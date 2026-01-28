@@ -11,7 +11,6 @@ type Props = {
 
 export default function ProductCard({ product }: Props) {
   const { t } = useTranslation();
-  const image = product.media?.find((m) => m.media_type === "image")?.url;
   return (
     <div
       className={cn(

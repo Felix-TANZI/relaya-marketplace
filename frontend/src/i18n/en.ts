@@ -38,8 +38,6 @@ export default {
     invalidProductId: "Invalid product id",
     imageUnavailable: "Image unavailable",
     discovery: "Discover",
-    empty: "No products available yet.",
-    error: "Unable to load products.",
     pills: {
       trending: "Trending",
       flash: "Flash deals",

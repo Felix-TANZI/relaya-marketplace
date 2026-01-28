@@ -38,8 +38,6 @@ export default {
     invalidProductId: "Identifiant produit invalide",
     imageUnavailable: "Image indisponible",
     discovery: "Découvrir",
-    empty: "Aucun produit disponible pour le moment.",
-    error: "Impossible de charger les produits.",
     pills: {
       trending: "Tendance",
       flash: "Offres flash",

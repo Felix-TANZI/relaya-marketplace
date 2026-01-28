@@ -91,9 +91,9 @@ export default function AppLayout() {
               title={t("common.theme", "Theme")}
             >
               {theme === "dark" ? (
-                <Sun size={18} title={t("common.light", "Light")} />
+                <Sun size={18} />
               ) : (
-                <Moon size={18} title={t("common.dark", "Dark")} />
+                <Moon size={18} />
               )}
             </button>
           </div>

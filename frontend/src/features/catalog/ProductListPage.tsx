@@ -4,14 +4,8 @@ import { Flame, Sparkles, TrendingUp, ShieldCheck, Truck, Store } from "lucide-r
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  image?: string;
-  category?: string;
-};
+import { listProducts } from "./api";
+import type { Product } from "./types";
 
 type Pill = {
   key: string;
@@ -29,16 +23,19 @@ export default function ProductListPage() {
   const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [activePill, setActivePill] = useState<string>("trending");
 
   useEffect(() => {
-    fetch("http://localhost:8000/api/products/")
-      .then((res) => res.json())
+    listProducts()
       .then((data) => {
         setProducts(data);
-        setLoading(false);
+        setError(null);
       })
-      .catch(() => setLoading(false));
+      .catch((err) => {
+        setError(String(err?.message || err));
+      })
+      .finally(() => setLoading(false));
   }, []);
 
   const topProducts = useMemo(() => {
@@ -212,6 +209,14 @@ export default function ProductListPage() {
                 className="aspect-[3/4] rounded-2xl bg-[rgba(var(--bg2),0.6)] animate-pulse"
               />
             ))}
+          </div>
+        ) : error ? (
+          <div className="rounded-2xl border border-[rgba(var(--border),0.4)] bg-[rgba(var(--glass),0.5)] p-6 text-sm text-[rgb(var(--muted))]">
+            {t("catalog.error", "Impossible de charger les produits.")} {error}
+          </div>
+        ) : topProducts.length === 0 ? (
+          <div className="rounded-2xl border border-[rgba(var(--border),0.4)] bg-[rgba(var(--glass),0.5)] p-6 text-sm text-[rgb(var(--muted))]">
+            {t("catalog.empty", "Aucun produit disponible pour le moment.")}
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">

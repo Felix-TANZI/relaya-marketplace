@@ -90,7 +90,11 @@ export default function AppLayout() {
               className="glass p-2 rounded-full hover:glow-accent transition"
               title={t("common.theme", "Theme")}
             >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              {theme === "dark" ? (
+                <Sun size={18} title={t("common.light", "Light")} />
+              ) : (
+                <Moon size={18} title={t("common.dark", "Dark")} />
+              )}
             </button>
           </div>
         </div>

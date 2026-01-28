@@ -5,6 +5,7 @@ import ProductDetailPage from "@/features/catalog/ProductDetailPage";
 import CartPage from "@/features/cart/CartPage";
 import CheckoutPage from "@/features/checkout/CheckoutPage";
 import OrderDetailPage from "@/features/orders/OrderDetailPage";
+import NotFoundPage from "@/features/system/NotFoundPage";
 import { getOrder } from "@/services/api/orders";
 import { listPaymentsByOrder } from "@/services/api/payments";
 import { trackShipment } from "@/services/api/shipping";

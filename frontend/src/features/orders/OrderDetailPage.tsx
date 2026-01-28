@@ -101,16 +101,24 @@ export default function OrderDetailPage() {
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Badge label={`Order: ${order.status}`} />
+          <Badge
+            label={t("orders.badges.order", "Commande") + `: ${order.status}`}
+          />
           {shipment ? (
-            <Badge label={`Shipping: ${shipment.status}`} />
+            <Badge
+              label={t("orders.badges.shipping", "Livraison") + `: ${shipment.status}`}
+            />
           ) : (
-            <Badge label="Shipping: N/A" />
+            <Badge label={t("orders.badges.shippingNA", "Livraison: N/A")} />
           )}
           {payments.length > 0 ? (
-            <Badge label={`Payments: ${payments.length}`} />
+            <Badge
+              label={
+                t("orders.badges.payments", "Paiements") + `: ${payments.length}`
+              }
+            />
           ) : (
-            <Badge label="Payments: 0" />
+            <Badge label={t("orders.badges.paymentsEmpty", "Paiements: 0")} />
           )}
         </div>
       </div>
@@ -129,7 +137,10 @@ export default function OrderDetailPage() {
               "La livraison n’a pas encore été créée pour cette commande."
             )}
             <div style={{ marginTop: 10, fontSize: 13 }}>
-              Astuce (dev): crée un shipment dans Swagger (Shipping → create), puis ajoute des events.
+              {t(
+                "shipping.devHint",
+                "Astuce (dev) : crée un shipment dans Swagger (Shipping → create), puis ajoute des events."
+              )}
             </div>
           </div>
         )}

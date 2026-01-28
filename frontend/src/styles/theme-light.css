@@ -1,0 +1,26 @@
+/* ===============================
+   RELAYA – LIGHT THEME
+   Ivoire + Or Champagne
+   =============================== */
+
+:root[data-theme="light"] {
+  --bg-main: #f6f6f4;
+  --bg-soft: #ffffff;
+  --bg-glass: rgba(255, 255, 255, 0.7);
+
+  --text-main: #1c1e22;
+  --text-muted: #5f646d;
+  --text-soft: #8a8f98;
+
+  --border-soft: rgba(0, 0, 0, 0.08);
+
+  /* Accent – identique */
+  --accent-main: #c9a24d;
+  --accent-soft: rgba(201, 162, 77, 0.18);
+  --accent-strong: #b8913f;
+
+  /* Status */
+  --success: #3fa65b;
+  --warning: #e8a400;
+  --danger: #d6452d;
+}

@@ -1,0 +1,26 @@
+/* ===============================
+   RELAYA – DARK THEME
+   Graphite Noir + Or Champagne
+   =============================== */
+
+:root[data-theme="dark"] {
+  --bg-main: #0e0f11;
+  --bg-soft: #14161a;
+  --bg-glass: rgba(20, 22, 26, 0.6);
+
+  --text-main: #f5f5f5;
+  --text-muted: #a3a6ad;
+  --text-soft: #7b7f87;
+
+  --border-soft: rgba(255, 255, 255, 0.08);
+
+  /* Accent – Or Champagne */
+  --accent-main: #c9a24d;
+  --accent-soft: rgba(201, 162, 77, 0.15);
+  --accent-strong: #e3be6a;
+
+  /* Status */
+  --success: #4caf50;
+  --warning: #ffb020;
+  --danger: #e5533d;
+}

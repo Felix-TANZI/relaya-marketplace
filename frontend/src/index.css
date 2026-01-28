@@ -1,0 +1,16 @@
+@import "./styles/tokens.css";
+@import "./styles/theme-dark.css";
+@import "./styles/theme-light.css";
+@import "./styles/glass.css";
+@import "./styles/shadows.css";
+
+html {
+  font-family: var(--font-sans);
+  background: var(--bg-main);
+  color: var(--text-main);
+}
+
+body {
+  margin: 0;
+  background: var(--bg-main);
+}

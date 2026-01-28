@@ -61,7 +61,17 @@ export const router = createBrowserRouter([
       },
       {
         path: "*",
-        element: <NotFoundPage />,
+        element: (
+          <div style={{ padding: 16 }}>
+            <h1 style={{ marginTop: 0 }}>404</h1>
+            <div style={{ color: "rgb(var(--muted))", marginBottom: 12 }}>
+              Page introuvable.
+            </div>
+            <a href="/" style={{ fontWeight: 800 }}>
+              Retour à l’accueil
+            </a>
+          </div>
+        ),
       },
     ],
   },

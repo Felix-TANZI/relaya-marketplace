@@ -11,7 +11,6 @@ type Props = {
 
 export default function ProductCard({ product }: Props) {
   const { t } = useTranslation();
-  const imageUrl = product.media?.find((m) => m.media_type === "image")?.url;
   return (
     <div
       className={cn(
@@ -22,9 +21,9 @@ export default function ProductCard({ product }: Props) {
     >
       {/* Image */}
       <div className="relative aspect-square bg-[rgba(var(--bg2),0.6)]">
-        {imageUrl ? (
+        {image ? (
           <img
-            src={imageUrl}
+            src={image}
             alt={product.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />

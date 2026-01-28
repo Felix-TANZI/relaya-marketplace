@@ -4,6 +4,10 @@
 @import "./styles/glass.css";
 @import "./styles/shadows.css";
 
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 html {
   font-family: var(--font-sans);
   background: var(--bg-main);

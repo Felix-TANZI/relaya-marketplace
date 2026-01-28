@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
@@ -16,6 +17,7 @@ type Props = {
 };
 
 export default function ProductCard({ product }: Props) {
+  const { t } = useTranslation();
   return (
     <div
       className={cn(
@@ -34,7 +36,7 @@ export default function ProductCard({ product }: Props) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-[rgb(var(--subtext))]">
-            Image indisponible
+            {t("catalog.imageUnavailable", "Image indisponible")}
           </div>
         )}
 
@@ -45,7 +47,7 @@ export default function ProductCard({ product }: Props) {
             "glass border border-[rgba(var(--border),0.4)]",
             "opacity-0 group-hover:opacity-100 transition"
           )}
-          aria-label="Ajouter aux favoris"
+          aria-label={t("catalog.addToWishlist", "Ajouter aux favoris")}
         >
           <Heart size={16} />
         </button>
@@ -75,7 +77,7 @@ export default function ProductCard({ product }: Props) {
             variant="secondary"
             size="sm"
             className="rounded-xl"
-            aria-label="Ajouter au panier"
+            aria-label={t("catalog.addToCart", "Ajouter au panier")}
           >
             <ShoppingCart size={16} />
           </Button>

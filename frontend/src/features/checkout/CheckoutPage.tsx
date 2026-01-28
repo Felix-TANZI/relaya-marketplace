@@ -106,7 +106,9 @@ export default function CheckoutPage() {
     return (
       <div>
         <h1 style={{ marginTop: 0 }}>{t("checkout.title", "Checkout")}</h1>
-        <div style={{ color: "var(--muted)" }}>{t("checkout.emptyCart", "Your cart is empty.")}</div>
+        <div style={{ color: "rgb(var(--muted))" }}>
+          {t("checkout.emptyCart", "Your cart is empty.")}
+        </div>
         <div style={{ marginTop: 12 }}>
           <Link to="/cart">← {t("cart.title", "Cart")}</Link>
         </div>
@@ -118,8 +120,8 @@ export default function CheckoutPage() {
     <div style={{ display: "grid", gridTemplateColumns: "1.2fr 0.8fr", gap: 16, alignItems: "start" }}>
       <div
         style={{
-          border: "1px solid var(--border)",
-          background: "var(--card)",
+          border: "1px solid rgb(var(--border))",
+          background: "rgb(var(--card))",
           borderRadius: 16,
           padding: 14,
         }}
@@ -130,9 +132,9 @@ export default function CheckoutPage() {
           <div
             style={{
               padding: 12,
-              border: "1px solid var(--border)",
+              border: "1px solid rgb(var(--border))",
               borderRadius: 12,
-              background: "var(--bg)",
+              background: "rgb(var(--bg))",
               marginBottom: 12,
             }}
           >
@@ -170,7 +172,7 @@ export default function CheckoutPage() {
             style={inputStyle()}
             disabled={submitting}
           />
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginTop: 6 }}>
             {t("checkout.phoneHint", "Example: +2376XXXXXXXX or 6XXXXXXXX")}
           </div>
         </Field>
@@ -195,7 +197,12 @@ export default function CheckoutPage() {
 
           <button
             onClick={onSubmit}
-            style={{ ...btnStyle(), background: "var(--text)", color: "var(--bg)", opacity: submitting ? 0.8 : 1 }}
+            style={{
+              ...btnStyle(),
+              background: "rgb(var(--text))",
+              color: "rgb(var(--bg))",
+              opacity: submitting ? 0.8 : 1,
+            }}
             disabled={submitting}
           >
             {submitting ? t("checkout.submitting", "Submitting...") : t("checkout.continue", "Continue")}
@@ -205,8 +212,8 @@ export default function CheckoutPage() {
 
       <div
         style={{
-          border: "1px solid var(--border)",
-          background: "var(--card)",
+          border: "1px solid rgb(var(--border))",
+          background: "rgb(var(--card))",
           borderRadius: 16,
           padding: 14,
         }}
@@ -222,7 +229,7 @@ export default function CheckoutPage() {
                 <div style={{ fontWeight: 800, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                   {i.title}
                 </div>
-                <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                <div style={{ color: "rgb(var(--muted))", fontSize: 12 }}>
                   {i.qty} × {i.price_xaf.toLocaleString()} FCFA
                 </div>
               </div>
@@ -233,7 +240,7 @@ export default function CheckoutPage() {
           ))}
         </div>
 
-        <div style={{ borderTop: "1px solid var(--border)", marginTop: 12, paddingTop: 12 }}>
+        <div style={{ borderTop: "1px solid rgb(var(--border))", marginTop: 12, paddingTop: 12 }}>
           <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 900 }}>
             <span>{t("cart.total", "Total")}</span>
             <span>{total.toLocaleString()} FCFA</span>
@@ -247,7 +254,9 @@ export default function CheckoutPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ marginTop: 12 }}>
-      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>{label}</div>
+      <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginBottom: 6 }}>
+        {label}
+      </div>
       {children}
     </div>
   );
@@ -256,9 +265,9 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--text)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--bg))",
+    color: "rgb(var(--text))",
     borderRadius: 12,
     padding: "10px 12px",
     outline: "none",
@@ -267,9 +276,9 @@ function inputStyle(): React.CSSProperties {
 
 function btnStyle(): React.CSSProperties {
   return {
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--text)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--bg))",
+    color: "rgb(var(--text))",
     padding: "10px 12px",
     borderRadius: 12,
     cursor: "pointer",

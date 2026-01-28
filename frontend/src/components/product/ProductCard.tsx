@@ -47,7 +47,7 @@ export default function ProductCard({ product }: Props) {
             "glass border border-[rgba(var(--border),0.4)]",
             "opacity-0 group-hover:opacity-100 transition"
           )}
-          aria-label="Ajouter aux favoris"
+          aria-label={t("catalog.addToWishlist", "Ajouter aux favoris")}
         >
           <Heart size={16} />
         </button>
@@ -77,7 +77,7 @@ export default function ProductCard({ product }: Props) {
             variant="secondary"
             size="sm"
             className="rounded-xl"
-            aria-label="Ajouter au panier"
+            aria-label={t("catalog.addToCart", "Ajouter au panier")}
           >
             <ShoppingCart size={16} />
           </Button>

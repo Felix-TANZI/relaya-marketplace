@@ -6,15 +6,81 @@ export default {
     dark: "Sombre",
     language: "Langue",
     back: "Retour",
+    close: "Fermer",
     loading: "Chargement...",
     error: "Erreur",
+  },
+  search: {
+    placeholder: "Rechercher un produit, une boutique, une idée…",
+    city: "Yaoundé",
+  },
+  nav: {
+    home: "Accueil",
+    shops: "Boutiques",
+    sell: "Devenir vendeur",
+  },
+  footer: {
+    tagline: "Marketplace premium du Cameroun.",
+    subline: "Paiement sécurisé · Livraison suivie.",
+    platform: "Plateforme",
+    legal: "Légal",
+    terms: "Conditions d’utilisation",
+    privacy: "Politique de confidentialité",
+    returns: "Paiements & retours",
+    rights: "Tous droits réservés",
   },
   catalog: {
     title: "Produits",
     price: "Prix",
     stock: "Stock",
     addToCart: "Ajouter au panier",
+    addToWishlist: "Ajouter aux favoris",
     invalidProductId: "Identifiant produit invalide",
+    imageUnavailable: "Image indisponible",
+    discovery: "Découvrir",
+    empty: "Aucun produit disponible pour le moment.",
+    error: "Impossible de charger les produits.",
+    pills: {
+      trending: "Tendance",
+      flash: "Offres flash",
+      new: "Nouveautés",
+    },
+    sections: {
+      trending: "Tendance",
+      flash: "Offres Flash",
+      new: "Nouveautés",
+    },
+    hero: {
+      badge: "Vendeurs vérifiés · Paiement sécurisé · Support réactif",
+      title: "Relaya,",
+      subtitle: "le marketplace premium du Cameroun.",
+      description:
+        "Une expérience d’achat fluide, une sélection large, et une logistique pensée pour Yaoundé & Douala (puis extension nationale).",
+      ctaExplore: "Explorer maintenant",
+      ctaSell: "Devenir vendeur",
+      delivery: {
+        title: "Livraison",
+        subtitle: "Suivi en temps réel",
+      },
+      shops: {
+        title: "Boutiques",
+        subtitle: "Vendeurs vérifiés",
+      },
+      payments: {
+        title: "FCFA",
+        subtitle: "MoMo / OM",
+      },
+      blockSelection: {
+        label: "Sélection",
+        title: "Produits choisis pour la qualité",
+        description: "Design, tech, maison, mode — une vitrine propre et premium.",
+      },
+      blockExperience: {
+        label: "Expérience",
+        title: "Rapide, clair, sans friction",
+        description: "Recherche intelligente, filtres fluides, commandes simples.",
+      },
+    },
   },
   cart: {
     title: "Panier",
@@ -52,6 +118,17 @@ export default {
     subtotal: "Sous-total",
     deliveryFee: "Frais de livraison",
     total: "Total",
+    badges: {
+      order: "Commande",
+      shipping: "Livraison",
+      shippingNA: "Livraison: N/A",
+      payments: "Paiements",
+      paymentsEmpty: "Paiements: 0",
+    },
+  },
+  shipping: {
+    devHint:
+      "Astuce (dev) : crée un shipment dans Swagger (Shipping → create), puis ajoute des events.",
   },
   payments: {
     title: "Payer via Mobile Money",
@@ -79,5 +156,9 @@ export default {
 
     simSuccess: "Simuler succès",
     simulating: "Simulation...",
+  },
+  system: {
+    notFound: "Page introuvable.",
+    backHome: "Retour à l’accueil",
   },
 };

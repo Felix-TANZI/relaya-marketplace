@@ -23,7 +23,7 @@ const sizes: Record<Size, string> = {
 
 const variants: Record<Variant, string> = {
   primary:
-    "text-[rgb(var(--bg))] " +
+    "text-[rgb(var(--accent-foreground))] " +
     "bg-[rgb(var(--primary))] " +
     "hover:bg-[rgb(var(--primary-strong))] " +
     "shadow-soft",
@@ -37,7 +37,7 @@ const variants: Record<Variant, string> = {
     "hover:bg-[rgba(var(--glass),0.55)] " +
     "border border-transparent",
   danger:
-    "text-[rgb(var(--bg))] bg-[rgb(var(--danger))] hover:opacity-90 shadow-soft",
+    "text-[rgb(var(--on-danger))] bg-[rgb(var(--danger))] hover:opacity-90 shadow-soft",
 };
 
 export function Button({

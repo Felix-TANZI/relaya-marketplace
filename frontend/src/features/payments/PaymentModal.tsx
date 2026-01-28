@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { X } from "lucide-react";
 import type { PaymentProvider, PaymentTransaction } from "@/services/api/payments";
 import { initPayment } from "@/services/api/payments";
 
@@ -78,13 +79,13 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
         <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
           <div>
             <div style={{ fontWeight: 900, fontSize: 18 }}>{t("payments.title", "Pay with Mobile Money")}</div>
-            <div style={{ color: "var(--muted)", fontSize: 12, marginTop: 4 }}>
+            <div style={{ color: "rgb(var(--muted))", fontSize: 12, marginTop: 4 }}>
               {t("payments.amount", "Amount")}: {amountXaf.toLocaleString()} FCFA
             </div>
           </div>
 
           <button onClick={onClose} style={iconBtnStyle()} aria-label="Close">
-            ✕
+            <X size={18} />
           </button>
         </div>
 
@@ -94,8 +95,8 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
               marginTop: 12,
               padding: 12,
               borderRadius: 12,
-              border: "1px solid var(--border)",
-              background: "var(--bg)",
+              border: "1px solid rgb(var(--border))",
+              background: "rgb(var(--bg))",
             }}
           >
             <strong>{t("common.error", "Error")}:</strong> {error}
@@ -103,7 +104,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
         )}
 
         <div style={{ marginTop: 14 }}>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginBottom: 6 }}>
             {t("payments.provider", "Provider")}
           </div>
           <select
@@ -118,7 +119,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
         </div>
 
         <div style={{ marginTop: 12 }}>
-          <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
+          <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginBottom: 6 }}>
             {t("payments.phone", "Phone")}
           </div>
           <input
@@ -128,7 +129,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
             style={inputStyle()}
             disabled={submitting}
           />
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
+          <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginTop: 6 }}>
             {t("payments.phoneHint", "Example: +2376XXXXXXXX or 6XXXXXXXX")}
           </div>
         </div>
@@ -139,14 +140,19 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
           </button>
           <button
             onClick={onSubmit}
-            style={{ ...btnStyle(), background: "var(--text)", color: "var(--bg)", opacity: submitting ? 0.85 : 1 }}
+            style={{
+              ...btnStyle(),
+              background: "rgb(var(--text))",
+              color: "rgb(var(--bg))",
+              opacity: submitting ? 0.85 : 1,
+            }}
             disabled={submitting}
           >
             {submitting ? t("payments.submitting", "Creating...") : t("payments.payNow", "Pay now")}
           </button>
         </div>
 
-        <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)" }}>
+        <div style={{ marginTop: 10, fontSize: 12, color: "rgb(var(--muted))" }}>
           {t("payments.devNote", "Dev mode: this creates a mock transaction. Provider integration will come next.")}
         </div>
       </div>
@@ -170,8 +176,8 @@ function modalStyle(): React.CSSProperties {
   return {
     width: "min(520px, 100%)",
     borderRadius: 16,
-    border: "1px solid var(--border)",
-    background: "var(--card)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--card))",
     padding: 14,
     boxShadow: "0 20px 60px rgba(0,0,0,0.35)",
   };
@@ -180,9 +186,9 @@ function modalStyle(): React.CSSProperties {
 function inputStyle(): React.CSSProperties {
   return {
     width: "100%",
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--text)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--bg))",
+    color: "rgb(var(--text))",
     borderRadius: 12,
     padding: "10px 12px",
     outline: "none",
@@ -191,9 +197,9 @@ function inputStyle(): React.CSSProperties {
 
 function btnStyle(): React.CSSProperties {
   return {
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--text)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--bg))",
+    color: "rgb(var(--text))",
     padding: "10px 12px",
     borderRadius: 12,
     cursor: "pointer",
@@ -206,10 +212,9 @@ function iconBtnStyle(): React.CSSProperties {
     width: 36,
     height: 36,
     borderRadius: 12,
-    border: "1px solid var(--border)",
-    background: "var(--bg)",
-    color: "var(--text)",
+    border: "1px solid rgb(var(--border))",
+    background: "rgb(var(--bg))",
+    color: "rgb(var(--text))",
     cursor: "pointer",
-    fontWeight: 900,
   };
 }

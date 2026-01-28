@@ -19,8 +19,24 @@
   --accent-soft: rgba(201, 162, 77, 0.18);
   --accent-strong: #b8913f;
 
+  /* Legacy palette bridge (rgb values) */
+  --bg: 246 246 244;
+  --text: 28 30 34;
+  --muted: 95 100 109;
+  --subtext: 138 143 152;
+  --card: 255 255 255;
+  --border: 224 227 232;
+  --glass: 255 255 255;
+  --bg2: 235 238 242;
+  --primary: 201 162 77;
+  --primary-strong: 184 145 63;
+  --accent: 201 162 77;
+  --ring: 201 162 77;
+  --accent-foreground: 20 22 26;
+  --on-danger: 255 255 255;
+
   /* Status */
-  --success: #3fa65b;
-  --warning: #e8a400;
-  --danger: #d6452d;
+  --success: 63 166 91;
+  --warning: 232 164 0;
+  --danger: 214 69 45;
 }

@@ -6,15 +6,81 @@ export default {
     dark: "Dark",
     language: "Language",
     back: "Back",
+    close: "Close",
     loading: "Loading...",
     error: "Error",
+  },
+  search: {
+    placeholder: "Search for a product, a shop, an idea…",
+    city: "Yaoundé",
+  },
+  nav: {
+    home: "Home",
+    shops: "Shops",
+    sell: "Become a seller",
+  },
+  footer: {
+    tagline: "Premium marketplace of Cameroon.",
+    subline: "Secure payment · Tracked delivery.",
+    platform: "Platform",
+    legal: "Legal",
+    terms: "Terms of use",
+    privacy: "Privacy policy",
+    returns: "Payments & returns",
+    rights: "All rights reserved",
   },
   catalog: {
     title: "Products",
     price: "Price",
     stock: "Stock",
     addToCart: "Add to cart",
+    addToWishlist: "Add to wishlist",
     invalidProductId: "Invalid product id",
+    imageUnavailable: "Image unavailable",
+    discovery: "Discover",
+    empty: "No products available yet.",
+    error: "Unable to load products.",
+    pills: {
+      trending: "Trending",
+      flash: "Flash deals",
+      new: "New arrivals",
+    },
+    sections: {
+      trending: "Trending",
+      flash: "Flash deals",
+      new: "New arrivals",
+    },
+    hero: {
+      badge: "Verified sellers · Secure payment · Responsive support",
+      title: "Relaya,",
+      subtitle: "the premium marketplace of Cameroon.",
+      description:
+        "A smooth shopping experience, a wide selection, and logistics built for Yaoundé & Douala (then nationwide).",
+      ctaExplore: "Explore now",
+      ctaSell: "Become a seller",
+      delivery: {
+        title: "Delivery",
+        subtitle: "Real-time tracking",
+      },
+      shops: {
+        title: "Shops",
+        subtitle: "Verified sellers",
+      },
+      payments: {
+        title: "FCFA",
+        subtitle: "MoMo / OM",
+      },
+      blockSelection: {
+        label: "Selection",
+        title: "Products picked for quality",
+        description: "Design, tech, home, fashion — a clean, premium showcase.",
+      },
+      blockExperience: {
+        label: "Experience",
+        title: "Fast, clear, frictionless",
+        description: "Smart search, smooth filters, simple ordering.",
+      },
+    },
   },
   cart: {
     title: "Cart",
@@ -52,6 +118,17 @@ export default {
     subtotal: "Subtotal",
     deliveryFee: "Delivery fee",
     total: "Total",
+    badges: {
+      order: "Order",
+      shipping: "Shipping",
+      shippingNA: "Shipping: N/A",
+      payments: "Payments",
+      paymentsEmpty: "Payments: 0",
+    },
+  },
+  shipping: {
+    devHint:
+      "Dev tip: create a shipment in Swagger (Shipping → create), then add events.",
   },
   payments: {
     title: "Pay with Mobile Money",
@@ -79,5 +156,9 @@ export default {
 
     simSuccess: "Simulate success",
     simulating: "Simulating...",
+  },
+  system: {
+    notFound: "Page not found.",
+    backHome: "Back to home",
   },
 };

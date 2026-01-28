@@ -1,21 +1,17 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-
-type Product = {
-  id: number;
-  name: string;
-  price: number;
-  image?: string;
-  category?: string;
-};
+import type { Product } from "@/features/catalog/types";
 
 type Props = {
   product: Product;
 };
 
 export default function ProductCard({ product }: Props) {
+  const { t } = useTranslation();
+  const imageUrl = product.media?.find((m) => m.media_type === "image")?.url;
   return (
     <div
       className={cn(
@@ -26,15 +22,15 @@ export default function ProductCard({ product }: Props) {
     >
       {/* Image */}
       <div className="relative aspect-square bg-[rgba(var(--bg2),0.6)]">
-        {product.image ? (
+        {imageUrl ? (
           <img
-            src={product.image}
-            alt={product.name}
+            src={imageUrl}
+            alt={product.title}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-sm text-[rgb(var(--subtext))]">
-            Image indisponible
+            {t("catalog.imageUnavailable", "Image indisponible")}
           </div>
         )}
 
@@ -45,7 +41,7 @@ export default function ProductCard({ product }: Props) {
             "glass border border-[rgba(var(--border),0.4)]",
             "opacity-0 group-hover:opacity-100 transition"
           )}
-          aria-label="Ajouter aux favoris"
+          aria-label={t("catalog.addToWishlist", "Ajouter aux favoris")}
         >
           <Heart size={16} />
         </button>
@@ -55,7 +51,7 @@ export default function ProductCard({ product }: Props) {
       <div className="flex flex-col gap-2 p-4">
         {product.category && (
           <span className="text-xs uppercase tracking-wide text-[rgb(var(--subtext))]">
-            {product.category}
+            {product.category.name}
           </span>
         )}
 
@@ -63,19 +59,19 @@ export default function ProductCard({ product }: Props) {
           to={`/product/${product.id}`}
           className="line-clamp-2 font-medium leading-snug hover:underline"
         >
-          {product.name}
+          {product.title}
         </Link>
 
         <div className="mt-1 flex items-center justify-between">
           <div className="text-lg font-bold text-[rgb(var(--primary-strong))]">
-            {product.price.toLocaleString()} FCFA
+            {product.price_xaf.toLocaleString()} FCFA
           </div>
 
           <Button
             variant="secondary"
             size="sm"
             className="rounded-xl"
-            aria-label="Ajouter au panier"
+            aria-label={t("catalog.addToCart", "Ajouter au panier")}
           >
             <ShoppingCart size={16} />
           </Button>

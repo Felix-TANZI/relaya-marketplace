@@ -84,11 +84,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            style={iconBtnStyle()}
-            aria-label={t("common.close", "Close")}
-          >
+          <button onClick={onClose} style={iconBtnStyle()} aria-label="Close">
             <X size={18} />
           </button>
         </div>

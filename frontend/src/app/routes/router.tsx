@@ -1,13 +1,7 @@
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "@/app/layout/AppLayout";
-import ProductListPage from "@/features/catalog/ProductListPage";
-import ProductDetailPage from "@/features/catalog/ProductDetailPage";
-import CartPage from "@/features/cart/CartPage";
-import CheckoutPage from "@/features/checkout/CheckoutPage";
-import OrderDetailPage from "@/features/orders/OrderDetailPage";
-import { getOrder } from "@/services/api/orders";
-import { listPaymentsByOrder } from "@/services/api/payments";
-import { trackShipment } from "@/services/api/shipping";
+import HomePage from "@/features/home/HomePage";
+
 
 export const router = createBrowserRouter([
   {
@@ -16,58 +10,24 @@ export const router = createBrowserRouter([
     children: [
       {
         index: true,
-        element: <ProductListPage />,
+        element: <HomePage />,
       },
       {
-        path: "product/:id",
-        element: <ProductDetailPage />,
+        path: "catalog",
+        element: <div className="container py-12"><h1>Catalogue (à venir)</h1></div>,
       },
       {
-        path: "cart",
-        element: <CartPage />,
-      },
-      {
-        path: "checkout",
-        element: <CheckoutPage />,
-      },
-      {
-        path: "checkout/confirm",
-        element: <Navigate to="/checkout" replace />,
-      },
-      {
-        path: "order/:id",
-        loader: async ({ params }) => {
-          const n = Number(params.id);
-          if (!Number.isFinite(n) || n <= 0) {
-            throw new Response("Invalid order id", { status: 400 });
-          }
-
-          const [order, payments] = await Promise.all([
-            getOrder(n),
-            listPaymentsByOrder(n),
-          ]);
-
-          let shipment = null;
-          try {
-            shipment = await trackShipment(n);
-          } catch {
-            shipment = null;
-          }
-
-          return { order, payments, shipment };
-        },
-        element: <OrderDetailPage />,
+        path: "shops",
+        element: <div className="container py-12"><h1>Boutiques (à venir)</h1></div>,
       },
       {
         path: "*",
         element: (
-          <div style={{ padding: 16 }}>
-            <h1 style={{ marginTop: 0 }}>404</h1>
-            <div style={{ color: "var(--muted)", marginBottom: 12 }}>
-              Page introuvable.
-            </div>
-            <a href="/" style={{ fontWeight: 800 }}>
-              Retour a l'accueil
+          <div className="container py-12">
+            <h1 className="text-4xl font-display font-bold mb-4">404</h1>
+            <p className="text-text-secondary mb-6">Page introuvable.</p>
+            <a href="/" className="text-accent-cyan hover:text-accent-primary-hover">
+              ← Retour à l'accueil
             </a>
           </div>
         ),

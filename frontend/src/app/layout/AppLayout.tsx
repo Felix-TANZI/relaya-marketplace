@@ -1,172 +1,200 @@
-﻿import { Outlet, Link } from "react-router-dom";
-import {
-  Search,
-  ShoppingCart,
-  User,
-  Globe,
-  Sun,
-  Moon,
-} from "lucide-react";
+﻿import { Outlet, Link, useLocation } from "react-router-dom";
+import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useCart } from "@/features/cart/useCart";
 import { cn } from "@/lib/cn";
 
 export default function AppLayout() {
-  const { t, i18n } = useTranslation();
-  const items = useCart();
   const [theme, setTheme] = useState<"dark" | "light">(
-    (document.documentElement.getAttribute("data-theme") as "dark" | "light") ||
-      "dark"
+    (document.documentElement.getAttribute("data-theme") as "dark" | "light") || "dark"
   );
-  const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
-
-  const currentLang = i18n?.language || "fr";
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-  }, [theme]);
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
-  const onToggleLanguage = () => {
-    const next = currentLang === "fr" ? "en" : "fr";
-    i18n.changeLanguage(next);
-    window.localStorage.setItem("relaya.lang", next);
+useEffect(() => {
+  const id = requestAnimationFrame(() => {
+    setMobileMenuOpen(false);
+  });
+
+  return () => cancelAnimationFrame(id);
+}, [location.pathname]);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+    localStorage.setItem("relaya-theme", newTheme);
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-[var(--bg-main)] text-[var(--text-main)]">
-      {/* ================= HEADER ================= */}
+    <div className="min-h-screen flex flex-col bg-primary text-text-primary">
+      {/* HEADER */}
       <header
         className={cn(
-          "sticky top-0 z-[var(--z-header)]",
-          "border-b border-[var(--border-soft)]",
-          "bg-[var(--bg-glass)] backdrop-blur-xl"
+          "sticky top-0 z-50 transition-all duration-base",
+          scrolled ? "glass-strong border-b border-border-default shadow-lg" : "bg-transparent"
         )}
       >
-        <div className="mx-auto max-w-7xl px-4 py-3 flex items-center gap-4">
-          {/* Logo */}
-          <Link
-            to="/"
-            className="flex items-center gap-2 font-extrabold tracking-tight"
-          >
-            <span className="text-lg">{t("common.appName", "Relaya")}</span>
-            <span className="h-2 w-2 rounded-full bg-[var(--accent-main)]" />
-          </Link>
-
-          {/* Search Bar (signature) */}
-          <div className="flex-1 hidden md:block">
-            <div className="glass shadow-soft flex items-center gap-3 px-4 py-2 rounded-full">
-              <Search size={18} className="text-[var(--text-soft)]" />
-              <input
-                type="text"
-                placeholder={t(
-                  "search.placeholder",
-                  "Rechercher un produit, une boutique, une idee..."
-                )}
-                className="w-full bg-transparent outline-none text-sm placeholder:text-[var(--text-soft)]"
-              />
-              <span className="text-xs text-[var(--text-soft)]">
-                {t("search.city", "Yaounde")}
-              </span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2">
-            <Link
-              to="/cart"
-              className="relative glass p-2 rounded-full hover:glow-accent transition"
-              aria-label={t("common.cart", "Panier")}
-              title={t("common.cart", "Panier")}
-            >
-              <ShoppingCart size={18} />
-              {cartCount > 0 ? (
-                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[rgb(var(--primary))] px-1 text-[10px] font-bold text-[rgb(var(--accent-foreground))]">
-                  {cartCount}
-                </span>
-              ) : null}
+        <div className="container">
+          <div className="flex items-center justify-between py-4">
+            {/* Logo */}
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="relative">
+                <div className="absolute inset-0 gradient-holographic rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
+                <div className="relative w-10 h-10 rounded-full gradient-holographic flex items-center justify-center text-text-inverse font-display font-bold text-xl">
+                  R
+                </div>
+              </div>
+              <span className="font-display font-bold text-2xl tracking-tight">Relaya</span>
             </Link>
 
-            <button
-              className="glass p-2 rounded-full hover:glow-accent transition"
-              aria-label={t("common.account", "Compte")}
-              title={t("common.account", "Compte")}
-            >
-              <User size={18} />
-            </button>
+            {/* Desktop Search */}
+            <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
+              <div className="relative w-full group">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-accent-cyan transition-colors" size={20} />
+                <input
+                  type="text"
+                  placeholder="Rechercher des produits, boutiques..."
+                  className="w-full pl-12 pr-4 py-3 rounded-full glass border-border-default focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all"
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <kbd className="px-2 py-1 text-xs rounded bg-primary-tertiary text-text-tertiary border border-border-subtle">⌘K</kbd>
+                </div>
+              </div>
+            </div>
 
-            <button
-              onClick={onToggleLanguage}
-              className="glass px-3 py-2 rounded-full hover:glow-accent transition flex items-center gap-2 text-xs font-semibold"
-              title={t("common.language", "Langue")}
-            >
-              <Globe size={16} />
-              {currentLang.toUpperCase()}
-            </button>
+            {/* Desktop Actions */}
+            <div className="hidden lg:flex items-center gap-2">
+              <button
+                onClick={toggleTheme}
+                className="p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all"
+                title="Changer de thème"
+              >
+                {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+              </button>
 
+              <button className="p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all">
+                <Globe size={20} />
+              </button>
+
+              <button className="relative p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all">
+                <ShoppingCart size={20} />
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-pink text-text-inverse text-xs font-bold flex items-center justify-center animate-glow-pulse">3</span>
+              </button>
+
+              <button className="ml-2 px-6 py-3 rounded-xl gradient-holographic text-text-inverse animate-gradient shadow-md hover:shadow-xl transition-all font-medium">
+                <User size={18} className="inline mr-2" />
+                Connexion
+              </button>
+            </div>
+
+            {/* Mobile Menu Button */}
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-              className="glass p-2 rounded-full hover:glow-accent transition"
-              title={t("common.theme", "Theme")}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-3 rounded-xl glass border-border-subtle"
             >
-              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
+
+          {/* Mobile Search */}
+          <div className="lg:hidden pb-4">
+            <div className="relative group">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
+              <input
+                type="text"
+                placeholder="Rechercher..."
+                className="w-full pl-12 pr-4 py-3 rounded-full glass border-border-default focus:border-accent-cyan transition-all"
+              />
+            </div>
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {mobileMenuOpen && (
+          <div className="lg:hidden border-t border-border-subtle glass-strong">
+            <div className="container py-4 space-y-3">
+              <Link to="/" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+                Accueil
+              </Link>
+              <Link to="/catalog" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+                Catalogue
+              </Link>
+              <Link to="/shops" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+                Boutiques
+              </Link>
+              <div className="flex items-center gap-2 pt-2">
+                <button className="flex-1 px-6 py-3 rounded-xl gradient-holographic text-text-inverse animate-gradient font-medium">
+                  Connexion
+                </button>
+                <button onClick={toggleTheme} className="p-3 rounded-xl glass border-border-subtle">
+                  {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
-      {/* ================= MAIN ================= */}
+      {/* MAIN */}
       <main className="flex-1">
-        <div className="mx-auto max-w-7xl px-4 py-10">
-          <Outlet />
-        </div>
+        <Outlet />
       </main>
 
-      {/* ================= FOOTER ================= */}
-      <footer className="border-t border-[var(--border-soft)] bg-[var(--bg-soft)]">
-        <div className="mx-auto max-w-7xl px-4 py-10 grid gap-8 md:grid-cols-3">
-          <div>
-            <div className="font-bold text-lg">{t("common.appName", "Relaya")}</div>
-            <p className="mt-2 text-sm text-[var(--text-muted)]">
-              {t("footer.tagline", "Marketplace premium du Cameroun.")}{" "}
-              <br />
-              {t("footer.subline", "Paiement securise - Livraison suivie.")}
-            </p>
-          </div>
-
-          <div className="text-sm">
-            <div className="font-semibold mb-2">
-              {t("footer.platform", "Plateforme")}
+      {/* FOOTER */}
+      <footer className="border-t border-border-subtle bg-primary-secondary mt-20">
+        <div className="container py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-full gradient-holographic flex items-center justify-center text-text-inverse font-display font-bold text-xl">R</div>
+                <span className="font-display font-bold text-xl">Relaya</span>
+              </div>
+              <p className="text-text-secondary text-sm leading-relaxed">
+                La marketplace premium du Cameroun. Paiement sécurisé, livraison rapide, confiance garantie.
+              </p>
             </div>
-            <ul className="space-y-1 text-[var(--text-muted)]">
-              <li>
-                <Link to="/">{t("nav.home", "Accueil")}</Link>
-              </li>
-              <li>
-                <Link to="/shops">{t("nav.shops", "Boutiques")}</Link>
-              </li>
-              <li>
-                <Link to="/sell">{t("nav.sell", "Devenir vendeur")}</Link>
-              </li>
-            </ul>
+
+            <div>
+              <h3 className="font-display font-semibold text-lg mb-4">Marketplace</h3>
+              <ul className="space-y-3">
+                <li><Link to="/catalog" className="text-text-secondary hover:text-accent-cyan transition-colors">Catalogue</Link></li>
+                <li><Link to="/shops" className="text-text-secondary hover:text-accent-cyan transition-colors">Boutiques</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-display font-semibold text-lg mb-4">Vendeurs</h3>
+              <ul className="space-y-3">
+                <li><Link to="/sell" className="text-text-secondary hover:text-accent-cyan transition-colors">Devenir vendeur</Link></li>
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-display font-semibold text-lg mb-4">Support</h3>
+              <ul className="space-y-3">
+                <li><Link to="/help" className="text-text-secondary hover:text-accent-cyan transition-colors">Centre d'aide</Link></li>
+              </ul>
+            </div>
           </div>
 
-          <div className="text-sm">
-            <div className="font-semibold mb-2">{t("footer.legal", "Legal")}</div>
-            <ul className="space-y-1 text-[var(--text-muted)]">
-              <li>{t("footer.terms", "Conditions d'utilisation")}</li>
-              <li>{t("footer.privacy", "Politique de confidentialite")}</li>
-              <li>{t("footer.returns", "Paiements et retours")}</li>
-            </ul>
+          <div className="mt-12 pt-8 border-t border-border-subtle flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-text-tertiary text-sm">© {new Date().getFullYear()} Relaya. Tous droits réservés.</p>
+            <div className="flex items-center gap-6 text-sm">
+              <Link to="/privacy" className="text-text-tertiary hover:text-accent-cyan transition-colors">Confidentialité</Link>
+              <Link to="/terms" className="text-text-tertiary hover:text-accent-cyan transition-colors">Conditions</Link>
+            </div>
           </div>
-        </div>
-
-        <div className="text-center text-xs text-[var(--text-soft)] pb-6">
-          (c) {new Date().getFullYear()} {t("common.appName", "Relaya")} -{" "}
-          {t("footer.rights", "Tous droits reserves")}
         </div>
       </footer>
     </div>
   );
 }
-

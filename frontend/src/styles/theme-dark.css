@@ -1,45 +1,78 @@
-/* ===============================
-   RELAYA - DARK THEME
-   Graphite Noir + Or Champagne
-   =============================== */
+﻿/* ================================================================
+   DARK THEME - HOLOGRAPHIC PREMIUM
+   ================================================================ */
 
-:root[data-theme="dark"] {
-  --bg-main: #0e0f11;
-  --bg-soft: #14161a;
-  --bg-glass: rgba(20, 22, 26, 0.6);
+[data-theme="dark"] {
+  /* ============= BACKGROUNDS ============= */
+  --bg-primary: #08090B;
+  --bg-secondary: #0F1116;
+  --bg-tertiary: #16181D;
+  --bg-elevated: #1C1F26;
+  
+  /* Glass effect backgrounds */
+  --bg-glass: rgba(22, 24, 29, 0.7);
+  --bg-glass-strong: rgba(22, 24, 29, 0.9);
 
-  --text-main: #f5f5f5;
-  --text-muted: #a3a6ad;
-  --text-soft: #7b7f87;
+  /* ============= TEXT ============= */
+  --text-primary: #E8EDF4;
+  --text-secondary: #A8B1C3;
+  --text-tertiary: #6B7280;
+  --text-inverse: #0D0F12;
 
-  --border-soft: rgba(255, 255, 255, 0.08);
+  /* ============= BORDERS ============= */
+  --border-subtle: rgba(232, 237, 244, 0.06);
+  --border-default: rgba(232, 237, 244, 0.1);
+  --border-strong: rgba(232, 237, 244, 0.2);
 
-  /* Accent - Or Champagne */
-  --accent-main: #c9a24d;
-  --accent-soft: rgba(201, 162, 77, 0.15);
-  --accent-strong: #e3be6a;
+  /* ============= HOLOGRAPHIC GRADIENT (signature) ============= */
+  --gradient-holographic: linear-gradient(
+    135deg,
+    #00F5FF 0%,
+    #B64CFF 50%,
+    #FF006E 100%
+  );
+  
+  --gradient-holographic-subtle: linear-gradient(
+    135deg,
+    rgba(0, 245, 255, 0.15) 0%,
+    rgba(182, 76, 255, 0.15) 50%,
+    rgba(255, 0, 110, 0.15) 100%
+  );
 
-  /* Status */
-  --success: #4caf50;
-  --warning: #ffb020;
-  --danger: #e5533d;
+  /* ============= ACCENT COLORS ============= */
+  --accent-cyan: #00F5FF;
+  --accent-purple: #B64CFF;
+  --accent-pink: #FF006E;
+  
+  /* Single accent for simple use cases */
+  --accent-primary: #00F5FF;
+  --accent-primary-hover: #00D4E6;
 
-  /* Component aliases (rgb triples expected) */
-  --bg: #0e0f11;
-  --bg-rgb: 14 15 17;
-  --bg2: 20 22 26;
-  --text: #f5f5f5;
-  --text-rgb: 245 245 245;
-  --subtext: #a3a6ad;
-  --subtext-rgb: 163 166 173;
-  --muted: #a4b1c2;
-  --card: #121826;
-  --border: rgba(255, 255, 255, 0.12);
-  --border-rgb: 255 255 255;
-  --glass: 20 22 26;
-  --primary: 201 162 77;
-  --primary-strong: 227 190 106;
-  --accent: 201 162 77;
-  --accent-foreground: 12 12 12;
-  --ring: 201 162 77;
+  /* ============= SEMANTIC COLORS ============= */
+  --success: #10B981;
+  --success-bg: rgba(16, 185, 129, 0.1);
+  --warning: #F59E0B;
+  --warning-bg: rgba(245, 158, 11, 0.1);
+  --error: #EF4444;
+  --error-bg: rgba(239, 68, 68, 0.1);
+  --info: #3B82F6;
+  --info-bg: rgba(59, 130, 246, 0.1);
+
+  /* ============= SHADOWS ============= */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.5),
+               0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5),
+               0 4px 6px -2px rgba(0, 0, 0, 0.3);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5),
+               0 10px 10px -5px rgba(0, 0, 0, 0.3);
+  --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  
+  /* Glow effects */
+  --shadow-glow-cyan: 0 0 20px rgba(0, 245, 255, 0.4),
+                      0 0 40px rgba(0, 245, 255, 0.2);
+  --shadow-glow-purple: 0 0 20px rgba(182, 76, 255, 0.4),
+                        0 0 40px rgba(182, 76, 255, 0.2);
+  --shadow-glow-pink: 0 0 20px rgba(255, 0, 110, 0.4),
+                      0 0 40px rgba(255, 0, 110, 0.2);
 }

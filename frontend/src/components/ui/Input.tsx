@@ -1,20 +1,41 @@
-import * as React from "react";
+import { InputHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
-type Props = React.InputHTMLAttributes<HTMLInputElement>;
-
-export function Input({ className, ...props }: Props) {
-  return (
-    <input
-      className={cn(
-        "h-11 w-full rounded-2xl px-4 text-sm",
-        "text-[rgb(var(--text-rgb))] placeholder:text-[rgba(var(--subtext-rgb),0.9)]",
-        "bg-[rgba(var(--glass),0.55)] border border-[rgba(var(--border-rgb),0.40)]",
-        "backdrop-blur-md shadow-soft",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--ring),0.30)]",
-        className
-      )}
-      {...props}
-    />
-  );
+interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
+  label?: string;
+  error?: string;
 }
+
+const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, label, error, ...props }, ref) => {
+    return (
+      <div className="w-full">
+        {label && (
+          <label className="block text-sm font-medium text-text-secondary mb-2">
+            {label}
+          </label>
+        )}
+        <input
+          ref={ref}
+          className={cn(
+            "w-full px-4 py-3 rounded-lg",
+            "glass border-border-default",
+            "text-text-primary placeholder:text-text-tertiary",
+            "focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20",
+            "transition-all duration-base",
+            error && "border-error focus:border-error focus:ring-error/20",
+            className
+          )}
+          {...props}
+        />
+        {error && (
+          <p className="mt-1.5 text-sm text-error">{error}</p>
+        )}
+      </div>
+    );
+  }
+);
+
+Input.displayName = "Input";
+
+export { Input };

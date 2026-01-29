@@ -1,55 +1,55 @@
-import * as React from "react";
+import { ButtonHTMLAttributes, forwardRef } from "react";
 import { cn } from "@/lib/cn";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
-type Size = "sm" | "md" | "lg";
-
-type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: Variant;
-  size?: Size;
-};
-
-const base =
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition " +
-  "disabled:pointer-events-none disabled:opacity-50 " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[rgba(var(--ring),0.35)] " +
-  "rounded-2xl";
-
-const sizes: Record<Size, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-11 px-5 text-base",
-};
-
-const variants: Record<Variant, string> = {
-  primary:
-    "text-[rgb(var(--bg-rgb))] " +
-    "bg-[rgb(var(--primary))] " +
-    "hover:bg-[rgb(var(--primary-strong))] " +
-    "shadow-soft",
-  secondary:
-    "glass border border-[rgba(var(--border-rgb),0.45)] " +
-    "text-[rgb(var(--text-rgb))] " +
-    "hover:bg-[rgba(var(--glass),0.85)] " +
-    "shadow-soft",
-  ghost:
-    "text-[rgb(var(--text-rgb))] " +
-    "hover:bg-[rgba(var(--glass),0.55)] " +
-    "border border-transparent",
-  danger:
-    "text-[rgb(var(--bg-rgb))] bg-[rgb(var(--danger))] hover:opacity-90 shadow-soft",
-};
-
-export function Button({
-  variant = "secondary",
-  size = "md",
-  className,
-  ...props
-}: Props) {
-  return (
-    <button
-      className={cn(base, sizes[size], variants[variant], className)}
-      {...props}
-    />
-  );
+interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  variant?: "primary" | "secondary" | "ghost" | "gradient";
+  size?: "sm" | "md" | "lg";
+  isLoading?: boolean;
 }
+
+const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
+    const baseStyles = "inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-base disabled:opacity-50 disabled:cursor-not-allowed";
+    
+    const variants = {
+      primary: "bg-accent-cyan text-text-inverse hover:bg-accent-primary-hover shadow-md hover:shadow-lg hover:shadow-glow-cyan",
+      secondary: "glass border-border-default hover:border-accent-cyan hover:shadow-glow-cyan",
+      ghost: "hover:bg-primary-tertiary text-text-secondary hover:text-text-primary",
+      gradient: "gradient-holographic text-text-inverse animate-gradient shadow-md hover:shadow-xl",
+    };
+    
+    const sizes = {
+      sm: "px-4 py-2 text-sm",
+      md: "px-6 py-3 text-base",
+      lg: "px-8 py-4 text-lg",
+    };
+
+    return (
+      <button
+        ref={ref}
+        className={cn(
+          baseStyles,
+          variants[variant],
+          sizes[size],
+          isLoading && "opacity-70 cursor-wait",
+          className
+        )}
+        disabled={disabled || isLoading}
+        {...props}
+      >
+        {isLoading ? (
+          <>
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span>Chargement...</span>
+          </>
+        ) : (
+          children
+        )}
+      </button>
+    );
+  }
+);
+
+Button.displayName = "Button";
+
+export { Button };

@@ -1,0 +1,169 @@
+/* ================================================================
+   UTILITY CLASSES - PREMIUM EFFECTS
+   ================================================================ */
+
+/* ============= GLASSMORPHISM ============= */
+.glass {
+  background: var(--bg-glass);
+  backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--blur-md)) saturate(180%);
+  border: 1px solid var(--border-subtle);
+}
+
+.glass-strong {
+  background: var(--bg-glass-strong);
+  backdrop-filter: blur(var(--blur-lg)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--blur-lg)) saturate(200%);
+  border: 1px solid var(--border-default);
+}
+
+/* ============= GRADIENTS ============= */
+.gradient-holographic {
+  background: var(--gradient-holographic);
+}
+
+.gradient-holographic-text {
+  background: var(--gradient-holographic);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-holographic-border {
+  position: relative;
+  background: var(--bg-secondary);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.gradient-holographic-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  margin: -2px;
+  border-radius: inherit;
+  background: var(--gradient-holographic);
+}
+
+/* ============= ANIMATIONS ============= */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-shift 8s ease infinite;
+}
+
+@keyframes glow-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+.animate-glow {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+/* ============= HOVER EFFECTS ============= */
+.hover-lift {
+  transition: transform var(--transition-base), box-shadow var(--transition-base);
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.hover-glow-cyan:hover {
+  box-shadow: var(--shadow-glow-cyan);
+  border-color: var(--accent-cyan);
+}
+
+.hover-glow-purple:hover {
+  box-shadow: var(--shadow-glow-purple);
+  border-color: var(--accent-purple);
+}
+
+.hover-glow-pink:hover {
+  box-shadow: var(--shadow-glow-pink);
+  border-color: var(--accent-pink);
+}
+
+/* ============= 3D TRANSFORMS ============= */
+.perspective {
+  perspective: 1000px;
+}
+
+.preserve-3d {
+  transform-style: preserve-3d;
+}
+
+.hover-tilt {
+  transition: transform var(--transition-base);
+}
+
+.hover-tilt:hover {
+  transform: rotateX(5deg) rotateY(5deg) scale(1.02);
+}
+
+/* ============= SCROLLBAR CUSTOM ============= */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-primary) var(--bg-tertiary);
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-full);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--bg-tertiary);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-primary-hover);
+}
+
+/* ============= SELECTION ============= */
+::selection {
+  background: var(--accent-cyan);
+  color: var(--text-inverse);
+}
+
+::-moz-selection {
+  background: var(--accent-cyan);
+  color: var(--text-inverse);
+}

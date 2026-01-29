@@ -1,12 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 @import "./styles/tokens.css";
 @import "./styles/theme-dark.css";
 @import "./styles/theme-light.css";
 @import "./styles/glass.css";
 @import "./styles/shadows.css";
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
 
 html {
   font-family: var(--font-sans);

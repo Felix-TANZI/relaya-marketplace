@@ -1,5 +1,5 @@
 /* ===============================
-   RELAYA – DARK THEME
+   RELAYA - DARK THEME
    Graphite Noir + Or Champagne
    =============================== */
 
@@ -14,29 +14,32 @@
 
   --border-soft: rgba(255, 255, 255, 0.08);
 
-  /* Accent – Or Champagne */
+  /* Accent - Or Champagne */
   --accent-main: #c9a24d;
   --accent-soft: rgba(201, 162, 77, 0.15);
   --accent-strong: #e3be6a;
 
-  /* Legacy palette bridge (rgb values) */
-  --bg: 14 15 17;
-  --text: 245 245 245;
-  --muted: 163 166 173;
-  --subtext: 123 127 135;
-  --card: 20 22 26;
-  --border: 42 45 51;
+  /* Status */
+  --success: #4caf50;
+  --warning: #ffb020;
+  --danger: #e5533d;
+
+  /* Component aliases (rgb triples expected) */
+  --bg: #0e0f11;
+  --bg-rgb: 14 15 17;
+  --bg2: 20 22 26;
+  --text: #f5f5f5;
+  --text-rgb: 245 245 245;
+  --subtext: #a3a6ad;
+  --subtext-rgb: 163 166 173;
+  --muted: #a4b1c2;
+  --card: #121826;
+  --border: rgba(255, 255, 255, 0.12);
+  --border-rgb: 255 255 255;
   --glass: 20 22 26;
-  --bg2: 24 26 30;
   --primary: 201 162 77;
   --primary-strong: 227 190 106;
   --accent: 201 162 77;
+  --accent-foreground: 12 12 12;
   --ring: 201 162 77;
-  --accent-foreground: 14 15 17;
-  --on-danger: 245 245 245;
-
-  /* Status */
-  --success: 76 175 80;
-  --warning: 255 176 32;
-  --danger: 229 83 61;
 }

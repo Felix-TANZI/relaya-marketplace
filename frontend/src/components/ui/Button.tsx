@@ -23,21 +23,21 @@ const sizes: Record<Size, string> = {
 
 const variants: Record<Variant, string> = {
   primary:
-    "text-[rgb(var(--accent-foreground))] " +
+    "text-[rgb(var(--bg-rgb))] " +
     "bg-[rgb(var(--primary))] " +
     "hover:bg-[rgb(var(--primary-strong))] " +
     "shadow-soft",
   secondary:
-    "glass border border-[rgba(var(--border),0.45)] " +
-    "text-[rgb(var(--text))] " +
+    "glass border border-[rgba(var(--border-rgb),0.45)] " +
+    "text-[rgb(var(--text-rgb))] " +
     "hover:bg-[rgba(var(--glass),0.85)] " +
     "shadow-soft",
   ghost:
-    "text-[rgb(var(--text))] " +
+    "text-[rgb(var(--text-rgb))] " +
     "hover:bg-[rgba(var(--glass),0.55)] " +
     "border border-transparent",
   danger:
-    "text-[rgb(var(--on-danger))] bg-[rgb(var(--danger))] hover:opacity-90 shadow-soft",
+    "text-[rgb(var(--bg-rgb))] bg-[rgb(var(--danger))] hover:opacity-90 shadow-soft",
 };
 
 export function Button({

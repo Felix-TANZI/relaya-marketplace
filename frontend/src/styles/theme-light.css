@@ -1,5 +1,5 @@
 /* ===============================
-   RELAYA – LIGHT THEME
+   RELAYA - LIGHT THEME
    Ivoire + Or Champagne
    =============================== */
 
@@ -14,29 +14,32 @@
 
   --border-soft: rgba(0, 0, 0, 0.08);
 
-  /* Accent – identique */
+  /* Accent - Or Champagne */
   --accent-main: #c9a24d;
   --accent-soft: rgba(201, 162, 77, 0.18);
   --accent-strong: #b8913f;
 
-  /* Legacy palette bridge (rgb values) */
-  --bg: 246 246 244;
-  --text: 28 30 34;
-  --muted: 95 100 109;
-  --subtext: 138 143 152;
-  --card: 255 255 255;
-  --border: 224 227 232;
+  /* Status */
+  --success: #3fa65b;
+  --warning: #e8a400;
+  --danger: #d6452d;
+
+  /* Component aliases (rgb triples expected) */
+  --bg: #f6f6f4;
+  --bg-rgb: 246 246 244;
+  --bg2: 246 246 244;
+  --text: #1c1e22;
+  --text-rgb: 28 30 34;
+  --subtext: #5f646d;
+  --subtext-rgb: 95 100 109;
+  --muted: #666666;
+  --card: #f5f5f5;
+  --border: rgba(0, 0, 0, 0.12);
+  --border-rgb: 0 0 0;
   --glass: 255 255 255;
-  --bg2: 235 238 242;
   --primary: 201 162 77;
   --primary-strong: 184 145 63;
   --accent: 201 162 77;
+  --accent-foreground: 17 17 17;
   --ring: 201 162 77;
-  --accent-foreground: 20 22 26;
-  --on-danger: 255 255 255;
-
-  /* Status */
-  --success: 63 166 91;
-  --warning: 232 164 0;
-  --danger: 214 69 45;
 }

@@ -1,7 +1,5 @@
-import type { ReactNode } from "react";
 import { Link, useLoaderData } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CreditCard, Truck } from "lucide-react";
 import type { Shipment } from "@/services/api/shipping";
 import type { OrderDetail } from "@/services/api/orders";
 import type { PaymentTransaction } from "@/services/api/payments";
@@ -25,8 +23,8 @@ function Badge({ label }: { label: string }) {
         gap: 6,
         padding: "4px 10px",
         borderRadius: 999,
-        border: "1px solid rgb(var(--border))",
-        background: "rgb(var(--card))",
+        border: "1px solid var(--border)",
+        background: "var(--card)",
         fontSize: 12,
         fontWeight: 800,
       }}
@@ -42,23 +40,23 @@ function Card({
   children,
 }: {
   title: string;
-  icon?: ReactNode;
-  children: ReactNode;
+  icon?: string;
+  children: React.ReactNode;
 }) {
   return (
     <section
       style={{
-        border: "1px solid rgb(var(--border))",
+        border: "1px solid var(--border)",
         borderRadius: 18,
         padding: 16,
-        background: "rgb(var(--card))",
+        background: "var(--card)",
         boxShadow: "0 1px 0 rgba(0,0,0,0.03)",
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-        {icon}
-        <h2 style={{ margin: 0, fontSize: 18 }}>{title}</h2>
-      </div>
+      <h2 style={{ margin: 0, marginBottom: 12, fontSize: 18 }}>
+        {icon ? `${icon} ` : ""}
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -95,30 +93,22 @@ export default function OrderDetailPage() {
           <h1 style={{ margin: 0 }}>
             {t("orders.title", "Commande")} #{order.id}
           </h1>
-          <div style={{ color: "rgb(var(--muted))", fontSize: 13, marginTop: 4 }}>
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 4 }}>
             {t("orders.status", "Statut")} : <strong>{order.status}</strong>
           </div>
         </div>
 
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Badge
-            label={t("orders.badges.order", "Commande") + `: ${order.status}`}
-          />
+          <Badge label={`Order: ${order.status}`} />
           {shipment ? (
-            <Badge
-              label={t("orders.badges.shipping", "Livraison") + `: ${shipment.status}`}
-            />
+            <Badge label={`Shipping: ${shipment.status}`} />
           ) : (
-            <Badge label={t("orders.badges.shippingNA", "Livraison: N/A")} />
+            <Badge label="Shipping: N/A" />
           )}
           {payments.length > 0 ? (
-            <Badge
-              label={
-                t("orders.badges.payments", "Paiements") + `: ${payments.length}`
-              }
-            />
+            <Badge label={`Payments: ${payments.length}`} />
           ) : (
-            <Badge label={t("orders.badges.paymentsEmpty", "Paiements: 0")} />
+            <Badge label="Payments: 0" />
           )}
         </div>
       </div>
@@ -126,21 +116,15 @@ export default function OrderDetailPage() {
       {/* =========================
           TRACKING LIVRAISON
          ========================= */}
-      <Card
-        title={t("shipping.tracking", "Suivi de livraison")}
-        icon={<Truck size={18} />}
-      >
+      <Card title={t("shipping.tracking", "Suivi de livraison")} icon="🚚">
         {!shipment && (
-          <div style={{ color: "rgb(var(--muted))", lineHeight: 1.5 }}>
+          <div style={{ color: "var(--muted)", lineHeight: 1.5 }}>
             {t(
               "shipping.notStarted",
               "La livraison n’a pas encore été créée pour cette commande."
             )}
             <div style={{ marginTop: 10, fontSize: 13 }}>
-              {t(
-                "shipping.devHint",
-                "Astuce (dev) : crée un shipment dans Swagger (Shipping → create), puis ajoute des events."
-              )}
+              Astuce (dev): crée un shipment dans Swagger (Shipping → create), puis ajoute des events.
             </div>
           </div>
         )}
@@ -156,14 +140,14 @@ export default function OrderDetailPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 12, color: "rgb(var(--muted))" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   {t("shipping.status", "Statut")}
                 </div>
                 <div style={{ fontWeight: 900 }}>{shipment.status}</div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: "rgb(var(--muted))" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   {t("shipping.courier", "Livreur")}
                 </div>
                 <div style={{ fontWeight: 700 }}>
@@ -176,14 +160,14 @@ export default function OrderDetailPage() {
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: "rgb(var(--muted))" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   {t("shipping.createdAt", "Créé")}
                 </div>
                 <div style={{ fontWeight: 700 }}>{formatDate(shipment.created_at)}</div>
               </div>
 
               <div>
-                <div style={{ fontSize: 12, color: "rgb(var(--muted))" }}>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
                   {t("shipping.updatedAt", "Mis à jour")}
                 </div>
                 <div style={{ fontWeight: 700 }}>{formatDate(shipment.updated_at)}</div>
@@ -191,12 +175,12 @@ export default function OrderDetailPage() {
             </div>
 
             <div style={{ marginTop: 8 }}>
-              <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginBottom: 10 }}>
+              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
                 {t("shipping.timeline", "Timeline")}
               </div>
 
               {shipment.events.length === 0 && (
-                <div style={{ color: "rgb(var(--muted))" }}>
+                <div style={{ color: "var(--muted)" }}>
                   {t("shipping.noEvents", "Aucun événement de suivi pour l’instant.")}
                 </div>
               )}
@@ -206,7 +190,7 @@ export default function OrderDetailPage() {
                   style={{
                     display: "grid",
                     gap: 12,
-                    borderLeft: "3px solid rgb(var(--border))",
+                    borderLeft: "3px solid var(--border)",
                     paddingLeft: 14,
                   }}
                 >
@@ -220,11 +204,11 @@ export default function OrderDetailPage() {
                           width: 10,
                           height: 10,
                           borderRadius: 999,
-                          background: "rgb(var(--text))",
+                          background: "var(--text)",
                         }}
                       />
                       <div style={{ fontWeight: 900 }}>{ev.status}</div>
-                      <div style={{ fontSize: 12, color: "rgb(var(--muted))", marginTop: 2 }}>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}>
                         {formatDate(ev.created_at)}
                         {ev.location ? ` • ${ev.location}` : ""}
                       </div>
@@ -241,9 +225,9 @@ export default function OrderDetailPage() {
       {/* =========================
           PAIEMENTS
          ========================= */}
-      <Card title={t("payments.title", "Paiements")} icon={<CreditCard size={18} />}>
+      <Card title={t("payments.title", "Paiements")} icon="💳">
         {payments.length === 0 && (
-          <div style={{ color: "rgb(var(--muted))" }}>
+          <div style={{ color: "var(--muted)" }}>
             {t("payments.none", "Aucun paiement enregistré")}
           </div>
         )}
@@ -257,10 +241,10 @@ export default function OrderDetailPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  border: "1px solid rgb(var(--border))",
+                  border: "1px solid var(--border)",
                   borderRadius: 14,
                   padding: "10px 12px",
-                  background: "rgb(var(--bg))",
+                  background: "var(--background)",
                   fontSize: 14,
                 }}
               >
@@ -268,7 +252,7 @@ export default function OrderDetailPage() {
                   <strong>
                     {p.provider} • {p.status}
                   </strong>
-                  <span style={{ color: "rgb(var(--muted))", fontSize: 12 }}>
+                  <span style={{ color: "var(--muted)", fontSize: 12 }}>
                     {t("payments.txId", "Transaction")} : #{p.id}
                   </span>
                 </div>

@@ -45,9 +45,9 @@ export default function ProductDetailPage() {
           style={{
             marginTop: 16,
             padding: 12,
-            border: "1px solid rgb(var(--border))",
+            border: "1px solid var(--border)",
             borderRadius: 12,
-            background: "rgb(var(--card))",
+            background: "var(--card)",
           }}
         >
           <strong>{t("common.error", "Error")}:</strong>{" "}
@@ -65,9 +65,9 @@ export default function ProductDetailPage() {
           style={{
             marginTop: 16,
             padding: 12,
-            border: "1px solid rgb(var(--border))",
+            border: "1px solid var(--border)",
             borderRadius: 12,
-            background: "rgb(var(--card))",
+            background: "var(--card)",
           }}
         >
           <strong>{t("common.error", "Error")}:</strong> {error}
@@ -80,7 +80,7 @@ export default function ProductDetailPage() {
     return (
       <div>
         <Link to="/">← {t("common.back", "Back")}</Link>
-        <div style={{ marginTop: 16, color: "rgb(var(--muted))" }}>
+        <div style={{ marginTop: 16, color: "var(--muted)" }}>
           {t("common.loading", "Loading...")}
         </div>
       </div>
@@ -116,12 +116,12 @@ export default function ProductDetailPage() {
         <div
           style={{
             marginTop: 12,
-            border: "1px solid rgb(var(--border))",
+            border: "1px solid var(--border)",
             borderRadius: 14,
             overflow: "hidden",
           }}
         >
-          <div style={{ aspectRatio: "1 / 1", background: "rgb(var(--border))" }}>
+          <div style={{ aspectRatio: "1 / 1", background: "var(--border)" }}>
             {img ? (
               <img
                 src={img}
@@ -136,7 +136,7 @@ export default function ProductDetailPage() {
       <div>
         <h1 style={{ marginTop: 0 }}>{item.title}</h1>
 
-        <div style={{ color: "rgb(var(--muted))", marginBottom: 10 }}>
+        <div style={{ color: "var(--muted)", marginBottom: 10 }}>
           {item.category?.name}
         </div>
 
@@ -146,7 +146,7 @@ export default function ProductDetailPage() {
 
         <div
           style={{
-            color: stock > 0 ? "rgb(var(--text))" : "rgb(var(--muted))",
+            color: stock > 0 ? "var(--text)" : "var(--muted)",
             marginBottom: 14,
           }}
         >
@@ -162,9 +162,9 @@ export default function ProductDetailPage() {
             marginTop: 18,
             padding: "10px 14px",
             borderRadius: 12,
-            border: "1px solid rgb(var(--border))",
-            background: stock > 0 ? "rgb(var(--text))" : "rgb(var(--card))",
-            color: stock > 0 ? "rgb(var(--bg))" : "rgb(var(--muted))",
+            border: "1px solid var(--border)",
+            background: stock > 0 ? "var(--text)" : "var(--card)",
+            color: stock > 0 ? "var(--bg)" : "var(--muted)",
             cursor: stock > 0 ? "pointer" : "not-allowed",
             fontWeight: 700,
           }}

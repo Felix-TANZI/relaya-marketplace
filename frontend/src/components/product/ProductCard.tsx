@@ -1,29 +1,21 @@
-import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
+﻿import { Link } from "react-router-dom";
 import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
-import type { Product } from "@/features/catalog/types";
-import { addToCart } from "@/features/cart/cartStore";
+
+type Product = {
+  id: number;
+  name: string;
+  price: number;
+  image?: string;
+  category?: string;
+};
 
 type Props = {
   product: Product;
 };
 
 export default function ProductCard({ product }: Props) {
-  const { t } = useTranslation();
-  const imageUrl = product.media?.find((m) => m.media_type === "image")?.url;
-  const onAddToCart = () => {
-    addToCart(
-      {
-        productId: product.id,
-        title: product.title,
-        price_xaf: product.price_xaf,
-        imageUrl,
-      },
-      1
-    );
-  };
   return (
     <div
       className={cn(
@@ -34,15 +26,15 @@ export default function ProductCard({ product }: Props) {
     >
       {/* Image */}
       <div className="relative aspect-square bg-[rgba(var(--bg2),0.6)]">
-        {imageUrl ? (
+        {product.image ? (
           <img
-            src={imageUrl}
-            alt={product.title}
+            src={product.image}
+            alt={product.name}
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-sm text-[rgb(var(--subtext))]">
-            {t("catalog.imageUnavailable", "Image indisponible")}
+          <div className="flex h-full w-full items-center justify-center text-sm text-[rgb(var(--subtext-rgb))]">
+            Image indisponible
           </div>
         )}
 
@@ -50,10 +42,10 @@ export default function ProductCard({ product }: Props) {
         <button
           className={cn(
             "absolute right-3 top-3 rounded-xl p-2",
-            "glass border border-[rgba(var(--border),0.4)]",
+            "glass border border-[rgba(var(--border-rgb),0.4)]",
             "opacity-0 group-hover:opacity-100 transition"
           )}
-          aria-label={t("catalog.addToWishlist", "Ajouter aux favoris")}
+          aria-label="Ajouter aux favoris"
         >
           <Heart size={16} />
         </button>
@@ -62,8 +54,8 @@ export default function ProductCard({ product }: Props) {
       {/* Content */}
       <div className="flex flex-col gap-2 p-4">
         {product.category && (
-          <span className="text-xs uppercase tracking-wide text-[rgb(var(--subtext))]">
-            {product.category.name}
+          <span className="text-xs uppercase tracking-wide text-[rgb(var(--subtext-rgb))]">
+            {product.category}
           </span>
         )}
 
@@ -71,20 +63,19 @@ export default function ProductCard({ product }: Props) {
           to={`/product/${product.id}`}
           className="line-clamp-2 font-medium leading-snug hover:underline"
         >
-          {product.title}
+          {product.name}
         </Link>
 
         <div className="mt-1 flex items-center justify-between">
           <div className="text-lg font-bold text-[rgb(var(--primary-strong))]">
-            {product.price_xaf.toLocaleString()} FCFA
+            {product.price.toLocaleString()} FCFA
           </div>
 
           <Button
             variant="secondary"
             size="sm"
             className="rounded-xl"
-            aria-label={t("catalog.addToCart", "Ajouter au panier")}
-            onClick={onAddToCart}
+            aria-label="Ajouter au panier"
           >
             <ShoppingCart size={16} />
           </Button>
@@ -93,3 +84,4 @@ export default function ProductCard({ product }: Props) {
     </div>
   );
 }
+

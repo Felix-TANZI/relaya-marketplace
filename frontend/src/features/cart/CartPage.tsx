@@ -12,9 +12,7 @@ export default function CartPage() {
     return (
       <div>
         <h1 style={{ marginTop: 0 }}>{t("cart.title", "Cart")}</h1>
-        <div style={{ color: "rgb(var(--muted))" }}>
-          {t("cart.empty", "Your cart is empty.")}
-        </div>
+        <div style={{ color: "var(--muted)" }}>{t("cart.empty", "Your cart is empty.")}</div>
         <div style={{ marginTop: 12 }}>
           <Link to="/">← {t("common.back", "Back")}</Link>
         </div>
@@ -35,21 +33,13 @@ export default function CartPage() {
               gridTemplateColumns: "80px 1fr auto",
               gap: 12,
               alignItems: "center",
-              border: "1px solid rgb(var(--border))",
-              background: "rgb(var(--card))",
+              border: "1px solid var(--border)",
+              background: "var(--card)",
               borderRadius: 14,
               padding: 12,
             }}
           >
-            <div
-              style={{
-                width: 80,
-                height: 80,
-                borderRadius: 12,
-                overflow: "hidden",
-                background: "rgb(var(--border))",
-              }}
-            >
+            <div style={{ width: 80, height: 80, borderRadius: 12, overflow: "hidden", background: "var(--border)" }}>
               {i.imageUrl ? (
                 <img src={i.imageUrl} alt={i.title} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
               ) : null}
@@ -57,7 +47,7 @@ export default function CartPage() {
 
             <div>
               <div style={{ fontWeight: 800 }}>{i.title}</div>
-              <div style={{ color: "rgb(var(--muted))", fontSize: 13 }}>
+              <div style={{ color: "var(--muted)", fontSize: 13 }}>
                 {i.price_xaf.toLocaleString()} FCFA
               </div>
 
@@ -88,7 +78,7 @@ export default function CartPage() {
           justifyContent: "space-between",
           alignItems: "center",
           gap: 12,
-          borderTop: "1px solid rgb(var(--border))",
+          borderTop: "1px solid var(--border)",
           paddingTop: 14,
           flexWrap: "wrap",
         }}
@@ -106,8 +96,8 @@ export default function CartPage() {
           style={{
             ...btnStyle(),
             textDecoration: "none",
-            background: "rgb(var(--text))",
-            color: "rgb(var(--bg))",
+            background: "var(--text)",
+            color: "var(--bg)",
           }}
         >
           {t("checkout.title", "Checkout")}
@@ -123,9 +113,9 @@ export default function CartPage() {
 
 function btnStyle(): React.CSSProperties {
   return {
-    border: "1px solid rgb(var(--border))",
-    background: "rgb(var(--bg))",
-    color: "rgb(var(--text))",
+    border: "1px solid var(--border)",
+    background: "var(--bg)",
+    color: "var(--text)",
     padding: "8px 10px",
     borderRadius: 12,
     cursor: "pointer",

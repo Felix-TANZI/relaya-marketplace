@@ -1,4 +1,4 @@
-import { Outlet, Link } from "react-router-dom";
+ï»¿import { Outlet, Link } from "react-router-dom";
 import {
   Search,
   ShoppingCart,
@@ -21,12 +21,14 @@ export default function AppLayout() {
   );
   const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
+  const currentLang = i18n?.language || "fr";
+
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
   }, [theme]);
 
   const onToggleLanguage = () => {
-    const next = i18n.language === "fr" ? "en" : "fr";
+    const next = currentLang === "fr" ? "en" : "fr";
     i18n.changeLanguage(next);
     window.localStorage.setItem("relaya.lang", next);
   };
@@ -59,12 +61,12 @@ export default function AppLayout() {
                 type="text"
                 placeholder={t(
                   "search.placeholder",
-                  "Rechercher un produit, une boutique, une idée…"
+                  "Rechercher un produit, une boutique, une idee..."
                 )}
                 className="w-full bg-transparent outline-none text-sm placeholder:text-[var(--text-soft)]"
               />
               <span className="text-xs text-[var(--text-soft)]">
-                {t("search.city", "Yaoundé")}
+                {t("search.city", "Yaounde")}
               </span>
             </div>
           </div>
@@ -99,7 +101,7 @@ export default function AppLayout() {
               title={t("common.language", "Langue")}
             >
               <Globe size={16} />
-              {i18n.language.toUpperCase()}
+              {currentLang.toUpperCase()}
             </button>
 
             <button
@@ -128,7 +130,7 @@ export default function AppLayout() {
             <p className="mt-2 text-sm text-[var(--text-muted)]">
               {t("footer.tagline", "Marketplace premium du Cameroun.")}{" "}
               <br />
-              {t("footer.subline", "Paiement sécurisé · Livraison suivie.")}
+              {t("footer.subline", "Paiement securise - Livraison suivie.")}
             </p>
           </div>
 
@@ -150,20 +152,21 @@ export default function AppLayout() {
           </div>
 
           <div className="text-sm">
-            <div className="font-semibold mb-2">{t("footer.legal", "Légal")}</div>
+            <div className="font-semibold mb-2">{t("footer.legal", "Legal")}</div>
             <ul className="space-y-1 text-[var(--text-muted)]">
-              <li>{t("footer.terms", "Conditions d’utilisation")}</li>
-              <li>{t("footer.privacy", "Politique de confidentialité")}</li>
-              <li>{t("footer.returns", "Paiements & retours")}</li>
+              <li>{t("footer.terms", "Conditions d'utilisation")}</li>
+              <li>{t("footer.privacy", "Politique de confidentialite")}</li>
+              <li>{t("footer.returns", "Paiements et retours")}</li>
             </ul>
           </div>
         </div>
 
         <div className="text-center text-xs text-[var(--text-soft)] pb-6">
-          © {new Date().getFullYear()} {t("common.appName", "Relaya")} —{" "}
-          {t("footer.rights", "Tous droits réservés")}
+          (c) {new Date().getFullYear()} {t("common.appName", "Relaya")} -{" "}
+          {t("footer.rights", "Tous droits reserves")}
         </div>
       </footer>
     </div>
   );
 }
+

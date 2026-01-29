@@ -9,14 +9,17 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useCart } from "@/features/cart/useCart";
 import { cn } from "@/lib/cn";
 
 export default function AppLayout() {
   const { t, i18n } = useTranslation();
+  const items = useCart();
   const [theme, setTheme] = useState<"dark" | "light">(
     (document.documentElement.getAttribute("data-theme") as "dark" | "light") ||
       "dark"
   );
+  const cartCount = items.reduce((sum, item) => sum + item.qty, 0);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -56,23 +59,37 @@ export default function AppLayout() {
                 type="text"
                 placeholder={t(
                   "search.placeholder",
-                  "Rechercher un produit, une boutique, une idÃ©eâ€¦"
+                  "Rechercher un produit, une boutique, une idée…"
                 )}
                 className="w-full bg-transparent outline-none text-sm placeholder:text-[var(--text-soft)]"
               />
               <span className="text-xs text-[var(--text-soft)]">
-                {t("search.city", "YaoundÃ©")}
+                {t("search.city", "Yaoundé")}
               </span>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex items-center gap-2">
-            <button className="glass p-2 rounded-full hover:glow-accent transition">
+            <Link
+              to="/cart"
+              className="relative glass p-2 rounded-full hover:glow-accent transition"
+              aria-label={t("common.cart", "Panier")}
+              title={t("common.cart", "Panier")}
+            >
               <ShoppingCart size={18} />
-            </button>
+              {cartCount > 0 ? (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-[rgb(var(--primary))] px-1 text-[10px] font-bold text-[rgb(var(--accent-foreground))]">
+                  {cartCount}
+                </span>
+              ) : null}
+            </Link>
 
-            <button className="glass p-2 rounded-full hover:glow-accent transition">
+            <button
+              className="glass p-2 rounded-full hover:glow-accent transition"
+              aria-label={t("common.account", "Compte")}
+              title={t("common.account", "Compte")}
+            >
               <User size={18} />
             </button>
 
@@ -90,11 +107,7 @@ export default function AppLayout() {
               className="glass p-2 rounded-full hover:glow-accent transition"
               title={t("common.theme", "Theme")}
             >
-              {theme === "dark" ? (
-                <Sun size={18} />
-              ) : (
-                <Moon size={18} />
-              )}
+              {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
             </button>
           </div>
         </div>
@@ -115,7 +128,7 @@ export default function AppLayout() {
             <p className="mt-2 text-sm text-[var(--text-muted)]">
               {t("footer.tagline", "Marketplace premium du Cameroun.")}{" "}
               <br />
-              {t("footer.subline", "Paiement sÃ©curisÃ© Â· Livraison suivie.")}
+              {t("footer.subline", "Paiement sécurisé · Livraison suivie.")}
             </p>
           </div>
 
@@ -137,18 +150,18 @@ export default function AppLayout() {
           </div>
 
           <div className="text-sm">
-            <div className="font-semibold mb-2">{t("footer.legal", "LÃ©gal")}</div>
+            <div className="font-semibold mb-2">{t("footer.legal", "Légal")}</div>
             <ul className="space-y-1 text-[var(--text-muted)]">
-              <li>{t("footer.terms", "Conditions dâ€™utilisation")}</li>
-              <li>{t("footer.privacy", "Politique de confidentialitÃ©")}</li>
+              <li>{t("footer.terms", "Conditions d’utilisation")}</li>
+              <li>{t("footer.privacy", "Politique de confidentialité")}</li>
               <li>{t("footer.returns", "Paiements & retours")}</li>
             </ul>
           </div>
         </div>
 
         <div className="text-center text-xs text-[var(--text-soft)] pb-6">
-          Â© {new Date().getFullYear()} {t("common.appName", "Relaya")} â€”{" "}
-          {t("footer.rights", "Tous droits rÃ©servÃ©s")}
+          © {new Date().getFullYear()} {t("common.appName", "Relaya")} —{" "}
+          {t("footer.rights", "Tous droits réservés")}
         </div>
       </footer>
     </div>

@@ -9,6 +9,8 @@ export default {
     close: "Close",
     loading: "Loading...",
     error: "Error",
+    cart: "Cart",
+    account: "Account",
   },
   search: {
     placeholder: "Search for a product, a shop, an idea…",
@@ -38,6 +40,8 @@ export default {
     invalidProductId: "Invalid product id",
     imageUnavailable: "Image unavailable",
     discovery: "Discover",
+    empty: "No products available yet.",
+    error: "Unable to load products.",
     pills: {
       trending: "Trending",
       flash: "Flash deals",
@@ -158,5 +162,8 @@ export default {
   system: {
     notFound: "Page not found.",
     backHome: "Back to home",
+    errorTitle: "Something went wrong",
+    unexpectedError: "We couldn't load this page.",
+    retry: "Try again",
   },
 };

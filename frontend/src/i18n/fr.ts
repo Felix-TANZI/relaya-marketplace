@@ -9,6 +9,8 @@ export default {
     close: "Fermer",
     loading: "Chargement...",
     error: "Erreur",
+    cart: "Panier",
+    account: "Compte",
   },
   search: {
     placeholder: "Rechercher un produit, une boutique, une idée…",
@@ -38,6 +40,8 @@ export default {
     invalidProductId: "Identifiant produit invalide",
     imageUnavailable: "Image indisponible",
     discovery: "Découvrir",
+    empty: "Aucun produit disponible pour le moment.",
+    error: "Impossible de charger les produits.",
     pills: {
       trending: "Tendance",
       flash: "Offres flash",
@@ -158,5 +162,8 @@ export default {
   system: {
     notFound: "Page introuvable.",
     backHome: "Retour à l’accueil",
+    errorTitle: "Une erreur est survenue",
+    unexpectedError: "Nous n'avons pas pu charger cette page.",
+    retry: "Réessayer",
   },
 };

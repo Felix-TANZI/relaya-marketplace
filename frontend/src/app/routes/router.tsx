@@ -5,6 +5,8 @@ import ProductDetailPage from "@/features/catalog/ProductDetailPage";
 import CartPage from "@/features/cart/CartPage";
 import CheckoutPage from "@/features/checkout/CheckoutPage";
 import OrderDetailPage from "@/features/orders/OrderDetailPage";
+import NotFoundPage from "@/features/system/NotFoundPage";
+import ErrorPage from "@/features/system/ErrorPage";
 import { getOrder } from "@/services/api/orders";
 import { listPaymentsByOrder } from "@/services/api/payments";
 import { trackShipment } from "@/services/api/shipping";
@@ -13,6 +15,7 @@ export const router = createBrowserRouter([
   {
     path: "/",
     element: <AppLayout />,
+    errorElement: <ErrorPage />,
     children: [
       {
         index: true,
@@ -60,17 +63,7 @@ export const router = createBrowserRouter([
       },
       {
         path: "*",
-        element: (
-          <div style={{ padding: 16 }}>
-            <h1 style={{ marginTop: 0 }}>404</h1>
-            <div style={{ color: "rgb(var(--muted))", marginBottom: 12 }}>
-              Page introuvable.
-            </div>
-            <a href="/" style={{ fontWeight: 800 }}>
-              Retour à l’accueil
-            </a>
-          </div>
-        ),
+        element: <NotFoundPage />,
       },
     ],
   },

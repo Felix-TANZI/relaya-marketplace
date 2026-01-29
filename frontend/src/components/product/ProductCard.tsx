@@ -4,6 +4,7 @@ import { ShoppingCart, Heart } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import type { Product } from "@/features/catalog/types";
+import { addToCart } from "@/features/cart/cartStore";
 
 type Props = {
   product: Product;
@@ -12,6 +13,17 @@ type Props = {
 export default function ProductCard({ product }: Props) {
   const { t } = useTranslation();
   const imageUrl = product.media?.find((m) => m.media_type === "image")?.url;
+  const onAddToCart = () => {
+    addToCart(
+      {
+        productId: product.id,
+        title: product.title,
+        price_xaf: product.price_xaf,
+        imageUrl,
+      },
+      1
+    );
+  };
   return (
     <div
       className={cn(
@@ -72,6 +84,7 @@ export default function ProductCard({ product }: Props) {
             size="sm"
             className="rounded-xl"
             aria-label={t("catalog.addToCart", "Ajouter au panier")}
+            onClick={onAddToCart}
           >
             <ShoppingCart size={16} />
           </Button>

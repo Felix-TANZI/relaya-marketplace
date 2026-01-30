@@ -1,7 +1,10 @@
+// frontend/src/main.tsx
+
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { RouterProvider } from "react-router-dom";
 import { router } from "./app/routes/router";
+import { CartProvider } from "./context/CartContext";
 import "./index.css";
 
 // Initialiser le thème au chargement
@@ -16,6 +19,9 @@ initTheme();
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
-    <RouterProvider router={router} />
+        <CartProvider> 
+      <RouterProvider router={router} />
+    </CartProvider> 
+
   </React.StrictMode>
 );

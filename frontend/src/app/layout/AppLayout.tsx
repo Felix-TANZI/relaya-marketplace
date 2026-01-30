@@ -19,13 +19,12 @@ export default function AppLayout() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-useEffect(() => {
-  const id = requestAnimationFrame(() => {
-    setMobileMenuOpen(false);
-  });
-
-  return () => cancelAnimationFrame(id);
-}, [location.pathname]);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setMobileMenuOpen(false);
+    });
+    return () => cancelAnimationFrame(id);
+  }, [location.pathname]);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -35,12 +34,12 @@ useEffect(() => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-primary text-text-primary">
+    <div className="min-h-screen flex flex-col relaya-bg-primary relaya-text-primary">
       {/* HEADER */}
       <header
         className={cn(
           "sticky top-0 z-50 transition-all duration-base",
-          scrolled ? "glass-strong border-b border-border-default shadow-lg" : "bg-transparent"
+          scrolled ? "glass-strong border-b relaya-border-default shadow-lg" : "bg-transparent"
         )}
       >
         <div className="container">
@@ -49,7 +48,7 @@ useEffect(() => {
             <Link to="/" className="flex items-center gap-3 group">
               <div className="relative">
                 <div className="absolute inset-0 gradient-holographic rounded-full blur-md opacity-50 group-hover:opacity-75 transition-opacity" />
-                <div className="relative w-10 h-10 rounded-full gradient-holographic flex items-center justify-center text-text-inverse font-display font-bold text-xl">
+                <div className="relative w-10 h-10 rounded-full gradient-holographic flex items-center justify-center relaya-text-inverse font-display font-bold text-xl">
                   R
                 </div>
               </div>
@@ -59,14 +58,14 @@ useEffect(() => {
             {/* Desktop Search */}
             <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
               <div className="relative w-full group">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary group-focus-within:text-accent-cyan transition-colors" size={20} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 relaya-text-tertiary group-focus-within:relaya-text-accent-cyan transition-colors" size={20} />
                 <input
                   type="text"
                   placeholder="Rechercher des produits, boutiques..."
-                  className="w-full pl-12 pr-4 py-3 rounded-full glass border-border-default focus:border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all"
+                  className="w-full pl-12 pr-4 py-3 rounded-full glass border relaya-border-default focus:relaya-border-accent-cyan focus:ring-2 focus:ring-accent-cyan/20 transition-all relaya-text-primary"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <kbd className="px-2 py-1 text-xs rounded bg-primary-tertiary text-text-tertiary border border-border-subtle">⌘K</kbd>
+                  <kbd className="px-2 py-1 text-xs rounded relaya-bg-tertiary relaya-text-tertiary border relaya-border-subtle">⌘K</kbd>
                 </div>
               </div>
             </div>
@@ -75,22 +74,22 @@ useEffect(() => {
             <div className="hidden lg:flex items-center gap-2">
               <button
                 onClick={toggleTheme}
-                className="p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all"
+                className="p-3 rounded-xl glass border relaya-border-subtle relaya-hover-border-cyan relaya-hover-shadow-cyan transition-all"
                 title="Changer de thème"
               >
                 {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
               </button>
 
-              <button className="p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all">
+              <button className="p-3 rounded-xl glass border relaya-border-subtle relaya-hover-border-cyan relaya-hover-shadow-cyan transition-all">
                 <Globe size={20} />
               </button>
 
-              <button className="relative p-3 rounded-xl glass border-border-subtle hover:border-accent-cyan hover:shadow-glow-cyan transition-all">
+              <button className="relative p-3 rounded-xl glass border relaya-border-subtle relaya-hover-border-cyan relaya-hover-shadow-cyan transition-all">
                 <ShoppingCart size={20} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-accent-pink text-text-inverse text-xs font-bold flex items-center justify-center animate-glow-pulse">3</span>
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full relaya-bg-accent-pink relaya-text-inverse text-xs font-bold flex items-center justify-center animate-glow-pulse">3</span>
               </button>
 
-              <button className="ml-2 px-6 py-3 rounded-xl gradient-holographic text-text-inverse animate-gradient shadow-md hover:shadow-xl transition-all font-medium">
+              <button className="ml-2 px-6 py-3 rounded-xl gradient-holographic relaya-text-inverse animate-gradient shadow-md hover:shadow-xl transition-all font-medium">
                 <User size={18} className="inline mr-2" />
                 Connexion
               </button>
@@ -99,7 +98,7 @@ useEffect(() => {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-3 rounded-xl glass border-border-subtle"
+              className="lg:hidden p-3 rounded-xl glass border relaya-border-subtle"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -108,11 +107,11 @@ useEffect(() => {
           {/* Mobile Search */}
           <div className="lg:hidden pb-4">
             <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-text-tertiary" size={18} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 relaya-text-tertiary" size={18} />
               <input
                 type="text"
                 placeholder="Rechercher..."
-                className="w-full pl-12 pr-4 py-3 rounded-full glass border-border-default focus:border-accent-cyan transition-all"
+                className="w-full pl-12 pr-4 py-3 rounded-full glass border relaya-border-default focus:relaya-border-accent-cyan transition-all relaya-text-primary"
               />
             </div>
           </div>
@@ -120,22 +119,22 @@ useEffect(() => {
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-border-subtle glass-strong">
+          <div className="lg:hidden border-t relaya-border-subtle glass-strong">
             <div className="container py-4 space-y-3">
-              <Link to="/" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+              <Link to="/" className="block px-4 py-3 rounded-xl hover:relaya-bg-tertiary transition-colors">
                 Accueil
               </Link>
-              <Link to="/catalog" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+              <Link to="/catalog" className="block px-4 py-3 rounded-xl hover:relaya-bg-tertiary transition-colors">
                 Catalogue
               </Link>
-              <Link to="/shops" className="block px-4 py-3 rounded-xl hover:bg-primary-tertiary transition-colors">
+              <Link to="/shops" className="block px-4 py-3 rounded-xl hover:relaya-bg-tertiary transition-colors">
                 Boutiques
               </Link>
               <div className="flex items-center gap-2 pt-2">
-                <button className="flex-1 px-6 py-3 rounded-xl gradient-holographic text-text-inverse animate-gradient font-medium">
+                <button className="flex-1 px-6 py-3 rounded-xl gradient-holographic relaya-text-inverse animate-gradient font-medium">
                   Connexion
                 </button>
-                <button onClick={toggleTheme} className="p-3 rounded-xl glass border-border-subtle">
+                <button onClick={toggleTheme} className="p-3 rounded-xl glass border relaya-border-subtle">
                   {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
                 </button>
               </div>
@@ -150,15 +149,15 @@ useEffect(() => {
       </main>
 
       {/* FOOTER */}
-      <footer className="border-t border-border-subtle bg-primary-secondary mt-20">
+      <footer className="border-t relaya-border-subtle relaya-bg-secondary mt-20">
         <div className="container py-16">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full gradient-holographic flex items-center justify-center text-text-inverse font-display font-bold text-xl">R</div>
+                <div className="w-10 h-10 rounded-full gradient-holographic flex items-center justify-center relaya-text-inverse font-display font-bold text-xl">R</div>
                 <span className="font-display font-bold text-xl">Relaya</span>
               </div>
-              <p className="text-text-secondary text-sm leading-relaxed">
+              <p className="relaya-text-secondary text-sm leading-relaxed">
                 La marketplace premium du Cameroun. Paiement sécurisé, livraison rapide, confiance garantie.
               </p>
             </div>
@@ -166,31 +165,31 @@ useEffect(() => {
             <div>
               <h3 className="font-display font-semibold text-lg mb-4">Marketplace</h3>
               <ul className="space-y-3">
-                <li><Link to="/catalog" className="text-text-secondary hover:text-accent-cyan transition-colors">Catalogue</Link></li>
-                <li><Link to="/shops" className="text-text-secondary hover:text-accent-cyan transition-colors">Boutiques</Link></li>
+                <li><Link to="/catalog" className="relaya-text-secondary relaya-hover-text-cyan transition-colors">Catalogue</Link></li>
+                <li><Link to="/shops" className="relaya-text-secondary relaya-hover-text-cyan transition-colors">Boutiques</Link></li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-display font-semibold text-lg mb-4">Vendeurs</h3>
               <ul className="space-y-3">
-                <li><Link to="/sell" className="text-text-secondary hover:text-accent-cyan transition-colors">Devenir vendeur</Link></li>
+                <li><Link to="/sell" className="relaya-text-secondary relaya-hover-text-cyan transition-colors">Devenir vendeur</Link></li>
               </ul>
             </div>
 
             <div>
               <h3 className="font-display font-semibold text-lg mb-4">Support</h3>
               <ul className="space-y-3">
-                <li><Link to="/help" className="text-text-secondary hover:text-accent-cyan transition-colors">Centre d'aide</Link></li>
+                <li><Link to="/help" className="relaya-text-secondary relaya-hover-text-cyan transition-colors">Centre d'aide</Link></li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 pt-8 border-t border-border-subtle flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-text-tertiary text-sm">© {new Date().getFullYear()} Relaya. Tous droits réservés.</p>
+          <div className="mt-12 pt-8 border-t relaya-border-subtle flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="relaya-text-tertiary text-sm">© {new Date().getFullYear()} Relaya. Tous droits réservés.</p>
             <div className="flex items-center gap-6 text-sm">
-              <Link to="/privacy" className="text-text-tertiary hover:text-accent-cyan transition-colors">Confidentialité</Link>
-              <Link to="/terms" className="text-text-tertiary hover:text-accent-cyan transition-colors">Conditions</Link>
+              <Link to="/privacy" className="relaya-text-tertiary relaya-hover-text-cyan transition-colors">Confidentialité</Link>
+              <Link to="/terms" className="relaya-text-tertiary relaya-hover-text-cyan transition-colors">Conditions</Link>
             </div>
           </div>
         </div>

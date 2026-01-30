@@ -1,0 +1,54 @@
+/* ================================================================
+   UTILITIES EXTENDED - Classes utilitaires Relaya
+   Préfixées pour éviter les conflits avec Tailwind
+   ================================================================ */
+
+/* ============= BACKGROUNDS ============= */
+.relaya-bg-primary { background-color: var(--bg-primary); }
+.relaya-bg-secondary { background-color: var(--bg-secondary); }
+.relaya-bg-tertiary { background-color: var(--bg-tertiary); }
+.relaya-bg-elevated { background-color: var(--bg-elevated); }
+
+/* ============= TEXT COLORS ============= */
+.relaya-text-primary { color: var(--text-primary); }
+.relaya-text-secondary { color: var(--text-secondary); }
+.relaya-text-tertiary { color: var(--text-tertiary); }
+.relaya-text-inverse { color: var(--text-inverse); }
+
+/* ============= BORDERS ============= */
+.relaya-border-subtle { border-color: var(--border-subtle); }
+.relaya-border-default { border-color: var(--border-default); }
+.relaya-border-strong { border-color: var(--border-strong); }
+
+/* ============= ACCENT BACKGROUNDS ============= */
+.relaya-bg-accent-cyan { background-color: var(--accent-cyan); }
+.relaya-bg-accent-purple { background-color: var(--accent-purple); }
+.relaya-bg-accent-pink { background-color: var(--accent-pink); }
+
+/* ============= ACCENT TEXT ============= */
+.relaya-text-accent-cyan { color: var(--accent-cyan); }
+.relaya-text-accent-purple { color: var(--accent-purple); }
+.relaya-text-accent-pink { color: var(--accent-pink); }
+
+/* ============= ACCENT OPACITY BACKGROUNDS ============= */
+.relaya-bg-accent-cyan-10 { background-color: rgba(0, 245, 255, 0.1); }
+.relaya-bg-accent-purple-10 { background-color: rgba(182, 76, 255, 0.1); }
+.relaya-bg-accent-pink-10 { background-color: rgba(255, 0, 110, 0.1); }
+.relaya-bg-accent-cyan-20 { background-color: rgba(0, 245, 255, 0.2); }
+.relaya-bg-accent-purple-20 { background-color: rgba(182, 76, 255, 0.2); }
+
+/* ============= HOVER EFFECTS ============= */
+.relaya-hover-border-cyan:hover { border-color: var(--accent-cyan); }
+.relaya-hover-border-purple:hover { border-color: var(--accent-purple); }
+.relaya-hover-border-pink:hover { border-color: var(--accent-pink); }
+
+.relaya-hover-text-cyan:hover { color: var(--accent-cyan); }
+.relaya-hover-shadow-cyan:hover { box-shadow: var(--shadow-glow-cyan); }
+.relaya-hover-shadow-purple:hover { box-shadow: var(--shadow-glow-purple); }
+.relaya-hover-shadow-pink:hover { box-shadow: var(--shadow-glow-pink); }
+
+/* DEBUG - Force les couleurs pour tester */
+.relaya-text-primary { color: #E8EDF4 !important; }
+.relaya-text-secondary { color: #A8B1C3 !important; }
+.relaya-bg-primary { background-color: #08090B !important; }
+.relaya-bg-secondary { background-color: #0F1116 !important; }

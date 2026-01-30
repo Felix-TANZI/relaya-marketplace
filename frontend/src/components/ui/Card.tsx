@@ -1,40 +1,40 @@
-import * as React from "react";
-import { cn } from "@/lib/cn";
+import { HTMLAttributes, forwardRef } from "react";
 
-export function Card({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return (
-    <div
-      className={cn(
-        "rounded-2xl border border-[color:var(--border)] bg-[color:var(--card)] shadow-soft",
-        className
-      )}
-      {...props}
-    />
-  );
+interface CardProps extends HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "elevated" | "bordered";
+  padding?: "none" | "sm" | "md" | "lg";
+  hover?: boolean;
 }
 
-export function CardHeader({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-4 pb-2", className)} {...props} />;
-}
+const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className = "", variant = "default", padding = "md", hover = false, children, ...props }, ref) => {
+    const variants = {
+      default: "glass border border-white/10",
+      elevated: "glass border border-white/10 shadow-lg",
+      bordered: "border-2 border-white/20 bg-dark-bg-tertiary",
+    };
+    
+    const paddings = {
+      none: "",
+      sm: "p-4",
+      md: "p-6",
+      lg: "p-8",
+    };
 
-export function CardTitle({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLHeadingElement>) {
-  return (
-    <h2 className={cn("text-lg font-extrabold", className)} {...props} />
-  );
-}
+    const hoverStyles = hover ? "hover:border-holo-cyan hover-glow-cyan transition-all" : "";
 
-export function CardContent({
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("p-4 pt-2", className)} {...props} />;
-}
+    return (
+      <div
+        ref={ref}
+        className={`rounded-2xl ${variants[variant]} ${paddings[padding]} ${hoverStyles} ${className}`}
+        {...props}
+      >
+        {children}
+      </div>
+    );
+  }
+);
+
+Card.displayName = "Card";
+
+export { Card };

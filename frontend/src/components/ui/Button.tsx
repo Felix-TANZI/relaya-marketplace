@@ -1,21 +1,20 @@
 import { ButtonHTMLAttributes, forwardRef } from "react";
-import { cn } from "@/lib/cn";
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "ghost" | "gradient";
+  variant?: "gradient" | "primary" | "secondary" | "ghost";
   size?: "sm" | "md" | "lg";
   isLoading?: boolean;
 }
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
-    const baseStyles = "inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-base disabled:opacity-50 disabled:cursor-not-allowed";
+  ({ className = "", variant = "primary", size = "md", isLoading, children, disabled, ...props }, ref) => {
+    const baseStyles = "inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed";
     
     const variants = {
-      primary: "bg-accent-cyan text-text-inverse hover:bg-accent-primary-hover shadow-md hover:shadow-lg hover:shadow-glow-cyan",
-      secondary: "glass border-border-default hover:border-accent-cyan hover:shadow-glow-cyan",
-      ghost: "hover:bg-primary-tertiary text-text-secondary hover:text-text-primary",
-      gradient: "gradient-holographic text-text-inverse animate-gradient shadow-md hover:shadow-xl",
+      gradient: "bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl hover-glow-cyan",
+      primary: "bg-holo-cyan text-white shadow-md hover:shadow-lg hover-glow-cyan",
+      secondary: "glass border border-white/10 hover:border-holo-cyan hover-glow-cyan text-dark-text",
+      ghost: "hover:bg-white/5 text-dark-text-secondary hover:text-dark-text",
     };
     
     const sizes = {
@@ -27,13 +26,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
-        className={cn(
-          baseStyles,
-          variants[variant],
-          sizes[size],
-          isLoading && "opacity-70 cursor-wait",
-          className
-        )}
+        className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
         disabled={disabled || isLoading}
         {...props}
       >

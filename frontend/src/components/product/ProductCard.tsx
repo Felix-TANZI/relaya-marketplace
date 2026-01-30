@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, Badge } from "@/components/ui";
+import { useCart } from "@/context/CartContext";
 
 interface Product {
   id: number;
@@ -22,10 +23,22 @@ interface ProductCardProps {
 export default function ProductCard({ product }: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const { addItem } = useCart();
 
   const finalPrice = product.discount 
     ? product.price - (product.price * product.discount / 100)
     : product.price;
+
+      const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault(); // Empêche la navigation
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: finalPrice,
+      quantity: 1,
+      image: product.image,
+    });
+  };
 
   return (
     <Link to={`/product/${product.id}`}> 
@@ -66,7 +79,10 @@ export default function ProductCard({ product }: ProductCardProps) {
         </button>
 
         {/* Quick Add to Cart */}
-        <button className="absolute bottom-3 left-3 right-3 px-4 py-2 rounded-lg bg-gradient-holographic animate-gradient-bg text-white font-medium opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hover:shadow-xl">
+        <button 
+          onClick={handleAddToCart}
+          className="absolute bottom-3 left-3 right-3 px-4 py-2 rounded-lg bg-gradient-holographic animate-gradient-bg text-white font-medium opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hover:shadow-xl"
+        >
           <ShoppingCart size={16} className="inline mr-2" />
           Ajouter au panier
         </button>

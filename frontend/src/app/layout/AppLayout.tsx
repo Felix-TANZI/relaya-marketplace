@@ -1,4 +1,8 @@
-﻿import { Outlet, Link, useLocation } from "react-router-dom";
+﻿// frontend/src/app/layout/AppLayout.tsx
+// Layout principal de l'application avec header, footer et outlet pour les pages
+
+import { useCart } from "@/context/CartContext";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -7,6 +11,7 @@ export default function AppLayout() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const { itemCount } = useCart();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -78,10 +83,14 @@ useEffect(() => {
                 <Globe size={20} />
               </button>
 
-              <button className="relative p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all">
-                <ShoppingCart size={20} />
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-pink text-white text-xs font-bold flex items-center justify-center">3</span>
-              </button>
+<Link to="/cart" className="relative p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all">
+  <ShoppingCart size={20} />
+  {itemCount > 0 && (
+    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-pink text-white text-xs font-bold flex items-center justify-center">
+      {itemCount}
+    </span>
+  )}
+</Link>
 
               <button className="ml-2 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
                 <User size={18} className="inline mr-2" />

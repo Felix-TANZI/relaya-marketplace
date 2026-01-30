@@ -1,5 +1,10 @@
+// frontend/src/features/catalog/ProductDetailPage.tsx
+// Page de détail d'un produit
+
+import { useCart } from "@/context/CartContext";
 import { useState } from "react";
 import {  Link } from "react-router-dom";
+import {  useNavigate } from "react-router-dom";
 //import { useParams} from "react-router-dom";
 import {
   Heart,
@@ -131,6 +136,8 @@ const REVIEWS = [
 
 export default function ProductDetailPage() {
   //const { id } = useParams();
+  const navigate = useNavigate();
+  const { addItem } = useCart(); 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedStorage, setSelectedStorage] = useState(1);
@@ -138,6 +145,21 @@ export default function ProductDetailPage() {
   const [isFavorite, setIsFavorite] = useState(false);
 
   const product = MOCK_PRODUCT; // En production: fetch depuis API avec l'id
+
+    const handleAddToCart = () => {
+    addItem({
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      quantity: quantity,
+      image: product.images[0],
+      color: product.colors[selectedColor].name,
+      storage: product.storage[selectedStorage],
+    });
+    
+    // Rediriger vers le panier
+    navigate("/cart");
+  };
 
   return (
     <div className="min-h-screen py-8">
@@ -339,16 +361,22 @@ export default function ProductDetailPage() {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4">
-              <Button variant="gradient" size="lg" className="flex-1" disabled={!product.inStock}>
-                <ShoppingCart size={20} />
-                Ajouter au panier
-              </Button>
-              <Button variant="secondary" size="lg">
-                <Share2 size={20} />
-              </Button>
-            </div>
+  {/* Action Buttons */}
+  <div className="flex gap-4">
+    <Button 
+      variant="gradient" 
+      size="lg" 
+      className="flex-1" 
+      disabled={!product.inStock}
+      onClick={handleAddToCart}
+    >
+      <ShoppingCart size={20} />
+      Ajouter au panier
+    </Button>
+    <Button variant="secondary" size="lg">
+      <Share2 size={20} />
+    </Button>
+  </div>
 
             {/* Features */}
             <Card>

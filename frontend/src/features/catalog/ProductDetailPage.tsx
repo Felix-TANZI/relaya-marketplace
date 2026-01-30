@@ -5,7 +5,7 @@ import { useCart } from "@/context/CartContext";
 import { useState } from "react";
 import {  Link } from "react-router-dom";
 import {  useNavigate } from "react-router-dom";
-//import { useParams} from "react-router-dom";
+import { useParams} from "react-router-dom";
 import {
   Heart,
   ShoppingCart,
@@ -135,7 +135,8 @@ const REVIEWS = [
 ];
 
 export default function ProductDetailPage() {
-  //const { id } = useParams();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart(); 
   const [selectedImage, setSelectedImage] = useState(0);

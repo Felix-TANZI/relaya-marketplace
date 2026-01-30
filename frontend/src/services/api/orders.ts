@@ -1,43 +1,51 @@
-import { http } from "@/services/api/http";
+// frontend/src/services/api/orders.ts
+// Service API pour les commandes
 
-export type OrderCreatePayload = {
-  city: "YAOUNDE" | "DOUALA";
-  address: string;
-  phone: string;
-  note?: string;
-  items: { product_id: number; qty: number }[];
-};
+import { api } from "./client";
 
-export type OrderItem = {
+// Détail d'un item de commande
+export interface OrderItem {
   id: number;
   product: number;
-  title_snapshot: string;
-  price_xaf_snapshot: number;
-  qty: number;
-  line_total_xaf: number;
-};
+  product_name: string;
+  quantity: number;
+  unit_price: number;
+  subtotal: number;
+}
 
-export type OrderDetail = {
+// Détail d'une commande
+export interface Order {
   id: number;
-  status: string;
-  city: string;
-  address: string;
-  note: string | null;
-  customer_phone: string;
-  subtotal_xaf: number;
-  delivery_fee_xaf: number;
-  total_xaf: number;
-  created_at: string;
+  status: "PENDING" | "PAID" | "PROCESSING" | "SHIPPED" | "DELIVERED" | "CANCELLED";
+  total_price: number;
   items: OrderItem[];
+  shipping_address: string;
+  shipping_city: "YAOUNDE" | "DOUALA";
+  phone_number: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateOrderData {
+  items: Array<{
+    product_id: number;
+    quantity: number;
+  }>;
+  shipping_address: string;
+  shipping_city: "YAOUNDE" | "DOUALA";
+  phone_number: string;
+}
+
+export const ordersApi = {
+  // Liste des commandes de l'utilisateur
+  list: () => api.get<Order[]>("/orders/"),
+
+  // Détail d'une commande
+  get: (id: number) => api.get<Order>(`/orders/${id}/`),
+
+  // Créer une commande
+  create: (data: CreateOrderData) => api.post<Order>("/orders/", data),
+
+  // Annuler une commande
+  cancel: (id: number) => api.post(`/orders/${id}/cancel/`, {}),
 };
-
-export function createOrder(payload: OrderCreatePayload): Promise<OrderDetail> {
-  return http<OrderDetail>("/api/orders/", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function getOrder(id: number): Promise<OrderDetail> {
-  return http<OrderDetail>(`/api/orders/${id}/`);
-}

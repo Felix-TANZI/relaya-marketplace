@@ -1,96 +1,11 @@
 // frontend/src/features/catalog/CatalogPage.tsx
-// Page du catalogue de produits
+// Page du catalogue des produits
 
 import { useState, useEffect } from "react";
-import { Search, SlidersHorizontal, Grid3x3, List } from "lucide-react";
+import { Search, SlidersHorizontal, Grid3x3, List, AlertCircle } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { Button, Badge } from "@/components/ui";
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  image?: string;
-  category?: string;
-  rating?: number;
-  inStock?: boolean;
-  isNew?: boolean;
-  discount?: number;
-}
-
-// Mock data (en attendant la connexion au backend)
-const MOCK_PRODUCTS: Product[] = [
-  {
-    id: 1,
-    name: "iPhone 15 Pro Max 256GB",
-    price: 850000,
-    category: "Téléphones",
-    rating: 4.8,
-    inStock: true,
-    isNew: true,
-    discount: 10,
-  },
-  {
-    id: 2,
-    name: "Samsung Galaxy S24 Ultra",
-    price: 750000,
-    category: "Téléphones",
-    rating: 4.7,
-    inStock: true,
-    isNew: true,
-  },
-  {
-    id: 3,
-    name: "MacBook Pro M3 14 pouces",
-    price: 1500000,
-    category: "Ordinateurs",
-    rating: 4.9,
-    inStock: true,
-    discount: 5,
-  },
-  {
-    id: 4,
-    name: "Sony WH-1000XM5 Noir",
-    price: 180000,
-    category: "Audio",
-    rating: 4.6,
-    inStock: true,
-  },
-  {
-    id: 5,
-    name: "iPad Air M2 128GB",
-    price: 450000,
-    category: "Tablettes",
-    rating: 4.5,
-    inStock: false,
-  },
-  {
-    id: 6,
-    name: "Apple Watch Series 9",
-    price: 280000,
-    category: "Montres",
-    rating: 4.7,
-    inStock: true,
-    isNew: true,
-  },
-  {
-    id: 7,
-    name: "AirPods Pro 2ème génération",
-    price: 150000,
-    category: "Audio",
-    rating: 4.8,
-    inStock: true,
-  },
-  {
-    id: 8,
-    name: "PlayStation 5 Slim",
-    price: 380000,
-    category: "Gaming",
-    rating: 4.9,
-    inStock: true,
-    discount: 15,
-  },
-];
+import { productsApi, Product } from "@/services/api";
 
 const CATEGORIES = [
   "Tous",
@@ -105,32 +20,52 @@ const CATEGORIES = [
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
 
+  // Charger les produits depuis l'API
   useEffect(() => {
-    // Simuler le chargement depuis le backend
-    setTimeout(() => {
-      setProducts(MOCK_PRODUCTS);
-      setLoading(false);
-    }, 800);
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await productsApi.list({
+          page_size: 50,
+          search: searchQuery || undefined,
+        });
+        setProducts(response.results);
+      } catch (err) {
+        console.error("Erreur chargement produits:", err);
+        setError("Impossible de charger les produits. Vérifiez que le backend est démarré.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    // Pour la vraie API :
-    // fetch("http://localhost:8000/api/products/")
-    //   .then(res => res.json())
-    //   .then(data => {
-    //     setProducts(data);
-    //     setLoading(false);
-    //   });
-  }, []);
+    fetchProducts();
+  }, [searchQuery]);
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === "Tous" || product.category === selectedCategory;
+    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === "Tous" || product.category?.name === selectedCategory;
     return matchesSearch && matchesCategory;
   });
+
+// Transformer les produits API en format ProductCard
+const transformedProducts = filteredProducts.map((product) => ({
+  id: product.id,
+  name: product.title,
+  price: product.price_xaf,
+  image: product.media?.find((m) => m.sort_order === 0)?.url,
+  category: product.category?.name,
+  rating: 4.5,
+  inStock: product.stock_quantity > 0,
+  isNew: false,
+}));
 
   return (
     <div className="min-h-screen py-12">
@@ -150,7 +85,10 @@ export default function CatalogPage() {
           <div className="flex flex-col lg:flex-row gap-4">
             {/* Search */}
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-text-tertiary" size={20} />
+              <Search
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-text-tertiary"
+                size={20}
+              />
               <input
                 type="text"
                 placeholder="Rechercher un produit..."
@@ -170,7 +108,7 @@ export default function CatalogPage() {
                 <SlidersHorizontal size={18} />
                 Filtres
               </Button>
-              
+
               <div className="flex gap-1 glass border border-white/10 rounded-xl p-1">
                 <button
                   onClick={() => setViewMode("grid")}
@@ -214,14 +152,32 @@ export default function CatalogPage() {
           ))}
         </div>
 
+        {/* Error State */}
+        {error && (
+          <div className="glass border border-red-500/30 rounded-2xl p-6 mb-8 flex items-start gap-4">
+            <AlertCircle className="text-red-400 flex-shrink-0 mt-1" size={24} />
+            <div>
+              <h3 className="font-semibold text-red-400 mb-2">Erreur de connexion</h3>
+              <p className="text-dark-text-secondary text-sm mb-4">{error}</p>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => window.location.reload()}
+              >
+                Réessayer
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-dark-text-secondary">
-            {filteredProducts.length} produit{filteredProducts.length > 1 ? "s" : ""} trouvé{filteredProducts.length > 1 ? "s" : ""}
+            {transformedProducts.length} produit
+            {transformedProducts.length > 1 ? "s" : ""} trouvé
+            {transformedProducts.length > 1 ? "s" : ""}
           </p>
-          {searchQuery && (
-            <Badge variant="cyan">Recherche: {searchQuery}</Badge>
-          )}
+          {searchQuery && <Badge variant="cyan">Recherche: {searchQuery}</Badge>}
         </div>
 
         {/* Products Grid */}
@@ -234,13 +190,15 @@ export default function CatalogPage() {
               />
             ))}
           </div>
-        ) : filteredProducts.length > 0 ? (
-          <div className={
-            viewMode === "grid"
-              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
-              : "flex flex-col gap-4"
-          }>
-            {filteredProducts.map((product) => (
+        ) : transformedProducts.length > 0 ? (
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6"
+                : "flex flex-col gap-4"
+            }
+          >
+            {transformedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>
@@ -255,17 +213,20 @@ export default function CatalogPage() {
             <p className="text-dark-text-secondary mb-6">
               Essayez avec d'autres mots-clés ou catégories
             </p>
-            <Button variant="gradient" onClick={() => {
-              setSearchQuery("");
-              setSelectedCategory("Tous");
-            }}>
+            <Button
+              variant="gradient"
+              onClick={() => {
+                setSearchQuery("");
+                setSelectedCategory("Tous");
+              }}
+            >
               Réinitialiser les filtres
             </Button>
           </div>
         )}
 
         {/* Load More */}
-        {filteredProducts.length > 0 && !loading && (
+        {transformedProducts.length > 0 && !loading && (
           <div className="text-center mt-12">
             <Button variant="secondary" size="lg">
               Charger plus de produits

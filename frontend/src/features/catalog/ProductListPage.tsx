@@ -1,4 +1,7 @@
-﻿import { useEffect, useMemo, useState } from "react";
+﻿// frontend/src/features/catalog/ProductListPage.tsx
+// Page de liste des produits avec mise en avant des top produits
+
+import { useEffect, useMemo, useState } from "react";
 import { Flame, Sparkles, TrendingUp, ShieldCheck, Truck, Store } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/Button";

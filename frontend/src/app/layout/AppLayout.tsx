@@ -2,12 +2,15 @@
 // Layout principal de l'application avec header, footer et outlet pour les pages
 
 import { useCart } from "@/context/CartContext";
+import { useTheme } from "@/context/ThemeContext";
+import { useTranslation } from 'react-i18next'; // ✅ AJOUTÉ
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const { theme, toggleTheme } = useTheme();
+  const { t, i18n } = useTranslation(); // ✅ AJOUTÉ
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
@@ -21,16 +24,19 @@ export default function AppLayout() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-useEffect(() => {
-  const id = requestAnimationFrame(() => {
-    setMobileMenuOpen(false);
-  });
+  useEffect(() => {
+    const id = requestAnimationFrame(() => {
+      setMobileMenuOpen(false);
+    });
 
-  return () => cancelAnimationFrame(id);
-}, [location.pathname]);
+    return () => cancelAnimationFrame(id);
+  }, [location.pathname]);
 
-  const toggleTheme = () => {
-    setTheme(theme === "dark" ? "light" : "dark");
+  // ✅ AJOUTÉ : Fonction pour changer de langue
+  const toggleLanguage = () => {
+    const newLang = i18n.language === 'fr' ? 'en' : 'fr';
+    i18n.changeLanguage(newLang);
+    localStorage.setItem('relaya-language', newLang);
   };
 
   return (
@@ -60,7 +66,7 @@ useEffect(() => {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-text-tertiary group-focus-within:text-holo-cyan transition-colors" size={20} />
                 <input
                   type="text"
-                  placeholder="Rechercher des produits, boutiques..."
+                  placeholder={t('header.search_placeholder')}
                   className="w-full pl-12 pr-4 py-3 rounded-full glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all text-dark-text placeholder:text-dark-text-tertiary outline-none"
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -74,27 +80,33 @@ useEffect(() => {
               <button
                 onClick={toggleTheme}
                 className="p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all"
-                title="Changer de thème"
+                title={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
               >
                 {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
               </button>
 
-              <button className="p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all">
+              {/* ✅ MODIFIÉ : Bouton langue avec affichage de la langue actuelle */}
+              <button 
+                onClick={toggleLanguage}
+                className="flex items-center gap-2 p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all"
+                title={i18n.language === 'fr' ? 'Switch to English' : 'Passer en Français'}
+              >
                 <Globe size={20} />
+                <span className="text-xs font-bold uppercase">{i18n.language}</span>
               </button>
 
-<Link to="/cart" className="relative p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all">
-  <ShoppingCart size={20} />
-  {itemCount > 0 && (
-    <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-pink text-white text-xs font-bold flex items-center justify-center">
-      {itemCount}
-    </span>
-  )}
-</Link>
+              <Link to="/cart" className="relative p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all">
+                <ShoppingCart size={20} />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-pink text-white text-xs font-bold flex items-center justify-center">
+                    {itemCount}
+                  </span>
+                )}
+              </Link>
 
               <button className="ml-2 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
                 <User size={18} className="inline mr-2" />
-                Connexion
+                {t('header.login')} {/* ✅ TRADUIT */}
               </button>
             </div>
 
@@ -113,7 +125,7 @@ useEffect(() => {
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-text-tertiary" size={18} />
               <input
                 type="text"
-                placeholder="Rechercher..."
+                placeholder={t('header.search_placeholder')}
                 className="w-full pl-12 pr-4 py-3 rounded-full glass border border-white/10 focus:border-holo-cyan transition-all text-dark-text placeholder:text-dark-text-tertiary outline-none"
               />
             </div>
@@ -125,20 +137,23 @@ useEffect(() => {
           <div className="lg:hidden border-t border-white/10 glass-strong">
             <div className="container mx-auto px-4 py-4 space-y-3">
               <Link to="/" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                Accueil
+                {t('header.home')} {/* ✅ TRADUIT */}
               </Link>
               <Link to="/catalog" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                Catalogue
+                {t('header.catalog')} {/* ✅ TRADUIT */}
               </Link>
               <Link to="/shops" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                Boutiques
+                {t('header.shops')} {/* ✅ TRADUIT */}
               </Link>
               <div className="flex items-center gap-2 pt-2">
                 <button className="flex-1 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-medium">
-                  Connexion
+                  {t('header.login')} {/* ✅ TRADUIT */}
                 </button>
                 <button onClick={toggleTheme} className="p-3 rounded-xl glass border border-white/10">
                   {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+                </button>
+                <button onClick={toggleLanguage} className="p-3 rounded-xl glass border border-white/10">
+                  <Globe size={20} />
                 </button>
               </div>
             </div>
@@ -162,7 +177,7 @@ useEffect(() => {
                 <span className="font-display font-bold text-xl">Relaya</span>
               </div>
               <p className="text-dark-text-secondary text-sm leading-relaxed">
-                La marketplace premium du Cameroun. Paiement sécurisé, livraison rapide, confiance garantie.
+                {t('footer.description')} {/* ✅ TRADUIT */}
               </p>
               <div className="flex items-center gap-3 mt-6">
                 <a href="#" className="w-10 h-10 rounded-full glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all flex items-center justify-center">
@@ -188,44 +203,44 @@ useEffect(() => {
 
             {/* Links 1 */}
             <div>
-              <h3 className="font-display font-semibold text-lg mb-4">Marketplace</h3>
+              <h3 className="font-display font-semibold text-lg mb-4">{t('footer.marketplace')}</h3>
               <ul className="space-y-3">
-                <li><Link to="/catalog" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Catalogue</Link></li>
-                <li><Link to="/shops" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Boutiques</Link></li>
-                <li><Link to="/categories" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Catégories</Link></li>
-                <li><Link to="/deals" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Promotions</Link></li>
+                <li><Link to="/catalog" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('header.catalog')}</Link></li>
+                <li><Link to="/shops" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('header.shops')}</Link></li>
+                <li><Link to="/categories" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.categories')}</Link></li>
+                <li><Link to="/deals" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.deals')}</Link></li>
               </ul>
             </div>
 
             {/* Links 2 */}
             <div>
-              <h3 className="font-display font-semibold text-lg mb-4">Vendeurs</h3>
+              <h3 className="font-display font-semibold text-lg mb-4">{t('footer.sellers')}</h3>
               <ul className="space-y-3">
-                <li><Link to="/sell" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Devenir vendeur</Link></li>
-                <li><Link to="/seller-guide" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Guide vendeur</Link></li>
-                <li><Link to="/seller-dashboard" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Tableau de bord</Link></li>
+                <li><Link to="/sell" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.become_seller')}</Link></li>
+                <li><Link to="/seller-guide" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.seller_guide')}</Link></li>
+                <li><Link to="/seller-dashboard" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.seller_dashboard')}</Link></li>
               </ul>
             </div>
 
             {/* Links 3 */}
             <div>
-              <h3 className="font-display font-semibold text-lg mb-4">Support</h3>
+              <h3 className="font-display font-semibold text-lg mb-4">{t('footer.support')}</h3>
               <ul className="space-y-3">
-                <li><Link to="/help" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Centre d'aide</Link></li>
-                <li><Link to="/shipping" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Livraison</Link></li>
-                <li><Link to="/returns" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Retours</Link></li>
-                <li><Link to="/contact" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">Contact</Link></li>
+                <li><Link to="/help" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.help')}</Link></li>
+                <li><Link to="/shipping" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.shipping')}</Link></li>
+                <li><Link to="/returns" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.returns')}</Link></li>
+                <li><Link to="/contact" className="text-dark-text-secondary hover:text-holo-cyan transition-colors">{t('footer.contact')}</Link></li>
               </ul>
             </div>
           </div>
 
           {/* Bottom */}
           <div className="mt-12 pt-8 border-t border-white/10 flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-dark-text-tertiary text-sm">© {new Date().getFullYear()} Relaya. Tous droits réservés.</p>
+            <p className="text-dark-text-tertiary text-sm">© {new Date().getFullYear()} Relaya. {t('footer.rights')}</p>
             <div className="flex items-center gap-6 text-sm">
-              <Link to="/privacy" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">Confidentialité</Link>
-              <Link to="/terms" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">Conditions</Link>
-              <Link to="/legal" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">Mentions légales</Link>
+              <Link to="/privacy" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">{t('footer.privacy')}</Link>
+              <Link to="/terms" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">{t('footer.terms')}</Link>
+              <Link to="/legal" className="text-dark-text-tertiary hover:text-holo-cyan transition-colors">{t('footer.legal')}</Link>
             </div>
           </div>
         </div>

@@ -1,28 +1,26 @@
-from rest_framework import generics
-from drf_spectacular.utils import extend_schema
-
-from .models import Category, Product
-from .serializers import (
-    CategorySerializer,
-    ProductListSerializer,
-    ProductDetailSerializer,
-)
+from rest_framework import viewsets, filters
+from rest_framework.pagination import PageNumberPagination
+from .models import Product, Category
+from .serializers import ProductSerializer, CategorySerializer
 
 
-@extend_schema(tags=["Catalog"], summary="Lister les catégories")
-class CategoryListView(generics.ListAPIView):
-    queryset = Category.objects.filter(is_active=True)
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class ProductViewSet(viewsets.ModelViewSet):
+    queryset = Product.objects.all().select_related('category').prefetch_related('media', 'inventory')
+    serializer_class = ProductSerializer
+    pagination_class = StandardResultsSetPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['title', 'description']
+    ordering_fields = ['price_xaf', 'created_at', 'title']
+    ordering = ['-created_at']
+
+
+class CategoryViewSet(viewsets.ModelViewSet):
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
-
-
-@extend_schema(tags=["Catalog"], summary="Lister les produits")
-class ProductListView(generics.ListAPIView):
-    queryset = Product.objects.filter(is_active=True).select_related("category").prefetch_related("media")
-    serializer_class = ProductListSerializer
-
-
-@extend_schema(tags=["Catalog"], summary="Détails produit")
-class ProductDetailView(generics.RetrieveAPIView):
-    queryset = Product.objects.filter(is_active=True).select_related("category").prefetch_related("media", "inventory")
-    serializer_class = ProductDetailSerializer
-    lookup_field = "id"
+    pagination_class = StandardResultsSetPagination

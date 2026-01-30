@@ -1,27 +1,17 @@
-// frontend/src/main.tsx
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import './index.css';
+import './i18n/config'; // Importer la configuration i18n
+import App from './App';
+import { CartProvider } from './context/CartContext'; // Contexte du panier
+import { ThemeProvider } from './context/ThemeContext'; // Contexte du thème
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { RouterProvider } from "react-router-dom";
-import { router } from "./app/routes/router";
-import { CartProvider } from "./context/CartContext";
-import "./index.css";
-
-// Initialiser le thème au chargement
-const initTheme = () => {
-  const savedTheme = localStorage.getItem("relaya-theme");
-  const systemPrefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-  const theme = savedTheme || (systemPrefersDark ? "dark" : "light");
-  document.documentElement.setAttribute("data-theme", theme);
-};
-
-initTheme();
-
-ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
-        <CartProvider> 
-      <RouterProvider router={router} />
-    </CartProvider> 
-
-  </React.StrictMode>
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <ThemeProvider>
+      <CartProvider>
+        <App />
+      </CartProvider>
+    </ThemeProvider>
+  </StrictMode>,
 );

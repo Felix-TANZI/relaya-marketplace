@@ -1,6 +1,7 @@
 // frontend/src/features/catalog/CatalogPage.tsx
 // Page du catalogue des produits
 
+import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, Grid3x3, List, AlertCircle } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
@@ -8,21 +9,22 @@ import { Button, Badge } from "@/components/ui";
 import { productsApi, Product } from "@/services/api";
 
 const CATEGORIES = [
-  "Tous",
-  "Téléphones",
-  "Ordinateurs",
-  "Tablettes",
-  "Audio",
-  "Montres",
-  "Gaming",
+  "catalog.all",
+  "catalog.phones",
+  "catalog.computers",
+  "catalog.tablets",
+  "catalog.audio",
+  "catalog.watches",
+  "catalog.gaming",
 ];
 
 export default function CatalogPage() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tous");
+  const [selectedCategory, setSelectedCategory] = useState("catalog.all");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
   const [showFilters, setShowFilters] = useState(false);
 
@@ -39,33 +41,33 @@ export default function CatalogPage() {
         setProducts(response.results);
       } catch (err) {
         console.error("Erreur chargement produits:", err);
-        setError("Impossible de charger les produits. Vérifiez que le backend est démarré.");
+        setError(t('catalog.error_message'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchProducts();
-  }, [searchQuery]);
+  }, [searchQuery, t]);
 
   const filteredProducts = products.filter((product) => {
     const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory =
-      selectedCategory === "Tous" || product.category?.name === selectedCategory;
+      selectedCategory === "catalog.all" || product.category?.name === t(selectedCategory);
     return matchesSearch && matchesCategory;
   });
 
-// Transformer les produits API en format ProductCard
-const transformedProducts = filteredProducts.map((product) => ({
-  id: product.id,
-  name: product.title,
-  price: product.price_xaf,
-  image: product.media?.find((m) => m.sort_order === 0)?.url,
-  category: product.category?.name,
-  rating: 4.5,
-  inStock: product.stock_quantity > 0,
-  isNew: false,
-}));
+  // Transformer les produits API en format ProductCard
+  const transformedProducts = filteredProducts.map((product) => ({
+    id: product.id,
+    name: product.title,
+    price: product.price_xaf,
+    image: product.media?.find((m) => m.sort_order === 0)?.url,
+    category: product.category?.name,
+    rating: 4.5,
+    inStock: product.stock_quantity > 0,
+    isNew: false,
+  }));
 
   return (
     <div className="min-h-screen py-12">
@@ -73,10 +75,10 @@ const transformedProducts = filteredProducts.map((product) => ({
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-4">
-            <span className="text-gradient animate-gradient-bg">Catalogue</span>
+            <span className="text-gradient animate-gradient-bg">{t('catalog.title')}</span>
           </h1>
           <p className="text-dark-text-secondary text-lg">
-            Découvrez notre sélection premium de produits
+            {t('catalog.subtitle')}
           </p>
         </div>
 
@@ -91,7 +93,7 @@ const transformedProducts = filteredProducts.map((product) => ({
               />
               <input
                 type="text"
-                placeholder="Rechercher un produit..."
+                placeholder={t('catalog.search_placeholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
@@ -106,7 +108,7 @@ const transformedProducts = filteredProducts.map((product) => ({
                 onClick={() => setShowFilters(!showFilters)}
               >
                 <SlidersHorizontal size={18} />
-                Filtres
+                {t('catalog.filters')}
               </Button>
 
               <div className="flex gap-1 glass border border-white/10 rounded-xl p-1">
@@ -147,7 +149,7 @@ const transformedProducts = filteredProducts.map((product) => ({
                   : "glass border border-white/10 text-dark-text-secondary hover:border-holo-cyan hover:text-dark-text"
               }`}
             >
-              {category}
+              {t(category)}
             </button>
           ))}
         </div>
@@ -157,14 +159,14 @@ const transformedProducts = filteredProducts.map((product) => ({
           <div className="glass border border-red-500/30 rounded-2xl p-6 mb-8 flex items-start gap-4">
             <AlertCircle className="text-red-400 flex-shrink-0 mt-1" size={24} />
             <div>
-              <h3 className="font-semibold text-red-400 mb-2">Erreur de connexion</h3>
+              <h3 className="font-semibold text-red-400 mb-2">{t('catalog.error')}</h3>
               <p className="text-dark-text-secondary text-sm mb-4">{error}</p>
               <Button
                 variant="secondary"
                 size="sm"
                 onClick={() => window.location.reload()}
               >
-                Réessayer
+                {t('catalog.retry')}
               </Button>
             </div>
           </div>
@@ -173,11 +175,11 @@ const transformedProducts = filteredProducts.map((product) => ({
         {/* Results Count */}
         <div className="flex items-center justify-between mb-6">
           <p className="text-dark-text-secondary">
-            {transformedProducts.length} produit
-            {transformedProducts.length > 1 ? "s" : ""} trouvé
+            {transformedProducts.length} {t('catalog.products_found')}
+            {transformedProducts.length > 1 ? t('catalog.products_found_plural') : ""} {t('catalog.products_found_plural_verb')}
             {transformedProducts.length > 1 ? "s" : ""}
           </p>
-          {searchQuery && <Badge variant="cyan">Recherche: {searchQuery}</Badge>}
+          {searchQuery && <Badge variant="cyan">{t('catalog.search_label')} {searchQuery}</Badge>}
         </div>
 
         {/* Products Grid */}
@@ -208,19 +210,19 @@ const transformedProducts = filteredProducts.map((product) => ({
               <Search className="text-dark-text-tertiary" size={32} />
             </div>
             <h3 className="font-display font-semibold text-xl mb-2 text-dark-text">
-              Aucun produit trouvé
+              {t('catalog.no_products')}
             </h3>
             <p className="text-dark-text-secondary mb-6">
-              Essayez avec d'autres mots-clés ou catégories
+              {t('catalog.no_products_desc')}
             </p>
             <Button
               variant="gradient"
               onClick={() => {
                 setSearchQuery("");
-                setSelectedCategory("Tous");
+                setSelectedCategory("catalog.all");
               }}
             >
-              Réinitialiser les filtres
+              {t('catalog.reset_filters')}
             </Button>
           </div>
         )}
@@ -229,7 +231,7 @@ const transformedProducts = filteredProducts.map((product) => ({
         {transformedProducts.length > 0 && !loading && (
           <div className="text-center mt-12">
             <Button variant="secondary" size="lg">
-              Charger plus de produits
+              {t('catalog.load_more')}
             </Button>
           </div>
         )}

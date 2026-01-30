@@ -1,3 +1,8 @@
+// frontend/src/features/checkout/CheckoutPage.tsx
+// Page de paiement et confirmation de commande
+// Permet à l'utilisateur de saisir ses informations, choisir une méthode de paiement et confirmer la commande
+
+import { useTranslation } from 'react-i18next';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, CheckCircle } from "lucide-react";
@@ -5,6 +10,7 @@ import { Button, Card, Input } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
 
 export default function CheckoutPage() {
+  const { t, i18n } = useTranslation();
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const [step, setStep] = useState<"info" | "payment" | "success">("info");
@@ -47,42 +53,42 @@ export default function CheckoutPage() {
             <CheckCircle className="text-white" size={48} />
           </div>
           <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
-            Commande confirmée !
+            {t('checkout.success_title')}
           </h1>
           <p className="text-dark-text-secondary mb-2">
-            Votre commande a été passée avec succès.
+            {t('checkout.success_message')}
           </p>
           <p className="text-dark-text-secondary mb-8">
-            Vous recevrez une confirmation par SMS au <strong>{formData.phone}</strong>
+            {t('checkout.success_sms')} <strong>{formData.phone}</strong>
           </p>
           
           <Card className="mb-6 text-left">
-            <h3 className="font-semibold text-dark-text mb-4">Détails de livraison</h3>
+            <h3 className="font-semibold text-dark-text mb-4">{t('checkout.delivery_details')}</h3>
             <div className="space-y-2 text-sm">
               <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">Nom:</span> {formData.firstName} {formData.lastName}
+                <span className="text-dark-text font-medium">{t('checkout.name_label')}</span> {formData.firstName} {formData.lastName}
               </p>
               <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">Téléphone:</span> {formData.phone}
+                <span className="text-dark-text font-medium">{t('checkout.phone_label')}</span> {formData.phone}
               </p>
               <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">Adresse:</span> {formData.address}, {formData.city}
+                <span className="text-dark-text font-medium">{t('checkout.address_label')}</span> {formData.address}, {formData.city}
               </p>
             </div>
           </Card>
 
           <div className="flex flex-col gap-3">
-<Link to="/">
-  <Button variant="gradient" size="lg">
-    Retour à l'accueil
-  </Button>
-</Link>
+            <Link to="/">
+              <Button variant="gradient" size="lg">
+                {t('checkout.back_home')}
+              </Button>
+            </Link>
 
-<Link to="/catalog">
-  <Button variant="secondary" size="md">
-    Continuer mes achats
-  </Button>
-</Link>
+            <Link to="/catalog">
+              <Button variant="secondary" size="md">
+                {t('cart.continue_shopping')}
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
@@ -98,11 +104,11 @@ export default function CheckoutPage() {
           className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-8"
         >
           <ArrowLeft size={20} />
-          Retour au panier
+          {t('checkout.back_to_cart')}
         </Link>
 
         <h1 className="font-display font-bold text-4xl lg:text-5xl mb-8">
-          <span className="text-gradient animate-gradient-bg">Finaliser la commande</span>
+          <span className="text-gradient animate-gradient-bg">{t('checkout.title')}</span>
         </h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -116,32 +122,32 @@ export default function CheckoutPage() {
                     1
                   </div>
                   <h2 className="font-display font-bold text-2xl text-dark-text">
-                    Informations personnelles
+                    {t('checkout.step_info')}
                   </h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <Input
-                    label="Prénom"
-                    placeholder="Jean"
+                    label={t('checkout.first_name')}
+                    placeholder={t('checkout.first_name_placeholder')}
                     value={formData.firstName}
                     onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
                     required
                   />
                   <Input
-                    label="Nom"
-                    placeholder="Dupont"
+                    label={t('checkout.last_name')}
+                    placeholder={t('checkout.last_name_placeholder')}
                     value={formData.lastName}
                     onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                     required
                   />
                   <Input
-                    label="Téléphone"
+                    label={t('checkout.phone')}
                     type="tel"
-                    placeholder="+237 6XX XXX XXX"
+                    placeholder={t('checkout.phone_placeholder')}
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    helperText="Pour la confirmation de commande"
+                    helperText={t('checkout.phone_helper')}
                     required
                   />
                 </div>
@@ -154,14 +160,14 @@ export default function CheckoutPage() {
                     2
                   </div>
                   <h2 className="font-display font-bold text-2xl text-dark-text">
-                    Adresse de livraison
+                    {t('checkout.step_address')}
                   </h2>
                 </div>
 
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                      Ville
+                      {t('checkout.city')}
                     </label>
                     <div className="grid grid-cols-2 gap-3">
                       {["Yaoundé", "Douala"].map((city) => (
@@ -182,11 +188,11 @@ export default function CheckoutPage() {
                   </div>
 
                   <Input
-                    label="Adresse complète"
-                    placeholder="Quartier, rue, repère..."
+                    label={t('checkout.address')}
+                    placeholder={t('checkout.address_placeholder')}
                     value={formData.address}
                     onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    helperText="Soyez précis pour faciliter la livraison"
+                    helperText={t('checkout.address_helper')}
                     required
                   />
                 </div>
@@ -199,14 +205,14 @@ export default function CheckoutPage() {
                     3
                   </div>
                   <h2 className="font-display font-bold text-2xl text-dark-text">
-                    Mode de paiement
+                    {t('checkout.step_payment')}
                   </h2>
                 </div>
 
                 <div className="space-y-3">
                   {[
-                    { id: "momo", name: "MTN Mobile Money", icon: "📱" },
-                    { id: "orange", name: "Orange Money", icon: "🟠" },
+                    { id: "momo", name: t('checkout.payment_momo'), icon: "📱" },
+                    { id: "orange", name: t('checkout.payment_orange'), icon: "🟠" },
                   ].map((method) => (
                     <button
                       key={method.id}
@@ -229,7 +235,7 @@ export default function CheckoutPage() {
 
                 <p className="text-sm text-dark-text-secondary mt-4 flex items-start gap-2">
                   <CheckCircle className="text-holo-cyan flex-shrink-0 mt-0.5" size={16} />
-                  Vous recevrez une notification sur votre téléphone pour confirmer le paiement
+                  {t('checkout.payment_helper')}
                 </p>
               </Card>
 
@@ -240,7 +246,7 @@ export default function CheckoutPage() {
                 className="w-full"
                 isLoading={loading}
               >
-                Confirmer la commande
+                {t('checkout.confirm')}
               </Button>
             </form>
           </div>
@@ -249,7 +255,7 @@ export default function CheckoutPage() {
           <div className="lg:col-span-1">
             <Card className="sticky top-24">
               <h2 className="font-display font-bold text-xl text-dark-text mb-6">
-                Récapitulatif
+                {t('checkout.summary')}
               </h2>
 
               <div className="space-y-3 mb-6">
@@ -266,10 +272,10 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-dark-text truncate">{item.name}</p>
-                      <p className="text-xs text-dark-text-tertiary">Qté: {item.quantity}</p>
+                      <p className="text-xs text-dark-text-tertiary">{t('checkout.quantity_short')} {item.quantity}</p>
                     </div>
                     <p className="text-sm font-semibold text-dark-text">
-                      {(item.price * item.quantity).toLocaleString()}
+                      {(item.price * item.quantity).toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}
                     </p>
                   </div>
                 ))}
@@ -277,19 +283,19 @@ export default function CheckoutPage() {
 
               <div className="space-y-3 py-4 border-y border-white/10">
                 <div className="flex justify-between text-sm text-dark-text-secondary">
-                  <span>Sous-total</span>
-                  <span className="font-semibold text-dark-text">{total.toLocaleString()} FCFA</span>
+                  <span>{t('cart.subtotal')}</span>
+                  <span className="font-semibold text-dark-text">{total.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}</span>
                 </div>
                 <div className="flex justify-between text-sm text-dark-text-secondary">
-                  <span>Livraison</span>
-                  <span className="font-semibold text-dark-text">{shippingCost.toLocaleString()} FCFA</span>
+                  <span>{t('cart.shipping')}</span>
+                  <span className="font-semibold text-dark-text">{shippingCost.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}</span>
                 </div>
               </div>
 
               <div className="flex justify-between pt-4">
-                <span className="font-display font-bold text-lg text-dark-text">Total</span>
+                <span className="font-display font-bold text-lg text-dark-text">{t('cart.total')}</span>
                 <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                  {finalTotal.toLocaleString()} FCFA
+                  {finalTotal.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                 </span>
               </div>
             </Card>

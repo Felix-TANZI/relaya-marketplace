@@ -1,9 +1,15 @@
+// frontend/src/features/cart/CartPage.tsx
+// Page du panier d'achat
+// Affiche les articles dans le panier, le résumé des coûts et les options de paiement
+
+import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
 import { Trash2, Plus, Minus, ShoppingCart, ArrowRight, Package } from "lucide-react";
 import { Button, Card, Badge } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
 
 export default function CartPage() {
+  const { t, i18n } = useTranslation();
   const { items, removeItem, updateQuantity, total, itemCount } = useCart();
 
   const shippingCost = 2000; // Frais de livraison fixes
@@ -17,17 +23,17 @@ export default function CartPage() {
             <ShoppingCart className="text-dark-text-tertiary" size={48} />
           </div>
           <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
-            Votre panier est vide
+            {t('cart.empty')}
           </h1>
           <p className="text-dark-text-secondary mb-8">
-            Commencez vos achats et ajoutez des produits à votre panier
+            {t('cart.empty_desc')}
           </p>
-<Link to="/catalog">
-  <Button variant="gradient" size="lg">
-    <Package size={20} />
-    Explorer le catalogue
-  </Button>
-</Link>
+          <Link to="/catalog">
+            <Button variant="gradient" size="lg">
+              <Package size={20} />
+              {t('cart.explore')}
+            </Button>
+          </Link>
         </div>
       </div>
     );
@@ -39,10 +45,10 @@ export default function CartPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Panier</span>
+            <span className="text-gradient animate-gradient-bg">{t('cart.title')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            {itemCount} article{itemCount > 1 ? "s" : ""} dans votre panier
+            {itemCount} {itemCount > 1 ? t('cart.items') : t('cart.item')} {t('cart.in_cart')}
           </p>
         </div>
 
@@ -109,10 +115,10 @@ export default function CartPage() {
                   {/* Price */}
                   <div className="text-right">
                     <p className="font-display font-bold text-xl text-gradient animate-gradient-bg">
-                      {(item.price * item.quantity).toLocaleString()} FCFA
+                      {(item.price * item.quantity).toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                     </p>
                     <p className="text-sm text-dark-text-tertiary mt-1">
-                      {item.price.toLocaleString()} FCFA × {item.quantity}
+                      {item.price.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')} × {item.quantity}
                     </p>
                   </div>
                 </div>
@@ -124,48 +130,48 @@ export default function CartPage() {
           <div className="lg:col-span-1">
             <Card className="sticky top-24">
               <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
-                Résumé
+                {t('cart.summary')}
               </h2>
 
               <div className="space-y-4 mb-6">
                 <div className="flex justify-between text-dark-text-secondary">
-                  <span>Sous-total ({itemCount} articles)</span>
+                  <span>{t('cart.subtotal')} ({itemCount} {itemCount > 1 ? t('cart.items') : t('cart.item')})</span>
                   <span className="font-semibold text-dark-text">
-                    {total.toLocaleString()} FCFA
+                    {total.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                   </span>
                 </div>
 
                 <div className="flex justify-between text-dark-text-secondary">
-                  <span>Livraison</span>
+                  <span>{t('cart.shipping')}</span>
                   <span className="font-semibold text-dark-text">
-                    {shippingCost.toLocaleString()} FCFA
+                    {shippingCost.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                   </span>
                 </div>
 
                 <div className="pt-4 border-t border-white/10">
                   <div className="flex justify-between">
                     <span className="font-display font-bold text-lg text-dark-text">
-                      Total
+                      {t('cart.total')}
                     </span>
                     <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                      {finalTotal.toLocaleString()} FCFA
+                      {finalTotal.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
                     </span>
                   </div>
                 </div>
               </div>
 
-<Link to="/checkout">
-  <Button variant="gradient" size="lg" className="w-full mb-4">
-    Procéder au paiement
-    <ArrowRight size={20} />
-  </Button>
-</Link>
+              <Link to="/checkout">
+                <Button variant="gradient" size="lg" className="w-full mb-4">
+                  {t('cart.checkout')}
+                  <ArrowRight size={20} />
+                </Button>
+              </Link>
 
-<Link to="/catalog">
-  <Button variant="secondary" size="md" className="w-full">
-    Continuer mes achats
-  </Button>
-</Link>
+              <Link to="/catalog">
+                <Button variant="secondary" size="md" className="w-full">
+                  {t('cart.continue_shopping')}
+                </Button>
+              </Link>
 
               {/* Trust Badges */}
               <div className="mt-6 pt-6 border-t border-white/10 space-y-3">
@@ -173,13 +179,13 @@ export default function CartPage() {
                   <div className="w-8 h-8 rounded-lg bg-holo-cyan/10 flex items-center justify-center flex-shrink-0">
                     <Package className="text-holo-cyan" size={16} />
                   </div>
-                  <span>Livraison rapide 2-3 jours</span>
+                  <span>{t('cart.fast_delivery')}</span>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-dark-text-secondary">
                   <div className="w-8 h-8 rounded-lg bg-holo-purple/10 flex items-center justify-center flex-shrink-0">
                     <ShoppingCart className="text-holo-purple" size={16} />
                   </div>
-                  <span>Paiement 100% sécurisé</span>
+                  <span>{t('cart.secure_payment')}</span>
                 </div>
               </div>
             </Card>

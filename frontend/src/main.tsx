@@ -9,14 +9,17 @@ import App from './App';
 import { CartProvider } from './context/CartContext'; // Contexte du panier
 import { ThemeProvider } from './context/ThemeContext'; // Contexte du thème
 import { ToastProvider } from './context/ToastContext'; // Contexte des notifications Toast
+import { AuthProvider } from './context/AuthContext'; // Contexte d'authentification
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider>
       <ToastProvider>
-       <CartProvider>
-         <App />
-       </CartProvider>
+        <AuthProvider>
+         <CartProvider>
+           <App />
+         </CartProvider>
+        </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
   </StrictMode>,

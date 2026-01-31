@@ -11,12 +11,11 @@ interface FetchOptions extends RequestInit {
 async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
   
-  // Construire l'URL avec les query params (FILTRER les undefined/null)
+  // Construire l'URL avec les query params
   let url = `${API_BASE_URL}${endpoint}`;
   if (params) {
-    // Filtrer les valeurs undefined, null ou vides
     const cleanParams = Object.entries(params)
-      .filter(([, value]) => value !== undefined && value !== null && value !== '') // CHANGÉ: [, value] au lieu de [_, value]
+      .filter(([, value]) => value !== undefined && value !== null && value !== '')
       .map(([key, value]) => [key, String(value)]);
     
     if (cleanParams.length > 0) {
@@ -25,18 +24,31 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
     }
   }
 
-  const response = await fetch(url, {
-    ...fetchOptions,
-    headers: {
-      "Content-Type": "application/json",
-      ...fetchOptions.headers,
-    },
-  });
+  // Récupérer le token d'authentification depuis le stockage local
+const token = localStorage.getItem('access_token');
+const headers: Record<string, string> = {
+  "Content-Type": "application/json",
+};
+
+// Ajouter les headers personnalisés
+if (fetchOptions.headers) {
+  Object.assign(headers, fetchOptions.headers);
+}
+
+// Ajouter le token si présent
+if (token) {
+  headers['Authorization'] = `Bearer ${token}`;
+}
+
+const response = await fetch(url, {
+  ...fetchOptions,
+  headers,
+});
 
   if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      console.error('API Error Details:', errorData);
-      throw new Error(`API Error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
+    const errorData = await response.json().catch(() => null);
+    console.error('API Error Details:', errorData);
+    throw new Error(`API Error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
   }
 
   return response.json();

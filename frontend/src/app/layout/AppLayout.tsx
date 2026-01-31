@@ -3,18 +3,20 @@
 
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
-import { useTranslation } from 'react-i18next'; // ✅ AJOUTÉ
+import { useAuth } from '@/context/AuthContext';
+import { useTranslation } from 'react-i18next'; 
 import { Outlet, Link, useLocation } from "react-router-dom";
 import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {
   const { theme, toggleTheme } = useTheme();
-  const { t, i18n } = useTranslation(); // ✅ AJOUTÉ
+  const { t, i18n } = useTranslation(); 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { itemCount } = useCart();
+  const { user, logout, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,7 +34,7 @@ export default function AppLayout() {
     return () => cancelAnimationFrame(id);
   }, [location.pathname]);
 
-  // ✅ AJOUTÉ : Fonction pour changer de langue
+  // Fonction pour changer de langue
   const toggleLanguage = () => {
     const newLang = i18n.language === 'fr' ? 'en' : 'fr';
     i18n.changeLanguage(newLang);
@@ -85,7 +87,7 @@ export default function AppLayout() {
                 {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
               </button>
 
-              {/* ✅ MODIFIÉ : Bouton langue avec affichage de la langue actuelle */}
+              {/*  Bouton langue avec affichage de la langue actuelle */}
               <button 
                 onClick={toggleLanguage}
                 className="flex items-center gap-2 p-3 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all"
@@ -104,10 +106,26 @@ export default function AppLayout() {
                 )}
               </Link>
 
-              <button className="ml-2 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
-                <User size={18} className="inline mr-2" />
-                {t('header.login')} {/* ✅ TRADUIT */}
-              </button>
+              {isAuthenticated ? (
+  <div className="flex items-center gap-2">
+    <span className="text-dark-text-secondary text-sm">
+      {user?.first_name || user?.username}
+    </span>
+    <button
+      onClick={logout}
+      className="px-4 py-2 rounded-xl glass border border-white/10 hover:border-red-500 hover:text-red-400 transition-all text-sm"
+    >
+      Déconnexion
+    </button>
+  </div>
+) : (
+  <Link to="/login">
+    <button className="ml-2 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
+      <User size={18} className="inline mr-2" />
+      {t('header.login')}
+    </button>
+  </Link>
+)}
             </div>
 
             {/* Mobile Menu Button */}
@@ -137,17 +155,17 @@ export default function AppLayout() {
           <div className="lg:hidden border-t border-white/10 glass-strong">
             <div className="container mx-auto px-4 py-4 space-y-3">
               <Link to="/" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                {t('header.home')} {/* ✅ TRADUIT */}
+                {t('header.home')} {/*  TRADUIT */}
               </Link>
               <Link to="/catalog" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                {t('header.catalog')} {/* ✅ TRADUIT */}
+                {t('header.catalog')} {/* TRADUIT */}
               </Link>
               <Link to="/shops" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
-                {t('header.shops')} {/* ✅ TRADUIT */}
+                {t('header.shops')} {/* TRADUIT */}
               </Link>
               <div className="flex items-center gap-2 pt-2">
                 <button className="flex-1 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-medium">
-                  {t('header.login')} {/* ✅ TRADUIT */}
+                  {t('header.login')} {/* TRADUIT */}
                 </button>
                 <button onClick={toggleTheme} className="p-3 rounded-xl glass border border-white/10">
                   {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
@@ -177,7 +195,7 @@ export default function AppLayout() {
                 <span className="font-display font-bold text-xl">Relaya</span>
               </div>
               <p className="text-dark-text-secondary text-sm leading-relaxed">
-                {t('footer.description')} {/* ✅ TRADUIT */}
+                {t('footer.description')} {/* TRADUIT */}
               </p>
               <div className="flex items-center gap-3 mt-6">
                 <a href="#" className="w-10 h-10 rounded-full glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all flex items-center justify-center">

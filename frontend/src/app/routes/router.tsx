@@ -6,6 +6,9 @@ import CatalogPage from "@/features/catalog/CatalogPage";
 import ProductDetailPage from "@/features/catalog/ProductDetailPage";
 import CartPage from "@/features/cart/CartPage";
 import CheckoutPage from "@/features/checkout/CheckoutPage";
+import LoginPage from '@/features/auth/LoginPage';
+import RegisterPage from '@/features/auth/RegisterPage';
+
 
 export const router = createBrowserRouter([
   {
@@ -40,6 +43,14 @@ export const router = createBrowserRouter([
         path: "shops",
         element: <div className="container py-12"><h1>Boutiques (à venir)</h1></div>,
       },
+      {
+  path: "/login",
+  element: <LoginPage />,
+},
+{
+  path: "/register",
+  element: <RegisterPage />,
+},
       {
         path: "*",
         element: (

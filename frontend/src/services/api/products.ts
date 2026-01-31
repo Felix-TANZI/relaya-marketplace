@@ -1,13 +1,12 @@
 // frontend/src/services/api/products.ts
-// Service API pour les produits
-// Interagit avec le backend pour récupérer et gérer les produits
+// Service API pour la gestion des produits avec filtres avancés
 
-import { api } from './client';
+import { http } from './http';
 
 export interface ProductMedia {
   id: number;
   url: string;
-  media_type: string;
+  media_type: 'image' | 'video';
   sort_order: number;
 }
 
@@ -15,18 +14,34 @@ export interface Category {
   id: number;
   name: string;
   slug: string;
+  is_active: boolean;
 }
 
 export interface Product {
   id: number;
   title: string;
+  slug: string;
   description: string;
   price_xaf: number;
   stock_quantity: number;
-  category?: Category;
-  media?: ProductMedia[];
+  is_active: boolean;
+  category: Category | null;
+  media: ProductMedia[];
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  category?: number;
+  category_slug?: string;
+  price_min?: number;
+  price_max?: number;
+  in_stock?: boolean;
+  is_active?: boolean;
+  ordering?: string;
 }
 
 export interface ProductListResponse {
@@ -36,51 +51,42 @@ export interface ProductListResponse {
   results: Product[];
 }
 
-export interface ProductListParams {
-  page?: number;
-  page_size?: number;
-  search?: string;
-  ordering?: string;
-}
-
-//  Helper pour filtrer les undefined
-function cleanParams(params?: ProductListParams): Record<string, string | number | boolean> | undefined {
-  if (!params) return undefined;
-  
-  const cleaned: Record<string, string | number | boolean> = {};
+/**
+ * Convertit un objet de paramètres en query string
+ */
+function buildQueryString(params: ProductListParams): string {
+  const queryParams = new URLSearchParams();
   
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
-      cleaned[key] = value;
+      queryParams.append(key, String(value));
     }
   });
   
-  return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  const queryString = queryParams.toString();
+  return queryString ? `?${queryString}` : '';
 }
 
 export const productsApi = {
-  // Liste des produits
-  list: async (params?: ProductListParams): Promise<ProductListResponse> => {
-    return api.get<ProductListResponse>('/catalog/products/', { params: cleanParams(params) });
+  /**
+   * Liste des produits avec filtres avancés
+   */
+  list: async (params: ProductListParams = {}): Promise<ProductListResponse> => {
+    const queryString = buildQueryString(params);
+    return http<ProductListResponse>(`/api/catalog/products/${queryString}`);
   },
 
-  // Détail d'un produit
+  /**
+   * Détails d'un produit
+   */
   get: async (id: number): Promise<Product> => {
-    return api.get<Product>(`/catalog/products/${id}/`);
+    return http<Product>(`/api/catalog/products/${id}/`);
   },
 
-  // Créer un produit (pour les vendeurs plus tard)
-  create: async (data: Partial<Product>): Promise<Product> => {
-    return api.post<Product>('/catalog/products/', data);
-  },
-
-  // Mettre à jour un produit
-  update: async (id: number, data: Partial<Product>): Promise<Product> => {
-    return api.put<Product>(`/catalog/products/${id}/`, data);
-  },
-
-  // Supprimer un produit
-  delete: async (id: number): Promise<void> => {
-    return api.delete<void>(`/catalog/products/${id}/`);
+  /**
+   * Liste des catégories
+   */
+  listCategories: async (): Promise<{ results: Category[] }> => {
+    return http<{ results: Category[] }>('/api/catalog/categories/?page_size=100');
   },
 };

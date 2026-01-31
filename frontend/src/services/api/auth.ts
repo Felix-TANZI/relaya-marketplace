@@ -1,8 +1,7 @@
 // frontend/src/services/api/auth.ts
-// Service API pour l'authentification des utilisateurs
-// Fournit des fonctions pour l'inscription, la connexion, le rafraîchissement des tokens et la récupération des informations utilisateur
+// Service API pour l'authentification et la gestion du profil utilisateur
 
-import { api } from './client';
+import { http } from './http';
 
 export interface User {
   id: number;
@@ -13,18 +12,18 @@ export interface User {
   date_joined: string;
 }
 
+export interface LoginCredentials {
+  username: string;
+  password: string;
+}
+
 export interface RegisterData {
   username: string;
   email: string;
   password: string;
-  password2: string;
+  password2?: string;
   first_name?: string;
   last_name?: string;
-}
-
-export interface LoginData {
-  username: string;
-  password: string;
 }
 
 export interface TokenResponse {
@@ -32,24 +31,68 @@ export interface TokenResponse {
   refresh: string;
 }
 
+export interface UpdateProfileData {
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
 export const authApi = {
-  // Register
+  /**
+   * Connexion utilisateur
+   */
+  login: async (credentials: LoginCredentials): Promise<TokenResponse> => {
+    return http<TokenResponse>('/api/auth/login/', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  /**
+   * Inscription utilisateur
+   */
   register: async (data: RegisterData): Promise<User> => {
-    return api.post<User>('/auth/register/', data);
+    return http<User>('/api/auth/register/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 
-  // Login
-  login: async (data: LoginData): Promise<TokenResponse> => {
-    return api.post<TokenResponse>('/auth/login/', data);
-  },
-
-  // Refresh token
-  refresh: async (refreshToken: string): Promise<{ access: string }> => {
-    return api.post<{ access: string }>('/auth/refresh/', { refresh: refreshToken });
-  },
-
-  // Get current user
+  /**
+   * Récupérer les infos de l'utilisateur connecté
+   */
   me: async (): Promise<User> => {
-    return api.get<User>('/auth/me/');
+    const token = localStorage.getItem('access_token');
+    return http<User>('/api/auth/me/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Récupérer le profil complet
+   */
+  getProfile: async (): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    return http<User>('/api/auth/profile/', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Mettre à jour le profil
+   */
+  updateProfile: async (data: UpdateProfileData): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    return http<User>('/api/auth/profile/update/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 };

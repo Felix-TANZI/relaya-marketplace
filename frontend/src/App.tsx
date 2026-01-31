@@ -15,6 +15,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute"; // Composant de r
 import PublicRoute from "./components/auth/PublicRoute"; // Composant de route publique
 import OrdersHistoryPage from "./features/orders/OrdersHistoryPage"; // Page d'historique des commandes
 import OrderDetailPage from "./features/orders/OrderDetailPage"; // Page de détail de la commande
+import ProfilePage from "./features/profile/ProfilePage"; // Page de profil utilisateur
 
 function App() {
   return (
@@ -58,6 +59,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+           <Route
+            path="profile"
+            element={
+              <ProtectedRoute>
+                <ProfilePage />
               </ProtectedRoute>
             }
           />

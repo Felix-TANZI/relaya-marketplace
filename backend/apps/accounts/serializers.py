@@ -37,3 +37,27 @@ class RegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data.get("last_name", ""),
         )
         return user
+class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour le profil utilisateur (lecture et modification)
+    """
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'date_joined']
+        read_only_fields = ['id', 'username', 'date_joined']
+
+
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour la mise à jour du profil
+    """
+    class Meta:
+        model = User
+        fields = ['email', 'first_name', 'last_name']
+        
+    def validate_email(self, value):
+        """Vérifier que l'email n'est pas déjà utilisé par un autre utilisateur"""
+        user = self.context['request'].user
+        if User.objects.exclude(pk=user.pk).filter(email=value).exists():
+            raise serializers.ValidationError("Cet email est déjà utilisé.")
+        return value

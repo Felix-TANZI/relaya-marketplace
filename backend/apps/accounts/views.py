@@ -7,6 +7,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .serializers import UserProfileSerializer, UserProfileUpdateSerializer
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
 
@@ -41,3 +42,39 @@ class RegisterView(generics.CreateAPIView):
 def me(request):
     serializer = UserSerializer(request.user)
     return Response(serializer.data)
+
+@extend_schema(
+    tags=["Auth"], 
+    summary="Get user profile",
+    responses={200: UserProfileSerializer}
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def profile(request):
+    """Récupérer le profil de l'utilisateur connecté"""
+    serializer = UserProfileSerializer(request.user)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Auth"], 
+    summary="Update user profile",
+    request=UserProfileUpdateSerializer,
+    responses={200: UserProfileSerializer}
+)
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def update_profile(request):
+    """Mettre à jour le profil de l'utilisateur connecté"""
+    serializer = UserProfileUpdateSerializer(
+        request.user, 
+        data=request.data, 
+        partial=True,
+        context={'request': request}
+    )
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    
+    # Retourner le profil complet mis à jour
+    profile_serializer = UserProfileSerializer(request.user)
+    return Response(profile_serializer.data)

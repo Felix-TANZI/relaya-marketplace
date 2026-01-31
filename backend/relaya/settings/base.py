@@ -1,3 +1,7 @@
+# backend/relaya/settings/base.py
+# Paramètres de base pour le projet backend Relaya.
+# Configure les applications, middleware, base de données, internationalisation, etc.
+
 from pathlib import Path
 import os
 
@@ -88,10 +92,18 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
+# DRF Settings
 REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "DEFAULT_AUTHENTICATION_CLASSES": (
+        "rest_framework_simplejwt.authentication.JWTAuthentication",
+    ),
+    "DEFAULT_PERMISSION_CLASSES": (
+        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+    ),
 }
 
+# DRF Spectacular settings
 SPECTACULAR_SETTINGS = {
     "TITLE": "Relaya API",
     "DESCRIPTION": "API privée de la marketplace Relaya",
@@ -109,4 +121,17 @@ SPECTACULAR_SETTINGS = {
         {"name": "Analytics", "description": "KPI, dashboards, exports"},
         {"name": "AI", "description": "Fonctionnalités IA et alertes"},
     ],
+}
+
+# JWT Settings
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": False,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
 }

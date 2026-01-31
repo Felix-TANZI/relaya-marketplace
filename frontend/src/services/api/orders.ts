@@ -50,4 +50,9 @@ export const ordersApi = {
   get: async (id: number): Promise<Order> => {
     return api.get<Order>(`/orders/${id}/`);
   },
+
+    // Récupérer mes commandes
+  getMyOrders: async (): Promise<Order[]> => {
+    return api.get<Order[]>('/orders/my-orders/');
+  },
 };

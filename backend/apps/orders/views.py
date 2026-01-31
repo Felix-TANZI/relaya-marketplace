@@ -1,9 +1,6 @@
-# backend/apps/orders/views.py
-# Vues pour la gestion des commandes.
-
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated  # ✅ DÉJÀ IMPORTÉ
 from drf_spectacular.utils import extend_schema
 
 from .models import Order
@@ -18,16 +15,14 @@ from .serializers import OrderCreateSerializer, OrderDetailSerializer
 )
 class OrderCreateView(generics.CreateAPIView):
     serializer_class = OrderCreateSerializer
+    permission_classes = [IsAuthenticated]  # ✅ AJOUTÉ : Exiger authentification
 
     def create(self, request, *args, **kwargs):
-        # 1) Validate input
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
-        # 2) Create order (serializer.create)
         order = serializer.save()
 
-        # 3) Return a proper output serializer
         out = OrderDetailSerializer(order)
         return Response(out.data, status=status.HTTP_201_CREATED)
 
@@ -38,13 +33,13 @@ class OrderDetailView(generics.RetrieveAPIView):
     serializer_class = OrderDetailSerializer
     lookup_field = "id"
 
-#  Liste des commandes de l'utilisateur
+
 @extend_schema(
     tags=["Orders"],
     summary="Mes commandes",
     description="Liste des commandes de l'utilisateur connecté"
 )
-class MyOrdersView(generics.ListAPIView): # Liste des commandes de l'utilisateur connecté
+class MyOrdersView(generics.ListAPIView):
     serializer_class = OrderDetailSerializer
     permission_classes = [IsAuthenticated]
 

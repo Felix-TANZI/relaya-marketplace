@@ -145,7 +145,7 @@
     "legal": "Legal",
     "rights": "All rights reserved"
   },
-    "auth": {
+  "auth": {
     "login": "Login",
     "register": "Create account",
     "logout": "Logout",
@@ -168,6 +168,24 @@
     "register_success": "Account created successfully!",
     "login_error": "Incorrect credentials",
     "register_error": "Error creating account"
+  },
+  "orders": {
+    "title": "My Orders",
+    "subtitle": "History of all your orders",
+    "no_orders": "No orders",
+    "no_orders_desc": "You haven't placed any orders yet",
+    "order_number": "Order",
+    "date": "Date",
+    "status": "Status",
+    "total": "Total",
+    "items": "items",
+    "view_details": "View details",
+    "status_pending": "Pending",
+    "status_paid": "Paid",
+    "status_cancelled": "Cancelled",
+    "loading": "Loading your orders...",
+    "error": "Loading error",
+    "error_message": "Unable to load your orders"
   },
   "common": {
     "currency": "XAF",

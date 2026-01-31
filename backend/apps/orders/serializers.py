@@ -1,3 +1,6 @@
+# backend/apps/orders/serializers.py
+# Serializers pour la gestion des commandes et des articles de commande.
+
 from rest_framework import serializers
 from django.db import transaction
 
@@ -48,6 +51,7 @@ class OrderCreateSerializer(serializers.Serializer):
         user = request.user if request and request.user.is_authenticated else None
 
         order = Order.objects.create(
+            user=user,
             customer_phone=validated_data["phone"],
             city=validated_data["city"],
             address=validated_data["address"],

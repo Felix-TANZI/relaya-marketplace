@@ -145,7 +145,7 @@
     "legal": "Mentions légales",
     "rights": "Tous droits réservés"
   },
-    "auth": {
+  "auth": {
     "login": "Connexion",
     "register": "Créer un compte",
     "logout": "Déconnexion",
@@ -168,6 +168,24 @@
     "register_success": "Compte créé avec succès !",
     "login_error": "Identifiants incorrects",
     "register_error": "Erreur lors de la création du compte"
+  },
+  "orders": {
+    "title": "Mes Commandes",
+    "subtitle": "Historique de toutes vos commandes",
+    "no_orders": "Aucune commande",
+    "no_orders_desc": "Vous n'avez pas encore passé de commande",
+    "order_number": "Commande",
+    "date": "Date",
+    "status": "Statut",
+    "total": "Total",
+    "items": "articles",
+    "view_details": "Voir détails",
+    "status_pending": "En attente",
+    "status_paid": "Payée",
+    "status_cancelled": "Annulée",
+    "loading": "Chargement de vos commandes...",
+    "error": "Erreur de chargement",
+    "error_message": "Impossible de charger vos commandes"
   },
   "common": {
     "currency": "FCFA",

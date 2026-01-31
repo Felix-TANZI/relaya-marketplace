@@ -6,6 +6,110 @@
   body {
     @apply font-display;
   }
+  
+  /* ============================================
+     STYLES POUR LES FORMULAIRES/FILTRES
+     ============================================ */
+  
+  /* Force le color-scheme dark pour tous les inputs natifs */
+  input,
+  select,
+  textarea {
+    color-scheme: dark;
+  }
+  
+  /* Styles pour les select */
+  select {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #E8EDF4;
+    cursor: pointer;
+  }
+  
+  /* Styles pour les options des select */
+  select option {
+    background-color: #16181D !important;
+    color: #E8EDF4 !important;
+    padding: 0.75rem 1rem;
+    font-weight: 400;
+  }
+  
+  select option:hover,
+  select option:focus {
+    background-color: #1C1F26 !important;
+    color: #00F5FF !important;
+  }
+  
+  select option:checked {
+    background-color: #1C1F26 !important;
+    color: #00F5FF !important;
+    font-weight: 500;
+  }
+  
+  /* Styles pour les inputs (text, number, etc.) */
+  input[type="text"],
+  input[type="number"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"] {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #E8EDF4;
+  }
+  
+  input[type="text"]::placeholder,
+  input[type="number"]::placeholder,
+  input[type="email"]::placeholder,
+  input[type="password"]::placeholder,
+  input[type="search"]::placeholder,
+  input[type="tel"]::placeholder,
+  input[type="url"]::placeholder {
+    color: #71717a;
+    opacity: 1;
+  }
+  
+  /* Styles pour les textarea */
+  textarea {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: #E8EDF4;
+  }
+  
+  textarea::placeholder {
+    color: #71717a;
+    opacity: 1;
+  }
+  
+  /* Styles pour les checkbox et radio */
+  input[type="checkbox"],
+  input[type="radio"] {
+    cursor: pointer;
+    accent-color: #00F5FF;
+  }
+  
+  /* Désactiver l'apparence par défaut des spinners sur input number */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
+    cursor: pointer;
+  }
+  
+  /* Autofill styles (quand le navigateur remplit automatiquement) */
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus,
+  input:-webkit-autofill:active {
+    -webkit-box-shadow: 0 0 0 30px #16181D inset !important;
+    -webkit-text-fill-color: #E8EDF4 !important;
+    caret-color: #E8EDF4;
+  }
+  
+  /* Focus visible pour accessibilité */
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid #00F5FF;
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {

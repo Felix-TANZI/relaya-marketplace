@@ -142,7 +142,7 @@ export default function CatalogPage() {
                   setCurrentPage(1);
                 }}
                 placeholder={t('catalog.search_placeholder')}
-                className="w-full pl-12 pr-4 py-3 rounded-xl bg-dark-bg-tertiary border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
+                className="w-full pl-12 pr-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
               />
             </div>
 
@@ -201,7 +201,7 @@ export default function CatalogPage() {
                       setSelectedCategory(e.target.value ? parseInt(e.target.value) : null);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-4 py-2 rounded-xl bg-dark-bg-tertiary border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
+                    className="w-full px-4 py-2 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
                   >
                     <option value="">{t('catalog.all')}</option>
                     {categories.map((cat) => (
@@ -225,7 +225,7 @@ export default function CatalogPage() {
                       setCurrentPage(1);
                     }}
                     placeholder="0"
-                    className="w-full px-4 py-2 rounded-xl bg-dark-bg-tertiary border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
+                    className="w-full px-4 py-2 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                   />
                 </div>
 
@@ -242,7 +242,7 @@ export default function CatalogPage() {
                       setCurrentPage(1);
                     }}
                     placeholder="1000000"
-                    className="w-full px-4 py-2 rounded-xl bg-dark-bg-tertiary border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
+                    className="w-full px-4 py-2 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                   />
                 </div>
 
@@ -257,7 +257,7 @@ export default function CatalogPage() {
                       setSortBy(e.target.value);
                       setCurrentPage(1);
                     }}
-                    className="w-full px-4 py-2 rounded-xl bg-dark-bg-tertiary border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
+                    className="w-full px-4 py-2 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
                   >
                     <option value="-created_at">Plus récents</option>
                     <option value="created_at">Plus anciens</option>
@@ -279,7 +279,7 @@ export default function CatalogPage() {
                     setInStockOnly(e.target.checked);
                     setCurrentPage(1);
                   }}
-                  className="w-5 h-5 rounded border-white/20 bg-dark-bg-tertiary text-holo-cyan focus:ring-2 focus:ring-holo-cyan/20"
+                  className="w-5 h-5 rounded border-white/20 glass text-holo-cyan focus:ring-2 focus:ring-holo-cyan/20"
                 />
                 <label htmlFor="inStock" className="text-dark-text font-medium cursor-pointer">
                   {t('product.in_stock')} uniquement

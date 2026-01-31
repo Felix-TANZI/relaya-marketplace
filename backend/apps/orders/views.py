@@ -1,6 +1,9 @@
+# backend/apps/orders/views.py
+# Vues pour la gestion des commandes.
+
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated  # ✅ DÉJÀ IMPORTÉ
+from rest_framework.permissions import IsAuthenticated  #
 from drf_spectacular.utils import extend_schema
 
 from .models import Order
@@ -15,7 +18,7 @@ from .serializers import OrderCreateSerializer, OrderDetailSerializer
 )
 class OrderCreateView(generics.CreateAPIView):
     serializer_class = OrderCreateSerializer
-    permission_classes = [IsAuthenticated]  # ✅ AJOUTÉ : Exiger authentification
+    permission_classes = [IsAuthenticated]  # Exiger authentification
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data, context={'request': request})

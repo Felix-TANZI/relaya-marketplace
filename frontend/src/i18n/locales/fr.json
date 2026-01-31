@@ -180,12 +180,21 @@
     "total": "Total",
     "items": "articles",
     "view_details": "Voir détails",
-    "status_pending": "En attente",
+    "status_pending": "En attente de paiement",
     "status_paid": "Payée",
     "status_cancelled": "Annulée",
     "loading": "Chargement de vos commandes...",
     "error": "Erreur de chargement",
-    "error_message": "Impossible de charger vos commandes"
+    "error_message": "Impossible de charger vos commandes",
+    "detail_title": "Détails de la commande",
+    "order_info": "Informations",
+    "delivery_info": "Livraison",
+    "payment_info": "Paiement",
+    "order_summary": "Résumé",
+    "back_to_orders": "Retour aux commandes",
+    "placed_on": "Passée le",
+    "payment_method": "Mode de paiement",
+    "mobile_money": "Mobile Money"
   },
   "common": {
     "currency": "FCFA",

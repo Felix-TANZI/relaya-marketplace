@@ -180,12 +180,21 @@
     "total": "Total",
     "items": "items",
     "view_details": "View details",
-    "status_pending": "Pending",
+    "status_pending": "Pending payment",
     "status_paid": "Paid",
     "status_cancelled": "Cancelled",
     "loading": "Loading your orders...",
     "error": "Loading error",
-    "error_message": "Unable to load your orders"
+    "error_message": "Unable to load your orders",
+    "detail_title": "Order details",
+    "order_info": "Information",
+    "delivery_info": "Delivery",
+    "payment_info": "Payment",
+    "order_summary": "Summary",
+    "back_to_orders": "Back to orders",
+    "placed_on": "Placed on",
+    "payment_method": "Payment method",
+    "mobile_money": "Mobile Money"
   },
   "common": {
     "currency": "XAF",

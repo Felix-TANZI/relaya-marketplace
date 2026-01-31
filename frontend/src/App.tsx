@@ -14,6 +14,7 @@ import RegisterPage from "./features/auth/RegisterPage"; // Page d'inscription
 import ProtectedRoute from "./components/auth/ProtectedRoute"; // Composant de route protégée
 import PublicRoute from "./components/auth/PublicRoute"; // Composant de route publique
 import OrdersHistoryPage from "./features/orders/OrdersHistoryPage"; // Page d'historique des commandes
+import OrderDetailPage from "./features/orders/OrderDetailPage"; // Page de détail de la commande
 
 function App() {
   return (
@@ -49,6 +50,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <OrdersHistoryPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="orders/:id"
+            element={
+              <ProtectedRoute>
+                <OrderDetailPage />
               </ProtectedRoute>
             }
           />

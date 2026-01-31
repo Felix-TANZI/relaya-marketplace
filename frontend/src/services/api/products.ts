@@ -89,4 +89,26 @@ export const productsApi = {
   listCategories: async (): Promise<{ results: Category[] }> => {
     return http<{ results: Category[] }>('/api/catalog/categories/?page_size=100');
   },
+
+    /**
+   * Produits similaires (même catégorie)
+   */
+  getSimilar: async (productId: number, limit: number = 4): Promise<Product[]> => {
+    // D'abord récupérer le produit pour connaître sa catégorie
+    const product = await productsApi.get(productId);
+    
+    if (!product.category) {
+      return [];
+    }
+    
+    // Récupérer les produits de la même catégorie (en excluant le produit actuel)
+    const response = await productsApi.list({
+      category: product.category.id,
+      page_size: limit + 1, // +1 car on va exclure le produit actuel
+      is_active: true,
+    });
+    
+    // Filtrer pour exclure le produit actuel
+    return response.results.filter(p => p.id !== productId).slice(0, limit);
+  },
 };

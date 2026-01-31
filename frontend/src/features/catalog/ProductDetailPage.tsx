@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ShoppingCart, Heart, Share2, ChevronLeft, Star, Package, AlertCircle } from 'lucide-react';
 import { Button, Badge } from '@/components/ui';
+import ProductCard from "@/components/product/ProductCard";
 import { useCart } from '@/context/CartContext';
 import { productsApi, type Product } from '@/services/api/products';
 
@@ -21,6 +22,7 @@ export default function ProductDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
 
   // Charger le produit depuis l'API
   useEffect(() => {
@@ -32,6 +34,9 @@ export default function ProductDetailPage() {
         setError(null);
         const data = await productsApi.get(parseInt(id));
         setProduct(data);
+        // Charger les produits similaires
+        const similar = await productsApi.getSimilar(parseInt(id), 8); // Limite à 8 produits similaires
+        setSimilarProducts(similar);
       } catch (err) {
         console.error('Erreur chargement produit:', err);
         setError(t('product.error_message'));
@@ -282,17 +287,30 @@ export default function ProductDetailPage() {
         </div>
 
         {/* Related Products */}
-        <div>
-          <h2 className="font-display font-bold text-3xl text-dark-text mb-8 text-center">
-            {t('product.related')}
-          </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Mock - À remplacer par de vrais produits similaires plus tard */}
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="aspect-[3/4] rounded-2xl glass border border-white/10 animate-pulse" />
-            ))}
+        {similarProducts.length > 0 && (
+          <div>
+            <h2 className="font-display font-bold text-3xl text-dark-text mb-8 text-center">
+              {t('product.related')}
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {similarProducts.map((similarProduct) => (
+                <ProductCard
+                  key={similarProduct.id}
+                  product={{
+                    id: similarProduct.id,
+                    name: similarProduct.title,
+                    price: similarProduct.price_xaf,
+                    image: similarProduct.media?.find((m) => m.sort_order === 0)?.url,
+                    category: similarProduct.category?.name,
+                    rating: 4.5,
+                    inStock: similarProduct.stock_quantity > 0,
+                    isNew: false,
+                  }}
+                />
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

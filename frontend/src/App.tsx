@@ -16,6 +16,8 @@ import PublicRoute from "./components/auth/PublicRoute"; // Composant de route p
 import OrdersHistoryPage from "./features/orders/OrdersHistoryPage"; // Page d'historique des commandes
 import OrderDetailPage from "./features/orders/OrderDetailPage"; // Page de détail de la commande
 import ProfilePage from "./features/profile/ProfilePage"; // Page de profil utilisateur
+import BecomeSellerPage from "./features/vendors/BecomeSellerPage"; // Page pour devenir vendeur
+import SellerDashboardPage from "./features/vendors/SellerDashboardPage"; // Tableau de bord du vendeur
 
 function App() {
   return (
@@ -33,6 +35,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Routes vendeur */}
+          <Route
+            path="become-seller"
+            element={
+              <ProtectedRoute>
+                <BecomeSellerPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="seller/dashboard"
+            element={
+              <ProtectedRoute>
+                <SellerDashboardPage />
               </ProtectedRoute>
             }
           />
@@ -62,7 +82,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-           <Route
+          <Route
             path="profile"
             element={
               <ProtectedRoute>

@@ -2,8 +2,8 @@
 # Modèles pour la gestion des commandes et des articles de commande.
 
 from django.db import models
-from django.contrib.auth.models import User
-from apps.catalog.models import Product
+from django.contrib.auth.models import User # Lien vers le modèle utilisateur intégré de Django
+from apps.catalog.models import Product # Lien vers le modèle produit
 
 
 class TimeStampedModel(models.Model):
@@ -14,7 +14,7 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
-class Order(TimeStampedModel):
+class Order(TimeStampedModel): # Modèle de commande
     class Status(models.TextChoices):
         PENDING_PAYMENT = "PENDING_PAYMENT", "Pending payment"
         PAID = "PAID", "Paid"

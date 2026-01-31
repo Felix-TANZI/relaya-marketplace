@@ -43,6 +43,10 @@ class OrderCreateSerializer(serializers.Serializer):
         delivery_fee = 0  # v1: free (we'll add later)
         total = subtotal + delivery_fee
 
+        # Récupérer le user depuis le contexte
+        request = self.context.get('request')
+        user = request.user if request and request.user.is_authenticated else None
+
         order = Order.objects.create(
             customer_phone=validated_data["phone"],
             city=validated_data["city"],

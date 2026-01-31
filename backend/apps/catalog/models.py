@@ -1,5 +1,8 @@
-from django.db import models
+# backend/apps/catalog/models.py
+# Models for product catalog, including products, categories, and inventory.
 
+from django.db import models
+from django.contrib.auth.models import User
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -41,6 +44,15 @@ class Product(TimeStampedModel):
         related_name="products",
     )
 
+    vendor = models.ForeignKey(
+    User, 
+    on_delete=models.CASCADE, 
+    related_name='products',
+    null=True,  # Temporaire pour la migration
+    blank=True,
+    verbose_name="Vendeur"
+   )
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -71,3 +83,4 @@ class Inventory(TimeStampedModel):
 
     def __str__(self):
         return f"{self.product.title} - stock={self.quantity}"
+

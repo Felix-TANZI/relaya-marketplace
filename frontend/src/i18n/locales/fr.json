@@ -56,6 +56,25 @@
     "reset_filters": "Réinitialiser les filtres",
     "load_more": "Charger plus de produits"
   },
+  "product": {
+    "loading": "Chargement du produit...",
+    "error": "Erreur de chargement",
+    "error_message": "Impossible de charger le produit. Vérifiez que le backend est démarré.",
+    "retry": "Réessayer",
+    "not_found": "Produit introuvable",
+    "back_to_catalog": "Retour au catalogue",
+    "description": "Description",
+    "specifications": "Caractéristiques",
+    "in_stock": "En stock",
+    "out_of_stock": "Rupture de stock",
+    "stock_available": "disponible",
+    "stock_available_plural": "disponibles",
+    "quantity": "Quantité",
+    "add_to_cart": "Ajouter au panier",
+    "buy_now": "Acheter maintenant",
+    "related": "Produits Similaires",
+    "category": "Catégorie"
+  },
   "cart": {
     "title": "Panier",
     "empty": "Votre panier est vide",

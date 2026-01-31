@@ -56,6 +56,25 @@
     "reset_filters": "Reset filters",
     "load_more": "Load more products"
   },
+  "product": {
+    "loading": "Loading product...",
+    "error": "Loading error",
+    "error_message": "Unable to load product. Please check that the backend is running.",
+    "retry": "Retry",
+    "not_found": "Product not found",
+    "back_to_catalog": "Back to catalog",
+    "description": "Description",
+    "specifications": "Specifications",
+    "in_stock": "In stock",
+    "out_of_stock": "Out of stock",
+    "stock_available": "available",
+    "stock_available_plural": "available",
+    "quantity": "Quantity",
+    "add_to_cart": "Add to cart",
+    "buy_now": "Buy now",
+    "related": "Related Products",
+    "category": "Category"
+  },
   "cart": {
     "title": "Cart",
     "empty": "Your cart is empty",

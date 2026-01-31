@@ -1,11 +1,11 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import ProductViewSet, CategoryViewSet
+# backend/apps/catalog/urls.py
+# URL patterns pour la gestion du catalogue de produits.
 
-router = DefaultRouter()
-router.register(r'products', ProductViewSet, basename='product')
-router.register(r'categories', CategoryViewSet, basename='category')
+from django.urls import path
+from .views import CategoryListView, ProductListView, ProductDetailView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("categories/", CategoryListView.as_view(), name="categories-list"),
+    path("products/", ProductListView.as_view(), name="products-list"),
+    path("products/<int:id>/", ProductDetailView.as_view(), name="product-detail"),
 ]

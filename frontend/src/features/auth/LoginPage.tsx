@@ -1,8 +1,12 @@
+// frontend/src/features/auth/LoginPage.tsx
+// Page de connexion pour les utilisateurs
+// Permet aux utilisateurs de se connecter à leur compte
+
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { LogIn, User, Lock } from 'lucide-react';
-import { Button} from '@/components/ui';
+import { Button } from '@/components/ui';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 
@@ -11,6 +15,52 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const { showToast } = useToast();
+
+  const extractBackendErrorMessage = (error: unknown, fallback: string): string => {
+    const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+
+    // Axios-like shape: error.response.data
+    if (isRecord(error) && 'response' in error) {
+      const response = (error as Record<string, unknown>).response;
+      if (isRecord(response) && 'data' in response) {
+        const data = (response as Record<string, unknown>).data;
+
+        if (typeof data === 'string' && data.trim().length > 0) return data;
+
+        if (isRecord(data)) {
+          const firstValue = Object.values(data)[0];
+          if (Array.isArray(firstValue) && typeof firstValue[0] === 'string') return firstValue[0];
+          if (typeof firstValue === 'string' && firstValue.trim().length > 0) return firstValue;
+        }
+      }
+    }
+
+    // Native Error: error.message (sometimes embeds JSON)
+    if (error instanceof Error) {
+      const msg = (error.message ?? '').trim();
+      if (!msg) return fallback;
+
+      if (msg.includes('{')) {
+        try {
+          const match = msg.match(/\{.*\}/);
+          if (match) {
+            const parsed = JSON.parse(match[0]) as unknown;
+            if (isRecord(parsed)) {
+              const firstValue = Object.values(parsed)[0];
+              if (Array.isArray(firstValue) && typeof firstValue[0] === 'string') return firstValue[0];
+              if (typeof firstValue === 'string' && firstValue.trim().length > 0) return firstValue;
+            }
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      return msg;
+    }
+
+    return fallback;
+  };
 
   const [formData, setFormData] = useState({
     username: '',
@@ -26,9 +76,10 @@ export default function LoginPage() {
       await login(formData.username, formData.password);
       showToast(t('auth.login_success'), 'success');
       navigate('/');
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Login error:', error);
-      showToast(t('auth.login_error'), 'error');
+      const msg = extractBackendErrorMessage(error, t('auth.login_error'));
+      showToast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -70,6 +121,9 @@ export default function LoginPage() {
                     className="w-full pl-12 pr-4 py-3 rounded-xl bg-white/5 border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                   />
                 </div>
+                <p className="text-xs text-dark-text-tertiary mt-1">
+                  Lettres, chiffres et @.+-_ seulement (pas d&apos;espaces)
+                </p>
               </div>
 
               {/* Password */}

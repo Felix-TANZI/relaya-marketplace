@@ -6,7 +6,7 @@ import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
 import { useTranslation } from "react-i18next";
 import { Outlet, Link, useLocation } from "react-router-dom";
-import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe } from "lucide-react";
+import { Search, ShoppingCart, User, Menu, X, Sun, Moon, Globe, UserCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function AppLayout() {

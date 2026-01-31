@@ -1,4 +1,4 @@
-﻿// frontend/src/app/layout/AppLayout.tsx
+﻿﻿// frontend/src/app/layout/AppLayout.tsx
 // Layout principal de l'application avec header, footer et outlet pour les pages
 
 import { useCart } from "@/context/CartContext";
@@ -106,26 +106,42 @@ export default function AppLayout() {
                 )}
               </Link>
 
-              {isAuthenticated ? (
-  <div className="flex items-center gap-2">
-    <span className="text-dark-text-secondary text-sm">
-      {user?.first_name || user?.username}
-    </span>
-    <button
-      onClick={logout}
-      className="px-4 py-2 rounded-xl glass border border-white/10 hover:border-red-500 hover:text-red-400 transition-all text-sm"
-    >
-      Déconnexion
-    </button>
-  </div>
-) : (
-  <Link to="/login">
-    <button className="ml-2 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
-      <User size={18} className="inline mr-2" />
-      {t('header.login')}
-    </button>
-  </Link>
-)}
+              {/* Desktop User Section */}
+              <div className="hidden md:flex items-center gap-4">
+                {isAuthenticated && user ? (
+                  <div className="flex items-center gap-3">
+                    {/* User Info */}
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-dark-text">
+                        {user.first_name || user.username}
+                      </p>
+                      <p className="text-xs text-dark-text-tertiary">
+                        {user.email}
+                      </p>
+                    </div>
+                    
+                    {/* Avatar */}
+                    <div className="w-10 h-10 rounded-full bg-gradient-holographic flex items-center justify-center text-white font-bold">
+                      {(user.first_name?.[0] || user.username[0]).toUpperCase()}
+                    </div>
+                    
+                    {/* Logout Button */}
+                    <button
+                      onClick={logout}
+                      className="px-4 py-2 rounded-xl glass border border-white/10 hover:border-red-500 hover:text-red-400 transition-all text-sm"
+                    >
+                      {t('auth.logout')}
+                    </button>
+                  </div>
+                ) : (
+                  <Link to="/login">
+                    <button className="px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white shadow-md hover:shadow-xl transition-all font-medium">
+                      <User size={18} className="inline mr-2" />
+                      {t('header.login')}
+                    </button>
+                  </Link>
+                )}
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -163,17 +179,43 @@ export default function AppLayout() {
               <Link to="/shops" className="block px-4 py-3 rounded-xl hover:bg-white/5 transition-colors">
                 {t('header.shops')} {/* TRADUIT */}
               </Link>
-              <div className="flex items-center gap-2 pt-2">
-                <button className="flex-1 px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-medium">
-                  {t('header.login')} {/* TRADUIT */}
-                </button>
-                <button onClick={toggleTheme} className="p-3 rounded-xl glass border border-white/10">
-                  {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
-                </button>
-                <button onClick={toggleLanguage} className="p-3 rounded-xl glass border border-white/10">
-                  <Globe size={20} />
-                </button>
-              </div>
+
+              {/* Mobile User Section */}
+              {isAuthenticated && user ? (
+                <div className="p-4 border-t border-white/10">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="w-12 h-12 rounded-full bg-gradient-holographic flex items-center justify-center text-white font-bold text-lg">
+                      {(user.first_name?.[0] || user.username[0]).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-dark-text">
+                        {user.first_name || user.username}
+                      </p>
+                      <p className="text-sm text-dark-text-tertiary">
+                        {user.email}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full px-4 py-3 rounded-xl glass border border-white/10 hover:border-red-500 hover:text-red-400 transition-all text-center"
+                  >
+                    {t('auth.logout')}
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 border-t border-white/10">
+                  <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                    <button className="w-full px-6 py-3 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-medium">
+                      <User size={18} className="inline mr-2" />
+                      {t('header.login')}
+                    </button>
+                  </Link>
+                </div>
+              )}
             </div>
           </div>
         )}

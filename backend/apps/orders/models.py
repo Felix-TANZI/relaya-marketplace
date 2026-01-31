@@ -1,4 +1,8 @@
+# backend/apps/orders/models.py
+# Modèles pour la gestion des commandes et des articles de commande.
+
 from django.db import models
+from django.contrib.auth.models import User
 from apps.catalog.models import Product
 
 
@@ -15,6 +19,9 @@ class Order(TimeStampedModel):
         PENDING_PAYMENT = "PENDING_PAYMENT", "Pending payment"
         PAID = "PAID", "Paid"
         CANCELLED = "CANCELLED", "Cancelled"
+
+    # Lien vers l'utilisateur
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="orders", null=True, blank=True)    
 
     # Customer info (v1: guest-friendly)
     customer_email = models.EmailField(blank=True, null=True)

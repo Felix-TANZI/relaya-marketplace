@@ -122,6 +122,8 @@
     "name_label": "Nom:",
     "phone_label": "Téléphone:",
     "address_label": "Adresse:",
+    "error": "Erreur lors de la création de la commande",
+    "order_number": "Numéro de commande",
     "back_home": "Retour à l'accueil"
   },
   "footer": {

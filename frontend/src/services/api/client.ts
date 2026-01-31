@@ -2,7 +2,7 @@
 // Client API pour interagir avec le backend Relaya Marketplace
 
 // Configuration du client API
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api/catalog";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -34,7 +34,9 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
   });
 
   if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+      const errorData = await response.json().catch(() => null);
+      console.error('API Error Details:', errorData);
+      throw new Error(`API Error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
   }
 
   return response.json();

@@ -8,6 +8,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, CheckCircle } from "lucide-react";
 import { Button, Card, Input } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
+import { ordersApi } from '@/services/api/orders';
+import { useToast } from '@/context/ToastContext';
 
 export default function CheckoutPage() {
   const { t, i18n } = useTranslation();
@@ -15,6 +17,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState<"info" | "payment" | "success">("info");
   const [loading, setLoading] = useState(false);
+  const { showToast } = useToast();
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -23,22 +26,52 @@ export default function CheckoutPage() {
     address: "",
     city: "Yaoundé",
     paymentMethod: "momo",
+    orderId: 0,
   });
 
   const shippingCost = 2000;
   const finalTotal = total + shippingCost;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-    // Simuler l'appel API
-    setTimeout(() => {
-      setLoading(false);
-      setStep("success");
-      clearCart();
-    }, 2000);
-  };
+  try {
+    // Préparer les données pour l'API
+    const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = {
+  'Yaoundé': 'YAOUNDE',
+  'Douala': 'DOUALA',
+  'YAOUNDE': 'YAOUNDE',
+  'DOUALA': 'DOUALA',
+};
+
+const orderData = {
+  city: cityMap[formData.city] || 'YAOUNDE',
+  address: formData.address,
+  phone: formData.phone,
+  note: '',
+  items: items.map((item) => ({
+    product_id: item.id,
+    qty: item.quantity,
+  })),
+};
+
+    // Créer la commande
+    const order = await ordersApi.create(orderData);
+
+    // Succès : vider le panier et passer à l'étape succès
+    clearCart();
+    setStep('success');
+
+    // Stocker l'ID de commande pour l'affichage
+    setFormData({ ...formData, orderId: order.id });
+  } catch (error) {
+    console.error('Erreur création commande:', error);
+    showToast(t('checkout.error'), 'error');
+  } finally {
+    setLoading(false);
+  }
+};
 
   if (items.length === 0 && step !== "success") {
     navigate("/cart");
@@ -55,6 +88,15 @@ export default function CheckoutPage() {
           <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
             {t('checkout.success_title')}
           </h1>
+          {/* Afficher le numéro de commande */}
+<div className="glass rounded-xl p-4 mb-4 inline-block">
+  <p className="text-sm text-dark-text-secondary mb-1">
+    {t('checkout.order_number')}
+  </p>
+  <p className="text-2xl font-bold text-holo-cyan">
+    #{formData.orderId}
+  </p>
+</div>
           <p className="text-dark-text-secondary mb-2">
             {t('checkout.success_message')}
           </p>

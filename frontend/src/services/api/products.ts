@@ -61,26 +61,26 @@ function cleanParams(params?: ProductListParams): Record<string, string | number
 export const productsApi = {
   // Liste des produits
   list: async (params?: ProductListParams): Promise<ProductListResponse> => {
-    return api.get<ProductListResponse>('/products/', { params: cleanParams(params) });
+    return api.get<ProductListResponse>('/catalog/products/', { params: cleanParams(params) });
   },
 
   // Détail d'un produit
   get: async (id: number): Promise<Product> => {
-    return api.get<Product>(`/products/${id}/`);
+    return api.get<Product>(`/catalog/products/${id}/`);
   },
 
   // Créer un produit (pour les vendeurs plus tard)
   create: async (data: Partial<Product>): Promise<Product> => {
-    return api.post<Product>('/products/', data);
+    return api.post<Product>('/catalog/products/', data);
   },
 
   // Mettre à jour un produit
   update: async (id: number, data: Partial<Product>): Promise<Product> => {
-    return api.put<Product>(`/products/${id}/`, data);
+    return api.put<Product>(`/catalog/products/${id}/`, data);
   },
 
   // Supprimer un produit
   delete: async (id: number): Promise<void> => {
-    return api.delete<void>(`/products/${id}/`);
+    return api.delete<void>(`/catalog/products/${id}/`);
   },
 };

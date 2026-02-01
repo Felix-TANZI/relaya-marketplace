@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Category, Product, ProductMedia, Inventory
+from .models import Category, Product, ProductMedia, Inventory, ProductImage
 
 
 @admin.register(Category)
@@ -21,6 +21,12 @@ class InventoryInline(admin.StackedInline):
     max_num = 1
 
 
+class ProductImageInline(admin.TabularInline):
+    model = ProductImage
+    extra = 1
+    fields = ['image', 'is_primary', 'order']
+
+
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ("id", "title", "slug", "price_xaf", "is_active", "category", "created_at")
@@ -28,6 +34,7 @@ class ProductAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug")
     prepopulated_fields = {"slug": ("title",)}
     inlines = [InventoryInline, ProductMediaInline]
+    inlines = [ProductImageInline]
 
 
 @admin.register(ProductMedia)

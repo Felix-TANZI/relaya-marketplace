@@ -7,6 +7,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Count, Sum, Q
+from apps.catalog.models import ProductImage
+from apps.catalog.serializers import ProductImageSerializer
 
 from .models import VendorProfile
 from .serializers import (
@@ -129,3 +131,127 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             raise PermissionError("Vous devez être vendeur pour créer des produits.")
         
         serializer.save(vendor=self.request.user)
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Upload product image",
+    request={
+        'multipart/form-data': {
+            'type': 'object',
+            'properties': {
+                'image': {'type': 'string', 'format': 'binary'},
+                'is_primary': {'type': 'boolean'},
+                'order': {'type': 'integer'},
+            }
+        }
+    },
+    responses={201: ProductImageSerializer}
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_product_image(request, product_id):
+    """Upload une image pour un produit"""
+    try:
+        # Vérifier que le produit appartient au vendeur
+        product = Product.objects.get(id=product_id, vendor=request.user)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Produit introuvable ou non autorisé.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    if 'image' not in request.FILES:
+        return Response(
+            {'detail': 'Aucune image fournie.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Créer l'image
+    image_data = {
+        'product': product.id,
+        'image': request.FILES['image'],
+        'is_primary': request.data.get('is_primary', False),
+        'order': request.data.get('order', 0),
+    }
+    
+    serializer = ProductImageSerializer(data=image_data, context={'request': request})
+    serializer.is_valid(raise_exception=True)
+    
+    # Sauvegarder avec le produit
+    product_image = ProductImage.objects.create(
+        product=product,
+        image=image_data['image'],
+        is_primary=image_data['is_primary'],
+        order=image_data['order']
+    )
+    
+    return Response(
+        ProductImageSerializer(product_image, context={'request': request}).data,
+        status=status.HTTP_201_CREATED
+    )
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Delete product image",
+    responses={204: None}
+)
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_product_image(request, product_id, image_id):
+    """Supprimer une image de produit"""
+    try:
+        product = Product.objects.get(id=product_id, vendor=request.user)
+        image = ProductImage.objects.get(id=image_id, product=product)
+    except (Product.DoesNotExist, ProductImage.DoesNotExist):
+        return Response(
+            {'detail': 'Image introuvable ou non autorisée.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Supprimer le fichier physique
+    if image.image:
+        image.image.delete()
+    
+    # Si c'était l'image principale, définir une autre comme principale
+    was_primary = image.is_primary
+    image.delete()
+    
+    if was_primary:
+        first_image = ProductImage.objects.filter(product=product).first()
+        if first_image:
+            first_image.is_primary = True
+            first_image.save()
+    
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Set product primary image",
+    responses={200: ProductImageSerializer}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def set_primary_image(request, product_id, image_id):
+    """Définir l'image principale d'un produit"""
+    try:
+        product = Product.objects.get(id=product_id, vendor=request.user)
+        image = ProductImage.objects.get(id=image_id, product=product)
+    except (Product.DoesNotExist, ProductImage.DoesNotExist):
+        return Response(
+            {'detail': 'Image introuvable ou non autorisée.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    # Retirer le flag primary de toutes les autres images
+    ProductImage.objects.filter(product=product).update(is_primary=False)
+    
+    # Définir cette image comme principale
+    image.is_primary = True
+    image.save()
+    
+    return Response(
+        ProductImageSerializer(image, context={'request': request}).data
+    )

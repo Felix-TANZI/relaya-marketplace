@@ -58,6 +58,46 @@ class Product(TimeStampedModel):
 
     def __str__(self):
         return self.title
+    
+class ProductImage(models.Model):
+    """
+    Images des produits - support multi-images
+    """
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        related_name='images',
+        verbose_name="Produit"
+    )
+    image = models.ImageField(
+        upload_to='products/%Y/%m/',
+        verbose_name="Image"
+    )
+    is_primary = models.BooleanField(
+        default=False,
+        verbose_name="Image principale"
+    )
+    order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = "Image Produit"
+        verbose_name_plural = "Images Produits"
+        ordering = ['order', '-is_primary', '-created_at']
+    
+    def __str__(self):
+        return f"Image {self.id} - {self.product.title}"
+    
+    def save(self, *args, **kwargs):
+        # Si c'est la première image, la définir comme principale
+        if self.is_primary:
+            ProductImage.objects.filter(product=self.product).update(is_primary=False)
+        elif not ProductImage.objects.filter(product=self.product).exists():
+            self.is_primary = True
+        super().save(*args, **kwargs)    
 
 
 class ProductMedia(TimeStampedModel):

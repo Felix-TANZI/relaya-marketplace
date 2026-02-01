@@ -87,7 +87,7 @@ def vendor_stats(request):
         
         # Calculer le revenu total
         total_revenue = order_items.aggregate(
-            total=Sum('total_price')
+            total=Sum('line_total_xaf')
         )['total'] or 0
         
         stats = {

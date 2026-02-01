@@ -18,6 +18,7 @@ import OrderDetailPage from "./features/orders/OrderDetailPage"; // Page de dét
 import ProfilePage from "./features/profile/ProfilePage"; // Page de profil utilisateur
 import BecomeSellerPage from "./features/vendors/BecomeSellerPage"; // Page pour devenir vendeur
 import SellerDashboardPage from "./features/vendors/SellerDashboardPage"; // Tableau de bord du vendeur
+import ProductFormPage from "./features/vendors/ProductFormPage"; // Page de formulaire de produit
 
 function App() {
   return (
@@ -35,6 +36,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <CheckoutPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Routes gestion produits vendeur */}
+          <Route
+            path="seller/products/new"
+            element={
+              <ProtectedRoute>
+                <ProductFormPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="seller/products/:id/edit"
+            element={
+              <ProtectedRoute>
+                <ProductFormPage />
               </ProtectedRoute>
             }
           />

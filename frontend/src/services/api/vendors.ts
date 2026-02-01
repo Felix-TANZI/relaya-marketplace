@@ -56,6 +56,7 @@ export const vendorsApi = {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -68,6 +69,7 @@ export const vendorsApi = {
     const token = localStorage.getItem('access_token');
     return http<VendorProfile>('/api/vendors/profile/', {
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -80,6 +82,7 @@ export const vendorsApi = {
     const token = localStorage.getItem('access_token');
     return http<VendorStats>('/api/vendors/stats/', {
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -92,6 +95,7 @@ export const vendorsApi = {
     const token = localStorage.getItem('access_token');
     return http<VendorProduct[]>('/api/vendors/products/', {
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -106,6 +110,7 @@ export const vendorsApi = {
       method: 'POST',
       body: JSON.stringify(data),
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -120,6 +125,7 @@ export const vendorsApi = {
       method: 'PATCH',
       body: JSON.stringify(data),
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });
@@ -133,6 +139,7 @@ export const vendorsApi = {
     await http<void>(`/api/vendors/products/${id}/`, {
       method: 'DELETE',
       headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });

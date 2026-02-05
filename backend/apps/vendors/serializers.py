@@ -94,14 +94,18 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             'id',
-            'order_number',
             'status',
             'customer_name',
-            'shipping_address',
-            'shipping_city',
-            'phone',
+            'customer_email',
+            'customer_phone',
+            'city',
+            'address',
+            'note',
             'items',
             'vendor_total',
+            'subtotal_xaf',
+            'delivery_fee_xaf',
+            'total_xaf',
             'created_at',
             'updated_at'
         ]

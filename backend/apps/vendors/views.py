@@ -12,11 +12,13 @@ from .models import VendorProfile
 from .serializers import (
     VendorProfileSerializer, 
     VendorApplicationSerializer,
-    VendorStatsSerializer
+    VendorStatsSerializer,
+    VendorOrderSerializer,
+    VendorOrderItemSerializer,
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
-from apps.orders.models import Order
+from apps.orders.models import Order, OrderItem
 
 
 @extend_schema(
@@ -140,6 +142,174 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             raise PermissionError("Vous devez être vendeur pour créer des produits.")
         
         serializer.save(vendor=self.request.user)
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get vendor orders",
+    parameters=[
+        OpenApiParameter(
+            name='status',
+            type=str,
+            description='Filter by order status (PENDING, PROCESSING, SHIPPED, DELIVERED, CANCELLED)',
+            required=False
+        ),
+    ],
+    responses={200: VendorOrderSerializer(many=True)}
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_orders(request):
+    """Liste des commandes contenant des produits du vendeur"""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': 'Votre compte vendeur n\'est pas encore approuvé.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Récupérer toutes les commandes contenant au moins un produit du vendeur
+        orders = Order.objects.filter(
+            items__product__vendor=request.user
+        ).distinct().order_by('-created_at')
+        
+        # Filtrer par statut si fourni
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            orders = orders.filter(status=status_filter)
+        
+        serializer = VendorOrderSerializer(
+            orders, 
+            many=True, 
+            context={'request': request, 'vendor': request.user}
+        )
+        return Response(serializer.data)
+        
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get vendor order detail",
+    responses={200: VendorOrderSerializer}
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_order_detail(request, order_id):
+    """Détail d'une commande pour le vendeur"""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': 'Votre compte vendeur n\'est pas encore approuvé.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Vérifier que la commande contient au moins un produit du vendeur
+        order = Order.objects.filter(
+            id=order_id,
+            items__product__vendor=request.user
+        ).distinct().first()
+        
+        if not order:
+            return Response(
+                {'detail': 'Commande introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        serializer = VendorOrderSerializer(
+            order,
+            context={'request': request, 'vendor': request.user}
+        )
+        return Response(serializer.data)
+        
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+# Vue pour mettre à jour le statut d'une commande (ex: passer de PENDING à SHIPPED)
+@extend_schema(
+    tags=["Vendors"],
+    summary="Update order status",
+    request={
+        'application/json': {
+            'type': 'object',
+            'properties': {
+                'status': {
+                    'type': 'string',
+                    'enum': ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
+                    'description': 'New order status'
+                }
+            },
+            'required': ['status']
+        }
+    },
+    responses={200: VendorOrderSerializer}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def update_order_status(request, order_id):
+    """Mettre à jour le statut d'une commande"""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': 'Votre compte vendeur n\'est pas encore approuvé.'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        # Vérifier que la commande contient au moins un produit du vendeur
+        order = Order.objects.filter(
+            id=order_id,
+            items__product__vendor=request.user
+        ).distinct().first()
+        
+        if not order:
+            return Response(
+                {'detail': 'Commande introuvable.'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        new_status = request.data.get('status')
+        if not new_status:
+            return Response(
+                {'detail': 'Le statut est requis.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Valider le statut
+        valid_statuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED']
+        if new_status not in valid_statuses:
+            return Response(
+                {'detail': f'Statut invalide. Valeurs possibles : {", ".join(valid_statuses)}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Mettre à jour le statut
+        order.status = new_status
+        order.save()
+        
+        serializer = VendorOrderSerializer(
+            order,
+            context={'request': request, 'vendor': request.user}
+        )
+        return Response(serializer.data)
+        
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
 
 
 @extend_schema(

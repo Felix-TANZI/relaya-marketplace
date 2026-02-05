@@ -1,105 +1,177 @@
 # backend/apps/orders/serializers.py
-# Serializers pour la gestion des commandes et des articles de commande.
+# Serializers pour les commandes avec séparation payment_status et fulfillment_status
 
 from rest_framework import serializers
-from django.db import transaction
-
-from apps.catalog.models import Product, Inventory
 from .models import Order, OrderItem
-
-
-class OrderItemCreateSerializer(serializers.Serializer):
-    product_id = serializers.IntegerField()
-    qty = serializers.IntegerField(min_value=1)
-
-
-class OrderCreateSerializer(serializers.Serializer):
-    city = serializers.ChoiceField(choices=[("YAOUNDE", "YAOUNDE"), ("DOUALA", "DOUALA")])
-    address = serializers.CharField(max_length=255)
-    phone = serializers.CharField(max_length=20)
-    note = serializers.CharField(required=False, allow_blank=True)
-
-    items = OrderItemCreateSerializer(many=True)
-
-    @transaction.atomic
-    def create(self, validated_data):
-        items_data = validated_data.pop("items")
-
-        # Calculate totals + stock checks
-        subtotal = 0
-        order_items = []
-
-        for it in items_data:
-            product = Product.objects.select_for_update().get(id=it["product_id"])
-            qty = int(it["qty"])
-
-            inv = Inventory.objects.select_for_update().get(product=product)
-            if inv.quantity < qty:
-                raise serializers.ValidationError(
-                    {"items": f"Stock insuffisant pour '{product.title}'. Stock={inv.quantity}, demandé={qty}"}
-                )
-
-            line_total = product.price_xaf * qty
-            subtotal += line_total
-            order_items.append((product, qty, line_total))
-
-        delivery_fee = 0  # v1: free (we'll add later)
-        total = subtotal + delivery_fee
-
-        # Récupérer le user depuis le contexte
-        request = self.context.get('request')
-        user = request.user if request and request.user.is_authenticated else None
-
-        order = Order.objects.create(
-            user=user,
-            customer_phone=validated_data["phone"],
-            city=validated_data["city"],
-            address=validated_data["address"],
-            note=validated_data.get("note", ""),
-            subtotal_xaf=subtotal,
-            delivery_fee_xaf=delivery_fee,
-            total_xaf=total,
-            status=Order.Status.PENDING_PAYMENT,
-        )
-
-        # Create items and decrement stock
-        for product, qty, line_total in order_items:
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                title_snapshot=product.title,
-                price_xaf_snapshot=product.price_xaf,
-                qty=qty,
-                line_total_xaf=line_total,
-            )
-            inv = Inventory.objects.select_for_update().get(product=product)
-            inv.quantity -= qty
-            inv.save(update_fields=["quantity", "updated_at"])
-
-        return order
+from apps.catalog.models import Product
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    """Serializer pour les articles d'une commande"""
+    
     class Meta:
         model = OrderItem
-        fields = ["id", "product", "title_snapshot", "price_xaf_snapshot", "qty", "line_total_xaf"]
+        fields = [
+            'id',
+            'product',
+            'title_snapshot',
+            'price_xaf_snapshot',
+            'qty',
+            'line_total_xaf'
+        ]
+        read_only_fields = ['id', 'line_total_xaf']
 
 
-class OrderDetailSerializer(serializers.ModelSerializer):
-    items = OrderItemSerializer(many=True)
-
+class OrderSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour les commandes avec les deux statuts séparés :
+    - payment_status : état du paiement
+    - fulfillment_status : état de la livraison
+    """
+    items = OrderItemSerializer(many=True, read_only=True)
+    
+    # Champs en lecture seule calculés
+    is_paid = serializers.ReadOnlyField()
+    can_be_fulfilled = serializers.ReadOnlyField()
+    
     class Meta:
         model = Order
         fields = [
-            "id",
-            "status",
-            "city",
-            "address",
-            "note",
-            "customer_phone",
-            "subtotal_xaf",
-            "delivery_fee_xaf",
-            "total_xaf",
-            "created_at",
-            "items",
+            'id',
+            'user',
+            'customer_email',
+            'customer_phone',
+            'city',
+            'address',
+            'note',
+            'payment_status',
+            'fulfillment_status',
+            'subtotal_xaf',
+            'delivery_fee_xaf',
+            'total_xaf',
+            'items',
+            'is_paid',
+            'can_be_fulfilled',
+            'created_at',
+            'updated_at'
         ]
+        read_only_fields = [
+            'id',
+            'user',
+            'subtotal_xaf',
+            'delivery_fee_xaf',
+            'total_xaf',
+            'is_paid',
+            'can_be_fulfilled',
+            'created_at',
+            'updated_at'
+        ]
+
+
+class OrderCreateSerializer(serializers.Serializer):
+    """Serializer pour créer une nouvelle commande"""
+    
+    cart_items = serializers.ListField(
+        child=serializers.DictField(),
+        min_length=1,
+        help_text="Liste des articles du panier avec product_id et qty"
+    )
+    city = serializers.ChoiceField(
+        choices=['YAOUNDE', 'DOUALA'],
+        help_text="Ville de livraison"
+    )
+    address = serializers.CharField(
+        max_length=255,
+        help_text="Adresse complète de livraison"
+    )
+    customer_phone = serializers.CharField(
+        max_length=20,
+        help_text="Numéro de téléphone du client"
+    )
+    customer_email = serializers.EmailField(
+        required=False,
+        allow_blank=True,
+        help_text="Email du client (optionnel)"
+    )
+    note = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        help_text="Note pour la livraison (optionnel)"
+    )
+
+    def validate_cart_items(self, value):
+        """Valider les articles du panier"""
+        for item in value:
+            if 'product_id' not in item or 'qty' not in item:
+                raise serializers.ValidationError(
+                    "Chaque article doit avoir 'product_id' et 'qty'"
+                )
+            
+            if not isinstance(item['qty'], int) or item['qty'] < 1:
+                raise serializers.ValidationError(
+                    "La quantité doit être un entier positif"
+                )
+        
+        return value
+
+    def create(self, validated_data):
+        """Créer une nouvelle commande"""
+        from apps.shipping.models import ShippingRate
+        
+        cart_items = validated_data.pop('cart_items')
+        user = self.context['request'].user if self.context['request'].user.is_authenticated else None
+        
+        # Calculer le sous-total
+        subtotal = 0
+        order_items_data = []
+        
+        for item in cart_items:
+            try:
+                product = Product.objects.get(id=item['product_id'])
+            except Product.DoesNotExist:
+                raise serializers.ValidationError(
+                    f"Produit {item['product_id']} introuvable"
+                )
+            
+            qty = item['qty']
+            line_total = product.price_xaf * qty
+            subtotal += line_total
+            
+            order_items_data.append({
+                'product': product,
+                'title_snapshot': product.title,
+                'price_xaf_snapshot': product.price_xaf,
+                'qty': qty,
+                'line_total_xaf': line_total
+            })
+        
+        # Calculer les frais de livraison
+        try:
+            shipping_rate = ShippingRate.objects.get(
+                city=validated_data['city'],
+                is_active=True
+            )
+            delivery_fee = shipping_rate.rate_xaf
+        except ShippingRate.DoesNotExist:
+            delivery_fee = 2000  # Frais par défaut
+        
+        # Créer la commande
+        order = Order.objects.create(
+            user=user,
+            customer_email=validated_data.get('customer_email', ''),
+            customer_phone=validated_data['customer_phone'],
+            city=validated_data['city'],
+            address=validated_data['address'],
+            note=validated_data.get('note', ''),
+            subtotal_xaf=subtotal,
+            delivery_fee_xaf=delivery_fee,
+            total_xaf=subtotal + delivery_fee,
+            payment_status=Order.PaymentStatus.PENDING,
+            fulfillment_status=Order.FulfillmentStatus.PENDING
+        )
+        
+        # Créer les articles de la commande
+        for item_data in order_items_data:
+            OrderItem.objects.create(order=order, **item_data)
+        
+        return order

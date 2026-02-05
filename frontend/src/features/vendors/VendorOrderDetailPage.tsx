@@ -1,5 +1,5 @@
 // frontend/src/features/vendors/VendorOrderDetailPage.tsx
-// Page de détail d'une commande pour le vendeur avec changement de statut
+// Page de détail d'une commande pour le vendeur avec gestion séparée des statuts
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
@@ -10,26 +10,17 @@ import {
   MapPin, 
   Phone, 
   Mail,
-  Calendar,
   DollarSign,
   AlertCircle,
-  CheckCircle
+  CheckCircle,
+  Truck,
+  CreditCard
 } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
 import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
-
-const STATUS_TRANSITIONS = {
-  'PENDING_PAYMENT': [
-    { value: 'PAID', label: 'Marquer comme payée', color: 'success' },
-    { value: 'CANCELLED', label: 'Annuler', color: 'error' },
-  ],
-  'PAID': [
-    { value: 'CANCELLED', label: 'Annuler', color: 'error' },
-  ],
-  'CANCELLED': [],
-};
+import type { PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function VendorOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -39,9 +30,9 @@ export default function VendorOrderDetailPage() {
   
   const [order, setOrder] = useState<VendorOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [updatingPayment, setUpdatingPayment] = useState(false);
+  const [updatingFulfillment, setUpdatingFulfillment] = useState(false);
 
-  // useCallback pour éviter le warning ESLint
   const loadOrder = useCallback(async (orderId: number) => {
     try {
       setLoading(true);
@@ -62,54 +53,126 @@ export default function VendorOrderDetailPage() {
     }
   }, [id, loadOrder]);
 
-  const handleStatusChange = async (newStatus: string) => {
+  const handlePaymentStatusChange = async (newStatus: PaymentStatus) => {
     if (!order) return;
 
-    // Utiliser la modale custom au lieu du confirm natif
     const confirmed = await confirm({
-      title: 'Confirmer le changement de statut',
-      message: `Voulez-vous vraiment changer le statut de cette commande vers "${getStatusLabel(newStatus)}" ?`,
-      type: newStatus === 'CANCELLED' ? 'danger' : 'success',
-      confirmText: 'OK',
+      title: 'Confirmer le changement de statut de paiement',
+      message: `Voulez-vous vraiment changer le statut de paiement vers "${getPaymentStatusLabel(newStatus)}" ?`,
+      type: 'warning',
+      confirmText: 'Confirmer',
       cancelText: 'Annuler',
     });
 
     if (!confirmed) return;
 
     try {
-      setUpdating(true);
-      const updatedOrder = await vendorsApi.updateOrderStatus(order.id, newStatus);
+      setUpdatingPayment(true);
+      const updatedOrder = await vendorsApi.updatePaymentStatus(order.id, {
+        payment_status: newStatus
+      });
       setOrder(updatedOrder);
-      showToast('Statut mis à jour avec succès', 'success');
+      showToast('Statut de paiement mis à jour avec succès', 'success');
     } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
-      showToast('Erreur lors de la mise à jour', 'error');
+      console.error('Erreur mise à jour statut paiement:', error);
+      showToast('Erreur lors de la mise à jour du statut de paiement', 'error');
     } finally {
-      setUpdating(false);
+      setUpdatingPayment(false);
     }
   };
 
-  const getStatusLabel = (status: string): string => {
+  const handleFulfillmentStatusChange = async (newStatus: FulfillmentStatus) => {
+    if (!order) return;
+
+    if (!order.is_paid && newStatus !== 'CANCELLED') {
+      showToast('La commande doit être payée avant de pouvoir être traitée', 'error');
+      return;
+    }
+
+    const confirmed = await confirm({
+      title: 'Confirmer le changement de statut de livraison',
+      message: `Voulez-vous vraiment changer le statut de livraison vers "${getFulfillmentStatusLabel(newStatus)}" ?`,
+      type: newStatus === 'CANCELLED' ? 'danger' : 'success',
+      confirmText: 'Confirmer',
+      cancelText: 'Annuler',
+    });
+
+    if (!confirmed) return;
+
+    try {
+      setUpdatingFulfillment(true);
+      const updatedOrder = await vendorsApi.updateFulfillmentStatus(order.id, {
+        fulfillment_status: newStatus
+      });
+      setOrder(updatedOrder);
+      showToast('Statut de livraison mis à jour avec succès', 'success');
+    } catch (error) {
+      console.error('Erreur mise à jour statut livraison:', error);
+      showToast('Erreur lors de la mise à jour du statut de livraison', 'error');
+    } finally {
+      setUpdatingFulfillment(false);
+    }
+  };
+
+  const getPaymentStatusLabel = (status: PaymentStatus): string => {
     switch (status) {
-      case 'PENDING_PAYMENT':
-        return 'En attente paiement';
+      case 'PENDING':
+        return 'En attente';
       case 'PAID':
-        return 'Payée';
-      case 'CANCELLED':
-        return 'Annulée';
+        return 'Payé';
+      case 'FAILED':
+        return 'Échec';
+      case 'REFUNDED':
+        return 'Remboursé';
       default:
         return status;
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
-      case 'PENDING_PAYMENT':
-        return { variant: 'warning' as const, text: 'En attente paiement' };
+      case 'PENDING':
+        return { variant: 'warning' as const, text: 'En attente' };
       case 'PAID':
-        return { variant: 'success' as const, text: 'Payée' };
+        return { variant: 'success' as const, text: 'Payé' };
+      case 'FAILED':
+        return { variant: 'error' as const, text: 'Échec' };
+      case 'REFUNDED':
+        return { variant: 'default' as const, text: 'Remboursé' };
+      default:
+        return { variant: 'default' as const, text: status };
+    }
+  };
+
+  const getFulfillmentStatusLabel = (status: FulfillmentStatus): string => {
+    switch (status) {
+      case 'PENDING':
+        return 'En attente';
+      case 'PROCESSING':
+        return 'En préparation';
+      case 'SHIPPED':
+        return 'Expédié';
+      case 'DELIVERED':
+        return 'Livré';
       case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulée' };
+        return 'Annulé';
+      default:
+        return status;
+    }
+  };
+
+  const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return { variant: 'warning' as const, text: 'En attente' };
+      case 'PROCESSING':
+        return { variant: 'default' as const, text: 'En préparation' };
+      case 'SHIPPED':
+        return { variant: 'success' as const, text: 'Expédié' };
+      case 'DELIVERED':
+        return { variant: 'success' as const, text: 'Livré' };
+      case 'CANCELLED':
+        return { variant: 'error' as const, text: 'Annulé' };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -150,7 +213,8 @@ export default function VendorOrderDetailPage() {
             Cette commande n'existe pas ou ne contient pas vos produits.
           </p>
           <Link to="/seller/orders">
-            <Button variant="gradient">
+            <Button variant="secondary">
+              <ArrowLeft size={20} className="mr-2" />
               Retour aux commandes
             </Button>
           </Link>
@@ -159,119 +223,182 @@ export default function VendorOrderDetailPage() {
     );
   }
 
-  const statusBadge = getStatusBadge(order.status);
-  const availableActions = STATUS_TRANSITIONS[order.status as keyof typeof STATUS_TRANSITIONS] || [];
+  const paymentBadge = getPaymentStatusBadge(order.payment_status);
+  const fulfillmentBadge = getFulfillmentStatusBadge(order.fulfillment_status);
 
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Link 
-            to="/seller/orders"
-            className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-4"
-          >
-            <ArrowLeft size={20} />
-            Retour aux commandes
+          <Link to="/seller/orders">
+            <Button variant="secondary" className="mb-4">
+              <ArrowLeft size={20} className="mr-2" />
+              Retour aux commandes
+            </Button>
           </Link>
           
-          <div className="flex items-start justify-between">
+          <div className="flex items-center justify-between">
             <div>
-              <h1 className="font-display font-bold text-4xl mb-2">
-                <span className="text-gradient bg-gradient-holographic bg-clip-text text-transparent">
-                  Commande #{order.id}
-                </span>
+              <h1 className="font-display font-bold text-3xl mb-2">
+                Commande <span className="text-gradient">#{order.id}</span>
               </h1>
-              <div className="flex items-center gap-3">
-                <Badge variant={statusBadge.variant} className="text-sm">
-                  {statusBadge.text}
-                </Badge>
-                <span className="text-dark-text-tertiary text-sm">
-                  <Calendar size={14} className="inline mr-1" />
-                  {formatDate(order.created_at)}
-                </span>
-              </div>
+              <p className="text-dark-text-secondary">
+                Passée le {formatDate(order.created_at)}
+              </p>
             </div>
-
-            {/* Actions statut */}
-            {availableActions.length > 0 && (
-              <div className="flex gap-2">
-                {availableActions.map((action) => (
-                  <Button
-                    key={action.value}
-                    variant={action.color === 'success' ? 'gradient' : 'secondary'}
-                    onClick={() => handleStatusChange(action.value)}
-                    disabled={updating}
-                    size="sm"
-                  >
-                    {updating ? (
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <CheckCircle size={18} />
-                    )}
-                    {action.label}
-                  </Button>
-                ))}
-              </div>
-            )}
+            
+            <div className="flex flex-col gap-2">
+              <Badge variant={paymentBadge.variant}>
+                <CreditCard size={16} className="mr-1" />
+                {paymentBadge.text}
+              </Badge>
+              <Badge variant={fulfillmentBadge.variant}>
+                <Truck size={16} className="mr-1" />
+                {fulfillmentBadge.text}
+              </Badge>
+            </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Produits */}
+            {/* Articles */}
             <Card>
-              <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
-                <Package size={24} className="inline mr-2 text-holo-cyan" />
-                Vos produits
-              </h2>
+              <div className="flex items-center gap-3 mb-6">
+                <Package className="text-holo-cyan" size={24} />
+                <h2 className="font-display font-bold text-xl">Articles commandés</h2>
+              </div>
+
               <div className="space-y-4">
                 {order.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center gap-4 p-4 glass rounded-xl border border-white/10"
+                    className="flex items-center gap-4 p-4 rounded-lg bg-dark-accent/30"
                   >
-                    {/* Image */}
-                    {item.product_image ? (
-                      <img
-                        src={item.product_image}
-                        alt={item.product_title}
-                        className="w-16 h-16 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="w-16 h-16 rounded-lg bg-dark-bg-secondary flex items-center justify-center">
-                        <Package size={24} className="text-dark-text-tertiary" />
-                      </div>
-                    )}
-
-                    {/* Info */}
                     <div className="flex-1">
-                      <h3 className="font-semibold text-dark-text">
-                        {item.title_snapshot}
-                      </h3>
+                      <p className="font-medium text-dark-text mb-1">
+                        {item.product_title}
+                      </p>
                       <p className="text-sm text-dark-text-secondary">
-                        {formatPrice(item.price_xaf_snapshot)} × {item.qty}
+                        {formatPrice(item.product_price)} × {item.qty}
                       </p>
                     </div>
-
-                    {/* Total */}
-                    <div className="text-right">
-                      <p className="font-bold text-dark-text">
-                        {formatPrice(item.line_total_xaf)}
-                      </p>
-                    </div>
+                    <p className="font-semibold text-holo-cyan">
+                      {formatPrice(item.line_total_xaf)}
+                    </p>
                   </div>
                 ))}
               </div>
+            </Card>
 
-              {/* Total vendeur */}
-              <div className="mt-6 pt-6 border-t border-white/10">
-                <div className="flex justify-between items-center">
-                  <span className="text-dark-text-secondary">Votre total :</span>
-                  <span className="font-bold text-2xl text-holo-cyan">
-                    {formatPrice(order.vendor_total)}
-                  </span>
+            {/* Actions de paiement */}
+            <Card>
+              <div className="flex items-center gap-3 mb-6">
+                <CreditCard className="text-holo-purple" size={24} />
+                <h2 className="font-display font-bold text-xl">Gestion du paiement</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-text-secondary">Statut actuel :</span>
+                  <Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>
+                </div>
+
+                {order.payment_status === 'PENDING' && (
+                  <Button
+                    variant="primary"
+                    onClick={() => handlePaymentStatusChange('PAID')}
+                    disabled={updatingPayment}
+                    className="w-full"
+                  >
+                    {updatingPayment ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                        Mise à jour...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle size={20} className="mr-2" />
+                        Marquer comme payé
+                      </>
+                    )}
+                  </Button>
+                )}
+
+                <p className="text-xs text-dark-text-secondary">
+                  ℹ️ Le statut de paiement est normalement géré automatiquement par le système de paiement.
+                  Cette action manuelle est utile pour les paiements en espèces à la livraison.
+                </p>
+              </div>
+            </Card>
+
+            {/* Actions de livraison */}
+            <Card>
+              <div className="flex items-center gap-3 mb-6">
+                <Truck className="text-holo-cyan" size={24} />
+                <h2 className="font-display font-bold text-xl">Gestion de la livraison</h2>
+              </div>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-dark-text-secondary">Statut actuel :</span>
+                  <Badge variant={fulfillmentBadge.variant}>{fulfillmentBadge.text}</Badge>
+                </div>
+
+                {!order.is_paid && order.fulfillment_status !== 'CANCELLED' && (
+                  <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
+                    <p className="text-sm text-yellow-400">
+                      ⚠️ La commande doit être payée avant de pouvoir être traitée
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  {order.fulfillment_status === 'PENDING' && order.is_paid && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleFulfillmentStatusChange('PROCESSING')}
+                      disabled={updatingFulfillment}
+                      className="col-span-2"
+                    >
+                      Prendre en charge
+                    </Button>
+                  )}
+
+                  {order.fulfillment_status === 'PROCESSING' && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleFulfillmentStatusChange('SHIPPED')}
+                      disabled={updatingFulfillment}
+                      className="col-span-2"
+                    >
+                      Marquer comme expédié
+                    </Button>
+                  )}
+
+                  {order.fulfillment_status === 'SHIPPED' && (
+                    <Button
+                      variant="primary"
+                      onClick={() => handleFulfillmentStatusChange('DELIVERED')}
+                      disabled={updatingFulfillment}
+                      className="col-span-2"
+                    >
+                      Marquer comme livré
+                    </Button>
+                  )}
+
+                  {order.fulfillment_status !== 'CANCELLED' && order.fulfillment_status !== 'DELIVERED' && (
+                    <Button
+                      variant="secondary"
+                      onClick={() => handleFulfillmentStatusChange('CANCELLED')}
+                      disabled={updatingFulfillment}
+                      className="col-span-2"
+                    >
+                      Annuler
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>
@@ -279,80 +406,66 @@ export default function VendorOrderDetailPage() {
 
           {/* Colonne latérale */}
           <div className="space-y-6">
-            {/* Infos client */}
+            {/* Informations client */}
             <Card>
-              <h3 className="font-display font-bold text-lg text-dark-text mb-4">
-                <User size={20} className="inline mr-2 text-holo-purple" />
-                Client
-              </h3>
+              <div className="flex items-center gap-3 mb-4">
+                <User className="text-holo-purple" size={20} />
+                <h3 className="font-display font-bold">Client</h3>
+              </div>
+              
               <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-dark-text-tertiary mb-1">Nom</p>
-                  <p className="text-dark-text font-medium">{order.customer_name}</p>
-                </div>
-                <div>
-                  <p className="text-dark-text-tertiary mb-1">
-                    <Phone size={14} className="inline mr-1" />
-                    Téléphone
-                  </p>
-                  <p className="text-dark-text font-medium">{order.customer_phone}</p>
-                </div>
                 {order.customer_email && (
-                  <div>
-                    <p className="text-dark-text-tertiary mb-1">
-                      <Mail size={14} className="inline mr-1" />
-                      Email
-                    </p>
-                    <p className="text-dark-text font-medium break-all">
-                      {order.customer_email}
-                    </p>
+                  <div className="flex items-center gap-2">
+                    <Mail size={16} className="text-dark-text-secondary" />
+                    <span>{order.customer_email}</span>
                   </div>
                 )}
+                <div className="flex items-center gap-2">
+                  <Phone size={16} className="text-dark-text-secondary" />
+                  <span>{order.customer_phone}</span>
+                </div>
               </div>
             </Card>
 
-            {/* Livraison */}
+            {/* Informations de livraison */}
             <Card>
-              <h3 className="font-display font-bold text-lg text-dark-text mb-4">
-                <MapPin size={20} className="inline mr-2 text-holo-pink" />
-                Livraison
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-dark-text-tertiary mb-1">Ville</p>
-                  <p className="text-dark-text font-medium">{order.city}</p>
-                </div>
-                <div>
-                  <p className="text-dark-text-tertiary mb-1">Adresse</p>
-                  <p className="text-dark-text font-medium">{order.address}</p>
-                </div>
-                {order.note && (
-                  <div>
-                    <p className="text-dark-text-tertiary mb-1">Note</p>
-                    <p className="text-dark-text italic">{order.note}</p>
-                  </div>
-                )}
+              <div className="flex items-center gap-3 mb-4">
+                <MapPin className="text-holo-cyan" size={20} />
+                <h3 className="font-display font-bold">Livraison</h3>
               </div>
-            </Card>
-
-            {/* Total commande */}
-            <Card>
-              <h3 className="font-display font-bold text-lg text-dark-text mb-4">
-                <DollarSign size={20} className="inline mr-2 text-green-400" />
-                Total commande
-              </h3>
+              
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <p className="font-medium">{order.city}</p>
+                <p className="text-dark-text-secondary">{order.address}</p>
+                {order.note && (
+                  <div className="mt-3 p-2 rounded bg-dark-accent/30">
+                    <p className="text-xs text-dark-text-secondary">Note :</p>
+                    <p className="text-sm">{order.note}</p>
+                  </div>
+                )}
+              </div>
+            </Card>
+
+            {/* Résumé financier */}
+            <Card>
+              <div className="flex items-center gap-3 mb-4">
+                <DollarSign className="text-holo-cyan" size={20} />
+                <h3 className="font-display font-bold">Résumé</h3>
+              </div>
+              
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
                   <span className="text-dark-text-secondary">Sous-total</span>
-                  <span className="text-dark-text">{formatPrice(order.subtotal_xaf)}</span>
+                  <span>{formatPrice(order.subtotal_xaf)}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-dark-text-secondary">Frais de livraison</span>
-                  <span className="text-dark-text">{formatPrice(order.delivery_fee_xaf)}</span>
+                <div className="flex justify-between text-sm">
+                  <span className="text-dark-text-secondary">Livraison</span>
+                  <span>{formatPrice(order.delivery_fee_xaf)}</span>
                 </div>
-                <div className="flex justify-between pt-2 border-t border-white/10">
-                  <span className="font-bold text-dark-text">Total</span>
-                  <span className="font-bold text-dark-text">{formatPrice(order.total_xaf)}</span>
+                <div className="h-px bg-dark-accent/50" />
+                <div className="flex justify-between font-bold text-lg">
+                  <span>Total</span>
+                  <span className="text-holo-cyan">{formatPrice(order.total_xaf)}</span>
                 </div>
               </div>
             </Card>

@@ -52,6 +52,7 @@ export interface VendorOrderItem {
   product: number;
   product_title: string;
   product_image: string | null;
+  product_price: number; // ← AJOUTÉ
   title_snapshot: string;
   qty: number;
   price_xaf_snapshot: number;
@@ -62,6 +63,10 @@ export interface VendorOrderItem {
 export interface VendorOrder {
   id: number;
   status: string;
+  payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED'; // ← AJOUTÉ
+  fulfillment_status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'; // ← AJOUTÉ
+  is_paid: boolean; // ← AJOUTÉ
+  can_be_fulfilled: boolean; // ← AJOUTÉ
   customer_name: string;
   customer_email: string | null;
   customer_phone: string;
@@ -75,6 +80,12 @@ export interface VendorOrder {
   total_xaf: number;
   created_at: string;
   updated_at: string;
+}
+
+// ← AJOUTÉ : Interface pour les filtres
+export interface VendorOrderFilters {
+  payment_status?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  fulfillment_status?: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
 }
 
 export interface ProductImage {
@@ -249,11 +260,23 @@ export const vendorsApi = {
 
   /**
    * Récupérer les commandes du vendeur
+   * ← MODIFIÉ : accepte maintenant VendorOrderFilters au lieu de status
    */
-  getOrders: async (status?: string): Promise<VendorOrder[]> => {
+  getOrders: async (filters?: VendorOrderFilters): Promise<VendorOrder[]> => {
     const token = localStorage.getItem('access_token');
-    const params = status ? `?status=${status}` : '';
-    return http<VendorOrder[]>(`/api/vendors/orders/${params}`, {
+    
+    const params = new URLSearchParams();
+    if (filters?.payment_status) {
+      params.append('payment_status', filters.payment_status);
+    }
+    if (filters?.fulfillment_status) {
+      params.append('fulfillment_status', filters.fulfillment_status);
+    }
+    
+    const queryString = params.toString();
+    const url = `/api/vendors/orders/${queryString ? `?${queryString}` : ''}`;
+    
+    return http<VendorOrder[]>(url, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
@@ -280,6 +303,38 @@ export const vendorsApi = {
     return http<VendorOrder>(`/api/vendors/orders/${orderId}/status/`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // ← AJOUTÉ : Mettre à jour le statut de paiement
+  updatePaymentStatus: async (
+    orderId: number,
+    data: { payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED' }
+  ): Promise<VendorOrder> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrder>(`/api/vendors/orders/${orderId}/payment-status/`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // ← AJOUTÉ : Mettre à jour le statut de livraison
+  updateFulfillmentStatus: async (
+    orderId: number,
+    data: { fulfillment_status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' }
+  ): Promise<VendorOrder> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrder>(`/api/vendors/orders/${orderId}/fulfillment-status/`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,

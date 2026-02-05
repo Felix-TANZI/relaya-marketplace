@@ -1,36 +1,31 @@
 // frontend/src/features/vendors/VendorOrdersPage.tsx
-// Page de gestion des commandes pour les vendeurs
+// Page de gestion des commandes pour les vendeurs avec filtres de statuts
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Package, Eye, Filter, ChevronDown } from 'lucide-react';
+import { Package, Eye, Filter, CreditCard, Truck } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
-import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
+import { vendorsApi, type VendorOrder, type VendorOrderFilters } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
-
-const STATUS_OPTIONS = [
-  { value: '', label: 'Toutes' },
-  { value: 'PENDING_PAYMENT', label: 'En attente paiement' },
-  { value: 'PAID', label: 'Payée' },
-  { value: 'CANCELLED', label: 'Annulée' },
-];
+import type { PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function VendorOrdersPage() {
   const { showToast } = useToast();
   
   const [orders, setOrders] = useState<VendorOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState('');
+  const [filters, setFilters] = useState<VendorOrderFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [statusFilter]);
+  }, [filters]);
 
   const loadOrders = async () => {
     try {
       setLoading(true);
-      const data = await vendorsApi.getOrders(statusFilter || undefined);
+      const data = await vendorsApi.getOrders(filters);
       setOrders(data);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
@@ -40,14 +35,51 @@ export default function VendorOrdersPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
+  const handlePaymentFilterChange = (status: PaymentStatus | '') => {
+    setFilters((prev: VendorOrderFilters) => ({
+      ...prev,
+      payment_status: status || undefined
+    }));
+  };
+
+  const handleFulfillmentFilterChange = (status: FulfillmentStatus | '') => {
+    setFilters((prev: VendorOrderFilters) => ({
+      ...prev,
+      fulfillment_status: status || undefined
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({});
+  };
+
+  const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
-      case 'PENDING_PAYMENT':
+      case 'PENDING':
         return { variant: 'warning' as const, text: 'En attente' };
       case 'PAID':
-        return { variant: 'success' as const, text: 'Payée' };
+        return { variant: 'success' as const, text: 'Payé' };
+      case 'FAILED':
+        return { variant: 'error' as const, text: 'Échec' };
+      case 'REFUNDED':
+        return { variant: 'default' as const, text: 'Remboursé' };
+      default:
+        return { variant: 'default' as const, text: status };
+    }
+  };
+
+  const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
+    switch (status) {
+      case 'PENDING':
+        return { variant: 'warning' as const, text: 'En attente' };
+      case 'PROCESSING':
+        return { variant: 'default' as const, text: 'En préparation' };
+      case 'SHIPPED':
+        return { variant: 'success' as const, text: 'Expédié' };
+      case 'DELIVERED':
+        return { variant: 'success' as const, text: 'Livré' };
       case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulée' };
+        return { variant: 'error' as const, text: 'Annulé' };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -63,6 +95,10 @@ export default function VendorOrdersPage() {
     });
   };
 
+  const formatPrice = (price: number) => {
+    return `${price.toLocaleString('fr-FR')} XAF`;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
@@ -74,6 +110,8 @@ export default function VendorOrdersPage() {
     );
   }
 
+  const activeFilterCount = Object.values(filters).filter(Boolean).length;
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4">
@@ -84,118 +122,144 @@ export default function VendorOrdersPage() {
               <span className="text-gradient animate-gradient-bg">Mes Commandes</span>
             </h1>
             <p className="text-dark-text-secondary">
-              Gérez vos commandes et leurs statuts
+              Gérez vos commandes et leur statut de livraison
             </p>
           </div>
-          <Link to="/seller/dashboard">
-            <Button variant="secondary">
-              Retour au dashboard
-            </Button>
-          </Link>
+
+          <Button
+            variant="secondary"
+            onClick={() => setShowFilters(!showFilters)}
+            className="relative"
+          >
+            <Filter size={20} className="mr-2" />
+            Filtres
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-cyan text-dark-bg text-xs flex items-center justify-center font-bold">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
         </div>
 
         {/* Filtres */}
-        <Card className="mb-6">
-          <div className="flex items-center gap-4">
-            <Filter className="text-dark-text-tertiary" size={20} />
-            <div className="relative flex-1">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="appearance-none glass border border-white/10 rounded-xl px-4 py-3 pr-10 text-dark-text outline-none cursor-pointer hover:border-white/20 transition-all w-full md:w-64"
-              >
-                {STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-dark-text-tertiary pointer-events-none" size={18} />
+        {showFilters && (
+          <Card className="mb-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Filtre statut de paiement */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <CreditCard size={16} className="text-holo-purple" />
+                  Statut de paiement
+                </label>
+                <select
+                  value={filters.payment_status || ''}
+                  onChange={(e) => handlePaymentFilterChange(e.target.value as PaymentStatus | '')}
+                  className="w-full px-4 py-2 rounded-lg bg-dark-accent text-dark-text border border-dark-accent focus:border-holo-cyan focus:outline-none"
+                >
+                  <option value="">Tous</option>
+                  <option value="PENDING">En attente</option>
+                  <option value="PAID">Payé</option>
+                  <option value="FAILED">Échec</option>
+                  <option value="REFUNDED">Remboursé</option>
+                </select>
+              </div>
+
+              {/* Filtre statut de livraison */}
+              <div>
+                <label className="flex items-center gap-2 text-sm font-medium mb-3">
+                  <Truck size={16} className="text-holo-cyan" />
+                  Statut de livraison
+                </label>
+                <select
+                  value={filters.fulfillment_status || ''}
+                  onChange={(e) => handleFulfillmentFilterChange(e.target.value as FulfillmentStatus | '')}
+                  className="w-full px-4 py-2 rounded-lg bg-dark-accent text-dark-text border border-dark-accent focus:border-holo-cyan focus:outline-none"
+                >
+                  <option value="">Tous</option>
+                  <option value="PENDING">En attente</option>
+                  <option value="PROCESSING">En préparation</option>
+                  <option value="SHIPPED">Expédié</option>
+                  <option value="DELIVERED">Livré</option>
+                  <option value="CANCELLED">Annulé</option>
+                </select>
+              </div>
             </div>
-            <p className="text-dark-text-secondary text-sm">
-              {orders.length} commande{orders.length > 1 ? 's' : ''}
-            </p>
-          </div>
-        </Card>
+
+            {activeFilterCount > 0 && (
+              <div className="mt-4 pt-4 border-t border-dark-accent/50">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={clearFilters}
+                >
+                  Réinitialiser les filtres
+                </Button>
+              </div>
+            )}
+          </Card>
+        )}
 
         {/* Liste des commandes */}
         {orders.length === 0 ? (
           <Card className="text-center py-12">
-            <Package className="text-dark-text-tertiary mx-auto mb-4" size={48} />
-            <p className="text-dark-text-secondary mb-2">Aucune commande pour le moment</p>
-            <p className="text-dark-text-tertiary text-sm">
-              Les commandes contenant vos produits apparaîtront ici
+            <Package className="text-dark-text-secondary mx-auto mb-4" size={48} />
+            <h2 className="font-bold text-xl text-dark-text mb-2">
+              Aucune commande
+            </h2>
+            <p className="text-dark-text-secondary">
+              {activeFilterCount > 0
+                ? 'Aucune commande ne correspond aux filtres sélectionnés'
+                : 'Vous n\'avez pas encore reçu de commandes'}
             </p>
           </Card>
         ) : (
           <div className="space-y-4">
             {orders.map((order) => {
-              const statusBadge = getStatusBadge(order.status);
+              const paymentBadge = getPaymentStatusBadge(order.payment_status);
+              const fulfillmentBadge = getFulfillmentStatusBadge(order.fulfillment_status);
+
               return (
-                <Card key={order.id} className="hover:border-holo-cyan transition-all">
-                  <div className="flex items-start justify-between">
+                <Card key={order.id} className="hover:border-holo-cyan/50 transition-colors">
+                  <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                    {/* Informations de base */}
                     <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
-                        <h3 className="font-display font-semibold text-xl text-dark-text">
-                          Commande #{order.id}
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-display font-bold text-xl">
+                          Commande <span className="text-holo-cyan">#{order.id}</span>
                         </h3>
-                        <Badge variant={statusBadge.variant}>
-                          {statusBadge.text}
-                        </Badge>
-                      </div>
-
-                      {/* Infos client */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <p className="text-sm text-dark-text-tertiary mb-1">Client</p>
-                          <p className="text-dark-text font-medium">{order.customer_name}</p>
-                          <p className="text-sm text-dark-text-secondary">{order.customer_phone}</p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-dark-text-tertiary mb-1">Livraison</p>
-                          <p className="text-dark-text">{order.city}</p>
-                          <p className="text-sm text-dark-text-secondary">{order.address}</p>
+                        <div className="flex gap-2">
+                          <Badge variant={paymentBadge.variant}>
+                            <CreditCard size={14} className="mr-1" />
+                            {paymentBadge.text}
+                          </Badge>
+                          <Badge variant={fulfillmentBadge.variant}>
+                            <Truck size={14} className="mr-1" />
+                            {fulfillmentBadge.text}
+                          </Badge>
                         </div>
                       </div>
 
-                      {/* Items */}
-                      <div className="mb-4">
-                        <p className="text-sm text-dark-text-tertiary mb-2">
-                          Vos produits ({order.items.length})
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {order.items.map((item) => (
-                            <div
-                              key={item.id}
-                              className="glass border border-white/10 rounded-lg px-3 py-2 text-sm"
-                            >
-                              <span className="text-dark-text">{item.product_title}</span>
-                              <span className="text-dark-text-tertiary"> × {item.qty}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Total */}
-                      <div className="flex items-center justify-between pt-4 border-t border-white/10">
-                        <div className="text-sm text-dark-text-secondary">
-                          {formatDate(order.created_at)}
-                        </div>
-                        <div>
-                          <span className="text-sm text-dark-text-tertiary mr-2">Votre total :</span>
-                          <span className="font-display font-bold text-xl text-gradient animate-gradient-bg">
-                            {order.vendor_total.toLocaleString()} XAF
-                          </span>
-                        </div>
+                      <div className="flex flex-wrap gap-4 text-sm text-dark-text-secondary">
+                        <span>{formatDate(order.created_at)}</span>
+                        <span>•</span>
+                        <span>{order.items.length} article(s)</span>
+                        <span>•</span>
+                        <span>{order.city}</span>
                       </div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="ml-6">
+                    {/* Prix et action */}
+                    <div className="flex items-center gap-4">
+                      <div className="text-right">
+                        <p className="text-2xl font-bold text-holo-cyan">
+                          {formatPrice(order.total_xaf)}
+                        </p>
+                      </div>
+                      
                       <Link to={`/seller/orders/${order.id}`}>
-                        <Button variant="secondary" size="sm">
-                          <Eye size={18} />
-                          Détails
+                        <Button variant="primary">
+                          <Eye size={20} className="mr-2" />
+                          Voir détails
                         </Button>
                       </Link>
                     </div>

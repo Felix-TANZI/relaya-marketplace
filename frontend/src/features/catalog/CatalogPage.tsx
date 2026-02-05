@@ -108,6 +108,7 @@ export default function CatalogPage() {
     id: product.id,
     name: product.title,
     price: product.price_xaf,
+    images: product.images,
     image: product.media?.find((m) => m.sort_order === 0)?.url,
     category: product.category?.name,
     rating: 4.5,

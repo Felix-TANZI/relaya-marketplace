@@ -10,6 +10,14 @@ export interface ProductMedia {
   sort_order: number;
 }
 
+export interface ProductImage {
+  id: number;
+  image_url: string;
+  is_primary: boolean;
+  order: number;
+  created_at: string;
+}
+
 export interface Category {
   id: number;
   name: string;

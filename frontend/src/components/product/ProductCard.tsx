@@ -1,7 +1,7 @@
 ﻿// frontend/src/components/product/ProductCard.tsx
 // Composant carte produit avec support images
 
-import { Heart, ShoppingCart, Star, Package } from "lucide-react";
+import { Heart, ShoppingCart, Star } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Card, Badge } from "@/components/ui";
@@ -35,8 +35,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
 
-  const finalPrice = product.discount 
-    ? product.price - (product.price * product.discount / 100)
+  const finalPrice = product.discount
+    ? product.price - (product.price * product.discount) / 100
     : product.price;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -46,33 +46,38 @@ export default function ProductCard({ product }: ProductCardProps) {
       name: product.name,
       price: finalPrice,
       quantity: 1,
-      image: product.images?.find(img => img.is_primary)?.image_url || product.images?.[0]?.image_url || product.image,
+      image:
+        product.images?.find((img) => img.is_primary)?.image_url ||
+        product.images?.[0]?.image_url ||
+        product.image,
     });
   };
 
-  // Obtenir l'image à afficher (priorité: image principale des images uploadées, sinon première image, sinon image legacy)
-  const displayImage = product.images?.find(img => img.is_primary)?.image_url 
-    || product.images?.[0]?.image_url 
-    || product.image;
-
   return (
-    <Link to={`/product/${product.id}`}> 
+    <Link to={`/product/${product.id}`}>
       <Card variant="default" hover className="group overflow-hidden p-0">
         {/* Image */}
         <div className="relative aspect-square overflow-hidden bg-dark-bg-tertiary">
-          {!imageError && displayImage ? (
-            <img
-              src={displayImage}
-              alt={product.name}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-              onError={() => setImageError(true)}
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center">
-              <Package className="text-dark-text-tertiary" size={48} />
-            </div>
-          )}
-          
+          {(() => {
+            const displayImage =
+              product.images?.find((img) => img.is_primary)?.image_url ||
+              product.images?.[0]?.image_url ||
+              product.image;
+
+            return !imageError && displayImage ? (
+              <img
+                src={displayImage}
+                alt={product.name}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center">
+                <ShoppingCart className="text-dark-text-tertiary" size={48} />
+              </div>
+            );
+          })()}
+
           {/* Badges */}
           <div className="absolute top-3 left-3 flex flex-col gap-2">
             {product.isNew && <Badge variant="cyan">Nouveau</Badge>}
@@ -91,13 +96,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             className="absolute top-3 right-3 p-2 rounded-full glass border border-white/10 hover:border-holo-pink hover-glow-pink transition-all opacity-0 group-hover:opacity-100"
           >
             <Heart
-              className={isFavorite ? "text-holo-pink fill-holo-pink" : "text-white"}
+              className={
+                isFavorite ? "text-holo-pink fill-holo-pink" : "text-white"
+              }
               size={18}
             />
           </button>
 
           {/* Quick Add to Cart */}
-          <button 
+          <button
             onClick={handleAddToCart}
             disabled={!product.inStock}
             className="absolute bottom-3 left-3 right-3 px-4 py-2 rounded-lg bg-gradient-holographic animate-gradient-bg text-white font-medium opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0 hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
@@ -156,6 +163,6 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         </div>
       </Card>
-    </Link>  
+    </Link>
   );
 }

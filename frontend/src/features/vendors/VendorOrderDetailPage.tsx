@@ -1,100 +1,103 @@
 // frontend/src/features/vendors/VendorOrderDetailPage.tsx
 // Page de détail d'une commande pour le vendeur avec changement de statut
 
-import { useEffect, useState } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  MapPin, 
-  Phone, 
+import { useEffect, useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Package,
+  User,
+  MapPin,
+  Phone,
   Mail,
   Calendar,
   DollarSign,
   AlertCircle,
-  CheckCircle
-} from 'lucide-react';
-import { Button, Card, Badge } from '@/components/ui';
-import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
-import { useToast } from '@/context/ToastContext';
+  CheckCircle,
+} from "lucide-react";
+import { Button, Card, Badge } from "@/components/ui";
+import { vendorsApi, type VendorOrder } from "@/services/api/vendors";
+import { useToast } from "@/context/ToastContext";
+import { useConfirm } from "@/context/ConfirmContext";
+import { useCallback } from "react";
 
 const STATUS_TRANSITIONS = {
-  'PENDING_PAYMENT': [
-    { value: 'PAID', label: 'Marquer comme payée', color: 'success' },
-    { value: 'CANCELLED', label: 'Annuler', color: 'error' },
+  PENDING_PAYMENT: [
+    { value: "PAID", label: "Marquer comme payée", color: "success" },
+    { value: "CANCELLED", label: "Annuler", color: "error" },
   ],
-  'PAID': [
-    { value: 'CANCELLED', label: 'Annuler', color: 'error' },
-  ],
-  'CANCELLED': [],
+  PAID: [{ value: "CANCELLED", label: "Annuler", color: "error" }],
+  CANCELLED: [],
 };
 
 export default function VendorOrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
-  
+  const { confirm } = useConfirm();
+
   const [order, setOrder] = useState<VendorOrder | null>(null);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState(false);
+  const [updating] = useState(false);
+
+  // Fonction pour charger les détails de la commande
+  const loadOrder = useCallback(
+    async (orderId: number) => {
+      try {
+        setLoading(true);
+        const data = await vendorsApi.getOrderDetail(orderId);
+        setOrder(data);
+      } catch (error) {
+        console.error("Erreur chargement commande:", error);
+        showToast("Erreur de chargement de la commande", "error");
+        navigate("/seller/orders");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [showToast, navigate],
+  ); // Dépendances du callback
 
   useEffect(() => {
     if (id) {
       loadOrder(parseInt(id));
     }
-  }, [id]);
-
-  const loadOrder = async (orderId: number) => {
-    try {
-      setLoading(true);
-      const data = await vendorsApi.getOrderDetail(orderId);
-      setOrder(data);
-    } catch (error) {
-      console.error('Erreur chargement commande:', error);
-      showToast('Erreur de chargement de la commande', 'error');
-      navigate('/seller/orders');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [id, loadOrder]);
 
   const handleStatusChange = async (newStatus: string) => {
-    if (!order || !confirm(`Confirmer le changement de statut vers "${newStatus}" ?`)) return;
+    if (!order) return;
 
-    try {
-      setUpdating(true);
-      const updatedOrder = await vendorsApi.updateOrderStatus(order.id, newStatus);
-      setOrder(updatedOrder);
-      showToast('Statut mis à jour avec succès', 'success');
-    } catch (error) {
-      console.error('Erreur mise à jour statut:', error);
-      showToast('Erreur lors de la mise à jour', 'error');
-    } finally {
-      setUpdating(false);
-    }
+    const confirmed = await confirm({
+      title: "Confirmer le changement de statut",
+      message: `Voulez-vous vraiment changer le statut vers "${newStatus}" ?`,
+      type: "info",
+      confirmText: "OK",
+      cancelText: "Annuler",
+    });
+
+    if (!confirmed) return;
   };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'PENDING_PAYMENT':
-        return { variant: 'warning' as const, text: 'En attente paiement' };
-      case 'PAID':
-        return { variant: 'success' as const, text: 'Payée' };
-      case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulée' };
+      case "PENDING_PAYMENT":
+        return { variant: "warning" as const, text: "En attente paiement" };
+      case "PAID":
+        return { variant: "success" as const, text: "Payée" };
+      case "CANCELLED":
+        return { variant: "error" as const, text: "Annulée" };
       default:
-        return { variant: 'default' as const, text: status };
+        return { variant: "default" as const, text: status };
     }
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
+    return new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
@@ -103,7 +106,9 @@ export default function VendorOrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement de la commande...</p>
+          <p className="text-dark-text-secondary">
+            Chargement de la commande...
+          </p>
         </div>
       </div>
     );
@@ -114,12 +119,14 @@ export default function VendorOrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <Card className="max-w-md text-center">
           <AlertCircle className="text-red-400 mx-auto mb-4" size={48} />
-          <h2 className="font-bold text-xl text-dark-text mb-2">Commande introuvable</h2>
-          <p className="text-dark-text-secondary mb-6">Cette commande n'existe pas ou ne contient pas vos produits.</p>
+          <h2 className="font-bold text-xl text-dark-text mb-2">
+            Commande introuvable
+          </h2>
+          <p className="text-dark-text-secondary mb-6">
+            Cette commande n'existe pas ou ne contient pas vos produits.
+          </p>
           <Link to="/seller/orders">
-            <Button variant="gradient">
-              Retour aux commandes
-            </Button>
+            <Button variant="gradient">Retour aux commandes</Button>
           </Link>
         </Card>
       </div>
@@ -127,25 +134,28 @@ export default function VendorOrderDetailPage() {
   }
 
   const statusBadge = getStatusBadge(order.status);
-  const availableActions = STATUS_TRANSITIONS[order.status as keyof typeof STATUS_TRANSITIONS] || [];
+  const availableActions =
+    STATUS_TRANSITIONS[order.status as keyof typeof STATUS_TRANSITIONS] || [];
 
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-5xl">
         {/* Header */}
         <div className="mb-8">
-          <Link 
+          <Link
             to="/seller/orders"
             className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-4"
           >
             <ArrowLeft size={20} />
             Retour aux commandes
           </Link>
-          
+
           <div className="flex items-start justify-between">
             <div>
               <h1 className="font-display font-bold text-4xl mb-2">
-                <span className="text-gradient animate-gradient-bg">Commande #{order.id}</span>
+                <span className="text-gradient animate-gradient-bg">
+                  Commande #{order.id}
+                </span>
               </h1>
               <div className="flex items-center gap-3">
                 <Badge variant={statusBadge.variant} className="text-sm">
@@ -164,7 +174,9 @@ export default function VendorOrderDetailPage() {
                 {availableActions.map((action) => (
                   <Button
                     key={action.value}
-                    variant={action.color === 'success' ? 'gradient' : 'secondary'}
+                    variant={
+                      action.color === "success" ? "gradient" : "secondary"
+                    }
                     onClick={() => handleStatusChange(action.value)}
                     disabled={updating}
                     size="sm"
@@ -201,7 +213,10 @@ export default function VendorOrderDetailPage() {
                       />
                     ) : (
                       <div className="w-20 h-20 rounded-lg bg-dark-bg-secondary flex items-center justify-center">
-                        <Package className="text-dark-text-tertiary" size={24} />
+                        <Package
+                          className="text-dark-text-tertiary"
+                          size={24}
+                        />
                       </div>
                     )}
 
@@ -211,7 +226,8 @@ export default function VendorOrderDetailPage() {
                         {item.product_title}
                       </h3>
                       <p className="text-sm text-dark-text-secondary">
-                        {item.price_xaf_snapshot.toLocaleString()} XAF × {item.qty}
+                        {item.price_xaf_snapshot.toLocaleString()} XAF ×{" "}
+                        {item.qty}
                       </p>
                     </div>
 
@@ -227,7 +243,9 @@ export default function VendorOrderDetailPage() {
 
               {/* Total vendeur */}
               <div className="mt-6 pt-6 border-t border-white/10 flex items-center justify-between">
-                <span className="font-semibold text-dark-text">Votre total :</span>
+                <span className="font-semibold text-dark-text">
+                  Votre total :
+                </span>
                 <span className="font-display font-bold text-3xl text-gradient animate-gradient-bg">
                   {order.vendor_total.toLocaleString()} XAF
                 </span>
@@ -237,7 +255,9 @@ export default function VendorOrderDetailPage() {
             {/* Note client */}
             {order.note && (
               <Card>
-                <h3 className="font-semibold text-dark-text mb-3">Note du client</h3>
+                <h3 className="font-semibold text-dark-text mb-3">
+                  Note du client
+                </h3>
                 <p className="text-dark-text-secondary">{order.note}</p>
               </Card>
             )}
@@ -254,7 +274,9 @@ export default function VendorOrderDetailPage() {
               <div className="space-y-3">
                 <div>
                   <p className="text-sm text-dark-text-tertiary mb-1">Nom</p>
-                  <p className="text-dark-text font-medium">{order.customer_name}</p>
+                  <p className="text-dark-text font-medium">
+                    {order.customer_name}
+                  </p>
                 </div>
                 {order.customer_email && (
                   <div>
@@ -262,7 +284,9 @@ export default function VendorOrderDetailPage() {
                       <Mail size={14} />
                       Email
                     </p>
-                    <p className="text-dark-text text-sm">{order.customer_email}</p>
+                    <p className="text-dark-text text-sm">
+                      {order.customer_email}
+                    </p>
                   </div>
                 )}
                 <div>
@@ -283,7 +307,9 @@ export default function VendorOrderDetailPage() {
               </h3>
               <div className="space-y-2">
                 <p className="text-dark-text font-medium">{order.city}</p>
-                <p className="text-dark-text-secondary text-sm">{order.address}</p>
+                <p className="text-dark-text-secondary text-sm">
+                  {order.address}
+                </p>
               </div>
             </Card>
 
@@ -296,11 +322,15 @@ export default function VendorOrderDetailPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-dark-text-secondary">Sous-total</span>
-                  <span className="text-dark-text">{order.subtotal_xaf.toLocaleString()} XAF</span>
+                  <span className="text-dark-text">
+                    {order.subtotal_xaf.toLocaleString()} XAF
+                  </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-dark-text-secondary">Livraison</span>
-                  <span className="text-dark-text">{order.delivery_fee_xaf.toLocaleString()} XAF</span>
+                  <span className="text-dark-text">
+                    {order.delivery_fee_xaf.toLocaleString()} XAF
+                  </span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-white/10">
                   <span className="font-semibold text-dark-text">Total</span>

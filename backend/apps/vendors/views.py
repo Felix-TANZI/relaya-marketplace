@@ -7,8 +7,6 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Count, Sum, Q
-from apps.catalog.models import ProductImage
-from apps.catalog.serializers import ProductImageSerializer
 
 from .models import VendorProfile
 from .serializers import (
@@ -16,7 +14,8 @@ from .serializers import (
     VendorApplicationSerializer,
     VendorStatsSerializer
 )
-from apps.catalog.models import Product
+from apps.catalog.models import Product, ProductImage
+from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
 from apps.orders.models import Order
 
 
@@ -117,8 +116,18 @@ class VendorProductViewSet(viewsets.ModelViewSet):
         return Product.objects.filter(vendor=self.request.user).order_by('-created_at')
     
     def get_serializer_class(self):
-        from apps.catalog.serializers import ProductSerializer
+        """Utiliser le bon serializer selon l'action"""
+        if self.action in ['create', 'update', 'partial_update']:
+            return ProductCreateUpdateSerializer
         return ProductSerializer
+    
+    def get_serializer_context(self):
+        """Ajouter stock_quantity au contexte"""
+        context = super().get_serializer_context()
+        if self.action in ['create', 'update', 'partial_update']:
+            stock_quantity = self.request.data.get('stock_quantity', 0)
+            context['stock_quantity'] = int(stock_quantity) if stock_quantity else 0
+        return context
     
     def perform_create(self, serializer):
         """Assigner le vendeur lors de la création"""
@@ -168,11 +177,14 @@ def upload_product_image(request, product_id):
         )
     
     # Créer l'image
+    is_primary_str = request.data.get('is_primary', 'false')
+    is_primary = is_primary_str.lower() == 'true' if isinstance(is_primary_str, str) else bool(is_primary_str)
+
     image_data = {
-        'product': product.id,
-        'image': request.FILES['image'],
-        'is_primary': request.data.get('is_primary', False),
-        'order': request.data.get('order', 0),
+       'product': product.id,
+       'image': request.FILES['image'],
+       'is_primary': is_primary,
+       'order': int(request.data.get('order', 0)),
     }
     
     serializer = ProductImageSerializer(data=image_data, context={'request': request})

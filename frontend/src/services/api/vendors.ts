@@ -44,6 +44,16 @@ export interface VendorProduct {
   is_active: boolean;
   category: number;
   created_at: string;
+  images?: ProductImage[];
+}
+
+export interface ProductImage {
+  id: number;
+  image: string;
+  image_url: string;
+  is_primary: boolean;
+  order: number;
+  created_at: string;
 }
 
 export const vendorsApi = {
@@ -143,5 +153,67 @@ export const vendorsApi = {
         Authorization: `Bearer ${token}`,
       },
     });
+  },
+
+  /**
+   * Upload une image pour un produit
+   */
+  uploadImage: async (productId: number, file: File, isPrimary: boolean = false): Promise<ProductImage> => {
+    const token = localStorage.getItem('access_token');
+    const formData = new FormData();
+    formData.append('image', file);
+    formData.append('is_primary', isPrimary.toString());
+    
+    const response = await fetch(`http://localhost:8000/api/vendors/products/${productId}/images/`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    return response.json();
+  },
+
+  /**
+   * Supprimer une image
+   */
+  deleteImage: async (productId: number, imageId: number): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await fetch(`http://localhost:8000/api/vendors/products/${productId}/images/${imageId}/`, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+  },
+
+  /**
+   * Définir l'image principale
+   */
+  setPrimaryImage: async (productId: number, imageId: number): Promise<ProductImage> => {
+    const token = localStorage.getItem('access_token');
+    
+    const response = await fetch(`http://localhost:8000/api/vendors/products/${productId}/images/${imageId}/set-primary/`, {
+      method: 'PATCH',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    
+    return response.json();
   },
 };

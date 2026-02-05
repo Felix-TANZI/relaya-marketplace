@@ -3,6 +3,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.text import slugify
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -45,19 +46,31 @@ class Product(TimeStampedModel):
     )
 
     vendor = models.ForeignKey(
-    User, 
-    on_delete=models.CASCADE, 
-    related_name='products',
-    null=True,  # Temporaire pour la migration
-    blank=True,
-    verbose_name="Vendeur"
-   )
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='products',
+        null=True,
+        blank=True,
+        verbose_name="Vendeur"
+    )
 
     class Meta:
         ordering = ["-created_at"]
 
     def __str__(self):
         return self.title
+    
+    def save(self, *args, **kwargs):
+        # Générer le slug automatiquement à partir du titre
+        if not self.slug:
+            self.slug = slugify(self.title)
+            # Assurer l'unicité du slug
+            original_slug = self.slug
+            counter = 1
+            while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{original_slug}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
     
 class ProductImage(models.Model):
     """

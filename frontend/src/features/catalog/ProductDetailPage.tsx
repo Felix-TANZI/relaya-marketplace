@@ -1,6 +1,5 @@
 // frontend/src/features/catalog/ProductDetailPage.tsx
-// Page de détail d'un produit
-// Affiche les informations détaillées d'un produit, les images, les avis et permet d'ajouter au panier
+// Page de détail d'un produit avec support images uploadées
 
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
@@ -9,7 +8,8 @@ import { ShoppingCart, Heart, Share2, ChevronLeft, Star, Package, AlertCircle } 
 import { Button, Badge } from '@/components/ui';
 import ProductCard from "@/components/product/ProductCard";
 import { useCart } from '@/context/CartContext';
-import { productsApi, type Product } from '@/services/api/products';
+import { productsApi, type Product, type ProductImage } from '@/services/api/products';
+
 
 export default function ProductDetailPage() {
   const { t, i18n } = useTranslation();
@@ -21,7 +21,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
-  const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
 
   // Charger le produit depuis l'API
@@ -35,7 +35,7 @@ export default function ProductDetailPage() {
         const data = await productsApi.get(parseInt(id));
         setProduct(data);
         // Charger les produits similaires
-        const similar = await productsApi.getSimilar(parseInt(id), 8); // Limite à 8 produits similaires
+        const similar = await productsApi.getSimilar(parseInt(id), 8);
         setSimilarProducts(similar);
       } catch (err) {
         console.error('Erreur chargement produit:', err);
@@ -51,12 +51,17 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    const productImages = product.images;
+    const displayImage = productImages?.find(img => img.is_primary)?.image_url 
+      || productImages?.[0]?.image_url
+      || product.media?.[0]?.url;
+
     addItem({
       id: product.id,
       name: product.title,
       price: product.price_xaf,
       quantity: quantity,
-      image: product.media?.[0]?.url,
+      image: displayImage,
     });
   };
 
@@ -110,7 +115,10 @@ export default function ProductDetailPage() {
   }
 
   const inStock = product.stock_quantity > 0;
-  const images = product.media || [];
+  const productImages = product.images;
+  const images = productImages || [];
+  const legacyImages = product.media || [];
+  const allImages = images.length > 0 ? images : legacyImages;
 
   return (
     <div className="min-h-screen py-12">
@@ -137,9 +145,11 @@ export default function ProductDetailPage() {
           <div>
             {/* Main Image */}
             <div className="aspect-square rounded-2xl overflow-hidden glass border border-white/10 mb-4">
-              {images.length > 0 && images[selectedImage]?.url ? (
+              {allImages.length > 0 ? (
                 <img
-                  src={images[selectedImage].url}
+                  src={'image_url' in allImages[selectedImageIndex] 
+                    ? (allImages[selectedImageIndex] as ProductImage).image_url 
+                    : allImages[selectedImageIndex].url}
                   alt={product.title}
                   className="w-full h-full object-cover"
                 />
@@ -151,19 +161,23 @@ export default function ProductDetailPage() {
             </div>
 
             {/* Thumbnails */}
-            {images.length > 1 && (
+            {allImages.length > 1 && (
               <div className="grid grid-cols-4 gap-3">
-                {images.slice(0, 4).map((image, idx) => (
+                {allImages.slice(0, 4).map((image, idx) => (
                   <button
                     key={idx}
-                    onClick={() => setSelectedImage(idx)}
+                    onClick={() => setSelectedImageIndex(idx)}
                     className={`aspect-square rounded-xl overflow-hidden glass border transition-all ${
-                      selectedImage === idx
+                      selectedImageIndex === idx
                         ? 'border-holo-cyan shadow-glow-cyan'
                         : 'border-white/10 hover:border-white/30'
                     }`}
                   >
-                    <img src={image.url} alt={`${product.title} ${idx + 1}`} className="w-full h-full object-cover" />
+                    <img 
+                      src={'image_url' in image ? image.image_url : image.url}
+                      alt={`${product.title} ${idx + 1}`} 
+                      className="w-full h-full object-cover" 
+                    />
                   </button>
                 ))}
               </div>
@@ -300,6 +314,7 @@ export default function ProductDetailPage() {
                     id: similarProduct.id,
                     name: similarProduct.title,
                     price: similarProduct.price_xaf,
+                    images: similarProduct.images,
                     image: similarProduct.media?.find((m) => m.sort_order === 0)?.url,
                     category: similarProduct.category?.name,
                     rating: 4.5,

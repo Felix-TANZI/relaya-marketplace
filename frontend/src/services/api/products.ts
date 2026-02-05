@@ -17,6 +17,14 @@ export interface Category {
   is_active: boolean;
 }
 
+export interface ProductImage {
+  id: number;
+  image_url: string;
+  is_primary: boolean;
+  order: number;
+  created_at: string;
+}
+
 export interface Product {
   id: number;
   title: string;
@@ -27,6 +35,7 @@ export interface Product {
   is_active: boolean;
   category: Category | null;
   media: ProductMedia[];
+  images?: ProductImage[];
   created_at: string;
   updated_at: string;
 }

@@ -47,6 +47,36 @@ export interface VendorProduct {
   images?: ProductImage[];
 }
 
+export interface VendorOrderItem {
+  id: number;
+  product: number;
+  product_title: string;
+  product_image: string | null;
+  title_snapshot: string;
+  qty: number;
+  price_xaf_snapshot: number;
+  line_total_xaf: number;
+  created_at: string;
+}
+
+export interface VendorOrder {
+  id: number;
+  status: string;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string;
+  city: string;
+  address: string;
+  note: string | null;
+  items: VendorOrderItem[];
+  vendor_total: number;
+  subtotal_xaf: number;
+  delivery_fee_xaf: number;
+  total_xaf: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface ProductImage {
   id: number;
   image: string;
@@ -215,5 +245,45 @@ export const vendorsApi = {
     }
     
     return response.json();
+  },
+
+  /**
+   * Récupérer les commandes du vendeur
+   */
+  getOrders: async (status?: string): Promise<VendorOrder[]> => {
+    const token = localStorage.getItem('access_token');
+    const params = status ? `?status=${status}` : '';
+    return http<VendorOrder[]>(`/api/vendors/orders/${params}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Récupérer le détail d'une commande
+   */
+  getOrderDetail: async (orderId: number): Promise<VendorOrder> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrder>(`/api/vendors/orders/${orderId}/`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Mettre à jour le statut d'une commande
+   */
+  updateOrderStatus: async (orderId: number, status: string): Promise<VendorOrder> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrder>(`/api/vendors/orders/${orderId}/status/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status }),
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
   },
 };

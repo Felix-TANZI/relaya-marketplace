@@ -20,6 +20,7 @@ import BecomeSellerPage from "./features/vendors/BecomeSellerPage"; // Page pour
 import SellerDashboardPage from "./features/vendors/SellerDashboardPage"; // Tableau de bord du vendeur
 import ProductFormPage from "./features/vendors/ProductFormPage"; // Page de formulaire de produit
 import VendorOrdersPage from "./features/vendors/VendorOrdersPage"; // Page de gestion des commandes pour les vendeurs
+import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage"; // Page de détail d'une commande pour les vendeurs
 
 function App() {
   return (
@@ -65,6 +66,16 @@ function App() {
             element={
               <ProtectedRoute>
                 <VendorOrdersPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route détail commande vendeur */}
+          <Route
+            path="seller/orders/:id"
+            element={
+              <ProtectedRoute>
+                <VendorOrderDetailPage />
               </ProtectedRoute>
             }
           />

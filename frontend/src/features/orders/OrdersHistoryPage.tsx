@@ -1,6 +1,5 @@
 // frontend/src/features/orders/OrdersHistoryPage.tsx
-// Page d'historique des commandes de l'utilisateur
-// Affiche la liste des commandes passées par l'utilisateur connecté
+// Page d'historique des commandes de l'utilisateur avec statuts séparés
 
 import { useTranslation } from "react-i18next";
 import { useState, useEffect } from "react";
@@ -11,9 +10,12 @@ import {
   AlertCircle,
   Calendar,
   MapPin,
+  CreditCard,
+  Truck,
 } from "lucide-react";
-import { Button, Card } from "@/components/ui";
-import { ordersApi, type Order } from "@/services/api/orders";
+import { Button, Card, Badge } from "@/components/ui";
+import { ordersApi } from "@/services/api/orders";
+import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
 
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
@@ -39,29 +41,31 @@ export default function OrdersHistoryPage() {
     fetchOrders();
   }, [t]);
 
-  const getStatusColor = (status: string) => {
+  const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
-      case "PAID":
-        return "bg-green-500/10 text-green-400 border-green-500/30";
-      case "PENDING_PAYMENT":
-        return "bg-yellow-500/10 text-yellow-400 border-yellow-500/30";
-      case "CANCELLED":
-        return "bg-red-500/10 text-red-400 border-red-500/30";
-      default:
-        return "bg-gray-500/10 text-gray-400 border-gray-500/30";
+      case 'PENDING':
+        return { variant: 'warning' as const, text: 'En attente paiement', icon: CreditCard };
+      case 'PAID':
+        return { variant: 'success' as const, text: 'Payé', icon: CreditCard };
+      case 'FAILED':
+        return { variant: 'error' as const, text: 'Échec', icon: AlertCircle };
+      case 'REFUNDED':
+        return { variant: 'default' as const, text: 'Remboursé', icon: CreditCard };
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
-      case "PAID":
-        return t("orders.status_paid");
-      case "PENDING_PAYMENT":
-        return t("orders.status_pending");
-      case "CANCELLED":
-        return t("orders.status_cancelled");
-      default:
-        return status;
+      case 'PENDING':
+        return { variant: 'warning' as const, text: 'En attente', icon: Package };
+      case 'PROCESSING':
+        return { variant: 'default' as const, text: 'En préparation', icon: Package };
+      case 'SHIPPED':
+        return { variant: 'success' as const, text: 'Expédié', icon: Truck };
+      case 'DELIVERED':
+        return { variant: 'success' as const, text: 'Livré', icon: Package };
+      case 'CANCELLED':
+        return { variant: 'error' as const, text: 'Annulé', icon: AlertCircle };
     }
   };
 
@@ -99,7 +103,7 @@ export default function OrdersHistoryPage() {
           </h1>
           <p className="text-dark-text-secondary mb-8">{error}</p>
           <Button variant="gradient" onClick={() => window.location.reload()}>
-            {t("catalog.retry")}
+            Réessayer
           </Button>
         </div>
       </div>
@@ -123,7 +127,7 @@ export default function OrdersHistoryPage() {
           <Link to="/catalog">
             <Button variant="gradient" size="lg">
               <Package size={20} />
-              {t("cart.explore")}
+              Explorer le catalogue
             </Button>
           </Link>
         </div>
@@ -146,92 +150,95 @@ export default function OrdersHistoryPage() {
 
         {/* Orders List */}
         <div className="space-y-4">
-          {orders.map((order) => (
-            <Card key={order.id} padding="none">
-              <div className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="font-display font-bold text-xl text-dark-text">
-                        {t("orders.order_number")} #{order.id}
-                      </h3>
-                      <div
-                        className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}
-                      >
-                        {getStatusLabel(order.status)}
+          {orders.map((order) => {
+            const paymentBadge = getPaymentStatusBadge(order.payment_status);
+            const fulfillmentBadge = getFulfillmentStatusBadge(order.fulfillment_status);
+            
+            return (
+              <Card key={order.id} padding="none">
+                <div className="p-6">
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h3 className="font-display font-bold text-xl text-dark-text">
+                          {t("orders.order_number")} #{order.id}
+                        </h3>
+                        <Badge variant={paymentBadge.variant} className="text-xs">
+                          <paymentBadge.icon size={12} className="mr-1" />
+                          {paymentBadge.text}
+                        </Badge>
+                        <Badge variant={fulfillmentBadge.variant} className="text-xs">
+                          <fulfillmentBadge.icon size={12} className="mr-1" />
+                          {fulfillmentBadge.text}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-4 text-sm text-dark-text-secondary flex-wrap">
+                        <div className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          {formatDate(order.created_at)}
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <MapPin size={14} />
+                          {order.city}
+                        </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-dark-text-secondary">
-                      <div className="flex items-center gap-1">
-                        <Calendar size={14} />
-                        {formatDate(order.created_at)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin size={14} />
-                        {order.city}
-                      </div>
-                    </div>
-                  </div>
 
-                  <div className="text-right">
-                    <div className="text-2xl font-display font-bold text-gradient animate-gradient-bg">
-                      {order.total_xaf.toLocaleString(
-                        i18n.language === "fr" ? "fr-FR" : "en-US",
-                      )}{" "}
-                      {t("common.currency")}
-                    </div>
-                    <p className="text-sm text-dark-text-tertiary">
-                      {order.items.length} {t("orders.items")}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Items */}
-                <div className="space-y-2 mb-4">
-                  {order.items.map((item) => (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between text-sm"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-holo-cyan" />
-                        <span className="text-dark-text">
-                          {item.title_snapshot}
-                        </span>
-                        <span className="text-dark-text-tertiary">
-                          x{item.qty}
-                        </span>
-                      </div>
-                      <span className="text-dark-text font-medium">
-                        {item.line_total_xaf.toLocaleString(
+                    <div className="text-right">
+                      <div className="text-2xl font-display font-bold text-gradient animate-gradient-bg">
+                        {order.total_xaf.toLocaleString(
                           i18n.language === "fr" ? "fr-FR" : "en-US",
                         )}{" "}
                         {t("common.currency")}
-                      </span>
+                      </div>
+                      <p className="text-sm text-dark-text-tertiary">
+                        {order.items.length} {t("orders.items")}
+                      </p>
                     </div>
-                  ))}
-                </div>
+                  </div>
 
-                {/* Address */}
-                <div className="pt-4 border-t border-white/10">
-                  <p className="text-sm text-dark-text-secondary">
-                    <span className="font-medium text-dark-text">
-                      {t("checkout.address_label")}:
-                    </span>{" "}
-                    {order.address}
-                  </p>
+                  {/* Items Preview */}
+                  <div className="space-y-2 mb-4">
+                    {order.items.slice(0, 3).map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center justify-between text-sm"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-holo-cyan" />
+                          <span className="text-dark-text">
+                            {item.title_snapshot}
+                          </span>
+                          <span className="text-dark-text-tertiary">
+                            x{item.qty}
+                          </span>
+                        </div>
+                        <span className="text-dark-text font-medium">
+                          {item.line_total_xaf.toLocaleString(
+                            i18n.language === "fr" ? "fr-FR" : "en-US",
+                          )}{" "}
+                          XAF
+                        </span>
+                      </div>
+                    ))}
+                    {order.items.length > 3 && (
+                      <p className="text-xs text-dark-text-tertiary italic">
+                        + {order.items.length - 3} autre(s) article(s)
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Action */}
+                  <Link to={`/orders/${order.id}`}>
+                    <Button variant="secondary" className="w-full">
+                      {t("orders.view_details")}
+                    </Button>
+                  </Link>
                 </div>
-              </div>
-              <div className="pt-4 border-t border-white/10 flex justify-end">
-                <Link to={`/orders/${order.id}`}>
-                  <Button variant="secondary" size="sm">
-                    {t("orders.view_details")}
-                  </Button>
-                </Link>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            );
+          })}
         </div>
       </div>
     </div>

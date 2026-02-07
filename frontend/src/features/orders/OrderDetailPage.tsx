@@ -1,19 +1,31 @@
 // frontend/src/features/orders/OrderDetailPage.tsx
-// Page de détail d'une commande spécifique
-// Affiche les informations détaillées d'une commande passée par l'utilisateur
+// Page de détail d'une commande avec statuts séparés paiement/livraison
 
 import { useTranslation } from 'react-i18next';
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, MapPin, Calendar, CreditCard, AlertCircle, CheckCircle } from 'lucide-react';
-import { Button, Card } from '@/components/ui';
-import { ordersApi, type Order } from '@/services/api/orders';
+import {
+  ArrowLeft,
+  Package,
+  MapPin,
+  Phone,
+  Mail,
+  CreditCard,
+  Truck,
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertCircle,
+} from 'lucide-react';
+import { Button, Card, Badge } from '@/components/ui';
+import { ordersApi } from '@/services/api/orders';
+import type { Order, PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function OrderDetailPage() {
   const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-
+  
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +33,7 @@ export default function OrderDetailPage() {
   useEffect(() => {
     const fetchOrder = async () => {
       if (!id) return;
-
+      
       try {
         setLoading(true);
         setError(null);
@@ -38,29 +50,81 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id, t]);
 
-  const getStatusColor = (status: string) => {
+  const getPaymentStatusInfo = (status: PaymentStatus) => {
     switch (status) {
+      case 'PENDING':
+        return {
+          variant: 'warning' as const,
+          text: 'En attente de paiement',
+          icon: Clock,
+          color: 'text-yellow-400',
+        };
       case 'PAID':
-        return 'text-green-400';
-      case 'PENDING_PAYMENT':
-        return 'text-yellow-400';
-      case 'CANCELLED':
-        return 'text-red-400';
-      default:
-        return 'text-gray-400';
+        return {
+          variant: 'success' as const,
+          text: 'Payé',
+          icon: CheckCircle,
+          color: 'text-green-400',
+        };
+      case 'FAILED':
+        return {
+          variant: 'error' as const,
+          text: 'Échec du paiement',
+          icon: XCircle,
+          color: 'text-red-400',
+        };
+      case 'REFUNDED':
+        return {
+          variant: 'default' as const,
+          text: 'Remboursé',
+          icon: CreditCard,
+          color: 'text-gray-400',
+        };
     }
   };
 
-  const getStatusLabel = (status: string) => {
+  const getFulfillmentStatusInfo = (status: FulfillmentStatus) => {
     switch (status) {
-      case 'PAID':
-        return t('orders.status_paid');
-      case 'PENDING_PAYMENT':
-        return t('orders.status_pending');
+      case 'PENDING':
+        return {
+          variant: 'warning' as const,
+          text: 'En attente',
+          icon: Clock,
+          color: 'text-yellow-400',
+          step: 0,
+        };
+      case 'PROCESSING':
+        return {
+          variant: 'default' as const,
+          text: 'En préparation',
+          icon: Package,
+          color: 'text-blue-400',
+          step: 1,
+        };
+      case 'SHIPPED':
+        return {
+          variant: 'success' as const,
+          text: 'Expédié',
+          icon: Truck,
+          color: 'text-purple-400',
+          step: 2,
+        };
+      case 'DELIVERED':
+        return {
+          variant: 'success' as const,
+          text: 'Livré',
+          icon: CheckCircle,
+          color: 'text-green-400',
+          step: 3,
+        };
       case 'CANCELLED':
-        return t('orders.status_cancelled');
-      default:
-        return status;
+        return {
+          variant: 'error' as const,
+          text: 'Annulé',
+          icon: XCircle,
+          color: 'text-red-400',
+          step: -1,
+        };
     }
   };
 
@@ -73,6 +137,10 @@ export default function OrderDetailPage() {
       hour: '2-digit',
       minute: '2-digit',
     }).format(date);
+  };
+
+  const formatPrice = (price: number) => {
+    return `${price.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} XAF`;
   };
 
   // Loading State
@@ -107,6 +175,19 @@ export default function OrderDetailPage() {
     );
   }
 
+  const paymentInfo = getPaymentStatusInfo(order.payment_status);
+  const fulfillmentInfo = getFulfillmentStatusInfo(order.fulfillment_status);
+
+  // Timeline steps
+  const timelineSteps = [
+    { label: 'En attente', step: 0 },
+    { label: 'En préparation', step: 1 },
+    { label: 'Expédié', step: 2 },
+    { label: 'Livré', step: 3 },
+  ];
+
+  const currentStep = fulfillmentInfo.step;
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-5xl">
@@ -121,7 +202,7 @@ export default function OrderDetailPage() {
 
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-start justify-between mb-4">
+          <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
             <div>
               <h1 className="font-display font-bold text-3xl lg:text-4xl text-dark-text mb-2">
                 {t('orders.order_number')} #{order.id}
@@ -130,77 +211,94 @@ export default function OrderDetailPage() {
                 {t('orders.placed_on')} {formatDate(order.created_at)}
               </p>
             </div>
-            <div className={`px-4 py-2 rounded-full glass border border-white/10 font-medium ${getStatusColor(order.status)}`}>
-              {getStatusLabel(order.status)}
+            
+            {/* Status Badges */}
+            <div className="flex gap-2 flex-wrap">
+              <Badge variant={paymentInfo.variant} className="flex items-center gap-1">
+                <paymentInfo.icon size={14} />
+                {paymentInfo.text}
+              </Badge>
+              <Badge variant={fulfillmentInfo.variant} className="flex items-center gap-1">
+                <fulfillmentInfo.icon size={14} />
+                {fulfillmentInfo.text}
+              </Badge>
             </div>
           </div>
 
-          {/* Timeline */}
-          <Card>
-            <div className="flex items-center justify-between relative">
-              {/* Progress Line */}
-              <div className="absolute top-6 left-0 right-0 h-0.5 bg-white/10" />
-              <div
-                className={`absolute top-6 left-0 h-0.5 bg-gradient-holographic transition-all duration-500`}
-                style={{ width: order.status === 'PAID' ? '100%' : '50%' }}
-              />
+          {/* Timeline (si pas annulé) */}
+          {order.fulfillment_status !== 'CANCELLED' && (
+            <Card>
+              <div className="relative">
+                {/* Progress Bar */}
+                <div className="absolute top-6 left-0 right-0 h-1 bg-white/10 rounded-full" />
+                <div
+                  className="absolute top-6 left-0 h-1 bg-gradient-holographic rounded-full transition-all duration-500"
+                  style={{ width: `${(currentStep / 3) * 100}%` }}
+                />
 
-              {/* Steps */}
-              <div className="flex-1 flex items-center justify-between relative z-10">
-                {/* Pending */}
-                <div className="flex flex-col items-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                    order.status === 'PENDING_PAYMENT' || order.status === 'PAID'
-                      ? 'bg-gradient-holographic'
-                      : 'glass border border-white/10'
-                  }`}>
-                    <Package className="text-white" size={20} />
-                  </div>
-                  <span className="text-xs text-dark-text-secondary text-center">
-                    {t('orders.status_pending')}
-                  </span>
-                </div>
+                {/* Steps */}
+                <div className="relative flex items-start justify-between">
+                  {timelineSteps.map((step) => {
+                    const isActive = currentStep >= step.step;
+                    const isCurrent = currentStep === step.step;
 
-                {/* Paid */}
-                <div className="flex flex-col items-center">
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 ${
-                    order.status === 'PAID'
-                      ? 'bg-gradient-holographic'
-                      : 'glass border border-white/10'
-                  }`}>
-                    <CheckCircle className="text-white" size={20} />
-                  </div>
-                  <span className="text-xs text-dark-text-secondary text-center">
-                    {t('orders.status_paid')}
-                  </span>
+                    return (
+                      <div key={step.step} className="flex flex-col items-center flex-1">
+                        <div
+                          className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
+                            isActive
+                              ? 'bg-gradient-holographic shadow-lg shadow-holo-cyan/30'
+                              : 'bg-white/10 border-2 border-white/20'
+                          }`}
+                        >
+                          {isActive ? (
+                            <CheckCircle className="text-white" size={24} />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full bg-white/30" />
+                          )}
+                        </div>
+                        <p
+                          className={`text-sm text-center ${
+                            isCurrent ? 'text-holo-cyan font-medium' : 'text-dark-text-secondary'
+                          }`}
+                        >
+                          {step.label}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
-          </Card>
+            </Card>
+          )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Colonne principale */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Items */}
+            {/* Articles */}
             <Card>
-              <h2 className="font-display font-bold text-xl text-dark-text mb-4">
-                {t('checkout.summary')}
+              <h2 className="font-display font-bold text-2xl text-dark-text mb-6 flex items-center gap-2">
+                <Package size={24} className="text-holo-cyan" />
+                Articles commandés
               </h2>
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between py-3 border-b border-white/10 last:border-0">
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-4 glass rounded-xl border border-white/10"
+                  >
                     <div className="flex-1">
-                      <h3 className="font-medium text-dark-text mb-1">
+                      <h3 className="font-semibold text-dark-text mb-1">
                         {item.title_snapshot}
                       </h3>
-                      <p className="text-sm text-dark-text-tertiary">
-                        {item.price_xaf_snapshot.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')} × {item.qty}
+                      <p className="text-sm text-dark-text-secondary">
+                        {formatPrice(item.price_xaf_snapshot)} × {item.qty}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-dark-text">
-                        {item.line_total_xaf.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
+                      <p className="font-display font-bold text-lg text-dark-text">
+                        {formatPrice(item.line_total_xaf)}
                       </p>
                     </div>
                   </div>
@@ -208,89 +306,92 @@ export default function OrderDetailPage() {
               </div>
             </Card>
 
-            {/* Delivery Info */}
+            {/* Note client */}
+            {order.note && (
+              <Card>
+                <h3 className="font-semibold text-dark-text mb-3">Note</h3>
+                <p className="text-dark-text-secondary">{order.note}</p>
+              </Card>
+            )}
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Récapitulatif */}
             <Card>
-              <h2 className="font-display font-bold text-xl text-dark-text mb-4 flex items-center gap-2">
-                <MapPin className="text-holo-cyan" size={20} />
-                {t('orders.delivery_info')}
-              </h2>
+              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
+                <CreditCard size={20} className="text-holo-pink" />
+                Récapitulatif
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-dark-text-secondary">Sous-total</span>
+                  <span className="text-dark-text font-medium">
+                    {formatPrice(order.subtotal_xaf)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-dark-text-secondary">Livraison</span>
+                  <span className="text-dark-text font-medium">
+                    {formatPrice(order.delivery_fee_xaf)}
+                  </span>
+                </div>
+                <div className="pt-3 border-t border-white/10 flex justify-between">
+                  <span className="font-semibold text-dark-text">Total</span>
+                  <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
+                    {formatPrice(order.total_xaf)}
+                  </span>
+                </div>
+              </div>
+            </Card>
+
+            {/* Livraison */}
+            <Card>
+              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
+                <MapPin size={20} className="text-holo-purple" />
+                Livraison
+              </h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-dark-text-secondary mb-1">{t('checkout.city')}</p>
+                  <p className="text-xs text-dark-text-tertiary mb-1">Ville</p>
                   <p className="text-dark-text font-medium">{order.city}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-dark-text-secondary mb-1">{t('checkout.address')}</p>
-                  <p className="text-dark-text font-medium">{order.address}</p>
+                  <p className="text-xs text-dark-text-tertiary mb-1">Adresse</p>
+                  <p className="text-dark-text text-sm">{order.address}</p>
                 </div>
                 <div>
-                  <p className="text-sm text-dark-text-secondary mb-1">{t('checkout.phone')}</p>
-                  <p className="text-dark-text font-medium">{order.customer_phone}</p>
+                  <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
+                    <Phone size={12} />
+                    Téléphone
+                  </p>
+                  <p className="text-dark-text">{order.customer_phone}</p>
                 </div>
-                {order.note && (
+                {order.customer_email && (
                   <div>
-                    <p className="text-sm text-dark-text-secondary mb-1">Note</p>
-                    <p className="text-dark-text">{order.note}</p>
+                    <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
+                      <Mail size={12} />
+                      Email
+                    </p>
+                    <p className="text-dark-text text-sm">{order.customer_email}</p>
                   </div>
                 )}
               </div>
             </Card>
-          </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-1">
-            {/* Order Summary */}
-            <Card className="sticky top-24">
-              <h2 className="font-display font-bold text-xl text-dark-text mb-4">
-                {t('orders.order_summary')}
-              </h2>
-
-              <div className="space-y-3 mb-6">
-                <div className="flex justify-between text-dark-text-secondary">
-                  <span>{t('cart.subtotal')}</span>
-                  <span className="font-medium text-dark-text">
-                    {order.subtotal_xaf.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
-                  </span>
+            {/* Paiement */}
+            <Card>
+              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
+                <CreditCard size={20} className="text-holo-cyan" />
+                Paiement
+              </h3>
+              <div className="flex items-center gap-3">
+                <div className={`p-3 rounded-full ${paymentInfo.color.replace('text-', 'bg-')}/10`}>
+                  <paymentInfo.icon className={paymentInfo.color} size={20} />
                 </div>
-
-                <div className="flex justify-between text-dark-text-secondary">
-                  <span>{t('cart.shipping')}</span>
-                  <span className="font-medium text-dark-text">
-                    {order.delivery_fee_xaf.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
-                  </span>
-                </div>
-
-                <div className="pt-3 border-t border-white/10">
-                  <div className="flex justify-between">
-                    <span className="font-display font-bold text-lg text-dark-text">
-                      {t('cart.total')}
-                    </span>
-                    <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                      {order.total_xaf.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Payment Info */}
-              <div className="pt-6 border-t border-white/10">
-                <div className="flex items-center gap-3 mb-2">
-                  <CreditCard className="text-holo-purple" size={20} />
-                  <h3 className="font-semibold text-dark-text">{t('orders.payment_info')}</h3>
-                </div>
-                <p className="text-sm text-dark-text-secondary">
-                  {t('orders.mobile_money')}
-                </p>
-              </div>
-
-              {/* Order Date */}
-              <div className="pt-6 border-t border-white/10">
-                <div className="flex items-center gap-3">
-                  <Calendar className="text-holo-cyan" size={20} />
-                  <div>
-                    <p className="text-sm text-dark-text-secondary">{t('orders.date')}</p>
-                    <p className="text-dark-text font-medium">{formatDate(order.created_at)}</p>
-                  </div>
+                <div>
+                  <p className="font-medium text-dark-text">{paymentInfo.text}</p>
+                  <p className="text-xs text-dark-text-tertiary">Mobile Money</p>
                 </div>
               </div>
             </Card>

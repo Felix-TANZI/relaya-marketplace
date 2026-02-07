@@ -98,6 +98,55 @@ export interface AdminAnalytics {
   total_revenue_growth: number;
 }
 
+
+export interface AdminProduct {
+  id: number;
+  title: string;
+  slug: string;
+  price_xaf: number;
+  is_active: boolean;
+  vendor: number;
+  vendor_name: string;
+  vendor_business: string;
+  category: number;
+  category_name: string;
+  stock_quantity: number;
+  images_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminProductUpdate {
+  title?: string;
+  description?: string;
+  price_xaf?: number;
+  is_active?: boolean;
+  category?: number;
+}
+
+export interface AdminProductDetail {
+  id: number;
+  title: string;
+  slug: string;
+  description: string;
+  price_xaf: number;
+  is_active: boolean;
+  vendor: number;
+  category: {
+    id: number;
+    name: string;
+    slug: string;
+  };
+  images: Array<{
+    id: number;
+    image: string;
+    image_url: string;
+    is_primary: boolean;
+  }>;
+  created_at: string;
+  updated_at: string;
+}
+
 //  API
 
 export const adminApi = {
@@ -203,6 +252,89 @@ export const adminApi = {
     return http<AdminAnalytics>("/api/vendors/admin/dashboard/analytics/", {
       headers: {
         "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Liste tous les produits (admin)
+   */
+  listProducts: async (filters?: {
+    vendor?: number;
+    category?: number;
+    is_active?: boolean;
+    search?: string;
+  }): Promise<AdminProduct[]> => {
+    const token = localStorage.getItem('access_token');
+    
+    const params = new URLSearchParams();
+    if (filters?.vendor) params.append('vendor', filters.vendor.toString());
+    if (filters?.category) params.append('category', filters.category.toString());
+    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    if (filters?.search) params.append('search', filters.search);
+    
+    const url = `/api/vendors/admin/products/${params.toString() ? '?' + params.toString() : ''}`;
+    
+    return http<AdminProduct[]>(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Détail d'un produit (admin)
+   */
+  getProductDetail: async (productId: number): Promise<AdminProductDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminProductDetail>(`/api/vendors/admin/products/${productId}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Modifier un produit (admin)
+   */
+  updateProduct: async (productId: number, data: AdminProductUpdate): Promise<AdminProductDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminProductDetail>(`/api/vendors/admin/products/${productId}/update/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Supprimer un produit (admin)
+   */
+  deleteProduct: async (productId: number): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    return http<void>(`/api/vendors/admin/products/${productId}/delete/`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Activer/désactiver un produit (admin)
+   */
+  toggleProductStatus: async (productId: number): Promise<AdminProductDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminProductDetail>(`/api/vendors/admin/products/${productId}/toggle-status/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
     });

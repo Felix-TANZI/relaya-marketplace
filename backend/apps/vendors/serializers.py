@@ -297,7 +297,7 @@ class AdminDashboardStatsSerializer(serializers.Serializer):
     failed_payments = serializers.IntegerField()    
 
 
-    # ========== ADMIN DASHBOARD - DONNÉES GRAPHIQUES ==========
+    #  ADMIN DASHBOARD - DONNÉES GRAPHIQUES 
 
 class RevenueDataPointSerializer(serializers.Serializer):
     """Point de données pour le graphique revenus"""
@@ -342,3 +342,43 @@ class AdminAnalyticsSerializer(serializers.Serializer):
     average_order_value = serializers.IntegerField()
     conversion_rate = serializers.FloatField()
     total_revenue_growth = serializers.FloatField()  # % croissance vs mois dernier
+
+
+#  ADMIN PRODUCTS MANAGEMENT 
+
+class AdminProductListSerializer(serializers.ModelSerializer):
+    """Serializer pour la liste admin des produits"""
+    vendor_name = serializers.CharField(source='vendor.username', read_only=True)
+    vendor_business = serializers.CharField(source='vendor.vendor_profile.business_name', read_only=True, default='N/A')
+    category_name = serializers.CharField(source='category.name', read_only=True)
+    stock_quantity = serializers.SerializerMethodField()
+    images_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        from apps.catalog.models import Product
+        model = Product
+        fields = [
+            'id', 'title', 'slug', 'price_xaf', 'is_active',
+            'vendor', 'vendor_name', 'vendor_business',
+            'category', 'category_name',
+            'stock_quantity', 'images_count',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_stock_quantity(self, obj):
+        try:
+            return obj.inventory.quantity
+        except:
+            return 0
+    
+    def get_images_count(self, obj):
+        return obj.images.count()
+
+
+class AdminProductUpdateSerializer(serializers.ModelSerializer):
+    """Serializer pour la modification admin d'un produit"""
+    
+    class Meta:
+        from apps.catalog.models import Product
+        model = Product
+        fields = ['title', 'description', 'price_xaf', 'is_active', 'category']    

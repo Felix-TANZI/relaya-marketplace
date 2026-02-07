@@ -82,4 +82,21 @@ urlpatterns = [
 
     # Données analytiques (graphiques)
     path('admin/dashboard/analytics/', views.admin_analytics, name='admin-analytics'),
+
+    #  ADMINISTRATION - GESTION PRODUITS 
+    
+    # Liste produits
+    path('admin/products/', views.admin_list_products, name='admin-list-products'),
+    
+    # Détail produit
+    path('admin/products/<int:product_id>/', views.admin_product_detail, name='admin-product-detail'),
+    
+    # Modifier produit
+    path('admin/products/<int:product_id>/update/', views.admin_update_product, name='admin-update-product'),
+    
+    # Supprimer produit
+    path('admin/products/<int:product_id>/delete/', views.admin_delete_product, name='admin-delete-product'),
+    
+    # Activer/désactiver (bannir)
+    path('admin/products/<int:product_id>/toggle-status/', views.admin_toggle_product_status, name='admin-toggle-product-status'),
 ]

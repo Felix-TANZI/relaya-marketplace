@@ -21,6 +21,7 @@ from .serializers import (
     VendorOrderSerializer,
     UpdateFulfillmentStatusSerializer,
     UpdatePaymentStatusSerializer,
+    AdminProductUpdateSerializer,
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
@@ -911,3 +912,152 @@ def admin_analytics(request):
     
     serializer = AdminAnalyticsSerializer(analytics)
     return Response(serializer.data)
+
+
+#  ADMINISTRATION - GESTION PRODUITS 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="List all products (admin)",
+    description="Liste tous les produits avec filtres (réservé admin)",
+    parameters=[
+        OpenApiParameter(name='vendor', description='Filtrer par vendor ID', required=False, type=int),
+        OpenApiParameter(name='category', description='Filtrer par category ID', required=False, type=int),
+        OpenApiParameter(name='is_active', description='Filtrer par statut actif', required=False, type=bool),
+        OpenApiParameter(name='search', description='Recherche par titre', required=False, type=str),
+    ],
+    responses={200: 'AdminProductListSerializer(many=True)'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_products(request):
+    """
+    Liste admin de tous les produits avec filtres
+    """
+    from apps.vendors.serializers import AdminProductListSerializer
+    
+    products = Product.objects.select_related(
+        'vendor', 
+        'vendor__vendor_profile', 
+        'category'
+    ).prefetch_related('images', 'inventory')
+    
+    # Filtres
+    vendor_id = request.query_params.get('vendor')
+    if vendor_id:
+        products = products.filter(vendor_id=vendor_id)
+    
+    category_id = request.query_params.get('category')
+    if category_id:
+        products = products.filter(category_id=category_id)
+    
+    is_active = request.query_params.get('is_active')
+    if is_active is not None:
+        products = products.filter(is_active=is_active.lower() == 'true')
+    
+    search = request.query_params.get('search')
+    if search:
+        products = products.filter(
+            Q(title__icontains=search) | Q(description__icontains=search)
+        )
+    
+    products = products.order_by('-created_at')
+    
+    serializer = AdminProductListSerializer(products, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get product detail (admin)",
+    description="Détail d'un produit (réservé admin)",
+    responses={200: ProductSerializer}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_product_detail(request, product_id):
+    """Détail d'un produit pour admin"""
+    try:
+        product = Product.objects.select_related('vendor', 'category').prefetch_related('images').get(id=product_id)
+        serializer = ProductSerializer(product, context={'request': request})
+        return Response(serializer.data)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Produit introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Update product (admin)",
+    description="Modifier un produit (réservé admin)",
+    request=AdminProductUpdateSerializer,
+    responses={200: ProductSerializer}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_product(request, product_id):
+    """Modifier un produit (admin force)"""
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Produit introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.vendors.serializers import AdminProductUpdateSerializer
+    serializer = AdminProductUpdateSerializer(product, data=request.data, partial=True)
+    
+    if serializer.is_valid():
+        serializer.save()
+        result_serializer = ProductSerializer(product, context={'request': request})
+        return Response(result_serializer.data)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Delete product (admin)",
+    description="Supprimer définitivement un produit (réservé admin)",
+    responses={204: None}
+)
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_product(request, product_id):
+    """Supprimer un produit"""
+    try:
+        product = Product.objects.get(id=product_id)
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Produit introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Toggle product active status (admin)",
+    description="Activer/désactiver un produit (bannir) (réservé admin)",
+    responses={200: ProductSerializer}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_toggle_product_status(request, product_id):
+    """Activer/désactiver un produit (bannir)"""
+    try:
+        product = Product.objects.get(id=product_id)
+        product.is_active = not product.is_active
+        product.save()
+        
+        serializer = ProductSerializer(product, context={'request': request})
+        return Response(serializer.data)
+    except Product.DoesNotExist:
+        return Response(
+            {'detail': 'Produit introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )

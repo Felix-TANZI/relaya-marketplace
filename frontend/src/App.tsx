@@ -26,6 +26,8 @@ import AdminDashboardPage from './features/admin/AdminDashboardPage'; // Page du
 import ProductsManagementPage from './features/admin/ProductsManagementPage'; // Page de gestion des produits pour les admins
 import OrdersManagementPage from './features/admin/OrdersManagementPage'; // Page de gestion des commandes pour les admins
 import AdminOrderDetailPage from './features/admin/OrderDetailPage'; // Page de détail d'une commande pour les admins
+import UsersManagementPage from './features/admin/UsersManagementPage'; // Page de gestion des utilisateurs pour les admins
+import UserDetailPage from './features/admin/UserDetailPage'; // Page de détail d'un utilisateur pour les admins
 
 function App() {
   return (
@@ -143,6 +145,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminOrderDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Routes gestion utilisateurs admin */}
+          <Route
+            path="admin/users"
+            element={
+              <ProtectedRoute>
+                <UsersManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/users/:id"
+            element={
+              <ProtectedRoute>
+                <UserDetailPage />
               </ProtectedRoute>
             }
           />

@@ -238,6 +238,100 @@ export interface OrderFilters {
   search?: string;
 }
 
+//  USERS 
+
+export interface UserActivityLog {
+  id: number;
+  action: string;
+  description: string;
+  performed_by: number | null;
+  performed_by_name: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  timestamp: string;
+}
+
+export interface AdminUser {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_staff: boolean;
+  is_active: boolean;
+  is_superuser: boolean;
+  is_vendor: boolean;
+  is_banned: boolean;
+  total_orders: number;
+  total_spent: number;
+  date_joined: string;
+  last_login: string | null;
+}
+
+export interface UserStats {
+  total_orders: number;
+  paid_orders: number;
+  pending_orders: number;
+  total_spent: number;
+  average_order_value: number;
+  total_products?: number;
+  active_products?: number;
+}
+
+export interface UserProfile {
+  phone: string | null;
+  bio: string | null;
+  is_banned: boolean;
+  ban_reason: string | null;
+  banned_at: string | null;
+  banned_by: string | null;
+  newsletter_subscribed: boolean;
+}
+
+export interface VendorProfileBasic {
+  id: number;
+  business_name: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+  created_at: string;
+  approved_at: string | null;
+}
+
+export interface AdminUserDetail {
+  id: number;
+  username: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  is_staff: boolean;
+  is_active: boolean;
+  is_superuser: boolean;
+  date_joined: string;
+  last_login: string | null;
+  is_vendor: boolean;
+  vendor_profile: VendorProfileBasic | null;
+  profile: UserProfile | null;
+  activity_logs: UserActivityLog[];
+  stats: UserStats;
+}
+
+export interface AdminUserUpdate {
+  is_staff?: boolean;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  first_name?: string;
+  last_name?: string;
+  email?: string;
+}
+
+export interface UserFilters {
+  role?: string;
+  is_banned?: boolean;
+  is_active?: boolean;
+  date_from?: string;
+  date_to?: string;
+  search?: string;
+}
+
 //  API
 
 export const adminApi = {
@@ -514,5 +608,116 @@ export const adminApi = {
     
     const token = localStorage.getItem('access_token');
     return `/api/vendors/admin/orders/export/csv/?${params.toString()}&token=${token}`;
+  },
+
+
+  //  USERS 
+
+  /**
+   * Liste tous les utilisateurs (admin)
+   */
+  listUsers: async (filters?: UserFilters): Promise<AdminUser[]> => {
+    const token = localStorage.getItem('access_token');
+    
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.is_banned !== undefined) params.append('is_banned', filters.is_banned.toString());
+    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    if (filters?.search) params.append('search', filters.search);
+    
+    const url = `/api/vendors/admin/users/${params.toString() ? '?' + params.toString() : ''}`;
+    
+    return http<AdminUser[]>(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Détail d'un utilisateur (admin)
+   */
+  getUserDetail: async (userId: number): Promise<AdminUserDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminUserDetail>(`/api/vendors/admin/users/${userId}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Modifier un utilisateur (admin)
+   */
+  updateUser: async (userId: number, data: AdminUserUpdate): Promise<AdminUserDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminUserDetail>(`/api/vendors/admin/users/${userId}/update/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Bannir un utilisateur (admin)
+   */
+  banUser: async (userId: number, reason: string): Promise<AdminUserDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminUserDetail>(`/api/vendors/admin/users/${userId}/ban/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ reason }),
+    });
+  },
+
+  /**
+   * Débannir un utilisateur (admin)
+   */
+  unbanUser: async (userId: number): Promise<AdminUserDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminUserDetail>(`/api/vendors/admin/users/${userId}/unban/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Supprimer un utilisateur (admin)
+   */
+  deleteUser: async (userId: number): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    return http<void>(`/api/vendors/admin/users/${userId}/delete/`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Exporter les utilisateurs en CSV
+   */
+  exportUsersCSV: (filters?: UserFilters): string => {
+    const params = new URLSearchParams();
+    if (filters?.role) params.append('role', filters.role);
+    if (filters?.is_banned !== undefined) params.append('is_banned', filters.is_banned.toString());
+    if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
+    
+    const token = localStorage.getItem('access_token');
+    return `/api/vendors/admin/users/export/csv/?${params.toString()}&token=${token}`;
   },
 };

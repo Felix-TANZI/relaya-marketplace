@@ -74,4 +74,9 @@ urlpatterns = [
     
     # Suspendre un vendeur
     path('admin/vendors/<int:vendor_id>/suspend/', views.admin_suspend_vendor, name='admin-suspend-vendor'),
+
+    #  ADMINISTRATION - DASHBOARD 
+    
+    # Statistiques globales dashboard
+    path('admin/dashboard/stats/', views.admin_dashboard_stats, name='admin-dashboard-stats'),
 ]

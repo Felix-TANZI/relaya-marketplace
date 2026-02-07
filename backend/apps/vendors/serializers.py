@@ -6,7 +6,7 @@ from .models import VendorProfile
 from apps.orders.models import Order, OrderItem
 
 
-# ========== SERIALIZERS PROFIL VENDEUR ==========
+#  SERIALIZERS PROFIL VENDEUR 
 
 class VendorProfileSerializer(serializers.ModelSerializer):
     """Serializer pour le profil vendeur"""
@@ -54,7 +54,7 @@ class VendorStatsSerializer(serializers.Serializer):
     total_revenue = serializers.DecimalField(max_digits=10, decimal_places=2)
 
 
-# ========== SERIALIZERS COMMANDES ==========
+#  SERIALIZERS COMMANDES 
 
 class VendorOrderItemSerializer(serializers.ModelSerializer):
     """Serializer pour les items de commande du vendeur"""
@@ -162,7 +162,7 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         return 0
 
 
-# ========== NOUVEAUX SERIALIZERS (MISE À JOUR STATUTS) ==========
+#  NOUVEAUX SERIALIZERS (MISE À JOUR STATUTS) 
 
 class UpdateFulfillmentStatusSerializer(serializers.Serializer):
     """
@@ -252,3 +252,46 @@ class UpdatePaymentStatusSerializer(serializers.Serializer):
         instance.payment_status = validated_data['payment_status']
         instance.save()
         return instance
+    
+
+#  ADMIN DASHBOARD STATS 
+
+class AdminDashboardStatsSerializer(serializers.Serializer):
+    """Serializer pour les statistiques du dashboard admin"""
+    
+    # Utilisateurs
+    total_users = serializers.IntegerField()
+    new_users_today = serializers.IntegerField() # Nombre de nouveaux utilisateurs inscrits aujourd'hui
+    new_users_week = serializers.IntegerField()
+    new_users_month = serializers.IntegerField()
+    
+    # Vendeurs
+    total_vendors = serializers.IntegerField()
+    pending_vendors = serializers.IntegerField()
+    approved_vendors = serializers.IntegerField()
+    rejected_vendors = serializers.IntegerField()
+    suspended_vendors = serializers.IntegerField()
+    
+    # Produits
+    total_products = serializers.IntegerField()
+    active_products = serializers.IntegerField()
+    inactive_products = serializers.IntegerField()
+    
+    # Commandes
+    total_orders = serializers.IntegerField()
+    pending_orders = serializers.IntegerField()
+    processing_orders = serializers.IntegerField()
+    shipped_orders = serializers.IntegerField()
+    delivered_orders = serializers.IntegerField()
+    cancelled_orders = serializers.IntegerField()
+    
+    # Revenus
+    revenue_total = serializers.IntegerField()
+    revenue_today = serializers.IntegerField()
+    revenue_week = serializers.IntegerField()
+    revenue_month = serializers.IntegerField()
+    
+    # Paiements
+    paid_orders = serializers.IntegerField()
+    unpaid_orders = serializers.IntegerField()
+    failed_payments = serializers.IntegerField()    

@@ -517,3 +517,137 @@ class AdminOrderUpdateSerializer(serializers.Serializer):
         required=False
     )
     note = serializers.CharField(required=False, allow_blank=True)        
+
+
+#  ADMIN USERS MANAGEMENT 
+
+class UserActivityLogSerializer(serializers.ModelSerializer):
+    """Serializer pour le journal d'activité"""
+    performed_by_name = serializers.CharField(source='performed_by.username', read_only=True, default='Système')
+    
+    class Meta:
+        from apps.accounts.models import UserActivityLog
+        model = UserActivityLog
+        fields = [
+            'id', 'action', 'description', 'performed_by', 'performed_by_name',
+            'ip_address', 'user_agent', 'timestamp'
+        ]
+
+
+class AdminUserListSerializer(serializers.ModelSerializer):
+    """Serializer pour liste admin des utilisateurs"""
+    is_vendor = serializers.SerializerMethodField()
+    is_banned = serializers.SerializerMethodField()
+    total_orders = serializers.SerializerMethodField()
+    total_spent = serializers.SerializerMethodField()
+    
+    class Meta:
+        from django.contrib.auth.models import User
+        model = User
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_staff', 'is_active', 'is_superuser',
+            'is_vendor', 'is_banned',
+            'total_orders', 'total_spent',
+            'date_joined', 'last_login'
+        ]
+    
+    def get_is_vendor(self, obj):
+        return hasattr(obj, 'vendor_profile')
+    
+    def get_is_banned(self, obj):
+        if hasattr(obj, 'profile'):
+            return obj.profile.is_banned
+        return False
+    
+    def get_total_orders(self, obj):
+        from apps.orders.models import Order
+        return Order.objects.filter(user=obj).count()
+    
+    def get_total_spent(self, obj):
+        from apps.orders.models import Order
+        from django.db.models import Sum
+        total = Order.objects.filter(
+            user=obj, 
+            payment_status='PAID'
+        ).aggregate(total=Sum('total_xaf'))['total']
+        return total or 0
+
+
+class AdminUserDetailSerializer(serializers.ModelSerializer):
+    """Serializer détaillé pour un utilisateur"""
+    is_vendor = serializers.SerializerMethodField()
+    vendor_profile = serializers.SerializerMethodField()
+    profile = serializers.SerializerMethodField()
+    activity_logs = UserActivityLogSerializer(many=True, read_only=True)
+    stats = serializers.SerializerMethodField()
+    
+    class Meta:
+        from django.contrib.auth.models import User
+        model = User
+        fields = [
+            'id', 'username', 'email', 'first_name', 'last_name',
+            'is_staff', 'is_active', 'is_superuser',
+            'date_joined', 'last_login',
+            'is_vendor', 'vendor_profile', 'profile',
+            'activity_logs', 'stats'
+        ]
+    
+    def get_is_vendor(self, obj):
+        return hasattr(obj, 'vendor_profile')
+    
+    def get_vendor_profile(self, obj):
+        if hasattr(obj, 'vendor_profile'):
+            from apps.vendors.serializers import VendorProfileSerializer
+            return VendorProfileSerializer(obj.vendor_profile).data
+        return None
+    
+    def get_profile(self, obj):
+        if hasattr(obj, 'profile'):
+            return {
+                'phone': obj.profile.phone,
+                'bio': obj.profile.bio,
+                'is_banned': obj.profile.is_banned,
+                'ban_reason': obj.profile.ban_reason,
+                'banned_at': obj.profile.banned_at,
+                'banned_by': obj.profile.banned_by.username if obj.profile.banned_by else None,
+                'newsletter_subscribed': obj.profile.newsletter_subscribed,
+            }
+        return None
+    
+    def get_stats(self, obj):
+        from apps.orders.models import Order
+        from django.db.models import Sum, Count
+        
+        orders = Order.objects.filter(user=obj)
+        paid_orders = orders.filter(payment_status='PAID')
+        
+        stats = {
+            'total_orders': orders.count(),
+            'paid_orders': paid_orders.count(),
+            'pending_orders': orders.filter(payment_status='PENDING').count(),
+            'total_spent': paid_orders.aggregate(total=Sum('total_xaf'))['total'] or 0,
+            'average_order_value': 0,
+        }
+        
+        if stats['paid_orders'] > 0:
+            stats['average_order_value'] = int(stats['total_spent'] / stats['paid_orders'])
+        
+        # Si vendeur
+        if hasattr(obj, 'vendor_profile'):
+            from apps.catalog.models import Product
+            vendor_products = Product.objects.filter(vendor=obj)
+            stats['total_products'] = vendor_products.count()
+            stats['active_products'] = vendor_products.filter(is_active=True).count()
+        
+        return stats
+
+
+class AdminUserUpdateSerializer(serializers.Serializer):
+    """Serializer pour modification utilisateur (admin)"""
+    is_staff = serializers.BooleanField(required=False)
+    is_active = serializers.BooleanField(required=False)
+    is_superuser = serializers.BooleanField(required=False)
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False)    

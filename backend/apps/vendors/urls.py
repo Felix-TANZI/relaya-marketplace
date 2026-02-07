@@ -116,4 +116,27 @@ urlpatterns = [
     
     # Export CSV
     path('admin/orders/export/csv/', views.admin_export_orders_csv, name='admin-export-orders-csv'),
+
+    #  ADMINISTRATION - GESTION UTILISATEURS 
+    
+    # Liste utilisateurs
+    path('admin/users/', views.admin_list_users, name='admin-list-users'),
+    
+    # Détail utilisateur
+    path('admin/users/<int:user_id>/', views.admin_user_detail, name='admin-user-detail'),
+    
+    # Modifier utilisateur
+    path('admin/users/<int:user_id>/update/', views.admin_update_user, name='admin-update-user'),
+    
+    # Bannir utilisateur
+    path('admin/users/<int:user_id>/ban/', views.admin_ban_user, name='admin-ban-user'),
+    
+    # Débannir utilisateur
+    path('admin/users/<int:user_id>/unban/', views.admin_unban_user, name='admin-unban-user'),
+    
+    # Supprimer utilisateur
+    path('admin/users/<int:user_id>/delete/', views.admin_delete_user, name='admin-delete-user'),
+    
+    # Export CSV
+    path('admin/users/export/csv/', views.admin_export_users_csv, name='admin-export-users-csv'),
 ]

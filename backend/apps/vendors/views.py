@@ -1322,3 +1322,327 @@ def admin_export_orders_csv(request):
         ])
     
     return response    
+
+
+#  ADMINISTRATION - GESTION UTILISATEURS 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="List all users (admin)",
+    description="Liste tous les utilisateurs avec filtres",
+    parameters=[
+        OpenApiParameter(name='role', description='Filtrer par rôle (vendor/admin/customer)', required=False, type=str),
+        OpenApiParameter(name='is_banned', description='Filtrer par statut ban', required=False, type=bool),
+        OpenApiParameter(name='is_active', description='Filtrer par statut actif', required=False, type=bool),
+        OpenApiParameter(name='date_from', description='Date inscription début', required=False, type=str),
+        OpenApiParameter(name='date_to', description='Date inscription fin', required=False, type=str),
+        OpenApiParameter(name='search', description='Recherche (username, email, nom)', required=False, type=str),
+    ],
+    responses={200: 'AdminUserListSerializer(many=True)'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_users(request):
+    """Liste admin de tous les utilisateurs"""
+    from apps.vendors.serializers import AdminUserListSerializer
+    from apps.accounts.models import UserProfile
+    
+    users = User.objects.select_related('vendor_profile').prefetch_related('orders')
+    
+    # Filtre par rôle
+    role = request.query_params.get('role')
+    if role == 'vendor':
+        users = users.filter(vendor_profile__isnull=False)
+    elif role == 'admin':
+        users = users.filter(is_staff=True)
+    elif role == 'customer':
+        users = users.filter(vendor_profile__isnull=True, is_staff=False)
+    
+    # Filtre actif/inactif
+    is_active = request.query_params.get('is_active')
+    if is_active is not None:
+        users = users.filter(is_active=is_active.lower() == 'true')
+    
+    # Filtre banni
+    is_banned = request.query_params.get('is_banned')
+    if is_banned is not None:
+        # Créer les profils manquants si nécessaire
+        for user in users:
+            UserProfile.objects.get_or_create(user=user)
+        
+        if is_banned.lower() == 'true':
+            users = users.filter(profile__is_banned=True)
+        else:
+            users = users.filter(Q(profile__is_banned=False) | Q(profile__isnull=True))
+    
+    # Filtre dates
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        users = users.filter(date_joined__date__gte=date_from)
+    
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        users = users.filter(date_joined__date__lte=date_to)
+    
+    # Recherche
+    search = request.query_params.get('search')
+    if search:
+        users = users.filter(
+            Q(username__icontains=search) |
+            Q(email__icontains=search) |
+            Q(first_name__icontains=search) |
+            Q(last_name__icontains=search)
+        )
+    
+    users = users.order_by('-date_joined')
+    
+    serializer = AdminUserListSerializer(users, many=True)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get user detail (admin)",
+    description="Détail complet d'un utilisateur",
+    responses={200: 'AdminUserDetailSerializer'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_user_detail(request, user_id):
+    """Détail complet d'un utilisateur"""
+    try:
+        user = User.objects.prefetch_related(
+            'vendor_profile',
+            'profile',
+            'activity_logs',
+            'orders'
+        ).get(id=user_id)
+        
+        from apps.vendors.serializers import AdminUserDetailSerializer
+        serializer = AdminUserDetailSerializer(user)
+        return Response(serializer.data)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Utilisateur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Update user (admin)",
+    description="Modifier un utilisateur",
+    request='AdminUserUpdateSerializer',
+    responses={200: 'AdminUserDetailSerializer'}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_user(request, user_id):
+    """Modifier un utilisateur"""
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Utilisateur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.vendors.serializers import AdminUserUpdateSerializer, AdminUserDetailSerializer
+    from apps.accounts.models import UserActivityLog
+    
+    serializer = AdminUserUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Enregistrer les modifications
+    for field, new_value in serializer.validated_data.items():
+        old_value = getattr(user, field)
+        if old_value != new_value:
+            UserActivityLog.objects.create(
+                user=user,
+                action=f"Modification {field}",
+                description=f"Changé de '{old_value}' à '{new_value}'",
+                performed_by=request.user,
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+            setattr(user, field, new_value)
+    
+    user.save()
+    
+    result_serializer = AdminUserDetailSerializer(user)
+    return Response(result_serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Ban user (admin)",
+    description="Bannir un utilisateur",
+    responses={200: 'AdminUserDetailSerializer'}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_ban_user(request, user_id):
+    """Bannir un utilisateur"""
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Utilisateur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.accounts.models import UserProfile, UserActivityLog
+    from apps.vendors.serializers import AdminUserDetailSerializer
+    
+    reason = request.data.get('reason', 'Aucune raison spécifiée')
+    
+    # Créer ou mettre à jour le profil
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    profile.is_banned = True
+    profile.ban_reason = reason
+    profile.banned_at = timezone.now()
+    profile.banned_by = request.user
+    profile.save()
+    
+    # Désactiver le compte
+    user.is_active = False
+    user.save()
+    
+    # Log
+    UserActivityLog.objects.create(
+        user=user,
+        action="Compte banni",
+        description=f"Raison: {reason}",
+        performed_by=request.user,
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    serializer = AdminUserDetailSerializer(user)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Unban user (admin)",
+    description="Débannir un utilisateur",
+    responses={200: 'AdminUserDetailSerializer'}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_unban_user(request, user_id):
+    """Débannir un utilisateur"""
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Utilisateur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.accounts.models import UserProfile, UserActivityLog
+    from apps.vendors.serializers import AdminUserDetailSerializer
+    
+    if hasattr(user, 'profile'):
+        user.profile.is_banned = False
+        user.profile.ban_reason = None
+        user.profile.banned_at = None
+        user.profile.banned_by = None
+        user.profile.save()
+    
+    # Réactiver le compte
+    user.is_active = True
+    user.save()
+    
+    # Log
+    UserActivityLog.objects.create(
+        user=user,
+        action="Compte débanni",
+        description="Accès restauré",
+        performed_by=request.user,
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    serializer = AdminUserDetailSerializer(user)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Delete user (admin)",
+    description="Supprimer définitivement un utilisateur",
+    responses={204: None}
+)
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_user(request, user_id):
+    """Supprimer un utilisateur"""
+    try:
+        user = User.objects.get(id=user_id)
+        
+        # Empêcher de se supprimer soi-même
+        if user.id == request.user.id:
+            return Response(
+                {'detail': 'Vous ne pouvez pas supprimer votre propre compte.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    except User.DoesNotExist:
+        return Response(
+            {'detail': 'Utilisateur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Export users to CSV",
+    description="Exporter les utilisateurs en CSV",
+    responses={200: 'CSV file'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_export_users_csv(request):
+    """Export CSV des utilisateurs"""
+    import csv
+    from django.http import HttpResponse
+    
+    users = User.objects.select_related('vendor_profile', 'profile').order_by('-date_joined')
+    
+    # Appliquer filtres
+    role = request.query_params.get('role')
+    if role == 'vendor':
+        users = users.filter(vendor_profile__isnull=False)
+    elif role == 'admin':
+        users = users.filter(is_staff=True)
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="utilisateurs_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID', 'Username', 'Email', 'Prénom', 'Nom',
+        'Rôle', 'Actif', 'Banni', 'Date Inscription', 'Dernière Connexion'
+    ])
+    
+    for user in users:
+        role_display = "Admin" if user.is_staff else ("Vendeur" if hasattr(user, 'vendor_profile') else "Client")
+        is_banned = user.profile.is_banned if hasattr(user, 'profile') else False
+        
+        writer.writerow([
+            user.id,
+            user.username,
+            user.email,
+            user.first_name,
+            user.last_name,
+            role_display,
+            "Oui" if user.is_active else "Non",
+            "Oui" if is_banned else "Non",
+            user.date_joined.strftime('%Y-%m-%d %H:%M'),
+            user.last_login.strftime('%Y-%m-%d %H:%M') if user.last_login else 'Jamais',
+        ])
+    
+    return response

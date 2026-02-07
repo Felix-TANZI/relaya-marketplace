@@ -6,7 +6,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django.db.models import Sum, Count, Q
+from django.db import models
+from django.db.models import Sum, Count, Q, Avg, F
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
@@ -1646,3 +1647,280 @@ def admin_export_users_csv(request):
         ])
     
     return response
+
+
+#  ADMINISTRATION - GESTION LITIGES 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="List all disputes (admin)",
+    description="Liste tous les litiges avec filtres",
+    parameters=[
+        OpenApiParameter(name='status', description='Filtrer par statut', required=False, type=str),
+        OpenApiParameter(name='reason', description='Filtrer par motif', required=False, type=str),
+        OpenApiParameter(name='order', description='Filtrer par order ID', required=False, type=int),
+        OpenApiParameter(name='search', description='Recherche (order ID, email)', required=False, type=str),
+    ],
+    responses={200: 'AdminDisputeListSerializer(many=True)'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_disputes(request):
+    """Liste admin de tous les litiges"""
+    from apps.orders.models import Dispute
+    from apps.vendors.serializers import AdminDisputeListSerializer
+    
+    disputes = Dispute.objects.select_related(
+        'order', 
+        'order__user', 
+        'opened_by'
+    ).prefetch_related('messages')
+    
+    # Filtres
+    status = request.query_params.get('status')
+    if status:
+        disputes = disputes.filter(status=status)
+    
+    reason = request.query_params.get('reason')
+    if reason:
+        disputes = disputes.filter(reason=reason)
+    
+    order_id = request.query_params.get('order')
+    if order_id:
+        disputes = disputes.filter(order_id=order_id)
+    
+    # Recherche
+    search = request.query_params.get('search')
+    if search:
+        if search.isdigit():
+            disputes = disputes.filter(Q(id=int(search)) | Q(order_id=int(search)))
+        else:
+            disputes = disputes.filter(
+                Q(order__customer_email__icontains=search) |
+                Q(opened_by__username__icontains=search)
+            )
+    
+    disputes = disputes.order_by('-created_at')
+    
+    serializer = AdminDisputeListSerializer(disputes, many=True)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get dispute detail (admin)",
+    description="Détail complet d'un litige",
+    responses={200: 'AdminDisputeDetailSerializer'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_dispute_detail(request, dispute_id):
+    """Détail complet d'un litige"""
+    try:
+        from apps.orders.models import Dispute
+        from apps.vendors.serializers import AdminDisputeDetailSerializer
+        
+        dispute = Dispute.objects.select_related(
+            'order',
+            'order__user',
+            'opened_by',
+            'resolved_by'
+        ).prefetch_related(
+            'messages',
+            'messages__sender',
+            'evidences',
+            'evidences__uploaded_by'
+        ).get(id=dispute_id)
+        
+        serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
+        return Response(serializer.data)
+    except Dispute.DoesNotExist:
+        return Response(
+            {'detail': 'Litige introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Update dispute (admin)",
+    description="Modifier un litige",
+    request='AdminDisputeUpdateSerializer',
+    responses={200: 'AdminDisputeDetailSerializer'}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_dispute(request, dispute_id):
+    """Modifier un litige"""
+    try:
+        from apps.orders.models import Dispute, DisputeMessage
+        from apps.vendors.serializers import AdminDisputeUpdateSerializer, AdminDisputeDetailSerializer
+        
+        dispute = Dispute.objects.get(id=dispute_id)
+    except Dispute.DoesNotExist:
+        return Response(
+            {'detail': 'Litige introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    serializer = AdminDisputeUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Enregistrer les modifications
+    changed_fields = []
+    for field, new_value in serializer.validated_data.items():
+        old_value = getattr(dispute, field)
+        if old_value != new_value:
+            changed_fields.append(f"{field}: {old_value} → {new_value}")
+            setattr(dispute, field, new_value)
+    
+    # Si résolu, enregistrer qui et quand
+    if 'status' in serializer.validated_data and serializer.validated_data['status'] in ['RESOLVED', 'CLOSED']:
+        if not dispute.resolved_at:
+            dispute.resolved_by = request.user
+            dispute.resolved_at = timezone.now()
+    
+    dispute.save()
+    
+    # Ajouter message interne
+    if changed_fields:
+        DisputeMessage.objects.create(
+            dispute=dispute,
+            sender=request.user,
+            message=f"Admin a modifié le litige : {', '.join(changed_fields)}",
+            is_internal=True
+        )
+    
+    result_serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
+    return Response(result_serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Add message to dispute (admin)",
+    description="Ajouter un message au litige",
+    request='DisputeMessageCreateSerializer',
+    responses={200: 'AdminDisputeDetailSerializer'}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_add_dispute_message(request, dispute_id):
+    """Ajouter un message au litige"""
+    try:
+        from apps.orders.models import Dispute, DisputeMessage
+        from apps.vendors.serializers import DisputeMessageCreateSerializer, AdminDisputeDetailSerializer
+        
+        dispute = Dispute.objects.get(id=dispute_id)
+    except Dispute.DoesNotExist:
+        return Response(
+            {'detail': 'Litige introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    serializer = DisputeMessageCreateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    DisputeMessage.objects.create(
+        dispute=dispute,
+        sender=request.user,
+        message=serializer.validated_data['message'],
+        is_internal=serializer.validated_data.get('is_internal', False)
+    )
+    
+    result_serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
+    return Response(result_serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Resolve dispute (admin)",
+    description="Résoudre un litige avec décision",
+    responses={200: 'AdminDisputeDetailSerializer'}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_resolve_dispute(request, dispute_id):
+    """Résoudre un litige"""
+    try:
+        from apps.orders.models import Dispute, DisputeMessage
+        from apps.vendors.serializers import AdminDisputeDetailSerializer
+        
+        dispute = Dispute.objects.get(id=dispute_id)
+    except Dispute.DoesNotExist:
+        return Response(
+            {'detail': 'Litige introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    resolution = request.data.get('resolution')
+    resolution_note = request.data.get('resolution_note', '')
+    refund_amount = request.data.get('refund_amount_xaf')
+    
+    if not resolution:
+        return Response(
+            {'detail': 'La résolution est requise.'},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    dispute.status = 'RESOLVED'
+    dispute.resolution = resolution
+    dispute.resolution_note = resolution_note
+    dispute.refund_amount_xaf = refund_amount
+    dispute.resolved_by = request.user
+    dispute.resolved_at = timezone.now()
+    dispute.save()
+    
+    # Message de résolution
+    DisputeMessage.objects.create(
+        dispute=dispute,
+        sender=request.user,
+        message=f"Litige résolu : {dispute.get_resolution_display()}. {resolution_note}",
+        is_internal=False
+    )
+    
+    serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get dispute stats (admin)",
+    description="Statistiques des litiges",
+    responses={200: 'object'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_dispute_stats(request):
+    """Statistiques des litiges"""
+    from apps.orders.models import Dispute
+    from django.db.models import Count, Avg
+    
+    total_disputes = Dispute.objects.count()
+    
+    stats_by_status = Dispute.objects.values('status').annotate(count=Count('id'))
+    stats_by_reason = Dispute.objects.values('reason').annotate(count=Count('id'))
+    stats_by_resolution = Dispute.objects.filter(
+        resolution__isnull=False
+    ).values('resolution').annotate(count=Count('id'))
+    
+    # Délai moyen de résolution
+    avg_resolution_time = Dispute.objects.filter(
+        resolved_at__isnull=False
+    ).annotate(
+        resolution_time=models.F('resolved_at') - models.F('created_at')
+    ).aggregate(avg_time=Avg('resolution_time'))
+    
+    stats = {
+        'total_disputes': total_disputes,
+        'open_disputes': Dispute.objects.filter(status='OPEN').count(),
+        'in_progress_disputes': Dispute.objects.filter(status='IN_PROGRESS').count(),
+        'resolved_disputes': Dispute.objects.filter(status='RESOLVED').count(),
+        'stats_by_status': list(stats_by_status),
+        'stats_by_reason': list(stats_by_reason),
+        'stats_by_resolution': list(stats_by_resolution),
+        'avg_resolution_days': avg_resolution_time['avg_time'].days if avg_resolution_time['avg_time'] else 0,
+    }
+    
+    return Response(stats)

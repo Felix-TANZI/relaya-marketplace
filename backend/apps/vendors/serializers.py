@@ -651,3 +651,109 @@ class AdminUserUpdateSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False, allow_blank=True)
     last_name = serializers.CharField(required=False, allow_blank=True)
     email = serializers.EmailField(required=False)    
+
+
+#  ADMIN DISPUTES MANAGEMENT 
+
+class DisputeMessageSerializer(serializers.ModelSerializer):
+    """Serializer pour message de litige"""
+    sender_name = serializers.CharField(source='sender.username', read_only=True)
+    
+    class Meta:
+        from apps.orders.models import DisputeMessage
+        model = DisputeMessage
+        fields = ['id', 'sender', 'sender_name', 'message', 'is_internal', 'created_at']
+
+
+class DisputeEvidenceSerializer(serializers.ModelSerializer):
+    """Serializer pour preuve de litige"""
+    uploaded_by_name = serializers.CharField(source='uploaded_by.username', read_only=True)
+    file_url = serializers.SerializerMethodField()
+    
+    class Meta:
+        from apps.orders.models import DisputeEvidence
+        model = DisputeEvidence
+        fields = ['id', 'uploaded_by', 'uploaded_by_name', 'file', 'file_url', 'description', 'created_at']
+    
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if request and obj.file:
+            return request.build_absolute_uri(obj.file.url)
+        return None
+
+
+class AdminDisputeListSerializer(serializers.ModelSerializer):
+    """Serializer pour liste admin des litiges"""
+    order_id = serializers.IntegerField(source='order.id', read_only=True)
+    customer_name = serializers.SerializerMethodField()
+    opened_by_name = serializers.CharField(source='opened_by.username', read_only=True)
+    messages_count = serializers.SerializerMethodField()
+    
+    class Meta:
+        from apps.orders.models import Dispute
+        model = Dispute
+        fields = [
+            'id', 'order', 'order_id', 'opened_by', 'opened_by_name',
+            'customer_name', 'reason', 'status', 'resolution',
+            'messages_count', 'created_at', 'updated_at'
+        ]
+    
+    def get_customer_name(self, obj):
+        if obj.order.user:
+            return obj.order.user.username
+        return obj.order.customer_email or 'Invité'
+    
+    def get_messages_count(self, obj):
+        return obj.messages.count()
+
+
+class AdminDisputeDetailSerializer(serializers.ModelSerializer):
+    """Serializer détaillé pour un litige"""
+    order_detail = serializers.SerializerMethodField()
+    opened_by_name = serializers.CharField(source='opened_by.username', read_only=True)
+    resolved_by_name = serializers.CharField(source='resolved_by.username', read_only=True, default=None)
+    messages = DisputeMessageSerializer(many=True, read_only=True)
+    evidences = DisputeEvidenceSerializer(many=True, read_only=True)
+    
+    class Meta:
+        from apps.orders.models import Dispute
+        model = Dispute
+        fields = [
+            'id', 'order', 'order_detail', 'opened_by', 'opened_by_name',
+            'reason', 'status', 'description',
+            'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
+            'refund_amount_xaf',
+            'messages', 'evidences',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_order_detail(self, obj):
+        return {
+            'id': obj.order.id,
+            'total_xaf': obj.order.total_xaf,
+            'customer_email': obj.order.customer_email,
+            'customer_phone': obj.order.customer_phone,
+            'payment_status': obj.order.payment_status,
+            'fulfillment_status': obj.order.fulfillment_status,
+            'created_at': obj.order.created_at,
+        }
+
+
+class AdminDisputeUpdateSerializer(serializers.Serializer):
+    """Serializer pour modification litige (admin)"""
+    status = serializers.ChoiceField(
+        choices=['OPEN', 'IN_PROGRESS', 'RESOLVED', 'CLOSED'],
+        required=False
+    )
+    resolution = serializers.ChoiceField(
+        choices=['REFUND', 'EXCHANGE', 'PARTIAL_REFUND', 'REJECTED', 'OTHER'],
+        required=False
+    )
+    resolution_note = serializers.CharField(required=False, allow_blank=True)
+    refund_amount_xaf = serializers.IntegerField(required=False, allow_null=True)
+
+
+class DisputeMessageCreateSerializer(serializers.Serializer):
+    """Serializer pour créer un message"""
+    message = serializers.CharField()
+    is_internal = serializers.BooleanField(default=False)    

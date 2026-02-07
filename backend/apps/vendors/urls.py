@@ -139,4 +139,24 @@ urlpatterns = [
     
     # Export CSV
     path('admin/users/export/csv/', views.admin_export_users_csv, name='admin-export-users-csv'),
+
+    #  ADMINISTRATION - GESTION LITIGES 
+    
+    # Liste litiges
+    path('admin/disputes/', views.admin_list_disputes, name='admin-list-disputes'),
+    
+    # Stats litiges
+    path('admin/disputes/stats/', views.admin_dispute_stats, name='admin-dispute-stats'),
+    
+    # Détail litige
+    path('admin/disputes/<int:dispute_id>/', views.admin_dispute_detail, name='admin-dispute-detail'),
+    
+    # Modifier litige
+    path('admin/disputes/<int:dispute_id>/update/', views.admin_update_dispute, name='admin-update-dispute'),
+    
+    # Ajouter message
+    path('admin/disputes/<int:dispute_id>/message/', views.admin_add_dispute_message, name='admin-add-dispute-message'),
+    
+    # Résoudre litige
+    path('admin/disputes/<int:dispute_id>/resolve/', views.admin_resolve_dispute, name='admin-resolve-dispute'),
 ]

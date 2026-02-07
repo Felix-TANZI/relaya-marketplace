@@ -135,3 +135,106 @@ class OrderHistory(models.Model):
     
     def __str__(self):
         return f"Order #{self.order.id} - {self.action} - {self.timestamp}"
+    
+
+class Dispute(models.Model):
+    """
+    Litige sur une commande
+    """
+    REASON_CHOICES = [
+        ('NOT_RECEIVED', 'Commande non reçue'),
+        ('DAMAGED', 'Article endommagé'),
+        ('WRONG_ITEM', 'Mauvais article'),
+        ('NOT_AS_DESCRIBED', 'Non conforme à la description'),
+        ('REFUND_REQUEST', 'Demande de remboursement'),
+        ('OTHER', 'Autre'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('OPEN', 'Ouvert'),
+        ('IN_PROGRESS', 'En cours'),
+        ('RESOLVED', 'Résolu'),
+        ('CLOSED', 'Fermé'),
+    ]
+    
+    RESOLUTION_CHOICES = [
+        ('REFUND', 'Remboursement'),
+        ('EXCHANGE', 'Échange'),
+        ('PARTIAL_REFUND', 'Remboursement partiel'),
+        ('REJECTED', 'Rejeté'),
+        ('OTHER', 'Autre'),
+    ]
+    
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='disputes')
+    opened_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='opened_disputes')
+    
+    reason = models.CharField(max_length=50, choices=REASON_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='OPEN')
+    
+    description = models.TextField()
+    
+    # Résolution
+    resolution = models.CharField(max_length=50, choices=RESOLUTION_CHOICES, blank=True, null=True)
+    resolution_note = models.TextField(blank=True, null=True)
+    resolved_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        related_name='resolved_disputes'
+    )
+    resolved_at = models.DateTimeField(blank=True, null=True)
+    
+    # Montant du remboursement (si applicable)
+    refund_amount_xaf = models.IntegerField(blank=True, null=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Litige"
+        verbose_name_plural = "Litiges"
+    
+    def __str__(self):
+        return f"Litige #{self.id} - Commande #{self.order.id}"
+
+
+class DisputeMessage(models.Model):
+    """
+    Message dans un litige
+    """
+    dispute = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField()
+    is_internal = models.BooleanField(default=False)  # Note interne admin
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Message Litige"
+        verbose_name_plural = "Messages Litiges"
+    
+    def __str__(self):
+        return f"Message de {self.sender.username} - Litige #{self.dispute.id}"
+
+
+class DisputeEvidence(models.Model):
+    """
+    Preuve/Document joint à un litige
+    """
+    dispute = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name='evidences')
+    uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    file = models.FileField(upload_to='disputes/%Y/%m/')
+    description = models.CharField(max_length=255, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['created_at']
+        verbose_name = "Preuve Litige"
+        verbose_name_plural = "Preuves Litiges"
+    
+    def __str__(self):
+        return f"Preuve - Litige #{self.dispute.id}"    

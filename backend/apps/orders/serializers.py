@@ -22,7 +22,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'line_total_xaf']
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class OrderDetailSerializer(serializers.ModelSerializer):
     """
     Serializer pour les commandes avec les deux statuts séparés :
     - payment_status : état du paiement
@@ -155,7 +155,7 @@ class OrderCreateSerializer(serializers.Serializer):
         except ShippingRate.DoesNotExist:
             delivery_fee = 2000  # Frais par défaut
         
-        # Créer la commande
+        # Créer la commande avec l'ancien format de status
         order = Order.objects.create(
             user=user,
             customer_email=validated_data.get('customer_email', ''),
@@ -166,8 +166,7 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,
-            payment_status=Order.PaymentStatus.PENDING,
-            fulfillment_status=Order.FulfillmentStatus.PENDING
+            status='PENDING_PAYMENT'  # Utilise l'ancien champ
         )
         
         # Créer les articles de la commande

@@ -79,4 +79,7 @@ urlpatterns = [
     
     # Statistiques globales dashboard
     path('admin/dashboard/stats/', views.admin_dashboard_stats, name='admin-dashboard-stats'),
+
+    # Données analytiques (graphiques)
+    path('admin/dashboard/analytics/', views.admin_analytics, name='admin-analytics'),
 ]

@@ -295,3 +295,50 @@ class AdminDashboardStatsSerializer(serializers.Serializer):
     paid_orders = serializers.IntegerField()
     unpaid_orders = serializers.IntegerField()
     failed_payments = serializers.IntegerField()    
+
+
+    # ========== ADMIN DASHBOARD - DONNÉES GRAPHIQUES ==========
+
+class RevenueDataPointSerializer(serializers.Serializer):
+    """Point de données pour le graphique revenus"""
+    date = serializers.DateField()
+    revenue = serializers.IntegerField()
+
+
+class TopProductSerializer(serializers.Serializer):
+    """Produit le plus vendu"""
+    product_id = serializers.IntegerField()
+    product_title = serializers.CharField()
+    total_quantity = serializers.IntegerField()
+    total_revenue = serializers.IntegerField()
+
+
+class TopVendorSerializer(serializers.Serializer):
+    """Vendeur le plus performant"""
+    vendor_id = serializers.IntegerField()
+    vendor_name = serializers.CharField()
+    business_name = serializers.CharField()
+    total_revenue = serializers.IntegerField()
+    total_orders = serializers.IntegerField()
+
+
+class RecentActivitySerializer(serializers.Serializer):
+    """Activité récente sur la plateforme"""
+    type = serializers.CharField()  # 'order', 'vendor', 'product'
+    description = serializers.CharField()
+    timestamp = serializers.DateTimeField()
+    user = serializers.CharField(required=False)
+    amount = serializers.IntegerField(required=False)
+
+
+class AdminAnalyticsSerializer(serializers.Serializer):
+    """Données analytiques complètes pour le dashboard"""
+    revenue_chart = RevenueDataPointSerializer(many=True)
+    top_products = TopProductSerializer(many=True)
+    top_vendors = TopVendorSerializer(many=True)
+    recent_activity = RecentActivitySerializer(many=True)
+    
+    # Métriques avancées
+    average_order_value = serializers.IntegerField()
+    conversion_rate = serializers.FloatField()
+    total_revenue_growth = serializers.FloatField()  # % croissance vs mois dernier

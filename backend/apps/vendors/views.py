@@ -6,11 +6,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from django.db.models import Sum
+from django.db.models import Sum, Count, Q
 from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
+from datetime import timedelta
 
 from .models import VendorProfile
 from .serializers import (
@@ -616,3 +617,297 @@ def admin_vendor_detail(request, vendor_id):
         )
     
     return Response(VendorProfileSerializer(vendor).data)    
+
+
+#  ADMINISTRATION - DASHBOARD GLOBAL 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get admin dashboard statistics",
+    description="Statistiques globales de la plateforme (réservé admin)",
+    responses={200: 'AdminDashboardStatsSerializer'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_dashboard_stats(request):
+    """
+    Dashboard admin : statistiques globales de la plateforme
+    Réservé aux administrateurs (is_staff=True)
+    """
+    from apps.vendors.serializers import AdminDashboardStatsSerializer
+    
+    # Calcul des dates
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start = now - timedelta(days=7)
+    month_start = now - timedelta(days=30)
+    
+    #  UTILISATEURS 
+    total_users = User.objects.count()
+    new_users_today = User.objects.filter(date_joined__gte=today_start).count()
+    new_users_week = User.objects.filter(date_joined__gte=week_start).count()
+    new_users_month = User.objects.filter(date_joined__gte=month_start).count()
+    
+    #  VENDEURS 
+    total_vendors = VendorProfile.objects.count()
+    pending_vendors = VendorProfile.objects.filter(status='PENDING').count()
+    approved_vendors = VendorProfile.objects.filter(status='APPROVED').count()
+    rejected_vendors = VendorProfile.objects.filter(status='REJECTED').count()
+    suspended_vendors = VendorProfile.objects.filter(status='SUSPENDED').count()
+    
+    #  PRODUITS 
+    total_products = Product.objects.count()
+    active_products = Product.objects.filter(is_active=True).count()
+    inactive_products = Product.objects.filter(is_active=False).count()
+    
+    #  COMMANDES 
+    total_orders = Order.objects.count()
+    pending_orders = Order.objects.filter(fulfillment_status='PENDING').count()
+    processing_orders = Order.objects.filter(fulfillment_status='PROCESSING').count()
+    shipped_orders = Order.objects.filter(fulfillment_status='SHIPPED').count()
+    delivered_orders = Order.objects.filter(fulfillment_status='DELIVERED').count()
+    cancelled_orders = Order.objects.filter(fulfillment_status='CANCELLED').count()
+    
+    #  REVENUS 
+    revenue_total = Order.objects.filter(payment_status='PAID').aggregate(
+        total=Sum('total_xaf')
+    )['total'] or 0
+    
+    revenue_today = Order.objects.filter(
+        payment_status='PAID',
+        created_at__gte=today_start
+    ).aggregate(total=Sum('total_xaf'))['total'] or 0
+    
+    revenue_week = Order.objects.filter(
+        payment_status='PAID',
+        created_at__gte=week_start
+    ).aggregate(total=Sum('total_xaf'))['total'] or 0
+    
+    revenue_month = Order.objects.filter(
+        payment_status='PAID',
+        created_at__gte=month_start
+    ).aggregate(total=Sum('total_xaf'))['total'] or 0
+    
+    #  PAIEMENTS 
+    paid_orders = Order.objects.filter(payment_status='PAID').count()
+    unpaid_orders = Order.objects.filter(payment_status='PENDING').count()
+    failed_payments = Order.objects.filter(payment_status='FAILED').count()
+    
+    #  CONSTRUCTION RÉPONSE 
+    stats = {
+        # Utilisateurs
+        'total_users': total_users,
+        'new_users_today': new_users_today,
+        'new_users_week': new_users_week,
+        'new_users_month': new_users_month,
+        
+        # Vendeurs
+        'total_vendors': total_vendors,
+        'pending_vendors': pending_vendors,
+        'approved_vendors': approved_vendors,
+        'rejected_vendors': rejected_vendors,
+        'suspended_vendors': suspended_vendors,
+        
+        # Produits
+        'total_products': total_products,
+        'active_products': active_products,
+        'inactive_products': inactive_products,
+        
+        # Commandes
+        'total_orders': total_orders,
+        'pending_orders': pending_orders,
+        'processing_orders': processing_orders,
+        'shipped_orders': shipped_orders,
+        'delivered_orders': delivered_orders,
+        'cancelled_orders': cancelled_orders,
+        
+        # Revenus
+        'revenue_total': revenue_total,
+        'revenue_today': revenue_today,
+        'revenue_week': revenue_week,
+        'revenue_month': revenue_month,
+        
+        # Paiements
+        'paid_orders': paid_orders,
+        'unpaid_orders': unpaid_orders,
+        'failed_payments': failed_payments,
+    }
+    
+    serializer = AdminDashboardStatsSerializer(stats)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get admin analytics data",
+    description="Données analytiques pour graphiques dashboard (réservé admin)",
+    responses={200: 'AdminAnalyticsSerializer'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_analytics(request):
+    """
+    Analytics admin : données pour graphiques et tableaux
+    - Revenus des 30 derniers jours
+    - Top 5 produits
+    - Top 5 vendeurs
+    - Activité récente
+    - Métriques avancées
+    """
+    from apps.vendors.serializers import AdminAnalyticsSerializer
+    from django.db.models import F, Q
+    
+    # Calcul des dates
+    now = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_ago = now - timedelta(days=30)
+    two_months_ago = now - timedelta(days=60)
+    
+    #  REVENUS PAR JOUR (30 derniers jours) 
+    revenue_chart = []
+    for i in range(30):
+        day = today_start - timedelta(days=29-i)
+        day_end = day + timedelta(days=1)
+        
+        daily_revenue = Order.objects.filter(
+            payment_status='PAID',
+            created_at__gte=day,
+            created_at__lt=day_end
+        ).aggregate(total=Sum('total_xaf'))['total'] or 0
+        
+        revenue_chart.append({
+            'date': day.date(),
+            'revenue': daily_revenue
+        })
+    
+    #  TOP 5 PRODUITS 
+    top_products_data = OrderItem.objects.filter(
+        order__payment_status='PAID'
+    ).values(
+        'product_id',
+        'product__title'
+    ).annotate(
+        total_quantity=Sum('qty'),
+        total_revenue=Sum('line_total_xaf')
+    ).order_by('-total_revenue')[:5]
+    
+    top_products = [
+        {
+            'product_id': item['product_id'],
+            'product_title': item['product__title'],
+            'total_quantity': item['total_quantity'],
+            'total_revenue': item['total_revenue']
+        }
+        for item in top_products_data
+    ]
+    
+    #  TOP 5 VENDEURS 
+    top_vendors_data = OrderItem.objects.filter(
+        order__payment_status='PAID',
+        product__vendor__isnull=False
+    ).values(
+        'product__vendor__id',
+        'product__vendor__username',
+        'product__vendor__vendor_profile__business_name'
+    ).annotate(
+        total_revenue=Sum('line_total_xaf'),
+        total_orders=Count('order_id', distinct=True)
+    ).order_by('-total_revenue')[:5]
+    
+    top_vendors = [
+        {
+            'vendor_id': item['product__vendor__id'],
+            'vendor_name': item['product__vendor__username'],
+            'business_name': item['product__vendor__vendor_profile__business_name'] or 'N/A',
+            'total_revenue': item['total_revenue'],
+            'total_orders': item['total_orders']
+        }
+        for item in top_vendors_data
+    ]
+    
+    #  ACTIVITÉ RÉCENTE 
+    recent_activity = []
+    
+    # Dernières commandes (5)
+    recent_orders = Order.objects.select_related('user').order_by('-created_at')[:5]
+    for order in recent_orders:
+        recent_activity.append({
+            'type': 'order',
+            'description': f'Nouvelle commande #{order.id}',
+            'timestamp': order.created_at,
+            'user': order.user.username if order.user else order.customer_email or 'Invité',
+            'amount': order.total_xaf
+        })
+    
+    # Nouveaux vendeurs (5)
+    recent_vendors = VendorProfile.objects.select_related('user').filter(
+        status='APPROVED'
+    ).order_by('-approved_at')[:5]
+    for vendor in recent_vendors:
+        recent_activity.append({
+            'type': 'vendor',
+            'description': f'Nouveau vendeur approuvé : {vendor.business_name}',
+            'timestamp': vendor.approved_at or vendor.created_at,
+            'user': vendor.user.username
+        })
+    
+    # Nouveaux produits (5)
+    recent_products = Product.objects.select_related('vendor').filter(
+        vendor__isnull=False
+    ).order_by('-created_at')[:5]
+    for product in recent_products:
+        recent_activity.append({
+            'type': 'product',
+            'description': f'Nouveau produit : {product.title}',
+            'timestamp': product.created_at,
+            'user': product.vendor.username if product.vendor else 'N/A'
+        })
+    
+    # Trier par date décroissante
+    recent_activity.sort(key=lambda x: x['timestamp'], reverse=True)
+    recent_activity = recent_activity[:15]  # Garder les 15 plus récentes
+    
+    #  MÉTRIQUES AVANCÉES 
+    
+    # Panier moyen
+    total_orders_paid = Order.objects.filter(payment_status='PAID').count()
+    total_revenue_paid = Order.objects.filter(payment_status='PAID').aggregate(
+        total=Sum('total_xaf')
+    )['total'] or 0
+    
+    average_order_value = int(total_revenue_paid / total_orders_paid) if total_orders_paid > 0 else 0
+    
+    # Taux de conversion (commandes payées / total commandes)
+    total_orders = Order.objects.count()
+    conversion_rate = (total_orders_paid / total_orders * 100) if total_orders > 0 else 0
+    
+    # Croissance revenus (mois en cours vs mois précédent)
+    revenue_current_month = Order.objects.filter(
+        payment_status='PAID',
+        created_at__gte=month_ago
+    ).aggregate(total=Sum('total_xaf'))['total'] or 0
+    
+    revenue_previous_month = Order.objects.filter(
+        payment_status='PAID',
+        created_at__gte=two_months_ago,
+        created_at__lt=month_ago
+    ).aggregate(total=Sum('total_xaf'))['total'] or 0
+    
+    if revenue_previous_month > 0:
+        total_revenue_growth = ((revenue_current_month - revenue_previous_month) / revenue_previous_month) * 100
+    else:
+        total_revenue_growth = 100.0 if revenue_current_month > 0 else 0.0
+    
+    #  CONSTRUCTION RÉPONSE 
+    analytics = {
+        'revenue_chart': revenue_chart,
+        'top_products': top_products,
+        'top_vendors': top_vendors,
+        'recent_activity': recent_activity,
+        'average_order_value': average_order_value,
+        'conversion_rate': round(conversion_rate, 2),
+        'total_revenue_growth': round(total_revenue_growth, 2)
+    }
+    
+    serializer = AdminAnalyticsSerializer(analytics)
+    return Response(serializer.data)

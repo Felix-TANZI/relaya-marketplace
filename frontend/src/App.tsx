@@ -24,6 +24,8 @@ import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage"; //
 import VendorsManagementPage from "./features/admin/VendorsManagementPage"; // Page d'administration des vendeurs
 import AdminDashboardPage from './features/admin/AdminDashboardPage'; // Page du dashboard admin
 import ProductsManagementPage from './features/admin/ProductsManagementPage'; // Page de gestion des produits pour les admins
+import OrdersManagementPage from './features/admin/OrdersManagementPage'; // Page de gestion des commandes pour les admins
+import AdminOrderDetailPage from './features/admin/OrderDetailPage'; // Page de détail d'une commande pour les admins
 
 function App() {
   return (
@@ -124,6 +126,23 @@ function App() {
             element={
               <ProtectedRoute>
                 <AdminDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Routes gestion commandes admin */}
+          <Route
+            path="admin/orders"
+            element={
+              <ProtectedRoute>
+                <OrdersManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/orders/:id"
+            element={
+              <ProtectedRoute>
+                <AdminOrderDetailPage />
               </ProtectedRoute>
             }
           />

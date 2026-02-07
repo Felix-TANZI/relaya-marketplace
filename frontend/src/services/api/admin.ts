@@ -147,6 +147,97 @@ export interface AdminProductDetail {
   updated_at: string;
 }
 
+
+//  ORDERS 
+
+export interface OrderHistory {
+  id: number;
+  user: number | null;
+  user_name: string;
+  action: string;
+  field_name: string;
+  old_value: string;
+  new_value: string;
+  timestamp: string;
+  ip_address: string | null;
+}
+
+export interface OrderItem {
+  id: number;
+  product_id: number;
+  product_title: string;
+  product_image: string | null;
+  vendor_name: string;
+  qty: number;
+  price_xaf_snapshot: number;
+  line_total_xaf: number;
+}
+
+export interface PaymentTransaction {
+  id: string;
+  provider: string;
+  status: string;
+  amount_xaf: number;
+  payer_phone: string;
+  external_ref: string | null;
+  created_at: string;
+}
+
+export interface AdminOrder {
+  id: number;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string;
+  city: string;
+  payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  fulfillment_status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  subtotal_xaf: number;
+  delivery_fee_xaf: number;
+  total_xaf: number;
+  items_count: number;
+  vendor_names: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminOrderDetail {
+  id: number;
+  user: number | null;
+  customer_name: string;
+  customer_email: string | null;
+  customer_phone: string;
+  city: string;
+  address: string;
+  note: string | null;
+  payment_status: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  fulfillment_status: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  subtotal_xaf: number;
+  delivery_fee_xaf: number;
+  total_xaf: number;
+  items: OrderItem[];
+  history: OrderHistory[];
+  payment_transactions: PaymentTransaction[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminOrderUpdate {
+  payment_status?: 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
+  fulfillment_status?: 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+  note?: string;
+}
+
+export interface OrderFilters {
+  payment_status?: string;
+  fulfillment_status?: string;
+  vendor?: number;
+  date_from?: string;
+  date_to?: string;
+  min_amount?: number;
+  max_amount?: number;
+  search?: string;
+}
+
 //  API
 
 export const adminApi = {
@@ -338,5 +429,90 @@ export const adminApi = {
         Authorization: `Bearer ${token}`,
       },
     });
+  },
+
+  //  ORDERS 
+
+  /**
+   * Liste toutes les commandes (admin)
+   */
+  listOrders: async (filters?: OrderFilters): Promise<AdminOrder[]> => {
+    const token = localStorage.getItem('access_token');
+    
+    const params = new URLSearchParams();
+    if (filters?.payment_status) params.append('payment_status', filters.payment_status);
+    if (filters?.fulfillment_status) params.append('fulfillment_status', filters.fulfillment_status);
+    if (filters?.vendor) params.append('vendor', filters.vendor.toString());
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    if (filters?.min_amount) params.append('min_amount', filters.min_amount.toString());
+    if (filters?.max_amount) params.append('max_amount', filters.max_amount.toString());
+    if (filters?.search) params.append('search', filters.search);
+    
+    const url = `/api/vendors/admin/orders/${params.toString() ? '?' + params.toString() : ''}`;
+    
+    return http<AdminOrder[]>(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Détail d'une commande (admin)
+   */
+  getOrderDetail: async (orderId: number): Promise<AdminOrderDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminOrderDetail>(`/api/vendors/admin/orders/${orderId}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Modifier une commande (admin)
+   */
+  updateOrder: async (orderId: number, data: AdminOrderUpdate): Promise<AdminOrderDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminOrderDetail>(`/api/vendors/admin/orders/${orderId}/update/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Annuler une commande (admin)
+   */
+  cancelOrder: async (orderId: number): Promise<AdminOrderDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminOrderDetail>(`/api/vendors/admin/orders/${orderId}/cancel/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Exporter les commandes en CSV
+   */
+  exportOrdersCSV: (filters?: OrderFilters): string => {
+    const params = new URLSearchParams();
+    if (filters?.payment_status) params.append('payment_status', filters.payment_status);
+    if (filters?.fulfillment_status) params.append('fulfillment_status', filters.fulfillment_status);
+    if (filters?.vendor) params.append('vendor', filters.vendor.toString());
+    if (filters?.date_from) params.append('date_from', filters.date_from);
+    if (filters?.date_to) params.append('date_to', filters.date_to);
+    
+    const token = localStorage.getItem('access_token');
+    return `/api/vendors/admin/orders/export/csv/?${params.toString()}&token=${token}`;
   },
 };

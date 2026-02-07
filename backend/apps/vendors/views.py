@@ -1061,3 +1061,264 @@ def admin_toggle_product_status(request, product_id):
             {'detail': 'Produit introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+
+#  ADMINISTRATION - GESTION COMMANDES 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="List all orders (admin)",
+    description="Liste toutes les commandes avec filtres avancés",
+    parameters=[
+        OpenApiParameter(name='payment_status', description='Filtrer par statut paiement', required=False, type=str),
+        OpenApiParameter(name='fulfillment_status', description='Filtrer par statut livraison', required=False, type=str),
+        OpenApiParameter(name='vendor', description='Filtrer par vendor ID', required=False, type=int),
+        OpenApiParameter(name='date_from', description='Date début (YYYY-MM-DD)', required=False, type=str),
+        OpenApiParameter(name='date_to', description='Date fin (YYYY-MM-DD)', required=False, type=str),
+        OpenApiParameter(name='min_amount', description='Montant minimum', required=False, type=int),
+        OpenApiParameter(name='max_amount', description='Montant maximum', required=False, type=int),
+        OpenApiParameter(name='search', description='Recherche (ID, email, phone, transaction)', required=False, type=str),
+    ],
+    responses={200: 'AdminOrderListSerializer(many=True)'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_orders(request):
+    """
+    Liste admin de toutes les commandes avec filtres avancés
+    """
+    from apps.vendors.serializers import AdminOrderListSerializer
+    
+    orders = Order.objects.select_related('user').prefetch_related('items', 'items__product__vendor')
+    
+    # Filtres statuts
+    payment_status = request.query_params.get('payment_status')
+    if payment_status:
+        orders = orders.filter(payment_status=payment_status)
+    
+    fulfillment_status = request.query_params.get('fulfillment_status')
+    if fulfillment_status:
+        orders = orders.filter(fulfillment_status=fulfillment_status)
+    
+    # Filtre vendeur
+    vendor_id = request.query_params.get('vendor')
+    if vendor_id:
+        orders = orders.filter(items__product__vendor_id=vendor_id).distinct()
+    
+    # Filtre dates
+    date_from = request.query_params.get('date_from')
+    if date_from:
+        orders = orders.filter(created_at__date__gte=date_from)
+    
+    date_to = request.query_params.get('date_to')
+    if date_to:
+        orders = orders.filter(created_at__date__lte=date_to)
+    
+    # Filtre montant
+    min_amount = request.query_params.get('min_amount')
+    if min_amount:
+        orders = orders.filter(total_xaf__gte=int(min_amount))
+    
+    max_amount = request.query_params.get('max_amount')
+    if max_amount:
+        orders = orders.filter(total_xaf__lte=int(max_amount))
+    
+    # Recherche multi-critères
+    search = request.query_params.get('search')
+    if search:
+        from apps.payments.models import PaymentTransaction
+        
+        # Recherche par ID commande
+        if search.isdigit():
+            orders = orders.filter(id=int(search))
+        else:
+            # Recherche par email, phone ou transaction
+            orders = orders.filter(
+                Q(customer_email__icontains=search) |
+                Q(customer_phone__icontains=search) |
+                Q(user__username__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(payments__external_ref__icontains=search)
+            ).distinct()
+    
+    orders = orders.order_by('-created_at')
+    
+    serializer = AdminOrderListSerializer(orders, many=True, context={'request': request})
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get order detail (admin)",
+    description="Détail complet d'une commande avec historique",
+    responses={200: 'AdminOrderDetailSerializer'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_order_detail(request, order_id):
+    """Détail complet d'une commande"""
+    try:
+        order = Order.objects.select_related('user').prefetch_related(
+            'items',
+            'items__product',
+            'items__product__vendor',
+            'items__product__images',
+            'history',
+            'payments'
+        ).get(id=order_id)
+        
+        from apps.vendors.serializers import AdminOrderDetailSerializer
+        serializer = AdminOrderDetailSerializer(order, context={'request': request})
+        return Response(serializer.data)
+    except Order.DoesNotExist:
+        return Response(
+            {'detail': 'Commande introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Update order (admin)",
+    description="Modifier une commande (statuts, note)",
+    request='AdminOrderUpdateSerializer',
+    responses={200: 'AdminOrderDetailSerializer'}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_order(request, order_id):
+    """Modifier une commande (admin)"""
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response(
+            {'detail': 'Commande introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.vendors.serializers import AdminOrderUpdateSerializer, AdminOrderDetailSerializer
+    from apps.orders.models import OrderHistory
+    
+    serializer = AdminOrderUpdateSerializer(data=request.data)
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    # Enregistrer les modifications dans l'audit log
+    for field, new_value in serializer.validated_data.items():
+        old_value = getattr(order, field)
+        if str(old_value) != str(new_value):
+            OrderHistory.objects.create(
+                order=order,
+                user=request.user,
+                action=f"Modification {field}",
+                field_name=field,
+                old_value=str(old_value),
+                new_value=str(new_value),
+                ip_address=request.META.get('REMOTE_ADDR')
+            )
+            setattr(order, field, new_value)
+    
+    order.save()
+    
+    result_serializer = AdminOrderDetailSerializer(order, context={'request': request})
+    return Response(result_serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Cancel order (admin)",
+    description="Annuler une commande",
+    responses={200: 'AdminOrderDetailSerializer'}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_cancel_order(request, order_id):
+    """Annuler une commande"""
+    try:
+        order = Order.objects.get(id=order_id)
+    except Order.DoesNotExist:
+        return Response(
+            {'detail': 'Commande introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    from apps.orders.models import OrderHistory
+    from apps.vendors.serializers import AdminOrderDetailSerializer
+    
+    # Enregistrer dans l'audit log
+    OrderHistory.objects.create(
+        order=order,
+        user=request.user,
+        action="Commande annulée par admin",
+        field_name="fulfillment_status",
+        old_value=order.fulfillment_status,
+        new_value="CANCELLED",
+        ip_address=request.META.get('REMOTE_ADDR')
+    )
+    
+    order.fulfillment_status = 'CANCELLED'
+    order.save()
+    
+    serializer = AdminOrderDetailSerializer(order, context={'request': request})
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Export orders to CSV",
+    description="Exporter les commandes en CSV",
+    responses={200: 'CSV file'}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_export_orders_csv(request):
+    """Export CSV des commandes"""
+    import csv
+    from django.http import HttpResponse
+    
+    orders = Order.objects.select_related('user').prefetch_related('items').order_by('-created_at')
+    
+    # Appliquer les mêmes filtres que list
+    payment_status = request.query_params.get('payment_status')
+    if payment_status:
+        orders = orders.filter(payment_status=payment_status)
+    
+    fulfillment_status = request.query_params.get('fulfillment_status')
+    if fulfillment_status:
+        orders = orders.filter(fulfillment_status=fulfillment_status)
+    
+    response = HttpResponse(content_type='text/csv; charset=utf-8')
+    response['Content-Disposition'] = f'attachment; filename="commandes_{timezone.now().strftime("%Y%m%d_%H%M%S")}.csv"'
+    
+    # BOM UTF-8 pour Excel
+    response.write('\ufeff')
+    
+    writer = csv.writer(response)
+    writer.writerow([
+        'ID Commande', 'Date', 'Client', 'Email', 'Téléphone',
+        'Ville', 'Adresse', 'Statut Paiement', 'Statut Livraison',
+        'Sous-total', 'Livraison', 'Total', 'Nb Articles'
+    ])
+    
+    for order in orders:
+        customer_name = "Invité"
+        if order.user:
+            customer_name = f"{order.user.first_name} {order.user.last_name}".strip() or order.user.username
+        
+        writer.writerow([
+            order.id,
+            order.created_at.strftime('%Y-%m-%d %H:%M'),
+            customer_name,
+            order.customer_email or '',
+            order.customer_phone,
+            order.city,
+            order.address,
+            order.get_payment_status_display(),
+            order.get_fulfillment_status_display(),
+            order.subtotal_xaf,
+            order.delivery_fee_xaf,
+            order.total_xaf,
+            order.items.count()
+        ])
+    
+    return response    

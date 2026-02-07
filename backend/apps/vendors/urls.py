@@ -99,4 +99,21 @@ urlpatterns = [
     
     # Activer/désactiver (bannir)
     path('admin/products/<int:product_id>/toggle-status/', views.admin_toggle_product_status, name='admin-toggle-product-status'),
+
+    #  ADMINISTRATION - GESTION COMMANDES 
+    
+    # Liste commandes
+    path('admin/orders/', views.admin_list_orders, name='admin-list-orders'),
+    
+    # Détail commande
+    path('admin/orders/<int:order_id>/', views.admin_order_detail, name='admin-order-detail'),
+    
+    # Modifier commande
+    path('admin/orders/<int:order_id>/update/', views.admin_update_order, name='admin-update-order'),
+    
+    # Annuler commande
+    path('admin/orders/<int:order_id>/cancel/', views.admin_cancel_order, name='admin-cancel-order'),
+    
+    # Export CSV
+    path('admin/orders/export/csv/', views.admin_export_orders_csv, name='admin-export-orders-csv'),
 ]

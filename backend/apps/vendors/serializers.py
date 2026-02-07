@@ -382,3 +382,138 @@ class AdminProductUpdateSerializer(serializers.ModelSerializer):
         from apps.catalog.models import Product
         model = Product
         fields = ['title', 'description', 'price_xaf', 'is_active', 'category']    
+
+
+#  ADMIN ORDERS MANAGEMENT 
+
+class OrderHistorySerializer(serializers.ModelSerializer):
+    """Serializer pour l'historique des modifications"""
+    user_name = serializers.CharField(source='user.username', read_only=True, default='Système')
+    
+    class Meta:
+        from apps.orders.models import OrderHistory
+        model = OrderHistory
+        fields = [
+            'id', 'user', 'user_name', 'action', 'field_name',
+            'old_value', 'new_value', 'timestamp', 'ip_address'
+        ]
+
+
+class AdminOrderItemSerializer(serializers.Serializer):
+    """Items de commande pour admin"""
+    id = serializers.IntegerField()
+    product_id = serializers.IntegerField()
+    product_title = serializers.CharField()
+    product_image = serializers.CharField(allow_null=True)
+    vendor_name = serializers.CharField()
+    qty = serializers.IntegerField()
+    price_xaf_snapshot = serializers.IntegerField()
+    line_total_xaf = serializers.IntegerField()
+
+
+class AdminOrderListSerializer(serializers.ModelSerializer):
+    """Serializer pour liste admin des commandes"""
+    customer_name = serializers.SerializerMethodField()
+    items_count = serializers.SerializerMethodField()
+    vendor_names = serializers.SerializerMethodField()
+    
+    class Meta:
+        from apps.orders.models import Order
+        model = Order
+        fields = [
+            'id', 'customer_name', 'customer_email', 'customer_phone',
+            'city', 'payment_status', 'fulfillment_status',
+            'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
+            'items_count', 'vendor_names',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_customer_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
+        return "Invité"
+    
+    def get_items_count(self, obj):
+        return obj.items.count()
+    
+    def get_vendor_names(self, obj):
+        vendors = obj.items.values_list('product__vendor__username', flat=True).distinct()
+        return list(vendors)
+
+
+class AdminOrderDetailSerializer(serializers.ModelSerializer):
+    """Serializer détaillé pour une commande admin"""
+    customer_name = serializers.SerializerMethodField()
+    items = serializers.SerializerMethodField()
+    history = OrderHistorySerializer(many=True, read_only=True)
+    payment_transactions = serializers.SerializerMethodField()
+    
+    class Meta:
+        from apps.orders.models import Order
+        model = Order
+        fields = [
+            'id', 'user', 'customer_name', 'customer_email', 'customer_phone',
+            'city', 'address', 'note',
+            'payment_status', 'fulfillment_status',
+            'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
+            'items', 'history', 'payment_transactions',
+            'created_at', 'updated_at'
+        ]
+    
+    def get_customer_name(self, obj):
+        if obj.user:
+            return f"{obj.user.first_name} {obj.user.last_name}".strip() or obj.user.username
+        return "Invité"
+    
+    def get_items(self, obj):
+        items_data = []
+        for item in obj.items.select_related('product', 'product__vendor').prefetch_related('product__images'):
+            primary_image = item.product.images.filter(is_primary=True).first()
+            image_url = None
+            if primary_image:
+                request = self.context.get('request')
+                if request:
+                    image_url = request.build_absolute_uri(primary_image.image.url)
+            
+            items_data.append({
+                'id': item.id,
+                'product_id': item.product.id,
+                'product_title': item.title_snapshot,
+                'product_image': image_url,
+                'vendor_name': item.product.vendor.username if item.product.vendor else 'N/A',
+                'qty': item.qty,
+                'price_xaf_snapshot': item.price_xaf_snapshot,
+                'line_total_xaf': item.line_total_xaf,
+            })
+        return items_data
+    
+    def get_payment_transactions(self, obj):
+        """Récupérer les transactions de paiement"""
+        from apps.payments.models import PaymentTransaction
+        transactions = PaymentTransaction.objects.filter(order=obj).order_by('-created_at')
+        
+        return [
+            {
+                'id': str(tx.id),
+                'provider': tx.provider,
+                'status': tx.status,
+                'amount_xaf': tx.amount_xaf,
+                'payer_phone': tx.payer_phone,
+                'external_ref': tx.external_ref,
+                'created_at': tx.created_at,
+            }
+            for tx in transactions
+        ]
+
+
+class AdminOrderUpdateSerializer(serializers.Serializer):
+    """Serializer pour modifier une commande (admin)"""
+    payment_status = serializers.ChoiceField(
+        choices=['PENDING', 'PAID', 'FAILED', 'REFUNDED'],
+        required=False
+    )
+    fulfillment_status = serializers.ChoiceField(
+        choices=['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED'],
+        required=False
+    )
+    note = serializers.CharField(required=False, allow_blank=True)        

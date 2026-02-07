@@ -112,3 +112,26 @@ class OrderItem(TimeStampedModel):
 
     def __str__(self):
         return f"Commande #{self.order_id} - {self.title_snapshot} x{self.qty}"
+    
+
+class OrderHistory(models.Model):
+    """
+    Historique des modifications de commande (audit log)
+    Trace qui a modifié quoi et quand
+    """
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='history')
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    action = models.CharField(max_length=100)  # Ex: "Statut changé", "Remboursement créé"
+    field_name = models.CharField(max_length=100, blank=True)  # Champ modifié
+    old_value = models.TextField(blank=True)
+    new_value = models.TextField(blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Historique Commande"
+        verbose_name_plural = "Historiques Commandes"
+    
+    def __str__(self):
+        return f"Order #{self.order.id} - {self.action} - {self.timestamp}"

@@ -7,6 +7,10 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db.models import Sum
+from django.contrib.auth.models import User
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from django.utils import timezone
 
 from .models import VendorProfile
 from .serializers import (
@@ -22,7 +26,7 @@ from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, 
 from apps.orders.models import Order, OrderItem
 
 
-# ========== PROFIL VENDEUR ==========
+#  PROFIL VENDEUR 
 
 @extend_schema(
     tags=["Vendors"],
@@ -111,7 +115,7 @@ def vendor_stats(request):
         )
 
 
-# ========== GESTION DES PRODUITS ==========
+#  GESTION DES PRODUITS 
 
 class VendorProductViewSet(viewsets.ModelViewSet):
     """ViewSet pour la gestion des produits par le vendeur"""
@@ -227,7 +231,7 @@ def set_primary_image(request, product_id, image_id):
     return Response(ProductImageSerializer(image).data)
 
 
-# ========== GESTION DES COMMANDES ==========
+#  GESTION DES COMMANDES 
 
 @extend_schema(
     tags=["Vendors"],
@@ -385,7 +389,7 @@ def update_order_status(request, order_id):
         )
 
 
-# ========== NOUVEAUX ENDPOINTS (SÉPARATION PAIEMENT/LIVRAISON) ==========
+#  NOUVEAUX ENDPOINTS (SÉPARATION PAIEMENT/LIVRAISON) 
 
 @extend_schema(
     tags=["Vendors"],
@@ -493,3 +497,122 @@ def update_payment_status(request, order_id):
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+#  ADMINISTRATION VENDEURS 
+
+@extend_schema(
+    tags=["Admin - Vendors"],
+    summary="Liste tous les vendeurs (admin seulement)",
+    parameters=[
+        OpenApiParameter(
+            name='status',
+            description='Filtrer par statut : PENDING, APPROVED, REJECTED, SUSPENDED',
+            required=False,
+            type=str
+        ),
+    ],
+    responses={200: VendorProfileSerializer(many=True)}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_vendors(request):
+    """Liste tous les vendeurs avec filtre optionnel par statut"""
+    vendors = VendorProfile.objects.all().select_related('user').order_by('-created_at')
+    
+    # Filtre optionnel par statut
+    status = request.query_params.get('status')
+    if status:
+        vendors = vendors.filter(status=status)
+    
+    serializer = VendorProfileSerializer(vendors, many=True)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin - Vendors"],
+    summary="Approuver un vendeur",
+    responses={200: VendorProfileSerializer}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_vendor(request, vendor_id):
+    """Approuver une demande vendeur"""
+    try:
+        vendor = VendorProfile.objects.get(id=vendor_id)
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    vendor.status = VendorProfile.Status.APPROVED
+    vendor.approved_at = timezone.now()
+    vendor.save()
+    
+    return Response(VendorProfileSerializer(vendor).data)
+
+
+@extend_schema(
+    tags=["Admin - Vendors"],
+    summary="Rejeter un vendeur",
+    responses={200: VendorProfileSerializer}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_vendor(request, vendor_id):
+    """Rejeter une demande vendeur"""
+    try:
+        vendor = VendorProfile.objects.get(id=vendor_id)
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    vendor.status = VendorProfile.Status.REJECTED
+    vendor.save()
+    
+    return Response(VendorProfileSerializer(vendor).data)
+
+
+@extend_schema(
+    tags=["Admin - Vendors"],
+    summary="Suspendre un vendeur",
+    responses={200: VendorProfileSerializer}
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_suspend_vendor(request, vendor_id):
+    """Suspendre un vendeur"""
+    try:
+        vendor = VendorProfile.objects.get(id=vendor_id)
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    vendor.status = VendorProfile.Status.SUSPENDED
+    vendor.save()
+    
+    return Response(VendorProfileSerializer(vendor).data)
+
+
+@extend_schema(
+    tags=["Admin - Vendors"],
+    summary="Détail d'un vendeur (admin)",
+    responses={200: VendorProfileSerializer}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_vendor_detail(request, vendor_id):
+    """Récupérer les détails d'un vendeur"""
+    try:
+        vendor = VendorProfile.objects.select_related('user').get(id=vendor_id)
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    return Response(VendorProfileSerializer(vendor).data)    

@@ -1,33 +1,34 @@
 # backend/apps/vendors/urls.py
-# URLs pour l'interface vendeur
+# URLs pour l'espace vendeur
 
-from django.urls import path
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
 from . import views
 
 app_name = 'vendors'
 
+# Router pour le ViewSet des produits
+router = DefaultRouter()
+router.register(r'products', views.VendorProductViewSet, basename='vendor-product')
+
 urlpatterns = [
-    # ========== ROUTES VENDEUR  ==========
+    # ========== PROFIL VENDEUR ==========
     
     # Demande pour devenir vendeur
     path('apply/', views.apply_vendor, name='apply-vendor'),
     
     # Profil vendeur
-    path('profile/', views.get_vendor_profile, name='vendor-profile'),
+    path('profile/', views.vendor_profile, name='vendor-profile'),
     
     # Statistiques du vendeur
-    path('stats/', views.get_vendor_stats, name='vendor-stats'),
+    path('stats/', views.vendor_stats, name='vendor-stats'),
     
-    # ========== GESTION DES PRODUITS ==========
+    # ========== GESTION DES PRODUITS (ViewSet) ==========
     
-    # Liste des produits du vendeur
-    path('products/', views.get_vendor_products, name='vendor-products'),
+    # Toutes les routes produits (list, create, retrieve, update, delete)
+    path('', include(router.urls)),
     
-    # Créer un produit
-    path('products/create/', views.create_product, name='create-product'),
-    
-    # Détail/Modifier/Supprimer un produit
-    path('products/<int:product_id>/', views.product_detail, name='product-detail'),
+    # ========== GESTION DES IMAGES ==========
     
     # Upload d'images pour un produit
     path('products/<int:product_id>/images/', views.upload_product_image, name='upload-image'),
@@ -41,19 +42,19 @@ urlpatterns = [
     # ========== GESTION DES COMMANDES ==========
     
     # Liste des commandes du vendeur
-    path('orders/', views.get_vendor_orders, name='vendor-orders'),
+    path('orders/', views.vendor_orders, name='vendor-orders'),
     
     # Détail d'une commande
-    path('orders/<int:order_id>/', views.get_vendor_order_detail, name='vendor-order-detail'),
+    path('orders/<int:order_id>/', views.vendor_order_detail, name='vendor-order-detail'),
     
-    # Mettre à jour le statut d'une commande 
+    # Mettre à jour le statut (legacy - conservé pour compatibilité)
     path('orders/<int:order_id>/status/', views.update_order_status, name='update-order-status'),
     
-    # ========== NOUVEAUX ENDPOINTS  ==========
+    # ========== NOUVEAUX ENDPOINTS (SÉPARATION PAIEMENT/LIVRAISON) ==========
     
-    # Mise à jour du statut de livraison (fulfillment)
+    # Mise à jour du statut de livraison
     path('orders/<int:order_id>/fulfillment-status/', views.update_fulfillment_status, name='update-fulfillment-status'),
     
-    # Mise à jour du statut de paiement (pour marquer manuellement comme payé)
+    # Mise à jour du statut de paiement
     path('orders/<int:order_id>/payment-status/', views.update_payment_status, name='update-payment-status'),
 ]

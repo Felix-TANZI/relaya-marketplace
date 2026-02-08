@@ -23,6 +23,7 @@ from .serializers import (
     UpdateFulfillmentStatusSerializer,
     UpdatePaymentStatusSerializer,
     AdminProductUpdateSerializer,
+    PlatformSettingsSerializer,
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
@@ -1924,3 +1925,47 @@ def admin_dispute_stats(request):
     }
     
     return Response(stats)
+
+
+#  ADMINISTRATION - PARAMÈTRES SYSTÈME 
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Get platform settings (admin)",
+    description="Récupérer les paramètres de la plateforme",
+    responses={200: PlatformSettingsSerializer}
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_get_settings(request):
+    """Récupérer les paramètres plateforme"""
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.serializers import PlatformSettingsSerializer
+    
+    settings = PlatformSettings.get_settings()
+    serializer = PlatformSettingsSerializer(settings)
+    return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Update platform settings (admin)",
+    description="Modifier les paramètres de la plateforme",
+    request=PlatformSettingsSerializer,
+    responses={200: PlatformSettingsSerializer}
+)
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_settings(request):
+    """Modifier les paramètres plateforme"""
+    from apps.orders.models import PlatformSettings
+    from apps.vendors.serializers import PlatformSettingsSerializer
+    
+    settings = PlatformSettings.get_settings()
+    serializer = PlatformSettingsSerializer(settings, data=request.data, partial=True)
+    
+    if serializer.is_valid():
+        serializer.save(updated_by=request.user)
+        return Response(serializer.data)
+    
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

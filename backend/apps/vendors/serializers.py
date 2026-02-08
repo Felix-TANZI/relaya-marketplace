@@ -756,4 +756,23 @@ class AdminDisputeUpdateSerializer(serializers.Serializer):
 class DisputeMessageCreateSerializer(serializers.Serializer):
     """Serializer pour créer un message"""
     message = serializers.CharField()
-    is_internal = serializers.BooleanField(default=False)    
+    is_internal = serializers.BooleanField(default=False)
+
+
+#  ADMIN SETTINGS MANAGEMENT 
+
+class PlatformSettingsSerializer(serializers.ModelSerializer):
+    """Serializer pour les paramètres plateforme"""
+    updated_by_name = serializers.CharField(source='updated_by.username', read_only=True, default='Système')
+    
+    class Meta:
+        from apps.orders.models import PlatformSettings
+        model = PlatformSettings
+        fields = [
+            'id', 'delivery_fees', 'platform_commission_percent',
+            'minimum_order_amount_xaf', 'default_delivery_days',
+            'mtn_momo_enabled', 'orange_money_enabled',
+            'admin_email', 'support_email',
+            'maintenance_mode', 'maintenance_message',
+            'updated_at', 'updated_by', 'updated_by_name'
+        ]        

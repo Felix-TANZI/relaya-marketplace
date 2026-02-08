@@ -159,4 +159,12 @@ urlpatterns = [
     
     # Résoudre litige
     path('admin/disputes/<int:dispute_id>/resolve/', views.admin_resolve_dispute, name='admin-resolve-dispute'),
+
+    #  ADMINISTRATION - PARAMÈTRES SYSTÈME 
+    
+    # Récupérer paramètres
+    path('admin/settings/', views.admin_get_settings, name='admin-get-settings'),
+    
+    # Modifier paramètres
+    path('admin/settings/update/', views.admin_update_settings, name='admin-update-settings'),
 ]

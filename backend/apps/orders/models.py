@@ -237,4 +237,60 @@ class DisputeEvidence(models.Model):
         verbose_name_plural = "Preuves Litiges"
     
     def __str__(self):
-        return f"Preuve - Litige #{self.dispute.id}"    
+        return f"Preuve - Litige #{self.dispute.id}"   
+
+
+class PlatformSettings(models.Model):
+    """
+    Paramètres globaux de la plateforme
+    """
+    # Frais de livraison par ville (stocké en JSON)
+    # Format: {"Yaoundé": 1000, "Douala": 1500, ...}
+    delivery_fees = models.JSONField(default=dict)
+    
+    # Commission plateforme (en pourcentage)
+    platform_commission_percent = models.DecimalField(
+        max_digits=5, 
+        decimal_places=2, 
+        default=10.00,
+        help_text="Commission prélevée sur chaque vente (en %)"
+    )
+    
+    # Montant minimum de commande
+    minimum_order_amount_xaf = models.IntegerField(default=1000)
+    
+    # Délai de livraison par défaut (en jours)
+    default_delivery_days = models.IntegerField(default=3)
+    
+    # Configuration paiements
+    mtn_momo_enabled = models.BooleanField(default=True)
+    orange_money_enabled = models.BooleanField(default=True)
+    
+    # Emails notifications
+    admin_email = models.EmailField(default='admin@relaya.cm')
+    support_email = models.EmailField(default='support@relaya.cm')
+    
+    # Maintenance
+    maintenance_mode = models.BooleanField(default=False)
+    maintenance_message = models.TextField(blank=True, default='')
+    
+    updated_at = models.DateTimeField(auto_now=True)
+    updated_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True
+    )
+    
+    class Meta:
+        verbose_name = "Paramètres Plateforme"
+        verbose_name_plural = "Paramètres Plateforme"
+    
+    def __str__(self):
+        return "Paramètres de la plateforme"
+    
+    @classmethod
+    def get_settings(cls):
+        """Récupérer ou créer les paramètres"""
+        settings, _ = cls.objects.get_or_create(id=1)
+        return settings     

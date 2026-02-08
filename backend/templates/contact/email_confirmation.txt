@@ -1,0 +1,26 @@
+MESSAGE BIEN REÇU - RELAYA
+===========================
+
+Bonjour {{ name }},
+
+Merci d'avoir contacté l'équipe Relaya. Nous avons bien reçu votre message 
+concernant "{{ subject }}" et notre équipe support vous répondra dans les 
+plus brefs délais.
+
+⏱️ TEMPS DE RÉPONSE HABITUEL
+Moins de 24 heures
+
+📩 VOTRE DEMANDE
+Un membre de notre équipe examinera votre message et vous contactera 
+directement par email.
+
+BESOIN D'AIDE URGENTE ?
+Email : {{ support_email }}
+Téléphone : +237 6XX XX XX XX
+WhatsApp : +237 6XX XX XX XX
+
+---
+Relaya - La marketplace premium du Cameroun
+Paiement sécurisé • Livraison rapide • Confiance garantie
+
+{{ support_email }}

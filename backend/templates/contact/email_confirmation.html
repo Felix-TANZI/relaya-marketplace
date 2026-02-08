@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message reçu - Relaya</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0a0a0f 0%, #16181d 100%);
+            padding: 40px 20px;
+            color: #e8edf4;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(22, 24, 29, 0.9);
+            border-radius: 24px;
+            border: 1px solid rgba(232, 237, 244, 0.1);
+            backdrop-filter: blur(20px);
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #00f5ff 0%, #b64cff 50%, #ff006e 100%);
+            padding: 50px 30px;
+            text-align: center;
+        }
+        
+        .check-icon {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 48px;
+            margin-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+        
+        .content {
+            padding: 40px 30px;
+            text-align: center;
+        }
+        
+        .greeting {
+            font-size: 18px;
+            color: #e8edf4;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            font-size: 16px;
+            color: #a8b1c3;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .info-card {
+            background: rgba(0, 245, 255, 0.05);
+            border: 1px solid rgba(0, 245, 255, 0.2);
+            border-radius: 16px;
+            padding: 24px;
+            margin: 30px 0;
+            text-align: left;
+        }
+        
+        .info-title {
+            color: #00f5ff;
+            font-size: 14px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 12px;
+        }
+        
+        .info-text {
+            color: #e8edf4;
+            font-size: 15px;
+            line-height: 1.5;
+        }
+        
+        .response-time {
+            background: rgba(182, 76, 255, 0.1);
+            border: 1px solid rgba(182, 76, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin: 24px 0;
+        }
+        
+        .response-time-text {
+            color: #b64cff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .support-box {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(232, 237, 244, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 30px;
+        }
+        
+        .support-title {
+            color: #e8edf4;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+        }
+        
+        .support-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            color: #a8b1c3;
+            font-size: 14px;
+        }
+        
+        .footer {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 30px;
+            text-align: center;
+            border-top: 1px solid rgba(232, 237, 244, 0.1);
+        }
+        
+        .footer p {
+            color: #6b7280;
+            font-size: 13px;
+            margin: 8px 0;
+        }
+        
+        .social-links {
+            margin-top: 20px;
+        }
+        
+        .social-link {
+            display: inline-block;
+            width: 36px;
+            height: 36px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(232, 237, 244, 0.1);
+            border-radius: 50%;
+            margin: 0 6px;
+            text-decoration: none;
+            color: #a8b1c3;
+            font-size: 18px;
+            line-height: 36px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="check-icon">✓</div>
+            <h1>Message bien reçu !</h1>
+        </div>
+        
+        <div class="content">
+            <p class="greeting">Bonjour <strong>{{ name }}</strong>,</p>
+            
+            <p class="message">
+                Merci d'avoir contacté l'équipe Relaya. Nous avons bien reçu votre message 
+                concernant <strong>"{{ subject }}"</strong> et notre équipe support vous répondra 
+                dans les plus brefs délais.
+            </p>
+            
+            <div class="response-time">
+                <p class="response-time-text">
+                    ⏱️ Temps de réponse habituel : moins de 24 heures
+                </p>
+            </div>
+            
+            <div class="info-card">
+                <div class="info-title">📩 Votre demande</div>
+                <p class="info-text">
+                    Un membre de notre équipe examinera votre message et vous contactera 
+                    directement par email à l'adresse que vous avez fournie.
+                </p>
+            </div>
+            
+            <div class="support-box">
+                <p class="support-title">Besoin d'aide urgente ?</p>
+                <div class="support-item">
+                    📧 Email : {{ support_email }}
+                </div>
+                <div class="support-item">
+                    📱 Téléphone : +237 6XX XX XX XX
+                </div>
+                <div class="support-item">
+                    💬 WhatsApp : +237 6XX XX XX XX
+                </div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p><strong>Relaya</strong> - La marketplace premium du Cameroun</p>
+            <p>Paiement sécurisé • Livraison rapide • Confiance garantie</p>
+            <p>Yaoundé, Cameroun • {{ support_email }}</p>
+            
+            <div class="social-links">
+                <a href="#" class="social-link">f</a>
+                <a href="#" class="social-link">t</a>
+                <a href="#" class="social-link">in</a>
+                <a href="#" class="social-link">ig</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

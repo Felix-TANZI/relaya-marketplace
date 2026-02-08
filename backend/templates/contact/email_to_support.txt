@@ -1,0 +1,18 @@
+NOUVEAU MESSAGE DE CONTACT - RELAYA
+=====================================
+
+De : {{ contact.name }}
+Email : {{ contact.email }}
+{% if contact.phone %}Téléphone : {{ contact.phone }}{% endif %}
+Sujet : {{ contact.subject }}
+Date : {{ contact.created_at|date:"d/m/Y à H:i" }}
+
+MESSAGE :
+---------
+{{ contact.message }}
+
+---
+Pour répondre, envoyez un email à : {{ contact.email }}
+
+Relaya - La marketplace premium du Cameroun
+{{ support_email }}

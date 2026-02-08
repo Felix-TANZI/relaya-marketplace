@@ -21,9 +21,11 @@ import SellerDashboardPage from "./features/vendors/SellerDashboardPage";
 import ProductFormPage from "./features/vendors/ProductFormPage";
 import VendorOrdersPage from "./features/vendors/VendorOrdersPage";
 import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage";
+import HelpPage from "./features/help/HelpPage";
+import ContactPage from "./features/contact/ContactPage";
 
 // Admin imports
-import AdminLayout from './features/admin/AdminLayout';
+import AdminLayout from "./features/admin/AdminLayout";
 import AdminDashboardPage from "./features/admin/AdminDashboardPage";
 import ProductsManagementPage from "./features/admin/ProductsManagementPage";
 import OrdersManagementPage from "./features/admin/OrdersManagementPage";
@@ -33,7 +35,7 @@ import UserDetailPage from "./features/admin/UserDetailPage";
 import VendorsManagementPage from "./features/admin/VendorsManagementPage";
 import DisputesManagementPage from "./features/admin/DisputesManagementPage";
 import DisputeDetailPage from "./features/admin/DisputeDetailPage";
-import SettingsPage from './features/admin/SettingsPage';
+import SettingsPage from "./features/admin/SettingsPage";
 
 function App() {
   return (
@@ -121,6 +123,8 @@ function App() {
               </PublicRoute>
             }
           />
+          <Route path="help" element={<HelpPage />} />
+          <Route path="contact" element={<ContactPage />} />
           <Route
             path="orders"
             element={
@@ -166,7 +170,7 @@ function App() {
         >
           {/* Redirection par défaut vers dashboard */}
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
-          
+
           {/* Pages admin */}
           <Route path="dashboard" element={<AdminDashboardPage />} />
           <Route path="products" element={<ProductsManagementPage />} />

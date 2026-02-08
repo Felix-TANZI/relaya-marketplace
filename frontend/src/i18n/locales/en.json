@@ -196,6 +196,118 @@
     "payment_method": "Payment method",
     "mobile_money": "Mobile Money"
   },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Find quick answers to your questions",
+    "search_placeholder": "Search help...",
+    "popular_topics": "Popular topics",
+    "all_categories": "All categories",
+    "no_results": "No results found",
+    "no_results_desc": "Try different keywords or contact our support",
+    "contact_support": "Contact support",
+    "categories": {
+      "orders": {
+        "title": "Orders & Payments",
+        "description": "Manage your orders and payment methods"
+      },
+      "shipping": {
+        "title": "Shipping",
+        "description": "Delivery information and tracking"
+      },
+      "returns": {
+        "title": "Returns & Refunds",
+        "description": "Return policy and refund procedure"
+      },
+      "account": {
+        "title": "Account & Security",
+        "description": "Manage your account and information"
+      },
+      "sellers": {
+        "title": "Become a Seller",
+        "description": "Seller guide on Relaya"
+      },
+      "technical": {
+        "title": "Technical Support",
+        "description": "Help with technical issues"
+      }
+    },
+    "faq": {
+      "order_tracking": {
+        "question": "How do I track my order?",
+        "answer": "Once your order is placed, you receive a tracking number via SMS and email. You can track your package in real-time in the 'My Orders' section of your account."
+      },
+      "payment_methods": {
+        "question": "What payment methods are accepted?",
+        "answer": "We accept MTN Mobile Money and Orange Money. Payment is 100% secure and you receive instant SMS confirmation."
+      },
+      "delivery_time": {
+        "question": "What is the delivery time?",
+        "answer": "24-48h for Yaoundé and Douala, 3-5 days for other cities. You are notified by SMS at each step."
+      },
+      "return_policy": {
+        "question": "What is your return policy?",
+        "answer": "You have 14 days to return an unused item. Refund is processed within 7 days after verification."
+      },
+      "become_seller": {
+        "question": "How to become a seller on Relaya?",
+        "answer": "Click 'Become a Seller', fill out the form with your business information. Our team reviews your application within 48h."
+      },
+      "account_security": {
+        "question": "How to secure my account?",
+        "answer": "Use a strong, unique password. We recommend enabling two-factor authentication in your account settings."
+      }
+    }
+  },
+  "contact": {
+    "title": "Contact us",
+    "subtitle": "Our team is here to help",
+    "form": {
+      "title": "Send us a message",
+      "name": "Full name",
+      "name_placeholder": "Felix Tanzi",
+      "email": "Email",
+      "email_placeholder": "felix@example.com",
+      "phone": "Phone",
+      "phone_placeholder": "+237 6XX XX XX XX",
+      "subject": "Subject",
+      "subject_placeholder": "How can we help you?",
+      "message": "Message",
+      "message_placeholder": "Describe your request in detail...",
+      "send": "Send message",
+      "sending": "Sending...",
+      "success": "Message sent successfully!",
+      "success_desc": "We will respond within 24h.",
+      "error": "Error sending message",
+      "error_desc": "Please try again or call us directly."
+    },
+    "info": {
+      "title": "Contact information",
+      "email_label": "Email",
+      "email_value": "support@relaya.cm",
+      "phone_label": "Phone",
+      "phone_value": "+237 6XX XX XX XX",
+      "whatsapp_label": "WhatsApp",
+      "whatsapp_value": "+237 6XX XX XX XX",
+      "address_label": "Address",
+      "address_value": "Yaoundé, Cameroon"
+    },
+    "hours": {
+      "title": "Business hours",
+      "weekdays": "Monday - Friday",
+      "weekdays_hours": "8:00 AM - 6:00 PM",
+      "saturday": "Saturday",
+      "saturday_hours": "9:00 AM - 2:00 PM",
+      "sunday": "Sunday",
+      "sunday_hours": "Closed"
+    },
+    "social": {
+      "title": "Follow us",
+      "facebook": "Facebook",
+      "twitter": "Twitter",
+      "instagram": "Instagram",
+      "linkedin": "LinkedIn"
+    }
+  },
   "common": {
     "currency": "XAF",
     "loading": "Loading...",

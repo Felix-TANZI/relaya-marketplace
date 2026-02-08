@@ -65,12 +65,13 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen flex bg-dark-bg">
-      {/* Sidebar */}
+    <>
+      {/* Sidebar FIXE - Fond sombre */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 w-64 glass border-r border-white/10 transform transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0`}
+        style={{ backgroundColor: 'rgba(10, 10, 15, 0.95)' }}
       >
         <div className="flex flex-col h-full">
           {/* Header */}
@@ -91,7 +92,7 @@ export default function AdminLayout() {
                 onClick={() => setSidebarOpen(false)}
                 className="lg:hidden p-2 rounded-lg hover:bg-white/5 transition-all"
               >
-                <X size={20} />
+                <X size={20} className="text-white" />
               </button>
             </div>
           </div>
@@ -129,7 +130,7 @@ export default function AdminLayout() {
                 </span>
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{user?.username}</p>
+                <p className="font-medium truncate text-white">{user?.username}</p>
                 <p className="text-xs text-dark-text-tertiary">Administrateur</p>
               </div>
             </div>
@@ -152,40 +153,20 @@ export default function AdminLayout() {
         />
       )}
 
-      {/* Main Content */}
-      <div className={`flex-1 ${sidebarOpen ? 'lg:ml-64' : ''} transition-all duration-300`}>
-        {/* Top Bar */}
-        <header className="sticky top-0 z-30 glass border-b border-white/10 px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 rounded-lg hover:bg-white/5 transition-all lg:hidden"
-            >
-              <Menu size={24} />
-            </button>
+      {/* Bouton Menu Mobile FIXE */}
+      <button
+        onClick={() => setSidebarOpen(true)}
+        className={`lg:hidden fixed top-4 left-4 z-30 p-3 glass border border-white/10 rounded-xl hover:bg-white/5 transition-all ${
+          sidebarOpen ? 'hidden' : ''
+        }`}
+      >
+        <Menu size={24} className="text-white" />
+      </button>
 
-            <div className="hidden lg:block">
-              <p className="text-sm text-dark-text-tertiary">
-                Bienvenue, <span className="text-dark-text font-medium">{user?.username}</span>
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Link
-                to="/"
-                className="px-4 py-2 text-sm border border-white/10 rounded-xl hover:bg-white/5 transition-all"
-              >
-                Voir le site
-              </Link>
-            </div>
-          </div>
-        </header>
-
-        {/* Page Content */}
-        <main>
-          <Outlet />
-        </main>
+      {/* Contenu avec FOND DE L'APPLICATION */}
+      <div className="lg:pl-64 bg-dark-bg text-dark-text">
+        <Outlet />
       </div>
-    </div>
+    </>
   );
 }

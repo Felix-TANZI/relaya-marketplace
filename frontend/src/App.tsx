@@ -22,12 +22,14 @@ import ProductFormPage from "./features/vendors/ProductFormPage"; // Page de for
 import VendorOrdersPage from "./features/vendors/VendorOrdersPage"; // Page de gestion des commandes pour les vendeurs
 import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage"; // Page de détail d'une commande pour les vendeurs
 import VendorsManagementPage from "./features/admin/VendorsManagementPage"; // Page d'administration des vendeurs
-import AdminDashboardPage from './features/admin/AdminDashboardPage'; // Page du dashboard admin
-import ProductsManagementPage from './features/admin/ProductsManagementPage'; // Page de gestion des produits pour les admins
-import OrdersManagementPage from './features/admin/OrdersManagementPage'; // Page de gestion des commandes pour les admins
-import AdminOrderDetailPage from './features/admin/OrderDetailPage'; // Page de détail d'une commande pour les admins
-import UsersManagementPage from './features/admin/UsersManagementPage'; // Page de gestion des utilisateurs pour les admins
-import UserDetailPage from './features/admin/UserDetailPage'; // Page de détail d'un utilisateur pour les admins
+import AdminDashboardPage from "./features/admin/AdminDashboardPage"; // Page du dashboard admin
+import ProductsManagementPage from "./features/admin/ProductsManagementPage"; // Page de gestion des produits pour les admins
+import OrdersManagementPage from "./features/admin/OrdersManagementPage"; // Page de gestion des commandes pour les admins
+import AdminOrderDetailPage from "./features/admin/OrderDetailPage"; // Page de détail d'une commande pour les admins
+import UsersManagementPage from "./features/admin/UsersManagementPage"; // Page de gestion des utilisateurs pour les admins
+import UserDetailPage from "./features/admin/UserDetailPage"; // Page de détail d'un utilisateur pour les admins
+import DisputesManagementPage from "./features/admin/DisputesManagementPage"; // Page de gestion des litiges pour les admins
+import DisputeDetailPage from "./features/admin/DisputeDetailPage"; // Page de détail d'un litige pour les admins
 
 function App() {
   return (
@@ -163,6 +165,24 @@ function App() {
             element={
               <ProtectedRoute>
                 <UserDetailPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Routes gestion litiges admin */}
+          <Route
+            path="admin/disputes"
+            element={
+              <ProtectedRoute>
+                <DisputesManagementPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="admin/disputes/:id"
+            element={
+              <ProtectedRoute>
+                <DisputeDetailPage />
               </ProtectedRoute>
             }
           />

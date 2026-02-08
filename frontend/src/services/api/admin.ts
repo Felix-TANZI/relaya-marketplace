@@ -332,6 +332,98 @@ export interface UserFilters {
   search?: string;
 }
 
+//  DISPUTES 
+
+export interface DisputeMessage {
+  id: number;
+  sender: number;
+  sender_name: string;
+  message: string;
+  is_internal: boolean;
+  created_at: string;
+}
+
+export interface DisputeEvidence {
+  id: number;
+  uploaded_by: number;
+  uploaded_by_name: string;
+  file: string;
+  file_url: string | null;
+  description: string;
+  created_at: string;
+}
+
+export interface AdminDispute {
+  id: number;
+  order: number;
+  order_id: number;
+  opened_by: number;
+  opened_by_name: string;
+  customer_name: string;
+  reason: 'NOT_RECEIVED' | 'DAMAGED' | 'WRONG_ITEM' | 'NOT_AS_DESCRIBED' | 'REFUND_REQUEST' | 'OTHER';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  resolution: 'REFUND' | 'EXCHANGE' | 'PARTIAL_REFUND' | 'REJECTED' | 'OTHER' | null;
+  messages_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface OrderDetailBasic {
+  id: number;
+  total_xaf: number;
+  customer_email: string | null;
+  customer_phone: string;
+  payment_status: string;
+  fulfillment_status: string;
+  created_at: string;
+}
+
+export interface AdminDisputeDetail {
+  id: number;
+  order: number;
+  order_detail: OrderDetailBasic;
+  opened_by: number;
+  opened_by_name: string;
+  reason: 'NOT_RECEIVED' | 'DAMAGED' | 'WRONG_ITEM' | 'NOT_AS_DESCRIBED' | 'REFUND_REQUEST' | 'OTHER';
+  status: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  description: string;
+  resolution: 'REFUND' | 'EXCHANGE' | 'PARTIAL_REFUND' | 'REJECTED' | 'OTHER' | null;
+  resolution_note: string | null;
+  resolved_by: number | null;
+  resolved_by_name: string | null;
+  resolved_at: string | null;
+  refund_amount_xaf: number | null;
+  messages: DisputeMessage[];
+  evidences: DisputeEvidence[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminDisputeUpdate {
+  status?: 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+  resolution?: 'REFUND' | 'EXCHANGE' | 'PARTIAL_REFUND' | 'REJECTED' | 'OTHER';
+  resolution_note?: string;
+  refund_amount_xaf?: number;
+}
+
+export interface DisputeFilters {
+  status?: string;
+  reason?: string;
+  order?: number;
+  search?: string;
+}
+
+export interface DisputeStats {
+  total_disputes: number;
+  open_disputes: number;
+  in_progress_disputes: number;
+  resolved_disputes: number;
+  stats_by_status: Array<{ status: string; count: number }>;
+  stats_by_reason: Array<{ reason: string; count: number }>;
+  stats_by_resolution: Array<{ resolution: string; count: number }>;
+  avg_resolution_days: number;
+}
+
 //  API
 
 export const adminApi = {
@@ -719,5 +811,113 @@ export const adminApi = {
     
     const token = localStorage.getItem('access_token');
     return `/api/vendors/admin/users/export/csv/?${params.toString()}&token=${token}`;
+  },
+
+  //  DISPUTES 
+
+  /**
+   * Liste tous les litiges (admin)
+   */
+  listDisputes: async (filters?: DisputeFilters): Promise<AdminDispute[]> => {
+    const token = localStorage.getItem('access_token');
+    
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.reason) params.append('reason', filters.reason);
+    if (filters?.order) params.append('order', filters.order.toString());
+    if (filters?.search) params.append('search', filters.search);
+    
+    const url = `/api/vendors/admin/disputes/${params.toString() ? '?' + params.toString() : ''}`;
+    
+    return http<AdminDispute[]>(url, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Statistiques litiges (admin)
+   */
+  getDisputeStats: async (): Promise<DisputeStats> => {
+    const token = localStorage.getItem('access_token');
+    return http<DisputeStats>('/api/vendors/admin/disputes/stats/', {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Détail d'un litige (admin)
+   */
+  getDisputeDetail: async (disputeId: number): Promise<AdminDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/`, {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Modifier un litige (admin)
+   */
+  updateDispute: async (disputeId: number, data: AdminDisputeUpdate): Promise<AdminDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/update/`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  /**
+   * Ajouter un message au litige (admin)
+   */
+  addDisputeMessage: async (
+    disputeId: number,
+    message: string,
+    isInternal: boolean = false
+  ): Promise<AdminDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/message/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ message, is_internal: isInternal }),
+    });
+  },
+
+  /**
+   * Résoudre un litige (admin)
+   */
+  resolveDispute: async (
+    disputeId: number,
+    resolution: string,
+    resolutionNote: string,
+    refundAmount?: number
+  ): Promise<AdminDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/resolve/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        resolution,
+        resolution_note: resolutionNote,
+        refund_amount_xaf: refundAmount,
+      }),
+    });
   },
 };

@@ -1,0 +1,16 @@
+# Robots.txt pour Relaya - belivay.com
+
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /checkout/
+Disallow: /profile/
+Disallow: /orders/
+Disallow: /seller/
+
+# Sitemap
+Sitemap: https://belivay.com/sitemap.xml
+
+# Crawl-delay (optionnel)
+Crawl-delay: 1

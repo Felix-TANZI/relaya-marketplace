@@ -1,0 +1,32 @@
+FROM python:3.11-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1
+
+RUN apt-get update && apt-get install -y \
+    postgresql-client \
+    gettext \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m -u 1000 django && \
+    mkdir -p /app && \
+    chown -R django:django /app
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY --chown=django:django . .
+
+RUN mkdir -p /app/staticfiles /app/mediafiles && \
+    chown -R django:django /app/staticfiles /app/mediafiles
+
+USER django
+
+RUN python manage.py collectstatic --noinput --settings=relaya.settings.base
+
+EXPOSE 8000
+
+CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "4", "--timeout", "120", "relaya.wsgi:application"]

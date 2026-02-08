@@ -2,39 +2,44 @@
 // Composant principal de l'application React
 // Définit les routes principales et intègre les composants de mise en page et de routage
 
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import AppLayout from "./app/layout/AppLayout"; // Mise en page principale de l'application
-import HomePage from "./features/home/HomePage"; // Page d'accueil
-import CatalogPage from "./features/catalog/CatalogPage"; // Page du catalogue de produits
-import ProductDetailPage from "./features/catalog/ProductDetailPage"; // Page de détail du produit
-import CartPage from "./features/cart/CartPage"; // Page du panier
-import CheckoutPage from "./features/checkout/CheckoutPage"; // Page de paiement
-import LoginPage from "./features/auth/LoginPage"; // Page de connexion
-import RegisterPage from "./features/auth/RegisterPage"; // Page d'inscription
-import ProtectedRoute from "./components/auth/ProtectedRoute"; // Composant de route protégée
-import PublicRoute from "./components/auth/PublicRoute"; // Composant de route publique
-import OrdersHistoryPage from "./features/orders/OrdersHistoryPage"; // Page d'historique des commandes
-import OrderDetailPage from "./features/orders/OrderDetailPage"; // Page de détail de la commande
-import ProfilePage from "./features/profile/ProfilePage"; // Page de profil utilisateur
-import BecomeSellerPage from "./features/vendors/BecomeSellerPage"; // Page pour devenir vendeur
-import SellerDashboardPage from "./features/vendors/SellerDashboardPage"; // Tableau de bord du vendeur
-import ProductFormPage from "./features/vendors/ProductFormPage"; // Page de formulaire de produit
-import VendorOrdersPage from "./features/vendors/VendorOrdersPage"; // Page de gestion des commandes pour les vendeurs
-import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage"; // Page de détail d'une commande pour les vendeurs
-import VendorsManagementPage from "./features/admin/VendorsManagementPage"; // Page d'administration des vendeurs
-import AdminDashboardPage from "./features/admin/AdminDashboardPage"; // Page du dashboard admin
-import ProductsManagementPage from "./features/admin/ProductsManagementPage"; // Page de gestion des produits pour les admins
-import OrdersManagementPage from "./features/admin/OrdersManagementPage"; // Page de gestion des commandes pour les admins
-import AdminOrderDetailPage from "./features/admin/OrderDetailPage"; // Page de détail d'une commande pour les admins
-import UsersManagementPage from "./features/admin/UsersManagementPage"; // Page de gestion des utilisateurs pour les admins
-import UserDetailPage from "./features/admin/UserDetailPage"; // Page de détail d'un utilisateur pour les admins
-import DisputesManagementPage from "./features/admin/DisputesManagementPage"; // Page de gestion des litiges pour les admins
-import DisputeDetailPage from "./features/admin/DisputeDetailPage"; // Page de détail d'un litige pour les admins
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import AppLayout from "./app/layout/AppLayout";
+import HomePage from "./features/home/HomePage";
+import CatalogPage from "./features/catalog/CatalogPage";
+import ProductDetailPage from "./features/catalog/ProductDetailPage";
+import CartPage from "./features/cart/CartPage";
+import CheckoutPage from "./features/checkout/CheckoutPage";
+import LoginPage from "./features/auth/LoginPage";
+import RegisterPage from "./features/auth/RegisterPage";
+import ProtectedRoute from "./components/auth/ProtectedRoute";
+import PublicRoute from "./components/auth/PublicRoute";
+import OrdersHistoryPage from "./features/orders/OrdersHistoryPage";
+import OrderDetailPage from "./features/orders/OrderDetailPage";
+import ProfilePage from "./features/profile/ProfilePage";
+import BecomeSellerPage from "./features/vendors/BecomeSellerPage";
+import SellerDashboardPage from "./features/vendors/SellerDashboardPage";
+import ProductFormPage from "./features/vendors/ProductFormPage";
+import VendorOrdersPage from "./features/vendors/VendorOrdersPage";
+import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage";
+
+// Admin imports
+import AdminLayout from './features/admin/AdminLayout';
+import AdminDashboardPage from "./features/admin/AdminDashboardPage";
+import ProductsManagementPage from "./features/admin/ProductsManagementPage";
+import OrdersManagementPage from "./features/admin/OrdersManagementPage";
+import AdminOrderDetailPage from "./features/admin/OrderDetailPage";
+import UsersManagementPage from "./features/admin/UsersManagementPage";
+import UserDetailPage from "./features/admin/UserDetailPage";
+import VendorsManagementPage from "./features/admin/VendorsManagementPage";
+import DisputesManagementPage from "./features/admin/DisputesManagementPage";
+import DisputeDetailPage from "./features/admin/DisputeDetailPage";
+import SettingsPage from './features/admin/SettingsPage';
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Routes principales avec AppLayout */}
         <Route path="/" element={<AppLayout />}>
           <Route index element={<HomePage />} />
           <Route path="catalog" element={<CatalogPage />} />
@@ -106,86 +111,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-          {/* Route admin vendeurs */}
-          <Route
-            path="admin/vendors"
-            element={
-              <ProtectedRoute>
-                <VendorsManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Route gestion produits admin */}
-          <Route
-            path="admin/products"
-            element={
-              <ProtectedRoute>
-                <ProductsManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Route dashboard admin */}
-          <Route
-            path="admin/dashboard"
-            element={
-              <ProtectedRoute>
-                <AdminDashboardPage />
-              </ProtectedRoute>
-            }
-          />
-          {/* Routes gestion commandes admin */}
-          <Route
-            path="admin/orders"
-            element={
-              <ProtectedRoute>
-                <OrdersManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/orders/:id"
-            element={
-              <ProtectedRoute>
-                <AdminOrderDetailPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Routes gestion utilisateurs admin */}
-          <Route
-            path="admin/users"
-            element={
-              <ProtectedRoute>
-                <UsersManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/users/:id"
-            element={
-              <ProtectedRoute>
-                <UserDetailPage />
-              </ProtectedRoute>
-            }
-          />
-
-          {/* Routes gestion litiges admin */}
-          <Route
-            path="admin/disputes"
-            element={
-              <ProtectedRoute>
-                <DisputesManagementPage />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="admin/disputes/:id"
-            element={
-              <ProtectedRoute>
-                <DisputeDetailPage />
-              </ProtectedRoute>
-            }
-          />
 
           {/* Routes publiques (redirect si déjà connecté) */}
           <Route
@@ -228,6 +153,31 @@ function App() {
               </PublicRoute>
             }
           />
+        </Route>
+
+        {/* Routes admin avec AdminLayout (sidebar permanente) */}
+        <Route
+          path="admin"
+          element={
+            <ProtectedRoute>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Redirection par défaut vers dashboard */}
+          <Route index element={<Navigate to="/admin/dashboard" replace />} />
+          
+          {/* Pages admin */}
+          <Route path="dashboard" element={<AdminDashboardPage />} />
+          <Route path="products" element={<ProductsManagementPage />} />
+          <Route path="orders" element={<OrdersManagementPage />} />
+          <Route path="orders/:id" element={<AdminOrderDetailPage />} />
+          <Route path="users" element={<UsersManagementPage />} />
+          <Route path="users/:id" element={<UserDetailPage />} />
+          <Route path="vendors" element={<VendorsManagementPage />} />
+          <Route path="disputes" element={<DisputesManagementPage />} />
+          <Route path="disputes/:id" element={<DisputeDetailPage />} />
+          <Route path="settings" element={<SettingsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

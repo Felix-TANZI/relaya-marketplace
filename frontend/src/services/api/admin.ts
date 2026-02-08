@@ -424,6 +424,38 @@ export interface DisputeStats {
   avg_resolution_days: number;
 }
 
+//  SETTINGS 
+
+export interface PlatformSettings {
+  id: number;
+  delivery_fees: Record<string, number>; // {"Yaoundé": 1000, "Douala": 1500}
+  platform_commission_percent: string;
+  minimum_order_amount_xaf: number;
+  default_delivery_days: number;
+  mtn_momo_enabled: boolean;
+  orange_money_enabled: boolean;
+  admin_email: string;
+  support_email: string;
+  maintenance_mode: boolean;
+  maintenance_message: string;
+  updated_at: string;
+  updated_by: number | null;
+  updated_by_name: string;
+}
+
+export interface PlatformSettingsUpdate {
+  delivery_fees?: Record<string, number>;
+  platform_commission_percent?: string;
+  minimum_order_amount_xaf?: number;
+  default_delivery_days?: number;
+  mtn_momo_enabled?: boolean;
+  orange_money_enabled?: boolean;
+  admin_email?: string;
+  support_email?: string;
+  maintenance_mode?: boolean;
+  maintenance_message?: string;
+}
+
 //  API
 
 export const adminApi = {
@@ -918,6 +950,36 @@ export const adminApi = {
         resolution_note: resolutionNote,
         refund_amount_xaf: refundAmount,
       }),
+    });
+  },
+
+  //  SETTINGS 
+
+  /**
+   * Récupérer les paramètres plateforme (admin)
+   */
+  getSettings: async (): Promise<PlatformSettings> => {
+    const token = localStorage.getItem('access_token');
+    return http<PlatformSettings>('/api/vendors/admin/settings/', {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Modifier les paramètres plateforme (admin)
+   */
+  updateSettings: async (data: PlatformSettingsUpdate): Promise<PlatformSettings> => {
+    const token = localStorage.getItem('access_token');
+    return http<PlatformSettings>('/api/vendors/admin/settings/update/', {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
     });
   },
 };

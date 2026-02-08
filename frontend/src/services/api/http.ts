@@ -1,7 +1,9 @@
 // frontend/src/services/api/http.ts
 // Helper HTTP avec refresh token automatique
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
+// En développement, on utilise l'URL complète du backend
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
@@ -53,7 +55,11 @@ export async function http<T>(
   endpoint: string,
   config: RequestConfig = {}
 ): Promise<T> {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE_URL}${endpoint}`;
+  // Si l'endpoint est une URL complète, l'utiliser directement
+  // Sinon, construire l'URL avec la base (qui peut être vide en prod)
+  const url = endpoint.startsWith('http') 
+    ? endpoint 
+    : `${API_BASE_URL}${endpoint}`;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',

@@ -1,158 +1,199 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  * {
+    @apply border-border;
+  }
+  
   body {
-    @apply font-display;
+    @apply bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
-  
-  /* ============================================
-     STYLES POUR LES FORMULAIRES/FILTRES
-     ============================================ */
-  
-  /* Force le color-scheme dark pour tous les inputs natifs */
-  input,
-  select,
-  textarea {
-    color-scheme: dark;
-  }
-  
-  /* Styles pour les select */
-  select {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #E8EDF4;
-    cursor: pointer;
-  }
-  
-  /* Styles pour les options des select */
-  select option {
-    background-color: #16181D !important;
-    color: #E8EDF4 !important;
-    padding: 0.75rem 1rem;
-    font-weight: 400;
-  }
-  
-  select option:hover,
-  select option:focus {
-    background-color: #1C1F26 !important;
-    color: #00F5FF !important;
-  }
-  
-  select option:checked {
-    background-color: #1C1F26 !important;
-    color: #00F5FF !important;
-    font-weight: 500;
-  }
-  
-  /* Styles pour les inputs (text, number, etc.) */
-  input[type="text"],
-  input[type="number"],
-  input[type="email"],
-  input[type="password"],
-  input[type="search"],
-  input[type="tel"],
-  input[type="url"] {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #E8EDF4;
-  }
-  
-  input[type="text"]::placeholder,
-  input[type="number"]::placeholder,
-  input[type="email"]::placeholder,
-  input[type="password"]::placeholder,
-  input[type="search"]::placeholder,
-  input[type="tel"]::placeholder,
-  input[type="url"]::placeholder {
-    color: #71717a;
-    opacity: 1;
-  }
-  
-  /* Styles pour les textarea */
-  textarea {
-    background-color: rgba(255, 255, 255, 0.05);
-    color: #E8EDF4;
-  }
-  
-  textarea::placeholder {
-    color: #71717a;
-    opacity: 1;
-  }
-  
-  /* Styles pour les checkbox et radio */
-  input[type="checkbox"],
-  input[type="radio"] {
-    cursor: pointer;
-    accent-color: #00F5FF;
-  }
-  
-  /* Désactiver l'apparence par défaut des spinners sur input number */
-  input[type="number"]::-webkit-inner-spin-button,
-  input[type="number"]::-webkit-outer-spin-button {
-    opacity: 1;
-    cursor: pointer;
-  }
-  
-  /* Autofill styles (quand le navigateur remplit automatiquement) */
-  input:-webkit-autofill,
-  input:-webkit-autofill:hover,
-  input:-webkit-autofill:focus,
-  input:-webkit-autofill:active {
-    -webkit-box-shadow: 0 0 0 30px #16181D inset !important;
-    -webkit-text-fill-color: #E8EDF4 !important;
-    caret-color: #E8EDF4;
-  }
-  
-  /* Focus visible pour accessibilité */
-  input:focus-visible,
-  select:focus-visible,
-  textarea:focus-visible {
-    outline: 2px solid #00F5FF;
-    outline-offset: 2px;
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
   }
 }
 
 @layer utilities {
-  /* Glass effects */
-  .glass {
-    @apply bg-white/5 backdrop-blur-md;
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
   }
 
-  .glass-strong {
-    @apply bg-white/10 backdrop-blur-xl;
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
 
-  /* Hover glow effects */
-  .hover-glow-cyan {
-    @apply hover:shadow-[0_0_20px_rgba(0,245,255,0.3)];
+  /* Custom scrollbar for modern browsers */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    @apply bg-primary rounded-full;
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary-dark;
   }
 
-  .hover-glow-purple {
-    @apply hover:shadow-[0_0_20px_rgba(182,76,255,0.3)];
+  /* Text gradients */
+  .text-gradient-primary {
+    @apply bg-gradient-to-r from-primary to-primary-dark bg-clip-text text-transparent;
   }
 
-  .hover-glow-pink {
-    @apply hover:shadow-[0_0_20px_rgba(255,0,110,0.3)];
-  }
-
-  /* Gradient background animation */
-  .animate-gradient-bg {
-    background-size: 200% 200%;
-  }
-
-    /* Animation toast */
-  @keyframes slide-in-right {
+  /* Animations */
+  @keyframes fadeIn {
     from {
-      transform: translateX(100%);
       opacity: 0;
+      transform: translateY(20px);
     }
     to {
-      transform: translateX(0);
       opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  @keyframes slideInRight {
+    from {
+      opacity: 0;
+      transform: translateX(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
     }
   }
 
   .animate-slide-in-right {
-    animation: slide-in-right 0.3s ease-out;
+    animation: slideInRight 0.3s ease-out;
   }
+
+  /* Loading spinner */
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  /* Pulse animation for notifications */
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
+  }
+
+  .animate-pulse {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Image loading skeleton */
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .skeleton {
+    @apply bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700;
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite linear;
+  }
+
+  /* Line clamp utilities */
+  .line-clamp-1 {
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Glass morphism effect */
+  .glass {
+    @apply bg-white/10 backdrop-blur-lg border border-white/20;
+  }
+
+  .glass-dark {
+    @apply bg-black/10 backdrop-blur-lg border border-white/10;
+  }
+
+  /* Focus visible styles */
+  .focus-visible-ring {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2;
+  }
+
+  /* Transition utilities */
+  .transition-base {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  .transition-slow {
+    @apply transition-all duration-500 ease-in-out;
+  }
+}
+
+/* Print styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+}
+
+/* Dark mode images */
+@media (prefers-color-scheme: dark) {
+  img:not([src*=".svg"]) {
+    opacity: 0.9;
+  }
+}
+
+/* Selection color */
+::selection {
+  @apply bg-primary text-white;
+}
+
+::-moz-selection {
+  @apply bg-primary text-white;
 }

@@ -1,6 +1,3 @@
-// frontend/src/context/ThemeContext.tsx
-// Contexte pour la gestion du thème (clair/sombre) de l'application
-
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
@@ -15,15 +12,15 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    const stored = localStorage.getItem('relaya-theme') as Theme;
-    return stored || 'dark';
+    const saved = localStorage.getItem('belivay-theme');
+    return (saved as Theme) || 'light';
   });
 
   useEffect(() => {
     const root = window.document.documentElement;
     root.classList.remove('light', 'dark');
     root.classList.add(theme);
-    localStorage.setItem('relaya-theme', theme);
+    localStorage.setItem('belivay-theme', theme);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -44,8 +41,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 // eslint-disable-next-line react-refresh/only-export-components
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
+  if (!context) {
+    throw new Error('useTheme must be used within ThemeProvider');
   }
   return context;
 }

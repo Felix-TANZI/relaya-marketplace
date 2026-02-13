@@ -10,6 +10,7 @@ export interface User {
   first_name: string;
   last_name: string;
   date_joined: string;
+  is_vendor?: boolean;
 }
 
 export interface LoginCredentials {

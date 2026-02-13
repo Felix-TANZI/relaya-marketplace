@@ -171,7 +171,7 @@ export default function Header() {
                       <span className="text-text-light dark:text-text-dark">{t('header.wishlist')}</span>
                     </Link>
 
-                    {user.role === 'vendor' && (
+                    {user.is_vendor && (
                       <Link to="/vendor/dashboard" className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all" onClick={() => setUserMenuOpen(false)}>
                         <Settings size={18} className="text-text-light-secondary dark:text-text-dark-secondary" />
                         <span className="text-text-light dark:text-text-dark">{t('header.seller_dashboard')}</span>
@@ -255,7 +255,7 @@ export default function Header() {
                 <Link to="/orders" className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all" onClick={() => setMobileMenuOpen(false)}>
                   <span className="font-medium text-text-light dark:text-text-dark">{t('header.orders')}</span>
                 </Link>
-                {user.role === 'vendor' && (
+                {user.is_vendor && (
                   <Link to="/vendor/dashboard" className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all" onClick={() => setMobileMenuOpen(false)}>
                     <span className="font-medium text-text-light dark:text-text-dark">{t('header.seller_dashboard')}</span>
                   </Link>

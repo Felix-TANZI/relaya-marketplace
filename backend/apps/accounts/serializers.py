@@ -8,10 +8,16 @@ from django.contrib.auth.password_validation import validate_password
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_vendor = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ["id", "username", "email", "first_name", "last_name", "date_joined"]
-        read_only_fields = ["id", "date_joined"]
+        fields = ["id", "username", "email", "first_name", "last_name", "date_joined", "is_vendor"]
+        read_only_fields = ["id", "date_joined", "is_vendor"]
+    
+    def get_is_vendor(self, obj):
+        """Vérifier si l'utilisateur a un profil vendeur actif"""
+        return hasattr(obj, 'vendor_profile') and obj.vendor_profile.status == 'approved'
 
 
 class RegisterSerializer(serializers.ModelSerializer):
@@ -37,14 +43,22 @@ class RegisterSerializer(serializers.ModelSerializer):
             last_name=validated_data.get("last_name", ""),
         )
         return user
+
+
 class UserProfileSerializer(serializers.ModelSerializer):
     """
     Serializer pour le profil utilisateur (lecture et modification)
     """
+    is_vendor = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'date_joined']
-        read_only_fields = ['id', 'username', 'date_joined']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'date_joined', 'is_vendor']
+        read_only_fields = ['id', 'username', 'date_joined', 'is_vendor']
+    
+    def get_is_vendor(self, obj):
+        """Vérifier si l'utilisateur a un profil vendeur actif"""
+        return hasattr(obj, 'vendor_profile') and obj.vendor_profile.status == 'approved'
 
 
 class UserProfileUpdateSerializer(serializers.ModelSerializer):

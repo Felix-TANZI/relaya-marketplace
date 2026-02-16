@@ -3,6 +3,8 @@
 
 from rest_framework import serializers
 from .models import Product, Category, ProductMedia, ProductImage
+from django.contrib.auth.models import User
+from django.db.models import Avg, Count
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -43,6 +45,10 @@ class ProductSerializer(serializers.ModelSerializer):
     stock_quantity = serializers.SerializerMethodField()
     images = ProductImageSerializer(many=True, read_only=True)
     
+    # Stats des avis
+    rating_average = serializers.SerializerMethodField()
+    reviews_count = serializers.SerializerMethodField()
+    
     class Meta:
         model = Product
         fields = [
@@ -55,9 +61,11 @@ class ProductSerializer(serializers.ModelSerializer):
             'is_active',
             'category',
             'media',
+            'images',
+            'rating_average',
+            'reviews_count',
             'created_at',
             'updated_at',
-            'images',
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     
@@ -67,6 +75,20 @@ class ProductSerializer(serializers.ModelSerializer):
             return obj.inventory.quantity
         except:
             return 0
+    
+    def get_rating_average(self, obj):
+        """Calculer la moyenne des notes"""
+        from .models import ProductReview
+        avg = ProductReview.objects.filter(
+            product=obj, 
+            is_approved=True
+        ).aggregate(Avg('rating'))['rating__avg']
+        return round(avg, 1) if avg else None
+    
+    def get_reviews_count(self, obj):
+        """Compter le nombre d'avis approuvés"""
+        from .models import ProductReview
+        return ProductReview.objects.filter(product=obj, is_approved=True).count()
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
@@ -122,3 +144,57 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         """Utiliser ProductSerializer pour la représentation"""
         return ProductSerializer(instance, context=self.context).data
+    
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+    """Serializer pour les avis produits"""
+    user_name = serializers.CharField(source='user.username', read_only=True)
+    user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+    
+    class Meta:
+        from .models import ProductReview
+        model = ProductReview
+        fields = [
+            'id', 'user', 'user_name', 'user_first_name',
+            'rating', 'title', 'comment',
+            'is_verified_purchase', 'created_at'
+        ]
+        read_only_fields = ['id', 'user', 'is_verified_purchase', 'created_at']
+
+
+class ProductReviewCreateSerializer(serializers.ModelSerializer):
+    """Serializer pour créer un avis"""
+    
+    class Meta:
+        from .models import ProductReview
+        model = ProductReview
+        fields = ['product', 'rating', 'title', 'comment', 'order']
+    
+    def validate(self, data):
+        user = self.context['request'].user
+        product = data['product']
+        order = data.get('order')
+        
+        # Vérifier que l'utilisateur a acheté le produit
+        if order:
+            if not order.items.filter(product=product).exists():
+                raise serializers.ValidationError("Ce produit n'est pas dans cette commande.")
+            if order.user != user:
+                raise serializers.ValidationError("Cette commande ne vous appartient pas.")
+        
+        # Vérifier qu'il n'a pas déjà laissé un avis pour cette commande
+        from .models import ProductReview
+        if order and ProductReview.objects.filter(product=product, user=user, order=order).exists():
+            raise serializers.ValidationError("Vous avez déjà laissé un avis pour ce produit.")
+        
+        return data
+    
+    def create(self, validated_data):
+        from .models import ProductReview
+        validated_data['user'] = self.context['request'].user
+        
+        # Marquer comme achat vérifié si une commande est fournie
+        if validated_data.get('order'):
+            validated_data['is_verified_purchase'] = True
+        
+        return ProductReview.objects.create(**validated_data)    

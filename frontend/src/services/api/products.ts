@@ -23,6 +23,7 @@ export interface Category {
   name: string;
   slug: string;
   is_active: boolean;
+  parent?: number | null;
 }
 
 export interface ProductImage {
@@ -44,6 +45,8 @@ export interface Product {
   category: Category | null;
   media: ProductMedia[];
   images?: ProductImage[];
+  rating_average?: number | null;
+  reviews_count?: number;
   created_at: string;
   updated_at: string;
 }

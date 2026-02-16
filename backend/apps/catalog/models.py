@@ -4,6 +4,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
+from django.core.validators import MinValueValidator, MaxValueValidator
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -137,3 +138,36 @@ class Inventory(TimeStampedModel):
     def __str__(self):
         return f"{self.product.title} - stock={self.quantity}"
 
+
+class ProductReview(models.Model):
+    """
+    Avis et notes sur les produits
+    """
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews')
+    order = models.ForeignKey('orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='product_reviews')
+    
+    rating = models.IntegerField(
+        validators=[MinValueValidator(1), MaxValueValidator(5)],
+        help_text="Note de 1 à 5 étoiles"
+    )
+    title = models.CharField(max_length=200, blank=True)
+    comment = models.TextField(blank=True)
+    
+    is_verified_purchase = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'product_reviews'
+        ordering = ['-created_at']
+        unique_together = [['product', 'user', 'order']]  # Un seul avis par commande
+        indexes = [
+            models.Index(fields=['product', '-created_at']),
+            models.Index(fields=['product', 'is_approved']),
+        ]
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.product.title} ({self.rating}★)"

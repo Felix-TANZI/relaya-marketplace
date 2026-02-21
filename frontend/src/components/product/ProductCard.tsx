@@ -12,7 +12,7 @@ interface ProductImage {
 interface ProductMedia {
   id: number;
   url: string;
-  media_type: 'image' | 'video';
+  media_type: "image" | "video";
   sort_order: number;
 }
 
@@ -43,7 +43,10 @@ interface ProductCardProps {
   showPromo?: boolean;
 }
 
-export default function ProductCard({ product, showPromo = false }: ProductCardProps) {
+export default function ProductCard({
+  product,
+  showPromo = false,
+}: ProductCardProps) {
   const [isFavorite, setIsFavorite] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
@@ -62,7 +65,7 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
       image:
         product.images?.find((img) => img.is_primary)?.image_url ||
         product.images?.[0]?.image_url ||
-        product.media?.find((m) => m.media_type === 'image')?.url ||
+        product.media?.find((m) => m.media_type === "image")?.url ||
         product.image,
     });
   };
@@ -70,7 +73,7 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
   const displayImage =
     product.images?.find((img) => img.is_primary)?.image_url ||
     product.images?.[0]?.image_url ||
-    product.media?.find((m) => m.media_type === 'image')?.url ||
+    product.media?.find((m) => m.media_type === "image")?.url ||
     product.image;
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
@@ -92,7 +95,7 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
               </span>
             )}
           </div>
-          
+
           {!imageError && displayImage ? (
             <img
               src={displayImage}
@@ -115,7 +118,9 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
           >
             <Heart
               size={20}
-              className={isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"}
+              className={
+                isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"
+              }
             />
           </button>
         </div>
@@ -132,28 +137,31 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
           </h3>
 
           {/* Avis - N'afficher QUE si des avis existent */}
-          {hasReviews && product.rating_average && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-0.5">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <Star
-                    key={star}
-                    size={14}
-                    className={
-                      star <= Math.floor(product.rating_average!)
-                        ? "fill-yellow-400 text-yellow-400"
-                        : star - 0.5 <= product.rating_average!
-                        ? "fill-yellow-400 text-yellow-400"
-                        : "fill-gray-200 text-gray-200 dark:fill-gray-600 dark:text-gray-600"
-                    }
-                  />
-                ))}
+          {hasReviews &&
+            product.rating_average &&
+            product.reviews_count &&
+            product.reviews_count > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="flex items-center gap-0.5">
+                  {[1, 2, 3, 4, 5].map((star) => (
+                    <Star
+                      key={star}
+                      size={14}
+                      className={
+                        star <= Math.floor(product.rating_average!)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : star - 0.5 <= product.rating_average!
+                            ? "fill-yellow-400 text-yellow-400"
+                            : "fill-gray-200 text-gray-200 dark:fill-gray-600 dark:text-gray-600"
+                      }
+                    />
+                  ))}
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  ({product.reviews_count})
+                </span>
               </div>
-              <span className="text-xs text-gray-500 dark:text-gray-400">
-                ({product.reviews_count})
-              </span>
-            </div>
-          )}
+            )}
 
           <div className="flex items-center justify-between">
             <div>
@@ -181,12 +189,12 @@ export default function ProductCard({ product, showPromo = false }: ProductCardP
             disabled={!inStock}
             className={`w-full py-2.5 font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${
               inStock
-                ? 'bg-primary hover:bg-primary-dark text-white'
-                : 'bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed'
+                ? "bg-primary hover:bg-primary-dark text-white"
+                : "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
             }`}
           >
             <ShoppingCart size={18} />
-            {inStock ? 'Ajouter au panier' : 'Indisponible'}
+            {inStock ? "Ajouter au panier" : "Indisponible"}
           </button>
         </div>
       </div>

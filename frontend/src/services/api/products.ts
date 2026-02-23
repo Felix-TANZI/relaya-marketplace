@@ -1,22 +1,6 @@
 // frontend/src/services/api/products.ts
-// Service API pour la gestion des produits avec filtres avancés
 
-import { http } from './http';
-
-export interface ProductMedia {
-  id: number;
-  url: string;
-  media_type: 'image' | 'video';
-  sort_order: number;
-}
-
-export interface ProductImage {
-  id: number;
-  image_url: string;
-  is_primary: boolean;
-  order: number;
-  created_at: string;
-}
+import { api } from './client';
 
 export interface Category {
   id: number;
@@ -28,10 +12,18 @@ export interface Category {
 
 export interface ProductImage {
   id: number;
+  image: string;
   image_url: string;
   is_primary: boolean;
   order: number;
   created_at: string;
+}
+
+export interface ProductMedia {
+  id: number;
+  url: string;
+  media_type: 'image' | 'video';
+  sort_order: number;
 }
 
 export interface Product {
@@ -39,6 +31,7 @@ export interface Product {
   title: string;
   slug: string;
   description: string;
+  short_description?: string;
   price_xaf: number;
   stock_quantity: number;
   is_active: boolean;
@@ -49,6 +42,20 @@ export interface Product {
   reviews_count?: number;
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Product[];
+}
+
+export interface CategoryListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: Category[];
 }
 
 export interface ProductListParams {
@@ -64,71 +71,52 @@ export interface ProductListParams {
   ordering?: string;
 }
 
-export interface ProductListResponse {
-  count: number;
-  next: string | null;
-  previous: string | null;
-  results: Product[];
-}
-
-/**
- * Convertit un objet de paramètres en query string
- */
-function buildQueryString(params: ProductListParams): string {
-  const queryParams = new URLSearchParams();
-  
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      queryParams.append(key, String(value));
-    }
-  });
-  
-  const queryString = queryParams.toString();
-  return queryString ? `?${queryString}` : '';
+export interface CategoryListParams {
+  page?: number;
+  page_size?: number;
+  name?: string;
+  is_active?: boolean;
+  has_parent?: boolean;
+  parent?: number;
 }
 
 export const productsApi = {
-  /**
-   * Liste des produits avec filtres avancés
-   */
-  list: async (params: ProductListParams = {}): Promise<ProductListResponse> => {
-    const queryString = buildQueryString(params);
-    return http<ProductListResponse>(`/api/catalog/products/${queryString}`);
+  list: async (params?: ProductListParams): Promise<ProductListResponse> => {
+    const cleanParams = params ? Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    ) : undefined;
+    const response = await api.get<ProductListResponse>('/catalog/products/', { params: cleanParams });
+    return response;
   },
 
-  /**
-   * Détails d'un produit
-   */
   get: async (id: number): Promise<Product> => {
-    return http<Product>(`/api/catalog/products/${id}/`);
+    const response = await api.get<Product>(`/catalog/products/${id}/`);
+    return response;
   },
 
-  /**
-   * Liste des catégories
-   */
-  listCategories: async (): Promise<{ results: Category[] }> => {
-    return http<{ results: Category[] }>('/api/catalog/categories/?page_size=100');
-  },
-
-    /**
-   * Produits similaires (même catégorie)
-   */
-  getSimilar: async (productId: number, limit: number = 4): Promise<Product[]> => {
-    // D'abord récupérer le produit pour connaître sa catégorie
-    const product = await productsApi.get(productId);
+  getSimilar: async (id: number, limit: number = 4): Promise<Product[]> => {
+    const product = await productsApi.get(id);
+    if (!product.category) return [];
     
-    if (!product.category) {
-      return [];
-    }
-    
-    // Récupérer les produits de la même catégorie (en excluant le produit actuel)
     const response = await productsApi.list({
       category: product.category.id,
-      page_size: limit + 1, // +1 car on va exclure le produit actuel
-      is_active: true,
+      page_size: limit + 1,
+      is_active: true
     });
     
-    // Filtrer pour exclure le produit actuel
-    return response.results.filter(p => p.id !== productId).slice(0, limit);
+    return response.results.filter(p => p.id !== id).slice(0, limit);
+  },
+
+  listCategories: async (params?: CategoryListParams): Promise<CategoryListResponse> => {
+    const cleanParams = params ? Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    ) : undefined;
+    const response = await api.get<CategoryListResponse>('/catalog/categories/', { params: cleanParams });
+    return response;
+  },
+
+  getCategory: async (id: number): Promise<Category> => {
+    const response = await api.get<Category>(`/catalog/categories/${id}/`);
+    return response;
   },
 };

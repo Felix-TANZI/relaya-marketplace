@@ -3,8 +3,8 @@
 
 from django.db import models
 from django.contrib.auth.models import User
-from django.utils.text import slugify
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils.text import slugify
 
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
@@ -37,6 +37,7 @@ class Product(TimeStampedModel):
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=220, unique=True)
     description = models.TextField(blank=True)
+    short_description = models.CharField(max_length=300, blank=True, help_text="Description courte pour page produit")
     price_xaf = models.PositiveIntegerField(help_text="Prix en FCFA (XAF)")
     is_active = models.BooleanField(default=True)
 
@@ -62,10 +63,8 @@ class Product(TimeStampedModel):
         return self.title
     
     def save(self, *args, **kwargs):
-        # Générer le slug automatiquement à partir du titre
         if not self.slug:
             self.slug = slugify(self.title)
-            # Assurer l'unicité du slug
             original_slug = self.slug
             counter = 1
             while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
@@ -73,10 +72,8 @@ class Product(TimeStampedModel):
                 counter += 1
         super().save(*args, **kwargs)
     
+
 class ProductImage(models.Model):
-    """
-    Images des produits - support multi-images
-    """
     product = models.ForeignKey(
         Product,
         on_delete=models.CASCADE,
@@ -106,7 +103,6 @@ class ProductImage(models.Model):
         return f"Image {self.id} - {self.product.title}"
     
     def save(self, *args, **kwargs):
-        # Si c'est la première image, la définir comme principale
         if self.is_primary:
             ProductImage.objects.filter(product=self.product).update(is_primary=False)
         elif not ProductImage.objects.filter(product=self.product).exists():
@@ -140,9 +136,6 @@ class Inventory(TimeStampedModel):
 
 
 class ProductReview(models.Model):
-    """
-    Avis et notes sur les produits
-    """
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='product_reviews')
     order = models.ForeignKey('orders.Order', on_delete=models.SET_NULL, null=True, blank=True, related_name='product_reviews')
@@ -163,7 +156,7 @@ class ProductReview(models.Model):
     class Meta:
         db_table = 'product_reviews'
         ordering = ['-created_at']
-        unique_together = [['product', 'user', 'order']]  # Un seul avis par commande
+        unique_together = [['product', 'user']]
         indexes = [
             models.Index(fields=['product', '-created_at']),
             models.Index(fields=['product', 'is_approved']),

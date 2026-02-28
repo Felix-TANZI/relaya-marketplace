@@ -55,6 +55,73 @@
     out_of_stock: 'Out of stock',
   },
 
+  // Help
+  help: {
+    title: 'Help Center',
+    subtitle: 'Find answers to your most frequently asked questions',
+    search_placeholder: 'How can we help you?',
+    popular_topics: 'Popular Topics',
+    no_results: 'No results found',
+    no_results_desc: 'Try another search or contact our support team',
+    contact_support: 'Contact Support',
+    need_more_help: 'Need more help?',
+    support_available: 'Our support team is available 24/7 to help you',
+    send_message: 'Send a message',
+    call_support: 'Call',
+    categories: {
+      orders: {
+        title: 'Orders',
+        description: 'Track and manage orders',
+      },
+      shipping: {
+        title: 'Shipping',
+        description: 'Shipping times and fees',
+      },
+      returns: {
+        title: 'Returns',
+        description: 'Return policy',
+      },
+      account: {
+        title: 'Account',
+        description: 'Account security and management',
+      },
+      sellers: {
+        title: 'Sellers',
+        description: 'Become a seller',
+      },
+      technical: {
+        title: 'Technical',
+        description: 'Technical issues',
+      },
+    },
+    faq: {
+      order_tracking: {
+        question: 'How do I track my order?',
+        answer: 'You can track your order in real-time in your account under "My Orders". A tracking number will be sent as soon as your package is shipped.',
+      },
+      payment_methods: {
+        question: 'What payment methods do you accept?',
+        answer: 'We accept mobile wallets (MTN Money, Orange Money), credit cards, and cash on delivery. All payments are secured with SSL encryption.',
+      },
+      delivery_time: {
+        question: 'What is the delivery time?',
+        answer: 'Delivery times vary by location: Yaoundé (1-2 days), other cities (2-5 days). Express delivery options are available for an additional fee.',
+      },
+      return_policy: {
+        question: 'Can I return a product?',
+        answer: 'You have 30 days after receipt to return an item. Free returns are available if the product is defective or not as described.',
+      },
+      become_seller: {
+        question: 'How do I become a seller on Belivay?',
+        answer: 'Click "Become a Seller", fill out the registration form, and verify your identity. Your shop will be active within 24 hours.',
+      },
+      account_security: {
+        question: 'How do I secure my account?',
+        answer: 'Use a strong password, enable two-factor verification, and never share your credentials. Report any suspicious activity immediately.',
+      },
+    },
+  },
+
   // Common
   common: {
     loading: 'Loading...',

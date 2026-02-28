@@ -1,7 +1,7 @@
 // frontend/src/features/help/HelpPage.tsx
-// Page du centre d'aide avec FAQ interactive et recherche
+// Page du centre d'aide avec FAQ interactive et recherche - AMÉLIORÉE
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Search, 
@@ -129,9 +129,24 @@ export default function HelpPage() {
     return matchesSearch && matchesCategory;
   });
 
-  const toggleFAQ = (id: string) => {
+  // Sanitize search query et handler
+  const handleSearchChange = useCallback((value: string) => {
+    // Sanitize: limite à 100 caractères et supprime caractères spéciaux dangereux
+    const sanitized = value
+      .slice(0, 100)
+      .replace(/[<>]/g, '');
+    setSearchQuery(sanitized);
+  }, []);
+
+  const toggleFAQ = useCallback((id: string) => {
     setExpandedFAQ(expandedFAQ === id ? null : id);
-  };
+  }, [expandedFAQ]);
+
+  const handleCategoryChange = useCallback((key: string) => {
+    const isSelected = selectedCategory === key;
+    setSelectedCategory(isSelected ? 'all' : key);
+    setExpandedFAQ(null); // Reset FAQ expand quand on change la catégorie
+  }, [selectedCategory]);
 
   return (
     <div className="min-h-screen py-12">
@@ -154,17 +169,25 @@ export default function HelpPage() {
           <div className="relative group">
             <Search 
               className="absolute left-6 top-1/2 -translate-y-1/2 text-dark-text-tertiary group-focus-within:text-holo-cyan transition-colors" 
-              size={24} 
+              size={24}
+              aria-hidden="true"
             />
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder={t('help.search_placeholder')}
+              aria-label={t('help.search_placeholder')}
               className="w-full pl-16 pr-6 py-5 rounded-2xl glass-strong border border-white/20 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/30 transition-all text-dark-text placeholder:text-dark-text-tertiary outline-none text-lg"
             />
             <div className="absolute inset-0 -z-10 bg-gradient-holographic opacity-0 group-focus-within:opacity-20 blur-xl transition-opacity rounded-2xl" />
           </div>
+          {/* Afficher le nombre de résultats */}
+          {searchQuery && (
+            <p className="text-sm text-dark-text-secondary mt-2 text-center">
+              {filteredFAQs.length} {filteredFAQs.length === 1 ? 'résultat trouvé' : 'résultats trouvés'}
+            </p>
+          )}
         </div>
 
         {/* Catégories en grille */}
@@ -180,8 +203,10 @@ export default function HelpPage() {
               return (
                 <button
                   key={key}
-                  onClick={() => setSelectedCategory(isSelected ? 'all' : key)}
-                  className={`group relative overflow-hidden`}
+                  onClick={() => handleCategoryChange(key)}
+                  aria-pressed={isSelected}
+                  aria-label={t(`help.categories.${key}.title`)}
+                  className={`group relative overflow-hidden transition-all`}
                 >
                   <Card 
                     variant="default" 
@@ -194,7 +219,7 @@ export default function HelpPage() {
                   >
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-xl glass border border-white/10 ${cat.color} ${cat.glowColor} transition-all`}>
-                        <Icon size={24} />
+                        <Icon size={24} aria-hidden="true" />
                       </div>
                       <div className="flex-1 text-left">
                         <h3 className="font-display font-bold text-lg mb-1 text-dark-text">
@@ -218,7 +243,7 @@ export default function HelpPage() {
                 onClick={() => setSelectedCategory('all')}
                 className="text-holo-cyan"
               >
-                {t('help.all_categories')}
+                {t('help.all_categories')} ← {t('help.reset_filters')}
               </Button>
             </div>
           )}
@@ -229,7 +254,7 @@ export default function HelpPage() {
           {filteredFAQs.length === 0 ? (
             <Card variant="default" className="text-center py-12">
               <div className="w-16 h-16 rounded-full glass border border-white/20 flex items-center justify-center mx-auto mb-4">
-                <Search className="text-dark-text-tertiary" size={32} />
+                <Search className="text-dark-text-tertiary" size={32} aria-hidden="true" />
               </div>
               <h3 className="font-display font-bold text-xl mb-2 text-dark-text">
                 {t('help.no_results')}
@@ -239,13 +264,16 @@ export default function HelpPage() {
               </p>
               <Link to="/contact">
                 <Button variant="gradient">
-                  <MessageCircle size={18} />
+                  <MessageCircle size={18} aria-hidden="true" />
                   {t('help.contact_support')}
                 </Button>
               </Link>
             </Card>
           ) : (
             <div className="space-y-4">
+              <p className="text-sm text-dark-text-secondary mb-4">
+                {filteredFAQs.length} {filteredFAQs.length === 1 ? 'question disponible' : 'questions disponibles'}
+              </p>
               {filteredFAQs.map((faq) => {
                 const isExpanded = expandedFAQ === faq.id;
                 const categoryInfo = categories[faq.category];
@@ -258,11 +286,12 @@ export default function HelpPage() {
                   >
                     <button
                       onClick={() => toggleFAQ(faq.id)}
+                      aria-expanded={isExpanded}
                       className="w-full flex items-start justify-between gap-4 text-left"
                     >
                       <div className="flex items-start gap-4 flex-1">
                         <div className={`p-2 rounded-lg glass border border-white/10 ${categoryInfo.color} mt-1`}>
-                          <categoryInfo.icon size={20} />
+                          <categoryInfo.icon size={20} aria-hidden="true" />
                         </div>
                         <div className="flex-1">
                           <h3 className="font-display font-semibold text-lg text-dark-text mb-1">
@@ -277,6 +306,7 @@ export default function HelpPage() {
                       </div>
                       <ChevronDown 
                         size={24} 
+                        aria-hidden="true"
                         className={`text-dark-text-tertiary transition-transform flex-shrink-0 mt-1 ${
                           isExpanded ? 'rotate-180' : ''
                         }`}
@@ -289,29 +319,39 @@ export default function HelpPage() {
           )}
         </div>
 
-        {/* CTA Contact Support */}
+        {/* CTA Contact Support - Repositionné et amélioré */}
         <Card variant="elevated" className="max-w-4xl mx-auto overflow-hidden relative">
           <div className="absolute inset-0 bg-gradient-holographic opacity-10" />
           <div className="relative text-center py-12 px-6">
             <h2 className="font-display font-bold text-3xl mb-4">
               <span className="text-gradient animate-gradient-bg">
-                Besoin d'aide supplémentaire ?
+                {t('help.need_more_help')}
               </span>
             </h2>
             <p className="text-dark-text-secondary text-lg mb-8 max-w-2xl mx-auto">
-              Notre équipe support est disponible pour répondre à toutes vos questions
+              {t('help.support_available')}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link to="/contact">
-                <Button variant="gradient" size="lg">
-                  <Mail size={20} />
-                  Envoyer un message
+                <Button 
+                  variant="gradient" 
+                  size="lg"
+                  aria-label="Envoyer un message au support"
+                >
+                  <Mail size={20} aria-hidden="true" />
+                  {t('help.send_message')}
                 </Button>
               </Link>
-              <a href="tel:+2376XXXXXXXX">
-                <Button variant="secondary" size="lg">
-                  <Phone size={20} />
-                  Appeler le support
+              <a 
+                href="tel:+2376XXXXXXXX"
+                aria-label="Appeler le support"
+              >
+                <Button 
+                  variant="secondary" 
+                  size="lg"
+                >
+                  <Phone size={20} aria-hidden="true" />
+                  {t('help.call_support')}
                 </Button>
               </a>
             </div>

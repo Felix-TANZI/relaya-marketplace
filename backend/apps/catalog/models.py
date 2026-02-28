@@ -39,6 +39,11 @@ class Product(TimeStampedModel):
     description = models.TextField(blank=True)
     short_description = models.CharField(max_length=300, blank=True, help_text="Description courte pour page produit")
     price_xaf = models.PositiveIntegerField(help_text="Prix en FCFA (XAF)")
+    discount = models.PositiveIntegerField(
+        default=0,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Réduction en pourcentage (0-100)"
+    )
     is_active = models.BooleanField(default=True)
 
     category = models.ForeignKey(

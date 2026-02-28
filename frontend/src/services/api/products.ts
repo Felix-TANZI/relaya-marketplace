@@ -33,6 +33,8 @@ export interface Product {
   description: string;
   short_description?: string;
   price_xaf: number;
+  discount: number;
+  price_final: number;
   stock_quantity: number;
   is_active: boolean;
   category: Category | null;

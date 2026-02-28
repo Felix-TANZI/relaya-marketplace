@@ -79,6 +79,7 @@ class ProductSerializer(serializers.ModelSerializer):
     images = ProductImageSerializer(many=True, read_only=True)
     rating_average = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
+    price_final = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -88,7 +89,9 @@ class ProductSerializer(serializers.ModelSerializer):
             'slug',
             'description',
             'short_description',
-            'price_xaf', 
+            'price_xaf',
+            'discount',
+            'price_final', 
             'stock_quantity',
             'is_active',
             'category',
@@ -116,6 +119,12 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def get_reviews_count(self, obj):
         return ProductReview.objects.filter(product=obj, is_approved=True).count()
+    
+    def get_price_final(self, obj):
+        """Calculer le prix après réduction"""
+        if obj.discount > 0:
+            return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
+        return obj.price_xaf
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):

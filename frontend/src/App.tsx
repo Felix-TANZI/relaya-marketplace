@@ -23,6 +23,7 @@ import VendorOrdersPage from "./features/vendors/VendorOrdersPage";
 import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage";
 import HelpPage from "./features/help/HelpPage";
 import ContactPage from "./features/contact/ContactPage";
+import AboutPage from "./features/about/AboutPage";
 
 // Admin imports
 import AdminLayout from "./features/admin/AdminLayout";
@@ -125,6 +126,7 @@ function App() {
           />
           <Route path="help" element={<HelpPage />} />
           <Route path="contact" element={<ContactPage />} />
+          <Route path="about" element={<AboutPage />} />
           <Route
             path="orders"
             element={

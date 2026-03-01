@@ -12,6 +12,7 @@ import LoginPage from '@/features/auth/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage';
 import ContactPage from '@/features/contact/ContactPage';
 import HelpPage from '@/features/help/HelpPage';
+import AboutPage from '@/features/about/AboutPage';
 import NotFoundPage from '@/features/system/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -66,6 +67,10 @@ export const router = createBrowserRouter([
       {
         path: "help",
         element: <HelpPage />,
+      },
+      {
+        path: "about",
+        element: <AboutPage />,
       },
       {
         path: "*",

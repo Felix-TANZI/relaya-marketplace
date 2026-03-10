@@ -122,10 +122,47 @@
     },
   },
 
+  // Auth
+  auth: {
+    register: "S'inscrire",
+    login: "Se connecter",
+    have_account: "Vous avez déjà un compte ?",
+    no_account: "Pas encore de compte ?",
+    username: "Nom d'utilisateur",
+    username_placeholder: "Choisissez un nom d'utilisateur",
+    username_hint: "Lettres, chiffres et _ uniquement",
+    email: "Email",
+    email_placeholder: "votre@email.com",
+    password: "Mot de passe",
+    password_placeholder: "••••••••",
+    password_confirm: "Confirmer le mot de passe",
+    first_name: "Prénom",
+    first_name_placeholder: "Votre prénom",
+    last_name: "Nom",
+    last_name_placeholder: "Votre nom",
+    register_button: "Créer mon compte",
+    login_button: "Se connecter",
+    register_success: "Inscription réussie ! Bienvenue sur Belivay",
+    register_error: "Erreur lors de l'inscription",
+    login_error: "Identifiants incorrects",
+    
+    // Security features (NOUVEAU)
+    security_features: [
+      "Vos données sont cryptées et sécurisées",
+      "Aucune carte bancaire requise pour s'inscrire",
+      "Validation par email pour plus de sécurité"
+    ],
+  },
+
   // Common
   common: {
     loading: 'Chargement...',
     error: 'Une erreur est survenue',
     retry: 'Réessayer',
+  },
+
+  // Checkout
+  checkout: {
+    back_home: "Retour à l'accueil",
   },
 };

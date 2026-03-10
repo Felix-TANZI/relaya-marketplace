@@ -146,7 +146,7 @@
     register_error: "Registration failed",
     login_error: "Invalid credentials",
     
-    // Security features (NEW)
+    // Security features
     security_features: [
       "Your data is encrypted and secure",
       "No credit card required to register",

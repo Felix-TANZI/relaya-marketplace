@@ -146,7 +146,7 @@
     register_error: "Erreur lors de l'inscription",
     login_error: "Identifiants incorrects",
     
-    // Security features (NOUVEAU)
+    // Security features
     security_features: [
       "Vos données sont cryptées et sécurisées",
       "Aucune carte bancaire requise pour s'inscrire",

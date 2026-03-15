@@ -145,6 +145,7 @@
     register_success: "Registration successful! Welcome to Belivay",
     register_error: "Registration failed",
     login_error: "Invalid credentials",
+    forgot_password: "Forgot password?",
     
     // Security features
     security_features: [

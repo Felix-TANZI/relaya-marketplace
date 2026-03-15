@@ -78,229 +78,298 @@ export default function RegisterPage() {
   const securityFeatures = t('auth.security_features', { returnObjects: true }) as string[];
 
   return (
-    <div className="min-h-screen bg-bg-light dark:bg-bg-dark py-12 px-4">
-      <div className="max-w-2xl mx-auto space-y-8">
-        {/* Header */}
-        <div className="text-center space-y-4">
-          <Link to="/" className="inline-flex items-center gap-3 group">
-            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center shadow-lg group-hover:shadow-xl transition-all">
-              <span className="text-white font-bold text-2xl">B</span>
+    <div className="min-h-screen relative overflow-hidden">
+      {/* Background Image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{ 
+          backgroundImage: 'url(/images/auth/login.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20"></div>
+      </div>
+
+      {/* Content */}
+      <div className="relative z-10 min-h-screen flex items-center justify-center px-4 py-12">
+        <div className="w-full max-w-2xl space-y-6">
+          {/* Logo et Titre - SANS fond */}
+          <div className="text-center space-y-4">
+            {/* Logo */}
+            <div className="inline-flex items-center gap-3">
+              <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl">
+                <span className="text-white font-bold text-2xl">B</span>
+              </div>
+              <span 
+                className="text-4xl font-display font-bold text-gray-900"
+                style={{ textShadow: '0 2px 10px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.6)' }}
+              >
+                Belivay
+              </span>
             </div>
-            <span className="text-3xl font-display font-bold text-text-light dark:text-text-dark">
-              BelivaY
-            </span>
-          </Link>
-          <div>
-            <h2 className="text-2xl font-display font-bold text-text-light dark:text-text-dark">
+            
+            {/* Titre */}
+            <h1 
+              className="text-3xl font-bold text-gray-900"
+              style={{ textShadow: '0 2px 10px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.6)' }}
+            >
               {t('auth.register')}
-            </h2>
-            <p className="text-text-light-secondary dark:text-text-dark-secondary mt-2">
+            </h1>
+            
+            {/* Texte */}
+            <p 
+              className="text-gray-800"
+              style={{ textShadow: '0 1px 5px rgba(255,255,255,0.8)' }}
+            >
               {t('auth.have_account')}{' '}
-              <Link to="/login" className="text-primary hover:underline font-semibold">
+              <Link 
+                to="/login" 
+                className="text-primary font-semibold hover:underline"
+                style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+              >
                 {t('auth.login')}
               </Link>
             </p>
           </div>
-        </div>
 
-        {/* Form Card */}
-        <div className="bg-white dark:bg-bg-dark-alt rounded-2xl shadow-soft p-8 space-y-6">
-          <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Username */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                {t('auth.username')}
-              </label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary" size={20} />
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleChange}
-                  placeholder={t('auth.username_placeholder')}
-                  disabled={loading}
-                  className={`w-full pl-12 pr-4 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary ${
-                    errors.username ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' : 'border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                  }`}
-                />
-              </div>
-              <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">{t('auth.username_hint')}</p>
-              {errors.username && <p className="text-red-500 text-sm">{errors.username}</p>}
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                {t('auth.email')}
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary" size={20} />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder={t('auth.email_placeholder')}
-                  disabled={loading}
-                  className={`w-full pl-12 pr-4 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary ${
-                    errors.email ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' : 'border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                  }`}
-                />
-              </div>
-              {errors.email && <p className="text-red-500 text-sm">{errors.email}</p>}
-            </div>
-
-            {/* First & Last Name */}
-            <div className="grid grid-cols-2 gap-4">
+          {/* Form Card */}
+          <div className="backdrop-blur-2xl bg-white/40 rounded-3xl p-8 shadow-2xl border border-white/20">
+            <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Username */}
               <div className="space-y-2">
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                  {t('auth.first_name')}
-                </label>
-                <input
-                  type="text"
-                  name="first_name"
-                  value={formData.first_name}
-                  onChange={handleChange}
-                  placeholder={t('auth.first_name_placeholder')}
-                  disabled={loading}
-                  className="w-full px-4 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                  {t('auth.last_name')}
-                </label>
-                <input
-                  type="text"
-                  name="last_name"
-                  value={formData.last_name}
-                  onChange={handleChange}
-                  placeholder={t('auth.last_name_placeholder')}
-                  disabled={loading}
-                  className="w-full px-4 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary"
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                {t('auth.password')}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary" size={20} />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={(e) => handlePasswordChange(e.target.value)}
-                  placeholder={t('auth.password_placeholder')}
-                  disabled={loading}
-                  className={`w-full pl-12 pr-12 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary ${
-                    errors.password ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' : 'border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary hover:text-primary transition"
-                  disabled={loading}
+                <label 
+                  className="block text-sm font-semibold text-gray-900"
+                  style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
                 >
-                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
-              </div>
-
-              {/* Password Strength */}
-              {formData.password && (
-                <div className="space-y-2">
-                  <div className="flex gap-1">
-                    {[...Array(5)].map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1.5 flex-1 rounded-full transition-colors ${
-                          i < passwordStrength
-                            ? i < 2
-                              ? 'bg-red-500'
-                              : i < 4
-                              ? 'bg-yellow-500'
-                              : 'bg-green-500'
-                            : 'bg-gray-300 dark:bg-gray-600'
-                        }`}
-                      ></div>
-                    ))}
-                  </div>
-                  <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                    {passwordStrength < 2 ? 'Faible' : passwordStrength < 4 ? 'Moyen' : 'Fort'}
-                  </p>
+                  {t('auth.username')}
+                </label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
+                  <input
+                    type="text"
+                    name="username"
+                    value={formData.username}
+                    onChange={handleChange}
+                    placeholder={t('auth.username_placeholder')}
+                    disabled={loading}
+                    className={`w-full pl-12 pr-4 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600 ${
+                      errors.username 
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' 
+                        : 'border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40'
+                    }`}
+                  />
                 </div>
-              )}
-              {errors.password && <p className="text-red-500 text-sm">{errors.password}</p>}
-            </div>
+                <p className="text-xs text-gray-800 font-medium" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.6)' }}>
+                  {t('auth.username_hint')}
+                </p>
+                {errors.username && <p className="text-red-600 text-sm font-semibold">{errors.username}</p>}
+              </div>
 
-            {/* Confirm Password */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-text-light dark:text-text-dark">
-                {t('auth.password_confirm')}
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary" size={20} />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="password2"
-                  value={formData.password2}
-                  onChange={handleChange}
-                  placeholder={t('auth.password_placeholder')}
-                  disabled={loading}
-                  className={`w-full pl-12 pr-12 py-3 rounded-xl bg-bg-light dark:bg-bg-dark border transition-all outline-none text-text-light dark:text-text-dark placeholder:text-text-light-secondary dark:placeholder:text-text-dark-secondary ${
-                    errors.password2 ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' : 'border-gray-200 dark:border-gray-700 focus:border-primary focus:ring-2 focus:ring-primary/20'
-                  }`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-text-light-secondary dark:text-text-dark-secondary hover:text-primary transition"
-                  disabled={loading}
+              {/* Email */}
+              <div className="space-y-2">
+                <label 
+                  className="block text-sm font-semibold text-gray-900"
+                  style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
                 >
-                  {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
-                </button>
+                  {t('auth.email')}
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
+                  <input
+                    type="email"
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder={t('auth.email_placeholder')}
+                    disabled={loading}
+                    className={`w-full pl-12 pr-4 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600 ${
+                      errors.email 
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' 
+                        : 'border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40'
+                    }`}
+                  />
+                </div>
+                {errors.email && <p className="text-red-600 text-sm font-semibold">{errors.email}</p>}
               </div>
-              {errors.password2 && <p className="text-red-500 text-sm">{errors.password2}</p>}
+
+              {/* First & Last Name */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <label 
+                    className="block text-sm font-semibold text-gray-900"
+                    style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+                  >
+                    {t('auth.first_name')}
+                  </label>
+                  <input
+                    type="text"
+                    name="first_name"
+                    value={formData.first_name}
+                    onChange={handleChange}
+                    placeholder={t('auth.first_name_placeholder')}
+                    disabled={loading}
+                    className="w-full px-4 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40 transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label 
+                    className="block text-sm font-semibold text-gray-900"
+                    style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+                  >
+                    {t('auth.last_name')}
+                  </label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={formData.last_name}
+                    onChange={handleChange}
+                    placeholder={t('auth.last_name_placeholder')}
+                    disabled={loading}
+                    className="w-full px-4 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40 transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <label 
+                  className="block text-sm font-semibold text-gray-900"
+                  style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+                >
+                  {t('auth.password')}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="password"
+                    value={formData.password}
+                    onChange={(e) => handlePasswordChange(e.target.value)}
+                    placeholder={t('auth.password_placeholder')}
+                    disabled={loading}
+                    className={`w-full pl-12 pr-12 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600 ${
+                      errors.password 
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' 
+                        : 'border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 hover:text-primary transition"
+                    disabled={loading}
+                  >
+                    {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+
+                {/* Password Strength */}
+                {formData.password && (
+                  <div className="space-y-2">
+                    <div className="flex gap-1">
+                      {[...Array(5)].map((_, i) => (
+                        <div
+                          key={i}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${
+                            i < passwordStrength
+                              ? i < 2
+                                ? 'bg-red-500'
+                                : i < 4
+                                ? 'bg-yellow-500'
+                                : 'bg-green-500'
+                              : 'bg-gray-300'
+                          }`}
+                        ></div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-800 font-semibold" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.6)' }}>
+                      {passwordStrength < 2 ? 'Faible' : passwordStrength < 4 ? 'Moyen' : 'Fort'}
+                    </p>
+                  </div>
+                )}
+                {errors.password && <p className="text-red-600 text-sm font-semibold">{errors.password}</p>}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <label 
+                  className="block text-sm font-semibold text-gray-900"
+                  style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+                >
+                  {t('auth.password_confirm')}
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
+                  <input
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    name="password2"
+                    value={formData.password2}
+                    onChange={handleChange}
+                    placeholder={t('auth.password_placeholder')}
+                    disabled={loading}
+                    className={`w-full pl-12 pr-12 py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border transition-all outline-none text-gray-900 font-medium placeholder:text-gray-600 ${
+                      errors.password2 
+                        ? 'border-red-500 focus:ring-2 focus:ring-red-500/50' 
+                        : 'border-white/40 focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40'
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-700 hover:text-primary transition"
+                    disabled={loading}
+                  >
+                    {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                  </button>
+                </div>
+                {errors.password2 && <p className="text-red-600 text-sm font-semibold">{errors.password2}</p>}
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl mt-6"
+              >
+                {loading ? (
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                ) : (
+                  <>
+                    {t('auth.register_button')}
+                    <ArrowRight size={20} />
+                  </>
+                )}
+              </button>
+            </form>
+
+            {/* Security Features */}
+            <div className="pt-6 mt-6 border-t border-white/30 space-y-3">
+              {securityFeatures.map((feature, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <CheckCircle size={18} className="text-green-600 flex-shrink-0" />
+                  <span 
+                    className="text-sm text-gray-900 font-medium"
+                    style={{ textShadow: '0 1px 2px rgba(255,255,255,0.6)' }}
+                  >
+                    {feature}
+                  </span>
+                </div>
+              ))}
             </div>
-
-            {/* Submit Button */}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl mt-6"
-            >
-              {loading ? (
-                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-              ) : (
-                <>
-                  {t('auth.register_button')}
-                  <ArrowRight size={20} />
-                </>
-              )}
-            </button>
-          </form>
-
-          {/* Security Features */}
-          <div className="pt-6 border-t border-gray-200 dark:border-gray-700 space-y-3">
-            {securityFeatures.map((feature, idx) => (
-              <div key={idx} className="flex items-center gap-2">
-                <CheckCircle size={18} className="text-green-500 flex-shrink-0" />
-                <span className="text-sm text-text-light-secondary dark:text-text-dark-secondary">{feature}</span>
-              </div>
-            ))}
           </div>
-        </div>
 
-        {/* Footer */}
-        <div className="text-center">
-          <Link to="/" className="text-sm text-text-light-secondary dark:text-text-dark-secondary hover:text-primary transition-colors">
-            ← {t('checkout.back_home')}
-          </Link>
+          {/* Back to Home */}
+          <div className="text-center">
+            <Link 
+              to="/" 
+              className="text-sm text-gray-800 hover:text-primary transition-colors inline-flex items-center gap-1 font-semibold"
+              style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}
+            >
+              <span>←</span> {t('checkout.back_home')}
+            </Link>
+          </div>
         </div>
       </div>
     </div>

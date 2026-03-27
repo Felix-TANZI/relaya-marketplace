@@ -28,8 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         try {
           const userData = await authApi.me();
           setUser(userData);
-        } catch (error) {
-          console.error('Error loading user:', error);
+        } catch {
           localStorage.removeItem('access_token');
           localStorage.removeItem('refresh_token');
         }

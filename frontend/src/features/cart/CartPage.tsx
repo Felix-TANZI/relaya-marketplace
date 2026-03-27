@@ -128,7 +128,7 @@ export default function CartPage() {
 
           {/* Summary */}
           <div className="lg:col-span-1">
-            <Card className="sticky top-24">
+            <Card className="sticky top-24" data-tutorial="cart-summary">
               <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
                 {t('cart.summary')}
               </h2>

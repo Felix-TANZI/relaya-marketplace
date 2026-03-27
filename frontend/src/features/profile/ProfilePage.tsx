@@ -2,11 +2,17 @@
 // Page de profil utilisateur - consultation et modification des informations
 
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { User, Mail, Calendar, Edit2, Save, X, ShoppingBag } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { User, Mail, Calendar, Edit2, Save, X, ShoppingBag, Camera, Trash2, Bell, Heart, CircleHelp, Gift } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import { authApi, type User as UserType } from '@/services/api/auth';
 import { useToast } from '@/context/ToastContext';
+import {
+  getStoredProfileAvatar,
+  getUserDisplayName,
+  getUserInitials,
+  setStoredProfileAvatar,
+} from '@/lib/profileAvatar';
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -16,12 +22,14 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
 
   // Formulaire d'édition
   const [formData, setFormData] = useState({
     email: '',
     first_name: '',
     last_name: '',
+    phone: '',
   });
 
   // Charger le profil
@@ -35,7 +43,9 @@ export default function ProfilePage() {
           email: data.email,
           first_name: data.first_name,
           last_name: data.last_name,
+          phone: data.phone || '',
         });
+        setProfileAvatar(data.avatar_url || getStoredProfileAvatar());
       } catch (error) {
         console.error('Erreur chargement profil:', error);
         showToast('Erreur de chargement du profil', 'error');
@@ -66,13 +76,47 @@ export default function ProfilePage() {
   // Annuler l'édition
   const handleCancel = () => {
     if (user) {
-      setFormData({
-        email: user.email,
-        first_name: user.first_name,
-        last_name: user.last_name,
-      });
+        setFormData({
+          email: user.email,
+          first_name: user.first_name,
+          last_name: user.last_name,
+          phone: user.phone || '',
+        });
     }
     setIsEditing(false);
+  };
+
+  const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+
+    if (!file) {
+      return;
+    }
+
+    authApi.uploadAvatar(file).then((updatedUser) => {
+      const avatarUrl = updatedUser.avatar_url || null;
+      setUser(updatedUser);
+      setProfileAvatar(avatarUrl);
+      setStoredProfileAvatar(avatarUrl);
+      window.dispatchEvent(new Event('belivay-avatar-updated'));
+      showToast('Photo de profil mise a jour', 'success');
+    }).catch((error) => {
+      console.error('Erreur upload avatar:', error);
+      showToast('Impossible de mettre a jour la photo', 'error');
+    });
+  };
+
+  const handleRemoveAvatar = () => {
+    authApi.removeAvatar().then((updatedUser) => {
+      setUser(updatedUser);
+      setProfileAvatar(null);
+      setStoredProfileAvatar(null);
+      window.dispatchEvent(new Event('belivay-avatar-updated'));
+      showToast('Photo de profil supprimee', 'success');
+    }).catch((error) => {
+      console.error('Erreur suppression avatar:', error);
+      showToast('Impossible de supprimer la photo', 'error');
+    });
   };
 
   // Formater la date d'inscription
@@ -100,11 +144,14 @@ export default function ProfilePage() {
     return null;
   }
 
+  const displayName = getUserDisplayName(user);
+  const userInitials = getUserInitials(user);
+
   return (
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8" data-tutorial="profile-header">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
             <span className="text-gradient animate-gradient-bg">Mon Profil</span>
           </h1>
@@ -119,21 +166,68 @@ export default function ProfilePage() {
             {/* Avatar */}
             <Card>
               <div className="text-center">
-                <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-holographic flex items-center justify-center text-white font-display font-bold text-3xl">
-                  {user.username.charAt(0).toUpperCase()}
+                <div className="relative mx-auto mb-4 h-28 w-28">
+                  <div className="h-28 w-28 overflow-hidden rounded-full bg-gradient-holographic flex items-center justify-center text-white font-display font-bold text-3xl shadow-lg">
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      userInitials
+                    )}
+                  </div>
+                  <label className="absolute bottom-1 right-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105">
+                    <Camera size={18} />
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </label>
                 </div>
                 <h2 className="font-display font-bold text-xl text-dark-text mb-1">
-                  {user.first_name && user.last_name
-                    ? `${user.first_name} ${user.last_name}`
-                    : user.username}
+                  {displayName}
                 </h2>
                 <p className="text-dark-text-secondary text-sm">@{user.username}</p>
+                <p className="mt-2 text-xs text-dark-text-tertiary">
+                  Ajoute une photo pour la voir aussi dans le menu profil.
+                </p>
+                <div className="mt-4 flex justify-center gap-2">
+                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-white transition-all hover:bg-primary-dark">
+                    <Camera size={16} />
+                    Choisir une photo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarChange}
+                    />
+                  </label>
+                  {profileAvatar && (
+                    <button
+                      onClick={handleRemoveAvatar}
+                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50"
+                    >
+                      <Trash2 size={16} />
+                      Retirer
+                    </button>
+                  )}
+                </div>
               </div>
             </Card>
 
             {/* Quick Stats */}
             <Card>
-              <h3 className="font-semibold text-dark-text mb-4">Statistiques</h3>
+              <h3 className="font-semibold text-dark-text mb-4">Espace client</h3>
+              <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-sm">
+                <p className="font-semibold text-primary">200 Points · Bronze</p>
+                <p className="mt-1 text-dark-text-secondary">
+                  Continuez vos achats pour debloquer les prochains avantages.
+                </p>
+              </div>
               <div className="space-y-3">
                 <button
                   onClick={() => navigate('/orders')}
@@ -145,6 +239,26 @@ export default function ProfilePage() {
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </button>
+                <Link
+                  to="/wishlist"
+                  className="w-full flex items-center justify-between p-3 rounded-lg glass border border-white/10 hover:border-holo-cyan transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <Heart className="text-holo-cyan" size={20} />
+                    <span className="text-dark-text">Mes favoris</span>
+                  </div>
+                  <span className="text-dark-text-tertiary">→</span>
+                </Link>
+                <Link
+                  to="/notifications"
+                  className="w-full flex items-center justify-between p-3 rounded-lg glass border border-white/10 hover:border-holo-cyan transition-all text-left"
+                >
+                  <div className="flex items-center gap-3">
+                    <Bell className="text-holo-cyan" size={20} />
+                    <span className="text-dark-text">Notifications</span>
+                  </div>
+                  <span className="text-dark-text-tertiary">→</span>
+                </Link>
               </div>
             </Card>
 
@@ -155,6 +269,37 @@ export default function ProfilePage() {
                 <div>
                   <p className="text-dark-text-tertiary">Membre depuis</p>
                   <p className="text-dark-text font-medium">{formatDate(user.date_joined)}</p>
+                </div>
+              </div>
+            </Card>
+
+            <Card>
+              <h3 className="font-semibold text-dark-text mb-4">Support & avantages</h3>
+              <div className="space-y-3">
+                <Link
+                  to="/help"
+                  className="flex items-center justify-between rounded-xl border border-white/10 p-3 transition-all hover:border-holo-cyan"
+                >
+                  <div className="flex items-center gap-3">
+                    <CircleHelp size={18} className="text-holo-cyan" />
+                    <span className="text-dark-text">Centre d'aide</span>
+                  </div>
+                  <span className="text-dark-text-tertiary">→</span>
+                </Link>
+                <a
+                  href="https://wa.me/2370005568778"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center justify-between rounded-xl border border-white/10 p-3 transition-all hover:border-holo-cyan"
+                >
+                  <div className="flex items-center gap-3">
+                    <Gift size={18} className="text-holo-cyan" />
+                    <span className="text-dark-text">Support WhatsApp</span>
+                  </div>
+                  <span className="text-dark-text-tertiary">→</span>
+                </a>
+                <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                  Livraison offerte des 30 000 FCFA
                 </div>
               </div>
             </Card>
@@ -225,6 +370,26 @@ export default function ProfilePage() {
                     <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
                       <Mail className="text-dark-text-tertiary" size={20} />
                       <span className="text-dark-text">{user.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Phone */}
+                <div>
+                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
+                    Telephone
+                  </label>
+                  {isEditing ? (
+                    <input
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                      placeholder="+237 ..."
+                      className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
+                    />
+                  ) : (
+                    <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
+                      <span className="text-dark-text">{user.phone || 'Non renseigne'}</span>
                     </div>
                   )}
                 </div>

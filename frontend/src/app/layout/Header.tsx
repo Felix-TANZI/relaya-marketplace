@@ -1,6 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
 import {
+  Bell,
+  CircleHelp,
+  Gift,
+  GraduationCap,
   Search,
   ShoppingCart,
   User,
@@ -19,6 +23,13 @@ import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useAuth } from "@/context/AuthContext";
+import {
+  getStoredProfileAvatar,
+  getUserDisplayName,
+  getUserInitials,
+} from "@/lib/profileAvatar";
+import { getFavoriteProductIds } from "@/lib/favorites";
+import { customerApi } from "@/services/api/customer";
 
 export default function Header() {
   const { t, i18n } = useTranslation();
@@ -29,6 +40,8 @@ export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const totalItems = items.reduce(
@@ -50,6 +63,45 @@ export default function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const syncAvatar = () => setProfileAvatar(getStoredProfileAvatar() || user?.avatar_url || null);
+
+    syncAvatar();
+    window.addEventListener("storage", syncAvatar);
+    window.addEventListener("belivay-avatar-updated", syncAvatar as EventListener);
+
+    return () => {
+      window.removeEventListener("storage", syncAvatar);
+      window.removeEventListener("belivay-avatar-updated", syncAvatar as EventListener);
+    };
+  }, [user?.avatar_url]);
+
+  useEffect(() => {
+    const syncFavorites = async () => {
+      if (localStorage.getItem('access_token')) {
+        try {
+          const favorites = await customerApi.getFavorites();
+          setFavoritesCount(favorites.length);
+          return;
+        } catch (error) {
+          console.error('Erreur chargement favoris:', error);
+        }
+      }
+
+      setFavoritesCount(getFavoriteProductIds().length);
+    };
+
+    syncFavorites();
+    window.addEventListener("belivay-favorites-updated", syncFavorites as EventListener);
+
+    return () => {
+      window.removeEventListener(
+        "belivay-favorites-updated",
+        syncFavorites as EventListener,
+      );
+    };
+  }, []);
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -68,6 +120,17 @@ export default function Header() {
     setUserMenuOpen(false);
     navigate("/");
   };
+
+  const displayName = getUserDisplayName(user);
+  const userInitials = getUserInitials(user);
+  const clientNavItems = [
+    { label: "Accueil", to: "/" },
+    { label: "Promotions", to: "/catalog?promo=1" },
+    { label: "Categories", to: "/categories" },
+    { label: "Commandes", to: "/orders" },
+    { label: "Favoris", to: "/wishlist" },
+    { label: "Mon compte", to: "/profile" },
+  ];
 
   return (
     <header className="sticky top-0 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
@@ -91,6 +154,7 @@ export default function Header() {
           >
             <div className="relative w-full">
               <input
+                data-tutorial="header-search"
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -150,18 +214,60 @@ export default function Header() {
               )}
             </Link>
 
+            {/* Notifications */}
+            {user && (
+              <Link
+                to="/notifications"
+                className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              >
+                <Bell size={22} className="text-text-light dark:text-text-dark" />
+                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
+              </Link>
+            )}
+
+            {/* Wishlist */}
+            <Link
+              to="/wishlist"
+              className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+            >
+              <Heart size={22} className="text-text-light dark:text-text-dark" />
+              {favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {favoritesCount}
+                </span>
+              )}
+            </Link>
+
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("belivay-open-tutorial"))}
+              className="hidden lg:inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-text-light transition-all hover:bg-bg-light dark:text-text-dark dark:hover:bg-bg-dark-alt"
+            >
+              <GraduationCap size={18} />
+              Guide
+            </button>
+
             {/* User Menu */}
             {user ? (
               <div className="relative" ref={userMenuRef}>
                 <button
+                  data-tutorial="header-profile"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt transition-all"
                 >
-                  <div className="w-9 h-9 bg-primary rounded-full flex items-center justify-center">
-                    <User size={20} className="text-white" />
+                  <div className="w-9 h-9 overflow-hidden bg-primary rounded-full flex items-center justify-center ring-2 ring-primary/15">
+                    {profileAvatar ? (
+                      <img
+                        src={profileAvatar}
+                        alt={displayName}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <span className="text-xs font-bold text-white">{userInitials}</span>
+                    )}
                   </div>
                   <span className="hidden md:inline text-text-light dark:text-text-dark font-medium">
-                    {user.username}
+                    {displayName}
                   </span>
                   <ChevronDown
                     size={16}
@@ -175,16 +281,31 @@ export default function Header() {
                     ref={userMenuRef}
                     className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-bg-dark-alt rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
                   >
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                      <p className="text-sm text-text-light-secondary dark:text-text-dark-secondary">
-                        Connecté en tant que
-                      </p>
-                      <p className="font-semibold text-text-light dark:text-text-dark">
-                        {user.username}
-                      </p>
-                      <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                        {user.email}
-                      </p>
+                    <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary/10 via-orange-50 to-white dark:from-primary/10 dark:via-gray-800 dark:to-gray-800">
+                      <div className="flex items-center gap-3">
+                        <div className="h-14 w-14 overflow-hidden rounded-full bg-primary flex items-center justify-center shadow-sm">
+                          {profileAvatar ? (
+                            <img
+                              src={profileAvatar}
+                              alt={displayName}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-base font-bold text-white">{userInitials}</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                            Connecté en tant que
+                          </p>
+                          <p className="font-semibold text-text-light dark:text-text-dark truncate">
+                            {displayName}
+                          </p>
+                          <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary truncate">
+                            {user.email}
+                          </p>
+                        </div>
+                      </div>
                     </div>
 
                     <Link
@@ -229,6 +350,50 @@ export default function Header() {
                       </span>
                     </Link>
 
+                    <Link
+                      to="/notifications"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Bell
+                        size={18}
+                        className="text-text-light-secondary dark:text-text-dark-secondary"
+                      />
+                      <span className="text-text-light dark:text-text-dark">
+                        Notifications
+                      </span>
+                    </Link>
+
+                    <Link
+                      to="/help"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <CircleHelp
+                        size={18}
+                        className="text-text-light-secondary dark:text-text-dark-secondary"
+                      />
+                      <span className="text-text-light dark:text-text-dark">
+                        Centre d'aide
+                      </span>
+                    </Link>
+
+                    <a
+                      href="https://wa.me/2370005568778"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Gift
+                        size={18}
+                        className="text-text-light-secondary dark:text-text-dark-secondary"
+                      />
+                      <span className="text-text-light dark:text-text-dark">
+                        Support WhatsApp
+                      </span>
+                    </a>
+
                     {user.is_vendor && (
                       <Link
                         to="/vendor/dashboard"
@@ -246,6 +411,10 @@ export default function Header() {
                     )}
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
+                      <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
+                        <div>Livraison offerte des 30 000 FCFA</div>
+                        <div className="mt-1 truncate">Contact: +237 000 556 87 78</div>
+                      </div>
                       <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 px-4 py-3 w-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-600"
@@ -307,6 +476,18 @@ export default function Header() {
             </button>
           </div>
         </form>
+
+        <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
+          {clientNavItems.map((item) => (
+            <Link
+              key={item.label}
+              to={item.to}
+              className="rounded-full px-4 py-2 text-sm font-medium text-text-light-secondary transition-all hover:bg-orange-50 hover:text-primary dark:text-text-dark-secondary dark:hover:bg-bg-dark-alt dark:hover:text-primary whitespace-nowrap"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
       </div>
 
       {/* Mobile Menu */}
@@ -314,12 +495,31 @@ export default function Header() {
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-bg-dark">
           <nav className="container mx-auto px-4 py-4 space-y-2">
             <Link
+              to="/categories"
+              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="font-medium text-text-light dark:text-text-dark">
+                Categories
+              </span>
+            </Link>
+
+            <Link
               to="/catalog"
               className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
               onClick={() => setMobileMenuOpen(false)}
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 {t("header.catalog")}
+              </span>
+            </Link>
+            <Link
+              to="/catalog?promo=1"
+              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="font-medium text-text-light dark:text-text-dark">
+                Promotions
               </span>
             </Link>
 
@@ -332,6 +532,15 @@ export default function Header() {
                 >
                   <span className="font-medium text-text-light dark:text-text-dark">
                     {t("header.profile")}
+                  </span>
+                </Link>
+                <Link
+                  to="/notifications"
+                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="font-medium text-text-light dark:text-text-dark">
+                    Notifications
                   </span>
                 </Link>
                 <Link
@@ -354,6 +563,24 @@ export default function Header() {
                     </span>
                   </Link>
                 )}
+                <Link
+                  to="/wishlist"
+                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="font-medium text-text-light dark:text-text-dark">
+                    Mes favoris
+                  </span>
+                </Link>
+                <Link
+                  to="/help"
+                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="font-medium text-text-light dark:text-text-dark">
+                    Centre d'aide
+                  </span>
+                </Link>
                 <button
                   onClick={() => {
                     handleLogout();

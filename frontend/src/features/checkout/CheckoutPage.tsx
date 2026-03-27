@@ -37,6 +37,12 @@ const handleSubmit = async (e: React.FormEvent) => {
   setLoading(true);
 
   try {
+    if (!localStorage.getItem('access_token')) {
+      showToast('Connectez-vous pour finaliser votre commande', 'error');
+      navigate('/login');
+      return;
+    }
+
     // Préparer les données pour l'API
     const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = {
   'Yaoundé': 'YAOUNDE',
@@ -48,9 +54,10 @@ const handleSubmit = async (e: React.FormEvent) => {
 const orderData = {
   city: cityMap[formData.city] || 'YAOUNDE',
   address: formData.address,
-  phone: formData.phone,
+  customer_phone: formData.phone,
+  customer_email: '',
   note: '',
-  items: items.map((item) => ({
+  cart_items: items.map((item) => ({
     product_id: item.id,
     qty: item.quantity,
   })),

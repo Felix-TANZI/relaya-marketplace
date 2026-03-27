@@ -13,9 +13,10 @@ export interface OrderItem {
 export interface OrderCreateData {
   city: 'YAOUNDE' | 'DOUALA';
   address: string;
-  phone: string;
+  customer_phone: string;
+  customer_email?: string;
   note?: string;
-  items: OrderItem[];
+  cart_items: OrderItem[];
 }
 
 // Ré-exporter le type Order depuis types/order.ts

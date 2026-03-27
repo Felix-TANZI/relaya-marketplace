@@ -1,7 +1,9 @@
-﻿import { Heart, ShoppingCart, Star } from "lucide-react";
+import { Heart, ShoppingCart, Star, Store, Truck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
+import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
+import { customerApi } from "@/services/api/customer";
 
 interface ProductImage {
   id: number;
@@ -47,7 +49,7 @@ export default function ProductCard({
   product,
   showPromo = false,
 }: ProductCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
 
@@ -55,149 +57,181 @@ export default function ProductCard({
     ? product.price_xaf - (product.price_xaf * product.discount) / 100
     : product.price_xaf;
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
+  const displayImage =
+    product.images?.find((img) => img.is_primary)?.image_url ||
+    product.images?.[0]?.image_url ||
+    product.media?.find((media) => media.media_type === "image")?.url ||
+    product.image;
+
+  const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
+  const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
+  const hasFreeDelivery = finalPrice >= 30000;
+
+  const handleAddToCart = (event: React.MouseEvent) => {
+    event.preventDefault();
+
     addItem({
       id: product.id,
       name: product.title,
       price: finalPrice,
       quantity: 1,
-      image:
-        product.images?.find((img) => img.is_primary)?.image_url ||
-        product.images?.[0]?.image_url ||
-        product.media?.find((m) => m.media_type === "image")?.url ||
-        product.image,
+      image: displayImage,
     });
   };
 
-  const displayImage =
-    product.images?.find((img) => img.is_primary)?.image_url ||
-    product.images?.[0]?.image_url ||
-    product.media?.find((m) => m.media_type === "image")?.url ||
-    product.image;
+  const handleToggleFavorite = async (event: React.MouseEvent) => {
+    event.preventDefault();
 
-  const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
-  const hasReviews = product.reviews_count && product.reviews_count > 0;
+    const nextFavoriteIds = toggleFavoriteProduct(product.id);
+    const nextIsFavorite = nextFavoriteIds.includes(product.id);
+    setIsFavorite(nextIsFavorite);
+
+    if (!localStorage.getItem('access_token')) {
+      return;
+    }
+
+    try {
+      if (nextIsFavorite) {
+        await customerApi.addFavorite(product.id);
+        return;
+      }
+
+      const favorites = await customerApi.getFavorites();
+      const favorite = favorites.find((item) => item.product.id === product.id);
+      if (favorite) {
+        await customerApi.removeFavorite(favorite.id);
+      }
+    } catch (error) {
+      console.error('Erreur mise a jour favoris:', error);
+    }
+  };
 
   return (
-    <Link to={`/product/${product.id}`}>
-      <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all group border border-gray-100 dark:border-gray-700">
-        <div className="relative aspect-square overflow-hidden bg-gray-100 dark:bg-gray-900">
-          <div className="absolute top-3 left-3 z-10 flex flex-col gap-2">
-            {showPromo && product.discount && (
-              <span className="px-3 py-1 bg-primary text-white text-xs font-bold rounded-lg shadow-lg">
+    <Link to={`/product/${product.id}`} className="group block h-full">
+      <article className="flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#f0e3d6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
+        <div className="relative aspect-[0.95] overflow-hidden bg-gradient-to-br from-[#fff6ee] via-white to-[#fff1e2] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+          <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
+            {showPromo && product.discount ? (
+              <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white shadow-lg shadow-primary/25">
                 -{product.discount}%
               </span>
-            )}
-            {!inStock && (
-              <span className="px-3 py-1 bg-red-500 text-white text-xs font-bold rounded-lg shadow-lg">
+            ) : null}
+            {hasFreeDelivery ? (
+              <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                Livraison offerte
+              </span>
+            ) : null}
+            {!inStock ? (
+              <span className="rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-bold text-white">
                 Épuisé
               </span>
-            )}
+            ) : null}
           </div>
+
+          <button
+            onClick={handleToggleFavorite}
+            className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:text-red-500 dark:bg-gray-800/90 dark:text-gray-300"
+          >
+            <Heart
+              size={18}
+              className={isFavorite ? "fill-red-500 text-red-500" : ""}
+            />
+          </button>
 
           {!imageError && displayImage ? (
             <img
               src={displayImage}
               alt={product.title}
-              className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900">
-              <ShoppingCart className="text-gray-400" size={48} />
+            <div className="flex h-full w-full items-center justify-center">
+              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white text-primary shadow-sm dark:bg-gray-800">
+                <ShoppingCart size={36} />
+              </div>
             </div>
           )}
-
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              setIsFavorite(!isFavorite);
-            }}
-            className="absolute top-3 right-3 w-10 h-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-10"
-          >
-            <Heart
-              size={20}
-              className={
-                isFavorite ? "fill-red-500 text-red-500" : "text-gray-400"
-              }
-            />
-          </button>
         </div>
 
-        <div className="p-4 space-y-3">
-          {product.category && (
-            <p className="text-xs text-primary font-medium uppercase tracking-wide">
-              {product.category.name}
-            </p>
-          )}
+        <div className="flex flex-1 flex-col p-4">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            {product.category ? (
+              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary dark:bg-primary/10">
+                {product.category.name}
+              </span>
+            ) : (
+              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-gray-700 dark:text-gray-300">
+                Catalogue
+              </span>
+            )}
 
-          <h3 className="font-semibold text-gray-800 dark:text-white line-clamp-2 group-hover:text-primary transition-colors min-h-[2.5rem]">
+            <span className="flex items-center gap-1 text-[11px] font-medium text-gray-400 dark:text-gray-500">
+              <Store size={12} />
+              Belivay
+            </span>
+          </div>
+
+          <h3 className="min-h-[3rem] text-[15px] font-semibold leading-6 text-gray-900 transition-colors group-hover:text-primary dark:text-white">
             {product.title}
           </h3>
 
-          {/* Avis - N'afficher QUE si des avis existent */}
-          {hasReviews &&
-            product.rating_average &&
-            product.reviews_count &&
-            product.reviews_count > 0 && (
-              <div className="flex items-center gap-2">
-                <div className="flex items-center gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      size={14}
-                      className={
-                        star <= Math.floor(product.rating_average!)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : star - 0.5 <= product.rating_average!
-                            ? "fill-yellow-400 text-yellow-400"
-                            : "fill-gray-200 text-gray-200 dark:fill-gray-600 dark:text-gray-600"
-                      }
-                    />
-                  ))}
+          <div className="mt-2 flex items-center gap-2">
+            {hasReviews && product.rating_average ? (
+              <>
+                <div className="flex items-center gap-1 rounded-full bg-yellow-50 px-2.5 py-1 text-xs font-semibold text-yellow-700 dark:bg-yellow-900/20 dark:text-yellow-300">
+                  <Star size={12} className="fill-current" />
+                  {product.rating_average.toFixed(1)}
                 </div>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
-                  ({product.reviews_count})
+                <span className="text-xs text-gray-400 dark:text-gray-500">
+                  ({product.reviews_count} avis)
                 </span>
-              </div>
+              </>
+            ) : (
+              <span className="text-xs text-gray-400 dark:text-gray-500">
+                Nouveau sur la marketplace
+              </span>
             )}
+          </div>
 
-          <div className="flex items-center justify-between">
+          <div className="mt-3 flex items-end justify-between gap-3">
             <div>
+              <div className="text-xl font-bold text-gray-900 dark:text-white">
+                {finalPrice.toLocaleString()} FCFA
+              </div>
               {product.discount ? (
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="text-lg font-bold text-primary">
-                      {finalPrice.toLocaleString()} FCFA
-                    </span>
-                  </div>
-                  <span className="text-xs text-gray-400 line-through">
-                    {product.price_xaf.toLocaleString()} FCFA
-                  </span>
+                <div className="text-xs text-gray-400 line-through dark:text-gray-500">
+                  {product.price_xaf.toLocaleString()} FCFA
                 </div>
               ) : (
-                <span className="text-lg font-bold text-gray-800 dark:text-white">
-                  {product.price_xaf.toLocaleString()} FCFA
-                </span>
+                <div className="text-xs text-gray-400 dark:text-gray-500">
+                  Prix marketplace
+                </div>
               )}
             </div>
+
+            {inStock ? (
+              <div className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
+                <Truck size={12} />
+                {hasFreeDelivery ? "Offerte" : "72h max"}
+              </div>
+            ) : null}
           </div>
 
           <button
             onClick={handleAddToCart}
             disabled={!inStock}
-            className={`w-full py-2.5 font-medium rounded-lg transition-all flex items-center justify-center gap-2 ${
+            className={`mt-4 flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
               inStock
-                ? "bg-primary hover:bg-primary-dark text-white"
-                : "bg-gray-200 dark:bg-gray-700 text-gray-500 cursor-not-allowed"
+                ? "bg-primary text-white hover:bg-primary-dark"
+                : "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
             }`}
           >
             <ShoppingCart size={18} />
             {inStock ? "Ajouter au panier" : "Indisponible"}
           </button>
         </div>
-      </div>
+      </article>
     </Link>
   );
 }

@@ -2,17 +2,21 @@ import { createBrowserRouter } from "react-router-dom";
 import AppLayout from "@/app/layout/AppLayout";
 import HomePage from "@/features/home/HomePage";
 import CatalogPage from "@/features/catalog/CatalogPage";
+import CategoriesPage from "@/features/categories/CategoriesPage";
 import ProductDetailPage from "@/features/catalog/ProductDetailPage";
 import CartPage from "@/features/cart/CartPage";
 import CheckoutPage from "@/features/checkout/CheckoutPage";
 import CheckoutConfirmPage from "@/features/checkout/CheckoutConfirmPage";
+import NotificationsPage from "@/features/notifications/NotificationsPage";
 import OrdersHistoryPage from "@/features/orders/OrdersHistoryPage";
 import OrderDetailPage from "@/features/orders/OrderDetailPage";
+import WishlistPage from "@/features/wishlist/WishlistPage";
 import LoginPage from '@/features/auth/LoginPage';
 import RegisterPage from '@/features/auth/RegisterPage';
 import ContactPage from '@/features/contact/ContactPage';
 import HelpPage from '@/features/help/HelpPage';
 import AboutPage from '@/features/about/AboutPage';
+import ProfilePage from '@/features/profile/ProfilePage';
 import NotFoundPage from '@/features/system/NotFoundPage';
 
 export const router = createBrowserRouter([
@@ -27,6 +31,10 @@ export const router = createBrowserRouter([
       {
         path: "catalog",
         element: <CatalogPage />,
+      },
+      {
+        path: "categories",
+        element: <CategoriesPage />,
       },
       {
         path: "product/:id",
@@ -53,12 +61,24 @@ export const router = createBrowserRouter([
         element: <OrderDetailPage />,
       },
       {
+        path: "wishlist",
+        element: <WishlistPage />,
+      },
+      {
+        path: "notifications",
+        element: <NotificationsPage />,
+      },
+      {
         path: "login",
         element: <LoginPage />,
       },
       {
         path: "register",
         element: <RegisterPage />,
+      },
+      {
+        path: "profile",
+        element: <ProfilePage />,
       },
       {
         path: "contact",

@@ -25,6 +25,7 @@ import { useCart } from '@/context/CartContext';
 import { useToast } from '@/context/ToastContext';
 import { productsApi, type Product, type Category } from '@/services/api/products';
 import { useAuth } from '@/context/AuthContext';
+import { http } from '@/services/api/http';
 
 interface ProductReview {
   id: number;
@@ -139,11 +140,8 @@ export default function ProductDetailPage() {
       if (!id) return;
       
       try {
-        const response = await fetch(`http://localhost:8000/api/catalog/products/${id}/reviews/`);
-        if (response.ok) {
-          const data = await response.json();
-          setReviews(data);
-        }
+        const data = await http<ProductReview[]>(`/api/catalog/products/${id}/reviews/`);
+        setReviews(data);
       } catch (err) {
         console.error('Error loading reviews:', err);
       }
@@ -180,12 +178,8 @@ export default function ProductDetailPage() {
 
     try {
       setSubmittingReview(true);
-      const response = await fetch(`http://localhost:8000/api/catalog/products/${product.id}/add_review/`, {
+      await http<ProductReview>(`/api/catalog/products/${product.id}/add_review/`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
         body: JSON.stringify({
           rating: reviewRating,
           title: reviewTitle,
@@ -193,23 +187,16 @@ export default function ProductDetailPage() {
         })
       });
 
-      if (response.ok) {
-        showToast('Avis ajouté avec succès !', 'success');
-        setShowReviewForm(false);
-        setReviewRating(5);
-        setReviewTitle('');
-        setReviewComment('');
-        
-        const reviewsResponse = await fetch(`http://localhost:8000/api/catalog/products/${product.id}/reviews/`);
-        if (reviewsResponse.ok) {
-          const data = await reviewsResponse.json();
-          setReviews(data);
-        }
-      } else {
-        const error = await response.json();
-        showToast(error.detail || 'Erreur lors de l\'ajout de l\'avis', 'error');
-      }
-    } catch {
+      showToast('Avis ajouté avec succès !', 'success');
+      setShowReviewForm(false);
+      setReviewRating(5);
+      setReviewTitle('');
+      setReviewComment('');
+
+      const data = await http<ProductReview[]>(`/api/catalog/products/${product.id}/reviews/`);
+      setReviews(data);
+    } catch (error) {
+      console.error('Error submitting review:', error);
       showToast('Erreur lors de l\'ajout de l\'avis', 'error');
     } finally {
       setSubmittingReview(false);
@@ -472,6 +459,41 @@ export default function ProductDetailPage() {
                       <p className="text-xs text-blue-600 dark:text-blue-500">
                         Transaction encryptée et protégée
                       </p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl border border-orange-100 bg-[#fff7ef] p-4 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                        Resume client
+                      </p>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-primary dark:bg-gray-800">
+                        Achat rapide
+                      </span>
+                    </div>
+                    <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                      <div className="flex items-center justify-between">
+                        <span>Prix unitaire</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {product.price_final.toLocaleString()} FCFA
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Quantite</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">{quantity}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Sous-total</span>
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {(product.price_final * quantity).toLocaleString()} FCFA
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>Livraison</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">
+                          {product.price_final * quantity >= 30000 ? 'Offerte' : 'A calculer'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>

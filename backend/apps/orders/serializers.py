@@ -2,7 +2,7 @@
 # Serializers pour les commandes avec séparation payment_status et fulfillment_status
 
 from rest_framework import serializers
-from .models import Order, OrderItem
+from .models import Order, OrderItem, Dispute, DisputeMessage
 from apps.catalog.models import Product
 
 
@@ -116,8 +116,9 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         """Créer une nouvelle commande"""
-        from apps.shipping.models import ShippingRate
-        
+        from .models import PlatformSettings
+        from apps.shipping.models import Shipment, ShipmentEvent
+
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
         
@@ -146,14 +147,9 @@ class OrderCreateSerializer(serializers.Serializer):
             })
         
         # Calculer les frais de livraison
-        try:
-            shipping_rate = ShippingRate.objects.get(
-                city=validated_data['city'],
-                is_active=True
-            )
-            delivery_fee = shipping_rate.rate_xaf
-        except ShippingRate.DoesNotExist:
-            delivery_fee = 2000  # Frais par défaut
+        settings = PlatformSettings.get_settings()
+        delivery_fees = settings.delivery_fees or {}
+        delivery_fee = delivery_fees.get(validated_data['city'], 2000)
         
         # Créer la commande avec l'ancien format de status
         order = Order.objects.create(
@@ -166,11 +162,77 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,
-            status='PENDING_PAYMENT'  # Utilise l'ancien champ
+            payment_status=Order.PaymentStatus.PENDING,
+            fulfillment_status=Order.FulfillmentStatus.PENDING,
         )
         
         # Créer les articles de la commande
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
+
+        shipment = Shipment.objects.create(order=order, status=Shipment.Status.CREATED)
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.CREATED,
+            message="Commande recuee et en attente de prise en charge",
+            location=order.city,
+        )
         
         return order
+
+
+class DisputeMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DisputeMessage
+        fields = ['id', 'sender', 'sender_name', 'message', 'is_internal', 'created_at']
+        read_only_fields = fields
+
+    def get_sender_name(self, obj):
+        return obj.sender.get_full_name() or obj.sender.username
+
+
+class DisputeSerializer(serializers.ModelSerializer):
+    messages = DisputeMessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Dispute
+        fields = [
+            'id',
+            'order',
+            'opened_by',
+            'reason',
+            'status',
+            'description',
+            'resolution',
+            'resolution_note',
+            'refund_amount_xaf',
+            'created_at',
+            'updated_at',
+            'messages',
+        ]
+        read_only_fields = [
+            'id',
+            'order',
+            'opened_by',
+            'status',
+            'resolution',
+            'resolution_note',
+            'refund_amount_xaf',
+            'created_at',
+            'updated_at',
+            'messages',
+        ]
+
+
+class DisputeCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Dispute
+        fields = ['reason', 'description']
+
+
+class DisputeMessageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DisputeMessage
+        fields = ['message']

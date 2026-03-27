@@ -2,7 +2,23 @@
 // Client API pour interagir avec le backend Relaya Marketplace
 
 // Configuration du client API
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
+function normalizeEndpoint(endpoint: string): string {
+  if (endpoint.startsWith("http")) {
+    return endpoint;
+  }
+
+  if (endpoint.startsWith("/api/")) {
+    return endpoint;
+  }
+
+  if (endpoint.startsWith("/")) {
+    return `/api${endpoint}`;
+  }
+
+  return `/api/${endpoint}`;
+}
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
@@ -12,7 +28,7 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
   const { params, ...fetchOptions } = options;
   
   // Construire l'URL avec les query params
-  let url = `${API_BASE_URL}${endpoint}`;
+  let url = `${API_BASE_URL}${normalizeEndpoint(endpoint)}`;
   if (params) {
     const cleanParams = Object.entries(params)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')
@@ -26,13 +42,16 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
 
   // Récupérer le token d'authentification depuis le stockage local
 const token = localStorage.getItem('access_token');
-const headers: Record<string, string> = {
-  "Content-Type": "application/json",
-};
+const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
+const headers: Record<string, string> = {};
 
 // Ajouter les headers personnalisés
 if (fetchOptions.headers) {
   Object.assign(headers, fetchOptions.headers);
+}
+
+if (!isFormData && !headers['Content-Type']) {
+  headers['Content-Type'] = 'application/json';
 }
 
 // Ajouter le token si présent

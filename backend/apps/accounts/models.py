@@ -3,6 +3,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from apps.catalog.models import Product
 
 
 class UserProfile(models.Model):
@@ -67,3 +68,54 @@ class UserActivityLog(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.action} - {self.timestamp}"
+
+
+class UserFavorite(models.Model):
+    """
+    Produit mis en favori par un client.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='favorites')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='favorited_by')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        unique_together = [['user', 'product']]
+        verbose_name = "Favori utilisateur"
+        verbose_name_plural = "Favoris utilisateurs"
+
+    def __str__(self):
+        return f"{self.user.username} -> {self.product.title}"
+
+
+class UserNotification(models.Model):
+    """
+    Notification simple côté client.
+    """
+    class NotificationType(models.TextChoices):
+        ORDER = "ORDER", "Commande"
+        PROMOTION = "PROMOTION", "Promotion"
+        PAYMENT = "PAYMENT", "Paiement"
+        SUPPORT = "SUPPORT", "Support"
+        SYSTEM = "SYSTEM", "Système"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications')
+    title = models.CharField(max_length=160)
+    message = models.TextField()
+    notification_type = models.CharField(
+        max_length=20,
+        choices=NotificationType.choices,
+        default=NotificationType.SYSTEM,
+    )
+    action_url = models.CharField(max_length=255, blank=True, default="")
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Notification utilisateur"
+        verbose_name_plural = "Notifications utilisateurs"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.title}"

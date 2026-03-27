@@ -61,10 +61,14 @@ export async function http<T>(
     ? endpoint 
     : `${API_BASE_URL}${endpoint}`;
 
+  const isFormData = typeof FormData !== 'undefined' && config.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...config.headers,
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   // Ajouter le token si présent
   const token = localStorage.getItem('access_token');

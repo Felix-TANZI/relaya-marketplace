@@ -139,7 +139,7 @@ export default function OrdersHistoryPage() {
     <div className="min-h-screen py-12">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header */}
-        <div className="mb-8">
+        <div className="mb-8" data-tutorial="orders-header">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
             <span className="text-gradient animate-gradient-bg">
               {t("orders.title")}

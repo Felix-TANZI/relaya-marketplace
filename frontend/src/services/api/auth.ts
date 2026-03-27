@@ -11,6 +11,12 @@ export interface User {
   last_name: string;
   date_joined: string;
   is_vendor?: boolean;
+  phone?: string | null;
+  avatar_url?: string | null;
+  newsletter_subscribed?: boolean;
+  sms_notifications?: boolean;
+  loyalty_points?: number;
+  loyalty_tier?: string;
 }
 
 export interface LoginCredentials {
@@ -36,6 +42,10 @@ export interface UpdateProfileData {
   email?: string;
   first_name?: string;
   last_name?: string;
+  phone?: string | null;
+  bio?: string | null;
+  newsletter_subscribed?: boolean;
+  sms_notifications?: boolean;
 }
 
 export const authApi = {
@@ -91,6 +101,30 @@ export const authApi = {
     return http<User>('/api/auth/profile/update/', {
       method: 'PATCH',
       body: JSON.stringify(data),
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  uploadAvatar: async (file: File): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    const body = new FormData();
+    body.append('avatar', file);
+
+    return http<User>('/api/auth/profile/avatar/', {
+      method: 'POST',
+      body,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  removeAvatar: async (): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    return http<User>('/api/auth/profile/avatar/', {
+      method: 'DELETE',
       headers: {
         Authorization: `Bearer ${token}`,
       },

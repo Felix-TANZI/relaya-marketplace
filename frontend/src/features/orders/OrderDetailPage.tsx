@@ -1,400 +1,408 @@
-// frontend/src/features/orders/OrderDetailPage.tsx
-// Page de détail d'une commande avec statuts séparés paiement/livraison
-
-import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
-  Package,
-  MapPin,
-  Phone,
-  Mail,
-  CreditCard,
-  Truck,
-  CheckCircle,
-  Clock,
-  XCircle,
   AlertCircle,
-} from 'lucide-react';
-import { Button, Card, Badge } from '@/components/ui';
-import { ordersApi } from '@/services/api/orders';
-import type { Order, PaymentStatus, FulfillmentStatus } from '@/types/order';
+  CheckCircle,
+  Clock3,
+  CreditCard,
+  MapPin,
+  MessageCircleMore,
+  Phone,
+  ShieldCheck,
+  Truck,
+  UserCircle2,
+  XCircle,
+} from "lucide-react";
+import { ordersApi } from "@/services/api/orders";
+import { customerApi, type Shipment } from "@/services/api/customer";
+import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
+
+function getPaymentInfo(status: PaymentStatus) {
+  switch (status) {
+    case "PAID":
+      return {
+        label: "Paiement confirme",
+        color: "text-green-600",
+        bg: "bg-green-50 dark:bg-green-900/20",
+        icon: CheckCircle,
+      };
+    case "PENDING":
+      return {
+        label: "Paiement en attente",
+        color: "text-yellow-600",
+        bg: "bg-yellow-50 dark:bg-yellow-900/20",
+        icon: Clock3,
+      };
+    case "FAILED":
+      return {
+        label: "Paiement echoue",
+        color: "text-red-600",
+        bg: "bg-red-50 dark:bg-red-900/20",
+        icon: XCircle,
+      };
+    case "REFUNDED":
+      return {
+        label: "Rembourse",
+        color: "text-gray-600",
+        bg: "bg-gray-100 dark:bg-gray-800",
+        icon: CreditCard,
+      };
+  }
+}
+
+function getFulfillmentInfo(status: FulfillmentStatus) {
+  switch (status) {
+    case "PENDING":
+      return { label: "Commande recue", step: 0 };
+    case "PROCESSING":
+      return { label: "Preparation terminee", step: 1 };
+    case "SHIPPED":
+      return { label: "Livreur recu", step: 2 };
+    case "DELIVERED":
+      return { label: "Livree", step: 3 };
+    case "CANCELLED":
+      return { label: "Annulee", step: -1 };
+  }
+}
 
 export default function OrderDetailPage() {
-  const { t, i18n } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
   const [order, setOrder] = useState<Order | null>(null);
+  const [tracking, setTracking] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchOrder = async () => {
-      if (!id) return;
-      
+      if (!id) {
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
-        const data = await ordersApi.get(parseInt(id));
+        const data = await ordersApi.get(parseInt(id, 10));
         setOrder(data);
-      } catch (err) {
-        console.error('Error loading order:', err);
-        setError(t('orders.error_message'));
+        try {
+          const shipment = await customerApi.getOrderTracking(parseInt(id, 10));
+          setTracking(shipment);
+        } catch {
+          setTracking(null);
+        }
+      } catch (fetchError) {
+        console.error("Error loading order:", fetchError);
+        setError("Impossible de charger le detail de la commande.");
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrder();
-  }, [id, t]);
+  }, [id]);
 
-  const getPaymentStatusInfo = (status: PaymentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return {
-          variant: 'warning' as const,
-          text: 'En attente de paiement',
-          icon: Clock,
-          color: 'text-yellow-400',
-        };
-      case 'PAID':
-        return {
-          variant: 'success' as const,
-          text: 'Payé',
-          icon: CheckCircle,
-          color: 'text-green-400',
-        };
-      case 'FAILED':
-        return {
-          variant: 'error' as const,
-          text: 'Échec du paiement',
-          icon: XCircle,
-          color: 'text-red-400',
-        };
-      case 'REFUNDED':
-        return {
-          variant: 'default' as const,
-          text: 'Remboursé',
-          icon: CreditCard,
-          color: 'text-gray-400',
-        };
-    }
-  };
-
-  const getFulfillmentStatusInfo = (status: FulfillmentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return {
-          variant: 'warning' as const,
-          text: 'En attente',
-          icon: Clock,
-          color: 'text-yellow-400',
-          step: 0,
-        };
-      case 'PROCESSING':
-        return {
-          variant: 'default' as const,
-          text: 'En préparation',
-          icon: Package,
-          color: 'text-blue-400',
-          step: 1,
-        };
-      case 'SHIPPED':
-        return {
-          variant: 'success' as const,
-          text: 'Expédié',
-          icon: Truck,
-          color: 'text-purple-400',
-          step: 2,
-        };
-      case 'DELIVERED':
-        return {
-          variant: 'success' as const,
-          text: 'Livré',
-          icon: CheckCircle,
-          color: 'text-green-400',
-          step: 3,
-        };
-      case 'CANCELLED':
-        return {
-          variant: 'error' as const,
-          text: 'Annulé',
-          icon: XCircle,
-          color: 'text-red-400',
-          step: -1,
-        };
-    }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
-
-  const formatPrice = (price: number) => {
-    return `${price.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} XAF`;
-  };
-
-  // Loading State
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">{t('orders.loading')}</p>
+          <div className="inline-block h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            Chargement du suivi...
+          </p>
         </div>
       </div>
     );
   }
 
-  // Error State
   if (error || !order) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertCircle className="text-red-400" size={40} />
-          </div>
-          <h1 className="font-display font-bold text-2xl text-dark-text mb-4">
-            {t('orders.error')}
-          </h1>
-          <p className="text-dark-text-secondary mb-8">{error}</p>
-          <Button variant="gradient" onClick={() => navigate('/orders')}>
-            {t('orders.back_to_orders')}
-          </Button>
+        <div className="text-center max-w-md px-4">
+          <AlertCircle className="mx-auto mb-4 text-red-500" size={40} />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commande introuvable</h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{error}</p>
+          <button
+            onClick={() => navigate("/orders")}
+            className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
+          >
+            Retour a mes commandes
+          </button>
         </div>
       </div>
     );
   }
 
-  const paymentInfo = getPaymentStatusInfo(order.payment_status);
-  const fulfillmentInfo = getFulfillmentStatusInfo(order.fulfillment_status);
+  const payment = getPaymentInfo(order.payment_status);
+  const fulfillment = getFulfillmentInfo(order.fulfillment_status);
+  const PaymentIcon = payment.icon;
+  const timelineSteps = tracking?.events?.length
+    ? tracking.events.map((event) => ({
+        time: new Date(event.created_at).toLocaleTimeString("fr-FR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        label: event.message || event.status,
+      }))
+    : [
+        { time: "10:15", label: "Commande recue" },
+        { time: "14:30", label: "Preparation terminee" },
+        { time: "14:45", label: "Livreur recu" },
+        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? "Commande livree" : "Arrivee prevue aujourd'hui a 14h" },
+      ];
 
-  // Timeline steps
-  const timelineSteps = [
-    { label: 'En attente', step: 0 },
-    { label: 'En préparation', step: 1 },
-    { label: 'Expédié', step: 2 },
-    { label: 'Livré', step: 3 },
-  ];
+  const handleConfirmReceipt = async () => {
+    if (!id) return;
+    try {
+      const updatedOrder = await customerApi.confirmReceipt(parseInt(id, 10));
+      setOrder(updatedOrder);
+      const shipment = await customerApi.getOrderTracking(parseInt(id, 10));
+      setTracking(shipment);
+    } catch (actionError) {
+      console.error("Erreur confirmation reception:", actionError);
+    }
+  };
 
-  const currentStep = fulfillmentInfo.step;
+  const handleOpenDispute = async () => {
+    if (!id) return;
+    const description = window.prompt("Decris rapidement le probleme rencontre :");
+    if (!description) return;
+
+    try {
+      await customerApi.createOrderDispute(parseInt(id, 10), {
+        reason: "OTHER",
+        description,
+      });
+    } catch (actionError) {
+      console.error("Erreur ouverture litige:", actionError);
+    }
+  };
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
-        {/* Back Button */}
+    <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
+      <div className="container mx-auto max-w-6xl px-4">
         <Link
           to="/orders"
-          className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-8"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
         >
-          <ArrowLeft size={20} />
-          {t('orders.back_to_orders')}
+          <ArrowLeft size={18} />
+          Retour a mes commandes
         </Link>
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="font-display font-bold text-3xl lg:text-4xl text-dark-text mb-2">
-                {t('orders.order_number')} #{order.id}
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                Suivi de commande
+              </p>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                Commande #{order.id}
               </h1>
-              <p className="text-dark-text-secondary">
-                {t('orders.placed_on')} {formatDate(order.created_at)}
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Placee le {new Date(order.created_at).toLocaleDateString("fr-FR")} · ETA :
+                aujourd'hui avant 14h
               </p>
             </div>
-            
-            {/* Status Badges */}
-            <div className="flex gap-2 flex-wrap">
-              <Badge variant={paymentInfo.variant} className="flex items-center gap-1">
-                <paymentInfo.icon size={14} />
-                {paymentInfo.text}
-              </Badge>
-              <Badge variant={fulfillmentInfo.variant} className="flex items-center gap-1">
-                <fulfillmentInfo.icon size={14} />
-                {fulfillmentInfo.text}
-              </Badge>
+
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${payment.bg} ${payment.color}`}
+              >
+                <PaymentIcon size={16} />
+                {payment.label}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-primary dark:bg-primary/10">
+                <Truck size={16} />
+                {fulfillment.label}
+              </span>
             </div>
           </div>
+        </div>
 
-          {/* Timeline (si pas annulé) */}
-          {order.fulfillment_status !== 'CANCELLED' && (
-            <Card>
-              <div className="relative">
-                {/* Progress Bar */}
-                <div className="absolute top-6 left-0 right-0 h-1 bg-white/10 rounded-full" />
-                <div
-                  className="absolute top-6 left-0 h-1 bg-gradient-holographic rounded-full transition-all duration-500"
-                  style={{ width: `${(currentStep / 3) * 100}%` }}
-                />
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-6">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MapPin size={22} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    Suivi de commande
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Commande #{order.id} en cours de livraison
+                  </p>
+                </div>
+              </div>
 
-                {/* Steps */}
-                <div className="relative flex items-start justify-between">
-                  {timelineSteps.map((step) => {
-                    const isActive = currentStep >= step.step;
-                    const isCurrent = currentStep === step.step;
+              <div className="mb-6 h-56 rounded-[1.75rem] bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 ring-1 ring-orange-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900 dark:ring-gray-800">
+                <div className="flex h-full flex-col justify-between">
+                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                    <span>Ville: {order.city}</span>
+                    <span>Zone suivie</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-6 text-5xl">
+                    <span>📍</span>
+                    <span>🛵</span>
+                    <span>🏠</span>
+                  </div>
+                  <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
+                    Adresse de livraison : {order.address}
+                  </div>
+                </div>
+              </div>
 
-                    return (
-                      <div key={step.step} className="flex flex-col items-center flex-1">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
-                            isActive
-                              ? 'bg-gradient-holographic shadow-lg shadow-holo-cyan/30'
-                              : 'bg-white/10 border-2 border-white/20'
-                          }`}
-                        >
-                          {isActive ? (
-                            <CheckCircle className="text-white" size={24} />
-                          ) : (
-                            <div className="w-3 h-3 rounded-full bg-white/30" />
-                          )}
-                        </div>
-                        <p
-                          className={`text-sm text-center ${
-                            isCurrent ? 'text-holo-cyan font-medium' : 'text-dark-text-secondary'
-                          }`}
-                        >
+              <div className="space-y-4">
+                {timelineSteps.map((step, index) => {
+                  const isActive = fulfillment.step >= index;
+
+                  return (
+                    <div key={step.label} className="flex items-start gap-4">
+                      <div
+                        className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${
+                          isActive
+                            ? "bg-primary text-white"
+                            : "bg-gray-100 text-gray-400 dark:bg-gray-800"
+                        }`}
+                      >
+                        {isActive ? <CheckCircle size={18} /> : <Clock3 size={18} />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                          {step.time}
+                        </p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
                           {step.label}
                         </p>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
-            </Card>
-          )}
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne principale */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Articles */}
-            <Card>
-              <h2 className="font-display font-bold text-2xl text-dark-text mb-6 flex items-center gap-2">
-                <Package size={24} className="text-holo-cyan" />
-                Articles commandés
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  disabled={!tracking?.courier_phone}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Truck size={18} />
+                  Contacter le livreur
+                </button>
+                <button
+                  onClick={handleOpenDispute}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                >
+                  <MessageCircleMore size={18} />
+                  Ouvrir un litige
+                </button>
+                {order.fulfillment_status !== "DELIVERED" && (
+                  <button
+                    onClick={handleConfirmReceipt}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"
+                  >
+                    <CheckCircle size={18} />
+                    Confirmer la reception
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
+                Articles commandes
               </h2>
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {order.items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex items-center justify-between p-4 glass rounded-xl border border-white/10"
+                    className="flex items-center justify-between rounded-2xl bg-[#fcfbf8] px-4 py-4 dark:bg-gray-800"
                   >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-dark-text mb-1">
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
                         {item.title_snapshot}
-                      </h3>
-                      <p className="text-sm text-dark-text-secondary">
-                        {formatPrice(item.price_xaf_snapshot)} × {item.qty}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {item.qty} × {item.price_xaf_snapshot.toLocaleString()} FCFA
                       </p>
                     </div>
-                    <div className="text-right">
-                      <p className="font-display font-bold text-lg text-dark-text">
-                        {formatPrice(item.line_total_xaf)}
-                      </p>
-                    </div>
+                    <p className="text-lg font-bold text-primary">
+                      {item.line_total_xaf.toLocaleString()} FCFA
+                    </p>
                   </div>
                 ))}
               </div>
-            </Card>
-
-            {/* Note client */}
-            {order.note && (
-              <Card>
-                <h3 className="font-semibold text-dark-text mb-3">Note</h3>
-                <p className="text-dark-text-secondary">{order.note}</p>
-              </Card>
-            )}
+            </section>
           </div>
 
-          {/* Sidebar */}
           <div className="space-y-6">
-            {/* Récapitulatif */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <CreditCard size={20} className="text-holo-pink" />
-                Récapitulatif
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Sous-total</span>
-                  <span className="text-dark-text font-medium">
-                    {formatPrice(order.subtotal_xaf)}
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+                Resume
+              </h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                  <span>Sous-total</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {order.subtotal_xaf.toLocaleString()} FCFA
                   </span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Livraison</span>
-                  <span className="text-dark-text font-medium">
-                    {formatPrice(order.delivery_fee_xaf)}
+                <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                  <span>Livraison</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {order.delivery_fee_xaf.toLocaleString()} FCFA
                   </span>
                 </div>
-                <div className="pt-3 border-t border-white/10 flex justify-between">
-                  <span className="font-semibold text-dark-text">Total</span>
-                  <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                    {formatPrice(order.total_xaf)}
-                  </span>
+                <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
+                  <span className="text-gray-900 dark:text-white">Total</span>
+                  <span className="text-xl text-primary">{order.total_xaf.toLocaleString()} FCFA</span>
                 </div>
               </div>
-            </Card>
+            </section>
 
-            {/* Livraison */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <MapPin size={20} className="text-holo-purple" />
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 Livraison
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1">Ville</p>
-                  <p className="text-dark-text font-medium">{order.city}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1">Adresse</p>
-                  <p className="text-dark-text text-sm">{order.address}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
-                    <Phone size={12} />
-                    Téléphone
-                  </p>
-                  <p className="text-dark-text">{order.customer_phone}</p>
-                </div>
-                {order.customer_email && (
+              </h2>
+              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-start gap-3">
+                  <MapPin size={18} className="mt-0.5 text-primary" />
                   <div>
-                    <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
-                      <Mail size={12} />
-                      Email
-                    </p>
-                    <p className="text-dark-text text-sm">{order.customer_email}</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{order.city}</p>
+                    <p>{order.address}</p>
                   </div>
-                )}
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone size={18} className="mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Telephone</p>
+                    <p>{order.customer_phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <UserCircle2 size={18} className="mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">Livreur</p>
+                    <p>
+                      {tracking?.courier_name || "En attente d'assignation"}
+                      {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </Card>
+            </section>
 
-            {/* Paiement */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <CreditCard size={20} className="text-holo-cyan" />
-                Paiement
-              </h3>
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-full ${paymentInfo.color.replace('text-', 'bg-')}/10`}>
-                  <paymentInfo.icon className={paymentInfo.color} size={20} />
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-900/20">
+                  <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="font-medium text-dark-text">{paymentInfo.text}</p>
-                  <p className="text-xs text-dark-text-tertiary">Mobile Money</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">Paiement securise</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money protege</p>
                 </div>
               </div>
-            </Card>
+            </section>
           </div>
         </div>
       </div>

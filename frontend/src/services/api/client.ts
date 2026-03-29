@@ -2,7 +2,9 @@
 // Client API pour interagir avec le backend Relaya Marketplace
 
 // Configuration du client API
-const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
 
 function normalizeEndpoint(endpoint: string): string {
   if (endpoint.startsWith("http")) {

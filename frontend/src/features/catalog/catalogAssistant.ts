@@ -1,4 +1,5 @@
 import type { Product } from "@/services/api/products";
+import { http } from "@/services/api/http";
 
 export interface CatalogAssistantSuggestion {
   productId: number;
@@ -10,8 +11,10 @@ export interface CatalogAssistantResponse {
   answer: string;
   suggestions: CatalogAssistantSuggestion[];
   followUp: string[];
-  source: "mock";
+  source: "mock" | "openrouter";
   providerReady: boolean;
+  model?: string;
+  error?: string;
 }
 
 export interface CatalogAssistantContext {
@@ -31,6 +34,35 @@ function normalizeText(value: string) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "");
+}
+
+function isGreeting(message: string) {
+  const normalized = normalizeText(message).trim();
+  return [
+    "salut",
+    "bonjour",
+    "bonsoir",
+    "hello",
+    "coucou",
+    "cc",
+    "yo",
+  ].includes(normalized);
+}
+
+function buildSuggestionsSentence(suggestions: CatalogAssistantSuggestion[]) {
+  if (suggestions.length === 0) {
+    return "";
+  }
+
+  if (suggestions.length === 1) {
+    return suggestions[0].title;
+  }
+
+  if (suggestions.length === 2) {
+    return `${suggestions[0].title} puis ${suggestions[1].title}`;
+  }
+
+  return `${suggestions[0].title}, puis ${suggestions[1].title} et ${suggestions[2].title}`;
 }
 
 function scoreProduct(product: Product, query: string) {
@@ -82,6 +114,50 @@ function scoreProduct(product: Product, query: string) {
 export async function getCatalogAssistantResponse(
   context: CatalogAssistantContext,
 ): Promise<CatalogAssistantResponse> {
+  if (isGreeting(context.message)) {
+    return {
+      answer:
+        "Salut. Je peux t'aider a choisir un produit dans ce catalogue. Dis-moi simplement ce que tu cherches, ton budget, ou si tu veux plutot le meilleur rapport qualite-prix, une promo, ou un produit bien note.",
+      suggestions: [],
+      followUp: [
+        "Je cherche un produit pas cher",
+        "Je veux le meilleur rapport qualite prix",
+        "Montre-moi les meilleures promotions",
+      ],
+      source: "mock",
+      providerReady: true,
+      model: "mock-local",
+    };
+  }
+
+  const visibleProductsPayload = context.products.slice(0, 8).map((product) => ({
+    id: product.id,
+    title: product.title,
+    description: product.description,
+    short_description: product.short_description || "",
+    category_name: product.category?.name || "",
+    price_xaf: product.price_xaf,
+    price_final: product.price_final,
+    discount: product.discount ?? 0,
+    stock_quantity: product.stock_quantity ?? 0,
+    rating_average: product.rating_average ?? null,
+    reviews_count: product.reviews_count ?? 0,
+  }));
+
+  try {
+    return await http<CatalogAssistantResponse>("/api/ai/catalog-assistant/", {
+      method: "POST",
+      body: JSON.stringify({
+        message: context.message,
+        selectedCategoryName: context.selectedCategoryName,
+        filters: context.filters,
+        products: visibleProductsPayload,
+      }),
+    });
+  } catch (error) {
+    console.error("Erreur assistant catalogue:", error);
+  }
+
   const rankedProducts = [...context.products]
     .map((product) => ({
       product,
@@ -104,7 +180,7 @@ export async function getCatalogAssistantResponse(
 
   const answer =
     suggestions.length > 0
-      ? `J'ai analyse les produits visibles dans le catalogue ${context.selectedCategoryName !== "Toutes les catégories" ? `pour la categorie ${context.selectedCategoryName}` : ""}. Je te recommande surtout ${suggestions[0].title}, puis ${suggestions.slice(1).map((item) => item.title).join(" et ")}.`
+      ? `J'ai analyse les produits visibles dans le catalogue ${context.selectedCategoryName !== "Toutes les catégories" ? `pour la categorie ${context.selectedCategoryName}` : ""}. Je te recommande surtout ${buildSuggestionsSentence(suggestions)}.`
       : "Je n'ai pas encore trouve de produit vraiment pertinent dans les resultats visibles. Essaie une recherche plus precise ou retire certains filtres.";
 
   return {
@@ -117,5 +193,6 @@ export async function getCatalogAssistantResponse(
     ],
     source: "mock",
     providerReady: true,
+    model: "mock-local",
   };
 }

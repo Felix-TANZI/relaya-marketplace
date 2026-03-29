@@ -3,7 +3,7 @@
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;

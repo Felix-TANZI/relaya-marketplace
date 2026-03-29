@@ -47,6 +47,14 @@ export default function CatalogAssistantPanel({
     { productId: number; title: string; reason: string }[]
   >([]);
   const [followUpPrompts, setFollowUpPrompts] = useState<string[]>(QUICK_PROMPTS);
+  const [assistantMeta, setAssistantMeta] = useState<{
+    source: "mock" | "openrouter";
+    providerReady: boolean;
+    model?: string;
+  }>({
+    source: "mock",
+    providerReady: false,
+  });
 
   const visibleProducts = useMemo(() => products.slice(0, 12), [products]);
 
@@ -79,6 +87,11 @@ export default function CatalogAssistantPanel({
       ]);
       setSuggestedProducts(response.suggestions);
       setFollowUpPrompts(response.followUp);
+      setAssistantMeta({
+        source: response.source,
+        providerReady: response.providerReady,
+        model: response.model,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -102,13 +115,15 @@ export default function CatalogAssistantPanel({
               <div>
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   <Sparkles size={14} />
-                  IA prete pour API
+                  {assistantMeta.source === "openrouter" ? "OpenRouter actif" : "Mode secours mock"}
                 </p>
                 <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
                   Conseiller d'achat
                 </h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  Version demo en dur. L'interface est deja prete pour OpenAI ou Claude.
+                  {assistantMeta.source === "openrouter"
+                    ? `Le chatbot utilise actuellement ${assistantMeta.model || "OpenRouter"}.`
+                    : "Le chatbot est en fallback local si l'API IA ne repond pas."}
                 </p>
               </div>
               <button

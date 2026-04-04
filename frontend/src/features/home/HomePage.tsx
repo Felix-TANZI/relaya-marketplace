@@ -1,16 +1,20 @@
 import { Link } from "react-router-dom";
 import {
+  Bell,
   Flame,
   Gift,
   MapPinned,
+  Package,
   ShieldCheck,
   Sparkles,
   Store,
   Truck,
+  User,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product, type ProductListResponse } from "@/services/api/products";
+import { useAuth } from "@/context/AuthContext";
 
 const categoryTiles = [
   { name: "Toutes les categories", link: "/categories", emoji: "🧺" },
@@ -40,7 +44,14 @@ const trustCards = [
   },
 ];
 
+const quickLinks = [
+  { label: "Mon compte", to: "/profile", icon: User, color: "bg-orange-50 text-primary dark:bg-gray-800" },
+  { label: "Commandes", to: "/orders", icon: Package, color: "bg-orange-50 text-primary dark:bg-gray-800" },
+  { label: "Notifications", to: "/notifications", icon: Bell, color: "bg-orange-50 text-primary dark:bg-gray-800" },
+];
+
 export default function HomePage() {
+  const { isAuthenticated } = useAuth();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -98,6 +109,25 @@ export default function HomePage() {
           })}
         </div>
       </section>
+
+      {isAuthenticated && (
+        <section className="border-b border-orange-100 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className="container mx-auto px-4 py-3">
+            <div className="flex items-center gap-3 overflow-x-auto scrollbar-hide">
+              {quickLinks.map(({ label, to, icon: Icon, color }) => (
+                <Link
+                  key={label}
+                  to={to}
+                  className={`flex flex-shrink-0 items-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition-all hover:opacity-80 ${color}`}
+                >
+                  <Icon size={16} />
+                  {label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="container mx-auto px-4 py-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">

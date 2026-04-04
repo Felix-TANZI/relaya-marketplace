@@ -39,7 +39,6 @@ export default function Header() {
   const { user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -102,14 +101,6 @@ export default function Header() {
     };
   }, []);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/catalog?search=${encodeURIComponent(searchQuery)}`);
-      setSearchQuery("");
-    }
-  };
-
   const toggleLanguage = () => {
     const newLang = i18n.language === "fr" ? "en" : "fr";
     i18n.changeLanguage(newLang);
@@ -148,27 +139,16 @@ export default function Header() {
           </Link>
 
           {/* Search Bar - Desktop */}
-          <form
-            onSubmit={handleSearch}
-            className="hidden lg:flex flex-1 max-w-2xl mx-8"
+          <button
+            data-tutorial="header-search"
+            onClick={() => navigate("/search")}
+            className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
           >
-            <div className="relative w-full">
-              <input
-                data-tutorial="header-search"
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder={t("header.search_placeholder")}
-                className="w-full px-6 py-3 pr-12 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-primary hover:bg-primary/10 rounded-lg transition-all"
-              >
-                <Search size={20} />
-              </button>
-            </div>
-          </form>
+            <Search size={20} className="text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-400 dark:text-gray-500">
+              {t("header.search_placeholder")}
+            </span>
+          </button>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
@@ -459,23 +439,17 @@ export default function Header() {
         </div>
 
         {/* Search Bar - Mobile */}
-        <form onSubmit={handleSearch} className="lg:hidden pb-4">
-          <div className="relative">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t("header.search_placeholder")}
-              className="w-full px-4 py-2.5 pr-10 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
-            />
-            <button
-              type="submit"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 text-primary hover:bg-primary/10 rounded transition-all"
-            >
-              <Search size={18} />
-            </button>
+        <button
+          onClick={() => navigate("/search")}
+          className="lg:hidden pb-4 w-full"
+        >
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
+            <Search size={18} className="text-gray-400 flex-shrink-0" />
+            <span className="text-sm text-gray-400 dark:text-gray-500">
+              {t("header.search_placeholder")}
+            </span>
           </div>
-        </form>
+        </button>
 
         <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
           {clientNavItems.map((item) => (

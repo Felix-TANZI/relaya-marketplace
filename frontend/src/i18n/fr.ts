@@ -1,4 +1,4 @@
-﻿export default {
+export default {
   // Header
   header: {
     search_placeholder: 'Rechercher des produits...',
@@ -55,6 +55,266 @@
     out_of_stock: 'Rupture de stock',
   },
 
+  // Search
+  search: {
+    placeholder: 'Rechercher un produit, une marque...',
+    categories_label: 'Catégories',
+    results_count_one: '{{count}} résultat pour « {{query}} »',
+    results_count_other: '{{count}} résultats pour « {{query}} »',
+    no_results: 'Aucun résultat pour « {{query}} »',
+    empty_title: 'Aucun produit trouvé',
+    empty_description: 'Essayez un autre mot-clé ou parcourez nos catégories.',
+    empty_button: 'Voir les catégories',
+  },
+
+  // Categories
+  categories: {
+    breadcrumb: 'Parcours client',
+    title: 'Toutes les catégories',
+    subtitle: 'Explorez rapidement les univers produits à partir d\'une vue simple et visuelle.',
+    subcategory_count: '{{count}} sous-catégorie',
+    subcategory_count_plural: '{{count}} sous-catégories',
+    main_category: 'Catégorie principale',
+    explore: 'Explorer cette catégorie',
+    loading: 'Chargement des catégories...',
+    empty: 'Aucune catégorie disponible.',
+  },
+
+  // Wishlist
+  wishlist: {
+    breadcrumb: 'Mon espace client',
+    title: 'Mes favoris',
+    subtitle: 'Retrouvez les produits que vous avez mis de côté pour y revenir plus tard.',
+    tracked_label: 'Produits suivis',
+    empty_title: 'Aucun favori pour l\'instant',
+    empty_description: 'Ajoutez des produits à votre liste depuis le catalogue pour les retrouver ici.',
+    empty_button: 'Explorer le catalogue',
+    remove: 'Retirer',
+    view: 'Voir le produit',
+  },
+
+  // Notifications
+  notifications: {
+    breadcrumb: 'Espace client',
+    title: 'Notifications',
+    subtitle: 'Suivez vos commandes, promotions et messages importants au même endroit.',
+    unread_label: 'Non lues',
+    loading: 'Chargement des notifications...',
+    new_badge: 'Nouveau',
+    mark_all_read: 'Tout marquer comme lu',
+    empty_title: 'Aucune notification',
+    empty_description: 'Vous n\'avez aucune notification pour le moment.',
+  },
+
+  // Not Found
+  notfound: {
+    title: 'Page introuvable',
+    message: 'Désolé, la page que vous recherchez n\'existe pas ou a été déplacée.',
+    home_button: 'Retour à l\'accueil',
+    catalog_button: 'Explorer le catalogue',
+    quick: {
+      products: 'Voir les produits',
+      orders: 'Mes commandes',
+      contact: 'Nous contacter',
+    },
+  },
+
+  // Checkout
+  checkout: {
+    back_home: "Retour à l'accueil",
+    confirm: {
+      missing_info_title: 'Informations de livraison manquantes',
+      missing_info_description: 'Revenez à l\'étape checkout pour confirmer votre adresse et votre numéro.',
+      back_button: 'Retour au checkout',
+      breadcrumb: 'Validation',
+      title: 'Validation de la commande',
+      subtitle: 'Vérifiez les produits, l\'adresse et le montant total avant paiement.',
+      products_title: 'Produits',
+      products_count_one: '{{count}} article à confirmer',
+      products_count_other: '{{count}} articles à confirmer',
+      delivery_title: 'Informations de livraison',
+      delivery_summary: 'Résumé du destinataire',
+      city_label: 'Ville',
+      phone_label: 'Téléphone',
+      address_label: 'Adresse',
+      total_title: 'Total à payer',
+      subtotal: 'Sous-total',
+      delivery: 'Livraison',
+      delivery_free: 'Offerte',
+      total: 'Total',
+      validate_button: 'Valider la commande',
+      return_button: 'Retour',
+      payment_note: 'Le paiement Mobile Money sera branché dans la prochaine étape.',
+      delivery_offer_title: 'Livraison',
+      delivery_offer: 'Offerte à partir de 30 000 FCFA',
+      secure_payment_title: 'Paiement sécurisé',
+      secure_payment: 'Validation protégée et chiffrée',
+    },
+  },
+
+  // Contact
+  contact: {
+    title: 'Contactez-nous',
+    subtitle: 'Notre équipe est à votre écoute pour répondre à toutes vos questions',
+    form_title: 'Envoyez-nous un message',
+    success_title: 'Message envoyé !',
+    success_description: 'Nous vous répondrons dans les 24h.',
+    form: {
+      full_name_label: 'Nom complet *',
+      full_name_placeholder: 'Votre nom',
+      phone_label: 'Téléphone *',
+      phone_placeholder: '+237 6XX XX XX XX',
+      email_label: 'Email *',
+      email_placeholder: 'votre@email.com',
+      subject_label: 'Objet *',
+      subject_placeholder: 'Ex : Question sur ma commande',
+      message_label: 'Message *',
+      message_placeholder: 'Décrivez votre demande en détail...',
+      submit: 'Envoyer le message',
+      submitting: 'Envoi en cours...',
+    },
+    faq_title: 'Questions fréquentes',
+    faq: {
+      delivery_question: 'Quels sont vos délais de livraison ?',
+      delivery_answer: 'Nous livrons sous 2-5 jours ouvrables en standard et 24-48h en express.',
+      tracking_question: 'Comment suivre ma commande ?',
+      tracking_answer: 'Connectez-vous et accédez à « Mes commandes » pour suivre votre colis en temps réel.',
+      return_question: 'Puis-je retourner un produit ?',
+      return_answer: 'Oui, vous disposez de 10 jours pour retourner un produit non conforme.',
+      payment_question: 'Quels modes de paiement acceptez-vous ?',
+      payment_answer: 'Nous acceptons Mobile Money (MTN, Orange), cartes bancaires et paiement à la livraison.',
+    },
+    methods: {
+      phone_title: 'Téléphone',
+      phone_response: 'Réponse immédiate',
+      email_title: 'Email',
+      email_response: 'Sous 24h',
+      whatsapp_title: 'WhatsApp',
+      whatsapp_response: 'Réponse rapide',
+      address_title: 'Adresse',
+      address_value: 'Yaoundé, Cameroun',
+      address_response: 'Visite sur RDV',
+    },
+    urgent_title: 'Besoin urgent ?',
+    urgent_description: 'Pour les urgences, contactez-nous directement par téléphone ou WhatsApp',
+    urgent_call: 'Appeler',
+    urgent_whatsapp: 'WhatsApp',
+    coordinates_title: 'Nos coordonnées',
+    opening_hours_title: 'Heures d\'ouverture',
+    opening_hours: {
+      monday_friday: 'Lundi - Vendredi',
+      monday_friday_time: '8h - 18h',
+      saturday: 'Samedi',
+      saturday_time: '9h - 14h',
+      sunday: 'Dimanche',
+      sunday_closed: 'Fermé',
+      whatsapp_note: 'Support WhatsApp disponible 24h/24',
+    },
+    social_title: 'Suivez-nous',
+    social_description: 'Restez informé des nouveautés, offres et actualités',
+    help_center_title: 'Centre d\'aide',
+    help_center_description: 'Consultez nos guides et tutoriels pour des réponses immédiates',
+    help_center_link: 'Accéder au centre d\'aide',
+  },
+
+  // Order detail
+  order: {
+    detail: {
+      back_link: 'Retour à mes commandes',
+      breadcrumb: 'Suivi de commande',
+      loading: 'Chargement du suivi...',
+      error_title: 'Commande introuvable',
+      error_button: 'Retour à mes commandes',
+      payment_confirmed: 'Paiement confirmé',
+      payment_pending: 'Paiement en attente',
+      payment_failed: 'Paiement échoué',
+      payment_refunded: 'Remboursé',
+      fulfillment_received: 'Commande reçue',
+      fulfillment_processing: 'Préparation terminée',
+      fulfillment_shipped: 'Livreur reçu',
+      fulfillment_delivered: 'Livrée',
+      fulfillment_cancelled: 'Annulée',
+      tracking_title: 'Suivi de commande',
+      city_label: 'Ville',
+      area_label: 'Zone suivie',
+      delivery_address: 'Adresse de livraison',
+      contact_courier: 'Contacter le livreur',
+      open_dispute: 'Ouvrir un litige',
+      confirm_receipt: 'Confirmer la réception',
+      items_title: 'Articles commandés',
+      summary_title: 'Résumé',
+      subtotal: 'Sous-total',
+      delivery_fee: 'Livraison',
+      total: 'Total',
+      shipping_title: 'Livraison',
+      shipping_phone_label: 'Téléphone',
+      shipping_courier_label: 'Livreur',
+      shipping_courier_pending: 'En attente d\'assignation',
+      secure_payment_title: 'Paiement sécurisé',
+      secure_payment_subtitle: 'Mobile Money protégé',
+      timeline: {
+        received: 'Commande reçue',
+        processing: 'Préparation terminée',
+        shipped: 'Livreur reçu',
+        delivered: 'Commande livrée',
+        eta: 'Arrivée prévue aujourd\'hui à 14h',
+      },
+    },
+  },
+
+  // Profile
+  profile: {
+    title: 'Mon Profil',
+    subtitle: 'Gérez vos informations personnelles et vos préférences',
+    loading: 'Chargement du profil...',
+    avatar_hint: 'Ajoutez une photo pour la voir aussi dans le menu profil.',
+    avatar_choose: 'Choisir une photo',
+    avatar_remove: 'Retirer',
+    avatar_success: 'Photo de profil mise à jour',
+    avatar_error: 'Impossible de mettre à jour la photo',
+    avatar_removed: 'Photo de profil supprimée',
+    avatar_remove_error: 'Impossible de supprimer la photo',
+    stats_title: 'Espace client',
+    stats: {
+      points: '{{points}} Points · {{level}}',
+      unlock_message: 'Continuez vos achats pour débloquer les prochains avantages.',
+    },
+    menu: {
+      orders: 'Mes commandes',
+      favorites: 'Mes favoris',
+      notifications: 'Notifications',
+    },
+    member_since_label: 'Membre depuis',
+    support_title: 'Support & avantages',
+    support: {
+      help_center: 'Centre d\'aide',
+      whatsapp: 'Support WhatsApp',
+      free_delivery: 'Livraison offerte dès 30 000 FCFA',
+    },
+    info_title: 'Informations personnelles',
+    button: {
+      edit: 'Modifier',
+      cancel: 'Annuler',
+      save: 'Enregistrer',
+    },
+    form: {
+      username_label: 'Nom d\'utilisateur',
+      username_readonly: 'Non modifiable',
+      email_label: 'Email',
+      phone_label: 'Téléphone',
+      phone_placeholder: '+237 ...',
+      phone_empty: 'Non renseigné',
+      firstname_label: 'Prénom',
+      firstname_placeholder: 'Votre prénom',
+      firstname_empty: 'Non renseigné',
+      lastname_label: 'Nom',
+      lastname_placeholder: 'Votre nom',
+      lastname_empty: 'Non renseigné',
+    },
+    update_success: 'Profil mis à jour avec succès',
+    update_error: 'Erreur lors de la mise à jour',
+  },
+
   // Help
   help: {
     title: 'Centre d\'Aide',
@@ -69,55 +329,37 @@
     send_message: 'Envoyer un message',
     call_support: 'Appeler',
     categories: {
-      orders: {
-        title: 'Commandes',
-        description: 'Suivre et gérer les commandes',
-      },
-      shipping: {
-        title: 'Livraison',
-        description: 'Délais et frais de livraison',
-      },
-      returns: {
-        title: 'Retours',
-        description: 'Politique de retour',
-      },
-      account: {
-        title: 'Compte',
-        description: 'Sécurité et gestion du compte',
-      },
-      sellers: {
-        title: 'Vendeurs',
-        description: 'Devenir vendeur',
-      },
-      technical: {
-        title: 'Technique',
-        description: 'Problèmes techniques',
-      },
+      orders: { title: 'Commandes', description: 'Suivre et gérer les commandes' },
+      shipping: { title: 'Livraison', description: 'Délais et frais de livraison' },
+      returns: { title: 'Retours', description: 'Politique de retour' },
+      account: { title: 'Compte', description: 'Sécurité et gestion du compte' },
+      sellers: { title: 'Vendeurs', description: 'Devenir vendeur' },
+      technical: { title: 'Technique', description: 'Problèmes techniques' },
     },
     faq: {
       order_tracking: {
         question: 'Comment suivre ma commande ?',
-        answer: 'Vous pouvez suivre votre commande en temps réel dans votre compte, section "Mes Commandes". Un numéro de suivi vous sera envoyé dès que votre colis est expédié.',
+        answer: 'Vous pouvez suivre votre commande en temps réel dans votre compte, section « Mes Commandes ».',
       },
       payment_methods: {
         question: 'Quels modes de paiement acceptez-vous ?',
-        answer: 'Nous acceptons les portefeuilles mobiles (MTN Money, Orange Money), les cartes bancaires et le paiement à la livraison. Tous les paiements sont sécurisés avec encryption SSL.',
+        answer: 'Nous acceptons MTN Money, Orange Money, cartes bancaires et paiement à la livraison.',
       },
       delivery_time: {
         question: 'Quel est le délai de livraison ?',
-        answer: 'Les délais varient selon votre localisation : Yaoundé (1-2 jours), autres villes (2-5 jours). Des options de livraison express sont disponibles pour un coût supplémentaire.',
+        answer: 'Yaoundé : 1-2 jours. Autres villes : 2-5 jours. Options express disponibles.',
       },
       return_policy: {
         question: 'Puis-je retourner un produit ?',
-        answer: 'Vous avez 30 jours après réception pour retourner un article. Les retours gratuits sont autorisés si le produit est défectueux ou non conforme à la description.',
+        answer: 'Vous avez 30 jours après réception. Retours gratuits si le produit est défectueux.',
       },
       become_seller: {
         question: 'Comment devenir vendeur sur Belivay ?',
-        answer: 'Cliquez sur "Devenir Vendeur", remplissez le formulaire d\'inscription et validez votre identité. Votre boutique sera active sous 24h.',
+        answer: 'Cliquez sur « Devenir Vendeur », remplissez le formulaire. Votre boutique sera active sous 24h.',
       },
       account_security: {
         question: 'Comment sécuriser mon compte ?',
-        answer: 'Utilisez un mot de passe fort, activez la vérification en deux étapes et ne partagez jamais vos identifiants. Signalez immédiatement toute activité suspecte.',
+        answer: 'Utilisez un mot de passe fort et activez la vérification en deux étapes.',
       },
     },
   },
@@ -146,8 +388,6 @@
     register_error: "Erreur lors de l'inscription",
     login_error: "Identifiants incorrects",
     forgot_password: "Mot de passe oublié",
-    
-    // Security features
     security_features: [
       "Vos données sont cryptées et sécurisées",
       "Aucune carte bancaire requise pour s'inscrire",
@@ -160,10 +400,19 @@
     loading: 'Chargement...',
     error: 'Une erreur est survenue',
     retry: 'Réessayer',
+    see_more: 'Voir plus',
+    back: 'Retour',
+    close: 'Fermer',
+    confirm: 'Confirmer',
+    cancel: 'Annuler',
+    save: 'Enregistrer',
+    edit: 'Modifier',
+    delete: 'Supprimer',
+    free: 'Gratuit',
   },
 
-  // Checkout
-  checkout: {
-    back_home: "Retour à l'accueil",
+  // Payments
+  payments: {
+    devNote: 'Dev mode : crée une transaction simulée. L\'intégration réelle du prestataire viendra prochainement.',
   },
 };

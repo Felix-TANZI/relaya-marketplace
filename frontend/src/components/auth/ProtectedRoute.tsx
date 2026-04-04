@@ -1,6 +1,6 @@
 // frontend/src/components/auth/ProtectedRoute.tsx
 // Composant de route protégée
-// Redirige les utilisateurs non authentifiés vers la page de connexion
+// Redirige les utilisateurs non authentifiés vers la landing page
 
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -21,7 +21,7 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

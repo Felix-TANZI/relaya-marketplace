@@ -18,6 +18,9 @@ import HelpPage from '@/features/help/HelpPage';
 import AboutPage from '@/features/about/AboutPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import NotFoundPage from '@/features/system/NotFoundPage';
+import SearchPage from '@/features/search/SearchPage';
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import PublicRoute from '@/components/auth/PublicRoute';
 
 export const router = createBrowserRouter([
   {
@@ -30,67 +33,139 @@ export const router = createBrowserRouter([
       },
       {
         path: "catalog",
-        element: <CatalogPage />,
+        element: (
+          <ProtectedRoute>
+            <CatalogPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "categories",
-        element: <CategoriesPage />,
+        element: (
+          <ProtectedRoute>
+            <CategoriesPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "product/:id",
-        element: <ProductDetailPage />,
+        element: (
+          <ProtectedRoute>
+            <ProductDetailPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "cart",
-        element: <CartPage />,
+        element: (
+          <ProtectedRoute>
+            <CartPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "checkout",
-        element: <CheckoutPage />,
+        element: (
+          <ProtectedRoute>
+            <CheckoutPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "checkout/confirm",
-        element: <CheckoutConfirmPage />,
+        element: (
+          <ProtectedRoute>
+            <CheckoutConfirmPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "orders",
-        element: <OrdersHistoryPage />,
+        element: (
+          <ProtectedRoute>
+            <OrdersHistoryPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "orders/:id",
-        element: <OrderDetailPage />,
+        element: (
+          <ProtectedRoute>
+            <OrderDetailPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "search",
+        element: (
+          <ProtectedRoute>
+            <SearchPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "wishlist",
-        element: <WishlistPage />,
+        element: (
+          <ProtectedRoute>
+            <WishlistPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "notifications",
-        element: <NotificationsPage />,
+        element: (
+          <ProtectedRoute>
+            <NotificationsPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "login",
-        element: <LoginPage />,
+        element: (
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        ),
       },
       {
         path: "register",
-        element: <RegisterPage />,
+        element: (
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        ),
       },
       {
         path: "profile",
-        element: <ProfilePage />,
+        element: (
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "contact",
-        element: <ContactPage />,
+        element: (
+          <ProtectedRoute>
+            <ContactPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "help",
-        element: <HelpPage />,
+        element: (
+          <ProtectedRoute>
+            <HelpPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "about",
-        element: <AboutPage />,
+        element: (
+          <ProtectedRoute>
+            <AboutPage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: "*",

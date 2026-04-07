@@ -4,9 +4,14 @@ import {
   Bell,
   Flame,
   Gift,
+  Home,
   MapPinned,
   Package,
   ShieldCheck,
+  Shirt,
+  ShoppingBag,
+  ShoppingCart,
+  Smartphone,
   Sparkles,
   Store,
   Truck,
@@ -25,13 +30,13 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   const categoryTiles = [
-    { name: t('home.cat_all'), link: "/categories", emoji: "🧺" },
-    { name: t('home.cat_women'), link: "/catalog?search=mode", emoji: "👗" },
-    { name: t('home.cat_men'), link: "/catalog?search=homme", emoji: "👔" },
-    { name: t('home.cat_phones'), link: "/catalog?search=telephone", emoji: "📱" },
-    { name: t('home.cat_home'), link: "/catalog?search=maison", emoji: "🏠" },
-    { name: t('home.cat_beauty'), link: "/catalog?search=beaute", emoji: "🧴" },
-    { name: t('home.cat_grocery'), link: "/catalog?search=supermarche", emoji: "🛒" },
+    { name: t('home.cat_all'), link: "/categories", icon: ShoppingBag, color: "bg-orange-50 text-primary dark:bg-primary/10" },
+    { name: t('home.cat_women'), link: "/catalog?search=mode", icon: Shirt, color: "bg-pink-50 text-pink-600 dark:bg-pink-900/20" },
+    { name: t('home.cat_men'), link: "/catalog?search=homme", icon: Shirt, color: "bg-blue-50 text-blue-600 dark:bg-blue-900/20" },
+    { name: t('home.cat_phones'), link: "/catalog?search=telephone", icon: Smartphone, color: "bg-purple-50 text-purple-600 dark:bg-purple-900/20" },
+    { name: t('home.cat_home'), link: "/catalog?search=maison", icon: Home, color: "bg-amber-50 text-amber-600 dark:bg-amber-900/20" },
+    { name: t('home.cat_beauty'), link: "/catalog?search=beaute", icon: Sparkles, color: "bg-rose-50 text-rose-600 dark:bg-rose-900/20" },
+    { name: t('home.cat_grocery'), link: "/catalog?search=supermarche", icon: ShoppingCart, color: "bg-green-50 text-green-600 dark:bg-green-900/20" },
   ];
 
   const trustCards = [
@@ -196,7 +201,9 @@ export default function HomePage() {
                   to={category.link}
                   className="rounded-2xl border border-gray-100 bg-[#fcfbf8] p-4 transition-all hover:border-orange-200 hover:bg-orange-50 dark:border-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
                 >
-                  <div className="mb-3 text-3xl">{category.emoji}</div>
+                  <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${category.color}`}>
+                    <category.icon size={24} />
+                  </div>
                   <p className="text-sm font-semibold text-gray-800 dark:text-white">
                     {category.name}
                   </p>

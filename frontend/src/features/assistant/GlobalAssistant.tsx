@@ -444,19 +444,21 @@ export default function GlobalAssistant() {
             )}
           </div>
 
-          <div className="border-t border-slate-200 bg-white px-4 py-4 dark:border-slate-800 dark:bg-slate-950">
-            <div className="mb-3 flex flex-wrap gap-2">
-              {contextualPrompts.map((prompt) => (
-                <button
-                  key={prompt}
-                  type="button"
-                  onClick={() => void handleAsk(prompt)}
-                  className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800"
-                >
-                  {prompt}
-                </button>
-              ))}
-            </div>
+          <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
+            {messages.filter(m => m.role === "user").length === 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {contextualPrompts.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => void handleAsk(prompt)}
+                    className="rounded-full border border-gray-200 bg-white px-3 py-1.5 text-xs font-semibold text-gray-600 transition-all hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <form
               onSubmit={(event) => {
@@ -473,11 +475,19 @@ export default function GlobalAssistant() {
                   />
                   <textarea
                     ref={textareaRef}
-                    rows={2}
+                    rows={1}
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
-                    placeholder="Pose une question sur les produits ou sur l'application…"
-                    className="min-h-[44px] w-full resize-none bg-transparent text-sm text-slate-900 outline-none placeholder:text-slate-400 dark:text-white"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        if (message.trim()) {
+                          void handleAsk(message);
+                        }
+                      }
+                    }}
+                    placeholder="Pose une question…"
+                    className="min-h-[36px] max-h-[80px] w-full resize-none bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
                   />
                 </div>
 

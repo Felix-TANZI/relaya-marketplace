@@ -75,30 +75,30 @@ export default function CategoriesPage() {
             ))}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
             {groupedCategories.map((category) => {
               const Icon = CATEGORY_ICONS[category.name] || ShoppingBag;
 
               return (
                 <section
                   key={category.id}
-                  className="rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                  className="rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900"
                 >
-                  <div className="mb-4 flex items-center gap-4">
-                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-50 text-primary dark:bg-primary/10">
-                      <Icon size={24} />
+                  <Link to={`/catalog?category=${category.id}`} className="mb-3 flex flex-col items-center gap-2 text-center sm:flex-row sm:items-start sm:text-left sm:gap-4">
+                    <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-primary dark:bg-primary/10">
+                      <Icon size={26} />
                     </div>
                     <div>
-                      <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <h2 className="text-sm font-bold text-gray-900 dark:text-white sm:text-base">
                         {category.name}
                       </h2>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
+                      <p className="text-xs text-gray-400 dark:text-gray-500">
                         {category.children.length > 0
                           ? t('categories.subcategory_count_plural', { count: category.children.length })
                           : t('categories.main_category')}
                       </p>
                     </div>
-                  </div>
+                  </Link>
 
                   <div className="space-y-2">
                     {category.children.length > 0 ? (

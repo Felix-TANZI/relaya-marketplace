@@ -106,7 +106,7 @@ export default function Header() {
   useEffect(() => {
     // Start with default unread count (welcome + fallback notifications)
     const stored = localStorage.getItem("belivay_notif_count");
-    setNotifCount(stored ? parseInt(stored, 10) : 3);
+    setNotifCount(stored ? parseInt(stored, 10) : 1);
 
     const handleNewNotif = () => {
       setNotifCount((prev) => {

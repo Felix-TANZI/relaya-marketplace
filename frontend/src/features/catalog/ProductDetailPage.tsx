@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { 
-  Star, 
-  Minus, 
+import { useTranslation } from 'react-i18next';
+import {
+  Star,
+  Minus,
   Plus,
   ShoppingCart,
   Truck,
@@ -44,38 +45,39 @@ export default function ProductDetailPage() {
   const { addItem } = useCart();
   const { showToast } = useToast();
   const { user } = useAuth();
-  
+  const { t } = useTranslation();
+
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [youMayLike, setYouMayLike] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [activeTab, setActiveTab] = useState<'description' | 'avis' | 'livraison'>('description');
   const [sortReviews, setSortReviews] = useState('recent');
   const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
-  
+
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
 
   const categoryIcons: Record<string, React.ComponentType<{ size?: number }>> = {
-    'Téléphones & Tablettes': Smartphone,
-    'Téléphones': Smartphone,
-    'Électronique': Monitor,
+    'Telephones & Tablettes': Smartphone,
+    'Telephones': Smartphone,
+    'Electronique': Monitor,
     'Audio': Sparkles,
     'Gaming': Monitor,
     'Montres': Sparkles,
     'Mode Femme': Shirt,
     'Mode Homme': Shirt,
-    'Beauté & Santé': Sparkles,
+    'Beaute & Sante': Sparkles,
     'Maison & Cuisine': HomeIcon,
-    'Supermarché': ShoppingBag,
+    'Supermarche': ShoppingBag,
   };
 
   const organizeCategories = (cats: Category[]) => {
@@ -111,22 +113,22 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       if (!id) return;
-      
+
       try {
         setLoading(true);
         const data = await productsApi.get(parseInt(id));
         setProduct(data);
-        
+
         if (data.category) {
           const similar = await productsApi.list({ category: data.category.id, page_size: 4 });
           setSimilarProducts(similar.results?.filter(p => p.id !== data.id) || []);
         }
-        
+
         const recommended = await productsApi.list({ page_size: 3 });
         setYouMayLike(recommended.results?.filter(p => p.id !== data.id) || []);
       } catch (err) {
         console.error('Error loading product:', err);
-        showToast('Erreur lors du chargement', 'error');
+        showToast(t('product_detail.loading_error'), 'error');
       } finally {
         setLoading(false);
       }
@@ -138,7 +140,7 @@ export default function ProductDetailPage() {
   useEffect(() => {
     const fetchReviews = async () => {
       if (!id) return;
-      
+
       try {
         const data = await http<ProductReview[]>(`/api/catalog/products/${id}/reviews/`);
         setReviews(data);
@@ -152,7 +154,7 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    
+
     addItem({
       id: product.id,
       name: product.title,
@@ -160,8 +162,8 @@ export default function ProductDetailPage() {
       quantity,
       image: product.images?.find(img => img.is_primary)?.image_url || product.images?.[0]?.image_url,
     });
-    
-    showToast('Produit ajouté au panier', 'success');
+
+    showToast(t('product_detail.added_to_cart'), 'success');
   };
 
   const handleBuyNow = () => {
@@ -172,7 +174,7 @@ export default function ProductDetailPage() {
   const handleSubmitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !product) {
-      showToast('Vous devez être connecté pour laisser un avis', 'error');
+      showToast(t('product_detail.login_required_review'), 'error');
       return;
     }
 
@@ -187,7 +189,7 @@ export default function ProductDetailPage() {
         })
       });
 
-      showToast('Avis ajouté avec succès !', 'success');
+      showToast(t('product_detail.review_success'), 'success');
       setShowReviewForm(false);
       setReviewRating(5);
       setReviewTitle('');
@@ -197,7 +199,7 @@ export default function ProductDetailPage() {
       setReviews(data);
     } catch (error) {
       console.error('Error submitting review:', error);
-      showToast('Erreur lors de l\'ajout de l\'avis', 'error');
+      showToast(t('product_detail.review_error'), 'error');
     } finally {
       setSubmittingReview(false);
     }
@@ -215,16 +217,16 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-gray-600 mb-4">Produit introuvable</p>
+          <p className="text-xl text-gray-600 mb-4">{t('product_detail.not_found')}</p>
           <Link to="/catalog" className="text-primary hover:underline">
-            Retour au catalogue
+            {t('product_detail.back_to_catalog')}
           </Link>
         </div>
       </div>
     );
   }
 
-  const displayImages = product.images?.length 
+  const displayImages = product.images?.length
     ? product.images.map(img => img.image_url)
     : product.media?.filter(m => m.media_type === 'image').map(m => m.url) || [];
 
@@ -240,16 +242,16 @@ export default function ProductDetailPage() {
     <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <div className="container mx-auto px-4 py-8">
         <div className="flex gap-6">
-          {/* SIDEBAR GAUCHE - Catégories uniquement */}
+          {/* SIDEBAR GAUCHE - Categories uniquement */}
           <aside className="hidden lg:block w-64 flex-shrink-0">
             <div className="sticky top-24">
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">Catégories</h3>
-                
+                <h3 className="font-semibold text-lg mb-4 text-gray-800 dark:text-white">{t('product_detail.categories')}</h3>
+
                 <Link to="/catalog">
                   <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-left mb-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300">
                     <ShoppingBag size={18} />
-                    <span className="text-sm font-semibold">Tous les produits</span>
+                    <span className="text-sm font-semibold">{t('product_detail.all_products')}</span>
                   </button>
                 </Link>
 
@@ -258,7 +260,7 @@ export default function ProductDetailPage() {
                     const Icon = categoryIcons[category.name] || ShoppingBag;
                     const hasChildren = category.children && category.children.length > 0;
                     const isExpanded = expandedCategories.includes(category.id);
-                    
+
                     return (
                       <div key={category.id}>
                         <button
@@ -296,9 +298,9 @@ export default function ProductDetailPage() {
           <div className="flex-1 space-y-6">
             {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-              <Link to="/" className="hover:text-primary">Accueil</Link>
+              <Link to="/" className="hover:text-primary">{t('product_detail.home')}</Link>
               <span>/</span>
-              <Link to="/catalog" className="hover:text-primary">Catalogue</Link>
+              <Link to="/catalog" className="hover:text-primary">{t('product_detail.catalog')}</Link>
               {product.category && (
                 <>
                   <span>/</span>
@@ -324,7 +326,7 @@ export default function ProductDetailPage() {
                         <Package size={64} className="text-gray-400" />
                       </div>
                     )}
-                    
+
                     <button className="absolute top-4 left-4 w-10 h-10 bg-white/90 dark:bg-gray-800/90 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                       <ZoomIn size={20} />
                     </button>
@@ -394,7 +396,7 @@ export default function ProductDetailPage() {
                   <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
                     <Truck className="text-green-600" size={20} />
                     <span className="text-sm font-medium text-green-700 dark:text-green-400">
-                      Livraison rapide partout au Cameroun.
+                      {t('product_detail.fast_delivery')}
                     </span>
                   </div>
 
@@ -403,7 +405,7 @@ export default function ProductDetailPage() {
                     {hasDiscount && (
                       <div className="flex items-center gap-3 mb-2">
                         <span className="px-3 py-1 bg-primary text-white text-sm font-bold rounded-md">
-                          Promo
+                          {t('product_detail.promo')}
                         </span>
                         <span className="text-lg text-gray-400 line-through">
                           {product.price_xaf.toLocaleString()} FCFA
@@ -415,7 +417,7 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  {/* Quantité */}
+                  {/* Quantite */}
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => setQuantity(Math.max(1, quantity - 1))}
@@ -439,25 +441,25 @@ export default function ProductDetailPage() {
                       className="px-6 py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg flex items-center justify-center gap-2 transition-all shadow-md hover:shadow-lg"
                     >
                       <ShoppingCart size={20} />
-                      Ajouter au panier
+                      {t('product_detail.add_to_cart')}
                     </button>
                     <button
                       onClick={handleBuyNow}
                       className="px-6 py-3 border-2 border-primary text-primary hover:bg-primary hover:text-white font-semibold rounded-lg transition-all"
                     >
-                      Acheter maintenant
+                      {t('product_detail.buy_now')}
                     </button>
                   </div>
 
-                  {/* Badge sécurité */}
+                  {/* Badge securite */}
                   <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                     <Shield className="text-blue-600" size={24} />
                     <div>
                       <p className="text-sm font-semibold text-blue-700 dark:text-blue-400">
-                        Paiement sécurisé
+                        {t('product_detail.secure_payment')}
                       </p>
                       <p className="text-xs text-blue-600 dark:text-blue-500">
-                        Transaction encryptée et protégée
+                        {t('product_detail.encrypted_transaction')}
                       </p>
                     </div>
                   </div>
@@ -465,33 +467,33 @@ export default function ProductDetailPage() {
                   <div className="rounded-2xl border border-orange-100 bg-[#fff7ef] p-4 dark:border-gray-700 dark:bg-gray-900">
                     <div className="mb-3 flex items-center justify-between">
                       <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                        Resume client
+                        {t('product_detail.customer_summary')}
                       </p>
                       <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-primary dark:bg-gray-800">
-                        Achat rapide
+                        {t('product_detail.quick_buy')}
                       </span>
                     </div>
                     <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                       <div className="flex items-center justify-between">
-                        <span>Prix unitaire</span>
+                        <span>{t('product_detail.unit_price')}</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {product.price_final.toLocaleString()} FCFA
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Quantite</span>
+                        <span>{t('product_detail.quantity')}</span>
                         <span className="font-semibold text-gray-900 dark:text-white">{quantity}</span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Sous-total</span>
+                        <span>{t('product_detail.subtotal')}</span>
                         <span className="font-semibold text-gray-900 dark:text-white">
                           {(product.price_final * quantity).toLocaleString()} FCFA
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span>Livraison</span>
+                        <span>{t('product_detail.delivery')}</span>
                         <span className="font-semibold text-green-600 dark:text-green-400">
-                          {product.price_final * quantity >= 30000 ? 'Offerte' : 'A calculer'}
+                          {product.price_final * quantity >= 30000 ? t('product_detail.free') : t('product_detail.to_calculate')}
                         </span>
                       </div>
                     </div>
@@ -512,7 +514,7 @@ export default function ProductDetailPage() {
                       : 'text-gray-600 dark:text-gray-400 hover:text-primary'
                   }`}
                 >
-                  Description
+                  {t('product_detail.description')}
                 </button>
                 <button
                   onClick={() => setActiveTab('avis')}
@@ -522,7 +524,7 @@ export default function ProductDetailPage() {
                       : 'text-gray-600 dark:text-gray-400 hover:text-primary'
                   }`}
                 >
-                  Avis ({reviews.length})
+                  {t('product_detail.reviews_tab')} ({reviews.length})
                 </button>
                 <button
                   onClick={() => setActiveTab('livraison')}
@@ -532,7 +534,7 @@ export default function ProductDetailPage() {
                       : 'text-gray-600 dark:text-gray-400 hover:text-primary'
                   }`}
                 >
-                  Livraison Rapide
+                  {t('product_detail.fast_delivery_tab')}
                 </button>
               </div>
 
@@ -556,7 +558,7 @@ export default function ProductDetailPage() {
                             onClick={() => setShowReviewForm(true)}
                             className="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark shadow-md transition-all"
                           >
-                            Donner votre avis
+                            {t('product_detail.give_review')}
                           </button>
                         </div>
                       )}
@@ -564,7 +566,7 @@ export default function ProductDetailPage() {
                       {showReviewForm && (
                         <div className="mb-6 p-6 bg-gray-50 dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700">
                           <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-semibold">Donner votre avis</h3>
+                            <h3 className="text-lg font-semibold">{t('product_detail.give_review')}</h3>
                             <button
                               onClick={() => setShowReviewForm(false)}
                               className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg transition-colors"
@@ -575,7 +577,7 @@ export default function ProductDetailPage() {
 
                           <form onSubmit={handleSubmitReview} className="space-y-4">
                             <div>
-                              <label className="block text-sm font-medium mb-2">Votre note</label>
+                              <label className="block text-sm font-medium mb-2">{t('product_detail.your_rating')}</label>
                               <div className="flex gap-2">
                                 {[1, 2, 3, 4, 5].map((star) => (
                                   <button
@@ -598,24 +600,24 @@ export default function ProductDetailPage() {
                             </div>
 
                             <div>
-                              <label className="block text-sm font-medium mb-2">Titre (optionnel)</label>
+                              <label className="block text-sm font-medium mb-2">{t('product_detail.title_optional')}</label>
                               <input
                                 type="text"
                                 value={reviewTitle}
                                 onChange={(e) => setReviewTitle(e.target.value)}
-                                placeholder="Résumez votre expérience"
+                                placeholder={t('product_detail.summarize_experience')}
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-800"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-sm font-medium mb-2">Votre avis</label>
+                              <label className="block text-sm font-medium mb-2">{t('product_detail.your_review')}</label>
                               <textarea
                                 value={reviewComment}
                                 onChange={(e) => setReviewComment(e.target.value)}
                                 required
                                 rows={4}
-                                placeholder="Partagez votre expérience avec ce produit..."
+                                placeholder={t('product_detail.share_experience')}
                                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary dark:bg-gray-800"
                               />
                             </div>
@@ -626,14 +628,14 @@ export default function ProductDetailPage() {
                                 disabled={submittingReview || !reviewComment}
                                 className="px-6 py-2 bg-primary text-white font-semibold rounded-lg hover:bg-primary-dark disabled:bg-gray-300 disabled:cursor-not-allowed transition-all"
                               >
-                                {submittingReview ? 'Envoi...' : 'Publier mon avis'}
+                                {submittingReview ? t('product_detail.sending') : t('product_detail.publish_review')}
                               </button>
                               <button
                                 type="button"
                                 onClick={() => setShowReviewForm(false)}
                                 className="px-6 py-2 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                               >
-                                Annuler
+                                {t('common.cancel')}
                               </button>
                             </div>
                           </form>
@@ -657,7 +659,7 @@ export default function ProductDetailPage() {
                                 />
                               ))}
                             </div>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">basé sur {reviews.length} avis</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{t('product_detail.based_on_reviews', { count: reviews.length })}</p>
                           </div>
 
                           <div className="space-y-2">
@@ -681,15 +683,15 @@ export default function ProductDetailPage() {
                       )}
 
                       <div className="flex items-center justify-between mb-4">
-                        <h3 className="font-semibold">Avis des clients</h3>
+                        <h3 className="font-semibold">{t('product_detail.customer_reviews')}</h3>
                         <select
                           value={sortReviews}
                           onChange={(e) => setSortReviews(e.target.value)}
                           className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm dark:bg-gray-800"
                         >
-                          <option value="recent">Trier par: Les plus récents</option>
-                          <option value="rating">Meilleure note</option>
-                          <option value="useful">Plus utiles</option>
+                          <option value="recent">{t('product_detail.sort_recent')}</option>
+                          <option value="rating">{t('product_detail.sort_rating')}</option>
+                          <option value="useful">{t('product_detail.sort_useful')}</option>
                         </select>
                       </div>
 
@@ -724,14 +726,14 @@ export default function ProductDetailPage() {
                                         </span>
                                         {review.is_verified_purchase && (
                                           <span className="text-xs text-green-600 dark:text-green-400 font-medium">
-                                            ✓ Achat vérifié
+                                            ✓ {t('product_detail.verified_purchase')}
                                           </span>
                                         )}
                                       </div>
                                     </div>
                                     <div className="flex gap-2 text-sm">
-                                      <button className="text-gray-600 dark:text-gray-400 hover:text-primary">Utile</button>
-                                      <button className="text-gray-600 dark:text-gray-400 hover:text-red-500">Signaler</button>
+                                      <button className="text-gray-600 dark:text-gray-400 hover:text-primary">{t('product_detail.useful')}</button>
+                                      <button className="text-gray-600 dark:text-gray-400 hover:text-red-500">{t('product_detail.report')}</button>
                                     </div>
                                   </div>
                                   {review.title && <p className="font-semibold mb-2">{review.title}</p>}
@@ -746,7 +748,7 @@ export default function ProductDetailPage() {
                           ))
                         ) : (
                           <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                            Aucun avis pour le moment. Soyez le premier !
+                            {t('product_detail.no_reviews')}
                           </p>
                         )}
                       </div>
@@ -757,18 +759,18 @@ export default function ProductDetailPage() {
                     <div className="space-y-6">
                       <div className="grid md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                          <h3 className="font-semibold text-lg">Options de livraison</h3>
-                          
+                          <h3 className="font-semibold text-lg">{t('product_detail.delivery_options')}</h3>
+
                           <div className="flex gap-4">
                             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
                               <Truck className="text-green-600" size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold mb-1">Livraison Standard</h4>
+                              <h4 className="font-semibold mb-1">{t('product_detail.standard_delivery')}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                Délai: 2-5 jours ouvrables
+                                {t('product_detail.standard_delay')}
                               </p>
-                              <p className="text-sm text-primary font-semibold">Gratuit dès 25,000 FCFA</p>
+                              <p className="text-sm text-primary font-semibold">{t('product_detail.free_from')}</p>
                             </div>
                           </div>
 
@@ -777,9 +779,9 @@ export default function ProductDetailPage() {
                               <Package className="text-blue-600" size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold mb-1">Livraison Express</h4>
+                              <h4 className="font-semibold mb-1">{t('product_detail.express_delivery')}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                Délai: 24-48 heures
+                                {t('product_detail.express_delay')}
                               </p>
                               <p className="text-sm text-primary font-semibold">2,500 FCFA</p>
                             </div>
@@ -790,26 +792,26 @@ export default function ProductDetailPage() {
                               <ShoppingBag className="text-purple-600" size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold mb-1">Retrait en point relais</h4>
+                              <h4 className="font-semibold mb-1">{t('product_detail.pickup_point')}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-                                Disponible dans +50 points au Cameroun
+                                {t('product_detail.pickup_availability')}
                               </p>
-                              <p className="text-sm text-primary font-semibold">Gratuit</p>
+                              <p className="text-sm text-primary font-semibold">{t('common.free')}</p>
                             </div>
                           </div>
                         </div>
 
                         <div className="space-y-4">
-                          <h3 className="font-semibold text-lg">Politique de retour</h3>
-                          
+                          <h3 className="font-semibold text-lg">{t('product_detail.return_policy')}</h3>
+
                           <div className="flex gap-4">
                             <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/20 rounded-lg flex items-center justify-center flex-shrink-0">
                               <RotateCcw className="text-orange-600" size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold mb-1">Retour sous 10 jours</h4>
+                              <h4 className="font-semibold mb-1">{t('product_detail.return_10_days')}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Vous pouvez retourner votre article dans les 10 jours suivant la réception si vous n'êtes pas satisfait.
+                                {t('product_detail.return_desc')}
                               </p>
                             </div>
                           </div>
@@ -819,9 +821,9 @@ export default function ProductDetailPage() {
                               <Shield className="text-teal-600" size={24} />
                             </div>
                             <div>
-                              <h4 className="font-semibold mb-1">Garantie produit</h4>
+                              <h4 className="font-semibold mb-1">{t('product_detail.product_warranty')}</h4>
                               <p className="text-sm text-gray-600 dark:text-gray-400">
-                                Tous nos produits sont garantis contre les défauts de fabrication.
+                                {t('product_detail.warranty_desc')}
                               </p>
                             </div>
                           </div>
@@ -830,7 +832,7 @@ export default function ProductDetailPage() {
 
                       <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                         <p className="text-sm text-blue-700 dark:text-blue-400">
-                          <strong>💡 Astuce:</strong> Suivez votre commande en temps réel depuis votre espace client.
+                          {t('product_detail.tip')}
                         </p>
                       </div>
                     </div>
@@ -844,27 +846,27 @@ export default function ProductDetailPage() {
                     <div className="flex gap-3">
                       <Truck className="text-green-600 flex-shrink-0" size={20} />
                       <div>
-                        <h4 className="font-semibold text-sm mb-1">Livraison Rapide</h4>
+                        <h4 className="font-semibold text-sm mb-1">{t('product_detail.fast_delivery_feature')}</h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Livraison rapide à votre domicile.
+                          {t('product_detail.fast_delivery_desc')}
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <Package className="text-blue-600 flex-shrink-0" size={20} />
                       <div>
-                        <h4 className="font-semibold text-sm mb-1">Suivi des Commandes</h4>
+                        <h4 className="font-semibold text-sm mb-1">{t('product_detail.order_tracking')}</h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Suivez l'état facilement.
+                          {t('product_detail.tracking_desc')}
                         </p>
                       </div>
                     </div>
                     <div className="flex gap-3">
                       <RotateCcw className="text-purple-600 flex-shrink-0" size={20} />
                       <div>
-                        <h4 className="font-semibold text-sm mb-1">Retour Facile</h4>
+                        <h4 className="font-semibold text-sm mb-1">{t('product_detail.easy_return')}</h4>
                         <p className="text-xs text-gray-600 dark:text-gray-400">
-                          Satisfait ou remboursé.
+                          {t('product_detail.satisfaction_guaranteed')}
                         </p>
                       </div>
                     </div>
@@ -872,7 +874,7 @@ export default function ProductDetailPage() {
 
                   {/* Vous Aimerez Aussi */}
                   <div className="bg-gray-50 dark:bg-gray-900 rounded-xl p-4">
-                    <h4 className="font-semibold mb-4">Vous Aimerez Aussi</h4>
+                    <h4 className="font-semibold mb-4">{t('product_detail.you_may_like')}</h4>
                     <div className="space-y-4">
                       {youMayLike.slice(0, 3).map((p) => (
                         <Link key={p.id} to={`/product/${p.id}`} className="flex gap-3 group">
@@ -902,7 +904,7 @@ export default function ProductDetailPage() {
             {/* PRODUITS SIMILAIRES EN BAS */}
             {similarProducts.length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
-                <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">Produits Similaires</h2>
+                <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">{t('product_detail.similar_products')}</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                   {similarProducts.map((p) => (
                     <Link key={p.id} to={`/product/${p.id}`} className="group">

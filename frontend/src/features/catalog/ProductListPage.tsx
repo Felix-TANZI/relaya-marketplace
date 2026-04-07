@@ -1,7 +1,8 @@
-﻿// frontend/src/features/catalog/ProductListPage.tsx
+// frontend/src/features/catalog/ProductListPage.tsx
 // Page de liste des produits avec mise en avant des top produits
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Flame, Sparkles, TrendingUp, ShieldCheck, Truck, Store } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/Button";
@@ -21,12 +22,6 @@ type Pill = {
   icon: React.ReactNode;
 };
 
-const pills: Pill[] = [
-  { key: "trending", label: "Tendance", icon: <TrendingUp size={16} /> },
-  { key: "flash", label: "Flash Deals", icon: <Flame size={16} /> },
-  { key: "new", label: "Nouveautes", icon: <Sparkles size={16} /> },
-];
-
 const fallbackProducts: Product[] = [
   { id: 1, name: "Casque audio Pro", price: 59000, category: "Tech" },
   { id: 2, name: "Sac a dos urbain", price: 25000, category: "Mode" },
@@ -39,9 +34,16 @@ const fallbackProducts: Product[] = [
 ];
 
 export default function ProductListPage() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [activePill, setActivePill] = useState<string>("trending");
+
+  const pills: Pill[] = [
+    { key: "trending", label: t('catalog.trending'), icon: <TrendingUp size={16} /> },
+    { key: "flash", label: t('catalog.flash_deals'), icon: <Flame size={16} /> },
+    { key: "new", label: t('catalog.new_arrivals'), icon: <Sparkles size={16} /> },
+  ];
 
   useEffect(() => {
     let active = true;
@@ -87,27 +89,26 @@ export default function ProductListPage() {
           <div className="max-w-xl">
             <div className="inline-flex items-center gap-2 rounded-2xl px-3 py-2 glass border border-[rgba(var(--border-rgb),0.45)] text-xs tracking-wide text-[rgb(var(--subtext-rgb))]">
               <ShieldCheck size={16} />
-              Vendeurs verifies - Paiement securise - Support reactif
+              {t('catalog.trust_badge')}
             </div>
 
             <h1 className="mt-5 text-3xl font-extrabold tracking-tight md:text-5xl">
               Relaya,
               <span className="block text-[rgba(var(--text-rgb),0.85)]">
-                le marketplace premium du Cameroun.
+                {t('catalog.hero_subtitle')}
               </span>
             </h1>
 
             <p className="mt-4 text-[rgb(var(--subtext-rgb))]">
-              Une experience d'achat fluide, une selection large, et une logistique pensee
-              pour Yaounde & Douala (puis extension nationale).
+              {t('catalog.hero_desc')}
             </p>
 
             <div className="mt-6 flex flex-wrap gap-3">
               <Button variant="primary" className="rounded-2xl">
-                Explorer maintenant
+                {t('catalog.explore_now')}
               </Button>
               <Button variant="secondary" className="rounded-2xl">
-                Devenir vendeur
+                {t('catalog.become_seller')}
               </Button>
             </div>
 
@@ -115,20 +116,20 @@ export default function ProductListPage() {
               <div className="glass rounded-2xl border border-[rgba(var(--border-rgb),0.45)] p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Truck size={16} />
-                  Livraison
+                  {t('catalog.delivery')}
                 </div>
                 <div className="mt-1 text-xs text-[rgb(var(--subtext-rgb))]">
-                  Suivi en temps reel
+                  {t('catalog.realtime_tracking')}
                 </div>
               </div>
 
               <div className="glass rounded-2xl border border-[rgba(var(--border-rgb),0.45)] p-4">
                 <div className="flex items-center gap-2 text-sm font-semibold">
                   <Store size={16} />
-                  Boutiques
+                  {t('catalog.shops')}
                 </div>
                 <div className="mt-1 text-xs text-[rgb(var(--subtext-rgb))]">
-                  Vendeurs verifies
+                  {t('catalog.verified_sellers')}
                 </div>
               </div>
 
@@ -146,25 +147,25 @@ export default function ProductListPage() {
             <div className="grid gap-4">
               <div className="glass rounded-[26px] border border-[rgba(var(--border-rgb),0.45)] p-6 shadow-soft">
                 <div className="text-xs uppercase tracking-[0.25em] text-[rgb(var(--subtext-rgb))]">
-                  Selection
+                  {t('catalog.selection')}
                 </div>
                 <div className="mt-2 text-lg font-bold">
-                  Produits choisis pour la qualite
+                  {t('catalog.quality_products')}
                 </div>
                 <div className="mt-3 text-sm text-[rgb(var(--subtext-rgb))]">
-                  Design, tech, maison, mode - une vitrine propre et premium.
+                  {t('catalog.showcase_desc')}
                 </div>
               </div>
 
               <div className="glass rounded-[26px] border border-[rgba(var(--border-rgb),0.45)] p-6 shadow-soft">
                 <div className="text-xs uppercase tracking-[0.25em] text-[rgb(var(--subtext-rgb))]">
-                  Experience
+                  {t('catalog.experience')}
                 </div>
                 <div className="mt-2 text-lg font-bold">
-                  Rapide, clair, sans friction
+                  {t('catalog.fast_clear')}
                 </div>
                 <div className="mt-3 text-sm text-[rgb(var(--subtext-rgb))]">
-                  Recherche intelligente, filtres fluides, commandes simples.
+                  {t('catalog.smart_search')}
                 </div>
               </div>
             </div>
@@ -175,7 +176,7 @@ export default function ProductListPage() {
       {/* PILLS */}
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Decouvrir</h2>
+          <h2 className="text-xl font-bold">{t('catalog.discover')}</h2>
         </div>
 
         <div className="flex flex-wrap gap-2">
@@ -206,10 +207,10 @@ export default function ProductListPage() {
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold">
             {activePill === "flash"
-              ? "Offres Flash"
+              ? t('catalog.flash_offers')
               : activePill === "new"
-              ? "Nouveautes"
-              : "Tendance"}
+              ? t('catalog.new_arrivals')
+              : t('catalog.trending')}
           </h3>
         </div>
 
@@ -233,5 +234,3 @@ export default function ProductListPage() {
     </div>
   );
 }
-
-

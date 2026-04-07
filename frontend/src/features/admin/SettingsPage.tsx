@@ -2,6 +2,7 @@
 // Gestion des paramètres système de la plateforme
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   DollarSign,
   Truck,
@@ -18,6 +19,7 @@ import { adminApi, type PlatformSettings } from '@/services/api/admin';
 import { useToast } from '@/context/ToastContext';
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
@@ -61,11 +63,11 @@ export default function SettingsPage() {
       setDeliveryFees(data.delivery_fees || {});
     } catch (error) {
       console.error('Erreur chargement paramètres:', error);
-      showToast('Erreur de chargement des paramètres', 'error');
+      showToast(t('admin.settings_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => {
     loadSettings();
@@ -78,11 +80,11 @@ export default function SettingsPage() {
         ...formData,
         delivery_fees: deliveryFees,
       });
-      showToast('Paramètres sauvegardés avec succès', 'success');
+      showToast(t('admin.settings_saved'), 'success');
       loadSettings();
     } catch (error) {
       console.error('Erreur sauvegarde:', error);
-      showToast('Erreur lors de la sauvegarde', 'error');
+      showToast(t('admin.save_error'), 'error');
     } finally {
       setSaving(false);
     }
@@ -90,7 +92,7 @@ export default function SettingsPage() {
 
   const handleAddCity = () => {
     if (!newCity.trim() || !newFee) {
-      showToast('Veuillez renseigner la ville et le montant', 'error');
+      showToast(t('admin.city_fee_required'), 'error');
       return;
     }
 
@@ -139,10 +141,10 @@ export default function SettingsPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Paramètres Système</span>
+            <span className="text-gradient animate-gradient-bg">{t('admin.system_settings')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Configuration globale de la plateforme Relaya
+            {t('admin.settings_subtitle')}
           </p>
         </div>
 
@@ -153,7 +155,7 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Clock className="text-holo-cyan" size={20} />
                 <div>
-                  <p className="text-sm font-medium">Dernière modification</p>
+                  <p className="text-sm font-medium">{t('admin.last_modified')}</p>
                   <p className="text-xs text-dark-text-tertiary">
                     Par {settings.updated_by_name} • {formatDateTime(settings.updated_at)}
                   </p>
@@ -169,7 +171,7 @@ export default function SettingsPage() {
                 ) : (
                   <Save size={16} />
                 )}
-                Sauvegarder
+                {t('admin.save')}
               </button>
             </div>
           </Card>
@@ -180,14 +182,14 @@ export default function SettingsPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <Truck className="text-holo-cyan" size={24} />
-              Frais de Livraison par Ville
+              {t('admin.delivery_fees_title')}
             </h3>
 
             {/* Liste des villes */}
             <div className="space-y-2 mb-4">
               {Object.keys(deliveryFees).length === 0 ? (
                 <p className="text-dark-text-tertiary text-center py-6">
-                  Aucune ville configurée
+                  {t('admin.no_city')}
                 </p>
               ) : (
                 Object.entries(deliveryFees).map(([city, fee]) => (
@@ -216,14 +218,14 @@ export default function SettingsPage() {
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Nom de la ville"
+                placeholder={t('admin.city_name')}
                 value={newCity}
                 onChange={(e) => setNewCity(e.target.value)}
                 className="flex-1 px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all"
               />
               <input
                 type="number"
-                placeholder="Montant (FCFA)"
+                placeholder={t('admin.amount_fcfa')}
                 value={newFee}
                 onChange={(e) => setNewFee(e.target.value)}
                 className="w-40 px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all"
@@ -233,7 +235,7 @@ export default function SettingsPage() {
                 className="px-4 py-2 bg-holo-cyan text-dark-bg rounded-xl hover:bg-holo-cyan/90 transition-all flex items-center gap-2"
               >
                 <Plus size={16} />
-                Ajouter
+                {t('admin.add')}
               </button>
             </div>
           </Card>
@@ -242,12 +244,12 @@ export default function SettingsPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <DollarSign className="text-holo-purple" size={24} />
-              Commission & Montants
+              {t('admin.commission_title')}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-dark-text-tertiary mb-2">
-                  Commission plateforme (%)
+                  {t('admin.platform_commission')}
                 </label>
                 <input
                   type="number"
@@ -262,13 +264,13 @@ export default function SettingsPage() {
                   className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
                 />
                 <p className="text-xs text-dark-text-tertiary mt-1">
-                  Pourcentage prélevé sur chaque vente
+                  {t('admin.commission_desc')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm text-dark-text-tertiary mb-2">
-                  Montant minimum de commande (FCFA)
+                  {t('admin.min_order')}
                 </label>
                 <input
                   type="number"
@@ -285,7 +287,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm text-dark-text-tertiary mb-2">
-                  Délai de livraison par défaut (jours)
+                  {t('admin.default_delivery_days')}
                 </label>
                 <input
                   type="number"
@@ -306,7 +308,7 @@ export default function SettingsPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <CreditCard className="text-holo-pink" size={24} />
-              Méthodes de Paiement
+              {t('admin.payment_methods')}
             </h3>
             <div className="space-y-3">
               <label className="flex items-center justify-between p-4 rounded-xl bg-dark-bg-tertiary border border-white/10 cursor-pointer hover:border-white/20 transition-all">
@@ -315,9 +317,9 @@ export default function SettingsPage() {
                     <span className="text-2xl">📱</span>
                   </div>
                   <div>
-                    <p className="font-medium">MTN Mobile Money</p>
+                    <p className="font-medium">{t('admin.mtn_momo')}</p>
                     <p className="text-sm text-dark-text-tertiary">
-                      Paiement via MTN MoMo
+                      {t('admin.mtn_desc')}
                     </p>
                   </div>
                 </div>
@@ -337,9 +339,9 @@ export default function SettingsPage() {
                     <span className="text-2xl">🍊</span>
                   </div>
                   <div>
-                    <p className="font-medium">Orange Money</p>
+                    <p className="font-medium">{t('admin.orange_money')}</p>
                     <p className="text-sm text-dark-text-tertiary">
-                      Paiement via Orange Money
+                      {t('admin.orange_desc')}
                     </p>
                   </div>
                 </div>
@@ -362,12 +364,12 @@ export default function SettingsPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <Mail className="text-holo-cyan" size={24} />
-              Emails de Contact
+              {t('admin.contact_emails')}
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm text-dark-text-tertiary mb-2">
-                  Email administrateur
+                  {t('admin.admin_email')}
                 </label>
                 <input
                   type="email"
@@ -381,7 +383,7 @@ export default function SettingsPage() {
 
               <div>
                 <label className="block text-sm text-dark-text-tertiary mb-2">
-                  Email support client
+                  {t('admin.support_email')}
                 </label>
                 <input
                   type="email"
@@ -399,7 +401,7 @@ export default function SettingsPage() {
           <Card className="border-2 border-yellow-500/30">
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <AlertTriangle className="text-yellow-400" size={24} />
-              Mode Maintenance
+              {t('admin.maintenance_mode')}
             </h3>
             <div className="space-y-4">
               <label className="flex items-center gap-3 cursor-pointer">
@@ -412,9 +414,9 @@ export default function SettingsPage() {
                   className="w-5 h-5"
                 />
                 <div>
-                  <p className="font-medium">Activer le mode maintenance</p>
+                  <p className="font-medium">{t('admin.enable_maintenance')}</p>
                   <p className="text-sm text-dark-text-tertiary">
-                    Le site sera inaccessible aux visiteurs
+                    {t('admin.maintenance_desc')}
                   </p>
                 </div>
               </label>
@@ -422,7 +424,7 @@ export default function SettingsPage() {
               {formData.maintenance_mode && (
                 <div>
                   <label className="block text-sm text-dark-text-tertiary mb-2">
-                    Message affiché aux visiteurs
+                    {t('admin.maintenance_msg_label')}
                   </label>
                   <textarea
                     value={formData.maintenance_message}
@@ -453,7 +455,7 @@ export default function SettingsPage() {
               ) : (
                 <Save size={20} />
               )}
-              Sauvegarder les Paramètres
+              {t('admin.save_settings')}
             </button>
           </div>
         </div>

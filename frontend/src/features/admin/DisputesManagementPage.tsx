@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertCircle,
   Search,
@@ -18,6 +19,7 @@ import { adminApi, type AdminDispute, type DisputeFilters, type DisputeStats } f
 import { useToast } from '@/context/ToastContext';
 
 export default function DisputesManagementPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [disputes, setDisputes] = useState<AdminDispute[]>([]);
@@ -37,11 +39,11 @@ export default function DisputesManagementPage() {
       setStats(statsData);
     } catch (error) {
       console.error('Erreur chargement litiges:', error);
-      showToast('Erreur de chargement des litiges', 'error');
+      showToast(t('admin.disputes_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters, showToast]);
+  }, [filters, showToast, t]);
 
   useEffect(() => {
     loadData();
@@ -63,24 +65,24 @@ export default function DisputesManagementPage() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      OPEN: { variant: 'warning' as const, text: 'Ouvert', icon: AlertCircle },
-      IN_PROGRESS: { variant: 'default' as const, text: 'En cours', icon: Clock },
-      RESOLVED: { variant: 'success' as const, text: 'Résolu', icon: CheckCircle },
-      CLOSED: { variant: 'default' as const, text: 'Fermé', icon: XCircle },
+      OPEN: { variant: 'warning' as const, text: t('admin.status_open'), icon: AlertCircle },
+      IN_PROGRESS: { variant: 'default' as const, text: t('admin.status_in_progress'), icon: Clock },
+      RESOLVED: { variant: 'success' as const, text: t('admin.status_resolved'), icon: CheckCircle },
+      CLOSED: { variant: 'default' as const, text: t('admin.status_closed'), icon: XCircle },
     };
     return variants[status as keyof typeof variants] || variants.OPEN;
   };
 
   const getReasonLabel = (reason: string) => {
-    const labels = {
-      NOT_RECEIVED: 'Non reçu',
-      DAMAGED: 'Endommagé',
-      WRONG_ITEM: 'Mauvais article',
-      NOT_AS_DESCRIBED: 'Non conforme',
-      REFUND_REQUEST: 'Remboursement',
-      OTHER: 'Autre',
+    const labels: Record<string, string> = {
+      NOT_RECEIVED: t('admin.reason_not_received'),
+      DAMAGED: t('admin.reason_damaged'),
+      WRONG_ITEM: t('admin.reason_wrong_item'),
+      NOT_AS_DESCRIBED: t('admin.reason_not_as_described'),
+      REFUND_REQUEST: t('admin.reason_refund'),
+      OTHER: t('admin.reason_other'),
     };
-    return labels[reason as keyof typeof labels] || reason;
+    return labels[reason] || reason;
   };
 
   if (loading) {
@@ -97,10 +99,10 @@ export default function DisputesManagementPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Gestion Litiges</span>
+            <span className="text-gradient animate-gradient-bg">{t('admin.disputes_management')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Arbitrage et résolution des litiges clients-vendeurs
+            {t('admin.disputes_subtitle')}
           </p>
         </div>
 
@@ -110,7 +112,7 @@ export default function DisputesManagementPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Total Litiges</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_disputes')}</p>
                   <p className="font-display font-bold text-3xl">{stats.total_disputes}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -122,7 +124,7 @@ export default function DisputesManagementPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Ouverts</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.open')}</p>
                   <p className="font-display font-bold text-3xl text-yellow-400">
                     {stats.open_disputes}
                   </p>
@@ -136,7 +138,7 @@ export default function DisputesManagementPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">En cours</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.in_progress')}</p>
                   <p className="font-display font-bold text-3xl text-holo-purple">
                     {stats.in_progress_disputes}
                   </p>
@@ -150,7 +152,7 @@ export default function DisputesManagementPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Résolus</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.resolved')}</p>
                   <p className="font-display font-bold text-3xl text-green-400">
                     {stats.resolved_disputes}
                   </p>
@@ -167,13 +169,13 @@ export default function DisputesManagementPage() {
         <Card className="mb-6">
           <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
             <Filter className="text-holo-purple" size={20} />
-            Filtres
+            {t('admin.filters')}
           </h3>
 
           {/* Recherche */}
           <div className="mb-4">
             <label className="block text-sm text-dark-text-tertiary mb-2">
-              Recherche (ID Litige, ID Commande, Email)
+              {t('admin.dispute_search_label')}
             </label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
@@ -183,7 +185,7 @@ export default function DisputesManagementPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={t('admin.search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -194,7 +196,7 @@ export default function DisputesManagementPage() {
                 onClick={handleSearch}
                 className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
               >
-                Rechercher
+                {t('admin.search')}
               </button>
             </div>
           </div>
@@ -202,7 +204,7 @@ export default function DisputesManagementPage() {
           {/* Filtres rapides */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm text-dark-text-tertiary mb-2">Statut</label>
+              <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.status')}</label>
               <select
                 value={filters.status || ''}
                 onChange={(e) =>
@@ -210,16 +212,16 @@ export default function DisputesManagementPage() {
                 }
                 className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
               >
-                <option value="">Tous</option>
-                <option value="OPEN">Ouverts</option>
-                <option value="IN_PROGRESS">En cours</option>
-                <option value="RESOLVED">Résolus</option>
-                <option value="CLOSED">Fermés</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="OPEN">{t('admin.status_open')}</option>
+                <option value="IN_PROGRESS">{t('admin.status_in_progress')}</option>
+                <option value="RESOLVED">{t('admin.status_resolved')}</option>
+                <option value="CLOSED">{t('admin.status_closed')}</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm text-dark-text-tertiary mb-2">Motif</label>
+              <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.reason')}</label>
               <select
                 value={filters.reason || ''}
                 onChange={(e) =>
@@ -227,13 +229,13 @@ export default function DisputesManagementPage() {
                 }
                 className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
               >
-                <option value="">Tous</option>
-                <option value="NOT_RECEIVED">Non reçu</option>
-                <option value="DAMAGED">Endommagé</option>
-                <option value="WRONG_ITEM">Mauvais article</option>
-                <option value="NOT_AS_DESCRIBED">Non conforme</option>
-                <option value="REFUND_REQUEST">Remboursement</option>
-                <option value="OTHER">Autre</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="NOT_RECEIVED">{t('admin.reason_not_received')}</option>
+                <option value="DAMAGED">{t('admin.reason_damaged')}</option>
+                <option value="WRONG_ITEM">{t('admin.reason_wrong_item')}</option>
+                <option value="NOT_AS_DESCRIBED">{t('admin.reason_not_as_described')}</option>
+                <option value="REFUND_REQUEST">{t('admin.reason_refund')}</option>
+                <option value="OTHER">{t('admin.reason_other')}</option>
               </select>
             </div>
           </div>
@@ -247,7 +249,7 @@ export default function DisputesManagementPage() {
               }}
               className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
             >
-              Réinitialiser
+              {t('admin.reset')}
             </button>
           </div>
         </Card>
@@ -258,7 +260,7 @@ export default function DisputesManagementPage() {
             {disputes.length === 0 ? (
               <div className="text-center py-12">
                 <AlertCircle className="w-16 h-16 text-dark-text-tertiary mx-auto mb-4" />
-                <p className="text-dark-text-secondary">Aucun litige trouvé</p>
+                <p className="text-dark-text-secondary">{t('admin.no_disputes')}</p>
               </div>
             ) : (
               <table className="w-full">
@@ -268,22 +270,22 @@ export default function DisputesManagementPage() {
                       #
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Commande
+                      {t('admin.order')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Client
+                      {t('admin.client')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Ouvert par
+                      {t('admin.opened_by')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Motif
+                      {t('admin.reason')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Messages
+                      {t('admin.messages')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Statut
+                      {t('admin.status')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
                       Date

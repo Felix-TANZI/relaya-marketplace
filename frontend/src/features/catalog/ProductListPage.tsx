@@ -7,6 +7,7 @@ import { Flame, Sparkles, TrendingUp, ShieldCheck, Truck, Store } from "lucide-r
 import ProductCard from "@/components/product/ProductCard";
 import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
+import type { Product as ProductCardProduct } from "@/services/api/products";
 
 type Product = {
   id: number;
@@ -75,6 +76,46 @@ export default function ProductListPage() {
     // Pour l'instant: simple slice (on branchera un scoring plus tard)
     return products.slice(0, 12);
   }, [products]);
+
+  const adaptedProducts = useMemo<ProductCardProduct[]>(
+    () =>
+      topProducts.map((product) => ({
+        id: product.id,
+        title: product.name,
+        slug: String(product.id),
+        description: product.category || "",
+        short_description: product.category || "",
+        price_xaf: product.price,
+        discount: 0,
+        price_final: product.price,
+        stock_quantity: 10,
+        is_active: true,
+        category: product.category
+          ? {
+              id: product.id,
+              name: product.category,
+              slug: product.category.toLowerCase(),
+              is_active: true,
+            }
+          : null,
+        media: [],
+        images: product.image
+          ? [
+              {
+                id: product.id,
+                image: product.image,
+                image_url: product.image,
+                is_primary: true,
+                order: 0,
+                created_at: new Date().toISOString(),
+              },
+            ]
+          : [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      })),
+    [topProducts],
+  );
 
   return (
     <div className="flex flex-col gap-10">
@@ -225,7 +266,7 @@ export default function ProductListPage() {
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {topProducts.map((product) => (
+            {adaptedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

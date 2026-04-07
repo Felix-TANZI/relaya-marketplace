@@ -145,8 +145,8 @@ const orderData = {
   }
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-6xl">
+    <div className="min-h-screen py-8 sm:py-12">
+      <div className="container mx-auto max-w-6xl px-4">
         {/* Header */}
         <Link
           to="/cart"
@@ -156,16 +156,16 @@ const orderData = {
           {t('checkout.back_to_cart')}
         </Link>
 
-        <h1 className="font-display font-bold text-4xl lg:text-5xl mb-8">
+        <h1 className="mb-8 font-display text-3xl font-bold lg:text-5xl">
           <span className="text-gradient animate-gradient-bg">{t('checkout.title')}</span>
         </h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
           {/* Form */}
-          <div className="lg:col-span-2">
+          <div className="order-2 lg:order-1 lg:col-span-2">
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Personal Info */}
-              <Card>
+              <Card data-tutorial="checkout-payment">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="w-10 h-10 rounded-lg bg-gradient-holographic animate-gradient-bg flex items-center justify-center text-white font-bold">
                     1
@@ -218,7 +218,7 @@ const orderData = {
                     <label className="block text-sm font-medium text-dark-text-secondary mb-2">
                       {t('checkout.city')}
                     </label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {["Yaoundé", "Douala"].map((city) => (
                         <button
                           key={city}
@@ -267,7 +267,7 @@ const orderData = {
                       key={method.id}
                       type="button"
                       onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
-                      className={`w-full p-4 rounded-xl flex items-center gap-4 transition-all ${
+                      className={`w-full rounded-xl p-4 flex items-center gap-4 transition-all ${
                         formData.paymentMethod === method.id
                           ? "glass border-2 border-holo-cyan shadow-glow-cyan"
                           : "glass border border-white/10 hover:border-white/30"
@@ -288,21 +288,32 @@ const orderData = {
                 </p>
               </Card>
 
-              <Button
-                type="submit"
-                variant="gradient"
-                size="lg"
-                className="w-full"
-                isLoading={loading}
-              >
-                {t('checkout.confirm')}
-              </Button>
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                <div className="mb-3 flex items-start gap-3 text-sm text-dark-text-secondary">
+                  <CheckCircle className="mt-0.5 flex-shrink-0 text-holo-cyan" size={16} />
+                  <span>
+                    Paiement protégé, validation rapide de la commande et livraison suivie
+                    directement depuis votre espace client.
+                  </span>
+                </div>
+
+                <Button
+                  id="checkout"
+                  type="submit"
+                  variant="gradient"
+                  size="lg"
+                  className="w-full"
+                  isLoading={loading}
+                >
+                  {t('checkout.confirm')}
+                </Button>
+              </div>
             </form>
           </div>
 
           {/* Order Summary */}
-          <div className="lg:col-span-1">
-            <Card className="sticky top-24">
+          <div className="order-1 lg:order-2 lg:col-span-1">
+            <Card className="lg:sticky lg:top-24">
               <h2 className="font-display font-bold text-xl text-dark-text mb-6">
                 {t('checkout.summary')}
               </h2>
@@ -328,6 +339,25 @@ const orderData = {
                     </p>
                   </div>
                 ))}
+              </div>
+
+              <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-dark-text-tertiary">
+                    Livraison
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-dark-text">
+                    24h à 72h selon la ville
+                  </p>
+                </div>
+                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                  <p className="text-xs uppercase tracking-[0.2em] text-dark-text-tertiary">
+                    Sécurité
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-dark-text">
+                    Confirmation + suivi de commande
+                  </p>
+                </div>
               </div>
 
               <div className="space-y-3 py-4 border-y border-white/10">

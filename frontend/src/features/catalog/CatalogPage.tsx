@@ -20,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-import CatalogAssistantPanel from "./CatalogAssistantPanel";
 import {
   productsApi,
   type Category,
@@ -504,7 +503,7 @@ export default function CatalogPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#fff1e3] via-white to-[#fff7ef] p-6 shadow-sm ring-1 ring-orange-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 dark:ring-gray-800 lg:p-8">
+        <div className="mb-8 overflow-hidden rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 lg:p-8">
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-gray-800">
@@ -535,7 +534,7 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {featuredCategories.map((category) => {
                 const Icon = CATEGORY_ICONS[category.name] || ShoppingBag;
                 const isSelected = selectedCategory === category.id;
@@ -571,11 +570,11 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="hidden w-80 flex-shrink-0 lg:block">{renderFilterPanel()}</aside>
 
           <main className="min-w-0 flex-1">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   {t('catalog_page.client_catalog')}
@@ -590,10 +589,10 @@ export default function CatalogPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 lg:hidden"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 sm:w-auto lg:hidden"
                 >
                   <SlidersHorizontal size={18} />
                   {t('catalog_page.filters')}
@@ -604,10 +603,10 @@ export default function CatalogPage() {
                   )}
                 </button>
 
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                   <button
                     onClick={() => setSortMenuOpen((previous) => !previous)}
-                    className="flex min-w-[170px] items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none ring-primary/20 transition-all focus:ring-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                    className="flex w-full min-w-[170px] items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none ring-primary/20 transition-all focus:ring-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
                     <span>{currentSortLabel}</span>
                     <ChevronDown
@@ -641,7 +640,7 @@ export default function CatalogPage() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={index}
@@ -695,7 +694,7 @@ export default function CatalogPage() {
               <>
                 <div
                   data-tutorial="catalog-products"
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                  className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
                 >
                   {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} showPromo />
@@ -761,16 +760,6 @@ export default function CatalogPage() {
           </div>
         </div>
       )}
-
-      <CatalogAssistantPanel
-        products={visibleProducts}
-        selectedCategoryName={selectedCategoryName}
-        filters={{
-          promoOnly: showPromoOnly,
-          inStockOnly,
-          minRating,
-        }}
-      />
     </div>
   );
 }

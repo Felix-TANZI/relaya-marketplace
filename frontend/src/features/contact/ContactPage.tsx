@@ -114,16 +114,17 @@ export default function ContactPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-[#f8f5f1] dark:bg-gray-950">
       <div className="container mx-auto px-4 py-12">
         {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
-            <span className="bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent">
-              {t('contact.title')}
-            </span>
+        <div className="mb-8 rounded-[2rem] border border-orange-100 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Contact
+          </p>
+          <h1 className="mt-3 text-4xl font-bold text-gray-900 dark:text-white">
+            {t('contact.title')}
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="mx-auto mt-3 max-w-2xl text-gray-600 dark:text-gray-400 text-lg">
             {t('contact.subtitle')}
           </p>
         </div>

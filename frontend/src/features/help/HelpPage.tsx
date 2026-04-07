@@ -189,16 +189,16 @@ export default function HelpPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div className="min-h-screen bg-[#f8f5f1] dark:bg-gray-950">
       {/* Hero Section */}
-      <section className="relative py-16 lg:py-24 overflow-hidden border-b border-gray-200 dark:border-gray-800">
-        <div className="absolute inset-0 opacity-5"></div>
+      <section className="py-10">
         <div className="container mx-auto px-4 relative z-10">
-          <div className="text-center max-w-4xl mx-auto">
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-display font-bold mb-6">
-              <span className="bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent">
-                {t('help.title')}
-              </span>
+          <div className="max-w-4xl mx-auto rounded-[2rem] border border-orange-100 bg-white px-6 py-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              Centre d'aide
+            </p>
+            <h1 className="mt-4 text-4xl md:text-5xl font-display font-bold mb-4 text-gray-900 dark:text-white">
+              {t('help.title')}
             </h1>
             <p className="text-gray-600 dark:text-gray-400 text-xl mb-10 leading-relaxed">
               {t('help.subtitle')}

@@ -11,6 +11,7 @@ import {
   Store,
   Truck,
   User,
+  Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import ProductCard from "@/components/product/ProductCard";
@@ -49,6 +50,7 @@ export default function HomePage() {
   const quickLinks = [
     { label: t('home.quick_account'), to: "/profile", icon: User, color: "bg-orange-50 text-primary dark:bg-gray-800" },
     { label: t('home.quick_orders'), to: "/orders", icon: Package, color: "bg-orange-50 text-primary dark:bg-gray-800" },
+    { label: "Vendeurs certifiés", to: "/vendors", icon: Users, color: "bg-orange-50 text-primary dark:bg-gray-800" },
     { label: t('home.quick_notifications'), to: "/notifications", icon: Bell, color: "bg-orange-50 text-primary dark:bg-gray-800" },
   ];
 
@@ -128,7 +130,7 @@ export default function HomePage() {
 
       <section className="container mx-auto px-4 py-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#fff1e4] via-white to-[#fff6ef] p-6 shadow-sm ring-1 ring-orange-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 dark:ring-gray-800 lg:p-8">
+          <div className="overflow-hidden rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 lg:p-8">
             <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-gray-800">
               <Flame size={14} />
               {t('home.promo_badge')}
@@ -177,14 +179,17 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div
+            id="categories"
+            className="rounded-[2rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+          >
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{t('home.categories_label')}</h2>
               <Link to="/categories" className="text-sm font-semibold text-primary">
                 {t('home.see_all')}
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2">
               {categoryTiles.map((category) => (
                 <Link
                   key={category.name}
@@ -218,7 +223,7 @@ export default function HomePage() {
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4">
             {Array.from({ length: 4 }).map((_, index) => (
               <div key={index} className="skeleton aspect-[0.85] rounded-[1.75rem]" />
             ))}
@@ -241,7 +246,7 @@ export default function HomePage() {
                 {t('home.explore')}
               </Link>
             </div>
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2">
               {popularProducts.map((product) => (
                 <ProductCard key={product.id} product={product} showPromo />
               ))}
@@ -272,7 +277,7 @@ export default function HomePage() {
                   {t('home.order_eta')}
                 </p>
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
+              <div className="grid gap-3 min-[480px]:grid-cols-3">
                 <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
                   <p className="text-xs font-medium text-gray-400">10:15</p>
                   <p className="mt-1 text-sm font-semibold text-gray-900 dark:text-white">
@@ -327,7 +332,7 @@ export default function HomePage() {
             {t('home.see_all')}
           </Link>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-4">
           {newestProducts.map((product) => (
             <ProductCard key={product.id} product={product} showPromo />
           ))}

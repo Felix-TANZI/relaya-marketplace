@@ -2,6 +2,7 @@
 import Header from './Header';
 import Footer from './Footer';
 import ClientTutorial from '@/features/tutorial/ClientTutorial';
+import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 
 export default function AppLayout() {
   return (
@@ -11,6 +12,7 @@ export default function AppLayout() {
         <Outlet />
       </main>
       <Footer />
+      <GlobalAssistant />
       <ClientTutorial />
     </div>
   );

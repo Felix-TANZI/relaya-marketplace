@@ -120,6 +120,7 @@ export default function Header() {
     { label: "Accueil", to: "/" },
     { label: "Promotions", to: "/catalog?promo=1" },
     { label: "Categories", to: "/categories" },
+    { label: "Vendeurs", to: "/vendors" },
     { label: "Commandes", to: "/orders" },
     { label: "Favoris", to: "/wishlist" },
     { label: "Mon compte", to: "/profile" },
@@ -143,6 +144,7 @@ export default function Header() {
           {/* Search Bar - Desktop (hidden on search page) */}
           {!isSearchPage && (
             <button
+              id="search"
               data-tutorial="header-search"
               onClick={() => navigate("/search")}
               className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
@@ -185,6 +187,7 @@ export default function Header() {
             {/* Cart */}
             <Link
               to="/cart"
+              id="cart"
               className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
             >
               <ShoppingCart
@@ -235,6 +238,7 @@ export default function Header() {
             {user ? (
               <div className="relative" ref={userMenuRef}>
                 <button
+                  id="account"
                   data-tutorial="header-profile"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt transition-all"
@@ -445,6 +449,7 @@ export default function Header() {
         {!isSearchPage && (
           <button
             onClick={() => navigate("/search")}
+            id="search-mobile"
             className="lg:hidden pb-4 w-full"
           >
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
@@ -480,6 +485,16 @@ export default function Header() {
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 Categories
+              </span>
+            </Link>
+
+            <Link
+              to="/vendors"
+              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="font-medium text-text-light dark:text-text-dark">
+                Vendeurs
               </span>
             </Link>
 

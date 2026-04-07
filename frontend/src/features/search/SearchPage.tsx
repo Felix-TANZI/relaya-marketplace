@@ -17,6 +17,7 @@ export default function SearchPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+  const liveSearchTimer = useRef<number | null>(null);
 
   // Fetch categories from backend on mount, fallback to mock categories
   useEffect(() => {
@@ -91,6 +92,35 @@ export default function SearchPage() {
     }
   };
 
+  useEffect(() => {
+    if (query === (searchParams.get("q") ?? "")) {
+      return;
+    }
+
+    if (liveSearchTimer.current) {
+      window.clearTimeout(liveSearchTimer.current);
+    }
+
+    liveSearchTimer.current = window.setTimeout(() => {
+      const trimmedQuery = query.trim();
+
+      if (!trimmedQuery) {
+        setProducts([]);
+        setSearched(false);
+        setSearchParams({});
+        return;
+      }
+
+      setSearchParams({ q: trimmedQuery });
+    }, 220);
+
+    return () => {
+      if (liveSearchTimer.current) {
+        window.clearTimeout(liveSearchTimer.current);
+      }
+    };
+  }, [query, searchParams, setSearchParams]);
+
   const handleQuickSearch = (term: string) => {
     setQuery(term);
     setSearchParams({ q: term });
@@ -124,6 +154,7 @@ export default function SearchPage() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 />
                 <input
+                  id="search-page-input"
                   ref={inputRef}
                   type="text"
                   value={query}

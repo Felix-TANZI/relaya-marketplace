@@ -30,6 +30,7 @@ import HelpPage from '@/features/help/HelpPage';
 import AboutPage from '@/features/about/AboutPage';
 import ProfilePage from '@/features/profile/ProfilePage';
 import BecomeSellerPage from '@/features/vendors/BecomeSellerPage';
+import VendorsShowcasePage from '@/features/vendors/VendorsShowcasePage';
 import NotFoundPage from '@/features/system/NotFoundPage';
 
 // ── Pages vendeur (existantes) ──
@@ -205,6 +206,14 @@ export const router = createBrowserRouter([
       {
         path: 'become-seller',
         element: <BecomeSellerPage />,
+      },
+      {
+        path: 'vendors',
+        element: (
+          <ProtectedRoute>
+            <VendorsShowcasePage />
+          </ProtectedRoute>
+        ),
       },
       {
         path: '*',

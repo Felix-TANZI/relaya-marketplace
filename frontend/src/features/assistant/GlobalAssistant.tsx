@@ -149,119 +149,226 @@ export default function GlobalAssistant() {
   const handleLocalHelp = async (rawPrompt: string) => {
     const prompt = normalize(rawPrompt);
 
-    if (
-      prompt.includes("accueil") ||
-      prompt.includes("retour") ||
-      prompt.includes("revenir")
-    ) {
+    // ── Greetings ──
+    if (/^(yo|salut|bonjour|bonsoir|hello|coucou|hey|hi|cc|slt)\b/.test(prompt)) {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Pour revenir à l'accueil, utilise le logo BelivaY en haut de page ou ce raccourci direct. Je peux aussi t'y envoyer maintenant.",
-        actions: [{ label: "Aller à l'accueil", onClick: () => navigate("/") }],
-      });
-      return;
-    }
-
-    if (prompt.includes("panier")) {
-      pushAssistantMessage({
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content:
-          "Le panier est accessible en permanence depuis l'icône en haut à droite. Si tu veux, je peux t'ouvrir la page panier immédiatement.",
-        actions: [{ label: "Ouvrir le panier", onClick: () => navigate("/cart") }],
-      });
-      return;
-    }
-
-    if (
-      prompt.includes("commande") ||
-      prompt.includes("suivi") ||
-      prompt.includes("orders")
-    ) {
-      pushAssistantMessage({
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content:
-          "Tu peux suivre tes achats dans la page Commandes. Tu y verras l'historique, les statuts et les détails de chaque commande.",
+        content: "Salut ! 👋 Je suis l'assistant BelivaY. Dis-moi ce que tu cherches : un produit, une page, ou une question sur l'appli. Je suis là pour t'aider !",
         actions: [
-          { label: "Voir mes commandes", onClick: () => navigate("/orders") },
+          { label: "🛍️ Voir les produits", onClick: () => navigate("/catalog") },
+          { label: "🏠 Accueil", onClick: () => navigate("/") },
+          { label: "🎓 Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
         ],
       });
       return;
     }
 
-    if (prompt.includes("profil") || prompt.includes("compte")) {
+    // ── Comment fonctionne l'app / aide générale ──
+    if (prompt.includes("fonctionne") || prompt.includes("comment ca marche") || prompt.includes("c'est quoi") || prompt.includes("utiliser") || prompt.includes("expliqu")) {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Ton compte client te permet de modifier tes informations, ton avatar et d'accéder rapidement à tes commandes, favoris et notifications.",
-        actions: [{ label: "Ouvrir mon compte", onClick: () => navigate("/profile") }],
+        content: "BelivaY est une marketplace camerounaise. Voici comment ça marche :\n\n🔍 **Cherche** un produit via la barre de recherche\n📦 **Ajoute** au panier et passe commande\n💳 **Paye** par Mobile Money (MTN MoMo / Orange Money)\n🚚 **Reçois** ta livraison en 24-72h\n\nTu veux que je te montre avec la visite guidée ?",
+        actions: [
+          { label: "🎓 Lancer la visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+          { label: "🔍 Chercher un produit", onClick: () => navigate("/search") },
+          { label: "📂 Voir les catégories", onClick: () => navigate("/categories") },
+        ],
       });
       return;
     }
 
-    if (prompt.includes("aide") || prompt.includes("support")) {
+    // ── Navigation: Accueil ──
+    if (prompt.includes("accueil") || prompt.includes("retour") || prompt.includes("revenir") || prompt.includes("home")) {
+      navigate("/");
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Je peux t'aider directement ici, mais si tu veux une page plus complète avec FAQ et guides, je peux aussi t'ouvrir le centre d'aide.",
-        actions: [{ label: "Centre d'aide", onClick: () => navigate("/help") }],
+        content: "C'est fait ! Je t'ai renvoyé à l'accueil. 🏠 Tu peux aussi cliquer sur le logo Belivay en haut à gauche à tout moment.",
       });
       return;
     }
 
-    if (prompt.includes("paiement") || prompt.includes("checkout")) {
+    // ── Panier ──
+    if (prompt.includes("panier") || prompt.includes("cart")) {
+      navigate("/cart");
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "La page Paiement te permet de confirmer tes informations, choisir ton mode de règlement et valider la commande. Je peux t'y envoyer si ton panier est prêt.",
-        actions: [{ label: "Aller au paiement", onClick: () => navigate("/checkout") }],
+        content: "Voici ton panier ! 🛒 Tu peux modifier les quantités, retirer des articles ou passer commande. L'icône panier en haut à droite t'y amène aussi.",
       });
       return;
     }
 
-    if (
-      prompt.includes("favori") ||
-      prompt.includes("wishlist") ||
-      prompt.includes("coeur")
-    ) {
+    // ── Commandes ──
+    if (prompt.includes("commande") || prompt.includes("suivi") || prompt.includes("orders") || prompt.includes("livraison")) {
+      navigate("/orders");
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Quand tu cliques sur le cœur d'un produit, il est ajouté aux Favoris et le compteur de l'en-tête se met à jour. Tu peux consulter tous tes favoris depuis la page dédiée.",
-        actions: [{ label: "Ouvrir mes favoris", onClick: () => navigate("/wishlist") }],
+        content: "Tu es sur tes commandes ! 📦 Tu y vois l'historique, les statuts de paiement et de livraison. Clique sur une commande pour les détails.",
       });
       return;
     }
 
-    if (
-      prompt.includes("guide") ||
-      prompt.includes("visite") ||
-      prompt.includes("tutoriel")
-    ) {
+    // ── Profil / Compte ──
+    if (prompt.includes("profil") || prompt.includes("compte") || prompt.includes("profile") || prompt.includes("info")) {
+      navigate("/profile");
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Je relance la visite guidée produit. Elle va te montrer les points essentiels de l'application dans le bon ordre.",
+        content: "Voici ton espace personnel ! 👤 Tu peux modifier tes infos, ton avatar, accéder à tes commandes et favoris.",
+      });
+      return;
+    }
+
+    // ── Favoris ──
+    if (prompt.includes("favori") || prompt.includes("wishlist") || prompt.includes("coeur") || prompt.includes("liste")) {
+      navigate("/wishlist");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Voici tes favoris ! ❤️ Clique sur le cœur d'un produit pour l'ajouter ici. Le compteur en haut se met à jour automatiquement.",
+      });
+      return;
+    }
+
+    // ── Aide / Support ──
+    if (prompt.includes("aide") || prompt.includes("support") || prompt.includes("help") || prompt.includes("contact")) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Tu peux me poser tes questions ici ! Pour un contact direct : WhatsApp +237 000 556 87 78, ou le centre d'aide complet.",
+        actions: [
+          { label: "📞 Centre d'aide", onClick: () => navigate("/help") },
+          { label: "✉️ Nous contacter", onClick: () => navigate("/contact") },
+        ],
+      });
+      return;
+    }
+
+    // ── Paiement ──
+    if (prompt.includes("paiement") || prompt.includes("checkout") || prompt.includes("payer") || prompt.includes("momo") || prompt.includes("orange money")) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "BelivaY accepte **MTN Mobile Money** et **Orange Money**. Le paiement est sécurisé. Pour payer, ajoute des articles au panier puis clique sur « Passer commande ».",
+        actions: [
+          { label: "🛒 Mon panier", onClick: () => navigate("/cart") },
+          { label: "💳 Passer commande", onClick: () => navigate("/checkout") },
+        ],
+      });
+      return;
+    }
+
+    // ── Catégories ──
+    if (prompt.includes("categorie") || prompt.includes("category") || prompt.includes("parcourir") || prompt.includes("explorer")) {
+      navigate("/categories");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Voici les catégories ! 📂 Mode Femme, Mode Homme, Téléphones, Maison, Beauté, Supermarché... Choisis ta catégorie pour filtrer les produits.",
+      });
+      return;
+    }
+
+    // ── Recherche ──
+    if (prompt.includes("recherch") || prompt.includes("cherch") || prompt.includes("search") || prompt.includes("trouver")) {
+      navigate("/search");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "La recherche est ouverte ! 🔍 Tape un mot-clé et les résultats apparaissent en temps réel. Pas besoin d'appuyer Entrée.",
+      });
+      return;
+    }
+
+    // ── Visite guidée ──
+    if (prompt.includes("guide") || prompt.includes("visite") || prompt.includes("tutoriel") || prompt.includes("tour")) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "C'est parti ! 🎓 La visite guidée va te montrer les fonctionnalités essentielles étape par étape.",
       });
       window.dispatchEvent(new Event("belivay-open-tutorial"));
+      setIsOpen(false);
       return;
     }
 
-    if (
-      prompt.includes("moins cher") ||
-      prompt.includes("pas cher") ||
-      prompt.includes("abordable") ||
-      prompt.includes("promo") ||
-      prompt.includes("produit")
-    ) {
+    // ── Vendeurs ──
+    if (prompt.includes("vendeur") || prompt.includes("boutique") || prompt.includes("seller") || prompt.includes("vendor")) {
+      navigate("/vendors");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Voici les vendeurs certifiés BelivaY ! 🏪 Chaque vendeur est vérifié. Tu peux voir leur note, nombre de ventes et spécialité.",
+      });
+      return;
+    }
+
+    // ── Notifications ──
+    if (prompt.includes("notification") || prompt.includes("alerte") || prompt.includes("cloche")) {
+      navigate("/notifications");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Tu es sur tes notifications ! 🔔 Commandes expédiées, promos flash, messages du support... tout est ici.",
+      });
+      return;
+    }
+
+    // ── Inscription / Connexion ──
+    if (prompt.includes("inscri") || prompt.includes("register") || prompt.includes("creer un compte") || prompt.includes("sign up")) {
+      navigate("/register");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Tu peux créer ton compte gratuitement ! 📝 Juste un email et un mot de passe.",
+      });
+      return;
+    }
+    if (prompt.includes("connexion") || prompt.includes("connecter") || prompt.includes("login") || prompt.includes("mot de passe")) {
+      navigate("/login");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Page de connexion ouverte ! 🔐 Connecte-toi avec ton email et mot de passe.",
+      });
+      return;
+    }
+
+    // ── Langue / Theme ──
+    if (prompt.includes("langue") || prompt.includes("anglais") || prompt.includes("francais") || prompt.includes("english")) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Pour changer la langue, clique sur l'icône 🌐 en haut de la page. Tu peux basculer entre Français et English.",
+      });
+      return;
+    }
+    if (prompt.includes("sombre") || prompt.includes("dark") || prompt.includes("theme") || prompt.includes("clair") || prompt.includes("nuit")) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Pour activer le mode sombre, clique sur l'icône ☀️/🌙 dans la barre de navigation en haut.",
+      });
+      return;
+    }
+
+    // ── Devenir vendeur ──
+    if (prompt.includes("vendre") || prompt.includes("devenir vendeur") || prompt.includes("ouvrir boutique")) {
+      navigate("/become-seller");
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "Tu veux vendre sur BelivaY ? 🚀 Remplis le formulaire et ton dossier sera examiné. Commission faible, paiements sécurisés, support dédié !",
+      });
+      return;
+    }
+
+    // ── Produits / Prix ──
+    if (prompt.includes("moins cher") || prompt.includes("pas cher") || prompt.includes("abordable") || prompt.includes("promo") || prompt.includes("produit") || prompt.includes("prix")) {
       const response = await productsApi.list({
         page_size: 3,
         ordering: "price_xaf",
@@ -274,28 +381,41 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          cheapestProducts.length > 0
-            ? "Voici quelques options intéressantes à petit prix que j'ai trouvées pour toi."
-            : "Je n'ai pas trouvé de produit correspondant tout de suite. Essaie une requête un peu plus précise.",
+        content: cheapestProducts.length > 0
+          ? "Voici les produits les plus abordables que j'ai trouvés pour toi ! 💰 Clique pour voir les détails."
+          : "Je n'ai pas trouvé de produit correspondant. Essaie un terme plus précis ou explore le catalogue.",
         products: cheapestProducts,
         actions: [
-          { label: "Ouvrir la recherche", onClick: () => navigate("/search") },
-          { label: "Voir le catalogue", onClick: () => navigate("/catalog") },
+          { label: "🔍 Rechercher", onClick: () => navigate("/search") },
+          { label: "📂 Catalogue", onClick: () => navigate("/catalog") },
         ],
       });
       return;
     }
 
+    // ── Merci / Au revoir ──
+    if (/^(merci|thanks|au revoir|bye|a\+|a bientot)\b/.test(prompt)) {
+      pushAssistantMessage({
+        id: `assistant-${Date.now()}`,
+        role: "assistant",
+        content: "De rien ! 😊 N'hésite pas à revenir si tu as d'autres questions. Bon shopping sur BelivaY !",
+      });
+      return;
+    }
+
+    // ── Fallback - more helpful ──
     pushAssistantMessage({
       id: `assistant-${Date.now()}`,
       role: "assistant",
-      content:
-        "Je peux t'aider sur deux choses: trouver un produit ou te guider dans l'application. Essaie par exemple « produits les moins chers », « ouvrir mon panier », « revenir à l'accueil » ou « relancer la visite guidée ».",
+      content: "Je ne suis pas sûr de comprendre ta demande. Voici ce que je peux faire pour toi :",
       actions: [
-        { label: "Recherche", onClick: () => navigate("/search") },
-        { label: "Accueil", onClick: () => navigate("/") },
-        { label: "Guide", onClick: () => window.dispatchEvent(new Event("belivay-open-tutorial")) },
+        { label: "🔍 Chercher un produit", onClick: () => navigate("/search") },
+        { label: "🏠 Aller à l'accueil", onClick: () => navigate("/") },
+        { label: "📦 Mes commandes", onClick: () => navigate("/orders") },
+        { label: "🛒 Mon panier", onClick: () => navigate("/cart") },
+        { label: "📂 Catégories", onClick: () => navigate("/categories") },
+        { label: "🎓 Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+        { label: "📞 Aide & Contact", onClick: () => navigate("/help") },
       ],
     });
   };
@@ -339,14 +459,14 @@ export default function GlobalAssistant() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="fixed bottom-20 right-4 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary-dark lg:bottom-6 lg:right-6"
+        className="fixed bottom-20 right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-105 hover:bg-primary-dark lg:bottom-6 lg:right-6"
         aria-label="Ouvrir l'assistant BelivaY"
       >
         {isOpen ? <X size={20} /> : <Bot size={22} />}
       </button>
 
       {isOpen && (
-        <section className="fixed bottom-36 right-4 z-[70] w-[min(400px,calc(100vw-2rem))] max-h-[min(520px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 flex flex-col">
+        <section className="fixed bottom-36 right-4 z-[80] w-[min(400px,calc(100vw-2rem))] max-h-[min(480px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 flex flex-col">
           <header className="border-b border-slate-200 bg-[linear-gradient(180deg,#fff,rgba(248,250,252,0.92))] px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

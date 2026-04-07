@@ -24,6 +24,15 @@ export default function NotificationsPage() {
 
   const fallbackNotifications = [
     {
+      id: 0,
+      title: "Bienvenue sur BelivaY ! 🎉",
+      description: "Nous sommes ravis de vous accueillir sur la marketplace de confiance du Cameroun. Explorez des milliers de produits, profitez de paiements sécurisés Mobile Money et de livraisons suivies. Bon shopping !",
+      time: "Maintenant",
+      icon: Gift,
+      tone: "bg-primary/10 text-primary",
+      unread: true,
+    },
+    {
       id: 1,
       title: t('notifications.fallback.order_shipped_title'),
       description: t('notifications.fallback.order_shipped_desc'),

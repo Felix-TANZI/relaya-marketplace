@@ -78,18 +78,16 @@ export default function Header() {
   }, [user?.avatar_url]);
 
   useEffect(() => {
-    const syncFavorites = async () => {
-      if (localStorage.getItem('access_token')) {
-        try {
-          const favorites = await customerApi.getFavorites();
-          setFavoritesCount(favorites.length);
-          return;
-        } catch (error) {
-          console.error('Erreur chargement favoris:', error);
-        }
-      }
-
+    const syncFavorites = () => {
+      // Always read localStorage first for instant counter update
       setFavoritesCount(getFavoriteProductIds().length);
+
+      // Then sync from API if logged in (may update later)
+      if (localStorage.getItem('access_token')) {
+        customerApi.getFavorites()
+          .then((favorites) => setFavoritesCount(favorites.length))
+          .catch(() => {/* keep localStorage count */});
+      }
     };
 
     syncFavorites();

@@ -38,6 +38,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       }
       return [...prev, item];
     });
+    // Dispatch event for notifications
+    window.dispatchEvent(new CustomEvent("belivay-cart-updated", { detail: { item } }));
   };
 
   const removeItem = (id: number) => {

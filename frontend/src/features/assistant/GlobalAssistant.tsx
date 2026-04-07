@@ -456,14 +456,30 @@ export default function GlobalAssistant() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setIsOpen((current) => !current)}
-        className="fixed bottom-20 right-4 z-[80] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-105 hover:bg-primary-dark lg:bottom-6 lg:right-6"
-        aria-label="Ouvrir l'assistant BelivaY"
-      >
-        {isOpen ? <X size={20} /> : <Bot size={22} />}
-      </button>
+      <div className="fixed bottom-20 right-4 z-[80] lg:bottom-6 lg:right-6">
+        {/* Pulse ring - attention grabber */}
+        {!isOpen && (
+          <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
+        )}
+        {/* Outer glow ring */}
+        {!isOpen && (
+          <span className="absolute -inset-1 animate-pulse rounded-full border-2 border-primary/40" />
+        )}
+        <button
+          type="button"
+          onClick={() => setIsOpen((current) => !current)}
+          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-110 hover:bg-primary-dark"
+          aria-label="Ouvrir l'assistant BelivaY"
+        >
+          {isOpen ? <X size={20} /> : <Bot size={22} />}
+          {/* Sparkle dot */}
+          {!isOpen && (
+            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-[8px] shadow-sm">
+              ✦
+            </span>
+          )}
+        </button>
+      </div>
 
       {isOpen && (
         <section className="fixed bottom-36 right-4 z-[80] w-[min(400px,calc(100vw-2rem))] max-h-[min(480px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 flex flex-col">

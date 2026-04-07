@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { CreditCard, MapPin, Package, Phone, ShieldCheck, Truck } from "lucide-react";
 import { useCart } from "@/features/cart/useCart";
 import { cartTotalXaf } from "@/features/cart/cartStore";
 import { loadCheckoutDraft } from "./storage";
 
 export default function CheckoutConfirmPage() {
+  const { t } = useTranslation();
   const items = useCart();
   const total = cartTotalXaf();
   const draft = loadCheckoutDraft();
@@ -17,16 +19,16 @@ export default function CheckoutConfirmPage() {
           <div className="rounded-[2rem] bg-white p-8 text-center shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
             <Package className="mx-auto mb-4 text-primary" size={34} />
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Informations de livraison manquantes
+              {t('checkout.confirm_details.missing_info_title')}
             </h1>
             <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-              Reviens a l'etape checkout pour confirmer ton adresse et ton numero.
+              {t('checkout.confirm_details.missing_info_description')}
             </p>
             <Link
               to="/checkout"
               className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
             >
-              Retour au checkout
+              {t('checkout.confirm_details.back_button')}
             </Link>
           </div>
         </div>
@@ -39,13 +41,13 @@ export default function CheckoutConfirmPage() {
       <div className="container mx-auto max-w-6xl px-4">
         <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Validation
+            {t('checkout.confirm_details.breadcrumb')}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-            Validation de la commande
+            {t('checkout.confirm_details.title')}
           </h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Verifie les produits, l'adresse et le montant total avant paiement.
+            {t('checkout.confirm_details.subtitle')}
           </p>
         </div>
 
@@ -57,9 +59,11 @@ export default function CheckoutConfirmPage() {
                   <Package size={22} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Produits</h2>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.confirm_details.products_title')}</h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {items.length} article{items.length > 1 ? "s" : ""} a confirmer
+                    {items.length > 1
+                      ? t('checkout.confirm_details.products_count_other', { count: items.length })
+                      : t('checkout.confirm_details.products_count_one', { count: items.length })}
                   </p>
                 </div>
               </div>
@@ -91,10 +95,10 @@ export default function CheckoutConfirmPage() {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                    Informations de livraison
+                    {t('checkout.confirm_details.delivery_title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Resume du destinataire
+                    {t('checkout.confirm_details.delivery_summary')}
                   </p>
                 </div>
               </div>
@@ -102,13 +106,13 @@ export default function CheckoutConfirmPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[#fff7ef] p-4 dark:bg-gray-800">
                   <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
-                    Ville
+                    {t('checkout.confirm_details.city_label')}
                   </p>
                   <p className="mt-2 font-semibold text-gray-900 dark:text-white">{draft.city}</p>
                 </div>
                 <div className="rounded-2xl bg-[#fff7ef] p-4 dark:bg-gray-800">
                   <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
-                    Telephone
+                    {t('checkout.confirm_details.phone_label')}
                   </p>
                   <p className="mt-2 flex items-center gap-2 font-semibold text-gray-900 dark:text-white">
                     <Phone size={16} className="text-primary" />
@@ -117,7 +121,7 @@ export default function CheckoutConfirmPage() {
                 </div>
                 <div className="rounded-2xl bg-[#fff7ef] p-4 dark:bg-gray-800 sm:col-span-2">
                   <p className="text-xs font-medium uppercase tracking-[0.2em] text-gray-400">
-                    Adresse
+                    {t('checkout.confirm_details.address_label')}
                   </p>
                   <p className="mt-2 font-semibold text-gray-900 dark:text-white">{draft.address}</p>
                   {draft.note ? (
@@ -131,23 +135,23 @@ export default function CheckoutConfirmPage() {
           <div className="space-y-6">
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">
-                Total a payer
+                {t('checkout.confirm_details.total_title')}
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>Sous-total</span>
+                  <span>{t('checkout.confirm_details.subtotal')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {total.toLocaleString()} FCFA
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>Livraison</span>
+                  <span>{t('checkout.confirm_details.delivery')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {deliveryFee === 0 ? "Offerte" : `${deliveryFee.toLocaleString()} FCFA`}
+                    {deliveryFee === 0 ? t('checkout.confirm_details.delivery_free') : `${deliveryFee.toLocaleString()} FCFA`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
-                  <span className="text-gray-900 dark:text-white">Total</span>
+                  <span className="text-gray-900 dark:text-white">{t('checkout.confirm_details.total')}</span>
                   <span className="text-2xl text-primary">
                     {(total + deliveryFee).toLocaleString()} FCFA
                   </span>
@@ -160,18 +164,18 @@ export default function CheckoutConfirmPage() {
                   disabled
                 >
                   <CreditCard size={18} />
-                  Valider la commande
+                  {t('checkout.confirm_details.validate_button')}
                 </button>
                 <Link
                   to="/checkout"
                   className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                 >
-                  Retour
+                  {t('checkout.confirm_details.return_button')}
                 </Link>
               </div>
 
               <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
-                Le paiement Mobile Money sera branche dans la prochaine etape.
+                {t('checkout.confirm_details.payment_note')}
               </p>
             </section>
 
@@ -181,9 +185,9 @@ export default function CheckoutConfirmPage() {
                   <Truck size={20} />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Livraison</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('checkout.confirm_details.delivery_offer_title')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Offerte a partir de 30 000 FCFA
+                    {t('checkout.confirm_details.delivery_offer')}
                   </p>
                 </div>
               </div>
@@ -193,9 +197,9 @@ export default function CheckoutConfirmPage() {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Paiement securise</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('checkout.confirm_details.secure_payment_title')}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Validation protegee et chiffree
+                    {t('checkout.confirm_details.secure_payment')}
                   </p>
                 </div>
               </div>

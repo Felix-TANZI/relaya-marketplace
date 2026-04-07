@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ShoppingCart,
   Search,
@@ -22,6 +23,7 @@ import { adminApi, type AdminOrder, type OrderFilters } from '@/services/api/adm
 import { useToast } from '@/context/ToastContext';
 
 export default function OrdersManagementPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
 
   const [orders, setOrders] = useState<AdminOrder[]>([]);
@@ -36,11 +38,11 @@ export default function OrdersManagementPage() {
       setOrders(data);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
-      showToast('Erreur de chargement des commandes', 'error');
+      showToast(t('admin.orders_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [filters, showToast]);
+  }, [filters, showToast, t]);
 
   useEffect(() => {
     loadOrders();
@@ -53,7 +55,7 @@ export default function OrdersManagementPage() {
   const handleExportCSV = () => {
     const url = adminApi.exportOrdersCSV(filters);
     window.open(url, '_blank');
-    showToast('Export CSV en cours...', 'success');
+    showToast(t('admin.exporting_csv'), 'success');
   };
 
   const formatCurrency = (amount: number) => {
@@ -72,21 +74,21 @@ export default function OrdersManagementPage() {
 
   const getPaymentStatusBadge = (status: string) => {
     const variants = {
-      PENDING: { variant: 'warning' as const, text: 'En attente', icon: Clock },
-      PAID: { variant: 'success' as const, text: 'Payé', icon: CheckCircle },
-      FAILED: { variant: 'error' as const, text: 'Échoué', icon: XCircle },
-      REFUNDED: { variant: 'default' as const, text: 'Remboursé', icon: DollarSign },
+      PENDING: { variant: 'warning' as const, text: t('admin.pending'), icon: Clock },
+      PAID: { variant: 'success' as const, text: t('admin.paid'), icon: CheckCircle },
+      FAILED: { variant: 'error' as const, text: t('admin.failed'), icon: XCircle },
+      REFUNDED: { variant: 'default' as const, text: t('admin.refunded'), icon: DollarSign },
     };
     return variants[status as keyof typeof variants] || variants.PENDING;
   };
 
   const getFulfillmentStatusBadge = (status: string) => {
     const variants = {
-      PENDING: { variant: 'warning' as const, text: 'En attente', icon: Clock },
-      PROCESSING: { variant: 'default' as const, text: 'En préparation', icon: PackageCheck },
-      SHIPPED: { variant: 'default' as const, text: 'Expédiée', icon: Truck },
-      DELIVERED: { variant: 'success' as const, text: 'Livrée', icon: CheckCircle },
-      CANCELLED: { variant: 'error' as const, text: 'Annulée', icon: Ban },
+      PENDING: { variant: 'warning' as const, text: t('admin.pending'), icon: Clock },
+      PROCESSING: { variant: 'default' as const, text: t('admin.processing'), icon: PackageCheck },
+      SHIPPED: { variant: 'default' as const, text: t('admin.shipped'), icon: Truck },
+      DELIVERED: { variant: 'success' as const, text: t('admin.delivered_status'), icon: CheckCircle },
+      CANCELLED: { variant: 'error' as const, text: t('admin.cancelled'), icon: Ban },
     };
     return variants[status as keyof typeof variants] || variants.PENDING;
   };
@@ -117,10 +119,10 @@ export default function OrdersManagementPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Gestion Commandes</span>
+            <span className="text-gradient animate-gradient-bg">{t('admin.orders_management')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Vue complète de toutes les commandes de la plateforme
+            {t('admin.orders_subtitle')}
           </p>
         </div>
 
@@ -129,7 +131,7 @@ export default function OrdersManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Commandes</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_orders')}</p>
                 <p className="font-display font-bold text-3xl">{stats.total}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -141,7 +143,7 @@ export default function OrdersManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Revenu Total</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_revenue')}</p>
                 <p className="font-display font-bold text-2xl text-green-400">
                   {formatCurrency(stats.total_revenue)}
                 </p>
@@ -155,7 +157,7 @@ export default function OrdersManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">En attente paiement</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.pending_payment')}</p>
                 <p className="font-display font-bold text-3xl text-yellow-400">
                   {stats.pending_payment}
                 </p>
@@ -171,13 +173,13 @@ export default function OrdersManagementPage() {
         <Card className="mb-6">
           <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
             <Filter className="text-holo-purple" size={20} />
-            Filtres Avancés
+            {t('admin.advanced_filters')}
           </h3>
 
           {/* Ligne 1 : Recherche */}
           <div className="mb-4">
             <label className="block text-sm text-dark-text-tertiary mb-2">
-              Recherche (ID, Email, Téléphone, Transaction)
+              {t('admin.search_label')}
             </label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
@@ -187,7 +189,7 @@ export default function OrdersManagementPage() {
                 />
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={t('admin.search_placeholder')}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -198,7 +200,7 @@ export default function OrdersManagementPage() {
                 onClick={handleSearch}
                 className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
               >
-                Rechercher
+                {t('admin.search')}
               </button>
             </div>
           </div>
@@ -207,7 +209,7 @@ export default function OrdersManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm text-dark-text-tertiary mb-2">
-                Statut Paiement
+                {t('admin.payment_status')}
               </label>
               <select
                 value={filters.payment_status || ''}
@@ -216,17 +218,17 @@ export default function OrdersManagementPage() {
                 }
                 className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
               >
-                <option value="">Tous</option>
-                <option value="PENDING">En attente</option>
-                <option value="PAID">Payé</option>
-                <option value="FAILED">Échoué</option>
-                <option value="REFUNDED">Remboursé</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="PENDING">{t('admin.pending')}</option>
+                <option value="PAID">{t('admin.paid')}</option>
+                <option value="FAILED">{t('admin.failed')}</option>
+                <option value="REFUNDED">{t('admin.refunded')}</option>
               </select>
             </div>
 
             <div>
               <label className="block text-sm text-dark-text-tertiary mb-2">
-                Statut Livraison
+                {t('admin.delivery_status')}
               </label>
               <select
                 value={filters.fulfillment_status || ''}
@@ -238,12 +240,12 @@ export default function OrdersManagementPage() {
                 }
                 className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
               >
-                <option value="">Tous</option>
-                <option value="PENDING">En attente</option>
-                <option value="PROCESSING">En préparation</option>
-                <option value="SHIPPED">Expédiée</option>
-                <option value="DELIVERED">Livrée</option>
-                <option value="CANCELLED">Annulée</option>
+                <option value="">{t('admin.all')}</option>
+                <option value="PENDING">{t('admin.pending')}</option>
+                <option value="PROCESSING">{t('admin.processing')}</option>
+                <option value="SHIPPED">{t('admin.shipped')}</option>
+                <option value="DELIVERED">{t('admin.delivered_status')}</option>
+                <option value="CANCELLED">{t('admin.cancelled')}</option>
               </select>
             </div>
           </div>
@@ -251,7 +253,7 @@ export default function OrdersManagementPage() {
           {/* Ligne 3 : Dates */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm text-dark-text-tertiary mb-2">Date début</label>
+              <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.date_from')}</label>
               <input
                 type="date"
                 value={filters.date_from || ''}
@@ -263,7 +265,7 @@ export default function OrdersManagementPage() {
             </div>
 
             <div>
-              <label className="block text-sm text-dark-text-tertiary mb-2">Date fin</label>
+              <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.date_to')}</label>
               <input
                 type="date"
                 value={filters.date_to || ''}
@@ -279,7 +281,7 @@ export default function OrdersManagementPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm text-dark-text-tertiary mb-2">
-                Montant minimum (FCFA)
+                {t('admin.min_amount')}
               </label>
               <input
                 type="number"
@@ -297,7 +299,7 @@ export default function OrdersManagementPage() {
 
             <div>
               <label className="block text-sm text-dark-text-tertiary mb-2">
-                Montant maximum (FCFA)
+                {t('admin.max_amount')}
               </label>
               <input
                 type="number"
@@ -323,14 +325,14 @@ export default function OrdersManagementPage() {
               }}
               className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
             >
-              Réinitialiser
+              {t('admin.reset')}
             </button>
             <button
               onClick={handleExportCSV}
               className="px-4 py-2 bg-holo-purple text-white rounded-xl hover:bg-holo-purple/90 transition-all flex items-center gap-2"
             >
               <Download size={16} />
-              Exporter CSV
+              {t('admin.export_csv')}
             </button>
           </div>
         </Card>
@@ -341,7 +343,7 @@ export default function OrdersManagementPage() {
             {orders.length === 0 ? (
               <div className="text-center py-12">
                 <ShoppingCart className="w-16 h-16 text-dark-text-tertiary mx-auto mb-4" />
-                <p className="text-dark-text-secondary">Aucune commande trouvée</p>
+                <p className="text-dark-text-secondary">{t('admin.no_orders')}</p>
               </div>
             ) : (
               <table className="w-full">
@@ -351,22 +353,22 @@ export default function OrdersManagementPage() {
                       #
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Client
+                      {t('admin.client')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Ville
+                      {t('admin.city')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Articles
+                      {t('admin.items')}
                     </th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Total
+                      {t('admin.total')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Paiement
+                      {t('admin.payment')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Livraison
+                      {t('admin.delivery')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
                       Date

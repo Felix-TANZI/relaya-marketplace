@@ -3,12 +3,13 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Package, 
-  User, 
-  MapPin, 
-  Phone, 
+import { useTranslation } from 'react-i18next';
+import {
+  ArrowLeft,
+  Package,
+  User,
+  MapPin,
+  Phone,
   Mail,
   DollarSign,
   AlertCircle,
@@ -23,11 +24,12 @@ import { useConfirm } from '@/context/ConfirmContext';
 import type { PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function VendorOrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
-  
+
   const [order, setOrder] = useState<VendorOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [updatingPayment, setUpdatingPayment] = useState(false);
@@ -40,12 +42,12 @@ export default function VendorOrderDetailPage() {
       setOrder(data);
     } catch (error) {
       console.error('Erreur chargement commande:', error);
-      showToast('Erreur de chargement de la commande', 'error');
+      showToast(t('vendor.errorLoadingOrder'), 'error');
       navigate('/seller/orders');
     } finally {
       setLoading(false);
     }
-  }, [showToast, navigate]);
+  }, [showToast, navigate, t]);
 
   useEffect(() => {
     if (id) {
@@ -57,11 +59,11 @@ export default function VendorOrderDetailPage() {
     if (!order) return;
 
     const confirmed = await confirm({
-      title: 'Confirmer le changement de statut de paiement',
-      message: `Voulez-vous vraiment changer le statut de paiement vers "${getPaymentStatusLabel(newStatus)}" ?`,
+      title: t('vendor.confirmPaymentStatusChange'),
+      message: t('vendor.confirmPaymentStatusChangeMessage', { status: getPaymentStatusLabel(newStatus) }),
       type: 'warning',
-      confirmText: 'Confirmer',
-      cancelText: 'Annuler',
+      confirmText: t('vendor.confirm'),
+      cancelText: t('vendor.cancel'),
     });
 
     if (!confirmed) return;
@@ -72,10 +74,10 @@ export default function VendorOrderDetailPage() {
         payment_status: newStatus
       });
       setOrder(updatedOrder);
-      showToast('Statut de paiement mis à jour avec succès', 'success');
+      showToast(t('vendor.paymentStatusUpdated'), 'success');
     } catch (error) {
       console.error('Erreur mise à jour statut paiement:', error);
-      showToast('Erreur lors de la mise à jour du statut de paiement', 'error');
+      showToast(t('vendor.errorUpdatingPaymentStatus'), 'error');
     } finally {
       setUpdatingPayment(false);
     }
@@ -85,16 +87,16 @@ export default function VendorOrderDetailPage() {
     if (!order) return;
 
     if (!order.is_paid && newStatus !== 'CANCELLED') {
-      showToast('La commande doit être payée avant de pouvoir être traitée', 'error');
+      showToast(t('vendor.orderMustBePaid'), 'error');
       return;
     }
 
     const confirmed = await confirm({
-      title: 'Confirmer le changement de statut de livraison',
-      message: `Voulez-vous vraiment changer le statut de livraison vers "${getFulfillmentStatusLabel(newStatus)}" ?`,
+      title: t('vendor.confirmFulfillmentStatusChange'),
+      message: t('vendor.confirmFulfillmentStatusChangeMessage', { status: getFulfillmentStatusLabel(newStatus) }),
       type: newStatus === 'CANCELLED' ? 'danger' : 'success',
-      confirmText: 'Confirmer',
-      cancelText: 'Annuler',
+      confirmText: t('vendor.confirm'),
+      cancelText: t('vendor.cancel'),
     });
 
     if (!confirmed) return;
@@ -105,10 +107,10 @@ export default function VendorOrderDetailPage() {
         fulfillment_status: newStatus
       });
       setOrder(updatedOrder);
-      showToast('Statut de livraison mis à jour avec succès', 'success');
+      showToast(t('vendor.fulfillmentStatusUpdated'), 'success');
     } catch (error) {
       console.error('Erreur mise à jour statut livraison:', error);
-      showToast('Erreur lors de la mise à jour du statut de livraison', 'error');
+      showToast(t('vendor.errorUpdatingFulfillmentStatus'), 'error');
     } finally {
       setUpdatingFulfillment(false);
     }
@@ -117,13 +119,13 @@ export default function VendorOrderDetailPage() {
   const getPaymentStatusLabel = (status: PaymentStatus): string => {
     switch (status) {
       case 'PENDING':
-        return 'En attente';
+        return t('vendor.paymentPending');
       case 'PAID':
-        return 'Payé';
+        return t('vendor.paymentPaid');
       case 'FAILED':
-        return 'Échec';
+        return t('vendor.paymentFailed');
       case 'REFUNDED':
-        return 'Remboursé';
+        return t('vendor.paymentRefunded');
       default:
         return status;
     }
@@ -132,13 +134,13 @@ export default function VendorOrderDetailPage() {
   const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente' };
+        return { variant: 'warning' as const, text: t('vendor.paymentPending') };
       case 'PAID':
-        return { variant: 'success' as const, text: 'Payé' };
+        return { variant: 'success' as const, text: t('vendor.paymentPaid') };
       case 'FAILED':
-        return { variant: 'error' as const, text: 'Échec' };
+        return { variant: 'error' as const, text: t('vendor.paymentFailed') };
       case 'REFUNDED':
-        return { variant: 'default' as const, text: 'Remboursé' };
+        return { variant: 'default' as const, text: t('vendor.paymentRefunded') };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -147,15 +149,15 @@ export default function VendorOrderDetailPage() {
   const getFulfillmentStatusLabel = (status: FulfillmentStatus): string => {
     switch (status) {
       case 'PENDING':
-        return 'En attente';
+        return t('vendor.fulfillmentPending');
       case 'PROCESSING':
-        return 'En préparation';
+        return t('vendor.fulfillmentProcessing');
       case 'SHIPPED':
-        return 'Expédié';
+        return t('vendor.fulfillmentShipped');
       case 'DELIVERED':
-        return 'Livré';
+        return t('vendor.fulfillmentDelivered');
       case 'CANCELLED':
-        return 'Annulé';
+        return t('vendor.fulfillmentCancelled');
       default:
         return status;
     }
@@ -164,15 +166,15 @@ export default function VendorOrderDetailPage() {
   const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
       case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente' };
+        return { variant: 'warning' as const, text: t('vendor.fulfillmentPending') };
       case 'PROCESSING':
-        return { variant: 'default' as const, text: 'En préparation' };
+        return { variant: 'default' as const, text: t('vendor.fulfillmentProcessing') };
       case 'SHIPPED':
-        return { variant: 'success' as const, text: 'Expédié' };
+        return { variant: 'success' as const, text: t('vendor.fulfillmentShipped') };
       case 'DELIVERED':
-        return { variant: 'success' as const, text: 'Livré' };
+        return { variant: 'success' as const, text: t('vendor.fulfillmentDelivered') };
       case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulé' };
+        return { variant: 'error' as const, text: t('vendor.fulfillmentCancelled') };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -197,7 +199,7 @@ export default function VendorOrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement de la commande...</p>
+          <p className="text-dark-text-secondary">{t('vendor.loadingOrder')}</p>
         </div>
       </div>
     );
@@ -208,14 +210,14 @@ export default function VendorOrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <Card className="max-w-md text-center">
           <AlertCircle className="text-red-400 mx-auto mb-4" size={48} />
-          <h2 className="font-bold text-xl text-dark-text mb-2">Commande introuvable</h2>
+          <h2 className="font-bold text-xl text-dark-text mb-2">{t('vendor.orderNotFound')}</h2>
           <p className="text-dark-text-secondary mb-6">
-            Cette commande n'existe pas ou ne contient pas vos produits.
+            {t('vendor.orderNotFoundMessage')}
           </p>
           <Link to="/seller/orders">
             <Button variant="secondary">
               <ArrowLeft size={20} className="mr-2" />
-              Retour aux commandes
+              {t('vendor.backToOrders')}
             </Button>
           </Link>
         </Card>
@@ -234,20 +236,20 @@ export default function VendorOrderDetailPage() {
           <Link to="/seller/orders">
             <Button variant="secondary" className="mb-4">
               <ArrowLeft size={20} className="mr-2" />
-              Retour aux commandes
+              {t('vendor.backToOrders')}
             </Button>
           </Link>
-          
+
           <div className="flex items-center justify-between">
             <div>
               <h1 className="font-display font-bold text-3xl mb-2">
-                Commande <span className="text-gradient">#{order.id}</span>
+                {t('vendor.order')} <span className="text-gradient">#{order.id}</span>
               </h1>
               <p className="text-dark-text-secondary">
-                Passée le {formatDate(order.created_at)}
+                {t('vendor.placedOn')} {formatDate(order.created_at)}
               </p>
             </div>
-            
+
             <div className="flex flex-col gap-2">
               <Badge variant={paymentBadge.variant}>
                 <CreditCard size={16} className="mr-1" />
@@ -268,7 +270,7 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-6">
                 <Package className="text-holo-cyan" size={24} />
-                <h2 className="font-display font-bold text-xl">Articles commandés</h2>
+                <h2 className="font-display font-bold text-xl">{t('vendor.orderedItems')}</h2>
               </div>
 
               <div className="space-y-4">
@@ -297,12 +299,12 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-6">
                 <CreditCard className="text-holo-purple" size={24} />
-                <h2 className="font-display font-bold text-xl">Gestion du paiement</h2>
+                <h2 className="font-display font-bold text-xl">{t('vendor.paymentManagement')}</h2>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-text-secondary">Statut actuel :</span>
+                  <span className="text-dark-text-secondary">{t('vendor.currentStatus')}</span>
                   <Badge variant={paymentBadge.variant}>{paymentBadge.text}</Badge>
                 </div>
 
@@ -316,20 +318,19 @@ export default function VendorOrderDetailPage() {
                     {updatingPayment ? (
                       <>
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
-                        Mise à jour...
+                        {t('vendor.updating')}
                       </>
                     ) : (
                       <>
                         <CheckCircle size={20} className="mr-2" />
-                        Marquer comme payé
+                        {t('vendor.markAsPaid')}
                       </>
                     )}
                   </Button>
                 )}
 
                 <p className="text-xs text-dark-text-secondary">
-                  ℹ️ Le statut de paiement est normalement géré automatiquement par le système de paiement.
-                  Cette action manuelle est utile pour les paiements en espèces à la livraison.
+                  {t('vendor.paymentStatusNote')}
                 </p>
               </div>
             </Card>
@@ -338,19 +339,19 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-6">
                 <Truck className="text-holo-cyan" size={24} />
-                <h2 className="font-display font-bold text-xl">Gestion de la livraison</h2>
+                <h2 className="font-display font-bold text-xl">{t('vendor.deliveryManagement')}</h2>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-dark-text-secondary">Statut actuel :</span>
+                  <span className="text-dark-text-secondary">{t('vendor.currentStatus')}</span>
                   <Badge variant={fulfillmentBadge.variant}>{fulfillmentBadge.text}</Badge>
                 </div>
 
                 {!order.is_paid && order.fulfillment_status !== 'CANCELLED' && (
                   <div className="p-3 rounded-lg bg-yellow-500/10 border border-yellow-500/30">
                     <p className="text-sm text-yellow-400">
-                      ⚠️ La commande doit être payée avant de pouvoir être traitée
+                      {t('vendor.orderMustBePaidWarning')}
                     </p>
                   </div>
                 )}
@@ -363,7 +364,7 @@ export default function VendorOrderDetailPage() {
                       disabled={updatingFulfillment}
                       className="col-span-2"
                     >
-                      Prendre en charge
+                      {t('vendor.takeInCharge')}
                     </Button>
                   )}
 
@@ -374,7 +375,7 @@ export default function VendorOrderDetailPage() {
                       disabled={updatingFulfillment}
                       className="col-span-2"
                     >
-                      Marquer comme expédié
+                      {t('vendor.markAsShipped')}
                     </Button>
                   )}
 
@@ -385,7 +386,7 @@ export default function VendorOrderDetailPage() {
                       disabled={updatingFulfillment}
                       className="col-span-2"
                     >
-                      Marquer comme livré
+                      {t('vendor.markAsDelivered')}
                     </Button>
                   )}
 
@@ -396,7 +397,7 @@ export default function VendorOrderDetailPage() {
                       disabled={updatingFulfillment}
                       className="col-span-2"
                     >
-                      Annuler
+                      {t('vendor.cancel')}
                     </Button>
                   )}
                 </div>
@@ -410,9 +411,9 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-4">
                 <User className="text-holo-purple" size={20} />
-                <h3 className="font-display font-bold">Client</h3>
+                <h3 className="font-display font-bold">{t('vendor.customer')}</h3>
               </div>
-              
+
               <div className="space-y-3 text-sm">
                 {order.customer_email && (
                   <div className="flex items-center gap-2">
@@ -431,15 +432,15 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-4">
                 <MapPin className="text-holo-cyan" size={20} />
-                <h3 className="font-display font-bold">Livraison</h3>
+                <h3 className="font-display font-bold">{t('vendor.delivery')}</h3>
               </div>
-              
+
               <div className="space-y-2 text-sm">
                 <p className="font-medium">{order.city}</p>
                 <p className="text-dark-text-secondary">{order.address}</p>
                 {order.note && (
                   <div className="mt-3 p-2 rounded bg-dark-accent/30">
-                    <p className="text-xs text-dark-text-secondary">Note :</p>
+                    <p className="text-xs text-dark-text-secondary">{t('vendor.note')} :</p>
                     <p className="text-sm">{order.note}</p>
                   </div>
                 )}
@@ -450,21 +451,21 @@ export default function VendorOrderDetailPage() {
             <Card>
               <div className="flex items-center gap-3 mb-4">
                 <DollarSign className="text-holo-cyan" size={20} />
-                <h3 className="font-display font-bold">Résumé</h3>
+                <h3 className="font-display font-bold">{t('vendor.summary')}</h3>
               </div>
-              
+
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Sous-total</span>
+                  <span className="text-dark-text-secondary">{t('vendor.subtotal')}</span>
                   <span>{formatPrice(order.subtotal_xaf)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Livraison</span>
+                  <span className="text-dark-text-secondary">{t('vendor.deliveryFee')}</span>
                   <span>{formatPrice(order.delivery_fee_xaf)}</span>
                 </div>
                 <div className="h-px bg-dark-accent/50" />
                 <div className="flex justify-between font-bold text-lg">
-                  <span>Total</span>
+                  <span>{t('vendor.total')}</span>
                   <span className="text-holo-cyan">{formatPrice(order.total_xaf)}</span>
                 </div>
               </div>

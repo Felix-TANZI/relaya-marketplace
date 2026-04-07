@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Bell,
   CircleHelp,
@@ -34,6 +34,8 @@ import { customerApi } from "@/services/api/customer";
 export default function Header() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSearchPage = location.pathname === "/search";
   const { items } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -138,17 +140,19 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Search Bar - Desktop */}
-          <button
-            data-tutorial="header-search"
-            onClick={() => navigate("/search")}
-            className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
-          >
-            <Search size={20} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-400 dark:text-gray-500">
-              {t("header.search_placeholder")}
-            </span>
-          </button>
+          {/* Search Bar - Desktop (hidden on search page) */}
+          {!isSearchPage && (
+            <button
+              data-tutorial="header-search"
+              onClick={() => navigate("/search")}
+              className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
+            >
+              <Search size={20} className="text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                {t("header.search_placeholder")}
+              </span>
+            </button>
+          )}
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
@@ -438,18 +442,20 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Bar - Mobile */}
-        <button
-          onClick={() => navigate("/search")}
-          className="lg:hidden pb-4 w-full"
-        >
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
-            <Search size={18} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-400 dark:text-gray-500">
-              {t("header.search_placeholder")}
-            </span>
-          </div>
-        </button>
+        {/* Search Bar - Mobile (hidden on search page) */}
+        {!isSearchPage && (
+          <button
+            onClick={() => navigate("/search")}
+            className="lg:hidden pb-4 w-full"
+          >
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
+              <Search size={18} className="text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                {t("header.search_placeholder")}
+              </span>
+            </div>
+          </button>
+        )}
 
         <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
           {clientNavItems.map((item) => (

@@ -1,6 +1,7 @@
 import { Heart, ShoppingCart, Star, Store, Truck } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useCart } from "@/context/CartContext";
 import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
 import { customerApi } from "@/services/api/customer";
@@ -49,6 +50,7 @@ export default function ProductCard({
   product,
   showPromo = false,
 }: ProductCardProps) {
+  const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
@@ -118,12 +120,12 @@ export default function ProductCard({
             ) : null}
             {hasFreeDelivery ? (
               <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                Livraison offerte
+                {t('product_card.free_delivery')}
               </span>
             ) : null}
             {!inStock ? (
               <span className="rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-bold text-white">
-                Épuisé
+                {t('product_card.sold_out')}
               </span>
             ) : null}
           </div>
@@ -162,7 +164,7 @@ export default function ProductCard({
               </span>
             ) : (
               <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-gray-700 dark:text-gray-300">
-                Catalogue
+                {t('product_card.catalog')}
               </span>
             )}
 
@@ -184,12 +186,12 @@ export default function ProductCard({
                   {product.rating_average.toFixed(1)}
                 </div>
                 <span className="text-xs text-gray-400 dark:text-gray-500">
-                  ({product.reviews_count} avis)
+                  ({product.reviews_count} {t('product_card.reviews')})
                 </span>
               </>
             ) : (
               <span className="text-xs text-gray-400 dark:text-gray-500">
-                Nouveau sur la marketplace
+                {t('product_card.new_on_marketplace')}
               </span>
             )}
           </div>
@@ -205,7 +207,7 @@ export default function ProductCard({
                 </div>
               ) : (
                 <div className="text-xs text-gray-400 dark:text-gray-500">
-                  Prix marketplace
+                  {t('product_card.marketplace_price')}
                 </div>
               )}
             </div>
@@ -213,7 +215,7 @@ export default function ProductCard({
             {inStock ? (
               <div className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
                 <Truck size={12} />
-                {hasFreeDelivery ? "Offerte" : "72h max"}
+                {hasFreeDelivery ? t('product_card.free') : t('product_card.max_72h')}
               </div>
             ) : null}
           </div>
@@ -228,7 +230,7 @@ export default function ProductCard({
             }`}
           >
             <ShoppingCart size={18} />
-            {inStock ? "Ajouter au panier" : "Indisponible"}
+            {inStock ? t('product_card.add_to_cart') : t('product_card.unavailable')}
           </button>
         </div>
       </article>

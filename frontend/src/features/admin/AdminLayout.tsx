@@ -3,6 +3,7 @@
 
 import { useState } from 'react';
 import { Link, useLocation, Outlet } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
   Package,
@@ -18,43 +19,44 @@ import {
 import { useAuth } from '@/context/AuthContext';
 
 export default function AdminLayout() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   const navigation = [
     {
-      name: 'Dashboard',
+      name: t('admin.navDashboard'),
       href: '/admin/dashboard',
       icon: LayoutDashboard,
     },
     {
-      name: 'Produits',
+      name: t('admin.navProducts'),
       href: '/admin/products',
       icon: Package,
     },
     {
-      name: 'Commandes',
+      name: t('admin.navOrders'),
       href: '/admin/orders',
       icon: ShoppingCart,
     },
     {
-      name: 'Utilisateurs',
+      name: t('admin.navUsers'),
       href: '/admin/users',
       icon: Users,
     },
     {
-      name: 'Vendeurs',
+      name: t('admin.navVendors'),
       href: '/admin/vendors',
       icon: Store,
     },
     {
-      name: 'Litiges',
+      name: t('admin.navDisputes'),
       href: '/admin/disputes',
       icon: AlertCircle,
     },
     {
-      name: 'Paramètres',
+      name: t('admin.navSettings'),
       href: '/admin/settings',
       icon: Settings,
     },
@@ -83,9 +85,9 @@ export default function AdminLayout() {
                 </div>
                 <div>
                   <p className="font-display font-bold text-lg text-gradient animate-gradient-bg">
-                    Admin
+                    {t('admin.adminTitle')}
                   </p>
-                  <p className="text-xs text-dark-text-tertiary">Relaya Panel</p>
+                  <p className="text-xs text-dark-text-tertiary">{t('admin.relayaPanel')}</p>
                 </div>
               </Link>
               <button
@@ -131,7 +133,7 @@ export default function AdminLayout() {
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate text-white">{user?.username}</p>
-                <p className="text-xs text-dark-text-tertiary">Administrateur</p>
+                <p className="text-xs text-dark-text-tertiary">{t('admin.administrator')}</p>
               </div>
             </div>
             <button
@@ -139,7 +141,7 @@ export default function AdminLayout() {
               className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-xl text-red-400 hover:bg-red-500/20 transition-all"
             >
               <LogOut size={16} />
-              <span>Déconnexion</span>
+              <span>{t('admin.logout')}</span>
             </button>
           </div>
         </div>

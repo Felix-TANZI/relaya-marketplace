@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { 
-  Mail, 
-  Phone, 
-  MapPin, 
+import { useTranslation } from 'react-i18next';
+import {
+  Mail,
+  Phone,
+  MapPin,
   Clock,
   Send,
   MessageCircle,
@@ -16,6 +17,7 @@ import {
 } from 'lucide-react';
 
 export default function ContactPage() {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -30,12 +32,12 @@ export default function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
-    
+
     setTimeout(() => {
       setSubmitting(false);
       setSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
-      
+
       setTimeout(() => setSubmitted(false), 5000);
     }, 1500);
   };
@@ -50,39 +52,39 @@ export default function ContactPage() {
   const contactMethods = [
     {
       icon: Phone,
-      title: 'Téléphone',
+      title: t('contact.methods.phone_title'),
       value: '+237 6XX XX XX XX',
       link: 'tel:+237',
       color: 'text-green-600',
       bg: 'bg-green-100 dark:bg-green-900/20',
-      delay: 'Réponse immédiate'
+      delay: t('contact.methods.phone_response')
     },
     {
       icon: Mail,
-      title: 'Email',
+      title: t('contact.methods.email_title'),
       value: 'contact@belivay.com',
       link: 'mailto:contact@belivay.com',
       color: 'text-blue-600',
       bg: 'bg-blue-100 dark:bg-blue-900/20',
-      delay: 'Sous 24h'
+      delay: t('contact.methods.email_response')
     },
     {
       icon: MessageCircle,
-      title: 'WhatsApp',
+      title: t('contact.methods.whatsapp_title'),
       value: '+237 6XX XX XX XX',
       link: 'https://wa.me/237',
       color: 'text-green-500',
       bg: 'bg-green-50 dark:bg-green-900/10',
-      delay: 'Réponse rapide'
+      delay: t('contact.methods.whatsapp_response')
     },
     {
       icon: MapPin,
-      title: 'Adresse',
-      value: 'Yaoundé, Cameroun',
+      title: t('contact.methods.address_title'),
+      value: t('contact.methods.address_value'),
       link: '#',
       color: 'text-purple-600',
       bg: 'bg-purple-100 dark:bg-purple-900/20',
-      delay: 'Visite sur RDV'
+      delay: t('contact.methods.address_response')
     }
   ];
 
@@ -94,20 +96,20 @@ export default function ContactPage() {
 
   const faqs = [
     {
-      question: "Quels sont vos délais de livraison ?",
-      answer: "Nous livrons sous 2-5 jours ouvrables en livraison standard et 24-48h en express sur tout le Cameroun."
+      question: t('contact.faq.delivery_question'),
+      answer: t('contact.faq.delivery_answer')
     },
     {
-      question: "Comment suivre ma commande ?",
-      answer: "Connectez-vous à votre compte et accédez à 'Mes commandes' pour suivre votre colis en temps réel."
+      question: t('contact.faq.tracking_question'),
+      answer: t('contact.faq.tracking_answer')
     },
     {
-      question: "Puis-je retourner un produit ?",
-      answer: "Oui, vous disposez de 10 jours pour retourner un produit non conforme ou si vous changez d'avis."
+      question: t('contact.faq.return_question'),
+      answer: t('contact.faq.return_answer')
     },
     {
-      question: "Quels modes de paiement acceptez-vous ?",
-      answer: "Nous acceptons Mobile Money (MTN, Orange), cartes bancaires et paiement à la livraison."
+      question: t('contact.faq.payment_question'),
+      answer: t('contact.faq.payment_answer')
     }
   ];
 
@@ -118,11 +120,11 @@ export default function ContactPage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-primary via-purple-600 to-blue-600 bg-clip-text text-transparent">
-              Contactez-nous
+              {t('contact.title')}
             </span>
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-lg max-w-2xl mx-auto">
-            Notre équipe est à votre écoute pour répondre à toutes vos questions
+            {t('contact.subtitle')}
           </p>
         </div>
 
@@ -131,15 +133,15 @@ export default function ContactPage() {
           <div className="lg:col-span-2 space-y-6">
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg">
               <h2 className="text-2xl font-bold mb-6 text-gray-900 dark:text-white">
-                Envoyez-nous un message
+                {t('contact.form_title')}
               </h2>
 
               {submitted && (
                 <div className="mb-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg flex items-center gap-3">
                   <CheckCircle className="text-green-600" size={24} />
                   <div>
-                    <p className="font-semibold text-green-800 dark:text-green-400">Message envoyé !</p>
-                    <p className="text-sm text-green-600 dark:text-green-500">Nous vous répondrons dans les 24h.</p>
+                    <p className="font-semibold text-green-800 dark:text-green-400">{t('contact.success_title')}</p>
+                    <p className="text-sm text-green-600 dark:text-green-500">{t('contact.success_description')}</p>
                   </div>
                 </div>
               )}
@@ -148,7 +150,7 @@ export default function ContactPage() {
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Nom complet *
+                      {t('contact.form.full_name_label')}
                     </label>
                     <input
                       type="text"
@@ -157,12 +159,12 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                      placeholder="Votre nom"
+                      placeholder={t('contact.form.full_name_placeholder')}
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                      Téléphone *
+                      {t('contact.form.phone_label')}
                     </label>
                     <input
                       type="tel"
@@ -171,14 +173,14 @@ export default function ContactPage() {
                       onChange={handleChange}
                       required
                       className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                      placeholder="+237 6XX XX XX XX"
+                      placeholder={t('contact.form.phone_placeholder')}
                     />
                   </div>
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    Email *
+                    {t('contact.form.email_label')}
                   </label>
                   <input
                     type="email"
@@ -187,13 +189,13 @@ export default function ContactPage() {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                    placeholder="votre@email.com"
+                    placeholder={t('contact.form.email_placeholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    Objet *
+                    {t('contact.form.subject_label')}
                   </label>
                   <input
                     type="text"
@@ -202,13 +204,13 @@ export default function ContactPage() {
                     onChange={handleChange}
                     required
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                    placeholder="Ex: Question sur ma commande #12345"
+                    placeholder={t('contact.form.subject_placeholder')}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
-                    Message *
+                    {t('contact.form.message_label')}
                   </label>
                   <textarea
                     name="message"
@@ -217,7 +219,7 @@ export default function ContactPage() {
                     required
                     rows={6}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all resize-none"
-                    placeholder="Décrivez votre demande en détail..."
+                    placeholder={t('contact.form.message_placeholder')}
                   />
                 </div>
 
@@ -229,12 +231,12 @@ export default function ContactPage() {
                   {submitting ? (
                     <>
                       <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                      Envoi en cours...
+                      {t('contact.form.submitting')}
                     </>
                   ) : (
                     <>
                       <Send size={20} />
-                      Envoyer le message
+                      {t('contact.form.submit')}
                     </>
                   )}
                 </button>
@@ -248,7 +250,7 @@ export default function ContactPage() {
                   <HelpCircle className="text-blue-600" size={20} />
                 </div>
                 <h3 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Questions fréquentes
+                  {t('contact.faq_title')}
                 </h3>
               </div>
               <div className="space-y-3">
@@ -259,8 +261,8 @@ export default function ContactPage() {
                       className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-all text-left"
                     >
                       <span className="font-medium text-gray-900 dark:text-white">{faq.question}</span>
-                      <ChevronDown 
-                        size={20} 
+                      <ChevronDown
+                        size={20}
                         className={`text-gray-500 transition-transform ${expandedFaq === index ? 'rotate-180' : ''}`}
                       />
                     </button>
@@ -273,12 +275,11 @@ export default function ContactPage() {
                 ))}
               </div>
               <div className="mt-6 text-center">
-                
-                  <a
+                <a
                   href="/help"
                   className="text-primary hover:underline font-medium text-sm"
                 >
-                  Voir toutes les questions →
+                  {t('contact.help_center_link')} →
                 </a>
               </div>
             </div>
@@ -293,26 +294,24 @@ export default function ContactPage() {
                   <Zap className="text-white" size={20} />
                 </div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                  Besoin urgent ?
+                  {t('contact.urgent_title')}
                 </h3>
               </div>
               <p className="text-sm text-gray-700 dark:text-gray-300 mb-4">
-                Pour les urgences, contactez-nous directement par téléphone ou WhatsApp
+                {t('contact.urgent_description')}
               </p>
               <div className="flex gap-3">
-                
-                  <a
+                <a
                   href="tel:+237"
                   className="flex-1 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg text-center font-semibold text-sm hover:shadow-md transition-all"
                 >
-                  📞 Appeler
+                  {t('contact.urgent_call')}
                 </a>
-                
-                  <a
+                <a
                   href="https://wa.me/237"
                   className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg text-center font-semibold text-sm hover:bg-green-600 transition-all"
                 >
-                  💬 WhatsApp
+                  {t('contact.urgent_whatsapp')}
                 </a>
               </div>
             </div>
@@ -320,7 +319,7 @@ export default function ContactPage() {
             {/* Moyens de contact */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
               <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
-                Nos coordonnées
+                {t('contact.coordinates_title')}
               </h3>
               <div className="space-y-4">
                 {contactMethods.map((method, index) => (
@@ -355,26 +354,26 @@ export default function ContactPage() {
                   <Clock className="text-orange-600" size={20} />
                 </div>
                 <h3 className="font-bold text-lg text-gray-900 dark:text-white">
-                  Heures d'ouverture
+                  {t('contact.opening_hours_title')}
                 </h3>
               </div>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Lundi - Vendredi</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">8h - 18h</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('contact.opening_hours.monday_friday')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{t('contact.opening_hours.monday_friday_time')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Samedi</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">9h - 14h</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('contact.opening_hours.saturday')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{t('contact.opening_hours.saturday_time')}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Dimanche</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">Fermé</span>
+                  <span className="text-gray-600 dark:text-gray-400">{t('contact.opening_hours.sunday')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{t('contact.opening_hours.sunday_closed')}</span>
                 </div>
               </div>
               <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                 <p className="text-xs text-blue-700 dark:text-blue-400">
-                  💡 Support WhatsApp disponible 24h/24
+                  {t('contact.opening_hours.whatsapp_note')}
                 </p>
               </div>
             </div>
@@ -382,7 +381,7 @@ export default function ContactPage() {
             {/* Réseaux sociaux */}
             <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-lg">
               <h3 className="font-bold text-lg mb-4 text-gray-900 dark:text-white">
-                Suivez-nous
+                {t('contact.social_title')}
               </h3>
               <div className="flex gap-3">
                 {socialLinks.map((social, index) => (
@@ -396,24 +395,23 @@ export default function ContactPage() {
                 ))}
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-4">
-                Restez informé des nouveautés, offres et actualités
+                {t('contact.social_description')}
               </p>
             </div>
 
             {/* Centre d'aide */}
             <div className="bg-gradient-to-br from-primary/10 to-purple-100/50 dark:from-primary/20 dark:to-purple-900/20 rounded-2xl p-6 border border-primary/20">
               <h3 className="font-bold text-lg mb-2 text-gray-900 dark:text-white">
-                Centre d'aide
+                {t('contact.help_center_title')}
               </h3>
               <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                Consultez nos guides et tutoriels pour des réponses immédiates
+                {t('contact.help_center_description')}
               </p>
-              
-                <a
+              <a
                 href="/help"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 text-primary font-semibold rounded-lg hover:shadow-md transition-all"
               >
-                Accéder au centre d'aide
+                {t('contact.help_center_link')}
                 <span>→</span>
               </a>
             </div>

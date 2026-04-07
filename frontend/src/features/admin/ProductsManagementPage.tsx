@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Package,
   Search,
@@ -20,6 +21,7 @@ import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
 
 export default function ProductsManagementPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -32,7 +34,7 @@ export default function ProductsManagementPage() {
   const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      
+
       const filters: {
         vendor?: number;
         category?: number;
@@ -42,16 +44,16 @@ export default function ProductsManagementPage() {
       if (filterStatus === 'active') filters.is_active = true;
       if (filterStatus === 'inactive') filters.is_active = false;
       if (searchQuery) filters.search = searchQuery;
-      
+
       const data = await adminApi.listProducts(filters);
       setProducts(data);
     } catch (error) {
       console.error('Erreur chargement produits:', error);
-      showToast('Erreur de chargement des produits', 'error');
+      showToast(t('admin.products_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, filterStatus, showToast]);
+  }, [searchQuery, filterStatus, showToast, t]);
 
   useEffect(() => {
     loadProducts();
@@ -148,10 +150,10 @@ export default function ProductsManagementPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Gestion Produits</span>
+            <span className="text-gradient animate-gradient-bg">{t('admin.products_management')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Modération et gestion de tous les produits de la plateforme
+            {t('admin.products_subtitle')}
           </p>
         </div>
 
@@ -160,7 +162,7 @@ export default function ProductsManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Produits</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_products')}</p>
                 <p className="font-display font-bold text-3xl">{stats.total}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -172,7 +174,7 @@ export default function ProductsManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Actifs</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.active_count')}</p>
                 <p className="font-display font-bold text-3xl text-green-400">
                   {stats.active}
                 </p>
@@ -186,7 +188,7 @@ export default function ProductsManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Inactifs</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.inactive_count')}</p>
                 <p className="font-display font-bold text-3xl text-red-400">
                   {stats.inactive}
                 </p>
@@ -200,7 +202,7 @@ export default function ProductsManagementPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Rupture Stock</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.out_of_stock')}</p>
                 <p className="font-display font-bold text-3xl text-yellow-400">
                   {stats.outOfStock}
                 </p>
@@ -223,7 +225,7 @@ export default function ProductsManagementPage() {
               />
               <input
                 type="text"
-                placeholder="Rechercher un produit, vendeur, catégorie..."
+                placeholder={t('admin.search_product')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all"
@@ -241,9 +243,9 @@ export default function ProductsManagementPage() {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="pl-10 pr-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all appearance-none cursor-pointer min-w-[180px]"
               >
-                <option value="">Tous les statuts</option>
-                <option value="active">Actifs uniquement</option>
-                <option value="inactive">Inactifs uniquement</option>
+                <option value="">{t('admin.all_statuses')}</option>
+                <option value="active">{t('admin.active_only')}</option>
+                <option value="inactive">{t('admin.inactive_only')}</option>
               </select>
             </div>
           </div>
@@ -253,7 +255,7 @@ export default function ProductsManagementPage() {
             <div className="mt-4 pt-4 border-t border-white/10">
               <p className="text-sm text-dark-text-secondary">
                 <span className="font-bold text-holo-cyan">{filteredProducts.length}</span>{' '}
-                résultat(s) pour "{searchQuery}"
+                {t('admin.results_for')} "{searchQuery}"
               </p>
             </div>
           )}
@@ -267,8 +269,8 @@ export default function ProductsManagementPage() {
                 <Package className="w-16 h-16 text-dark-text-tertiary mx-auto mb-4" />
                 <p className="text-dark-text-secondary">
                   {searchQuery
-                    ? 'Aucun produit ne correspond à votre recherche'
-                    : 'Aucun produit trouvé'}
+                    ? t('admin.no_product_match')
+                    : t('admin.no_products')}
                 </p>
               </div>
             ) : (
@@ -276,28 +278,28 @@ export default function ProductsManagementPage() {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Produit
+                      {t('admin.product')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Vendeur
+                      {t('admin.vendor')}
                     </th>
                     <th className="text-left py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Catégorie
+                      {t('admin.category')}
                     </th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Prix
+                      {t('admin.price')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Stock
+                      {t('admin.stock')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Statut
+                      {t('admin.status')}
                     </th>
                     <th className="text-center py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Date
+                      {t('admin.date')}
                     </th>
                     <th className="text-right py-3 px-4 text-sm font-medium text-dark-text-tertiary">
-                      Actions
+                      {t('admin.actions')}
                     </th>
                   </tr>
                 </thead>
@@ -340,7 +342,7 @@ export default function ProductsManagementPage() {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge variant={product.is_active ? 'success' : 'error'}>
-                          {product.is_active ? 'Actif' : 'Inactif'}
+                          {product.is_active ? t('admin.active_label') : t('admin.inactive_label')}
                         </Badge>
                       </td>
                       <td className="py-3 px-4 text-center text-sm text-dark-text-tertiary">

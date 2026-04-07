@@ -131,26 +131,26 @@ export default function HelpPage() {
 
   const guides: GuideItem[] = [
     {
-      title: 'Comment passer une commande',
-      description: 'Apprenez à créer un compte, naviguer, et finaliser votre première commande',
+      title: t('help.guides.order.title'),
+      description: t('help.guides.order.description'),
       icon: ShoppingCart,
       color: 'text-blue-600',
     },
     {
-      title: 'Suivi de commande en temps réel',
-      description: 'Comprenez le statut de votre colis et comment le suivre',
+      title: t('help.guides.tracking.title'),
+      description: t('help.guides.tracking.description'),
       icon: Truck,
       color: 'text-green-600',
     },
     {
-      title: 'Processus de retour',
-      description: 'Étapes complètes pour retourner un produit',
+      title: t('help.guides.returns.title'),
+      description: t('help.guides.returns.description'),
       icon: RotateCcw,
       color: 'text-purple-600',
     },
     {
-      title: 'Sécurité du compte',
-      description: 'Protégez votre compte avec 2FA et mots de passe forts',
+      title: t('help.guides.security.title'),
+      description: t('help.guides.security.description'),
       icon: Lock,
       color: 'text-red-600',
     },
@@ -158,23 +158,23 @@ export default function HelpPage() {
 
   const troubleshooting = [
     {
-      title: 'Je n\'arrive pas à me connecter',
-      description: 'Solutions pour les problèmes de connexion',
+      title: t('help.troubleshooting.login.title'),
+      description: t('help.troubleshooting.login.description'),
       icon: AlertCircle,
     },
     {
-      title: 'Erreur de paiement',
-      description: 'Dépannage des moyens de paiement',
+      title: t('help.troubleshooting.payment.title'),
+      description: t('help.troubleshooting.payment.description'),
       icon: CreditCard,
     },
     {
-      title: 'Produit indisponible',
-      description: 'Qu\'est-ce que cela signifie et que faire',
+      title: t('help.troubleshooting.unavailable.title'),
+      description: t('help.troubleshooting.unavailable.description'),
       icon: BarChart3,
     },
     {
-      title: 'Problèmes d\'expédition',
-      description: 'Issues de livraison et solutions',
+      title: t('help.troubleshooting.shipping.title'),
+      description: t('help.troubleshooting.shipping.description'),
       icon: Truck,
     },
   ];
@@ -216,7 +216,7 @@ export default function HelpPage() {
               />
               {searchQuery && (
                 <p className="text-sm text-gray-600 dark:text-gray-400 mt-3 text-center">
-                  {filteredFAQs.length} {filteredFAQs.length === 1 ? 'résultat trouvé' : 'résultats trouvés'}
+                  {filteredFAQs.length} {filteredFAQs.length === 1 ? t('help.result_found') : t('help.results_found')}
                 </p>
               )}
             </div>
@@ -229,10 +229,10 @@ export default function HelpPage() {
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-5xl mx-auto">
             {[
-              { number: '24/7', label: 'Support' },
-              { number: '5min', label: 'Temps moyen' },
-              { number: '10k+', label: 'Clients aidés' },
-              { number: '99%', label: 'Satisfaction' },
+              { number: '24/7', label: t('help.stats.support') },
+              { number: '5min', label: t('help.stats.avg_time') },
+              { number: '10k+', label: t('help.stats.clients_helped') },
+              { number: '99%', label: t('help.stats.satisfaction') },
             ].map((stat, index) => (
               <div key={index} className="text-center">
                 <p className="text-3xl font-bold text-primary">{stat.number}</p>
@@ -248,11 +248,11 @@ export default function HelpPage() {
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-4xl font-display font-bold mb-4">
-              <span className="text-gray-900 dark:text-white">Explorez par </span>
-              <span className="text-primary">catégorie</span>
+              <span className="text-gray-900 dark:text-white">{t('help.categories_title_prefix')} </span>
+              <span className="text-primary">{t('help.categories_title_suffix')}</span>
             </h2>
             <p className="text-gray-600 dark:text-gray-400 text-lg">
-              Sélectionnez une catégorie ou parcourez toutes les questions
+              {t('help.categories_subtitle')}
             </p>
           </div>
 
@@ -305,7 +305,7 @@ export default function HelpPage() {
                 onClick={() => setSelectedCategory('all')}
                 className="px-6 py-2.5 text-primary hover:text-primary-dark font-medium transition-colors flex items-center justify-center gap-2 mx-auto"
               >
-                ← Voir toutes les catégories
+                ← {t('help.view_all_categories')}
               </button>
             </div>
           )}
@@ -317,10 +317,10 @@ export default function HelpPage() {
         <div className="container mx-auto px-4">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl font-display font-bold mb-2 text-gray-900 dark:text-white">
-              Questions Fréquemment Posées
+              {t('help.faq_title')}
             </h2>
             <p className="text-gray-600 dark:text-gray-400 mb-12">
-              Trouvez rapidement les réponses les plus demandées
+              {t('help.faq_subtitle')}
             </p>
 
             {filteredFAQs.length === 0 ? (
@@ -406,15 +406,15 @@ export default function HelpPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 mb-4">
                 <Video size={16} className="text-purple-600" />
                 <span className="text-sm font-medium text-purple-700 dark:text-purple-400">
-                  Tutoriels Vidéo
+                  {t('help.video_tutorials')}
                 </span>
               </div>
               <h2 className="text-4xl font-display font-bold mb-4">
-                <span className="text-gray-900 dark:text-white">Guides </span>
-                <span className="text-primary">Complets</span>
+                <span className="text-gray-900 dark:text-white">{t('help.guides_title_prefix')} </span>
+                <span className="text-primary">{t('help.guides_title_suffix')}</span>
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Maîtrisez Belivay avec nos tutoriels détaillés
+                {t('help.guides_subtitle')}
               </p>
             </div>
 
@@ -434,7 +434,7 @@ export default function HelpPage() {
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">{guide.description}</p>
                     <div className="mt-4 flex items-center gap-2 text-primary font-medium text-sm group-hover:gap-3 transition-all">
-                      Voir le guide <span>→</span>
+                      {t('help.view_guide')} <span>→</span>
                     </div>
                   </button>
                 );
@@ -452,15 +452,15 @@ export default function HelpPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-200 dark:bg-orange-900/40 border border-orange-300 dark:border-orange-700 mb-4">
                 <AlertCircle size={16} className="text-orange-600" />
                 <span className="text-sm font-medium text-orange-700 dark:text-orange-400">
-                  Dépannage
+                  {t('help.troubleshooting_label')}
                 </span>
               </div>
               <h2 className="text-4xl font-display font-bold mb-4">
-                <span className="text-gray-900 dark:text-white">Résoudre un </span>
-                <span className="text-orange-600">Problème</span>
+                <span className="text-gray-900 dark:text-white">{t('help.troubleshooting_title_prefix')} </span>
+                <span className="text-orange-600">{t('help.troubleshooting_title_suffix')}</span>
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Solutions rapides pour les problèmes courants
+                {t('help.troubleshooting_subtitle')}
               </p>
             </div>
 
@@ -482,7 +482,7 @@ export default function HelpPage() {
                         </h3>
                         <p className="text-sm text-gray-600 dark:text-gray-400">{item.description}</p>
                         <div className="mt-3 flex items-center gap-2 text-primary font-medium text-sm group-hover:gap-3 transition-all">
-                          Voir les solutions <span>→</span>
+                          {t('help.view_solutions')} <span>→</span>
                         </div>
                       </div>
                     </div>
@@ -502,22 +502,22 @@ export default function HelpPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-100 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 mb-4">
                 <Users size={16} className="text-blue-600" />
                 <span className="text-sm font-medium text-blue-700 dark:text-blue-400">
-                  Communauté
+                  {t('help.community_label')}
                 </span>
               </div>
               <h2 className="text-4xl font-display font-bold mb-4">
-                <span className="text-gray-900 dark:text-white">Rejoignez notre </span>
-                <span className="text-primary">Communauté</span>
+                <span className="text-gray-900 dark:text-white">{t('help.community_title_prefix')} </span>
+                <span className="text-primary">{t('help.community_title_suffix')}</span>
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-lg mb-6">
-                Connectez-vous avec d'autres utilisateurs, partagez vos expériences et obtenez des conseils
+                {t('help.community_subtitle')}
               </p>
               <ul className="space-y-3 mb-8">
                 {[
-                  'Forums actifs avec modérateurs',
-                  'Groupes d\'entraide entre utilisateurs',
-                  'Conseils et astuces d\'experts',
-                  'Événements et webinaires',
+                  t('help.community_features.forums'),
+                  t('help.community_features.groups'),
+                  t('help.community_features.tips'),
+                  t('help.community_features.events'),
                 ].map((item, index) => (
                   <li key={index} className="flex items-start gap-3">
                     <CheckCircle className="text-primary flex-shrink-0 mt-1" size={20} />
@@ -526,14 +526,14 @@ export default function HelpPage() {
                 ))}
               </ul>
               <button className="px-8 py-3 bg-primary hover:bg-primary-dark text-white font-semibold rounded-lg transition-all shadow-lg hover:shadow-xl">
-                Rejoindre la communauté
+                {t('help.join_community')}
               </button>
             </div>
             <div className="bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/30 dark:to-purple-900/30 rounded-2xl p-12 border border-blue-200 dark:border-blue-800 flex items-center justify-center min-h-96">
               <div className="text-center">
                 <Users className="text-primary mx-auto mb-4" size={48} />
                 <p className="text-3xl font-bold text-primary">50k+</p>
-                <p className="text-gray-600 dark:text-gray-400">Utilisateurs actifs</p>
+                <p className="text-gray-600 dark:text-gray-400">{t('help.active_users')}</p>
               </div>
             </div>
           </div>
@@ -548,26 +548,26 @@ export default function HelpPage() {
               <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-purple-100 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 mb-4">
                 <BookOpen size={16} className="text-purple-600" />
                 <span className="text-sm font-medium text-purple-700 dark:text-purple-400">
-                  Base de Connaissances
+                  {t('help.knowledge_base_label')}
                 </span>
               </div>
               <h2 className="text-4xl font-display font-bold mb-4">
-                <span className="text-gray-900 dark:text-white">Articles </span>
-                <span className="text-primary">Détaillés</span>
+                <span className="text-gray-900 dark:text-white">{t('help.kb_title_prefix')} </span>
+                <span className="text-primary">{t('help.kb_title_suffix')}</span>
               </h2>
               <p className="text-gray-600 dark:text-gray-400 text-lg">
-                Documentation complète et guides d'utilisation
+                {t('help.kb_subtitle')}
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-6">
               {[
-                { title: 'Politique d\'expédition', icon: Truck },
-                { title: 'Conditions d\'utilisation', icon: FileText },
-                { title: 'Politique de confidentialité', icon: Lock },
-                { title: 'Programme de partenariat', icon: Globe },
-                { title: 'Frais et tarification', icon: CreditCard },
-                { title: 'Garantie produits', icon: CheckCircle },
+                { title: t('help.kb_articles.shipping_policy'), icon: Truck },
+                { title: t('help.kb_articles.terms'), icon: FileText },
+                { title: t('help.kb_articles.privacy'), icon: Lock },
+                { title: t('help.kb_articles.partnership'), icon: Globe },
+                { title: t('help.kb_articles.pricing'), icon: CreditCard },
+                { title: t('help.kb_articles.warranty'), icon: CheckCircle },
               ].map((item, index) => {
                 const Icon = item.icon;
                 return (
@@ -581,7 +581,7 @@ export default function HelpPage() {
                         {item.title}
                       </h3>
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Accédez à l'article complet</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{t('help.access_full_article')}</p>
                   </button>
                 );
               })}
@@ -595,22 +595,22 @@ export default function HelpPage() {
         <div className="container mx-auto px-4">
           <div className="bg-gradient-to-br from-primary to-purple-600 rounded-2xl p-12 max-w-4xl mx-auto text-center text-white">
             <h2 className="text-4xl font-display font-bold mb-4">
-              Vous n'avez pas trouvé de réponse ?
+              {t('help.cta_title')}
             </h2>
             <p className="text-white/90 text-lg mb-8">
-              Notre équipe support est prête à vous aider immédiatement
+              {t('help.cta_subtitle')}
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4">
               <Link to="/contact">
                 <button className="px-8 py-3 bg-white hover:bg-gray-100 text-primary font-semibold rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-xl">
                   <Mail size={20} />
-                  Contacter le support
+                  {t('help.contact_support')}
                 </button>
               </Link>
               <a href="tel:+237">
                 <button className="px-8 py-3 bg-white/20 hover:bg-white/30 text-white font-semibold rounded-lg flex items-center gap-2 transition-all backdrop-blur-sm border border-white/30">
                   <Phone size={20} />
-                  Appeler maintenant
+                  {t('help.call_now')}
                 </button>
               </a>
             </div>

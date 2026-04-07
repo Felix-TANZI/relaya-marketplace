@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, Package, Upload, X } from "lucide-react";
 import { Button, Card } from "@/components/ui";
 import { vendorsApi } from "@/services/api/vendors";
@@ -12,6 +13,7 @@ import ImageUploader from "@/components/vendor/ImageUploader";
 import { type ProductImage } from "@/services/api/vendors";
 
 export default function ProductFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -44,7 +46,7 @@ export default function ProductFormPage() {
       setCategories(data);
     } catch (error) {
       console.error("Erreur chargement catégories:", error);
-      showToast("Erreur de chargement des catégories", "error");
+      showToast(t("vendor.errorLoadingCategories"), "error");
     }
   };
 
@@ -66,12 +68,12 @@ export default function ProductFormPage() {
         // Charger les images si elles existent
         setProductImages(product.images || []);
       } else {
-        showToast("Produit introuvable", "error");
+        showToast(t("vendor.productNotFound"), "error");
         navigate("/seller/dashboard");
       }
     } catch (error) {
       console.error("Erreur chargement produit:", error);
-      showToast("Erreur de chargement du produit", "error");
+      showToast(t("vendor.errorLoadingProduct"), "error");
       navigate("/seller/dashboard");
     } finally {
       setLoading(false);
@@ -83,19 +85,19 @@ export default function ProductFormPage() {
 
     // Validation
     if (!formData.title.trim()) {
-      showToast("Le titre est requis", "error");
+      showToast(t("vendor.titleRequired"), "error");
       return;
     }
     if (!formData.price_xaf || parseFloat(formData.price_xaf) <= 0) {
-      showToast("Le prix doit être supérieur à 0", "error");
+      showToast(t("vendor.pricePositive"), "error");
       return;
     }
     if (!formData.stock_quantity || parseInt(formData.stock_quantity) < 0) {
-      showToast("Le stock ne peut pas être négatif", "error");
+      showToast(t("vendor.stockNotNegative"), "error");
       return;
     }
     if (!formData.category) {
-      showToast("Veuillez sélectionner une catégorie", "error");
+      showToast(t("vendor.selectCategory"), "error");
       return;
     }
 
@@ -113,7 +115,7 @@ export default function ProductFormPage() {
 
       if (isEdit && id) {
         await vendorsApi.updateProduct(parseInt(id), productData);
-        showToast("Produit mis à jour avec succès", "success");
+        showToast(t("vendor.productUpdated"), "success");
         navigate("/seller/dashboard");
       } else {
         // Créer le produit
@@ -131,12 +133,12 @@ export default function ProductFormPage() {
           }
         }
 
-        showToast("Produit créé avec succès !", "success");
+        showToast(t("vendor.productCreated"), "success");
         navigate("/seller/dashboard");
       }
     } catch (error) {
       console.error("Erreur sauvegarde produit:", error);
-      showToast("Erreur lors de la sauvegarde", "error");
+      showToast(t("vendor.errorSaving"), "error");
     } finally {
       setLoading(false);
     }
@@ -159,7 +161,7 @@ export default function ProductFormPage() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement du produit...</p>
+          <p className="text-dark-text-secondary">{t("vendor.loadingProduct")}</p>
         </div>
       </div>
     );
@@ -175,7 +177,7 @@ export default function ProductFormPage() {
             className="flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-4"
           >
             <ArrowLeft size={20} />
-            Retour au dashboard
+            {t("vendor.backToDashboard")}
           </button>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-xl bg-gradient-holographic/10 flex items-center justify-center">
@@ -184,13 +186,13 @@ export default function ProductFormPage() {
             <div>
               <h1 className="font-display font-bold text-4xl">
                 <span className="text-gradient animate-gradient-bg">
-                  {isEdit ? "Modifier le produit" : "Nouveau produit"}
+                  {isEdit ? t("vendor.editProduct") : t("vendor.newProduct")}
                 </span>
               </h1>
               <p className="text-dark-text-secondary">
                 {isEdit
-                  ? "Mettez à jour les informations de votre produit"
-                  : "Ajoutez un nouveau produit à votre catalogue"}
+                  ? t("vendor.updateProductInfo")
+                  : t("vendor.addNewProductCatalog")}
               </p>
             </div>
           </div>
@@ -200,14 +202,14 @@ export default function ProductFormPage() {
         <form onSubmit={handleSubmit}>
           <Card className="mb-6">
             <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
-              Informations du produit
+              {t("vendor.productInfo")}
             </h2>
 
             <div className="space-y-6">
               {/* Titre */}
               <div>
                 <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Titre du produit *
+                  {t("vendor.productTitle")} *
                 </label>
                 <input
                   type="text"
@@ -216,7 +218,7 @@ export default function ProductFormPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, title: e.target.value })
                   }
-                  placeholder="Ex: iPhone 15 Pro Max 256GB"
+                  placeholder={t("vendor.productTitlePlaceholder")}
                   className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                 />
               </div>
@@ -224,7 +226,7 @@ export default function ProductFormPage() {
               {/* Description */}
               <div>
                 <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Description *
+                  {t("vendor.description")} *
                 </label>
                 <textarea
                   required
@@ -233,7 +235,7 @@ export default function ProductFormPage() {
                   onChange={(e) =>
                     setFormData({ ...formData, description: e.target.value })
                   }
-                  placeholder="Décrivez votre produit en détail..."
+                  placeholder={t("vendor.descriptionPlaceholder")}
                   className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary resize-none"
                 />
               </div>
@@ -242,7 +244,7 @@ export default function ProductFormPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Prix (XAF) *
+                    {t("vendor.priceXAF")} *
                   </label>
                   <input
                     type="number"
@@ -260,7 +262,7 @@ export default function ProductFormPage() {
 
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Stock disponible *
+                    {t("vendor.availableStock")} *
                   </label>
                   <input
                     type="number"
@@ -283,7 +285,7 @@ export default function ProductFormPage() {
               {/* Catégorie */}
               <div>
                 <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Catégorie *
+                  {t("vendor.category")} *
                 </label>
                 <select
                   required
@@ -293,7 +295,7 @@ export default function ProductFormPage() {
                   }
                   className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
                 >
-                  <option value="">Sélectionnez une catégorie</option>
+                  <option value="">{t("vendor.selectACategory")}</option>
                   {categories.map((cat) => (
                     <option key={cat.id} value={cat.id}>
                       {cat.name}
@@ -317,7 +319,7 @@ export default function ProductFormPage() {
                   htmlFor="is_active"
                   className="text-sm text-dark-text-secondary cursor-pointer"
                 >
-                  Produit actif (visible sur la marketplace)
+                  {t("vendor.productActive")}
                 </label>
               </div>
             </div>
@@ -326,7 +328,7 @@ export default function ProductFormPage() {
           {/* Images */}
           <Card className="mb-6">
             <h2 className="font-display font-bold text-2xl text-dark-text mb-4">
-              Images du produit
+              {t("vendor.productImages")}
             </h2>
 
             {isEdit && id ? (
@@ -361,10 +363,10 @@ export default function ProductFormPage() {
                     <div className="flex flex-col items-center gap-3">
                       <Upload className="text-dark-text-tertiary" size={48} />
                       <p className="text-dark-text-secondary">
-                        Cliquez pour ajouter des images
+                        {t("vendor.clickToAddImages")}
                       </p>
                       <p className="text-dark-text-tertiary text-sm">
-                        PNG, JPG, WEBP (max 5 MB par image)
+                        {t("vendor.imageFormats")}
                       </p>
                     </div>
                   </label>
@@ -387,7 +389,7 @@ export default function ProductFormPage() {
                         </div>
                         {index === 0 && (
                           <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-holo-cyan text-white text-xs font-semibold">
-                            Principale
+                            {t("vendor.primary")}
                           </div>
                         )}
                         <button
@@ -412,7 +414,7 @@ export default function ProductFormPage() {
           {!isEdit && (
             <Card className="mb-6">
               <h2 className="font-display font-bold text-2xl text-dark-text mb-4">
-                Images du produit
+                {t("vendor.productImages")}
               </h2>
               <div className="glass border-2 border-dashed border-white/10 rounded-xl p-12 text-center">
                 <Upload
@@ -420,10 +422,10 @@ export default function ProductFormPage() {
                   size={48}
                 />
                 <p className="text-dark-text-secondary mb-2">
-                  Créez d'abord le produit
+                  {t("vendor.createProductFirst")}
                 </p>
                 <p className="text-dark-text-tertiary text-sm">
-                  Vous pourrez ajouter des images après la création
+                  {t("vendor.addImagesAfterCreation")}
                 </p>
               </div>
             </Card>
@@ -437,7 +439,7 @@ export default function ProductFormPage() {
               onClick={() => navigate("/seller/dashboard")}
               className="flex-1"
             >
-              Annuler
+              {t("vendor.cancel")}
             </Button>
             <Button
               type="submit"
@@ -445,7 +447,7 @@ export default function ProductFormPage() {
               isLoading={loading}
               className="flex-1"
             >
-              {isEdit ? "Mettre à jour" : "Créer le produit"}
+              {isEdit ? t("vendor.update") : t("vendor.createProduct")}
             </Button>
           </div>
         </form>

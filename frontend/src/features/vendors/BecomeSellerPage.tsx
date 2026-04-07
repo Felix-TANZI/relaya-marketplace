@@ -1,14 +1,13 @@
-// frontend/src/features/vendors/BecomeSellerPage.tsx
-// Page d'inscription pour devenir vendeur sur Relaya
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Store, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import { vendorsApi, type VendorApplication } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 
 export default function BecomeSellerPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
@@ -23,15 +22,15 @@ export default function BecomeSellerPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     try {
       setLoading(true);
       await vendorsApi.apply(formData);
-      showToast('Demande envoyée avec succès ! Nous examinerons votre candidature.', 'success');
+      showToast(t('seller.submit_success'), 'success');
       navigate('/seller/dashboard');
     } catch (error) {
       console.error('Erreur inscription vendeur:', error);
-      showToast('Erreur lors de l\'envoi de la demande', 'error');
+      showToast(t('seller.submit_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -46,10 +45,10 @@ export default function BecomeSellerPage() {
             <Store size={32} className="text-white" />
           </div>
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-4">
-            <span className="text-gradient animate-gradient-bg">Devenez Vendeur</span>
+            <span className="text-gradient animate-gradient-bg">{t('seller.title')}</span>
           </h1>
           <p className="text-dark-text-secondary text-lg max-w-2xl mx-auto">
-            Rejoignez des milliers de vendeurs sur Relaya et développez votre business au Cameroun
+            {t('seller.subtitle')}
           </p>
         </div>
 
@@ -59,68 +58,65 @@ export default function BecomeSellerPage() {
             <div className="w-12 h-12 rounded-full bg-holo-cyan/10 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="text-holo-cyan" size={24} />
             </div>
-            <h3 className="font-semibold text-lg text-dark-text mb-2">Commission faible</h3>
-            <p className="text-dark-text-secondary text-sm">Frais compétitifs pour maximiser vos profits</p>
+            <h3 className="font-semibold text-lg text-dark-text mb-2">{t('seller.advantage_commission_title')}</h3>
+            <p className="text-dark-text-secondary text-sm">{t('seller.advantage_commission_desc')}</p>
           </Card>
 
           <Card className="text-center">
             <div className="w-12 h-12 rounded-full bg-holo-purple/10 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="text-holo-purple" size={24} />
             </div>
-            <h3 className="font-semibold text-lg text-dark-text mb-2">Paiements sécurisés</h3>
-            <p className="text-dark-text-secondary text-sm">MTN MoMo et Orange Money intégrés</p>
+            <h3 className="font-semibold text-lg text-dark-text mb-2">{t('seller.advantage_payment_title')}</h3>
+            <p className="text-dark-text-secondary text-sm">{t('seller.advantage_payment_desc')}</p>
           </Card>
 
           <Card className="text-center">
             <div className="w-12 h-12 rounded-full bg-holo-pink/10 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="text-holo-pink" size={24} />
             </div>
-            <h3 className="font-semibold text-lg text-dark-text mb-2">Support dédié</h3>
-            <p className="text-dark-text-secondary text-sm">Équipe disponible pour vous accompagner</p>
+            <h3 className="font-semibold text-lg text-dark-text mb-2">{t('seller.advantage_support_title')}</h3>
+            <p className="text-dark-text-secondary text-sm">{t('seller.advantage_support_desc')}</p>
           </Card>
         </div>
 
         {/* Formulaire */}
         <Card>
           <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
-            Formulaire d'inscription
+            {t('seller.form_title')}
           </h2>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Nom de l'entreprise */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Nom de l'entreprise *
+                {t('seller.business_name_label')}
               </label>
               <input
                 type="text"
                 required
                 value={formData.business_name}
                 onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
-                placeholder="Ex: Boutique Mode Yaoundé"
+                placeholder={t('seller.business_name_placeholder')}
                 className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
               />
             </div>
 
-            {/* Description */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Description de l'entreprise *
+                {t('seller.business_desc_label')}
               </label>
               <textarea
                 required
                 rows={4}
                 value={formData.business_description}
                 onChange={(e) => setFormData({ ...formData, business_description: e.target.value })}
-                placeholder="Décrivez votre activité, vos produits..."
+                placeholder={t('seller.business_desc_placeholder')}
                 className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary resize-none"
               />
             </div>
 
-            {/* Téléphone */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Téléphone *
+                {t('seller.phone_label')}
               </label>
               <input
                 type="tel"
@@ -132,56 +128,52 @@ export default function BecomeSellerPage() {
               />
             </div>
 
-            {/* Ville */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Ville *
+                {t('seller.city_label')}
               </label>
               <input
                 type="text"
                 required
                 value={formData.city}
                 onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                placeholder="Ex: Yaoundé"
+                placeholder={t('seller.city_placeholder')}
                 className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
               />
             </div>
 
-            {/* Adresse */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Adresse complète *
+                {t('seller.address_label')}
               </label>
               <textarea
                 required
                 rows={2}
                 value={formData.address}
                 onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                placeholder="Quartier, rue, repère..."
+                placeholder={t('seller.address_placeholder')}
                 className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary resize-none"
               />
             </div>
 
-            {/* Document d'identité */}
             <div>
               <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                Numéro de document d'identité *
+                {t('seller.id_label')}
               </label>
               <input
                 type="text"
                 required
                 value={formData.id_document}
                 onChange={(e) => setFormData({ ...formData, id_document: e.target.value })}
-                placeholder="Numéro CNI ou passeport"
+                placeholder={t('seller.id_placeholder')}
                 className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
               />
               <p className="mt-2 text-xs text-dark-text-tertiary">
                 <AlertCircle size={14} className="inline mr-1" />
-                Cette information restera confidentielle et servira uniquement à la vérification
+                {t('seller.id_hint')}
               </p>
             </div>
 
-            {/* Boutons */}
             <div className="flex gap-4 pt-4">
               <Button
                 type="button"
@@ -189,7 +181,7 @@ export default function BecomeSellerPage() {
                 onClick={() => navigate('/')}
                 className="flex-1"
               >
-                Annuler
+                {t('common.cancel')}
               </Button>
               <Button
                 type="submit"
@@ -197,7 +189,7 @@ export default function BecomeSellerPage() {
                 isLoading={loading}
                 className="flex-1"
               >
-                Envoyer ma demande
+                {t('seller.submit_button')}
               </Button>
             </div>
           </form>

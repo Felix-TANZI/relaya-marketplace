@@ -2,6 +2,7 @@
 // Page d'administration des vendeurs
 
 import { useEffect, useState, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Users,
   Filter,
@@ -24,6 +25,7 @@ import type { VendorProfile } from "@/services/api/vendors";
 type VendorStatus = "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
 
 export default function VendorsManagementPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -40,11 +42,11 @@ export default function VendorsManagementPage() {
       setVendors(data);
     } catch (error) {
       console.error("Erreur chargement vendeurs:", error);
-      showToast("Erreur de chargement des vendeurs", "error");
+      showToast(t("admin.errorLoadingVendors"), "error");
     } finally {
       setLoading(false);
     }
-  }, [filterStatus, showToast]);
+  }, [filterStatus, showToast, t]);
 
   useEffect(() => {
     loadVendors();
@@ -52,11 +54,11 @@ export default function VendorsManagementPage() {
 
   const handleApprove = async (vendor: VendorProfile) => {
     const confirmed = await confirm({
-      title: "Approuver ce vendeur",
-      message: `Voulez-vous vraiment approuver ${vendor.business_name} ?`,
+      title: t("admin.approveVendorTitle"),
+      message: t("admin.approveVendorMessage", { name: vendor.business_name }),
       type: "success",
-      confirmText: "Approuver",
-      cancelText: "Annuler",
+      confirmText: t("admin.approve"),
+      cancelText: t("admin.cancelAction"),
     });
 
     if (!confirmed) return;
@@ -64,11 +66,11 @@ export default function VendorsManagementPage() {
     try {
       setActionLoading(vendor.id);
       await adminApi.approveVendor(vendor.id);
-      showToast("Vendeur approuvé avec succès", "success");
+      showToast(t("admin.vendorApproved"), "success");
       loadVendors();
     } catch (error) {
       console.error("Erreur approbation:", error);
-      showToast("Erreur lors de l'approbation", "error");
+      showToast(t("admin.errorApproving"), "error");
     } finally {
       setActionLoading(null);
     }
@@ -76,11 +78,11 @@ export default function VendorsManagementPage() {
 
   const handleReject = async (vendor: VendorProfile) => {
     const confirmed = await confirm({
-      title: "Rejeter ce vendeur",
-      message: `Voulez-vous vraiment rejeter ${vendor.business_name} ?`,
+      title: t("admin.rejectVendorTitle"),
+      message: t("admin.rejectVendorMessage", { name: vendor.business_name }),
       type: "danger",
-      confirmText: "Rejeter",
-      cancelText: "Annuler",
+      confirmText: t("admin.reject"),
+      cancelText: t("admin.cancelAction"),
     });
 
     if (!confirmed) return;
@@ -88,11 +90,11 @@ export default function VendorsManagementPage() {
     try {
       setActionLoading(vendor.id);
       await adminApi.rejectVendor(vendor.id);
-      showToast("Vendeur rejeté", "success");
+      showToast(t("admin.vendorRejected"), "success");
       loadVendors();
     } catch (error) {
       console.error("Erreur rejet:", error);
-      showToast("Erreur lors du rejet", "error");
+      showToast(t("admin.errorRejecting"), "error");
     } finally {
       setActionLoading(null);
     }
@@ -100,11 +102,11 @@ export default function VendorsManagementPage() {
 
   const handleSuspend = async (vendor: VendorProfile) => {
     const confirmed = await confirm({
-      title: "Suspendre ce vendeur",
-      message: `Voulez-vous vraiment suspendre ${vendor.business_name} ?`,
+      title: t("admin.suspendVendorTitle"),
+      message: t("admin.suspendVendorMessage", { name: vendor.business_name }),
       type: "warning",
-      confirmText: "Suspendre",
-      cancelText: "Annuler",
+      confirmText: t("admin.suspend"),
+      cancelText: t("admin.cancelAction"),
     });
 
     if (!confirmed) return;
@@ -112,11 +114,11 @@ export default function VendorsManagementPage() {
     try {
       setActionLoading(vendor.id);
       await adminApi.suspendVendor(vendor.id);
-      showToast("Vendeur suspendu", "success");
+      showToast(t("admin.vendorSuspended"), "success");
       loadVendors();
     } catch (error) {
       console.error("Erreur suspension:", error);
-      showToast("Erreur lors de la suspension", "error");
+      showToast(t("admin.errorSuspending"), "error");
     } finally {
       setActionLoading(null);
     }
@@ -125,17 +127,17 @@ export default function VendorsManagementPage() {
   const getStatusBadge = (status: VendorStatus) => {
     switch (status) {
       case "PENDING":
-        return { variant: "warning" as const, text: "En attente", icon: Clock };
+        return { variant: "warning" as const, text: t("admin.statusPending"), icon: Clock };
       case "APPROVED":
         return {
           variant: "success" as const,
-          text: "Approuvé",
+          text: t("admin.statusApproved"),
           icon: CheckCircle,
         };
       case "REJECTED":
-        return { variant: "error" as const, text: "Rejeté", icon: XCircle };
+        return { variant: "error" as const, text: t("admin.statusRejected"), icon: XCircle };
       case "SUSPENDED":
-        return { variant: "default" as const, text: "Suspendu", icon: Ban };
+        return { variant: "default" as const, text: t("admin.statusSuspended"), icon: Ban };
     }
   };
 
@@ -172,7 +174,7 @@ export default function VendorsManagementPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement des vendeurs...</p>
+          <p className="text-dark-text-secondary">{t("admin.loadingVendors")}</p>
         </div>
       </div>
     );
@@ -185,42 +187,42 @@ export default function VendorsManagementPage() {
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
             <span className="text-gradient animate-gradient-bg">
-              Gestion Vendeurs
+              {t("admin.vendorsManagement")}
             </span>
           </h1>
           <p className="text-dark-text-secondary">
-            Administrez les vendeurs de la plateforme
+            {t("admin.vendorsManagementDescription")}
           </p>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
           <Card className="text-center">
-            <p className="text-dark-text-tertiary text-sm mb-1">Total</p>
+            <p className="text-dark-text-tertiary text-sm mb-1">{t("admin.total")}</p>
             <p className="font-display font-bold text-3xl text-dark-text">
               {stats.total}
             </p>
           </Card>
           <Card className="text-center border-yellow-500/30">
-            <p className="text-dark-text-tertiary text-sm mb-1">En attente</p>
+            <p className="text-dark-text-tertiary text-sm mb-1">{t("admin.statusPending")}</p>
             <p className="font-display font-bold text-3xl text-yellow-400">
               {stats.pending}
             </p>
           </Card>
           <Card className="text-center border-green-500/30">
-            <p className="text-dark-text-tertiary text-sm mb-1">Approuvés</p>
+            <p className="text-dark-text-tertiary text-sm mb-1">{t("admin.approved")}</p>
             <p className="font-display font-bold text-3xl text-green-400">
               {stats.approved}
             </p>
           </Card>
           <Card className="text-center border-red-500/30">
-            <p className="text-dark-text-tertiary text-sm mb-1">Rejetés</p>
+            <p className="text-dark-text-tertiary text-sm mb-1">{t("admin.rejected")}</p>
             <p className="font-display font-bold text-3xl text-red-400">
               {stats.rejected}
             </p>
           </Card>
           <Card className="text-center border-gray-500/30">
-            <p className="text-dark-text-tertiary text-sm mb-1">Suspendus</p>
+            <p className="text-dark-text-tertiary text-sm mb-1">{t("admin.suspended")}</p>
             <p className="font-display font-bold text-3xl text-gray-400">
               {stats.suspended}
             </p>
@@ -238,7 +240,7 @@ export default function VendorsManagementPage() {
               />
               <input
                 type="text"
-                placeholder="Rechercher par nom, email, téléphone..."
+                placeholder={t("admin.searchVendorsPlaceholder")}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 bg-white/5 border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-colors"
@@ -255,11 +257,11 @@ export default function VendorsManagementPage() {
                 }
                 className="px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-colors"
               >
-                <option value="">Tous les statuts</option>
-                <option value="PENDING">En attente</option>
-                <option value="APPROVED">Approuvés</option>
-                <option value="REJECTED">Rejetés</option>
-                <option value="SUSPENDED">Suspendus</option>
+                <option value="">{t("admin.allStatuses")}</option>
+                <option value="PENDING">{t("admin.statusPending")}</option>
+                <option value="APPROVED">{t("admin.approved")}</option>
+                <option value="REJECTED">{t("admin.rejected")}</option>
+                <option value="SUSPENDED">{t("admin.suspended")}</option>
               </select>
             </div>
           </div>
@@ -270,7 +272,7 @@ export default function VendorsManagementPage() {
           <Card className="text-center py-12">
             <Users className="mx-auto mb-4 text-dark-text-tertiary" size={48} />
             <p className="text-dark-text-secondary">
-              {searchQuery ? "Aucun vendeur trouvé" : "Aucun vendeur"}
+              {searchQuery ? t("admin.noVendorsFound") : t("admin.noVendors")}
             </p>
           </Card>
         ) : (
@@ -324,10 +326,10 @@ export default function VendorsManagementPage() {
                     <div className="flex items-center justify-between pt-4 border-t border-white/10">
                       <div className="flex items-center gap-2 text-xs text-dark-text-tertiary">
                         <Calendar size={12} />
-                        Demande du {formatDate(vendor.created_at)}
+                        {t("admin.requestFrom")} {formatDate(vendor.created_at)}
                         {vendor.approved_at && (
                           <span className="ml-2">
-                            • Approuvé le {formatDate(vendor.approved_at)}
+                            • {t("admin.approvedOn")} {formatDate(vendor.approved_at)}
                           </span>
                         )}
                       </div>
@@ -342,7 +344,7 @@ export default function VendorsManagementPage() {
                               disabled={isLoading}
                             >
                               <CheckCircle size={16} />
-                              Approuver
+                              {t("admin.approve")}
                             </Button>
                             <Button
                               variant="secondary"
@@ -351,7 +353,7 @@ export default function VendorsManagementPage() {
                               disabled={isLoading}
                             >
                               <XCircle size={16} />
-                              Rejeter
+                              {t("admin.reject")}
                             </Button>
                           </>
                         )}
@@ -363,7 +365,7 @@ export default function VendorsManagementPage() {
                             disabled={isLoading}
                           >
                             <Ban size={16} />
-                            Suspendre
+                            {t("admin.suspend")}
                           </Button>
                         )}
                         {vendor.status === "SUSPENDED" && (
@@ -374,7 +376,7 @@ export default function VendorsManagementPage() {
                             disabled={isLoading}
                           >
                             <CheckCircle size={16} />
-                            Réactiver
+                            {t("admin.reactivate")}
                           </Button>
                         )}
                       </div>

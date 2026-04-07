@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { CreditCard, MapPin, Package, Phone, ShieldCheck, Truck } from "lucide-react";
+import { CreditCard, MapPin, Package, Phone, ShieldCheck } from "lucide-react";
 import { useCart } from "@/features/cart/useCart";
 import { cartTotalXaf } from "@/features/cart/cartStore";
 import { loadCheckoutDraft } from "./storage";
@@ -10,7 +10,7 @@ export default function CheckoutConfirmPage() {
   const items = useCart();
   const total = cartTotalXaf();
   const draft = loadCheckoutDraft();
-  const deliveryFee = total >= 30000 ? 0 : 2500;
+  const deliveryFee = 2500;
 
   if (!draft) {
     return (
@@ -147,7 +147,7 @@ export default function CheckoutConfirmPage() {
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
                   <span>{t('checkout.confirm_details.delivery')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {deliveryFee === 0 ? t('checkout.confirm_details.delivery_free') : `${deliveryFee.toLocaleString()} FCFA`}
+                    {`${deliveryFee.toLocaleString()} FCFA`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
@@ -181,18 +181,6 @@ export default function CheckoutConfirmPage() {
 
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-900/20">
-                  <Truck size={20} />
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{t('checkout.confirm_details.delivery_offer_title')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('checkout.confirm_details.delivery_offer')}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-900/20">
                   <ShieldCheck size={20} />
                 </div>

@@ -300,9 +300,6 @@ export default function ProfilePage() {
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </a>
-                <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                  {t('profile.support.free_delivery')}
-                </div>
               </div>
             </Card>
           </div>

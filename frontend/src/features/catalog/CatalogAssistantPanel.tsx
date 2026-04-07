@@ -10,7 +10,6 @@ interface CatalogAssistantPanelProps {
   selectedCategoryName: string;
   filters: {
     promoOnly: boolean;
-    freeDeliveryOnly: boolean;
     inStockOnly: boolean;
     minRating: number;
   };

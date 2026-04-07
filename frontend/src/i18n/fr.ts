@@ -421,7 +421,6 @@ export default {
     support: {
       help_center: 'Centre d\'aide',
       whatsapp: 'Support WhatsApp',
-      free_delivery: 'Livraison offerte dès 30 000 FCFA',
     },
     info_title: 'Informations personnelles',
     button: {

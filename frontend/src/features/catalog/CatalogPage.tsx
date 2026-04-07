@@ -49,13 +49,11 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Tablettes: Smartphone,
 };
 
-const TRUST_ICONS = [Truck, ShieldCheck, Flame];
 
 export default function CatalogPage() {
   const { t } = useTranslation();
 
   const TRUST_POINTS = [
-    { icon: Truck, title: t('catalog_page.free_delivery'), description: t('catalog_page.free_delivery_desc') },
     { icon: ShieldCheck, title: t('catalog_page.secure_payment'), description: t('catalog_page.secure_payment_desc') },
     { icon: Flame, title: t('catalog_page.active_promos'), description: t('catalog_page.active_promos_desc') },
   ];
@@ -81,9 +79,6 @@ export default function CatalogPage() {
     searchParams.get("category") ? parseInt(searchParams.get("category")!, 10) : null,
   );
   const [showPromoOnly, setShowPromoOnly] = useState(searchParams.get("promo") === "1");
-  const [showFreeDeliveryOnly, setShowFreeDeliveryOnly] = useState(
-    searchParams.get("free_delivery") === "1",
-  );
   const [priceRange, setPriceRange] = useState<[number, number]>([5000, 100000]);
   const [minRating, setMinRating] = useState(0);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -109,15 +104,10 @@ export default function CatalogPage() {
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     const filteredProducts = products.filter((product) => {
       const hasPromo = Boolean(product.discount && product.discount > 0);
-      const hasFreeDelivery = product.price_xaf >= 30000;
       const matchesRating = minRating === 0 || (product.rating_average ?? 0) >= minRating;
       const isRecent = now - new Date(product.created_at).getTime() <= thirtyDaysMs;
 
       if (showPromoOnly && !hasPromo) {
-        return false;
-      }
-
-      if (showFreeDeliveryOnly && !hasFreeDelivery) {
         return false;
       }
 
@@ -156,7 +146,6 @@ export default function CatalogPage() {
   }, [
     products,
     showPromoOnly,
-    showFreeDeliveryOnly,
     minRating,
     showNewOnly,
     sortBy,
@@ -228,7 +217,6 @@ export default function CatalogPage() {
     setSearchQuery("");
     setSelectedCategory(null);
     setShowPromoOnly(false);
-    setShowFreeDeliveryOnly(false);
     setPriceRange([5000, 100000]);
     setMinRating(0);
     setInStockOnly(false);
@@ -241,7 +229,6 @@ export default function CatalogPage() {
     searchQuery,
     selectedCategory,
     showPromoOnly,
-    showFreeDeliveryOnly,
     priceRange[0] > 5000,
     priceRange[1] < 100000,
     minRating > 0,
@@ -368,19 +355,6 @@ export default function CatalogPage() {
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
             <span className="text-sm text-gray-700 dark:text-gray-300">{t('catalog_page.promos_only')}</span>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={showFreeDeliveryOnly}
-              onChange={(event) => setShowFreeDeliveryOnly(event.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
-              <Truck size={14} />
-              {t('catalog_page.free_delivery')}
-            </span>
           </label>
 
           <label className="flex cursor-pointer items-center gap-3">
@@ -556,11 +530,6 @@ export default function CatalogPage() {
                 {showPromoOnly && (
                   <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
                     {t('catalog_page.promotions')}
-                  </span>
-                )}
-                {showFreeDeliveryOnly && (
-                  <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                    {t('catalog_page.free_delivery')}
                   </span>
                 )}
               </div>
@@ -798,7 +767,6 @@ export default function CatalogPage() {
         selectedCategoryName={selectedCategoryName}
         filters={{
           promoOnly: showPromoOnly,
-          freeDeliveryOnly: showFreeDeliveryOnly,
           inStockOnly,
           minRating,
         }}

@@ -67,7 +67,6 @@ export default function ProductCard({
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
-  const hasFreeDelivery = finalPrice >= 30000;
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -116,11 +115,6 @@ export default function ProductCard({
             {showPromo && product.discount ? (
               <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white shadow-lg shadow-primary/25">
                 -{product.discount}%
-              </span>
-            ) : null}
-            {hasFreeDelivery ? (
-              <span className="rounded-full bg-green-100 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                {t('product_card.free_delivery')}
               </span>
             ) : null}
             {!inStock ? (
@@ -215,7 +209,7 @@ export default function ProductCard({
             {inStock ? (
               <div className="flex items-center gap-1 rounded-full bg-green-50 px-2.5 py-1 text-[11px] font-semibold text-green-700 dark:bg-green-900/20 dark:text-green-300">
                 <Truck size={12} />
-                {hasFreeDelivery ? t('product_card.free') : t('product_card.max_72h')}
+                {t('product_card.max_72h')}
               </div>
             ) : null}
           </div>

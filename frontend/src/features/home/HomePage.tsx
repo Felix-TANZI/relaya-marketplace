@@ -35,11 +35,6 @@ export default function HomePage() {
 
   const trustCards = [
     {
-      icon: Truck,
-      title: t('home.trust_delivery_title'),
-      text: t('home.trust_delivery_text'),
-    },
-    {
       icon: ShieldCheck,
       title: t('home.trust_payment_title'),
       text: t('home.trust_payment_text'),
@@ -162,15 +157,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  {t('home.info_delivery')}
-                </p>
-                <p className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
-                  {t('home.info_delivery_value')}
-                </p>
-              </div>
+            <div className="mt-8 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   {t('home.info_tracking')}

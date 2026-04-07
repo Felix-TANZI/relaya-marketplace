@@ -396,8 +396,7 @@ export default function Header() {
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                       <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                        <div>Livraison offerte des 30 000 FCFA</div>
-                        <div className="mt-1 truncate">Contact: +237 000 556 87 78</div>
+                        <div className="truncate">Contact: +237 000 556 87 78</div>
                       </div>
                       <button
                         onClick={handleLogout}

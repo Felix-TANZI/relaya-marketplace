@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   AlertCircle,
@@ -18,61 +19,62 @@ import { ordersApi } from "@/services/api/orders";
 import { customerApi, type Shipment } from "@/services/api/customer";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 
-function getPaymentInfo(status: PaymentStatus) {
-  switch (status) {
-    case "PAID":
-      return {
-        label: "Paiement confirme",
-        color: "text-green-600",
-        bg: "bg-green-50 dark:bg-green-900/20",
-        icon: CheckCircle,
-      };
-    case "PENDING":
-      return {
-        label: "Paiement en attente",
-        color: "text-yellow-600",
-        bg: "bg-yellow-50 dark:bg-yellow-900/20",
-        icon: Clock3,
-      };
-    case "FAILED":
-      return {
-        label: "Paiement echoue",
-        color: "text-red-600",
-        bg: "bg-red-50 dark:bg-red-900/20",
-        icon: XCircle,
-      };
-    case "REFUNDED":
-      return {
-        label: "Rembourse",
-        color: "text-gray-600",
-        bg: "bg-gray-100 dark:bg-gray-800",
-        icon: CreditCard,
-      };
-  }
-}
-
-function getFulfillmentInfo(status: FulfillmentStatus) {
-  switch (status) {
-    case "PENDING":
-      return { label: "Commande recue", step: 0 };
-    case "PROCESSING":
-      return { label: "Preparation terminee", step: 1 };
-    case "SHIPPED":
-      return { label: "Livreur recu", step: 2 };
-    case "DELIVERED":
-      return { label: "Livree", step: 3 };
-    case "CANCELLED":
-      return { label: "Annulee", step: -1 };
-  }
-}
-
 export default function OrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [tracking, setTracking] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  function getPaymentInfo(status: PaymentStatus) {
+    switch (status) {
+      case "PAID":
+        return {
+          label: t('order.detail.payment_confirmed'),
+          color: "text-green-600",
+          bg: "bg-green-50 dark:bg-green-900/20",
+          icon: CheckCircle,
+        };
+      case "PENDING":
+        return {
+          label: t('order.detail.payment_pending'),
+          color: "text-yellow-600",
+          bg: "bg-yellow-50 dark:bg-yellow-900/20",
+          icon: Clock3,
+        };
+      case "FAILED":
+        return {
+          label: t('order.detail.payment_failed'),
+          color: "text-red-600",
+          bg: "bg-red-50 dark:bg-red-900/20",
+          icon: XCircle,
+        };
+      case "REFUNDED":
+        return {
+          label: t('order.detail.payment_refunded'),
+          color: "text-gray-600",
+          bg: "bg-gray-100 dark:bg-gray-800",
+          icon: CreditCard,
+        };
+    }
+  }
+
+  function getFulfillmentInfo(status: FulfillmentStatus) {
+    switch (status) {
+      case "PENDING":
+        return { label: t('order.detail.fulfillment_received'), step: 0 };
+      case "PROCESSING":
+        return { label: t('order.detail.fulfillment_processing'), step: 1 };
+      case "SHIPPED":
+        return { label: t('order.detail.fulfillment_shipped'), step: 2 };
+      case "DELIVERED":
+        return { label: t('order.detail.fulfillment_delivered'), step: 3 };
+      case "CANCELLED":
+        return { label: t('order.detail.fulfillment_cancelled'), step: -1 };
+    }
+  }
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -93,14 +95,14 @@ export default function OrderDetailPage() {
         }
       } catch (fetchError) {
         console.error("Error loading order:", fetchError);
-        setError("Impossible de charger le detail de la commande.");
+        setError(t('order.detail.error_load'));
       } finally {
         setLoading(false);
       }
     };
 
     fetchOrder();
-  }, [id]);
+  }, [id, t]);
 
   if (loading) {
     return (
@@ -108,7 +110,7 @@ export default function OrderDetailPage() {
         <div className="text-center">
           <div className="inline-block h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
           <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            Chargement du suivi...
+            {t('order.detail.loading')}
           </p>
         </div>
       </div>
@@ -120,13 +122,13 @@ export default function OrderDetailPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center max-w-md px-4">
           <AlertCircle className="mx-auto mb-4 text-red-500" size={40} />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commande introuvable</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('order.detail.error_title')}</h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{error}</p>
           <button
             onClick={() => navigate("/orders")}
             className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
           >
-            Retour a mes commandes
+            {t('order.detail.error_button')}
           </button>
         </div>
       </div>
@@ -145,10 +147,10 @@ export default function OrderDetailPage() {
         label: event.message || event.status,
       }))
     : [
-        { time: "10:15", label: "Commande recue" },
-        { time: "14:30", label: "Preparation terminee" },
-        { time: "14:45", label: "Livreur recu" },
-        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? "Commande livree" : "Arrivee prevue aujourd'hui a 14h" },
+        { time: "10:15", label: t('order.detail.timeline.received') },
+        { time: "14:30", label: t('order.detail.timeline.processing') },
+        { time: "14:45", label: t('order.detail.timeline.shipped') },
+        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta') },
       ];
 
   const handleConfirmReceipt = async () => {
@@ -165,7 +167,7 @@ export default function OrderDetailPage() {
 
   const handleOpenDispute = async () => {
     if (!id) return;
-    const description = window.prompt("Decris rapidement le probleme rencontre :");
+    const description = window.prompt(t('order.detail.dispute_prompt'));
     if (!description) return;
 
     try {
@@ -186,21 +188,20 @@ export default function OrderDetailPage() {
           className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
         >
           <ArrowLeft size={18} />
-          Retour a mes commandes
+          {t('order.detail.back_link')}
         </Link>
 
         <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Suivi de commande
+                {t('order.detail.breadcrumb')}
               </p>
               <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                Commande #{order.id}
+                {t('order.detail.order_title', { id: order.id })}
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Placee le {new Date(order.created_at).toLocaleDateString("fr-FR")} · ETA :
-                aujourd'hui avant 14h
+                {t('order.detail.placed_on', { date: new Date(order.created_at).toLocaleDateString("fr-FR") })}
               </p>
             </div>
 
@@ -228,10 +229,10 @@ export default function OrderDetailPage() {
                 </div>
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    Suivi de commande
+                    {t('order.detail.tracking_title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Commande #{order.id} en cours de livraison
+                    {t('order.detail.in_delivery', { id: order.id })}
                   </p>
                 </div>
               </div>
@@ -239,8 +240,8 @@ export default function OrderDetailPage() {
               <div className="mb-6 h-56 rounded-[1.75rem] bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 ring-1 ring-orange-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900 dark:ring-gray-800">
                 <div className="flex h-full flex-col justify-between">
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <span>Ville: {order.city}</span>
-                    <span>Zone suivie</span>
+                    <span>{t('order.detail.city_label')}: {order.city}</span>
+                    <span>{t('order.detail.area_label')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-6 text-5xl">
                     <span>📍</span>
@@ -248,7 +249,7 @@ export default function OrderDetailPage() {
                     <span>🏠</span>
                   </div>
                   <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
-                    Adresse de livraison : {order.address}
+                    {t('order.detail.delivery_address')} : {order.address}
                   </div>
                 </div>
               </div>
@@ -287,14 +288,14 @@ export default function OrderDetailPage() {
                   className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Truck size={18} />
-                  Contacter le livreur
+                  {t('order.detail.contact_courier')}
                 </button>
                 <button
                   onClick={handleOpenDispute}
                   className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                 >
                   <MessageCircleMore size={18} />
-                  Ouvrir un litige
+                  {t('order.detail.open_dispute')}
                 </button>
                 {order.fulfillment_status !== "DELIVERED" && (
                   <button
@@ -302,7 +303,7 @@ export default function OrderDetailPage() {
                     className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"
                   >
                     <CheckCircle size={18} />
-                    Confirmer la reception
+                    {t('order.detail.confirm_receipt')}
                   </button>
                 )}
               </div>
@@ -310,7 +311,7 @@ export default function OrderDetailPage() {
 
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-                Articles commandes
+                {t('order.detail.items_title')}
               </h2>
               <div className="space-y-3">
                 {order.items.map((item) => (
@@ -338,23 +339,23 @@ export default function OrderDetailPage() {
           <div className="space-y-6">
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
-                Resume
+                {t('order.detail.summary_title')}
               </h2>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>Sous-total</span>
+                  <span>{t('order.detail.subtotal')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {order.subtotal_xaf.toLocaleString()} FCFA
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>Livraison</span>
+                  <span>{t('order.detail.delivery_fee')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
                     {order.delivery_fee_xaf.toLocaleString()} FCFA
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
-                  <span className="text-gray-900 dark:text-white">Total</span>
+                  <span className="text-gray-900 dark:text-white">{t('order.detail.total')}</span>
                   <span className="text-xl text-primary">{order.total_xaf.toLocaleString()} FCFA</span>
                 </div>
               </div>
@@ -362,7 +363,7 @@ export default function OrderDetailPage() {
 
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
-                Livraison
+                {t('order.detail.shipping_title')}
               </h2>
               <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-start gap-3">
@@ -375,16 +376,16 @@ export default function OrderDetailPage() {
                 <div className="flex items-start gap-3">
                   <Phone size={18} className="mt-0.5 text-primary" />
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">Telephone</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_phone_label')}</p>
                     <p>{order.customer_phone}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
                   <UserCircle2 size={18} className="mt-0.5 text-primary" />
                   <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">Livreur</p>
+                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_courier_label')}</p>
                     <p>
-                      {tracking?.courier_name || "En attente d'assignation"}
+                      {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
                       {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
                     </p>
                   </div>
@@ -398,8 +399,8 @@ export default function OrderDetailPage() {
                   <ShieldCheck size={20} />
                 </div>
                 <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">Paiement securise</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Mobile Money protege</p>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.secure_payment_title')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('order.detail.secure_payment_subtitle')}</p>
                 </div>
               </div>
             </section>

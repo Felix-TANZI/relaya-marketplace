@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Package,
   ShoppingBag,
@@ -27,6 +28,7 @@ import {
 import { useToast } from "@/context/ToastContext";
 
 export default function SellerDashboardPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -65,7 +67,7 @@ export default function SellerDashboardPage() {
         // Pas de profil vendeur, rediriger vers l'inscription
         navigate("/become-seller");
       } else {
-        setError("Erreur de chargement du dashboard");
+        setError(t("vendor.errorLoadingDashboard"));
       }
     } finally {
       setLoading(false);
@@ -73,15 +75,15 @@ export default function SellerDashboardPage() {
   };
 
   const handleDeleteProduct = async (id: number) => {
-    if (!confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) return;
+    if (!confirm(t("vendor.confirmDeleteProduct"))) return;
 
     try {
       await vendorsApi.deleteProduct(id);
       setProducts(products.filter((p) => p.id !== id));
-      showToast("Produit supprimé avec succès", "success");
+      showToast(t("vendor.productDeleted"), "success");
     } catch (error) {
       console.error("Erreur suppression:", error);
-      showToast("Erreur lors de la suppression", "error");
+      showToast(t("vendor.errorDeleting"), "error");
     }
   };
 
@@ -91,25 +93,25 @@ export default function SellerDashboardPage() {
         return {
           variant: "warning" as const,
           icon: <Clock size={16} />,
-          text: "En attente",
+          text: t("vendor.statusPending"),
         };
       case "APPROVED":
         return {
           variant: "success" as const,
           icon: <CheckCircle size={16} />,
-          text: "Approuvé",
+          text: t("vendor.statusApproved"),
         };
       case "REJECTED":
         return {
           variant: "danger" as const,
           icon: <XCircle size={16} />,
-          text: "Rejeté",
+          text: t("vendor.statusRejected"),
         };
       case "SUSPENDED":
         return {
           variant: "danger" as const,
           icon: <AlertCircle size={16} />,
-          text: "Suspendu",
+          text: t("vendor.statusSuspended"),
         };
       default:
         return { variant: "secondary" as const, icon: null, text: status };
@@ -121,7 +123,7 @@ export default function SellerDashboardPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement du dashboard...</p>
+          <p className="text-dark-text-secondary">{t("vendor.loadingDashboard")}</p>
         </div>
       </div>
     );
@@ -132,12 +134,12 @@ export default function SellerDashboardPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <Card className="max-w-md text-center">
           <AlertCircle className="text-red-400 mx-auto mb-4" size={48} />
-          <h2 className="font-bold text-xl text-dark-text mb-2">Erreur</h2>
+          <h2 className="font-bold text-xl text-dark-text mb-2">{t("vendor.error")}</h2>
           <p className="text-dark-text-secondary mb-6">
-            {error || "Impossible de charger le dashboard"}
+            {error || t("vendor.unableToLoadDashboard")}
           </p>
           <Button variant="gradient" onClick={loadDashboardData}>
-            Réessayer
+            {t("vendor.retry")}
           </Button>
         </Card>
       </div>
@@ -156,32 +158,31 @@ export default function SellerDashboardPage() {
               <Clock className="text-holo-cyan" size={40} />
             </div>
             <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
-              Demande en cours d'examen
+              {t("vendor.requestUnderReview")}
             </h1>
             <p className="text-dark-text-secondary mb-2">
-              Nous examinons actuellement votre demande pour devenir vendeur.
+              {t("vendor.reviewingRequest")}
             </p>
             <p className="text-dark-text-tertiary text-sm mb-6">
-              Vous recevrez une notification par email une fois votre compte
-              approuvé.
+              {t("vendor.emailNotification")}
             </p>
             <div className="glass border border-white/10 rounded-xl p-6 text-left">
               <h3 className="font-semibold text-dark-text mb-4">
-                Vos informations :
+                {t("vendor.yourInfo")}
               </h3>
               <div className="space-y-2 text-sm">
                 <p>
-                  <span className="text-dark-text-tertiary">Entreprise :</span>{" "}
+                  <span className="text-dark-text-tertiary">{t("vendor.business")} :</span>{" "}
                   <span className="text-dark-text">
                     {profile.business_name}
                   </span>
                 </p>
                 <p>
-                  <span className="text-dark-text-tertiary">Ville :</span>{" "}
+                  <span className="text-dark-text-tertiary">{t("vendor.city")} :</span>{" "}
                   <span className="text-dark-text">{profile.city}</span>
                 </p>
                 <p>
-                  <span className="text-dark-text-tertiary">Téléphone :</span>{" "}
+                  <span className="text-dark-text-tertiary">{t("vendor.phone")} :</span>{" "}
                   <span className="text-dark-text">{profile.phone}</span>
                 </p>
               </div>
@@ -203,16 +204,16 @@ export default function SellerDashboardPage() {
             </div>
             <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
               {profile.status === "REJECTED"
-                ? "Demande refusée"
-                : "Compte suspendu"}
+                ? t("vendor.requestDenied")
+                : t("vendor.accountSuspended")}
             </h1>
             <p className="text-dark-text-secondary mb-6">
               {profile.status === "REJECTED"
-                ? "Votre demande pour devenir vendeur a été refusée. Veuillez contacter le support pour plus d'informations."
-                : "Votre compte vendeur a été suspendu. Contactez le support pour plus de détails."}
+                ? t("vendor.requestDeniedMessage")
+                : t("vendor.accountSuspendedMessage")}
             </p>
             <Button variant="secondary" onClick={() => navigate("/contact")}>
-              Contacter le support
+              {t("vendor.contactSupport")}
             </Button>
           </Card>
         </div>
@@ -229,11 +230,11 @@ export default function SellerDashboardPage() {
           <div>
             <h1 className="font-display font-bold text-4xl mb-2">
               <span className="text-gradient animate-gradient-bg">
-                Dashboard Vendeur
+                {t("vendor.vendorDashboard")}
               </span>
             </h1>
             <p className="text-dark-text-secondary">
-              Bienvenue,{" "}
+              {t("vendor.welcome")}{" "}
               <span className="text-dark-text font-semibold">
                 {profile.business_name}
               </span>
@@ -247,7 +248,7 @@ export default function SellerDashboardPage() {
             <Link to="/seller/products/new">
               <Button variant="gradient">
                 <Plus size={20} />
-                Nouveau produit
+                {t("vendor.newProduct")}
               </Button>
             </Link>
           </div>
@@ -260,7 +261,7 @@ export default function SellerDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-dark-text-tertiary text-sm mb-1">
-                    Total Produits
+                    {t("vendor.totalProducts")}
                   </p>
                   <p className="font-display font-bold text-3xl text-dark-text">
                     {stats.total_products}
@@ -276,7 +277,7 @@ export default function SellerDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-dark-text-tertiary text-sm mb-1">
-                    Produits Actifs
+                    {t("vendor.activeProducts")}
                   </p>
                   <p className="font-display font-bold text-3xl text-dark-text">
                     {stats.active_products}
@@ -293,7 +294,7 @@ export default function SellerDashboardPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-dark-text-tertiary text-sm mb-1">
-                      Commandes
+                      {t("vendor.orders")}
                     </p>
                     <p className="font-display font-bold text-3xl text-dark-text">
                       {stats.total_orders}
@@ -310,7 +311,7 @@ export default function SellerDashboardPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-dark-text-tertiary text-sm mb-1">
-                    Revenus Total
+                    {t("vendor.totalRevenue")}
                   </p>
                   <p className="font-display font-bold text-3xl text-dark-text">
                     {parseFloat(stats.total_revenue).toLocaleString()} XAF
@@ -328,12 +329,12 @@ export default function SellerDashboardPage() {
         <Card>
           <div className="flex items-center justify-between mb-6">
             <h2 className="font-display font-bold text-2xl text-dark-text">
-              Mes Produits
+              {t("vendor.myProducts")}
             </h2>
             <Link to="/seller/products/new">
               <Button variant="secondary" size="sm">
                 <Plus size={18} />
-                Ajouter
+                {t("vendor.add")}
               </Button>
             </Link>
           </div>
@@ -345,12 +346,12 @@ export default function SellerDashboardPage() {
                 size={48}
               />
               <p className="text-dark-text-secondary mb-6">
-                Aucun produit pour le moment
+                {t("vendor.noProducts")}
               </p>
               <Link to="/seller/products/new">
                 <Button variant="gradient">
                   <Plus size={20} />
-                  Créer mon premier produit
+                  {t("vendor.createFirstProduct")}
                 </Button>
               </Link>
             </div>
@@ -360,19 +361,19 @@ export default function SellerDashboardPage() {
                 <thead>
                   <tr className="border-b border-white/10">
                     <th className="text-left py-3 px-4 text-dark-text-secondary text-sm font-medium">
-                      Produit
+                      {t("vendor.product")}
                     </th>
                     <th className="text-left py-3 px-4 text-dark-text-secondary text-sm font-medium">
-                      Prix
+                      {t("vendor.price")}
                     </th>
                     <th className="text-left py-3 px-4 text-dark-text-secondary text-sm font-medium">
-                      Stock
+                      {t("vendor.stock")}
                     </th>
                     <th className="text-left py-3 px-4 text-dark-text-secondary text-sm font-medium">
-                      Statut
+                      {t("vendor.status")}
                     </th>
                     <th className="text-right py-3 px-4 text-dark-text-secondary text-sm font-medium">
-                      Actions
+                      {t("vendor.actions")}
                     </th>
                   </tr>
                 </thead>
@@ -406,7 +407,7 @@ export default function SellerDashboardPage() {
                         <Badge
                           variant={product.is_active ? "success" : "default"}
                         >
-                          {product.is_active ? "Actif" : "Inactif"}
+                          {product.is_active ? t("vendor.active") : t("vendor.inactive")}
                         </Badge>
                       </td>
                       <td className="py-3 px-4">

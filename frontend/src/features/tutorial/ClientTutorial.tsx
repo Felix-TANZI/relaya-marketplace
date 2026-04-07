@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { useLocation, useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -7,6 +8,7 @@ import { CLIENT_TUTORIAL_STEPS } from "./tutorialSteps";
 const STORAGE_KEY = "belivay-client-tutorial-seen";
 
 export default function ClientTutorial() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
@@ -139,7 +141,7 @@ export default function ClientTutorial() {
           <div>
             <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
               <Sparkles size={14} />
-              Tutoriel client
+              {t('tutorial.label')}
             </p>
             <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
               {step.title}
@@ -160,13 +162,13 @@ export default function ClientTutorial() {
 
         {!displayRect && (
           <p className="mt-3 text-xs text-gray-400">
-            Chargement de l'etape en cours...
+            {t('tutorial.loading_step')}
           </p>
         )}
 
         <div className="mt-5 flex items-center justify-between gap-3">
           <span className="text-xs font-medium text-gray-400">
-            Etape {stepIndex + 1} / {CLIENT_TUTORIAL_STEPS.length}
+            {t('tutorial.step', { current: stepIndex + 1, total: CLIENT_TUTORIAL_STEPS.length })}
           </span>
 
           <div className="flex gap-2">
@@ -177,12 +179,12 @@ export default function ClientTutorial() {
               disabled={stepIndex === 0}
             >
               <ChevronLeft size={16} />
-              Prec.
+              {t('tutorial.previous')}
             </Button>
 
             {stepIndex === CLIENT_TUTORIAL_STEPS.length - 1 ? (
               <Button variant="gradient" size="sm" onClick={finishTutorial}>
-                Terminer
+                {t('tutorial.finish')}
               </Button>
             ) : (
               <Button
@@ -194,7 +196,7 @@ export default function ClientTutorial() {
                   )
                 }
               >
-                Suivant
+                {t('tutorial.next')}
                 <ChevronRight size={16} />
               </Button>
             )}

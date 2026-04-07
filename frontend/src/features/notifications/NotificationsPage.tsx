@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import {
   Bell,
   CheckCircle2,
@@ -18,46 +19,48 @@ type NotificationCard = CustomerNotification & {
   time?: string;
 };
 
-const fallbackNotifications = [
-  {
-    id: 1,
-    title: "Commande #12345 expédiee",
-    description: "Votre colis est en route. Livraison estimee aujourd'hui avant 14h.",
-    time: "Il y a 10 min",
-    icon: Package,
-    tone: "bg-orange-50 text-primary",
-    unread: true,
-  },
-  {
-    id: 2,
-    title: "Promo flash : -30% sur la mode",
-    description: "Profitez d'une selection limitee sur les articles tendance du moment.",
-    time: "Il y a 1 h",
-    icon: Gift,
-    tone: "bg-pink-50 text-pink-600",
-    unread: true,
-  },
-  {
-    id: 3,
-    title: "Paiement securise confirme",
-    description: "Le paiement de votre derniere commande a ete valide sans incident.",
-    time: "Il y a 4 h",
-    icon: ShieldCheck,
-    tone: "bg-green-50 text-green-600",
-    unread: false,
-  },
-  {
-    id: 4,
-    title: "Nouveau message du support",
-    description: "Un agent Belivay a repondu a votre derniere demande d'assistance.",
-    time: "Hier",
-    icon: MessageCircleMore,
-    tone: "bg-blue-50 text-blue-600",
-    unread: false,
-  },
-];
-
 export default function NotificationsPage() {
+  const { t } = useTranslation();
+
+  const fallbackNotifications = [
+    {
+      id: 1,
+      title: t('notifications.fallback.order_shipped_title'),
+      description: t('notifications.fallback.order_shipped_desc'),
+      time: t('notifications.fallback.time_10min'),
+      icon: Package,
+      tone: "bg-orange-50 text-primary",
+      unread: true,
+    },
+    {
+      id: 2,
+      title: t('notifications.fallback.flash_promo_title'),
+      description: t('notifications.fallback.flash_promo_desc'),
+      time: t('notifications.fallback.time_1h'),
+      icon: Gift,
+      tone: "bg-pink-50 text-pink-600",
+      unread: true,
+    },
+    {
+      id: 3,
+      title: t('notifications.fallback.secure_payment_title'),
+      description: t('notifications.fallback.secure_payment_desc'),
+      time: t('notifications.fallback.time_4h'),
+      icon: ShieldCheck,
+      tone: "bg-green-50 text-green-600",
+      unread: false,
+    },
+    {
+      id: 4,
+      title: t('notifications.fallback.support_message_title'),
+      description: t('notifications.fallback.support_message_desc'),
+      time: t('notifications.fallback.time_yesterday'),
+      icon: MessageCircleMore,
+      tone: "bg-blue-50 text-blue-600",
+      unread: false,
+    },
+  ];
+
   const [notifications, setNotifications] = useState<NotificationCard[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -96,17 +99,17 @@ export default function NotificationsPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                Espace client
+                {t('notifications.breadcrumb')}
               </p>
               <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                Notifications
+                {t('notifications.title')}
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Suivez vos commandes, promotions et messages importants au meme endroit.
+                {t('notifications.subtitle')}
               </p>
             </div>
             <div className="rounded-2xl bg-orange-50 px-4 py-3 text-right dark:bg-primary/10">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">Non lues</p>
+              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('notifications.unread_label')}</p>
               <p className="text-2xl font-bold text-primary">{unreadCount}</p>
             </div>
           </div>
@@ -115,7 +118,7 @@ export default function NotificationsPage() {
         <div className="grid gap-4">
           {loading && (
             <article className="rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <p className="text-sm text-gray-500 dark:text-gray-400">Chargement des notifications...</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.loading')}</p>
             </article>
           )}
           {notifications.map((notification) => {
@@ -141,7 +144,7 @@ export default function NotificationsPage() {
                       </h2>
                       {!notification.is_read && (
                         <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
-                          Nouveau
+                          {t('notifications.new_badge')}
                         </span>
                       )}
                     </div>
@@ -162,15 +165,14 @@ export default function NotificationsPage() {
         <div className="mt-8 rounded-[1.75rem] border border-dashed border-orange-200 bg-white p-6 text-center dark:border-gray-700 dark:bg-gray-900">
           <Bell className="mx-auto mb-3 text-primary" size={30} />
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Centre de notifications pret
+            {t('notifications.center_ready_title')}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-            Cette vue est prete a etre reliee aux vraies notifications backend des que l'API sera
-            disponible.
+            {t('notifications.center_ready_desc')}
           </p>
           <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
             <CheckCircle2 size={16} />
-            Base UI client en place
+            {t('notifications.ui_ready')}
           </div>
         </div>
       </div>

@@ -19,7 +19,7 @@ import ProfilePage from "./features/profile/ProfilePage";
 import BecomeSellerPage from "./features/vendors/BecomeSellerPage";
 import SellerDashboardPage from "./features/vendors/SellerDashboardPage";
 import ProductFormPage from "./features/vendors/ProductFormPage";
-import VendorOrdersPage from "./features/vendors/VendorOrdersPage";
+import SellerOrdersPage from "./features/vendors/SellerOrdersPage";
 import VendorOrderDetailPage from "./features/vendors/VendorOrderDetailPage";
 import HelpPage from "./features/help/HelpPage";
 import ContactPage from "./features/contact/ContactPage";
@@ -82,7 +82,7 @@ function App() {
             path="seller/orders"
             element={
               <ProtectedRoute>
-                <VendorOrdersPage />
+                <SellerOrdersPage />
               </ProtectedRoute>
             }
           />

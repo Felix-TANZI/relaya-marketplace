@@ -79,6 +79,7 @@ export default function NotificationsPage() {
               action_url: '',
               updated_at: '',
               created_at: notification.time,
+              message: notification.description,
             })),
           );
         }

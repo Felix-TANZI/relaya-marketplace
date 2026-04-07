@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { User, Mail, Calendar, Edit2, Save, X, ShoppingBag, Camera, Trash2, Bell, Heart, CircleHelp, Gift } from 'lucide-react';
 import { Button, Card } from '@/components/ui';
 import { authApi, type User as UserType } from '@/services/api/auth';
@@ -15,6 +16,7 @@ import {
 } from '@/lib/profileAvatar';
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -48,14 +50,14 @@ export default function ProfilePage() {
         setProfileAvatar(data.avatar_url || getStoredProfileAvatar());
       } catch (error) {
         console.error('Erreur chargement profil:', error);
-        showToast('Erreur de chargement du profil', 'error');
+        showToast(t('profile.load_error'), 'error');
       } finally {
         setLoading(false);
       }
     };
 
     fetchProfile();
-  }, [showToast]);
+  }, [showToast, t]);
 
   // Sauvegarder les modifications
   const handleSave = async () => {
@@ -64,10 +66,10 @@ export default function ProfilePage() {
       const updatedUser = await authApi.updateProfile(formData);
       setUser(updatedUser);
       setIsEditing(false);
-      showToast('Profil mis à jour avec succès', 'success');
+      showToast(t('profile.update_success'), 'success');
     } catch (error) {
       console.error('Erreur mise à jour profil:', error);
-      showToast('Erreur lors de la mise à jour', 'error');
+      showToast(t('profile.update_error'), 'error');
     } finally {
       setSaving(false);
     }
@@ -99,10 +101,10 @@ export default function ProfilePage() {
       setProfileAvatar(avatarUrl);
       setStoredProfileAvatar(avatarUrl);
       window.dispatchEvent(new Event('belivay-avatar-updated'));
-      showToast('Photo de profil mise a jour', 'success');
+      showToast(t('profile.avatar_success'), 'success');
     }).catch((error) => {
       console.error('Erreur upload avatar:', error);
-      showToast('Impossible de mettre a jour la photo', 'error');
+      showToast(t('profile.avatar_error'), 'error');
     });
   };
 
@@ -112,10 +114,10 @@ export default function ProfilePage() {
       setProfileAvatar(null);
       setStoredProfileAvatar(null);
       window.dispatchEvent(new Event('belivay-avatar-updated'));
-      showToast('Photo de profil supprimee', 'success');
+      showToast(t('profile.avatar_removed'), 'success');
     }).catch((error) => {
       console.error('Erreur suppression avatar:', error);
-      showToast('Impossible de supprimer la photo', 'error');
+      showToast(t('profile.avatar_remove_error'), 'error');
     });
   };
 
@@ -134,7 +136,7 @@ export default function ProfilePage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement du profil...</p>
+          <p className="text-dark-text-secondary">{t('profile.loading')}</p>
         </div>
       </div>
     );
@@ -153,10 +155,10 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="mb-8" data-tutorial="profile-header">
           <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Mon Profil</span>
+            <span className="text-gradient animate-gradient-bg">{t('profile.title')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Gérez vos informations personnelles et vos préférences
+            {t('profile.subtitle')}
           </p>
         </div>
 
@@ -193,12 +195,12 @@ export default function ProfilePage() {
                 </h2>
                 <p className="text-dark-text-secondary text-sm">@{user.username}</p>
                 <p className="mt-2 text-xs text-dark-text-tertiary">
-                  Ajoute une photo pour la voir aussi dans le menu profil.
+                  {t('profile.avatar_hint')}
                 </p>
                 <div className="mt-4 flex justify-center gap-2">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-white transition-all hover:bg-primary-dark">
                     <Camera size={16} />
-                    Choisir une photo
+                    {t('profile.avatar_choose')}
                     <input
                       type="file"
                       accept="image/*"
@@ -212,7 +214,7 @@ export default function ProfilePage() {
                       className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50"
                     >
                       <Trash2 size={16} />
-                      Retirer
+                      {t('profile.avatar_remove')}
                     </button>
                   )}
                 </div>
@@ -221,11 +223,11 @@ export default function ProfilePage() {
 
             {/* Quick Stats */}
             <Card>
-              <h3 className="font-semibold text-dark-text mb-4">Espace client</h3>
+              <h3 className="font-semibold text-dark-text mb-4">{t('profile.stats_title')}</h3>
               <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-sm">
-                <p className="font-semibold text-primary">200 Points · Bronze</p>
+                <p className="font-semibold text-primary">{t('profile.stats.points', { points: 200, level: 'Bronze' })}</p>
                 <p className="mt-1 text-dark-text-secondary">
-                  Continuez vos achats pour debloquer les prochains avantages.
+                  {t('profile.stats.unlock_message')}
                 </p>
               </div>
               <div className="space-y-3">
@@ -235,7 +237,7 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3">
                     <ShoppingBag className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Mes commandes</span>
+                    <span className="text-dark-text">{t('profile.menu.orders')}</span>
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </button>
@@ -245,7 +247,7 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3">
                     <Heart className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Mes favoris</span>
+                    <span className="text-dark-text">{t('profile.menu.favorites')}</span>
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </Link>
@@ -255,7 +257,7 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3">
                     <Bell className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Notifications</span>
+                    <span className="text-dark-text">{t('profile.menu.notifications')}</span>
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </Link>
@@ -267,14 +269,14 @@ export default function ProfilePage() {
               <div className="flex items-center gap-3 text-dark-text-secondary text-sm">
                 <Calendar size={18} />
                 <div>
-                  <p className="text-dark-text-tertiary">Membre depuis</p>
+                  <p className="text-dark-text-tertiary">{t('profile.member_since_label')}</p>
                   <p className="text-dark-text font-medium">{formatDate(user.date_joined)}</p>
                 </div>
               </div>
             </Card>
 
             <Card>
-              <h3 className="font-semibold text-dark-text mb-4">Support & avantages</h3>
+              <h3 className="font-semibold text-dark-text mb-4">{t('profile.support_title')}</h3>
               <div className="space-y-3">
                 <Link
                   to="/help"
@@ -282,7 +284,7 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3">
                     <CircleHelp size={18} className="text-holo-cyan" />
-                    <span className="text-dark-text">Centre d'aide</span>
+                    <span className="text-dark-text">{t('profile.support.help_center')}</span>
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </Link>
@@ -294,12 +296,12 @@ export default function ProfilePage() {
                 >
                   <div className="flex items-center gap-3">
                     <Gift size={18} className="text-holo-cyan" />
-                    <span className="text-dark-text">Support WhatsApp</span>
+                    <span className="text-dark-text">{t('profile.support.whatsapp')}</span>
                   </div>
                   <span className="text-dark-text-tertiary">→</span>
                 </a>
                 <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                  Livraison offerte des 30 000 FCFA
+                  {t('profile.support.free_delivery')}
                 </div>
               </div>
             </Card>
@@ -311,18 +313,18 @@ export default function ProfilePage() {
               {/* Header avec bouton Edit */}
               <div className="flex items-center justify-between mb-6">
                 <h2 className="font-display font-bold text-2xl text-dark-text">
-                  Informations personnelles
+                  {t('profile.info_title')}
                 </h2>
                 {!isEditing ? (
                   <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
                     <Edit2 size={18} />
-                    Modifier
+                    {t('profile.button.edit')}
                   </Button>
                 ) : (
                   <div className="flex gap-2">
                     <Button variant="secondary" size="sm" onClick={handleCancel}>
                       <X size={18} />
-                      Annuler
+                      {t('profile.button.cancel')}
                     </Button>
                     <Button
                       variant="gradient"
@@ -331,7 +333,7 @@ export default function ProfilePage() {
                       isLoading={saving}
                     >
                       <Save size={18} />
-                      Enregistrer
+                      {t('profile.button.save')}
                     </Button>
                   </div>
                 )}
@@ -342,19 +344,19 @@ export default function ProfilePage() {
                 {/* Username (read-only) */}
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Nom d'utilisateur
+                    {t('profile.form.username_label')}
                   </label>
                   <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
                     <User className="text-dark-text-tertiary" size={20} />
                     <span className="text-dark-text">{user.username}</span>
-                    <span className="ml-auto text-xs text-dark-text-tertiary">Non modifiable</span>
+                    <span className="ml-auto text-xs text-dark-text-tertiary">{t('profile.form.username_readonly')}</span>
                   </div>
                 </div>
 
                 {/* Email */}
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Email
+                    {t('profile.form.email_label')}
                   </label>
                   {isEditing ? (
                     <div className="relative">
@@ -377,19 +379,19 @@ export default function ProfilePage() {
                 {/* Phone */}
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Telephone
+                    {t('profile.form.phone_label')}
                   </label>
                   {isEditing ? (
                     <input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+237 ..."
+                      placeholder={t('profile.form.phone_placeholder')}
                       className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.phone || 'Non renseigne'}</span>
+                      <span className="text-dark-text">{user.phone || t('profile.form.phone_empty')}</span>
                     </div>
                   )}
                 </div>
@@ -397,19 +399,19 @@ export default function ProfilePage() {
                 {/* First Name */}
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Prénom
+                    {t('profile.form.firstname_label')}
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={formData.first_name}
                       onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                      placeholder="Votre prénom"
+                      placeholder={t('profile.form.firstname_placeholder')}
                       className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.first_name || 'Non renseigné'}</span>
+                      <span className="text-dark-text">{user.first_name || t('profile.form.firstname_empty')}</span>
                     </div>
                   )}
                 </div>
@@ -417,19 +419,19 @@ export default function ProfilePage() {
                 {/* Last Name */}
                 <div>
                   <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Nom
+                    {t('profile.form.lastname_label')}
                   </label>
                   {isEditing ? (
                     <input
                       type="text"
                       value={formData.last_name}
                       onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                      placeholder="Votre nom"
+                      placeholder={t('profile.form.lastname_placeholder')}
                       className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
                     />
                   ) : (
                     <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.last_name || 'Non renseigné'}</span>
+                      <span className="text-dark-text">{user.last_name || t('profile.form.lastname_empty')}</span>
                     </div>
                   )}
                 </div>

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import { Search, X, SlidersHorizontal, ArrowLeft } from "lucide-react";
@@ -17,7 +17,7 @@ export default function SearchPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
-  const liveSearchTimer = useRef<number | null>(null);
+
 
   // Fetch categories from backend on mount, fallback to mock categories
   useEffect(() => {
@@ -57,19 +57,18 @@ export default function SearchPage() {
     inputRef.current?.focus();
   }, []);
 
-  // Run search when URL param changes
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync from URL on mount only
   useEffect(() => {
     const q = searchParams.get("q") ?? "";
-    setQuery(q);
-    if (q.trim()) {
+    if (q.trim() && !searched) {
+      setQuery(q);
       runSearch(q);
-    } else {
-      setProducts([]);
-      setSearched(false);
     }
-  }, [searchParams]);
+  }, []);
 
-  const runSearch = async (q: string) => {
+  const runSearch = useCallback(async (q: string) => {
     setLoading(true);
     setSearched(true);
     try {
@@ -83,47 +82,40 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Real-time debounced search as user types
+  const handleInputChange = useCallback((value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) {
+      setProducts([]);
+      setSearched(false);
+      setSearchParams({});
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      setSearchParams({ q: value.trim() }, { replace: true });
+      runSearch(value.trim());
+    }, 300);
+  }, [runSearch, setSearchParams]);
+
+  // Clean up debounce
+  useEffect(() => { return () => { if (debounceRef.current) clearTimeout(debounceRef.current); }; }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim()) {
       setSearchParams({ q: query.trim() });
+      runSearch(query.trim());
     }
   };
-
-  useEffect(() => {
-    if (query === (searchParams.get("q") ?? "")) {
-      return;
-    }
-
-    if (liveSearchTimer.current) {
-      window.clearTimeout(liveSearchTimer.current);
-    }
-
-    liveSearchTimer.current = window.setTimeout(() => {
-      const trimmedQuery = query.trim();
-
-      if (!trimmedQuery) {
-        setProducts([]);
-        setSearched(false);
-        setSearchParams({});
-        return;
-      }
-
-      setSearchParams({ q: trimmedQuery });
-    }, 220);
-
-    return () => {
-      if (liveSearchTimer.current) {
-        window.clearTimeout(liveSearchTimer.current);
-      }
-    };
-  }, [query, searchParams, setSearchParams]);
 
   const handleQuickSearch = (term: string) => {
     setQuery(term);
     setSearchParams({ q: term });
+    runSearch(term);
   };
 
   const handleClear = () => {
@@ -158,7 +150,7 @@ export default function SearchPage() {
                   ref={inputRef}
                   type="text"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  onChange={(e) => handleInputChange(e.target.value)}
                   placeholder={t('search.placeholder')}
                   className="w-full pl-11 pr-10 py-3 rounded-xl bg-[#f8f5f1] dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                 />

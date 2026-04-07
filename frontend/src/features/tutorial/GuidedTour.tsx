@@ -3,40 +3,28 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
-  Bot,
   Check,
   Compass,
   Sparkles,
   X,
 } from "lucide-react";
-import { Button } from "@/components/ui";
 import {
   CLIENT_TOUR_STORAGE_KEY,
   CLIENT_TUTORIAL_STEPS,
   type TutorialStep,
 } from "./tutorialSteps";
 
-const ONBOARDING_ENDPOINT = "/api/user/onboarding/";
-
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value));
 }
 
-function getFocusableSelector(step: TutorialStep) {
-  return step.selector ?? null;
-}
-
-function getVisibleTarget(selector: string) {
-  const elements = Array.from(
-    document.querySelectorAll(selector),
-  ) as HTMLElement[];
-
-  return (
-    elements.find((element) => {
-      const rect = element.getBoundingClientRect();
-      return rect.width > 0 && rect.height > 0;
-    }) ?? null
-  );
+function getVisibleTarget(selector: string | null) {
+  if (!selector) return null;
+  const elements = Array.from(document.querySelectorAll(selector)) as HTMLElement[];
+  return elements.find((el) => {
+    const r = el.getBoundingClientRect();
+    return r.width > 0 && r.height > 0;
+  }) ?? null;
 }
 
 export default function GuidedTour() {
@@ -45,351 +33,214 @@ export default function GuidedTour() {
   const [isOpen, setIsOpen] = useState(false);
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const [isTargetReady, setIsTargetReady] = useState(false);
-  const [isCompleting, setIsCompleting] = useState(false);
+  const [ready, setReady] = useState(false);
   const rafRef = useRef<number | null>(null);
-  const step = CLIENT_TUTORIAL_STEPS[stepIndex];
-  const totalSteps = CLIENT_TUTORIAL_STEPS.length;
 
-  const openTour = (startIndex = 0) => {
-    setStepIndex(startIndex);
-    setIsOpen(true);
-  };
+  const step = CLIENT_TUTORIAL_STEPS[stepIndex];
+  const total = CLIENT_TUTORIAL_STEPS.length;
+  const progress = ((stepIndex + 1) / total) * 100;
+
+  // ── Open / Close ──
+  const openTour = () => { setStepIndex(0); setIsOpen(true); };
 
   const closeTour = () => {
+    localStorage.setItem(CLIENT_TOUR_STORAGE_KEY, "true");
     setIsOpen(false);
     setStepIndex(0);
     setTargetRect(null);
-    setIsTargetReady(false);
+    setReady(false);
+    navigate("/");
   };
 
-  const persistCompletion = async () => {
-    localStorage.setItem(CLIENT_TOUR_STORAGE_KEY, "true");
-    try {
-      await fetch(ONBOARDING_ENDPOINT, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ completed: true }),
-      });
-    } catch {
-      // Optional sync. A local success is enough for the guided tour.
-    }
-  };
-
-  const finishTour = async () => {
-    setIsCompleting(true);
-    await persistCompletion();
-    setIsCompleting(false);
-    closeTour();
-  };
-
+  // Auto-start on first visit
   useEffect(() => {
-    const handleOpenTour = () => openTour(0);
-    const shouldAutoStart =
-      typeof window !== "undefined" &&
-      localStorage.getItem(CLIENT_TOUR_STORAGE_KEY) !== "true";
-
-    const timer = window.setTimeout(() => {
-      if (shouldAutoStart) {
-        openTour(0);
-      }
-    }, 550);
-
-    window.addEventListener("belivay-open-tutorial", handleOpenTour as EventListener);
-
-    return () => {
-      window.clearTimeout(timer);
-      window.removeEventListener(
-        "belivay-open-tutorial",
-        handleOpenTour as EventListener,
-      );
-    };
+    const seen = localStorage.getItem(CLIENT_TOUR_STORAGE_KEY) === "true";
+    const timer = setTimeout(() => { if (!seen) openTour(); }, 700);
+    const handler = () => openTour();
+    window.addEventListener("belivay-open-tutorial", handler);
+    return () => { clearTimeout(timer); window.removeEventListener("belivay-open-tutorial", handler); };
   }, []);
 
+  // Navigate to step route
   useEffect(() => {
-    if (!isOpen || !step?.route || location.pathname === step.route) {
-      return;
-    }
+    if (!isOpen || !step?.route || location.pathname === step.route) return;
     navigate(step.route);
   }, [isOpen, step, location.pathname, navigate]);
 
+  // Track target element
   useLayoutEffect(() => {
-    if (!isOpen || !step) {
-      return;
-    }
-
-    const selector = getFocusableSelector(step);
-    if (!selector) {
-      setTargetRect(null);
-      setIsTargetReady(true);
-      return;
-    }
+    if (!isOpen || !step) return;
+    const selector = step.selector ?? null;
+    if (!selector) { setTargetRect(null); setReady(true); return; }
 
     let attempts = 0;
-
-    const syncTarget = () => {
-      const target = getVisibleTarget(selector);
-
-      if (!target) {
-        attempts += 1;
-        setIsTargetReady(false);
-        if (attempts < 120) {
-          rafRef.current = window.requestAnimationFrame(syncTarget);
-        }
+    const sync = () => {
+      const el = getVisibleTarget(selector);
+      if (!el) {
+        attempts++;
+        setReady(false);
+        if (attempts < 100) rafRef.current = requestAnimationFrame(sync);
         return;
       }
-
-      target.scrollIntoView({
-        behavior: "smooth",
-        block: step.scrollBlock ?? "center",
-        inline: "center",
-      });
-
-      const rect = target.getBoundingClientRect();
-      setTargetRect(rect);
-      setIsTargetReady(rect.width > 0 && rect.height > 0);
+      el.scrollIntoView({ behavior: "smooth", block: step.scrollBlock ?? "center", inline: "center" });
+      const r = el.getBoundingClientRect();
+      setTargetRect(r);
+      setReady(r.width > 0 && r.height > 0);
     };
 
-    const onViewportChange = () => {
-      if (!selector) return;
-      const target = getVisibleTarget(selector);
-      if (!target) return;
-      setTargetRect(target.getBoundingClientRect());
+    const onResize = () => {
+      const el = getVisibleTarget(selector);
+      if (el) setTargetRect(el.getBoundingClientRect());
     };
 
-    syncTarget();
-    window.addEventListener("resize", onViewportChange);
-    window.addEventListener("scroll", onViewportChange, true);
-
+    sync();
+    window.addEventListener("resize", onResize);
+    window.addEventListener("scroll", onResize, true);
     return () => {
-      if (rafRef.current) {
-        window.cancelAnimationFrame(rafRef.current);
-      }
-      window.removeEventListener("resize", onViewportChange);
-      window.removeEventListener("scroll", onViewportChange, true);
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      window.removeEventListener("resize", onResize);
+      window.removeEventListener("scroll", onResize, true);
     };
   }, [isOpen, step, location.pathname]);
 
+  // Keyboard nav
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        void finishTour();
-        return;
-      }
-
-      if (event.key === "ArrowRight") {
-        event.preventDefault();
-        if (stepIndex === totalSteps - 1) {
-          void finishTour();
-        } else {
-          setStepIndex((current) => current + 1);
-        }
-        return;
-      }
-
-      if (event.key === "ArrowLeft") {
-        event.preventDefault();
-        setStepIndex((current) => Math.max(0, current - 1));
-      }
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { closeTour(); return; }
+      if (e.key === "ArrowRight") { e.preventDefault(); stepIndex < total - 1 ? setStepIndex(s => s + 1) : closeTour(); }
+      if (e.key === "ArrowLeft") { e.preventDefault(); setStepIndex(s => Math.max(0, s - 1)); }
     };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [isOpen, stepIndex, total]);
 
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen, stepIndex, totalSteps]);
-
+  // ── Tooltip positioning: prefer LEFT of target, fallback right/below ──
   const tooltipStyle = useMemo(() => {
-    const maxWidth = Math.min(420, window.innerWidth - 24);
+    const tooltipW = Math.min(380, window.innerWidth - 32);
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
 
-    if (!targetRect || !isTargetReady) {
-      return {
-        top: "50%",
-        left: "50%",
-        width: maxWidth,
-        transform: "translate(-50%, -50%)",
-      };
+    // Center if no target
+    if (!targetRect || !ready) {
+      return { position: "fixed" as const, top: "50%", left: "50%", width: tooltipW, transform: "translate(-50%, -50%)" };
     }
 
-    const spaceBelow = window.innerHeight - targetRect.bottom;
-    const placeAbove = spaceBelow < 300 && targetRect.top > 320;
-    const top = placeAbove
-      ? clamp(targetRect.top - 236, 16, window.innerHeight - 220)
-      : clamp(targetRect.bottom + 24, 16, window.innerHeight - 220);
-    const left = clamp(
-      targetRect.left + targetRect.width / 2 - maxWidth / 2,
-      12,
-      window.innerWidth - maxWidth - 12,
-    );
+    const pad = 16;
+    let top = 0;
+    let left = 0;
 
-    return {
-      top,
-      left,
-      width: maxWidth,
-      transform: "none",
-    };
-  }, [targetRect, isTargetReady]);
+    // Try LEFT of target
+    if (targetRect.left - tooltipW - pad > 0) {
+      left = targetRect.left - tooltipW - pad;
+      top = clamp(targetRect.top + targetRect.height / 2 - 120, pad, vh - 280);
+    }
+    // Try RIGHT of target
+    else if (targetRect.right + tooltipW + pad < vw) {
+      left = targetRect.right + pad;
+      top = clamp(targetRect.top + targetRect.height / 2 - 120, pad, vh - 280);
+    }
+    // Fallback BELOW
+    else {
+      top = clamp(targetRect.bottom + pad, pad, vh - 280);
+      left = clamp(targetRect.left + targetRect.width / 2 - tooltipW / 2, pad, vw - tooltipW - pad);
+    }
+
+    return { position: "fixed" as const, top, left, width: tooltipW, transform: "none" };
+  }, [targetRect, ready]);
 
   const spotlightStyle = useMemo(() => {
-    if (!targetRect || !isTargetReady) {
-      return null;
-    }
+    if (!targetRect || !ready) return null;
+    const p = window.innerWidth < 768 ? 8 : 12;
+    return { top: targetRect.top - p, left: targetRect.left - p, width: targetRect.width + p * 2, height: targetRect.height + p * 2 };
+  }, [targetRect, ready]);
 
-    const padding = window.innerWidth < 768 ? 8 : 12;
-    return {
-      top: targetRect.top - padding,
-      left: targetRect.left - padding,
-      width: targetRect.width + padding * 2,
-      height: targetRect.height + padding * 2,
-    };
-  }, [targetRect, isTargetReady]);
-
-  if (!isOpen || !step) {
-    return null;
-  }
+  if (!isOpen || !step) return null;
 
   return (
-    <div className="fixed inset-0 z-[90]" aria-live="polite">
-      <div className="absolute inset-0 bg-slate-950/70 backdrop-blur-[2px]" />
+    <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label="Visite guidée">
+      {/* Overlay - click to close */}
+      <div className="absolute inset-0 bg-black/60" onClick={closeTour} />
 
+      {/* Spotlight */}
       {spotlightStyle && (
-        <div
-          className="pointer-events-none absolute rounded-[28px] border border-white/70 bg-transparent shadow-[0_0_0_9999px_rgba(2,6,23,0.72)] transition-all duration-300"
-          style={spotlightStyle}
-        >
-          <div className="absolute inset-0 rounded-[28px] ring-8 ring-primary/15" />
-          <div className="absolute inset-0 animate-pulse rounded-[28px] border border-primary/60" />
-        </div>
+        <>
+          <div
+            className="absolute rounded-2xl animate-pulse"
+            style={{ ...spotlightStyle, top: spotlightStyle.top - 4, left: spotlightStyle.left - 4, width: spotlightStyle.width + 8, height: spotlightStyle.height + 8, border: "2px solid rgba(244,121,32,0.4)", pointerEvents: "none" }}
+          />
+          <div
+            className="absolute rounded-xl transition-all duration-500 ease-out"
+            style={{ ...spotlightStyle, boxShadow: "0 0 0 9999px rgba(0,0,0,0.6)", border: "2px solid rgba(244,121,32,0.8)", pointerEvents: "none", zIndex: 1 }}
+          />
+        </>
       )}
 
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="guided-tour-title"
-        className="absolute rounded-[28px] border border-white/80 bg-white/95 p-5 shadow-[0_28px_80px_rgba(15,23,42,0.28)] backdrop-blur-xl transition-all duration-300 dark:border-slate-700 dark:bg-slate-900/95"
+      {/* Tooltip */}
+      <div
+        className="z-10 rounded-3xl bg-white shadow-2xl dark:bg-gray-900 border border-orange-100 dark:border-gray-700 transition-all duration-300"
         style={tooltipStyle}
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
-              <Compass size={13} />
-              Visite guidée
-            </div>
-            <h2
-              id="guided-tour-title"
-              className="mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white"
-            >
-              {step.title}
-            </h2>
-            {step.routeLabel ? (
-              <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">
-                {step.routeLabel}
-              </p>
-            ) : null}
-          </div>
-
-          <button
-            type="button"
-            onClick={() => void finishTour()}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:border-slate-700 dark:text-slate-300"
-            aria-label="Fermer la visite guidée"
-          >
-            <X size={18} />
-          </button>
+        {/* Progress bar */}
+        <div className="h-1 rounded-t-3xl bg-gray-100 dark:bg-gray-800 overflow-hidden">
+          <div className="h-full bg-gradient-to-r from-primary to-orange-400 transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
 
-        <p className="text-sm leading-7 text-slate-600 dark:text-slate-300">
-          {step.description}
-        </p>
-
-        {step.helper ? (
-          <div className="mt-4 flex items-start gap-3 rounded-2xl bg-slate-100/80 px-4 py-3 text-sm text-slate-600 dark:bg-slate-800/70 dark:text-slate-300">
-            <Sparkles size={16} className="mt-0.5 shrink-0 text-primary" />
-            <span>{step.helper}</span>
-          </div>
-        ) : null}
-
-        {!isTargetReady && step.selector ? (
-          <p className="mt-4 text-xs font-medium text-slate-400">
-            Repérage de la zone en cours...
-          </p>
-        ) : null}
-
-        <div className="mt-6 flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <div className="mb-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-primary to-orange-400 transition-all duration-300"
-                style={{ width: `${((stepIndex + 1) / totalSteps) * 100}%` }}
-              />
+        <div className="p-5">
+          {/* Header */}
+          <div className="flex items-start justify-between gap-3 mb-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-primary">
+                <Compass size={13} />
+                Étape {stepIndex + 1} sur {total}
+              </div>
+              <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
+              {step.routeLabel && <p className="mt-1 text-xs font-medium text-gray-400">{step.routeLabel}</p>}
             </div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">
-              Étape {stepIndex + 1} sur {totalSteps}
-            </p>
+            <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label="Fermer">
+              <X size={18} />
+            </button>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-2">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-full px-4"
-              onClick={() => void finishTour()}
-            >
+          {/* Content */}
+          <p className="text-sm leading-relaxed text-gray-500 dark:text-gray-400">{step.description}</p>
+
+          {step.helper && (
+            <div className="mt-3 flex items-start gap-2 rounded-xl bg-orange-50 px-3 py-2.5 text-xs text-primary dark:bg-primary/10">
+              <Sparkles size={14} className="mt-0.5 shrink-0" />
+              <span>{step.helper}</span>
+            </div>
+          )}
+
+          {/* Step dots */}
+          <div className="mt-4 flex items-center gap-1.5">
+            {CLIENT_TUTORIAL_STEPS.map((_, i) => (
+              <div key={i} className={`h-1.5 rounded-full transition-all duration-300 ${i === stepIndex ? "w-6 bg-primary" : i < stepIndex ? "w-1.5 bg-primary/40" : "w-1.5 bg-gray-200 dark:bg-gray-700"}`} />
+            ))}
+          </div>
+
+          {/* Actions */}
+          <div className="mt-5 flex items-center justify-between gap-3">
+            <button onClick={closeTour} className="text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
               Ignorer
-            </Button>
-
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="rounded-full px-4"
-              disabled={stepIndex === 0}
-              onClick={() => setStepIndex((current) => Math.max(0, current - 1))}
-            >
-              <ArrowLeft size={15} />
-              Précédent
-            </Button>
-
-            {stepIndex === totalSteps - 1 ? (
-              <Button
-                type="button"
-                variant="gradient"
-                size="sm"
-                className="rounded-full px-5"
-                isLoading={isCompleting}
-                onClick={() => void finishTour()}
+            </button>
+            <div className="flex items-center gap-2">
+              {stepIndex > 0 && (
+                <button onClick={() => setStepIndex(s => Math.max(0, s - 1))} className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                  <ArrowLeft size={16} /> Précédent
+                </button>
+              )}
+              <button
+                onClick={() => stepIndex === total - 1 ? closeTour() : setStepIndex(s => s + 1)}
+                className="inline-flex items-center gap-1 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
               >
-                <Check size={15} />
-                Terminer
-              </Button>
-            ) : (
-              <Button
-                type="button"
-                variant="gradient"
-                size="sm"
-                className="rounded-full px-5"
-                onClick={() => setStepIndex((current) => current + 1)}
-              >
-                Suivant
-                <ArrowRight size={15} />
-              </Button>
-            )}
+                {stepIndex === total - 1 ? (<><Check size={16} /> Terminer</>) : (<>Suivant <ArrowRight size={16} /></>)}
+              </button>
+            </div>
           </div>
         </div>
-
-        <div className="mt-4 flex items-center gap-2 text-xs text-slate-400">
-          <Bot size={13} />
-          <span>
-            Astuce: tu peux utiliser les flèches du clavier pour avancer ou reculer.
-          </span>
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

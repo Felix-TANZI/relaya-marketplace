@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Heart, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
@@ -13,44 +13,49 @@ export default function WishlistPage() {
   const [loading, setLoading] = useState(true);
   const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
 
-  useEffect(() => {
-    const syncFavorites = () => setFavoriteIds(getFavoriteProductIds());
-
-    syncFavorites();
-    window.addEventListener("belivay-favorites-updated", syncFavorites as EventListener);
-
-    return () => {
-      window.removeEventListener("belivay-favorites-updated", syncFavorites as EventListener);
-    };
-  }, []);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        if (localStorage.getItem('access_token')) {
-          const favorites = await customerApi.getFavorites();
-          setProducts(favorites.map((favorite) => favorite.product));
-          return;
-        }
-
-        const response = await productsApi.list({ page_size: 50 });
-        setProducts(response.results || []);
-      } finally {
-        setLoading(false);
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      if (localStorage.getItem('access_token')) {
+        const favorites = await customerApi.getFavorites();
+        setProducts(favorites.map((favorite) => favorite.product));
+        setFavoriteIds(favorites.map((favorite) => favorite.product.id));
+        return;
       }
-    };
 
+      const ids = getFavoriteProductIds();
+      setFavoriteIds(ids);
+
+      if (ids.length === 0) {
+        setProducts([]);
+        return;
+      }
+
+      const response = await productsApi.list({ page_size: 100 });
+      setProducts(
+        (response.results || []).filter((product) => ids.includes(product.id))
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProducts();
   }, []);
 
-  const favoriteProducts = useMemo(
-    () => (
-      localStorage.getItem('access_token')
-        ? products
-        : products.filter((product) => favoriteIds.includes(product.id))
-    ),
-    [products, favoriteIds],
-  );
+  useEffect(() => {
+    const onFavoritesUpdated = () => {
+      fetchProducts();
+    };
+
+    window.addEventListener("belivay-favorites-updated", onFavoritesUpdated);
+    return () => {
+      window.removeEventListener("belivay-favorites-updated", onFavoritesUpdated);
+    };
+  }, []);
+
+  const favoriteProducts = products;
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">

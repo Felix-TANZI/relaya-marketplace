@@ -339,14 +339,14 @@ export default function GlobalAssistant() {
       <button
         type="button"
         onClick={() => setIsOpen((current) => !current)}
-        className="fixed bottom-5 right-5 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-slate-950 text-white shadow-[0_18px_50px_rgba(15,23,42,0.32)] transition-all hover:-translate-y-1 hover:bg-slate-900 dark:border dark:border-white/10"
+        className="fixed bottom-20 right-4 z-[70] flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-lg shadow-primary/30 transition-all hover:scale-105 hover:bg-primary-dark lg:bottom-6 lg:right-6"
         aria-label="Ouvrir l'assistant BelivaY"
       >
         {isOpen ? <X size={20} /> : <Bot size={22} />}
       </button>
 
       {isOpen && (
-        <section className="fixed inset-x-3 bottom-24 z-[70] overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_24px_80px_rgba(15,23,42,0.18)] dark:border-slate-800 dark:bg-slate-950 sm:inset-x-auto sm:right-4 sm:w-[min(420px,calc(100vw-1.5rem))]">
+        <section className="fixed bottom-36 right-4 z-[70] w-[min(400px,calc(100vw-2rem))] max-h-[min(520px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 flex flex-col">
           <header className="border-b border-slate-200 bg-[linear-gradient(180deg,#fff,rgba(248,250,252,0.92))] px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -372,7 +372,7 @@ export default function GlobalAssistant() {
             </div>
           </header>
 
-          <div className="max-h-[52vh] space-y-4 overflow-y-auto bg-slate-50/70 px-4 py-4 dark:bg-slate-950 sm:max-h-[58vh]">
+          <div className="flex-1 min-h-0 space-y-4 overflow-y-auto bg-gray-50 px-4 py-4 dark:bg-gray-950">
             {messages.map((chatMessage) => (
               <article
                 key={chatMessage.id}

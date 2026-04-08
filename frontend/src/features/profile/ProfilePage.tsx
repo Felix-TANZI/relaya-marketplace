@@ -171,20 +171,6 @@ export default function ProfilePage() {
                 Profil, préférences, commandes et raccourcis essentiels depuis un seul tableau de bord.
               </p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Niveau</div>
-                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">Bronze</div>
-              </div>
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Points</div>
-                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">200</div>
-              </div>
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
-                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Statut</div>
-                <div className="mt-1 text-lg font-bold text-green-700 dark:text-green-300">Vérifié</div>
-              </div>
-            </div>
           </div>
         </div>
 
@@ -350,32 +336,6 @@ export default function ProfilePage() {
                 </div>
               </div>
 
-              <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Préférences et assistance</h3>
-                <div className="mt-5 space-y-4 text-sm">
-                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
-                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <Bell size={16} className="text-primary" />
-                      Notifications actives
-                    </span>
-                    <span className="font-semibold text-green-700 dark:text-green-300">Oui</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
-                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <ShieldCheck size={16} className="text-primary" />
-                      Compte vérifié
-                    </span>
-                    <span className="font-semibold text-green-700 dark:text-green-300">Validé</span>
-                  </div>
-                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
-                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
-                      <CreditCard size={16} className="text-primary" />
-                      Paiement sécurisé
-                    </span>
-                    <span className="font-semibold text-gray-900 dark:text-white">Escrow actif</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
             <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">

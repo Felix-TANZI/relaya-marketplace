@@ -1,12 +1,7 @@
-// frontend/src/features/checkout/CheckoutPage.tsx
-// Page de paiement et confirmation de commande
-// Permet à l'utilisateur de saisir ses informations, choisir une méthode de paiement et confirmer la commande
-
 import { useTranslation } from 'react-i18next';
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CreditCard, CheckCircle } from "lucide-react";
-import { Button, Card, Input } from "@/components/ui";
+import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
@@ -18,126 +13,73 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<"info" | "payment" | "success">("info");
   const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
-    address: "",
-    city: "Yaoundé",
-    paymentMethod: "momo",
-    orderId: 0,
+    firstName: "", lastName: "", phone: "", address: "", city: "Yaoundé", paymentMethod: "momo", orderId: 0,
   });
 
   const shippingCost = 2000;
   const finalTotal = total + shippingCost;
 
-const handleSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  setLoading(true);
-
-  try {
-    if (!localStorage.getItem('access_token')) {
-      showToast('Connectez-vous pour finaliser votre commande', 'error');
-      navigate('/login');
-      return;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      if (!localStorage.getItem('access_token')) {
+        showToast('Connectez-vous pour finaliser votre commande', 'error');
+        navigate('/login');
+        return;
+      }
+      const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
+      const order = await ordersApi.create({
+        city: cityMap[formData.city] || 'YAOUNDE',
+        address: formData.address,
+        customer_phone: formData.phone,
+        customer_email: '',
+        note: '',
+        cart_items: items.map((item) => ({ product_id: item.id, qty: item.quantity })),
+      });
+      clearCart();
+      setStep('success');
+      setFormData({ ...formData, orderId: order.id });
+    } catch (error) {
+      console.error('Erreur création commande:', error);
+      showToast(t('checkout.error'), 'error');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Préparer les données pour l'API
-    const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = {
-  'Yaoundé': 'YAOUNDE',
-  'Douala': 'DOUALA',
-  'YAOUNDE': 'YAOUNDE',
-  'DOUALA': 'DOUALA',
-};
+  if (items.length === 0 && step !== "success") { navigate("/cart"); return null; }
 
-const orderData = {
-  city: cityMap[formData.city] || 'YAOUNDE',
-  address: formData.address,
-  customer_phone: formData.phone,
-  customer_email: '',
-  note: '',
-  cart_items: items.map((item) => ({
-    product_id: item.id,
-    qty: item.quantity,
-  })),
-};
-
-    // Créer la commande
-    const order = await ordersApi.create(orderData);
-
-    // Succès : vider le panier et passer à l'étape succès
-    clearCart();
-    setStep('success');
-
-    // Stocker l'ID de commande pour l'affichage
-    setFormData({ ...formData, orderId: order.id });
-  } catch (error) {
-    console.error('Erreur création commande:', error);
-    showToast(t('checkout.error'), 'error');
-  } finally {
-    setLoading(false);
-  }
-};
-
-  if (items.length === 0 && step !== "success") {
-    navigate("/cart");
-    return null;
-  }
+  const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder:text-gray-400";
 
   if (step === "success") {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-gradient-holographic animate-gradient-bg flex items-center justify-center">
-            <CheckCircle className="text-white" size={48} />
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] py-20 dark:bg-gray-950 px-4">
+        <div className="mx-auto max-w-md text-center">
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20">
+            <CheckCircle className="text-green-500" size={48} />
           </div>
-          <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
-            {t('checkout.success_title')}
-          </h1>
-          {/* Afficher le numéro de commande */}
-<div className="glass rounded-xl p-4 mb-4 inline-block">
-  <p className="text-sm text-dark-text-secondary mb-1">
-    {t('checkout.order_number')}
-  </p>
-  <p className="text-2xl font-bold text-holo-cyan">
-    #{formData.orderId}
-  </p>
-</div>
-          <p className="text-dark-text-secondary mb-2">
-            {t('checkout.success_message')}
-          </p>
-          <p className="text-dark-text-secondary mb-8">
-            {t('checkout.success_sms')} <strong>{formData.phone}</strong>
-          </p>
-          
-          <Card className="mb-6 text-left">
-            <h3 className="font-semibold text-dark-text mb-4">{t('checkout.delivery_details')}</h3>
-            <div className="space-y-2 text-sm">
-              <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">{t('checkout.name_label')}</span> {formData.firstName} {formData.lastName}
-              </p>
-              <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">{t('checkout.phone_label')}</span> {formData.phone}
-              </p>
-              <p className="text-dark-text-secondary">
-                <span className="text-dark-text font-medium">{t('checkout.address_label')}</span> {formData.address}, {formData.city}
-              </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('checkout.success_title')}</h1>
+          <div className="mx-auto mt-4 inline-block rounded-2xl bg-white px-6 py-4 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+            <p className="text-xs text-gray-400">{t('checkout.order_number', { number: formData.orderId })}</p>
+            <p className="mt-1 text-2xl font-bold text-primary">#{formData.orderId}</p>
+          </div>
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{t('checkout.success_message')}</p>
+          <p className="mt-1 text-sm text-gray-500"><strong className="text-gray-900 dark:text-white">{formData.phone}</strong></p>
+          <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">{t('checkout.delivery_details')}</h3>
+            <div className="space-y-2 text-sm text-gray-500">
+              <div className="flex items-center gap-2"><User size={14} className="text-gray-400" /><span>{formData.firstName} {formData.lastName}</span></div>
+              <div className="flex items-center gap-2"><Phone size={14} className="text-gray-400" /><span>{formData.phone}</span></div>
+              <div className="flex items-center gap-2"><MapPin size={14} className="text-gray-400" /><span>{formData.address}, {formData.city}</span></div>
             </div>
-          </Card>
-
-          <div className="flex flex-col gap-3">
-            <Link to="/">
-              <Button variant="gradient" size="lg">
-                {t('checkout.back_home')}
-              </Button>
-            </Link>
-
-            <Link to="/catalog">
-              <Button variant="secondary" size="md">
-                {t('cart.continue_shopping')}
-              </Button>
-            </Link>
+          </div>
+          <div className="mt-6 flex flex-col gap-3">
+            <Link to="/" className="inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark">{t('checkout.back_home')}</Link>
+            <Link to="/orders" className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">{t('orders.view_details')}</Link>
           </div>
         </div>
       </div>
@@ -145,239 +87,102 @@ const orderData = {
   }
 
   return (
-    <div className="min-h-screen py-8 sm:py-12">
-      <div className="container mx-auto max-w-6xl px-4">
-        {/* Header */}
-        <Link
-          to="/cart"
-          className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-8"
-        >
-          <ArrowLeft size={20} />
-          {t('checkout.back_to_cart')}
+    <div className="min-h-screen bg-[#f8f5f1] py-8 dark:bg-gray-950 px-4" data-tour="checkout">
+      <div className="container mx-auto max-w-6xl">
+        <Link to="/cart" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary dark:text-gray-400">
+          <ArrowLeft size={18} />{t('checkout.back_to_cart')}
         </Link>
 
-        <h1 className="mb-8 font-display text-3xl font-bold lg:text-5xl">
-          <span className="text-gradient animate-gradient-bg">{t('checkout.title')}</span>
-        </h1>
+        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Paiement</p>
+          <h1 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">{t('checkout.title')}</h1>
+        </div>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 lg:gap-8">
-          {/* Form */}
-          <div className="order-2 lg:order-1 lg:col-span-2">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Personal Info */}
-              <Card data-tutorial="checkout-payment">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-holographic animate-gradient-bg flex items-center justify-center text-white font-bold">
-                    1
-                  </div>
-                  <h2 className="font-display font-bold text-2xl text-dark-text">
-                    {t('checkout.step_info')}
-                  </h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Input
-                    label={t('checkout.first_name')}
-                    placeholder={t('checkout.first_name_placeholder')}
-                    value={formData.firstName}
-                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label={t('checkout.last_name')}
-                    placeholder={t('checkout.last_name_placeholder')}
-                    value={formData.lastName}
-                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                    required
-                  />
-                  <Input
-                    label={t('checkout.phone')}
-                    type="tel"
-                    placeholder={t('checkout.phone_placeholder')}
-                    value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    helperText={t('checkout.phone_helper')}
-                    required
-                  />
-                </div>
-              </Card>
-
-              {/* Delivery Address */}
-              <Card>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-holographic animate-gradient-bg flex items-center justify-center text-white font-bold">
-                    2
-                  </div>
-                  <h2 className="font-display font-bold text-2xl text-dark-text">
-                    {t('checkout.step_address')}
-                  </h2>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                      {t('checkout.city')}
-                    </label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {["Yaoundé", "Douala"].map((city) => (
-                        <button
-                          key={city}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, city })}
-                          className={`py-3 px-4 rounded-xl font-medium transition-all ${
-                            formData.city === city
-                              ? "bg-gradient-holographic animate-gradient-bg text-white"
-                              : "glass border border-white/10 text-dark-text hover:border-holo-cyan"
-                          }`}
-                        >
-                          {city}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  <Input
-                    label={t('checkout.address')}
-                    placeholder={t('checkout.address_placeholder')}
-                    value={formData.address}
-                    onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                    helperText={t('checkout.address_helper')}
-                    required
-                  />
-                </div>
-              </Card>
-
-              {/* Payment Method */}
-              <Card>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-10 rounded-lg bg-gradient-holographic animate-gradient-bg flex items-center justify-center text-white font-bold">
-                    3
-                  </div>
-                  <h2 className="font-display font-bold text-2xl text-dark-text">
-                    {t('checkout.step_payment')}
-                  </h2>
-                </div>
-
-                <div className="space-y-3">
-                  {[
-                    { id: "momo", name: t('checkout.payment_momo'), icon: "📱" },
-                    { id: "orange", name: t('checkout.payment_orange'), icon: "🟠" },
-                  ].map((method) => (
-                    <button
-                      key={method.id}
-                      type="button"
-                      onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
-                      className={`w-full rounded-xl p-4 flex items-center gap-4 transition-all ${
-                        formData.paymentMethod === method.id
-                          ? "glass border-2 border-holo-cyan shadow-glow-cyan"
-                          : "glass border border-white/10 hover:border-white/30"
-                      }`}
-                    >
-                      <span className="text-3xl">{method.icon}</span>
-                      <span className="font-medium text-dark-text">{method.name}</span>
-                      {formData.paymentMethod === method.id && (
-                        <CheckCircle className="text-holo-cyan ml-auto" size={24} />
-                      )}
-                    </button>
-                  ))}
-                </div>
-
-                <p className="text-sm text-dark-text-secondary mt-4 flex items-start gap-2">
-                  <CheckCircle className="text-holo-cyan flex-shrink-0 mt-0.5" size={16} />
-                  {t('checkout.payment_helper')}
-                </p>
-              </Card>
-
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="mb-3 flex items-start gap-3 text-sm text-dark-text-secondary">
-                  <CheckCircle className="mt-0.5 flex-shrink-0 text-holo-cyan" size={16} />
-                  <span>
-                    Paiement protégé, validation rapide de la commande et livraison suivie
-                    directement depuis votre espace client.
-                  </span>
-                </div>
-
-                <Button
-                  id="checkout"
-                  type="submit"
-                  variant="gradient"
-                  size="lg"
-                  className="w-full"
-                  isLoading={loading}
-                >
-                  {t('checkout.confirm')}
-                </Button>
+        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Step 1: Info */}
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">1</div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_info')}</h2>
               </div>
-            </form>
-          </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label><input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} /></div>
+                <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label><input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} /></div>
+                <div className="sm:col-span-2"><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.phone')}</label><input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder={t('checkout.phone_placeholder')} className={inputClass} /><p className="mt-1.5 text-xs text-gray-400">{t('checkout.phone_helper')}</p></div>
+              </div>
+            </section>
+
+            {/* Step 2: Address */}
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">2</div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_address')}</h2>
+              </div>
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.city')}</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    {["Yaoundé", "Douala"].map((city) => (
+                      <button key={city} type="button" onClick={() => setFormData({ ...formData, city })}
+                        className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${formData.city === city ? "bg-primary text-white shadow-lg shadow-primary/20" : "border border-gray-200 bg-white text-gray-700 hover:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"}`}>
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.address')}</label><input type="text" required value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder={t('checkout.address_placeholder')} className={inputClass} /><p className="mt-1.5 text-xs text-gray-400">{t('checkout.address_helper')}</p></div>
+              </div>
+            </section>
+
+            {/* Step 3: Payment */}
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">3</div>
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_payment')}</h2>
+              </div>
+              <div className="space-y-3">
+                {[{ id: "momo", name: t('checkout.payment_momo'), icon: <CreditCard size={20} /> }, { id: "orange", name: t('checkout.payment_orange'), icon: <CreditCard size={20} /> }].map((method) => (
+                  <button key={method.id} type="button" onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
+                    className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${formData.paymentMethod === method.id ? "border-primary bg-primary/5 dark:bg-primary/10" : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800"}`}>
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">{method.icon}</div>
+                    <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">{method.name}</span>
+                    {formData.paymentMethod === method.id && <CheckCircle className="text-primary" size={22} />}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-4 flex items-start gap-2 text-xs text-gray-400"><ShieldCheck className="mt-0.5 shrink-0 text-primary" size={14} />{t('checkout.payment_helper')}</p>
+            </section>
+
+            <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-dark disabled:opacity-60">
+              <CreditCard size={18} />{loading ? '...' : t('checkout.confirm')}
+            </button>
+          </form>
 
           {/* Order Summary */}
-          <div className="order-1 lg:order-2 lg:col-span-1">
-            <Card className="lg:sticky lg:top-24">
-              <h2 className="font-display font-bold text-xl text-dark-text mb-6">
-                {t('checkout.summary')}
-              </h2>
-
-              <div className="space-y-3 mb-6">
+          <div className="lg:sticky lg:top-24 lg:self-start">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">{t('checkout.summary')}</h2>
+              <div className="space-y-3">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-3">
-                    <div className="w-16 h-16 flex-shrink-0 rounded-lg overflow-hidden bg-dark-bg-tertiary">
-                      {item.image ? (
-                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <CreditCard className="text-dark-text-tertiary" size={24} />
-                        </div>
-                      )}
+                  <div key={item.id} className="flex items-center gap-3">
+                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#fcfbf8] dark:bg-gray-800">
+                      {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Package className="text-gray-300" size={20} /></div>}
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-dark-text truncate">{item.name}</p>
-                      <p className="text-xs text-dark-text-tertiary">{t('checkout.quantity_short')} {item.quantity}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
+                      <p className="text-xs text-gray-400">{t('checkout.quantity_short')} {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-semibold text-dark-text">
-                      {(item.price * item.quantity).toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')}
-                    </p>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{(item.price * item.quantity).toLocaleString(locale)} FCFA</p>
                   </div>
                 ))}
               </div>
-
-              <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-dark-text-tertiary">
-                    Livraison
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-dark-text">
-                    24h à 72h selon la ville
-                  </p>
-                </div>
-                <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                  <p className="text-xs uppercase tracking-[0.2em] text-dark-text-tertiary">
-                    Sécurité
-                  </p>
-                  <p className="mt-2 text-sm font-semibold text-dark-text">
-                    Confirmation + suivi de commande
-                  </p>
-                </div>
+              <div className="mt-5 space-y-3 border-t border-gray-100 pt-5 text-sm dark:border-gray-800">
+                <div className="flex justify-between text-gray-500"><span>{t('cart.subtotal')}</span><span className="font-semibold text-gray-900 dark:text-white">{total.toLocaleString(locale)} FCFA</span></div>
+                <div className="flex justify-between text-gray-500"><span>{t('cart.shipping')}</span><span className="font-semibold text-gray-900 dark:text-white">{shippingCost.toLocaleString(locale)} FCFA</span></div>
+                <div className="flex justify-between border-t border-gray-100 pt-3 dark:border-gray-800"><span className="font-semibold text-gray-900 dark:text-white">{t('cart.total')}</span><span className="text-2xl font-bold text-primary">{finalTotal.toLocaleString(locale)} FCFA</span></div>
               </div>
-
-              <div className="space-y-3 py-4 border-y border-white/10">
-                <div className="flex justify-between text-sm text-dark-text-secondary">
-                  <span>{t('cart.subtotal')}</span>
-                  <span className="font-semibold text-dark-text">{total.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}</span>
-                </div>
-                <div className="flex justify-between text-sm text-dark-text-secondary">
-                  <span>{t('cart.shipping')}</span>
-                  <span className="font-semibold text-dark-text">{shippingCost.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between pt-4">
-                <span className="font-display font-bold text-lg text-dark-text">{t('cart.total')}</span>
-                <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                  {finalTotal.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} {t('common.currency')}
-                </span>
-              </div>
-            </Card>
+            </section>
           </div>
         </div>
       </div>

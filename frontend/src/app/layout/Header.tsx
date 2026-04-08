@@ -43,6 +43,7 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(0);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const totalItems = items.reduce(
@@ -78,18 +79,16 @@ export default function Header() {
   }, [user?.avatar_url]);
 
   useEffect(() => {
-    const syncFavorites = async () => {
-      if (localStorage.getItem('access_token')) {
-        try {
-          const favorites = await customerApi.getFavorites();
-          setFavoritesCount(favorites.length);
-          return;
-        } catch (error) {
-          console.error('Erreur chargement favoris:', error);
-        }
-      }
-
+    const syncFavorites = () => {
+      // Always read localStorage first for instant counter update
       setFavoritesCount(getFavoriteProductIds().length);
+
+      // Then sync from API if logged in (may update later)
+      if (localStorage.getItem('access_token')) {
+        customerApi.getFavorites()
+          .then((favorites) => setFavoritesCount(favorites.length))
+          .catch(() => {/* keep localStorage count */});
+      }
     };
 
     syncFavorites();
@@ -100,6 +99,29 @@ export default function Header() {
         "belivay-favorites-updated",
         syncFavorites as EventListener,
       );
+    };
+  }, []);
+
+  // Notification count
+  useEffect(() => {
+    // Start with default unread count (welcome + fallback notifications)
+    const stored = localStorage.getItem("belivay_notif_count");
+    setNotifCount(stored ? parseInt(stored, 10) : 1);
+
+    const handleNewNotif = () => {
+      setNotifCount((prev) => {
+        const next = prev + 1;
+        localStorage.setItem("belivay_notif_count", String(next));
+        return next;
+      });
+    };
+
+    window.addEventListener("belivay-new-notification", handleNewNotif);
+    window.addEventListener("belivay-cart-updated", handleNewNotif);
+
+    return () => {
+      window.removeEventListener("belivay-new-notification", handleNewNotif);
+      window.removeEventListener("belivay-cart-updated", handleNewNotif);
     };
   }, []);
 
@@ -205,10 +227,15 @@ export default function Header() {
             {user && (
               <Link
                 to="/notifications"
+                onClick={() => { setNotifCount(0); localStorage.setItem("belivay_notif_count", "0"); }}
                 className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
               >
                 <Bell size={22} className="text-text-light dark:text-text-dark" />
-                <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-primary" />
+                {notifCount > 0 && (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                    {notifCount > 9 ? "9+" : notifCount}
+                  </span>
+                )}
               </Link>
             )}
 

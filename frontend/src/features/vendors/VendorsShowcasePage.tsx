@@ -1,7 +1,8 @@
 import { Link } from "react-router-dom";
-import { Award, ShieldCheck, Star, Store, TrendingUp } from "lucide-react";
+import { Award, Home, Monitor, ShieldCheck, Shirt, ShoppingBag, ShoppingCart, Sparkles, Star, Store, TrendingUp } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 
-const VENDORS = [
+const VENDORS: { id: number; name: string; category: string; city: string; rating: string; sales: string; products: string; badge: string; icon: LucideIcon; iconColor: string; description: string }[] = [
   {
     id: 1,
     name: "ModeAfrique",
@@ -11,7 +12,8 @@ const VENDORS = [
     sales: "1 240",
     products: "87",
     badge: "Or",
-    emoji: "👗",
+    icon: Shirt,
+    iconColor: "bg-pink-50 text-pink-600 dark:bg-pink-900/20",
     description:
       "Créations mode et wax premium, collections régulières et finitions soignées.",
   },
@@ -24,7 +26,8 @@ const VENDORS = [
     sales: "980",
     products: "64",
     badge: "Certifié",
-    emoji: "💻",
+    icon: Monitor,
+    iconColor: "bg-blue-50 text-blue-600 dark:bg-blue-900/20",
     description:
       "Produits tech, accessoires et appareils certifiés avec livraison suivie.",
   },
@@ -37,7 +40,8 @@ const VENDORS = [
     sales: "2 103",
     products: "142",
     badge: "Platinum",
-    emoji: "🌿",
+    icon: Sparkles,
+    iconColor: "bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20",
     description:
       "Cosmétique naturelle, huiles et soins locaux sélectionnés avec rigueur.",
   },
@@ -50,7 +54,8 @@ const VENDORS = [
     sales: "876",
     products: "203",
     badge: "Or",
-    emoji: "🛒",
+    icon: ShoppingCart,
+    iconColor: "bg-green-50 text-green-600 dark:bg-green-900/20",
     description:
       "Épicerie locale et produits du quotidien à forte rotation et livraison rapide.",
   },
@@ -63,7 +68,8 @@ const VENDORS = [
     sales: "312",
     products: "29",
     badge: "Argent",
-    emoji: "👟",
+    icon: ShoppingBag,
+    iconColor: "bg-purple-50 text-purple-600 dark:bg-purple-900/20",
     description:
       "Chaussures et sneakers sélectionnées pour le confort et la durabilité.",
   },
@@ -76,7 +82,8 @@ const VENDORS = [
     sales: "134",
     products: "31",
     badge: "Bronze",
-    emoji: "🛋️",
+    icon: Home,
+    iconColor: "bg-amber-50 text-amber-600 dark:bg-amber-900/20",
     description:
       "Décoration, textile et accessoires maison avec un angle artisanal assumé.",
   },
@@ -153,8 +160,10 @@ export default function VendorsShowcasePage() {
               key={vendor.id}
               className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
             >
-              <div className="rounded-[1.25rem] bg-[#fff7ef] px-4 py-5 text-center dark:bg-gray-800">
-                <div className="text-5xl">{vendor.emoji}</div>
+              <div className="flex items-center justify-center rounded-[1.25rem] bg-[#fff7ef] px-4 py-6 dark:bg-gray-800">
+                <div className={`flex h-16 w-16 items-center justify-center rounded-2xl ${vendor.iconColor}`}>
+                  <vendor.icon size={32} />
+                </div>
               </div>
               <div className="-mt-6 flex justify-center">
                 <div className="rounded-full border-4 border-white bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.16em] text-primary shadow-sm dark:border-gray-900 dark:bg-gray-900">

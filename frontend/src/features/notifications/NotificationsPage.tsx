@@ -24,6 +24,15 @@ export default function NotificationsPage() {
 
   const fallbackNotifications = [
     {
+      id: 0,
+      title: "Bienvenue sur BelivaY ! 🎉",
+      description: "Nous sommes ravis de vous accueillir sur la marketplace de confiance du Cameroun. Explorez des milliers de produits, profitez de paiements sécurisés Mobile Money et de livraisons suivies. Bon shopping !",
+      time: "Maintenant",
+      icon: Gift,
+      tone: "bg-primary/10 text-primary",
+      unread: true,
+    },
+    {
       id: 1,
       title: t('notifications.fallback.order_shipped_title'),
       description: t('notifications.fallback.order_shipped_desc'),
@@ -163,19 +172,6 @@ export default function NotificationsPage() {
           })}
         </div>
 
-        <div className="mt-8 rounded-[1.75rem] border border-dashed border-orange-200 bg-white p-6 text-center dark:border-gray-700 dark:bg-gray-900">
-          <Bell className="mx-auto mb-3 text-primary" size={30} />
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            {t('notifications.center_ready_title')}
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-gray-500 dark:text-gray-400">
-            {t('notifications.center_ready_desc')}
-          </p>
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
-            <CheckCircle2 size={16} />
-            {t('notifications.ui_ready')}
-          </div>
-        </div>
       </div>
     </div>
   );

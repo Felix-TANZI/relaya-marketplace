@@ -5,61 +5,61 @@
 //   /seller/* → SellerLayout (espace vendeur, auth requise)
 //   /admin/* → AdminLayout (espace admin, auth + staff)
 
-import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 // ── Layouts ──
-import AppLayout from '@/app/layout/AppLayout';
-import SellerLayout from '@/app/layout/SellerLayout';
+import AppLayout from "@/app/layout/AppLayout";
+import SellerLayout from "@/app/layout/SellerLayout";
 
 // ── Pages client ──
-import HomePage from '@/features/home/HomePage';
-import CatalogPage from '@/features/catalog/CatalogPage';
-import CategoriesPage from '@/features/categories/CategoriesPage';
-import ProductDetailPage from '@/features/catalog/ProductDetailPage';
-import CartPage from '@/features/cart/CartPage';
-import CheckoutPage from '@/features/checkout/CheckoutPage';
-import CheckoutConfirmPage from '@/features/checkout/CheckoutConfirmPage';
-import NotificationsPage from '@/features/notifications/NotificationsPage';
-import OrdersHistoryPage from '@/features/orders/OrdersHistoryPage';
-import OrderDetailPage from '@/features/orders/OrderDetailPage';
-import WishlistPage from '@/features/wishlist/WishlistPage';
-import LoginPage from '@/features/auth/LoginPage';
-import RegisterPage from '@/features/auth/RegisterPage';
-import ContactPage from '@/features/contact/ContactPage';
-import HelpPage from '@/features/help/HelpPage';
-import AboutPage from '@/features/about/AboutPage';
-import ProfilePage from '@/features/profile/ProfilePage';
-import BecomeSellerPage from '@/features/vendors/BecomeSellerPage';
+import HomePage from "@/features/home/HomePage";
+import CatalogPage from "@/features/catalog/CatalogPage";
+import CategoriesPage from "@/features/categories/CategoriesPage";
+import ProductDetailPage from "@/features/catalog/ProductDetailPage";
+import CartPage from "@/features/cart/CartPage";
+import CheckoutPage from "@/features/checkout/CheckoutPage";
+import CheckoutConfirmPage from "@/features/checkout/CheckoutConfirmPage";
+import NotificationsPage from "@/features/notifications/NotificationsPage";
+import OrdersHistoryPage from "@/features/orders/OrdersHistoryPage";
+import OrderDetailPage from "@/features/orders/OrderDetailPage";
+import WishlistPage from "@/features/wishlist/WishlistPage";
+import LoginPage from "@/features/auth/LoginPage";
+import RegisterPage from "@/features/auth/RegisterPage";
+import ContactPage from "@/features/contact/ContactPage";
+import HelpPage from "@/features/help/HelpPage";
+import AboutPage from "@/features/about/AboutPage";
+import ProfilePage from "@/features/profile/ProfilePage";
+import BecomeSellerPage from "@/features/vendors/BecomeSellerPage";
 import VendorsShowcasePage from '@/features/vendors/VendorsShowcasePage';
-import NotFoundPage from '@/features/system/NotFoundPage';
+import NotFoundPage from "@/features/system/NotFoundPage";
 
 // ── Pages vendeur (existantes) ──
-import SellerDashboardPage from '@/features/vendors/SellerDashboardPage';
-import SellerProductsPage from '@/features/vendors/SellerProductsPage';
-import ProductFormPage from '@/features/vendors/ProductFormPage';
-import VendorOrdersPage from '@/features/vendors/SellerOrdersPage';
-import VendorOrderDetailPage from '@/features/vendors/VendorOrderDetailPage';
+import SellerDashboardPage from "@/features/vendors/SellerDashboardPage";
+import SellerProductsPage from "@/features/vendors/SellerProductsPage";
+import ProductFormPage from "@/features/vendors/ProductFormPage";
+import VendorOrdersPage from "@/features/vendors/SellerOrdersPage";
+import VendorOrderDetailPage from "@/features/vendors/SellerOrderDetailPage";
 
 // ── Pages vendeur (nouvelles — stubs à compléter) ──
-import SellerPaymentsPage from '@/features/vendors/SellerPaymentsPage';
-import SellerDisputesPage from '@/features/vendors/SellerDisputesPage';
-import SellerShopPage from '@/features/vendors/SellerShopPage';
-import SellerAnalyticsPage from '@/features/vendors/SellerAnalyticsPage';
-import SellerBoostPage from '@/features/vendors/SellerBoostPage';
-import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
-import SellerPlansPage from '@/features/vendors/SellerPlansPage';
-import SellerSettingsPage from '@/features/vendors/SellerSettingsPage';
-import SellerWalletPage from '@/features/vendors/SellerWalletPage';
-import SearchPage from '@/features/search/SearchPage';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import PublicRoute from '@/components/auth/PublicRoute';
+import SellerPaymentsPage from "@/features/vendors/SellerPaymentsPage";
+import SellerDisputesPage from "@/features/vendors/SellerDisputesPage";
+import SellerShopPage from "@/features/vendors/SellerShopPage";
+import SellerAnalyticsPage from "@/features/vendors/SellerAnalyticsPage";
+import SellerBoostPage from "@/features/vendors/SellerBoostPage";
+import SellerCertificationsPage from "@/features/vendors/SellerCertificationsPage";
+import SellerPlansPage from "@/features/vendors/SellerPlansPage";
+import SellerSettingsPage from "@/features/vendors/SellerSettingsPage";
+import SellerWalletPage from "@/features/vendors/SellerWalletPage";
+import SearchPage from "@/features/search/SearchPage";
+import ProtectedRoute from "@/components/auth/ProtectedRoute";
+import PublicRoute from "@/components/auth/PublicRoute";
 
 export const router = createBrowserRouter([
   // ══════════════════════════════════════════
   // ESPACE CLIENT — AppLayout
   // ══════════════════════════════════════════
   {
-    path: '/',
+    path: "/",
     element: <AppLayout />,
     children: [
       {
@@ -67,7 +67,7 @@ export const router = createBrowserRouter([
         element: <HomePage />,
       },
       {
-        path: 'catalog',
+        path: "catalog",
         element: (
           <ProtectedRoute>
             <CatalogPage />
@@ -75,7 +75,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'categories',
+        path: "categories",
         element: (
           <ProtectedRoute>
             <CategoriesPage />
@@ -83,7 +83,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'product/:id',
+        path: "product/:id",
         element: (
           <ProtectedRoute>
             <ProductDetailPage />
@@ -91,7 +91,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'cart',
+        path: "cart",
         element: (
           <ProtectedRoute>
             <CartPage />
@@ -99,7 +99,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'checkout',
+        path: "checkout",
         element: (
           <ProtectedRoute>
             <CheckoutPage />
@@ -107,7 +107,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'checkout/confirm',
+        path: "checkout/confirm",
         element: (
           <ProtectedRoute>
             <CheckoutConfirmPage />
@@ -115,7 +115,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'orders',
+        path: "orders",
         element: (
           <ProtectedRoute>
             <OrdersHistoryPage />
@@ -123,7 +123,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'orders/:id',
+        path: "orders/:id",
         element: (
           <ProtectedRoute>
             <OrderDetailPage />
@@ -139,7 +139,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'wishlist',
+        path: "wishlist",
         element: (
           <ProtectedRoute>
             <WishlistPage />
@@ -147,7 +147,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'notifications',
+        path: "notifications",
         element: (
           <ProtectedRoute>
             <NotificationsPage />
@@ -155,7 +155,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'login',
+        path: "login",
         element: (
           <PublicRoute>
             <LoginPage />
@@ -163,7 +163,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'register',
+        path: "register",
         element: (
           <PublicRoute>
             <RegisterPage />
@@ -171,7 +171,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'profile',
+        path: "profile",
         element: (
           <ProtectedRoute>
             <ProfilePage />
@@ -179,7 +179,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'contact',
+        path: "contact",
         element: (
           <ProtectedRoute>
             <ContactPage />
@@ -187,7 +187,7 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: 'help',
+        path: "help",
         element: (
           <ProtectedRoute>
             <HelpPage />
@@ -204,7 +204,7 @@ export const router = createBrowserRouter([
       },
       // Page de candidature vendeur (dans AppLayout, pas SellerLayout)
       {
-        path: 'become-seller',
+        path: "become-seller",
         element: <BecomeSellerPage />,
       },
       {
@@ -216,7 +216,15 @@ export const router = createBrowserRouter([
         ),
       },
       {
-        path: '*',
+        path: 'vendors',
+        element: (
+          <ProtectedRoute>
+            <VendorsShowcasePage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "*",
         element: <NotFoundPage />,
       },
     ],
@@ -228,7 +236,7 @@ export const router = createBrowserRouter([
   // directement dans SellerLayout
   // ══════════════════════════════════════════
   {
-    path: '/seller',
+    path: "/seller",
     element: <SellerLayout />,
     children: [
       // Redirection /seller → /seller/dashboard
@@ -239,87 +247,88 @@ export const router = createBrowserRouter([
 
       // ── Tableau de bord ──
       {
-        path: 'dashboard',
+        path: "dashboard",
         element: <SellerDashboardPage />,
       },
 
       // ── Produits ──
       {
-        path: 'products',
+        path: "products",
         element: <SellerProductsPage />,
       },
       {
-        path: 'products/new',
+        path: "products/new",
         element: <ProductFormPage />,
       },
       {
-        path: 'products/:id/edit',
+        path: "products/:id/edit",
         element: <ProductFormPage />,
       },
 
       // ── Commandes ──
       {
-        path: 'orders',
+        path: "orders",
         element: <VendorOrdersPage />,
       },
       {
-        path: 'orders/:id',
+        path: "orders/:id",
         element: <VendorOrderDetailPage />,
       },
 
       // ── Paiements ──
       {
-        path: 'payments',
+        path: "payments",
         element: <SellerPaymentsPage />,
       },
 
       // ── Litiges ──
       {
-        path: 'disputes',
+        path: "disputes",
         element: <SellerDisputesPage />,
       },
 
       // ── Boutique ──
       {
-        path: 'shop',
+        path: "shop",
         element: <SellerShopPage />,
       },
 
       // ── Analytiques ──
       {
-        path: 'analytics',
+        path: "analytics",
         element: <SellerAnalyticsPage />,
       },
 
       // ── Boost & Publicité ──
       {
-        path: 'boost',
+        path: "boost",
         element: <SellerBoostPage />,
       },
 
       // ── Certifications ──
       {
-        path: 'certifications',
+        path: "certifications",
         element: <SellerCertificationsPage />,
       },
 
       // ── Plans & Abonnements ──
       {
-        path: 'plans',
+        path: "plans",
         element: <SellerPlansPage />,
       },
 
       // ── Paramètres ──
       {
-        path: 'settings',
+        path: "settings",
         element: <SellerSettingsPage />,
       },
 
       // ── Compte BelivaY (Wallet) ──
       {
-        path: 'wallet',
+        path: "wallet",
         element: <SellerWalletPage />,
       },
     ],
   },
 ]);
+

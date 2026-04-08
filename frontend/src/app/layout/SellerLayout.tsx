@@ -1,5 +1,5 @@
 // frontend/src/app/layout/SellerLayout.tsx
-// Espace vendeur BelivaY
+// Espace vendeur BelivaY 
 // Sidebar brun foncé chaleureux + fond crème + orange dominant.
 
 import { useState, useEffect, useRef } from 'react';
@@ -14,8 +14,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
+import SellerSplash from '@/features/vendors/SellerSplash';
 
-//  TOKENS 
+// ─── TOKENS ─────────────────────────────────
 const T = {
   orange:   '#F47920',
   orangeD:  '#E06510',
@@ -28,7 +29,7 @@ const T = {
   muted:    '#7C6E5A',
 };
 
-//  TYPES ─
+// ─── TYPES ──────────────────────────────────
 interface NavItem {
   label:  string;
   path:   string;
@@ -38,7 +39,7 @@ interface NavItem {
 }
 interface NavSection { label: string; items: NavItem[] }
 
-//  NAV CONFIG ──
+// ─── NAV CONFIG ─────────────────────────────
 const NAV: NavSection[] = [
   {
     label: 'Ventes',
@@ -80,7 +81,7 @@ const NAV: NavSection[] = [
   },
 ];
 
-//  NAV ITEM (hors composant principal) ─
+// ─── NAV ITEM (hors composant principal) ────
 function SidebarNavItem({
   item, onClick,
 }: { item: NavItem; onClick?: () => void }) {
@@ -122,7 +123,7 @@ function SidebarNavItem({
   );
 }
 
-//  SIDEBAR CONTENT (hors composant principal) ─
+// ─── SIDEBAR CONTENT (hors composant principal) ─
 function SidebarContent({
   shopName, onClose,
 }: { shopName: string; onClose?: () => void }) {
@@ -227,7 +228,7 @@ function SidebarContent({
   );
 }
 
-//  COMPOSANT PRINCIPAL 
+// ─── COMPOSANT PRINCIPAL ─────────────────────
 export default function SellerLayout() {
   const { theme, toggleTheme } = useTheme();
   const { user, logout }       = useAuth();
@@ -253,7 +254,7 @@ export default function SellerLayout() {
       setSidebarOpen(false);
       setMoreOpen(false);
     }
-  });
+  }, [location.pathname]);
 
   const shopName = profile?.business_name ?? user?.username ?? 'Ma Boutique';
 
@@ -265,9 +266,11 @@ export default function SellerLayout() {
   ];
 
   return (
+    <>
+      <SellerSplash />
     <div className="min-h-screen" style={{ background: T.cream }}>
 
-      {/*  TOPBAR  */}
+      {/* ═══ TOPBAR ═══ */}
       <header
         className="fixed top-0 left-0 right-0 z-[900] h-[62px] flex items-center gap-3 px-4"
         style={{
@@ -348,13 +351,13 @@ export default function SellerLayout() {
         </div>
       </header>
 
-      {/*  SIDEBAR DESKTOP  */}
+      {/* ═══ SIDEBAR DESKTOP ═══ */}
       <aside className="hidden lg:flex flex-col fixed top-[62px] left-0 bottom-0 w-[232px] z-[800]"
         style={{ background: T.sidebar }}>
         <SidebarContent shopName={shopName} />
       </aside>
 
-      {/*  SIDEBAR MOBILE OVERLAY  */}
+      {/* ═══ SIDEBAR MOBILE OVERLAY ═══ */}
       <div onClick={() => setSidebarOpen(false)}
         className={`lg:hidden fixed inset-0 z-[790] transition-all duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
         style={{ background: 'rgba(28,18,9,0.6)', backdropFilter: 'blur(4px)' }} />
@@ -363,14 +366,14 @@ export default function SellerLayout() {
         <SidebarContent shopName={shopName} onClose={() => setSidebarOpen(false)} />
       </aside>
 
-      {/*  MAIN  */}
+      {/* ═══ MAIN ═══ */}
       <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-5 lg:px-7 py-6">
           <Outlet />
         </div>
       </main>
 
-      {/*  MOBILE BOTTOM NAV  */}
+      {/* ═══ MOBILE BOTTOM NAV ═══ */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[700]"
         style={{
           background: T.topbar,
@@ -448,5 +451,6 @@ export default function SellerLayout() {
         </div>
       </div>
     </div>
+    </>
   );
 }

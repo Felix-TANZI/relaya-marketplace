@@ -1076,7 +1076,7 @@ export default function SellerDashboardPage() {
           ) : orders.slice(0, 5).map(order => {
             const pName  = order.items?.[0]?.product_title ?? `Commande ${order.id}`;
             const pImg   = order.items?.[0]?.product_image ?? null;
-            const vTotal = order.vendor_total ?? Number(order.total_xaf);
+            const vTotal = order.vendor_net_amount ?? Number(order.total_xaf);
             const fSt    = order.fulfillment_status ?? 'PENDING';
             const badge  = FULFILL[fSt] ?? { label: fSt, color: C.muted, bg: C.cream };
             return (

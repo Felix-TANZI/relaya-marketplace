@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store } from "lucide-react";
+import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
@@ -61,7 +61,20 @@ export default function CheckoutPage() {
     }
   };
 
-  if (items.length === 0 && step !== "success") { navigate("/cart"); return null; }
+  // Redirect to cart if empty (via useEffect to avoid render-time navigate)
+  useEffect(() => {
+    if (items.length === 0 && step !== "success") {
+      navigate("/cart");
+    }
+  }, [items.length, step, navigate]);
+
+  if (items.length === 0 && step !== "success") {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+      </div>
+    );
+  }
 
   const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder:text-gray-400";
 

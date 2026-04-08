@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   AlertCircle,
@@ -22,6 +23,7 @@ import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
 
 export default function DisputeDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -55,11 +57,11 @@ export default function DisputeDetailPage() {
       }));
     } catch (error) {
       console.error('Erreur chargement litige:', error);
-      showToast('Erreur de chargement du litige', 'error');
+      showToast(t('admin.dispute_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [id, showToast]);
+  }, [id, showToast, t]);
 
   useEffect(() => {
     loadDispute();
@@ -155,35 +157,35 @@ export default function DisputeDetailPage() {
 
   const getStatusBadge = (status: string) => {
     const variants = {
-      OPEN: { variant: 'warning' as const, text: 'Ouvert', icon: AlertCircle },
-      IN_PROGRESS: { variant: 'default' as const, text: 'En cours', icon: Clock },
-      RESOLVED: { variant: 'success' as const, text: 'Résolu', icon: CheckCircle },
-      CLOSED: { variant: 'default' as const, text: 'Fermé', icon: XCircle },
+      OPEN: { variant: 'warning' as const, text: t('admin.status_open'), icon: AlertCircle },
+      IN_PROGRESS: { variant: 'default' as const, text: t('admin.status_in_progress'), icon: Clock },
+      RESOLVED: { variant: 'success' as const, text: t('admin.status_resolved'), icon: CheckCircle },
+      CLOSED: { variant: 'default' as const, text: t('admin.status_closed'), icon: XCircle },
     };
     return variants[status as keyof typeof variants] || variants.OPEN;
   };
 
   const getReasonLabel = (reason: string) => {
-    const labels = {
-      NOT_RECEIVED: 'Commande non reçue',
-      DAMAGED: 'Article endommagé',
-      WRONG_ITEM: 'Mauvais article',
-      NOT_AS_DESCRIBED: 'Non conforme à la description',
-      REFUND_REQUEST: 'Demande de remboursement',
-      OTHER: 'Autre',
+    const labels: Record<string, string> = {
+      NOT_RECEIVED: t('admin.reason_order_not_received'),
+      DAMAGED: t('admin.reason_damaged'),
+      WRONG_ITEM: t('admin.reason_wrong_item'),
+      NOT_AS_DESCRIBED: t('admin.reason_not_as_described'),
+      REFUND_REQUEST: t('admin.reason_refund'),
+      OTHER: t('admin.reason_other'),
     };
-    return labels[reason as keyof typeof labels] || reason;
+    return labels[reason] || reason;
   };
 
   const getResolutionLabel = (resolution: string) => {
-    const labels = {
-      REFUND: 'Remboursement complet',
-      EXCHANGE: 'Échange',
-      PARTIAL_REFUND: 'Remboursement partiel',
-      REJECTED: 'Rejeté',
-      OTHER: 'Autre',
+    const labels: Record<string, string> = {
+      REFUND: t('admin.full_refund'),
+      EXCHANGE: t('admin.exchange'),
+      PARTIAL_REFUND: t('admin.partial_refund'),
+      REJECTED: t('admin.reject'),
+      OTHER: t('admin.reason_other'),
     };
-    return labels[resolution as keyof typeof labels] || resolution;
+    return labels[resolution] || resolution;
   };
 
   if (loading) {
@@ -199,13 +201,13 @@ export default function DisputeDetailPage() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-display font-bold mb-2">Litige introuvable</h2>
-          <p className="text-dark-text-secondary mb-6">Ce litige n'existe pas.</p>
+          <h2 className="text-xl font-display font-bold mb-2">{t('admin.dispute_not_found')}</h2>
+          <p className="text-dark-text-secondary mb-6">{t('admin.dispute_not_exist')}</p>
           <button
             onClick={() => navigate('/admin/disputes')}
             className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
           >
-            Retour aux litiges
+            {t('admin.back_to_disputes')}
           </button>
         </Card>
       </div>
@@ -224,7 +226,7 @@ export default function DisputeDetailPage() {
             className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-all mb-4"
           >
             <ArrowLeft size={20} />
-            Retour aux litiges
+            {t('admin.back_to_disputes')}
           </Link>
 
           <div className="flex items-start justify-between flex-wrap gap-4">
@@ -233,7 +235,7 @@ export default function DisputeDetailPage() {
                 <span className="text-gradient animate-gradient-bg">Litige #{dispute.id}</span>
               </h1>
               <p className="text-dark-text-secondary">
-                Ouvert le {formatDateTime(dispute.created_at)}
+                {t('admin.opened')} {formatDateTime(dispute.created_at)}
               </p>
             </div>
 
@@ -244,7 +246,7 @@ export default function DisputeDetailPage() {
                   className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all flex items-center gap-2"
                 >
                   <CheckCircle size={16} />
-                  Résoudre
+                  {t('admin.resolve')}
                 </button>
               )}
             </div>
@@ -258,22 +260,22 @@ export default function DisputeDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <AlertCircle className="text-holo-cyan" size={24} />
-                Informations du Litige
+                {t('admin.dispute_info')}
               </h3>
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Motif</p>
+                    <p className="text-sm text-dark-text-tertiary">{t('admin.reason')}</p>
                     <p className="font-medium">{getReasonLabel(dispute.reason)}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Statut</p>
+                    <p className="text-sm text-dark-text-tertiary">{t('admin.status')}</p>
                     <Badge variant={statusBadge.variant}>{statusBadge.text}</Badge>
                   </div>
                 </div>
 
                 <div>
-                  <p className="text-sm text-dark-text-tertiary mb-2">Description</p>
+                  <p className="text-sm text-dark-text-tertiary mb-2">{t('admin.description')}</p>
                   <div className="p-3 bg-dark-bg-tertiary rounded-xl border border-white/10">
                     <p className="text-sm">{dispute.description}</p>
                   </div>
@@ -282,18 +284,18 @@ export default function DisputeDetailPage() {
                 {dispute.resolution && (
                   <div className="p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
                     <p className="text-sm font-medium text-green-400 mb-2">
-                      Résolution : {getResolutionLabel(dispute.resolution)}
+                      {t('admin.resolution')} : {getResolutionLabel(dispute.resolution)}
                     </p>
                     {dispute.resolution_note && (
                       <p className="text-sm mb-2">{dispute.resolution_note}</p>
                     )}
                     {dispute.refund_amount_xaf && (
                       <p className="text-sm">
-                        Montant remboursé : <strong>{formatCurrency(dispute.refund_amount_xaf)}</strong>
+                        {t('admin.refund_amount')} : <strong>{formatCurrency(dispute.refund_amount_xaf)}</strong>
                       </p>
                     )}
                     <p className="text-xs text-dark-text-tertiary mt-2">
-                      Résolu par {dispute.resolved_by_name} le {formatDateTime(dispute.resolved_at!)}
+                      {t('admin.resolved_by')} {dispute.resolved_by_name} le {formatDateTime(dispute.resolved_at!)}
                     </p>
                   </div>
                 )}
@@ -304,12 +306,12 @@ export default function DisputeDetailPage() {
             {showResolveForm && (
               <Card className="border-2 border-green-500/50">
                 <h3 className="font-display font-bold text-xl mb-4 text-green-400">
-                  Résoudre le Litige
+                  {t('admin.resolve_dispute')}
                 </h3>
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-dark-text-tertiary mb-2">
-                      Type de résolution
+                      {t('admin.resolution_type')}
                     </label>
                     <select
                       value={resolveData.resolution}
@@ -318,11 +320,11 @@ export default function DisputeDetailPage() {
                       }
                       className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
                     >
-                      <option value="REFUND">Remboursement complet</option>
-                      <option value="PARTIAL_REFUND">Remboursement partiel</option>
-                      <option value="EXCHANGE">Échange</option>
-                      <option value="REJECTED">Rejeter</option>
-                      <option value="OTHER">Autre</option>
+                      <option value="REFUND">{t('admin.full_refund')}</option>
+                      <option value="PARTIAL_REFUND">{t('admin.partial_refund')}</option>
+                      <option value="EXCHANGE">{t('admin.exchange')}</option>
+                      <option value="REJECTED">{t('admin.reject')}</option>
+                      <option value="OTHER">{t('admin.reason_other')}</option>
                     </select>
                   </div>
 
@@ -330,7 +332,7 @@ export default function DisputeDetailPage() {
                     resolveData.resolution === 'PARTIAL_REFUND') && (
                     <div>
                       <label className="block text-sm text-dark-text-tertiary mb-2">
-                        Montant du remboursement (FCFA)
+                        {t('admin.refund_amount_label')}
                       </label>
                       <input
                         type="number"
@@ -348,7 +350,7 @@ export default function DisputeDetailPage() {
 
                   <div>
                     <label className="block text-sm text-dark-text-tertiary mb-2">
-                      Note de résolution *
+                      {t('admin.resolution_note')}
                     </label>
                     <textarea
                       value={resolveData.resolution_note}
@@ -356,7 +358,7 @@ export default function DisputeDetailPage() {
                         setResolveData((prev) => ({ ...prev, resolution_note: e.target.value }))
                       }
                       rows={4}
-                      placeholder="Expliquez la décision prise..."
+                      placeholder={t('admin.explain_decision')}
                       className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all resize-none"
                     />
                   </div>
@@ -366,13 +368,13 @@ export default function DisputeDetailPage() {
                       onClick={handleResolve}
                       className="flex-1 px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all"
                     >
-                      Confirmer la Résolution
+                      {t('admin.confirm_resolution')}
                     </button>
                     <button
                       onClick={() => setShowResolveForm(false)}
                       className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
                     >
-                      Annuler
+                      {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -383,7 +385,7 @@ export default function DisputeDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <MessageSquare className="text-holo-purple" size={24} />
-                Messages ({dispute.messages.length})
+                {t('admin.messages')} ({dispute.messages.length})
               </h3>
 
               {/* Liste Messages */}
@@ -403,7 +405,7 @@ export default function DisputeDetailPage() {
                         <span className="font-medium text-sm">{msg.sender_name}</span>
                         {msg.is_internal && (
                           <Badge variant="warning" className="text-xs">
-                            Interne
+                            {t('admin.internal')}
                           </Badge>
                         )}
                       </div>
@@ -428,7 +430,7 @@ export default function DisputeDetailPage() {
                         onChange={(e) => setIsInternal(e.target.checked)}
                         className="w-4 h-4"
                       />
-                      <span className="text-sm">Note interne (invisible pour les parties)</span>
+                      <span className="text-sm">{t('admin.internal_note')}</span>
                     </label>
                   </div>
 
@@ -443,7 +445,7 @@ export default function DisputeDetailPage() {
                         }
                       }}
                       placeholder={
-                        isInternal ? 'Note interne admin...' : 'Votre message...'
+                        isInternal ? t('admin.internal_note_placeholder') : t('admin.your_message')
                       }
                       rows={3}
                       className="flex-1 px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-purple transition-all resize-none"
@@ -469,7 +471,7 @@ export default function DisputeDetailPage() {
               <Card>
                 <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                   <Paperclip className="text-holo-pink" size={24} />
-                  Preuves ({dispute.evidences.length})
+                  {t('admin.evidences')} ({dispute.evidences.length})
                 </h3>
                 <div className="space-y-2">
                   {dispute.evidences.map((evidence) => (
@@ -479,7 +481,7 @@ export default function DisputeDetailPage() {
                     >
                       <div>
                         <p className="font-medium text-sm">
-                          {evidence.description || 'Document'}
+                          {evidence.description || t('admin.document')}
                         </p>
                         <p className="text-xs text-dark-text-tertiary">
                           Par {evidence.uploaded_by_name} • {formatDateTime(evidence.created_at)}
@@ -506,14 +508,14 @@ export default function DisputeDetailPage() {
           <div className="space-y-6">
             {/* Actions Rapides */}
             <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Actions Rapides</h3>
+              <h3 className="font-display font-bold text-lg mb-4">{t('admin.quick_actions')}</h3>
               <div className="space-y-2">
                 {dispute.status === 'OPEN' && (
                   <button
                     onClick={() => handleUpdateStatus('IN_PROGRESS')}
                     className="w-full px-4 py-2 bg-holo-purple text-white rounded-xl hover:bg-holo-purple/90 transition-all"
                   >
-                    Marquer "En cours"
+                    {t('admin.mark_in_progress')}
                   </button>
                 )}
 
@@ -521,7 +523,7 @@ export default function DisputeDetailPage() {
                   to={`/admin/orders/${dispute.order_detail.id}`}
                   className="block w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-cyan transition-all text-center"
                 >
-                  Voir la commande
+                  {t('admin.view_order')}
                 </Link>
               </div>
             </Card>
@@ -530,11 +532,11 @@ export default function DisputeDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
                 <ShoppingCart className="text-holo-cyan" size={20} />
-                Commande
+                {t('admin.order')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-dark-text-tertiary">ID Commande</p>
+                  <p className="text-dark-text-tertiary">{t('admin.order_id')}</p>
                   <Link
                     to={`/admin/orders/${dispute.order_detail.id}`}
                     className="font-medium text-holo-cyan hover:underline"
@@ -543,26 +545,26 @@ export default function DisputeDetailPage() {
                   </Link>
                 </div>
                 <div>
-                  <p className="text-dark-text-tertiary">Montant total</p>
+                  <p className="text-dark-text-tertiary">{t('admin.total_amount')}</p>
                   <p className="font-bold text-holo-cyan">
                     {formatCurrency(dispute.order_detail.total_xaf)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-dark-text-tertiary">Client</p>
+                  <p className="text-dark-text-tertiary">{t('admin.client')}</p>
                   <p className="font-medium">
                     {dispute.order_detail.customer_email || dispute.order_detail.customer_phone}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-dark-text-tertiary">Paiement</p>
+                    <p className="text-dark-text-tertiary">{t('admin.payment')}</p>
                     <Badge variant="default" className="text-xs">
                       {dispute.order_detail.payment_status}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-dark-text-tertiary">Livraison</p>
+                    <p className="text-dark-text-tertiary">{t('admin.delivery')}</p>
                     <Badge variant="default" className="text-xs">
                       {dispute.order_detail.fulfillment_status}
                     </Badge>
@@ -575,20 +577,20 @@ export default function DisputeDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
                 <Clock className="text-holo-pink" size={20} />
-                Dates
+                {t('admin.dates')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-dark-text-tertiary">Ouvert</p>
+                  <p className="text-dark-text-tertiary">{t('admin.opened')}</p>
                   <p className="font-medium">{formatDateTime(dispute.created_at)}</p>
                 </div>
                 <div>
-                  <p className="text-dark-text-tertiary">Dernière mise à jour</p>
+                  <p className="text-dark-text-tertiary">{t('admin.last_update')}</p>
                   <p className="font-medium">{formatDateTime(dispute.updated_at)}</p>
                 </div>
                 {dispute.resolved_at && (
                   <div>
-                    <p className="text-dark-text-tertiary">Résolu</p>
+                    <p className="text-dark-text-tertiary">{t('admin.resolved_date')}</p>
                     <p className="font-medium">{formatDateTime(dispute.resolved_at)}</p>
                   </div>
                 )}

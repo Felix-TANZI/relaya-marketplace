@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Home as HomeIcon,
   Monitor,
@@ -27,6 +28,7 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 };
 
 export default function CategoriesPage() {
+  const { t } = useTranslation();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -56,13 +58,13 @@ export default function CategoriesPage() {
       <div className="container mx-auto max-w-6xl px-4">
         <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Parcours client
+            {t('categories.breadcrumb')}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-            Toutes les categories
+            {t('categories.title')}
           </h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Explore rapidement les univers produits a partir d'une vue simple et visuelle.
+            {t('categories.subtitle')}
           </p>
         </div>
 
@@ -92,8 +94,8 @@ export default function CategoriesPage() {
                       </h2>
                       <p className="text-sm text-gray-400 dark:text-gray-500">
                         {category.children.length > 0
-                          ? `${category.children.length} sous-categories`
-                          : "Categorie principale"}
+                          ? t('categories.subcategory_count_plural', { count: category.children.length })
+                          : t('categories.main_category')}
                       </p>
                     </div>
                   </div>
@@ -115,7 +117,7 @@ export default function CategoriesPage() {
                         to={`/catalog?category=${category.id}`}
                         className="flex items-center justify-between rounded-2xl bg-gray-50 px-4 py-3 text-sm font-medium text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
-                        <span>Explorer cette categorie</span>
+                        <span>{t('categories.explore')}</span>
                         <span>›</span>
                       </Link>
                     )}

@@ -1,58 +1,88 @@
 export interface TutorialStep {
   id: string;
   route: string;
-  selector: string;
+  selector?: string;
   title: string;
   description: string;
+  helper?: string;
+  routeLabel?: string;
+  scrollBlock?: ScrollLogicalPosition;
 }
+
+export const CLIENT_TOUR_STORAGE_KEY = "belivay_client_tour_completed";
 
 export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
   {
+    id: "welcome",
+    route: "/",
+    title: "Bienvenue sur BelivaY",
+    description:
+      "Cette visite rapide te montre comment rechercher, explorer, ajouter au panier et finaliser une commande sans te perdre dans l'application.",
+    helper:
+      "Tu peux utiliser Suivant, Précédent, Ignorer ou la touche Echap. La visite ne se ferme pas quand tu cliques à côté.",
+    routeLabel: "Accueil",
+  },
+  {
     id: "search",
     route: "/",
-    selector: '[data-tutorial="header-search"]',
-    title: "Recherche rapide",
+    selector: "#search, #search-mobile",
+    title: "Rechercher des produits ici",
     description:
-      "Commence ici pour rechercher un produit, une marque ou un besoin precis depuis n'importe quelle page.",
+      "La recherche est disponible dès l'en-tête. Elle lance les résultats automatiquement pendant que tu écris, sans attendre la validation.",
+    helper: "Essaie par exemple « chaussures », « iPhone » ou « karité ».",
+    routeLabel: "Accueil",
   },
   {
     id: "categories",
-    route: "/catalog",
-    selector: '[data-tutorial="catalog-categories"]',
-    title: "Explorer les categories",
+    route: "/",
+    selector: "#categories",
+    title: "Parcourir par catégorie",
     description:
-      "Utilise ce panneau pour filtrer le catalogue par categorie, stock, promotions, prix et note minimale.",
+      "Tu peux partir d'une catégorie populaire pour aller plus vite vers la bonne famille de produits.",
+    helper: "Chaque carte t'envoie directement vers une vue ciblée du catalogue.",
+    routeLabel: "Accueil",
   },
   {
-    id: "catalog-products",
-    route: "/catalog",
-    selector: '[data-tutorial="catalog-products"]',
-    title: "Comparer les produits",
+    id: "product-card",
+    route: "/",
+    selector: ".product-card",
+    title: "Découvrir une fiche produit",
     description:
-      "Cette zone affiche les produits visibles. Tu peux comparer, ajouter aux favoris, mettre au panier ou ouvrir une fiche produit.",
+      "Chaque fiche permet d'ouvrir le détail du produit, de consulter le prix, la note et les informations essentielles avant achat.",
+    helper: "Le cœur sert aux favoris, et le bouton principal ajoute au panier.",
+    routeLabel: "Accueil",
+  },
+  {
+    id: "add-to-cart",
+    route: "/",
+    selector: ".add-to-cart",
+    title: "Ajouter des articles à votre panier",
+    description:
+      "Depuis la carte produit, tu peux ajouter immédiatement un article au panier sans quitter la page.",
+    helper: "Le compteur du panier se met à jour en direct dans l'en-tête.",
+    routeLabel: "Accueil",
+    scrollBlock: "center",
   },
   {
     id: "cart-summary",
     route: "/cart",
-    selector: '[data-tutorial="cart-summary"]',
-    title: "Verifier le panier",
+    selector: "#cart",
+    title: "Voir votre panier",
     description:
-      "Avant de payer, controle ici les quantites, le total et les frais de livraison.",
+      "Depuis l'icône panier, tu retrouves les articles ajoutés, les quantités et le total avant validation.",
+    helper: "Tu peux modifier les quantités ou retirer un article avant de passer à l'étape suivante.",
+    routeLabel: "Panier",
   },
   {
-    id: "profile-header",
-    route: "/profile",
-    selector: '[data-tutorial="profile-header"]',
-    title: "Gerer son compte",
+    id: "checkout",
+    route: "/checkout",
+    selector: "#checkout",
+    title: "Finaliser votre achat",
     description:
-      "Depuis ton profil, tu peux mettre a jour tes informations, ton avatar, tes notifications et tes favoris.",
-  },
-  {
-    id: "orders-header",
-    route: "/orders",
-    selector: '[data-tutorial="orders-header"]',
-    title: "Suivre ses commandes",
-    description:
-      "Retrouve ici l'historique de tes commandes, leur statut et l'acces au suivi de livraison.",
+      "La page de paiement te permet de confirmer ton adresse, choisir ton mode de règlement et valider la commande.",
+    helper:
+      "Une fois la visite terminée, tu peux la relancer à tout moment depuis le bouton Guide de l'en-tête.",
+    routeLabel: "Paiement",
+    scrollBlock: "center",
   },
 ];

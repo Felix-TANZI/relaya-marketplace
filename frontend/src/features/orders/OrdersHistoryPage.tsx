@@ -1,19 +1,15 @@
-// frontend/src/features/orders/OrdersHistoryPage.tsx
-// Page d'historique des commandes de l'utilisateur avec statuts séparés
-
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Package,
-  ShoppingBag,
   AlertCircle,
   Calendar,
-  MapPin,
   CreditCard,
+  MapPin,
+  Package,
   Truck,
 } from "lucide-react";
-import { Button, Card, Badge } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
 
@@ -38,71 +34,82 @@ export default function OrdersHistoryPage() {
       }
     };
 
-    fetchOrders();
+    void fetchOrders();
   }, [t]);
+
+  const stats = useMemo(() => {
+    const totalSpent = orders.reduce((sum, order) => sum + order.total_xaf, 0);
+    const delivered = orders.filter(
+      (order) => order.fulfillment_status === "DELIVERED",
+    ).length;
+    const inProgress = orders.filter((order) =>
+      ["PENDING", "PROCESSING", "SHIPPED"].includes(order.fulfillment_status),
+    ).length;
+
+    return { totalSpent, delivered, inProgress };
+  }, [orders]);
 
   const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente paiement', icon: CreditCard };
-      case 'PAID':
-        return { variant: 'success' as const, text: 'Payé', icon: CreditCard };
-      case 'FAILED':
-        return { variant: 'error' as const, text: 'Échec', icon: AlertCircle };
-      case 'REFUNDED':
-        return { variant: 'default' as const, text: 'Remboursé', icon: CreditCard };
+      case "PENDING":
+        return { variant: "warning" as const, text: "En attente paiement", icon: CreditCard };
+      case "PAID":
+        return { variant: "success" as const, text: "Payé", icon: CreditCard };
+      case "FAILED":
+        return { variant: "error" as const, text: "Échec", icon: AlertCircle };
+      case "REFUNDED":
+        return { variant: "default" as const, text: "Remboursé", icon: CreditCard };
     }
   };
 
   const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente', icon: Package };
-      case 'PROCESSING':
-        return { variant: 'default' as const, text: 'En préparation', icon: Package };
-      case 'SHIPPED':
-        return { variant: 'success' as const, text: 'Expédié', icon: Truck };
-      case 'DELIVERED':
-        return { variant: 'success' as const, text: 'Livré', icon: Package };
-      case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulé', icon: AlertCircle };
+      case "PENDING":
+        return { variant: "warning" as const, text: "En attente", icon: Package };
+      case "PROCESSING":
+        return { variant: "default" as const, text: "En préparation", icon: Package };
+      case "SHIPPED":
+        return { variant: "success" as const, text: "Expédié", icon: Truck };
+      case "DELIVERED":
+        return { variant: "success" as const, text: "Livré", icon: Package };
+      case "CANCELLED":
+        return { variant: "error" as const, text: "Annulé", icon: AlertCircle };
     }
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat(i18n.language === "fr" ? "fr-FR" : "en-US", {
+  const formatDate = (dateString: string) =>
+    new Intl.DateTimeFormat(i18n.language === "fr" ? "fr-FR" : "en-US", {
       day: "numeric",
       month: "long",
       year: "numeric",
-    }).format(date);
-  };
+    }).format(new Date(dateString));
 
-  // Loading State
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">{t("orders.loading")}</p>
+      <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <div key={index} className="skeleton h-36 rounded-[1.75rem]" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Error State
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertCircle className="text-red-400" size={40} />
+      <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-4xl rounded-[2rem] border border-red-100 bg-white p-10 text-center shadow-sm dark:border-red-900/30 dark:bg-gray-900">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-red-50 text-red-500 dark:bg-red-900/20">
+            <AlertCircle size={34} />
           </div>
-          <h1 className="font-display font-bold text-2xl text-dark-text mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t("orders.error")}
           </h1>
-          <p className="text-dark-text-secondary mb-8">{error}</p>
-          <Button variant="gradient" onClick={() => window.location.reload()}>
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">{error}</p>
+          <Button variant="primary" className="mt-6 rounded-2xl" onClick={() => window.location.reload()}>
             Réessayer
           </Button>
         </div>
@@ -110,23 +117,21 @@ export default function OrdersHistoryPage() {
     );
   }
 
-  // Empty State
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
-            <ShoppingBag className="text-dark-text-tertiary" size={48} />
+      <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-4xl rounded-[2rem] border border-gray-100 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50 text-primary dark:bg-primary/10">
+            <Package size={34} />
           </div>
-          <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {t("orders.no_orders")}
           </h1>
-          <p className="text-dark-text-secondary mb-8">
+          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-gray-500 dark:text-gray-400">
             {t("orders.no_orders_desc")}
           </p>
-          <Link to="/catalog">
-            <Button variant="gradient" size="lg">
-              <Package size={20} />
+          <Link to="/catalog" className="mt-6 inline-flex">
+            <Button variant="primary" className="rounded-2xl">
               Explorer le catalogue
             </Button>
           </Link>
@@ -136,107 +141,116 @@ export default function OrdersHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8" data-tutorial="orders-header">
-          <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
-            <span className="text-gradient animate-gradient-bg">
-              {t("orders.title")}
-            </span>
-          </h1>
-          <p className="text-dark-text-secondary">{t("orders.subtitle")}</p>
+    <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
+      <div className="mx-auto max-w-6xl">
+        <div className="mb-6 rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tutorial="orders-header">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Commandes
+          </p>
+          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Historique et suivi
+              </h1>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Suivez vos achats, paiements et livraisons depuis un seul endroit.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Commandes</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{orders.length}</div>
+              </div>
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">En cours</div>
+                <div className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{stats.inProgress}</div>
+              </div>
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Dépensé</div>
+                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+                  {stats.totalSpent.toLocaleString("fr-FR")} XAF
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Orders List */}
         <div className="space-y-4">
           {orders.map((order) => {
             const paymentBadge = getPaymentStatusBadge(order.payment_status);
             const fulfillmentBadge = getFulfillmentStatusBadge(order.fulfillment_status);
-            
+
             return (
-              <Card key={order.id} padding="none">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3 className="font-display font-bold text-xl text-dark-text">
-                          {t("orders.order_number")} #{order.id}
-                        </h3>
-                        <Badge variant={paymentBadge.variant} className="text-xs">
-                          <paymentBadge.icon size={12} className="mr-1" />
-                          {paymentBadge.text}
-                        </Badge>
-                        <Badge variant={fulfillmentBadge.variant} className="text-xs">
-                          <fulfillmentBadge.icon size={12} className="mr-1" />
-                          {fulfillmentBadge.text}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-dark-text-secondary flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          {formatDate(order.created_at)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          {order.city}
-                        </div>
-                      </div>
+              <article
+                key={order.id}
+                className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+              >
+                <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        Commande #{order.id}
+                      </h2>
+                      <Badge variant={paymentBadge.variant} className="text-xs">
+                        <paymentBadge.icon size={12} className="mr-1" />
+                        {paymentBadge.text}
+                      </Badge>
+                      <Badge variant={fulfillmentBadge.variant} className="text-xs">
+                        <fulfillmentBadge.icon size={12} className="mr-1" />
+                        {fulfillmentBadge.text}
+                      </Badge>
                     </div>
 
-                    <div className="text-right">
-                      <div className="text-2xl font-display font-bold text-gradient animate-gradient-bg">
-                        {order.total_xaf.toLocaleString(
-                          i18n.language === "fr" ? "fr-FR" : "en-US",
-                        )}{" "}
-                        {t("common.currency")}
-                      </div>
-                      <p className="text-sm text-dark-text-tertiary">
-                        {order.items.length} {t("orders.items")}
-                      </p>
+                    <div className="mt-3 flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                      <span className="inline-flex items-center gap-2">
+                        <Calendar size={14} />
+                        {formatDate(order.created_at)}
+                      </span>
+                      <span className="inline-flex items-center gap-2">
+                        <MapPin size={14} />
+                        {order.city}
+                      </span>
+                      <span>{order.items.length} article{order.items.length > 1 ? "s" : ""}</span>
+                    </div>
+
+                    <div className="mt-4 space-y-2 rounded-[1.25rem] bg-[#fffaf5] p-4 dark:bg-gray-800">
+                      {order.items.slice(0, 3).map((item) => (
+                        <div key={item.id} className="flex items-center justify-between gap-3 text-sm">
+                          <div className="min-w-0">
+                            <div className="truncate font-medium text-gray-900 dark:text-white">
+                              {item.title_snapshot}
+                            </div>
+                            <div className="text-xs text-gray-500 dark:text-gray-400">
+                              Qté {item.qty}
+                            </div>
+                          </div>
+                          <div className="shrink-0 font-semibold text-primary">
+                            {item.line_total_xaf.toLocaleString("fr-FR")} XAF
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Items Preview */}
-                  <div className="space-y-2 mb-4">
-                    {order.items.slice(0, 3).map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between text-sm"
-                      >
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-holo-cyan" />
-                          <span className="text-dark-text">
-                            {item.title_snapshot}
-                          </span>
-                          <span className="text-dark-text-tertiary">
-                            x{item.qty}
-                          </span>
-                        </div>
-                        <span className="text-dark-text font-medium">
-                          {item.line_total_xaf.toLocaleString(
-                            i18n.language === "fr" ? "fr-FR" : "en-US",
-                          )}{" "}
-                          XAF
-                        </span>
+                  <div className="flex w-full flex-col gap-4 xl:max-w-[220px]">
+                    <div className="rounded-[1.25rem] bg-[#fff7ef] px-4 py-4 text-left dark:bg-gray-800 xl:text-right">
+                      <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
+                        Total
                       </div>
-                    ))}
-                    {order.items.length > 3 && (
-                      <p className="text-xs text-dark-text-tertiary italic">
-                        + {order.items.length - 3} autre(s) article(s)
-                      </p>
-                    )}
-                  </div>
+                      <div className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                        {order.total_xaf.toLocaleString("fr-FR")} XAF
+                      </div>
+                    </div>
 
-                  {/* Action */}
-                  <Link to={`/orders/${order.id}`}>
-                    <Button variant="secondary" className="w-full">
-                      {t("orders.view_details")}
-                    </Button>
-                  </Link>
+                    <Link to={`/orders/${order.id}`}>
+                      <Button variant="primary" className="w-full rounded-2xl">
+                        {t("orders.view_details")}
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-              </Card>
+              </article>
             );
           })}
         </div>

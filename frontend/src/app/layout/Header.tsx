@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   Bell,
   CircleHelp,
@@ -34,6 +34,8 @@ import { customerApi } from "@/services/api/customer";
 export default function Header() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isSearchPage = location.pathname === "/search";
   const { items } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -118,6 +120,7 @@ export default function Header() {
     { label: "Accueil", to: "/" },
     { label: "Promotions", to: "/catalog?promo=1" },
     { label: "Categories", to: "/categories" },
+    { label: "Vendeurs", to: "/vendors" },
     { label: "Commandes", to: "/orders" },
     { label: "Favoris", to: "/wishlist" },
     { label: "Mon compte", to: "/profile" },
@@ -138,17 +141,20 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Search Bar - Desktop */}
-          <button
-            data-tutorial="header-search"
-            onClick={() => navigate("/search")}
-            className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
-          >
-            <Search size={20} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-400 dark:text-gray-500">
-              {t("header.search_placeholder")}
-            </span>
-          </button>
+          {/* Search Bar - Desktop (hidden on search page) */}
+          {!isSearchPage && (
+            <button
+              id="search"
+              data-tutorial="header-search"
+              onClick={() => navigate("/search")}
+              className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
+            >
+              <Search size={20} className="text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                {t("header.search_placeholder")}
+              </span>
+            </button>
+          )}
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
@@ -181,6 +187,7 @@ export default function Header() {
             {/* Cart */}
             <Link
               to="/cart"
+              id="cart"
               className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
             >
               <ShoppingCart
@@ -231,6 +238,7 @@ export default function Header() {
             {user ? (
               <div className="relative" ref={userMenuRef}>
                 <button
+                  id="account"
                   data-tutorial="header-profile"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                   className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt transition-all"
@@ -392,8 +400,7 @@ export default function Header() {
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                       <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                        <div>Livraison offerte des 30 000 FCFA</div>
-                        <div className="mt-1 truncate">Contact: +237 000 556 87 78</div>
+                        <div className="truncate">Contact: +237 000 556 87 78</div>
                       </div>
                       <button
                         onClick={handleLogout}
@@ -438,18 +445,21 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Bar - Mobile */}
-        <button
-          onClick={() => navigate("/search")}
-          className="lg:hidden pb-4 w-full"
-        >
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
-            <Search size={18} className="text-gray-400 flex-shrink-0" />
-            <span className="text-sm text-gray-400 dark:text-gray-500">
-              {t("header.search_placeholder")}
-            </span>
-          </div>
-        </button>
+        {/* Search Bar - Mobile (hidden on search page) */}
+        {!isSearchPage && (
+          <button
+            onClick={() => navigate("/search")}
+            id="search-mobile"
+            className="lg:hidden pb-4 w-full"
+          >
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
+              <Search size={18} className="text-gray-400 flex-shrink-0" />
+              <span className="text-sm text-gray-400 dark:text-gray-500">
+                {t("header.search_placeholder")}
+              </span>
+            </div>
+          </button>
+        )}
 
         <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
           {clientNavItems.map((item) => (
@@ -475,6 +485,16 @@ export default function Header() {
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 Categories
+              </span>
+            </Link>
+
+            <Link
+              to="/vendors"
+              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <span className="font-medium text-text-light dark:text-text-dark">
+                Vendeurs
               </span>
             </Link>
 

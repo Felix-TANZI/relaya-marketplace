@@ -1,20 +1,34 @@
-// frontend/src/features/profile/ProfilePage.tsx
-// Page de profil utilisateur - consultation et modification des informations
-
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { User, Mail, Calendar, Edit2, Save, X, ShoppingBag, Camera, Trash2, Bell, Heart, CircleHelp, Gift } from 'lucide-react';
-import { Button, Card } from '@/components/ui';
-import { authApi, type User as UserType } from '@/services/api/auth';
-import { useToast } from '@/context/ToastContext';
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import {
+  Bell,
+  Calendar,
+  Camera,
+  CreditCard,
+  Heart,
+  Mail,
+  MapPin,
+  Package,
+  Phone,
+  Save,
+  ShieldCheck,
+  Trash2,
+  User,
+  X,
+} from "lucide-react";
+import { Button, Input } from "@/components/ui";
+import { authApi, type User as UserType } from "@/services/api/auth";
+import { useToast } from "@/context/ToastContext";
 import {
   getStoredProfileAvatar,
   getUserDisplayName,
   getUserInitials,
   setStoredProfileAvatar,
-} from '@/lib/profileAvatar';
+} from "@/lib/profileAvatar";
 
 export default function ProfilePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { showToast } = useToast();
 
@@ -23,16 +37,13 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
-
-  // Formulaire d'édition
   const [formData, setFormData] = useState({
-    email: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
+    email: "",
+    first_name: "",
+    last_name: "",
+    phone: "",
   });
 
-  // Charger le profil
   useEffect(() => {
     const fetchProfile = async () => {
       try {
@@ -43,399 +54,352 @@ export default function ProfilePage() {
           email: data.email,
           first_name: data.first_name,
           last_name: data.last_name,
-          phone: data.phone || '',
+          phone: data.phone || "",
         });
         setProfileAvatar(data.avatar_url || getStoredProfileAvatar());
       } catch (error) {
-        console.error('Erreur chargement profil:', error);
-        showToast('Erreur de chargement du profil', 'error');
+        console.error("Erreur chargement profil:", error);
+        showToast(t("profile.load_error"), "error");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProfile();
-  }, [showToast]);
+    void fetchProfile();
+  }, [showToast, t]);
 
-  // Sauvegarder les modifications
   const handleSave = async () => {
     try {
       setSaving(true);
       const updatedUser = await authApi.updateProfile(formData);
       setUser(updatedUser);
       setIsEditing(false);
-      showToast('Profil mis à jour avec succès', 'success');
+      showToast(t("profile.update_success"), "success");
     } catch (error) {
-      console.error('Erreur mise à jour profil:', error);
-      showToast('Erreur lors de la mise à jour', 'error');
+      console.error("Erreur mise à jour profil:", error);
+      showToast(t("profile.update_error"), "error");
     } finally {
       setSaving(false);
     }
   };
 
-  // Annuler l'édition
   const handleCancel = () => {
-    if (user) {
-        setFormData({
-          email: user.email,
-          first_name: user.first_name,
-          last_name: user.last_name,
-          phone: user.phone || '',
-        });
-    }
+    if (!user) return;
+    setFormData({
+      email: user.email,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone: user.phone || "",
+    });
     setIsEditing(false);
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    if (!file) return;
 
-    if (!file) {
-      return;
-    }
-
-    authApi.uploadAvatar(file).then((updatedUser) => {
-      const avatarUrl = updatedUser.avatar_url || null;
-      setUser(updatedUser);
-      setProfileAvatar(avatarUrl);
-      setStoredProfileAvatar(avatarUrl);
-      window.dispatchEvent(new Event('belivay-avatar-updated'));
-      showToast('Photo de profil mise a jour', 'success');
-    }).catch((error) => {
-      console.error('Erreur upload avatar:', error);
-      showToast('Impossible de mettre a jour la photo', 'error');
-    });
+    authApi
+      .uploadAvatar(file)
+      .then((updatedUser) => {
+        const avatarUrl = updatedUser.avatar_url || null;
+        setUser(updatedUser);
+        setProfileAvatar(avatarUrl);
+        setStoredProfileAvatar(avatarUrl);
+        window.dispatchEvent(new Event("belivay-avatar-updated"));
+        showToast(t("profile.avatar_success"), "success");
+      })
+      .catch((error) => {
+        console.error("Erreur upload avatar:", error);
+        showToast(t("profile.avatar_error"), "error");
+      });
   };
 
   const handleRemoveAvatar = () => {
-    authApi.removeAvatar().then((updatedUser) => {
-      setUser(updatedUser);
-      setProfileAvatar(null);
-      setStoredProfileAvatar(null);
-      window.dispatchEvent(new Event('belivay-avatar-updated'));
-      showToast('Photo de profil supprimee', 'success');
-    }).catch((error) => {
-      console.error('Erreur suppression avatar:', error);
-      showToast('Impossible de supprimer la photo', 'error');
-    });
+    authApi
+      .removeAvatar()
+      .then((updatedUser) => {
+        setUser(updatedUser);
+        setProfileAvatar(null);
+        setStoredProfileAvatar(null);
+        window.dispatchEvent(new Event("belivay-avatar-updated"));
+        showToast(t("profile.avatar_removed"), "success");
+      })
+      .catch((error) => {
+        console.error("Erreur suppression avatar:", error);
+        showToast(t("profile.avatar_remove_error"), "error");
+      });
   };
 
-  // Formater la date d'inscription
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('fr-FR', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
     });
-  };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement du profil...</p>
+      <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-6xl">
+          <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+            <div className="skeleton h-[360px] rounded-[1.75rem]" />
+            <div className="skeleton h-[420px] rounded-[1.75rem]" />
+          </div>
         </div>
       </div>
     );
   }
 
-  if (!user) {
-    return null;
-  }
+  if (!user) return null;
 
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8" data-tutorial="profile-header">
-          <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Mon Profil</span>
-          </h1>
-          <p className="text-dark-text-secondary">
-            Gérez vos informations personnelles et vos préférences
+    <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
+      <div className="mx-auto max-w-7xl">
+        <div className="mb-6 rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tutorial="profile-header">
+          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            Compte client
           </p>
+          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                Gérez votre espace personnel
+              </h1>
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                Profil, préférences, commandes et raccourcis essentiels depuis un seul tableau de bord.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Niveau</div>
+                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">Bronze</div>
+              </div>
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Points</div>
+                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">200</div>
+              </div>
+              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+                <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">Statut</div>
+                <div className="mt-1 text-lg font-bold text-green-700 dark:text-green-300">Vérifié</div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Sidebar - Stats */}
-          <div className="space-y-6">
-            {/* Avatar */}
-            <Card>
+        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+          <aside className="space-y-6">
+            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="text-center">
                 <div className="relative mx-auto mb-4 h-28 w-28">
-                  <div className="h-28 w-28 overflow-hidden rounded-full bg-gradient-holographic flex items-center justify-center text-white font-display font-bold text-3xl shadow-lg">
+                  <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-primary text-3xl font-bold text-white shadow-lg">
                     {profileAvatar ? (
-                      <img
-                        src={profileAvatar}
-                        alt={displayName}
-                        className="h-full w-full object-cover"
-                      />
+                      <img src={profileAvatar} alt={displayName} className="h-full w-full object-cover" />
                     ) : (
                       userInitials
                     )}
                   </div>
-                  <label className="absolute bottom-1 right-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-primary text-white shadow-lg transition-transform hover:scale-105">
-                    <Camera size={18} />
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarChange}
-                    />
-                  </label>
-                </div>
-                <h2 className="font-display font-bold text-xl text-dark-text mb-1">
-                  {displayName}
-                </h2>
-                <p className="text-dark-text-secondary text-sm">@{user.username}</p>
-                <p className="mt-2 text-xs text-dark-text-tertiary">
-                  Ajoute une photo pour la voir aussi dans le menu profil.
-                </p>
-                <div className="mt-4 flex justify-center gap-2">
-                  <label className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-primary px-3 py-2 text-sm font-medium text-white transition-all hover:bg-primary-dark">
+                  <label className="absolute bottom-1 right-1 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full bg-white text-primary shadow-md ring-1 ring-orange-100 transition hover:scale-105 dark:bg-gray-900 dark:ring-gray-700">
                     <Camera size={16} />
-                    Choisir une photo
-                    <input
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleAvatarChange}
-                    />
+                    <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                   </label>
-                  {profileAvatar && (
-                    <button
-                      onClick={handleRemoveAvatar}
-                      className="inline-flex items-center gap-2 rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-all hover:bg-red-50"
-                    >
-                      <Trash2 size={16} />
-                      Retirer
-                    </button>
-                  )}
                 </div>
-              </div>
-            </Card>
-
-            {/* Quick Stats */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4">Espace client</h3>
-              <div className="mb-4 rounded-2xl bg-primary/10 p-4 text-sm">
-                <p className="font-semibold text-primary">200 Points · Bronze</p>
-                <p className="mt-1 text-dark-text-secondary">
-                  Continuez vos achats pour debloquer les prochains avantages.
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">{displayName}</h2>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
+                <p className="mt-4 rounded-2xl bg-[#fff7ef] px-4 py-3 text-sm text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                  {t("profile.avatar_hint")}
                 </p>
+                {profileAvatar ? (
+                  <button
+                    onClick={handleRemoveAvatar}
+                    className="mt-4 inline-flex items-center gap-2 rounded-full px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50 dark:hover:bg-red-900/20"
+                  >
+                    <Trash2 size={16} />
+                    {t("profile.avatar_remove")}
+                  </button>
+                ) : null}
               </div>
-              <div className="space-y-3">
+            </div>
+
+            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Raccourcis</h3>
+              <div className="mt-4 space-y-3">
+                {[
+                  { to: "/orders", label: t("profile.menu.orders"), icon: Package },
+                  { to: "/wishlist", label: t("profile.menu.favorites"), icon: Heart },
+                  { to: "/notifications", label: t("profile.menu.notifications"), icon: Bell },
+                ].map(({ to, label, icon: Icon }) => (
+                  <Link
+                    key={to}
+                    to={to}
+                    className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-orange-50 hover:text-primary dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  >
+                    <span className="inline-flex items-center gap-3">
+                      <Icon size={16} className="text-primary" />
+                      {label}
+                    </span>
+                    <span>→</span>
+                  </Link>
+                ))}
                 <button
-                  onClick={() => navigate('/orders')}
-                  className="w-full flex items-center justify-between p-3 rounded-lg glass border border-white/10 hover:border-holo-cyan transition-all text-left"
+                  onClick={() => window.dispatchEvent(new Event("belivay-open-tutorial"))}
+                  className="flex w-full items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-orange-50 hover:text-primary dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
-                  <div className="flex items-center gap-3">
-                    <ShoppingBag className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Mes commandes</span>
-                  </div>
-                  <span className="text-dark-text-tertiary">→</span>
+                  <span className="inline-flex items-center gap-3">
+                    <ShieldCheck size={16} className="text-primary" />
+                    Relancer la visite guidée
+                  </span>
+                  <span>→</span>
                 </button>
-                <Link
-                  to="/wishlist"
-                  className="w-full flex items-center justify-between p-3 rounded-lg glass border border-white/10 hover:border-holo-cyan transition-all text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <Heart className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Mes favoris</span>
-                  </div>
-                  <span className="text-dark-text-tertiary">→</span>
-                </Link>
-                <Link
-                  to="/notifications"
-                  className="w-full flex items-center justify-between p-3 rounded-lg glass border border-white/10 hover:border-holo-cyan transition-all text-left"
-                >
-                  <div className="flex items-center gap-3">
-                    <Bell className="text-holo-cyan" size={20} />
-                    <span className="text-dark-text">Notifications</span>
-                  </div>
-                  <span className="text-dark-text-tertiary">→</span>
-                </Link>
               </div>
-            </Card>
+            </div>
 
-            {/* Member Since */}
-            <Card>
-              <div className="flex items-center gap-3 text-dark-text-secondary text-sm">
-                <Calendar size={18} />
+            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center gap-3 text-sm text-gray-600 dark:text-gray-300">
+                <Calendar size={16} className="text-primary" />
+                Membre depuis {formatDate(user.date_joined)}
+              </div>
+            </div>
+          </aside>
+
+          <section className="space-y-6">
+            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary">Membre depuis</p>
-                  <p className="text-dark-text font-medium">{formatDate(user.date_joined)}</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white">Informations personnelles</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Modifiez vos coordonnées principales utilisées pour vos commandes.
+                  </p>
                 </div>
-              </div>
-            </Card>
-
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4">Support & avantages</h3>
-              <div className="space-y-3">
-                <Link
-                  to="/help"
-                  className="flex items-center justify-between rounded-xl border border-white/10 p-3 transition-all hover:border-holo-cyan"
-                >
-                  <div className="flex items-center gap-3">
-                    <CircleHelp size={18} className="text-holo-cyan" />
-                    <span className="text-dark-text">Centre d'aide</span>
-                  </div>
-                  <span className="text-dark-text-tertiary">→</span>
-                </Link>
-                <a
-                  href="https://wa.me/2370005568778"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center justify-between rounded-xl border border-white/10 p-3 transition-all hover:border-holo-cyan"
-                >
-                  <div className="flex items-center gap-3">
-                    <Gift size={18} className="text-holo-cyan" />
-                    <span className="text-dark-text">Support WhatsApp</span>
-                  </div>
-                  <span className="text-dark-text-tertiary">→</span>
-                </a>
-                <div className="rounded-xl bg-green-50 p-3 text-sm text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                  Livraison offerte des 30 000 FCFA
-                </div>
-              </div>
-            </Card>
-          </div>
-
-          {/* Main Content - Profile Info */}
-          <div className="lg:col-span-2">
-            <Card>
-              {/* Header avec bouton Edit */}
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="font-display font-bold text-2xl text-dark-text">
-                  Informations personnelles
-                </h2>
                 {!isEditing ? (
-                  <Button variant="secondary" size="sm" onClick={() => setIsEditing(true)}>
-                    <Edit2 size={18} />
+                  <Button variant="secondary" className="rounded-2xl" onClick={() => setIsEditing(true)}>
                     Modifier
                   </Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="secondary" size="sm" onClick={handleCancel}>
-                      <X size={18} />
+                    <Button variant="secondary" className="rounded-2xl" onClick={handleCancel}>
+                      <X size={16} />
                       Annuler
                     </Button>
-                    <Button
-                      variant="gradient"
-                      size="sm"
-                      onClick={handleSave}
-                      isLoading={saving}
-                    >
-                      <Save size={18} />
+                    <Button variant="primary" className="rounded-2xl" onClick={handleSave} isLoading={saving}>
+                      <Save size={16} />
                       Enregistrer
                     </Button>
                   </div>
                 )}
               </div>
 
-              {/* Form */}
-              <div className="space-y-4">
-                {/* Username (read-only) */}
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Nom d'utilisateur
-                  </label>
-                  <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                    <User className="text-dark-text-tertiary" size={20} />
-                    <span className="text-dark-text">{user.username}</span>
-                    <span className="ml-auto text-xs text-dark-text-tertiary">Non modifiable</span>
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <Input
+                  label={t("profile.first_name")}
+                  value={formData.first_name}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, first_name: event.target.value }))
+                  }
+                  disabled={!isEditing}
+                />
+                <Input
+                  label={t("profile.last_name")}
+                  value={formData.last_name}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, last_name: event.target.value }))
+                  }
+                  disabled={!isEditing}
+                />
+                <Input
+                  label={t("profile.email")}
+                  type="email"
+                  value={formData.email}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, email: event.target.value }))
+                  }
+                  disabled={!isEditing}
+                />
+                <Input
+                  label={t("profile.phone")}
+                  value={formData.phone}
+                  onChange={(event) =>
+                    setFormData((current) => ({ ...current, phone: event.target.value }))
+                  }
+                  disabled={!isEditing}
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Contact principal</h3>
+                <div className="mt-5 space-y-4 text-sm">
+                  <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                    <User size={16} className="mt-0.5 text-primary" />
+                    <span>{displayName}</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                    <Mail size={16} className="mt-0.5 text-primary" />
+                    <span>{user.email}</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                    <Phone size={16} className="mt-0.5 text-primary" />
+                    <span>{user.phone || "Numéro non renseigné"}</span>
+                  </div>
+                  <div className="flex items-start gap-3 text-gray-600 dark:text-gray-300">
+                    <MapPin size={16} className="mt-0.5 text-primary" />
+                    <span>Yaoundé, Cameroun</span>
                   </div>
                 </div>
+              </div>
 
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Email
-                  </label>
-                  {isEditing ? (
-                    <div className="relative">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-dark-text-tertiary" size={20} />
-                      <input
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full pl-12 pr-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <Mail className="text-dark-text-tertiary" size={20} />
-                      <span className="text-dark-text">{user.email}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Phone */}
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Telephone
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      placeholder="+237 ..."
-                      className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.phone || 'Non renseigne'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* First Name */}
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Prénom
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={formData.first_name}
-                      onChange={(e) => setFormData({ ...formData, first_name: e.target.value })}
-                      placeholder="Votre prénom"
-                      className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.first_name || 'Non renseigné'}</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Last Name */}
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Nom
-                  </label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={formData.last_name}
-                      onChange={(e) => setFormData({ ...formData, last_name: e.target.value })}
-                      placeholder="Votre nom"
-                      className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                    />
-                  ) : (
-                    <div className="flex items-center gap-3 p-3 rounded-xl glass border border-white/10">
-                      <span className="text-dark-text">{user.last_name || 'Non renseigné'}</span>
-                    </div>
-                  )}
+              <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Préférences et assistance</h3>
+                <div className="mt-5 space-y-4 text-sm">
+                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
+                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                      <Bell size={16} className="text-primary" />
+                      Notifications actives
+                    </span>
+                    <span className="font-semibold text-green-700 dark:text-green-300">Oui</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
+                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                      <ShieldCheck size={16} className="text-primary" />
+                      Compte vérifié
+                    </span>
+                    <span className="font-semibold text-green-700 dark:text-green-300">Validé</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 dark:bg-gray-800">
+                    <span className="inline-flex items-center gap-3 text-gray-700 dark:text-gray-300">
+                      <CreditCard size={16} className="text-primary" />
+                      Paiement sécurisé
+                    </span>
+                    <span className="font-semibold text-gray-900 dark:text-white">Escrow actif</span>
+                  </div>
                 </div>
               </div>
-            </Card>
-          </div>
+            </div>
+
+            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Parcours rapide</h3>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    Continuez votre parcours depuis vos sections les plus utilisées.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" className="rounded-2xl" onClick={() => navigate("/orders")}>
+                    Commandes
+                  </Button>
+                  <Button variant="secondary" className="rounded-2xl" onClick={() => navigate("/wishlist")}>
+                    Favoris
+                  </Button>
+                  <Button variant="secondary" className="rounded-2xl" onClick={() => navigate("/help")}>
+                    Aide
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </section>
         </div>
       </div>
     </div>

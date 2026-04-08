@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Users,
   Package,
@@ -40,6 +41,7 @@ import {
 import { useToast } from '@/context/ToastContext';
 
 export default function AdminDashboardPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [stats, setStats] = useState<AdminDashboardStats | null>(null);
   const [analytics, setAnalytics] = useState<AdminAnalytics | null>(null);
@@ -56,11 +58,11 @@ export default function AdminDashboardPage() {
       setAnalytics(analyticsData);
     } catch (error) {
       console.error('Erreur chargement dashboard:', error);
-      showToast('Erreur de chargement du dashboard', 'error');
+      showToast(t('admin.dashboard_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => {
     loadData();
@@ -110,15 +112,15 @@ export default function AdminDashboardPage() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-display font-bold mb-2">Erreur de chargement</h2>
+          <h2 className="text-xl font-display font-bold mb-2">{t('admin.loading_error')}</h2>
           <p className="text-dark-text-secondary mb-6">
-            Impossible de charger les statistiques
+            {t('admin.stats_error')}
           </p>
           <button
             onClick={loadData}
             className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
           >
-            Réessayer
+            {t('common.retry')}
           </button>
         </Card>
       </div>
@@ -127,17 +129,17 @@ export default function AdminDashboardPage() {
 
   // Données pour graphique circulaire statuts commandes
   const orderStatusData = [
-    { name: 'En attente', value: stats.pending_orders, color: COLORS.yellow },
-    { name: 'En préparation', value: stats.processing_orders, color: COLORS.blue },
-    { name: 'Expédiées', value: stats.shipped_orders, color: COLORS.purple },
-    { name: 'Livrées', value: stats.delivered_orders, color: COLORS.green },
+    { name: t('admin.status_pending'), value: stats.pending_orders, color: COLORS.yellow },
+    { name: t('admin.status_processing'), value: stats.processing_orders, color: COLORS.blue },
+    { name: t('admin.status_shipped'), value: stats.shipped_orders, color: COLORS.purple },
+    { name: t('admin.status_delivered'), value: stats.delivered_orders, color: COLORS.green },
   ];
 
   // Données pour graphique circulaire paiements
   const paymentStatusData = [
-    { name: 'Payés', value: stats.paid_orders, color: COLORS.green },
-    { name: 'En attente', value: stats.unpaid_orders, color: COLORS.yellow },
-    { name: 'Échoués', value: stats.failed_payments, color: COLORS.red },
+    { name: t('admin.status_paid'), value: stats.paid_orders, color: COLORS.green },
+    { name: t('admin.status_pending'), value: stats.unpaid_orders, color: COLORS.yellow },
+    { name: t('admin.status_failed'), value: stats.failed_payments, color: COLORS.red },
   ];
 
   return (
@@ -146,10 +148,10 @@ export default function AdminDashboardPage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">Dashboard Admin</span>
+            <span className="text-gradient animate-gradient-bg">{t('admin.dashboard_title')}</span>
           </h1>
           <p className="text-dark-text-secondary">
-            Vue d'ensemble de la plateforme Relaya
+            {t('admin.dashboard_subtitle')}
           </p>
         </div>
 
@@ -159,7 +161,7 @@ export default function AdminDashboardPage() {
           <Card className="bg-gradient-to-br from-holo-cyan/10 to-holo-purple/10 border-holo-cyan/30">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Revenu Total</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_revenue')}</p>
                 <p className="font-display font-bold text-2xl text-holo-cyan">
                   {formatCurrency(stats.revenue_total)}
                 </p>
@@ -180,7 +182,7 @@ export default function AdminDashboardPage() {
                 }
               >
                 {analytics.total_revenue_growth > 0 ? '+' : ''}
-                {analytics.total_revenue_growth}% vs mois dernier
+                {analytics.total_revenue_growth}% {t('admin.vs_last_month')}
               </span>
             </div>
           </Card>
@@ -189,7 +191,7 @@ export default function AdminDashboardPage() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Aujourd'hui</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.today')}</p>
                 <p className="font-display font-bold text-2xl">
                   {formatCurrency(stats.revenue_today)}
                 </p>
@@ -204,7 +206,7 @@ export default function AdminDashboardPage() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Panier Moyen</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.avg_cart')}</p>
                 <p className="font-display font-bold text-2xl">
                   {formatCurrency(analytics.average_order_value)}
                 </p>
@@ -219,7 +221,7 @@ export default function AdminDashboardPage() {
           <Card>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Taux Conversion</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.conversion_rate')}</p>
                 <p className="font-display font-bold text-2xl">
                   {analytics.conversion_rate}%
                 </p>
@@ -238,7 +240,7 @@ export default function AdminDashboardPage() {
             <Card className="hover:border-holo-cyan transition-all cursor-pointer h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Utilisateurs</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.users')}</p>
                   <p className="font-display font-bold text-3xl">{stats.total_users}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -247,11 +249,11 @@ export default function AdminDashboardPage() {
               </div>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-dark-text-tertiary">Aujourd'hui:</span>
+                  <span className="text-dark-text-tertiary">{t('admin.today_label')}</span>
                   <span className="text-green-400">+{stats.new_users_today}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-dark-text-tertiary">Cette semaine:</span>
+                  <span className="text-dark-text-tertiary">{t('admin.this_week')}</span>
                   <span>+{stats.new_users_week}</span>
                 </div>
               </div>
@@ -263,7 +265,7 @@ export default function AdminDashboardPage() {
             <Card className="hover:border-holo-purple transition-all cursor-pointer h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Vendeurs</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.vendors')}</p>
                   <p className="font-display font-bold text-3xl">{stats.total_vendors}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-holo-purple/10 flex items-center justify-center">
@@ -271,8 +273,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Badge variant="warning">{stats.pending_vendors} en attente</Badge>
-                <Badge variant="success">{stats.approved_vendors} actifs</Badge>
+                <Badge variant="warning">{stats.pending_vendors} {t('admin.pending')}</Badge>
+                <Badge variant="success">{stats.approved_vendors} {t('admin.active')}</Badge>
               </div>
             </Card>
           </Link>
@@ -282,7 +284,7 @@ export default function AdminDashboardPage() {
             <Card className="hover:border-holo-pink transition-all cursor-pointer h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Produits</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.products')}</p>
                   <p className="font-display font-bold text-3xl">{stats.total_products}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-holo-pink/10 flex items-center justify-center">
@@ -307,7 +309,7 @@ export default function AdminDashboardPage() {
             <Card className="hover:border-holo-cyan transition-all cursor-pointer h-full">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Commandes</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.orders')}</p>
                   <p className="font-display font-bold text-3xl">{stats.total_orders}</p>
                 </div>
                 <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -315,8 +317,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Badge variant="default">{stats.pending_orders} en attente</Badge>
-                <Badge variant="success">{stats.delivered_orders} livrées</Badge>
+                <Badge variant="default">{stats.pending_orders} {t('admin.pending')}</Badge>
+                <Badge variant="success">{stats.delivered_orders} {t('admin.delivered')}</Badge>
               </div>
             </Card>
           </Link>
@@ -328,7 +330,7 @@ export default function AdminDashboardPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <TrendingUp className="text-holo-cyan" size={24} />
-              Revenus - 30 derniers jours
+              {t('admin.revenue_30_days')}
             </h3>
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={analytics.revenue_chart}>
@@ -351,7 +353,7 @@ export default function AdminDashboardPage() {
                     borderRadius: '8px',
                   }}
                   labelFormatter={(label) => formatDate(String(label))}
-                  formatter={(value) => [formatCurrency(Number(value)), 'Revenu']}
+                  formatter={(value) => [formatCurrency(Number(value)), t('admin.revenue')]}
                 />
                 <Line
                   type="monotone"
@@ -371,7 +373,7 @@ export default function AdminDashboardPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <ShoppingCart className="text-holo-purple" size={24} />
-                Statuts Commandes
+                {t('admin.order_statuses')}
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -406,7 +408,7 @@ export default function AdminDashboardPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <DollarSign className="text-holo-pink" size={24} />
-                Statuts Paiements
+                {t('admin.payment_statuses')}
               </h3>
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -445,7 +447,7 @@ export default function AdminDashboardPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <Award className="text-holo-cyan" size={24} />
-              Top 5 Produits
+              {t('admin.top_5_products')}
             </h3>
             <div className="space-y-3">
               {analytics.top_products.map((product, index) => (
@@ -460,7 +462,7 @@ export default function AdminDashboardPage() {
                     <div className="flex-1">
                       <p className="font-medium truncate">{product.product_title}</p>
                       <p className="text-sm text-dark-text-tertiary">
-                        {product.total_quantity} vendus
+                        {product.total_quantity} {t('admin.sold')}
                       </p>
                     </div>
                   </div>
@@ -478,7 +480,7 @@ export default function AdminDashboardPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <Store className="text-holo-purple" size={24} />
-              Top 5 Vendeurs
+              {t('admin.top_5_vendors')}
             </h3>
             <div className="space-y-3">
               {analytics.top_vendors.map((vendor, index) => (
@@ -493,7 +495,7 @@ export default function AdminDashboardPage() {
                     <div className="flex-1">
                       <p className="font-medium truncate">{vendor.business_name}</p>
                       <p className="text-sm text-dark-text-tertiary">
-                        {vendor.total_orders} commandes
+                        {vendor.total_orders} {t('admin.orders_count')}
                       </p>
                     </div>
                   </div>
@@ -514,7 +516,7 @@ export default function AdminDashboardPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <AlertCircle className="text-holo-pink" size={24} />
-              Alertes
+              {t('admin.alerts')}
             </h3>
             <div className="space-y-3">
               {stats.pending_vendors > 0 && (
@@ -523,7 +525,7 @@ export default function AdminDashboardPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <Clock className="text-yellow-400" size={20} />
-                        <span>{stats.pending_vendors} vendeur(s) en attente</span>
+                        <span>{stats.pending_vendors} {t('admin.vendors_pending')}</span>
                       </div>
                       <Badge variant="warning">{stats.pending_vendors}</Badge>
                     </div>
@@ -536,7 +538,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <XCircle className="text-red-400" size={20} />
-                      <span>{stats.failed_payments} paiement(s) échoué(s)</span>
+                      <span>{stats.failed_payments} {t('admin.payments_failed')}</span>
                     </div>
                     <Badge variant="error">{stats.failed_payments}</Badge>
                   </div>
@@ -548,7 +550,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <XCircle className="text-dark-text-tertiary" size={20} />
-                      <span>{stats.cancelled_orders} commande(s) annulée(s)</span>
+                      <span>{stats.cancelled_orders} {t('admin.orders_cancelled')}</span>
                     </div>
                     <Badge variant="default">{stats.cancelled_orders}</Badge>
                   </div>
@@ -558,7 +560,7 @@ export default function AdminDashboardPage() {
               {stats.pending_vendors === 0 && stats.failed_payments === 0 && (
                 <div className="p-6 text-center text-dark-text-tertiary">
                   <CheckCircle className="w-12 h-12 mx-auto mb-2 text-green-400" />
-                  <p>Aucune alerte pour le moment</p>
+                  <p>{t('admin.no_alerts')}</p>
                 </div>
               )}
             </div>
@@ -568,7 +570,7 @@ export default function AdminDashboardPage() {
           <Card>
             <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
               <Activity className="text-holo-cyan" size={24} />
-              Activité Récente
+              {t('admin.recent_activity')}
             </h3>
             <div className="space-y-2 max-h-96 overflow-y-auto">
               {analytics.recent_activity.map((activity, index) => (

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
   ChevronDown,
@@ -19,7 +20,6 @@ import {
   X,
 } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-import CatalogAssistantPanel from "./CatalogAssistantPanel";
 import {
   productsApi,
   type Category,
@@ -48,30 +48,20 @@ const CATEGORY_ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   Tablettes: Smartphone,
 };
 
-const TRUST_POINTS = [
-  {
-    icon: Truck,
-    title: "Livraison offerte",
-    description: "Dès 30 000 FCFA d'achat",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Paiement sécurisé",
-    description: "Transactions protégées",
-  },
-  {
-    icon: Flame,
-    title: "Promotions actives",
-    description: "Offres du moment à saisir",
-  },
-];
 
 export default function CatalogPage() {
+  const { t } = useTranslation();
+
+  const TRUST_POINTS = [
+    { icon: ShieldCheck, title: t('catalog_page.secure_payment'), description: t('catalog_page.secure_payment_desc') },
+    { icon: Flame, title: t('catalog_page.active_promos'), description: t('catalog_page.active_promos_desc') },
+  ];
+
   const SORT_OPTIONS = [
-    { value: "pertinence", label: "Pertinence" },
-    { value: "price_asc", label: "Prix croissant" },
-    { value: "price_desc", label: "Prix décroissant" },
-    { value: "recent", label: "Nouveautés" },
+    { value: "pertinence", label: t('catalog_page.relevance') },
+    { value: "price_asc", label: t('catalog_page.price_asc') },
+    { value: "price_desc", label: t('catalog_page.price_desc') },
+    { value: "recent", label: t('catalog_page.newest') },
   ];
 
   const [searchParams] = useSearchParams();
@@ -88,9 +78,6 @@ export default function CatalogPage() {
     searchParams.get("category") ? parseInt(searchParams.get("category")!, 10) : null,
   );
   const [showPromoOnly, setShowPromoOnly] = useState(searchParams.get("promo") === "1");
-  const [showFreeDeliveryOnly, setShowFreeDeliveryOnly] = useState(
-    searchParams.get("free_delivery") === "1",
-  );
   const [priceRange, setPriceRange] = useState<[number, number]>([5000, 100000]);
   const [minRating, setMinRating] = useState(0);
   const [inStockOnly, setInStockOnly] = useState(false);
@@ -116,15 +103,10 @@ export default function CatalogPage() {
     const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
     const filteredProducts = products.filter((product) => {
       const hasPromo = Boolean(product.discount && product.discount > 0);
-      const hasFreeDelivery = product.price_xaf >= 30000;
       const matchesRating = minRating === 0 || (product.rating_average ?? 0) >= minRating;
       const isRecent = now - new Date(product.created_at).getTime() <= thirtyDaysMs;
 
       if (showPromoOnly && !hasPromo) {
-        return false;
-      }
-
-      if (showFreeDeliveryOnly && !hasFreeDelivery) {
         return false;
       }
 
@@ -163,7 +145,6 @@ export default function CatalogPage() {
   }, [
     products,
     showPromoOnly,
-    showFreeDeliveryOnly,
     minRating,
     showNewOnly,
     sortBy,
@@ -209,7 +190,7 @@ export default function CatalogPage() {
         setTotalCount(response.count || 0);
       } catch (fetchError) {
         console.error("Error loading products:", fetchError);
-        setError("Impossible de charger le catalogue pour le moment.");
+        setError(t('catalog_page.load_error'));
       } finally {
         setLoading(false);
       }
@@ -235,7 +216,6 @@ export default function CatalogPage() {
     setSearchQuery("");
     setSelectedCategory(null);
     setShowPromoOnly(false);
-    setShowFreeDeliveryOnly(false);
     setPriceRange([5000, 100000]);
     setMinRating(0);
     setInStockOnly(false);
@@ -248,7 +228,6 @@ export default function CatalogPage() {
     searchQuery,
     selectedCategory,
     showPromoOnly,
-    showFreeDeliveryOnly,
     priceRange[0] > 5000,
     priceRange[1] < 100000,
     minRating > 0,
@@ -257,7 +236,7 @@ export default function CatalogPage() {
   ].filter(Boolean).length;
 
   const selectedCategoryName =
-    categories.find((category) => category.id === selectedCategory)?.name || "Toutes les catégories";
+    categories.find((category) => category.id === selectedCategory)?.name || t('catalog_page.all_categories');
 
   const totalPages = Math.ceil(totalCount / pageSize);
   const currentSortLabel =
@@ -278,7 +257,7 @@ export default function CatalogPage() {
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Rechercher un produit, une marque..."
+            placeholder={t('search.placeholder')}
             className="w-full rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           />
         </div>
@@ -286,9 +265,9 @@ export default function CatalogPage() {
 
       <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Catégories</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('catalog_page.categories')}</h3>
           <span className="text-xs font-medium text-gray-400">
-            {categoriesLoading ? "..." : `${categories.length} dispo`}
+            {categoriesLoading ? "..." : `${categories.length} ${t('catalog_page.available')}`}
           </span>
         </div>
 
@@ -301,7 +280,7 @@ export default function CatalogPage() {
           }`}
         >
           <ShoppingBag size={18} />
-          <span className="text-sm font-semibold">Tout le catalogue</span>
+          <span className="text-sm font-semibold">{t('catalog_page.full_catalog')}</span>
         </button>
 
         <div className="space-y-1">
@@ -358,7 +337,7 @@ export default function CatalogPage() {
 
       <div className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-base font-semibold text-gray-900 dark:text-white">Filtres</h3>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">{t('catalog_page.filters')}</h3>
           {activeFiltersCount > 0 && (
             <span className="rounded-full bg-primary px-2.5 py-1 text-xs font-bold text-white">
               {activeFiltersCount}
@@ -374,20 +353,7 @@ export default function CatalogPage() {
               onChange={(event) => setShowPromoOnly(event.target.checked)}
               className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
             />
-            <span className="text-sm text-gray-700 dark:text-gray-300">Promotions uniquement</span>
-          </label>
-
-          <label className="flex cursor-pointer items-center gap-3">
-            <input
-              type="checkbox"
-              checked={showFreeDeliveryOnly}
-              onChange={(event) => setShowFreeDeliveryOnly(event.target.checked)}
-              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
-              <Truck size={14} />
-              Livraison offerte
-            </span>
+            <span className="text-sm text-gray-700 dark:text-gray-300">{t('catalog_page.promos_only')}</span>
           </label>
 
           <label className="flex cursor-pointer items-center gap-3">
@@ -399,7 +365,7 @@ export default function CatalogPage() {
             />
             <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
               <Package size={14} />
-              En stock seulement
+              {t('catalog_page.in_stock_only')}
             </span>
           </label>
 
@@ -412,13 +378,13 @@ export default function CatalogPage() {
             />
             <span className="flex items-center gap-1 text-sm text-gray-700 dark:text-gray-300">
               <Sparkles size={14} />
-              Nouveautés
+              {t('catalog_page.newest')}
             </span>
           </label>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Note minimale
+              {t('catalog_page.min_rating')}
             </label>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((rating) => (
@@ -442,7 +408,7 @@ export default function CatalogPage() {
 
           <div className="space-y-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              Fourchette de prix
+              {t('catalog_page.price_range')}
             </label>
             <div className="flex items-center justify-between rounded-2xl bg-gray-50 px-3 py-2 text-sm dark:bg-gray-700">
               <span className="text-gray-600 dark:text-gray-300">
@@ -491,14 +457,14 @@ export default function CatalogPage() {
             onClick={handleApplyFilters}
             className="w-full rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
           >
-            Appliquer les filtres
+            {t('catalog_page.apply_filters')}
           </button>
           {activeFiltersCount > 0 && (
             <button
               onClick={handleResetFilters}
               className="w-full rounded-2xl px-6 py-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
             >
-              Réinitialiser tout
+              {t('catalog_page.reset_all')}
             </button>
           )}
         </div>
@@ -537,19 +503,18 @@ export default function CatalogPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] bg-gradient-to-r from-[#fff1e3] via-white to-[#fff7ef] p-6 shadow-sm ring-1 ring-orange-100 dark:from-gray-900 dark:via-gray-900 dark:to-gray-800 dark:ring-gray-800 lg:p-8">
+        <div className="mb-8 overflow-hidden rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 lg:p-8">
           <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-gray-800">
                 <Flame size={14} />
-                Mega promotions Africa Wide
+                {t('catalog_page.mega_promos')}
               </div>
               <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-gray-900 dark:text-white lg:text-5xl">
-                Le catalogue client Belivay, repensé pour acheter plus vite et mieux.
+                {t('catalog_page.hero_title')}
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-gray-600 dark:text-gray-300 lg:text-base">
-                Explore les meilleures offres, filtre par catégorie, repère les produits
-                en promotion et retrouve rapidement ce qui t'intéresse.
+                {t('catalog_page.hero_desc')}
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2">
@@ -558,23 +523,18 @@ export default function CatalogPage() {
                 </span>
                 {!error && (
                   <span className="rounded-full bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800 dark:text-gray-200">
-                    {visibleProducts.length} produit{visibleProducts.length > 1 ? "s" : ""} visibles
+                    {visibleProducts.length} {t('catalog_page.visible_products')}
                   </span>
                 )}
                 {showPromoOnly && (
                   <span className="rounded-full bg-primary/10 px-4 py-2 text-sm font-medium text-primary">
-                    Promotions
-                  </span>
-                )}
-                {showFreeDeliveryOnly && (
-                  <span className="rounded-full bg-green-100 px-4 py-2 text-sm font-medium text-green-700 dark:bg-green-900/20 dark:text-green-300">
-                    Livraison offerte
+                    {t('catalog_page.promotions')}
                   </span>
                 )}
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
               {featuredCategories.map((category) => {
                 const Icon = CATEGORY_ICONS[category.name] || ShoppingBag;
                 const isSelected = selectedCategory === category.id;
@@ -599,8 +559,8 @@ export default function CatalogPage() {
                       <p className="text-sm font-semibold">{category.name}</p>
                       <p className="text-xs text-gray-400">
                         {category.children.length > 0
-                          ? `${category.children.length} sous-catégories`
-                          : "Explorer"}
+                          ? `${category.children.length} ${t('catalog_page.subcategories')}`
+                          : t('catalog_page.explore')}
                       </p>
                     </div>
                   </button>
@@ -610,32 +570,32 @@ export default function CatalogPage() {
           </div>
         </div>
 
-        <div className="flex gap-6">
+        <div className="flex flex-col gap-6 lg:flex-row">
           <aside className="hidden w-80 flex-shrink-0 lg:block">{renderFilterPanel()}</aside>
 
           <main className="min-w-0 flex-1">
-            <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                  Catalogue client
+                  {t('catalog_page.client_catalog')}
                 </p>
                 <h2 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
-                  Sélection du moment
+                  {t('catalog_page.current_selection')}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {error
-                    ? "Le tri ou le chargement a échoué. Tu peux réessayer juste en dessous."
-                    : `${totalCount} produit${totalCount > 1 ? "s" : ""} trouvés, ${visibleProducts.length} affiché${visibleProducts.length > 1 ? "s" : ""} sur cette page.`}
+                    ? t('catalog_page.sort_error')
+                    : t('catalog_page.results_summary', { total: totalCount, visible: visibleProducts.length })}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center">
                 <button
                   onClick={() => setShowMobileFilters(true)}
-                  className="flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 lg:hidden"
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 sm:w-auto lg:hidden"
                 >
                   <SlidersHorizontal size={18} />
-                  Filtres
+                  {t('catalog_page.filters')}
                   {activeFiltersCount > 0 && (
                     <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-bold text-white">
                       {activeFiltersCount}
@@ -643,10 +603,10 @@ export default function CatalogPage() {
                   )}
                 </button>
 
-                <div className="relative">
+                <div className="relative w-full sm:w-auto">
                   <button
                     onClick={() => setSortMenuOpen((previous) => !previous)}
-                    className="flex min-w-[170px] items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none ring-primary/20 transition-all focus:ring-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                    className="flex w-full min-w-[170px] items-center justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm outline-none ring-primary/20 transition-all focus:ring-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
                     <span>{currentSortLabel}</span>
                     <ChevronDown
@@ -680,7 +640,7 @@ export default function CatalogPage() {
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {Array.from({ length: 8 }).map((_, index) => (
                   <div
                     key={index}
@@ -700,7 +660,7 @@ export default function CatalogPage() {
                   <Package size={28} />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Catalogue indisponible
+                  {t('catalog_page.catalog_unavailable')}
                 </h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
                   {error}
@@ -709,7 +669,7 @@ export default function CatalogPage() {
                   onClick={() => window.location.reload()}
                   className="mt-6 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
                 >
-                  Réessayer
+                  {t('common.retry')}
                 </button>
               </div>
             ) : visibleProducts.length === 0 ? (
@@ -718,23 +678,23 @@ export default function CatalogPage() {
                   <ShoppingBag size={28} />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Aucun produit ne correspond
+                  {t('catalog_page.no_match')}
                 </h3>
                 <p className="mx-auto mt-2 max-w-md text-sm text-gray-500 dark:text-gray-400">
-                  Essaie d'élargir la recherche ou de réinitialiser les filtres actifs.
+                  {t('catalog_page.no_match_desc')}
                 </p>
                 <button
                   onClick={handleResetFilters}
                   className="mt-6 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
                 >
-                  Réinitialiser les filtres
+                  {t('catalog_page.reset_filters')}
                 </button>
               </div>
             ) : (
               <>
                 <div
                   data-tutorial="catalog-products"
-                  className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+                  className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
                 >
                   {visibleProducts.map((product) => (
                     <ProductCard key={product.id} product={product} showPromo />
@@ -748,7 +708,7 @@ export default function CatalogPage() {
                         onClick={() => setCurrentPage(currentPage - 1)}
                         className="rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
-                        Précédent
+                        {t('catalog_page.previous')}
                       </button>
                     )}
 
@@ -773,7 +733,7 @@ export default function CatalogPage() {
                         onClick={() => setCurrentPage(currentPage + 1)}
                         className="rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                       >
-                        Suivant
+                        {t('catalog_page.next')}
                       </button>
                     )}
                   </div>
@@ -788,7 +748,7 @@ export default function CatalogPage() {
         <div className="fixed inset-0 z-50 bg-black/50 lg:hidden">
           <div className="absolute inset-y-0 right-0 w-full max-w-sm overflow-y-auto bg-[#f8f5f1] p-4 dark:bg-gray-950">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Filtres catalogue</h2>
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('catalog_page.catalog_filters')}</h2>
               <button
                 onClick={() => setShowMobileFilters(false)}
                 className="rounded-2xl bg-white p-2 text-gray-600 shadow-sm dark:bg-gray-800 dark:text-gray-300"
@@ -800,17 +760,6 @@ export default function CatalogPage() {
           </div>
         </div>
       )}
-
-      <CatalogAssistantPanel
-        products={visibleProducts}
-        selectedCategoryName={selectedCategoryName}
-        filters={{
-          promoOnly: showPromoOnly,
-          freeDeliveryOnly: showFreeDeliveryOnly,
-          inStockOnly,
-          minRating,
-        }}
-      />
     </div>
   );
 }

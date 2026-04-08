@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from 'react-i18next';
 import { Link } from "react-router-dom";
 import { Bot, MessageCircle, Send, Sparkles, X } from "lucide-react";
 import type { Product } from "@/services/api/products";
@@ -9,7 +10,6 @@ interface CatalogAssistantPanelProps {
   selectedCategoryName: string;
   filters: {
     promoOnly: boolean;
-    freeDeliveryOnly: boolean;
     inStockOnly: boolean;
     minRating: number;
   };
@@ -21,17 +21,21 @@ interface ChatMessage {
   content: string;
 }
 
-const QUICK_PROMPTS = [
-  "Je cherche le meilleur rapport qualite prix",
-  "Montre-moi les produits en promo les plus interessants",
-  "Je veux un produit fiable et bien note",
-];
+// QUICK_PROMPTS moved inside component to use t()
 
 export default function CatalogAssistantPanel({
   products,
   selectedCategoryName,
   filters,
 }: CatalogAssistantPanelProps) {
+  const { t } = useTranslation();
+
+  const QUICK_PROMPTS = [
+    t('assistant.best_value'),
+    t('assistant.best_promos'),
+    t('assistant.reliable_product'),
+  ];
+
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -39,8 +43,7 @@ export default function CatalogAssistantPanel({
     {
       id: "intro",
       role: "assistant",
-      content:
-        "Je suis ton assistant catalogue. Dis-moi ton besoin et je te proposerai les meilleurs choix parmi les produits visibles.",
+      content: t('assistant.intro'),
     },
   ]);
   const [suggestedProducts, setSuggestedProducts] = useState<
@@ -105,7 +108,7 @@ export default function CatalogAssistantPanel({
         className="fixed bottom-6 right-6 z-40 inline-flex items-center gap-3 rounded-full bg-primary px-5 py-3 text-sm font-semibold text-white shadow-2xl shadow-primary/30 transition-all hover:scale-[1.02] hover:bg-primary-dark"
       >
         {isOpen ? <X size={18} /> : <Bot size={18} />}
-        Assistant catalogue
+        {t('assistant.catalog_assistant')}
       </button>
 
       {isOpen && (
@@ -115,15 +118,15 @@ export default function CatalogAssistantPanel({
               <div>
                 <p className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-primary">
                   <Sparkles size={14} />
-                  {assistantMeta.source === "openrouter" ? "OpenRouter actif" : "Mode secours mock"}
+                  {assistantMeta.source === "openrouter" ? t('assistant.openrouter_active') : t('assistant.fallback_mode')}
                 </p>
                 <h2 className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
-                  Conseiller d'achat
+                  {t('assistant.title')}
                 </h2>
                 <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                   {assistantMeta.source === "openrouter"
-                    ? `Le chatbot utilise actuellement ${assistantMeta.model || "OpenRouter"}.`
-                    : "Le chatbot est en fallback local si l'API IA ne repond pas."}
+                    ? t('assistant.using_model', { model: assistantMeta.model || "OpenRouter" })
+                    : t('assistant.fallback_description')}
                 </p>
               </div>
               <button
@@ -157,7 +160,7 @@ export default function CatalogAssistantPanel({
             {isLoading && (
               <div className="flex justify-start">
                 <div className="rounded-3xl bg-gray-100 px-4 py-3 text-sm text-gray-500 dark:bg-gray-800 dark:text-gray-300">
-                  Analyse du catalogue en cours...
+                  {t('assistant.analyzing')}
                 </div>
               </div>
             )}
@@ -165,7 +168,7 @@ export default function CatalogAssistantPanel({
             {suggestedProducts.length > 0 && (
               <div className="rounded-3xl border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-700 dark:bg-gray-800/70">
                 <p className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-                  Produits recommandes
+                  {t('assistant.recommended')}
                 </p>
                 <div className="space-y-3">
                   {suggestedProducts.map((suggestion) => (
@@ -186,7 +189,7 @@ export default function CatalogAssistantPanel({
                           to={`/product/${suggestion.productId}`}
                           className="rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/20"
                         >
-                          Voir
+                          {t('assistant.view')}
                         </Link>
                       </div>
                     </div>
@@ -223,7 +226,7 @@ export default function CatalogAssistantPanel({
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
                   rows={2}
-                  placeholder="Ex: Je veux un article fiable, bien note et pas trop cher"
+                  placeholder={t('assistant.placeholder')}
                   className="w-full resize-none rounded-2xl border border-gray-200 bg-gray-50 py-3 pl-11 pr-4 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:bg-white focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                 />
               </div>

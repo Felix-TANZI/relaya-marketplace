@@ -23,7 +23,6 @@ export interface CatalogAssistantContext {
   selectedCategoryName: string;
   filters: {
     promoOnly: boolean;
-    freeDeliveryOnly: boolean;
     inStockOnly: boolean;
     minRating: number;
   };
@@ -95,10 +94,6 @@ function scoreProduct(product: Product, query: string) {
 
   if (/(promo|promotion|reduction)/.test(normalizeText(query)) && (product.discount ?? 0) > 0) {
     score += 6;
-  }
-
-  if (/(livraison gratuite|livraison offerte)/.test(normalizeText(query)) && product.price_final >= 30000) {
-    score += 5;
   }
 
   if (product.stock_quantity && product.stock_quantity > 0) {

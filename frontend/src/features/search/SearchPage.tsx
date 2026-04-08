@@ -1,11 +1,13 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { useTranslation } from 'react-i18next';
 import { Search, X, SlidersHorizontal, ArrowLeft } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Category, type Product, type ProductListResponse } from "@/services/api/products";
 import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
 
 export default function SearchPage() {
+  const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -15,6 +17,7 @@ export default function SearchPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
+
 
   // Fetch categories from backend on mount, fallback to mock categories
   useEffect(() => {
@@ -54,19 +57,18 @@ export default function SearchPage() {
     inputRef.current?.focus();
   }, []);
 
-  // Run search when URL param changes
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Sync from URL on mount only
   useEffect(() => {
     const q = searchParams.get("q") ?? "";
-    setQuery(q);
-    if (q.trim()) {
+    if (q.trim() && !searched) {
+      setQuery(q);
       runSearch(q);
-    } else {
-      setProducts([]);
-      setSearched(false);
     }
-  }, [searchParams]);
+  }, []);
 
-  const runSearch = async (q: string) => {
+  const runSearch = useCallback(async (q: string) => {
     setLoading(true);
     setSearched(true);
     try {
@@ -80,18 +82,40 @@ export default function SearchPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Real-time debounced search as user types
+  const handleInputChange = useCallback((value: string) => {
+    setQuery(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (!value.trim()) {
+      setProducts([]);
+      setSearched(false);
+      setSearchParams({});
+      return;
+    }
+    debounceRef.current = setTimeout(() => {
+      setSearchParams({ q: value.trim() }, { replace: true });
+      runSearch(value.trim());
+    }, 300);
+  }, [runSearch, setSearchParams]);
+
+  // Clean up debounce
+  useEffect(() => { return () => { if (debounceRef.current) clearTimeout(debounceRef.current); }; }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (query.trim()) {
       setSearchParams({ q: query.trim() });
+      runSearch(query.trim());
     }
   };
 
   const handleQuickSearch = (term: string) => {
     setQuery(term);
     setSearchParams({ q: term });
+    runSearch(term);
   };
 
   const handleClear = () => {
@@ -122,11 +146,12 @@ export default function SearchPage() {
                   className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
                 />
                 <input
+                  id="search-page-input"
                   ref={inputRef}
                   type="text"
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Rechercher un produit, une marque..."
+                  onChange={(e) => handleInputChange(e.target.value)}
+                  placeholder={t('search.placeholder')}
                   className="w-full pl-11 pr-10 py-3 rounded-xl bg-[#f8f5f1] dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-sm"
                 />
                 {query && (
@@ -155,7 +180,7 @@ export default function SearchPage() {
         {!searched && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary mb-3">
-              Catégories
+              {t('search.categories_label')}
             </p>
             <div className="flex flex-wrap gap-2">
               {categories.map((cat) => (
@@ -185,8 +210,8 @@ export default function SearchPage() {
           <>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
               {products.length > 0
-                ? `${products.length} résultat${products.length > 1 ? "s" : ""} pour « ${searchParams.get("q")} »`
-                : `Aucun résultat pour « ${searchParams.get("q")} »`}
+                ? t('search.results_count', { count: products.length, query: searchParams.get("q") })
+                : t('search.no_results', { query: searchParams.get("q") })}
             </p>
 
             {products.length > 0 ? (
@@ -201,16 +226,16 @@ export default function SearchPage() {
                   <Search size={36} className="text-primary/60" />
                 </div>
                 <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Aucun produit trouvé
+                  {t('search.empty_title')}
                 </p>
                 <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
-                  Essayez un autre mot-clé ou parcourez nos catégories.
+                  {t('search.empty_description')}
                 </p>
                 <button
                   onClick={() => navigate("/categories")}
                   className="mt-2 rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-primary/90"
                 >
-                  Voir les catégories
+                  {t('search.empty_button')}
                 </button>
               </div>
             )}

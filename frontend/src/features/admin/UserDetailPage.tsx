@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   User,
@@ -29,6 +30,7 @@ import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
 
 export default function UserDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -63,11 +65,11 @@ export default function UserDetailPage() {
       });
     } catch (error) {
       console.error('Erreur chargement utilisateur:', error);
-      showToast('Erreur de chargement de l\'utilisateur', 'error');
+      showToast(t('admin.user_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [id, showToast]);
+  }, [id, showToast, t]);
 
   useEffect(() => {
     loadUser();
@@ -150,7 +152,7 @@ export default function UserDetailPage() {
   };
 
   const formatDateTime = (dateStr: string | null) => {
-    if (!dateStr) return 'Jamais';
+    if (!dateStr) return t('admin.never');
     return new Date(dateStr).toLocaleDateString('fr-FR', {
       day: '2-digit',
       month: 'long',
@@ -173,13 +175,13 @@ export default function UserDetailPage() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="max-w-md w-full text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-display font-bold mb-2">Utilisateur introuvable</h2>
-          <p className="text-dark-text-secondary mb-6">Cet utilisateur n'existe pas.</p>
+          <h2 className="text-xl font-display font-bold mb-2">{t('admin.user_not_found')}</h2>
+          <p className="text-dark-text-secondary mb-6">{t('admin.user_not_exist')}</p>
           <button
             onClick={() => navigate('/admin/users')}
             className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
           >
-            Retour aux utilisateurs
+            {t('admin.back_to_users')}
           </button>
         </Card>
       </div>
@@ -198,7 +200,7 @@ export default function UserDetailPage() {
             className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-all mb-4"
           >
             <ArrowLeft size={20} />
-            Retour aux utilisateurs
+            {t('admin.back_to_users')}
           </Link>
 
           <div className="flex items-start justify-between flex-wrap gap-4">
@@ -207,7 +209,7 @@ export default function UserDetailPage() {
                 <span className="text-gradient animate-gradient-bg">{user.username}</span>
               </h1>
               <p className="text-dark-text-secondary">
-                Membre depuis {formatDateTime(user.date_joined)}
+                {t('admin.member_since')} {formatDateTime(user.date_joined)}
               </p>
             </div>
 
@@ -219,7 +221,7 @@ export default function UserDetailPage() {
                     className="px-4 py-2 bg-holo-purple text-white rounded-xl hover:bg-holo-purple/90 transition-all flex items-center gap-2"
                   >
                     <Edit2 size={16} />
-                    Modifier
+                    {t('common.edit')}
                   </button>
                   {isBanned ? (
                     <button
@@ -227,7 +229,7 @@ export default function UserDetailPage() {
                       className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all flex items-center gap-2"
                     >
                       <ShieldOff size={16} />
-                      Débannir
+                      {t('admin.unban')}
                     </button>
                   ) : (
                     <button
@@ -235,7 +237,7 @@ export default function UserDetailPage() {
                       className="px-4 py-2 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all flex items-center gap-2"
                     >
                       <Shield size={16} />
-                      Bannir
+                      {t('admin.ban')}
                     </button>
                   )}
                   <button
@@ -243,7 +245,7 @@ export default function UserDetailPage() {
                     className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all flex items-center gap-2"
                   >
                     <Trash2 size={16} />
-                    Supprimer
+                    {t('common.delete')}
                   </button>
                 </>
               ) : (
@@ -252,7 +254,7 @@ export default function UserDetailPage() {
                     onClick={handleSaveChanges}
                     className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all"
                   >
-                    Enregistrer
+                    {t('common.save')}
                   </button>
                   <button
                     onClick={() => {
@@ -268,7 +270,7 @@ export default function UserDetailPage() {
                     }}
                     className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
                   >
-                    Annuler
+                    {t('common.cancel')}
                   </button>
                 </>
               )}
@@ -281,7 +283,7 @@ export default function UserDetailPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Commandes</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_orders')}</p>
                 <p className="font-display font-bold text-3xl">{user.stats.total_orders}</p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
@@ -293,7 +295,7 @@ export default function UserDetailPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Dépensé</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.total_spent')}</p>
                 <p className="font-display font-bold text-2xl text-green-400">
                   {formatCurrency(user.stats.total_spent)}
                 </p>
@@ -307,7 +309,7 @@ export default function UserDetailPage() {
           <Card>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Panier Moyen</p>
+                <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.avg_cart')}</p>
                 <p className="font-display font-bold text-2xl">
                   {formatCurrency(user.stats.average_order_value)}
                 </p>
@@ -322,7 +324,7 @@ export default function UserDetailPage() {
             <Card>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Produits Actifs</p>
+                  <p className="text-dark-text-tertiary text-sm mb-1">{t('admin.active_products')}</p>
                   <p className="font-display font-bold text-3xl text-holo-pink">
                     {user.stats.active_products || 0}
                   </p>
@@ -342,7 +344,7 @@ export default function UserDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <User className="text-holo-cyan" size={24} />
-                Informations Personnelles
+                {t('admin.personal_info')}
               </h3>
 
               {editMode ? (
@@ -350,7 +352,7 @@ export default function UserDetailPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm text-dark-text-tertiary mb-2">
-                        Prénom
+                        {t('admin.first_name')}
                       </label>
                       <input
                         type="text"
@@ -362,7 +364,7 @@ export default function UserDetailPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm text-dark-text-tertiary mb-2">Nom</label>
+                      <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.last_name')}</label>
                       <input
                         type="text"
                         value={editData.last_name}
@@ -375,7 +377,7 @@ export default function UserDetailPage() {
                   </div>
 
                   <div>
-                    <label className="block text-sm text-dark-text-tertiary mb-2">Email</label>
+                    <label className="block text-sm text-dark-text-tertiary mb-2">{t('admin.email')}</label>
                     <input
                       type="email"
                       value={editData.email}
@@ -396,7 +398,7 @@ export default function UserDetailPage() {
                         }
                         className="w-4 h-4"
                       />
-                      <span className="text-sm">Compte actif</span>
+                      <span className="text-sm">{t('admin.account_active')}</span>
                     </label>
 
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -408,7 +410,7 @@ export default function UserDetailPage() {
                         }
                         className="w-4 h-4"
                       />
-                      <span className="text-sm">Admin</span>
+                      <span className="text-sm">{t('admin.admin')}</span>
                     </label>
 
                     <label className="flex items-center gap-2 cursor-pointer">
@@ -420,7 +422,7 @@ export default function UserDetailPage() {
                         }
                         className="w-4 h-4"
                       />
-                      <span className="text-sm">Super Admin</span>
+                      <span className="text-sm">{t('admin.super_admin')}</span>
                     </label>
                   </div>
                 </div>
@@ -429,11 +431,11 @@ export default function UserDetailPage() {
                   <div className="flex items-start gap-3">
                     <User className="text-dark-text-tertiary mt-1" size={20} />
                     <div>
-                      <p className="text-sm text-dark-text-tertiary">Nom complet</p>
+                      <p className="text-sm text-dark-text-tertiary">{t('admin.full_name')}</p>
                       <p className="font-medium">
                         {user.first_name || user.last_name
                           ? `${user.first_name} ${user.last_name}`.trim()
-                          : 'Non renseigné'}
+                          : t('admin.not_provided')}
                       </p>
                     </div>
                   </div>
@@ -441,7 +443,7 @@ export default function UserDetailPage() {
                   <div className="flex items-start gap-3">
                     <Mail className="text-dark-text-tertiary mt-1" size={20} />
                     <div>
-                      <p className="text-sm text-dark-text-tertiary">Email</p>
+                      <p className="text-sm text-dark-text-tertiary">{t('admin.email')}</p>
                       <p className="font-medium">{user.email}</p>
                     </div>
                   </div>
@@ -450,7 +452,7 @@ export default function UserDetailPage() {
                     <div className="flex items-start gap-3">
                       <Phone className="text-dark-text-tertiary mt-1" size={20} />
                       <div>
-                        <p className="text-sm text-dark-text-tertiary">Téléphone</p>
+                        <p className="text-sm text-dark-text-tertiary">{t('admin.phone')}</p>
                         <p className="font-medium">{user.profile.phone}</p>
                       </div>
                     </div>
@@ -458,7 +460,7 @@ export default function UserDetailPage() {
 
                   {user.profile?.bio && (
                     <div className="p-3 bg-dark-bg-tertiary rounded-xl border border-white/10">
-                      <p className="text-sm text-dark-text-tertiary mb-1">Bio</p>
+                      <p className="text-sm text-dark-text-tertiary mb-1">{t('admin.bio')}</p>
                       <p className="text-sm">{user.profile.bio}</p>
                     </div>
                   )}
@@ -471,15 +473,15 @@ export default function UserDetailPage() {
               <Card>
                 <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                   <Store className="text-holo-purple" size={24} />
-                  Profil Vendeur
+                  {t('admin.vendor_profile')}
                 </h3>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Nom commercial</p>
+                    <p className="text-sm text-dark-text-tertiary">{t('admin.business_name')}</p>
                     <p className="font-medium">{user.vendor_profile.business_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Statut</p>
+                    <p className="text-sm text-dark-text-tertiary">{t('admin.status')}</p>
                     <Badge
                       variant={
                         user.vendor_profile.status === 'APPROVED'
@@ -496,7 +498,7 @@ export default function UserDetailPage() {
                     to={`/admin/vendors/${user.id}`}
                     className="inline-block mt-4 text-holo-purple hover:underline"
                   >
-                    Voir le profil vendeur complet →
+                    {t('admin.view_vendor_profile')} →
                   </Link>
                 </div>
               </Card>
@@ -506,11 +508,11 @@ export default function UserDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <Activity className="text-holo-cyan" size={24} />
-                Timeline d'Activité
+                {t('admin.activity_timeline')}
               </h3>
               {user.activity_logs.length === 0 ? (
                 <p className="text-dark-text-secondary text-center py-6">
-                  Aucune activité enregistrée
+                  {t('admin.no_activity')}
                 </p>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -524,7 +526,7 @@ export default function UserDetailPage() {
                           <p className="font-medium text-holo-cyan">{log.action}</p>
                           {log.performed_by_name && (
                             <p className="text-sm text-dark-text-tertiary">
-                              Par <strong>{log.performed_by_name}</strong>
+                              {t('admin.by')} <strong>{log.performed_by_name}</strong>
                             </p>
                           )}
                         </div>
@@ -551,49 +553,49 @@ export default function UserDetailPage() {
           <div className="space-y-6">
             {/* Statut Compte */}
             <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Statut du Compte</h3>
+              <h3 className="font-display font-bold text-lg mb-4">{t('admin.account_status')}</h3>
               <div className="space-y-3">
                 <div>
-                  <p className="text-sm text-dark-text-tertiary mb-2">État</p>
+                  <p className="text-sm text-dark-text-tertiary mb-2">{t('admin.state')}</p>
                   {isBanned ? (
                     <Badge variant="error" className="w-full justify-center py-2">
                       <XCircle size={16} className="mr-2" />
-                      Banni
+                      {t('admin.banned')}
                     </Badge>
                   ) : user.is_active ? (
                     <Badge variant="success" className="w-full justify-center py-2">
                       <CheckCircle size={16} className="mr-2" />
-                      Actif
+                      {t('admin.active_status')}
                     </Badge>
                   ) : (
                     <Badge variant="default" className="w-full justify-center py-2">
                       <XCircle size={16} className="mr-2" />
-                      Inactif
+                      {t('admin.inactive_status')}
                     </Badge>
                   )}
                 </div>
 
                 {isBanned && user.profile && (
                   <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                    <p className="text-sm font-medium text-red-400 mb-1">Raison du ban</p>
+                    <p className="text-sm font-medium text-red-400 mb-1">{t('admin.ban_reason')}</p>
                     <p className="text-sm">{user.profile.ban_reason}</p>
                     <p className="text-xs text-dark-text-tertiary mt-2">
-                      Banni le {formatDateTime(user.profile.banned_at)}
+                      {t('admin.banned_on')} {formatDateTime(user.profile.banned_at)}
                     </p>
                     {user.profile.banned_by && (
                       <p className="text-xs text-dark-text-tertiary">
-                        Par {user.profile.banned_by}
+                        {t('admin.by')} {user.profile.banned_by}
                       </p>
                     )}
                   </div>
                 )}
 
                 <div className="flex gap-2 flex-wrap">
-                  {user.is_superuser && <Badge variant="error">Super Admin</Badge>}
+                  {user.is_superuser && <Badge variant="error">{t('admin.super_admin')}</Badge>}
                   {user.is_staff && !user.is_superuser && (
-                    <Badge variant="warning">Admin</Badge>
+                    <Badge variant="warning">{t('admin.admin')}</Badge>
                   )}
-                  {user.is_vendor && <Badge variant="default">Vendeur</Badge>}
+                  {user.is_vendor && <Badge variant="default">{t('admin.vendor')}</Badge>}
                 </div>
               </div>
             </Card>
@@ -602,15 +604,15 @@ export default function UserDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
                 <Clock className="text-holo-pink" size={20} />
-                Dates
+                {t('admin.dates')}
               </h3>
               <div className="space-y-3 text-sm">
                 <div>
-                  <p className="text-dark-text-tertiary">Inscription</p>
+                  <p className="text-dark-text-tertiary">{t('admin.registration')}</p>
                   <p className="font-medium">{formatDateTime(user.date_joined)}</p>
                 </div>
                 <div>
-                  <p className="text-dark-text-tertiary">Dernière connexion</p>
+                  <p className="text-dark-text-tertiary">{t('admin.last_login')}</p>
                   <p className="font-medium">{formatDateTime(user.last_login)}</p>
                 </div>
               </div>
@@ -618,20 +620,20 @@ export default function UserDetailPage() {
 
             {/* Actions Rapides */}
             <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Actions Rapides</h3>
+              <h3 className="font-display font-bold text-lg mb-4">{t('admin.quick_actions')}</h3>
               <div className="space-y-2">
                 <Link
                   to={`/admin/orders?search=${user.email}`}
                   className="block w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-cyan transition-all text-center"
                 >
-                  Voir les commandes
+                  {t('admin.view_orders')}
                 </Link>
                 {user.is_vendor && (
                   <Link
                     to={`/admin/products?vendor=${user.id}`}
                     className="block w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-purple transition-all text-center"
                   >
-                    Voir les produits
+                    {t('admin.view_products')}
                   </Link>
                 )}
               </div>

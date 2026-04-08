@@ -5,11 +5,11 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft, Package, MapPin, Phone, Mail, FileText,
+  ArrowLeft, Package, MapPin, Phone, FileText,
   RefreshCw, CheckCircle, Clock, Truck, PackageCheck,
   XCircle, AlertTriangle, User, DollarSign, StickyNote,
 } from 'lucide-react';
-import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
+import { vendorsApi, type VendorOrder, type FulfillmentStatus } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 import { openInvoice, fmtXAF, fmtDate, orderRef } from './orderUtils';
 
@@ -41,7 +41,7 @@ const T = {
 // ─────────────────────────────────────────────
 // CONFIG
 // ─────────────────────────────────────────────
-type FulfillStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+// FulfillmentStatus importé depuis vendors.ts
 
 const STEPS = [
   { key: 'RECEIVED',   label: 'Reçue',         icon: CheckCircle },
@@ -52,15 +52,22 @@ const STEPS = [
 ];
 
 const STATUS_ORDER: Record<string, number> = {
-  RECEIVED: 0, PENDING: 1, PROCESSING: 2, SHIPPED: 3, DELIVERED: 4, CANCELLED: -1,
+  PAID_IN_ESCROW: 0, VENDOR_ACKNOWLEDGED: 1, PREPARING: 2, READY_FOR_PICKUP: 3, DELIVERED: 4, CANCELLED: -1,
 };
 
 const FULFILL_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:    { label: 'Confirmée',    color: T.amber,  bg: T.amberL  },
-  PROCESSING: { label: 'Préparation',  color: T.blue,   bg: T.blueL   },
-  SHIPPED:    { label: 'Prête',        color: T.violet, bg: T.violetL },
-  DELIVERED:  { label: 'Livrée',       color: T.green,  bg: T.greenL  },
-  CANCELLED:  { label: 'Annulée',      color: T.red,    bg: T.redL    },
+  CREATED:             { label: 'Reçue',           color: T.muted,  bg: T.creamAlt },
+  PAID_IN_ESCROW:      { label: 'À confirmer',      color: T.amber,  bg: T.amberL   },
+  VENDOR_ACKNOWLEDGED: { label: 'Confirmée',        color: T.blue,   bg: T.blueL    },
+  PREPARING:           { label: 'En préparation',   color: T.blue,   bg: T.blueL    },
+  READY_FOR_PICKUP:    { label: 'Prête',            color: T.violet, bg: T.violetL  },
+  DELIVERED:           { label: 'Livrée',           color: T.green,  bg: T.greenL   },
+  BUYER_CONFIRMED:     { label: 'Confirmée',        color: T.green,  bg: T.greenL   },
+  AUTO_CONFIRMED:      { label: 'Confirmée auto',   color: T.green,  bg: T.greenL   },
+  RELEASED_TO_VENDOR:  { label: 'Fonds libérés',    color: T.green,  bg: T.greenL   },
+  DISPUTED:            { label: 'Litige',           color: T.red,    bg: T.redL     },
+  CANCELLED:           { label: 'Annulée',          color: T.red,    bg: T.redL     },
+  REFUNDED:            { label: 'Remboursée',       color: T.blue,   bg: T.blueL    },
 };
 
 const PAYMENT_CFG: Record<string, { label: string; color: string; bg: string }> = {
@@ -147,7 +154,7 @@ export default function SellerOrderDetailPage() {
 
   useEffect(() => { loadOrder(); }, [loadOrder]);
 
-  const handleAdvance = async (next: FulfillStatus) => {
+  const handleAdvance = async (next: FulfillmentStatus) => {
     if (!order) return;
     try {
       setUpdating(true);
@@ -184,14 +191,14 @@ export default function SellerOrderDetailPage() {
   const fulfillCfg  = FULFILL_CFG[order.fulfillment_status];
   const paymentCfg  = PAYMENT_CFG[order.payment_status];
   const currentOrd  = STATUS_ORDER[order.fulfillment_status] ?? 1;
-  const status      = order.fulfillment_status as FulfillStatus;
+  const status      = order.fulfillment_status as FulfillmentStatus;
   const isCancelled = status === 'CANCELLED';
   const isDelivered = status === 'DELIVERED';
   const spinner     = <RefreshCw size={13} className="animate-spin" />;
 
   // Calcul timer (72h)
   const diffMs = new Date(order.created_at).getTime() + 72 * 3600000 - Date.now();
-  const timer  = status === 'PENDING' && diffMs > 0
+  const timer  = status === 'PAID_IN_ESCROW' && diffMs > 0
     ? `${Math.floor(diffMs / 3600000)}h ${Math.floor((diffMs % 3600000) / 60000)}min restantes`
     : null;
 
@@ -298,16 +305,16 @@ export default function SellerOrderDetailPage() {
         {/* Boutons d'action */}
         {!isCancelled && !isDelivered && (
           <div className="flex gap-2 mt-5 pt-4 flex-wrap" style={{ borderTop: `1px solid ${T.border}` }}>
-            {status === 'PENDING' && (
+            {status === 'PAID_IN_ESCROW' && (
               <>
-                <button onClick={() => handleAdvance('PROCESSING')}
+                <button onClick={() => handleAdvance('PREPARING')}
                   disabled={updating || !order.is_paid}
                   title={!order.is_paid ? 'En attente du paiement' : undefined}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px disabled:opacity-60"
                   style={{ background: T.green, boxShadow: '0 2px 8px rgba(22,163,74,0.3)' }}>
                   {updating ? spinner : <CheckCircle size={14} />}Accepter la commande
                 </button>
-                <button onClick={() => handleAdvance('PROCESSING')}
+                <button onClick={() => handleAdvance('PREPARING')}
                   disabled={updating || !order.is_paid}
                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-semibold transition-all"
                   style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}>
@@ -321,15 +328,15 @@ export default function SellerOrderDetailPage() {
                 </button>
               </>
             )}
-            {status === 'PROCESSING' && (
-              <button onClick={() => handleAdvance('SHIPPED')}
+            {status === 'PREPARING' && (
+              <button onClick={() => handleAdvance('READY_FOR_PICKUP')}
                 disabled={updating}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px"
                 style={{ background: T.orange, boxShadow: `0 2px 8px rgba(244,121,32,0.3)` }}>
                 {updating ? spinner : <Truck size={14} />}Marquer comme prêt à expédier
               </button>
             )}
-            {status === 'SHIPPED' && (
+            {status === 'READY_FOR_PICKUP' && (
               <button onClick={() => handleAdvance('DELIVERED')}
                 disabled={updating}
                 className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px"
@@ -361,9 +368,7 @@ export default function SellerOrderDetailPage() {
           {order.customer_phone && (
             <DetailRow icon={<Phone size={13} />}   label="Téléphone" value={order.customer_phone} />
           )}
-          {order.customer_email && (
-            <DetailRow icon={<Mail size={13} />}    label="Email"     value={order.customer_email} />
-          )}
+
           <DetailRow icon={<MapPin size={13} />}  label="Ville"     value={order.city} />
           {order.address && (
             <DetailRow icon={<MapPin size={13} />} label="Adresse"   value={order.address} />
@@ -404,7 +409,7 @@ export default function SellerOrderDetailPage() {
               style={{ background: T.text }}>
               <span className="text-[13px] font-bold text-white">Votre revenu</span>
               <span className="text-[17px] font-black" style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>
-                {fmtXAF(order.vendor_total ?? 0)}
+                {fmtXAF(order.vendor_net_amount ?? 0)}
               </span>
             </div>
 
@@ -459,7 +464,7 @@ export default function SellerOrderDetailPage() {
                   </span>
                   <span className="text-[12px]" style={{ color: T.muted }}>
                     Prix unit. : <strong style={{ color: T.text }}>
-                      {fmtXAF(item.product_price ?? item.price_xaf_snapshot ?? 0)}
+                      {fmtXAF(item.product_price ?? item.product_price ?? 0)}
                     </strong>
                   </span>
                 </div>

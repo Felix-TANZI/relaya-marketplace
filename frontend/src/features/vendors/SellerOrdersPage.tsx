@@ -12,6 +12,7 @@ import {
   vendorsApi,
   type VendorOrder,
   type VendorOrderFilters,
+  type FulfillmentStatus,
 } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 import { exportOrdersCSV, openInvoice, fmtXAF, fmtDate, orderRef } from './orderUtils';
@@ -45,26 +46,36 @@ const T = {
 // ─────────────────────────────────────────────
 // CONFIG STATUTS
 // ─────────────────────────────────────────────
-type FulfillStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+// FulfillmentStatus importé depuis vendors.ts
 
 const STEPS: { key: string; label: string }[] = [
-  { key: 'RECEIVED',   label: 'Reçue' },
-  { key: 'PENDING',    label: 'Confirmée' },
-  { key: 'PROCESSING', label: 'Préparation' },
-  { key: 'SHIPPED',    label: 'Prête' },
-  { key: 'DELIVERED',  label: 'Livrée' },
+  { key: 'PAID_IN_ESCROW',      label: 'Payée' },
+  { key: 'VENDOR_ACKNOWLEDGED', label: 'Confirmée' },
+  { key: 'PREPARING',           label: 'Préparation' },
+  { key: 'READY_FOR_PICKUP',    label: 'Prête' },
+  { key: 'DELIVERED',           label: 'Livrée' },
 ];
 
 const STATUS_ORDER: Record<string, number> = {
-  RECEIVED: 0, PENDING: 1, PROCESSING: 2, SHIPPED: 3, DELIVERED: 4, CANCELLED: -1,
+  CREATED: 0, PAID_IN_ESCROW: 1, VENDOR_ACKNOWLEDGED: 2, PREPARING: 3, READY_FOR_PICKUP: 4, DELIVERED: 5, CANCELLED: -1, DISPUTED: -1, REFUNDED: -1,
 };
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:    { label: 'Confirmée',    color: T.amber,  bg: T.amberL  },
-  PROCESSING: { label: 'Préparation',  color: T.blue,   bg: T.blueL   },
-  SHIPPED:    { label: 'Prête',        color: T.violet, bg: T.violetL },
-  DELIVERED:  { label: 'Livrée',       color: T.green,  bg: T.greenL  },
-  CANCELLED:  { label: 'Annulée',      color: T.red,    bg: T.redL    },
+  CREATED:             { label: 'Reçue',           color: T.muted,  bg: T.creamAlt },
+  PAID_IN_ESCROW:      { label: 'À confirmer',      color: T.amber,  bg: T.amberL   },
+  VENDOR_ACKNOWLEDGED: { label: 'Confirmée',        color: T.blue,   bg: T.blueL    },
+  PREPARING:           { label: 'En préparation',   color: T.blue,   bg: T.blueL    },
+  READY_FOR_PICKUP:    { label: 'Prête',            color: T.violet, bg: T.violetL  },
+  DRIVER_ASSIGNED:     { label: 'Livreur assigné',  color: T.blue,   bg: T.blueL    },
+  PICKED_UP:           { label: 'Pris en charge',   color: T.blue,   bg: T.blueL    },
+  OUT_FOR_DELIVERY:    { label: 'En livraison',     color: T.blue,   bg: T.blueL    },
+  DELIVERED:           { label: 'Livrée',           color: T.green,  bg: T.greenL   },
+  BUYER_CONFIRMED:     { label: 'Reçue · Confirmée',color: T.green,  bg: T.greenL   },
+  AUTO_CONFIRMED:      { label: 'Confirmée auto',   color: T.green,  bg: T.greenL   },
+  RELEASED_TO_VENDOR:  { label: 'Fonds libérés',    color: T.green,  bg: T.greenL   },
+  DISPUTED:            { label: 'Litige',           color: T.red,    bg: T.redL     },
+  CANCELLED:           { label: 'Annulée',          color: T.red,    bg: T.redL     },
+  REFUNDED:            { label: 'Remboursée',       color: T.blue,   bg: T.blueL    },
 };
 
 // ─────────────────────────────────────────────
@@ -148,13 +159,13 @@ function OrderStepper({ status }: { status: string }) {
 
 interface ActionProps {
   order:     VendorOrder;
-  onAdvance: (order: VendorOrder, next: FulfillStatus) => Promise<void>;
+  onAdvance: (order: VendorOrder, next: FulfillmentStatus) => Promise<void>;
   onInvoice: (order: VendorOrder) => void;
   isUpdating:boolean;
 }
 
 function OrderActions({ order, onAdvance, onInvoice, isUpdating }: ActionProps) {
-  const status  = order.fulfillment_status as FulfillStatus;
+  const status  = order.fulfillment_status as FulfillmentStatus;
   const spinner = <RefreshCw size={13} className="animate-spin" />;
 
   const btnDetails = (
@@ -173,7 +184,9 @@ function OrderActions({ order, onAdvance, onInvoice, isUpdating }: ActionProps) 
     </button>
   );
 
-  if (status === 'DELIVERED' || status === 'CANCELLED') {
+  // Statuts terminaux : aucune action possible
+  const isTerminal = ['DELIVERED','BUYER_CONFIRMED','AUTO_CONFIRMED','RELEASED_TO_VENDOR','CANCELLED','REFUNDED','DISPUTED'].includes(status);
+  if (isTerminal) {
     return (
       <div className="flex gap-2 mt-4 pt-4 flex-wrap" style={{ borderTop: `1px solid ${T.border}` }}>
         {btnDetails}
@@ -182,22 +195,29 @@ function OrderActions({ order, onAdvance, onInvoice, isUpdating }: ActionProps) 
     );
   }
 
+  // READY_FOR_PICKUP : livreur prend la main, vendeur attend
+  if (status === 'READY_FOR_PICKUP' || status === 'DRIVER_ASSIGNED' || status === 'PICKED_UP' || status === 'OUT_FOR_DELIVERY') {
+    return (
+      <div className="flex gap-2 mt-4 pt-4 flex-wrap" style={{ borderTop: `1px solid ${T.border}` }}>
+        <span className="text-[11.5px] font-medium self-center" style={{ color: T.muted }}>
+          En attente du livreur
+        </span>
+        <div className="ml-auto flex gap-2">{btnDetails}{btnInvoice}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex gap-2 mt-4 pt-4 flex-wrap" style={{ borderTop: `1px solid ${T.border}` }}>
-      {status === 'PENDING' && (
+      {/* PAID_IN_ESCROW : Accepter ou Refuser */}
+      {status === 'PAID_IN_ESCROW' && (
         <>
-          <button onClick={() => onAdvance(order, 'PROCESSING')}
+          <button onClick={() => onAdvance(order, 'VENDOR_ACKNOWLEDGED')}
             disabled={isUpdating || !order.is_paid}
             title={!order.is_paid ? 'Paiement non confirmé' : undefined}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px disabled:opacity-60"
             style={{ background: T.green, boxShadow: '0 2px 8px rgba(22,163,74,0.3)' }}>
             {isUpdating ? spinner : <CheckCircle size={13} />}Accepter
-          </button>
-          <button onClick={() => onAdvance(order, 'PROCESSING')}
-            disabled={isUpdating || !order.is_paid}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold transition-all"
-            style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}>
-            {isUpdating ? spinner : <Package size={13} />}Préparer
           </button>
           <button onClick={() => onAdvance(order, 'CANCELLED')}
             disabled={isUpdating}
@@ -207,20 +227,22 @@ function OrderActions({ order, onAdvance, onInvoice, isUpdating }: ActionProps) 
           </button>
         </>
       )}
-      {status === 'PROCESSING' && (
-        <button onClick={() => onAdvance(order, 'SHIPPED')}
+      {/* VENDOR_ACKNOWLEDGED : Démarrer la préparation */}
+      {status === 'VENDOR_ACKNOWLEDGED' && (
+        <button onClick={() => onAdvance(order, 'PREPARING')}
+          disabled={isUpdating}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px"
+          style={{ background: T.blue, boxShadow: `0 2px 8px rgba(37,99,235,0.3)` }}>
+          {isUpdating ? spinner : <Package size={13} />}Commencer la préparation
+        </button>
+      )}
+      {/* PREPARING : Déclarer prêt pour le livreur */}
+      {status === 'PREPARING' && (
+        <button onClick={() => onAdvance(order, 'READY_FOR_PICKUP')}
           disabled={isUpdating}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px"
           style={{ background: T.orange, boxShadow: `0 2px 8px rgba(244,121,32,0.3)` }}>
           {isUpdating ? spinner : <Truck size={13} />}Prêt à expédier
-        </button>
-      )}
-      {status === 'SHIPPED' && (
-        <button onClick={() => onAdvance(order, 'DELIVERED')}
-          disabled={isUpdating}
-          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-bold text-white transition-all hover:-translate-y-px"
-          style={{ background: T.orange, boxShadow: `0 2px 8px rgba(244,121,32,0.3)` }}>
-          {isUpdating ? spinner : <PackageCheck size={13} />}Expédier
         </button>
       )}
       <div className="flex gap-2 ml-auto">
@@ -269,8 +291,8 @@ function OrderCard({ order, onAdvance, onInvoice, isUpdating }: {
   onInvoice: (o: VendorOrder) => void;
   isUpdating: boolean;
 }) {
-  const status = order.fulfillment_status as FulfillStatus;
-  const timer  = useOrderTimer(order.created_at, status === 'PENDING');
+  const status = order.fulfillment_status as FulfillmentStatus;
+  const timer  = useOrderTimer(order.created_at, status === 'PAID_IN_ESCROW');
 
   return (
     <div className="rounded-2xl overflow-hidden"
@@ -349,7 +371,7 @@ function OrderCard({ order, onAdvance, onInvoice, isUpdating }: {
         </p>
         <p className="font-black text-[15px]"
           style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>
-          {fmtXAF(order.vendor_total ?? order.total_xaf ?? 0)}
+          {fmtXAF(order.vendor_net_amount ?? 0)}
         </p>
       </div>
     </div>
@@ -360,15 +382,16 @@ function OrderCard({ order, onAdvance, onInvoice, isUpdating }: {
 // COMPOSANT PRINCIPAL
 // ─────────────────────────────────────────────
 
-type TabFilter = 'all' | 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+type TabFilter = 'all' | 'PAID_IN_ESCROW' | 'PREPARING' | 'READY_FOR_PICKUP' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED';
 
 const TABS: { key: TabFilter; label: string }[] = [
-  { key: 'all',        label: 'Toutes'      },
-  { key: 'PENDING',    label: 'En attente'  },
-  { key: 'PROCESSING', label: 'Préparation' },
-  { key: 'SHIPPED',    label: 'Expédiées'   },
-  { key: 'DELIVERED',  label: 'Livrées'     },
-  { key: 'CANCELLED',  label: 'Annulées'    },
+  { key: 'all',             label: 'Toutes'         },
+  { key: 'PAID_IN_ESCROW',  label: 'À confirmer'    },
+  { key: 'PREPARING',       label: 'En préparation' },
+  { key: 'READY_FOR_PICKUP',label: 'Prêtes'         },
+  { key: 'DELIVERED',       label: 'Livrées'        },
+  { key: 'CANCELLED',       label: 'Annulées'       },
+  { key: 'DISPUTED',        label: 'Litiges'        },
 ];
 
 export default function SellerOrdersPage() {
@@ -395,7 +418,7 @@ export default function SellerOrdersPage() {
 
   useEffect(() => { loadOrders(); }, [loadOrders]);
 
-  const handleAdvance = async (order: VendorOrder, next: FulfillStatus) => {
+  const handleAdvance = async (order: VendorOrder, next: FulfillmentStatus) => {
     try {
       setUpdatingId(order.id);
       const updated = await vendorsApi.updateFulfillmentStatus(order.id, { fulfillment_status: next });
@@ -432,18 +455,18 @@ export default function SellerOrdersPage() {
   });
 
   const stats = {
-    pending:    orders.filter(o => o.fulfillment_status === 'PENDING').length,
-    processing: orders.filter(o => o.fulfillment_status === 'PROCESSING').length,
-    shipped:    orders.filter(o => o.fulfillment_status === 'SHIPPED').length,
+    pending:    orders.filter(o => o.fulfillment_status === 'PAID_IN_ESCROW').length,
+    processing: orders.filter(o => o.fulfillment_status === 'PREPARING').length,
+    shipped:    orders.filter(o => o.fulfillment_status === 'READY_FOR_PICKUP').length,
     delivered:  orders.filter(o => o.fulfillment_status === 'DELIVERED').length,
     cancelled:  orders.filter(o => o.fulfillment_status === 'CANCELLED').length,
     caDelivered:orders.filter(o => o.fulfillment_status === 'DELIVERED')
-      .reduce((acc, o) => acc + (o.vendor_total ?? 0), 0),
+      .reduce((acc, o) => acc + (o.vendor_net_amount ?? 0), 0),
   };
 
   const tabCounts: Record<string, number> = {
-    all: orders.length, PENDING: stats.pending, PROCESSING: stats.processing,
-    SHIPPED: stats.shipped, DELIVERED: stats.delivered, CANCELLED: stats.cancelled,
+    all: orders.length, PAID_IN_ESCROW: stats.pending, PREPARING: stats.processing,
+    READY_FOR_PICKUP: stats.shipped, DELIVERED: stats.delivered, CANCELLED: stats.cancelled,
   };
 
   return (
@@ -615,7 +638,7 @@ export default function SellerOrdersPage() {
               {search && ` · Recherche : "${search}"`}
             </p>
             <p className="text-[12px] font-bold" style={{ color: T.orange }}>
-              Total : {fmtXAF(filtered.reduce((a, o) => a + (o.vendor_total ?? 0), 0))}
+              Total : {fmtXAF(filtered.reduce((a, o) => a + (o.vendor_net_amount ?? 0), 0))}
             </p>
           </div>
         </div>

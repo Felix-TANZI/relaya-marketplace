@@ -70,7 +70,7 @@ export function exportOrdersCSV(orders: VendorOrder[], shopName: string): void {
       articles,
       Math.round(o.subtotal_xaf ?? 0),
       Math.round(o.delivery_fee_xaf ?? 0),
-      Math.round(o.vendor_total ?? 0),
+      Math.round(o.vendor_net_amount ?? 0),
     ];
   });
 
@@ -108,7 +108,7 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
     const items    = o.items ?? [];
     const subtotal = o.subtotal_xaf     ?? 0;
     const delivery = o.delivery_fee_xaf ?? 0;
-    const total    = o.vendor_total     ?? subtotal;
+    const total    = o.vendor_net_amount     ?? subtotal;
     const isPaid   = o.payment_status === 'PAID';
     const isDone   = o.fulfillment_status === 'DELIVERED';
 
@@ -116,7 +116,7 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
       <tr>
         <td class="td-product">${i.product_title ?? '—'}</td>
         <td class="td-center">${i.qty}</td>
-        <td class="td-right">${Math.round(i.product_price ?? i.price_xaf_snapshot ?? 0).toLocaleString('fr-FR')} FCFA</td>
+        <td class="td-right">${Math.round(i.product_price ?? i.product_price ?? 0).toLocaleString('fr-FR')} FCFA</td>
         <td class="td-right td-bold">${Math.round(i.line_total_xaf ?? 0).toLocaleString('fr-FR')} FCFA</td>
       </tr>`).join('');
 
@@ -165,7 +165,6 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
           <div class="party-label">CLIENT</div>
           <div class="party-name">${o.customer_name}</div>
           ${o.customer_phone ? `<div class="party-detail">${o.customer_phone}</div>` : ''}
-          ${o.customer_email ? `<div class="party-detail">${o.customer_email}</div>` : ''}
           <div class="party-detail">${o.city}${o.address ? `, ${o.address}` : ''}</div>
         </div>
       </div>

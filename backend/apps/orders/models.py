@@ -38,6 +38,10 @@ class Order(TimeStampedModel):
         DELIVERED = "DELIVERED", "Livré"
         CANCELLED = "CANCELLED", "Annulé"
 
+    class DeliveryMethod(models.TextChoices):
+        DELIVERY = "DELIVERY", "Livraison"
+        PICKUP = "PICKUP", "Retrait en boutique"
+
     # Relation utilisateur
     user = models.ForeignKey(
         User, 
@@ -52,6 +56,12 @@ class Order(TimeStampedModel):
     customer_phone = models.CharField(max_length=20)
 
     # Informations de livraison
+    delivery_method = models.CharField(
+        max_length=20,
+        choices=DeliveryMethod.choices,
+        default=DeliveryMethod.DELIVERY,
+        verbose_name="Mode de reception"
+    )
     city = models.CharField(max_length=20)  # YAOUNDE / DOUALA
     address = models.CharField(max_length=255)
     note = models.TextField(blank=True, null=True)

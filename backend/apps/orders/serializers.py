@@ -29,6 +29,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     - fulfillment_status : état de la livraison
     """
     items = OrderItemSerializer(many=True, read_only=True)
+    delivery_mode = serializers.CharField(source='delivery_method', read_only=True)
     
     # Champs en lecture seule calculés
     is_paid = serializers.ReadOnlyField()
@@ -44,6 +45,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'city',
             'address',
             'note',
+            'delivery_mode',
             'payment_status',
             'fulfillment_status',
             'subtotal_xaf',
@@ -67,10 +69,15 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
 
-
 class OrderCreateSerializer(serializers.Serializer):
     """Serializer pour créer une nouvelle commande"""
     
+    delivery_mode = serializers.ChoiceField(
+        choices=['DELIVERY', 'PICKUP'],
+        required=False,
+        default='DELIVERY',
+        help_text="Mode de reception: livraison ou retrait en boutique"
+    )
     cart_items = serializers.ListField(
         child=serializers.DictField(),
         min_length=1,
@@ -82,6 +89,8 @@ class OrderCreateSerializer(serializers.Serializer):
     )
     address = serializers.CharField(
         max_length=255,
+        required=False,
+        allow_blank=True,
         help_text="Adresse complète de livraison"
     )
     customer_phone = serializers.CharField(
@@ -146,19 +155,35 @@ class OrderCreateSerializer(serializers.Serializer):
                 'line_total_xaf': line_total
             })
         
+        delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
+
         # Calculer les frais de livraison
         settings = PlatformSettings.get_settings()
         delivery_fees = settings.delivery_fees or {}
-        delivery_fee = delivery_fees.get(validated_data['city'], 2000)
+        delivery_fee = 0 if delivery_mode == 'PICKUP' else delivery_fees.get(validated_data['city'], 2000)
+
+        address = validated_data.get('address', '').strip()
+        if delivery_mode == 'DELIVERY' and not address:
+            raise serializers.ValidationError({
+                'address': "L'adresse est obligatoire pour une livraison."
+            })
+
+        if delivery_mode == 'PICKUP':
+            address = f"Retrait en boutique - {validated_data['city']}"
+
+        note = validated_data.get('note', '').strip()
+        if delivery_mode == 'PICKUP':
+            note = f"[PICKUP] {note}".strip()
         
         # Créer la commande avec l'ancien format de status
         order = Order.objects.create(
             user=user,
             customer_email=validated_data.get('customer_email', ''),
             customer_phone=validated_data['customer_phone'],
+            delivery_method=delivery_mode,
             city=validated_data['city'],
-            address=validated_data['address'],
-            note=validated_data.get('note', ''),
+            address=address,
+            note=note,
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,

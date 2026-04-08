@@ -9,8 +9,10 @@ import {
   CreditCard,
   MapPin,
   MessageCircleMore,
+  Package,
   Phone,
   ShieldCheck,
+  Store,
   Truck,
   UserCircle2,
   XCircle,
@@ -213,8 +215,8 @@ export default function OrderDetailPage() {
                 {payment.label}
               </span>
               <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-primary dark:bg-primary/10">
-                <Truck size={16} />
-                {fulfillment.label}
+                {order.delivery_mode === "PICKUP" ? <Package size={16} /> : <Truck size={16} />}
+                {order.delivery_mode === "PICKUP" ? "Retrait en boutique" : fulfillment.label}
               </span>
             </div>
           </div>
@@ -232,7 +234,9 @@ export default function OrderDetailPage() {
                     {t('order.detail.tracking_title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {t('order.detail.in_delivery', { id: order.id })}
+                    {order.delivery_mode === "PICKUP"
+                      ? `Votre commande #${order.id} est en préparation pour retrait`
+                      : t('order.detail.in_delivery', { id: order.id })}
                   </p>
                 </div>
               </div>
@@ -241,15 +245,27 @@ export default function OrderDetailPage() {
                 <div className="flex h-full flex-col justify-between">
                   <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
                     <span>{t('order.detail.city_label')}: {order.city}</span>
-                    <span>{t('order.detail.area_label')}</span>
+                    <span>{order.delivery_mode === "PICKUP" ? "Point de retrait" : t('order.detail.area_label')}</span>
                   </div>
                   <div className="flex items-center justify-center gap-6 text-5xl">
-                    <span>📍</span>
-                    <span>🛵</span>
-                    <span>🏠</span>
+                    {order.delivery_mode === "PICKUP" ? (
+                      <>
+                        <span>🛒</span>
+                        <span>🏪</span>
+                        <span>📦</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>📍</span>
+                        <span>🛵</span>
+                        <span>🏠</span>
+                      </>
+                    )}
                   </div>
                   <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
-                    {t('order.detail.delivery_address')} : {order.address}
+                    {order.delivery_mode === "PICKUP"
+                      ? `Retrait en boutique : ${order.city}`
+                      : `${t('order.detail.delivery_address')} : ${order.address}`}
                   </div>
                 </div>
               </div>
@@ -349,9 +365,9 @@ export default function OrderDetailPage() {
                   </span>
                 </div>
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>{t('order.detail.delivery_fee')}</span>
+                  <span>{order.delivery_mode === "PICKUP" ? "Retrait boutique" : t('order.detail.delivery_fee')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {order.delivery_fee_xaf.toLocaleString()} FCFA
+                    {order.delivery_fee_xaf === 0 ? "Gratuit" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
@@ -367,10 +383,18 @@ export default function OrderDetailPage() {
               </h2>
               <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
                 <div className="flex items-start gap-3">
-                  <MapPin size={18} className="mt-0.5 text-primary" />
+                  {order.delivery_mode === "PICKUP" ? (
+                    <Store size={18} className="mt-0.5 text-primary" />
+                  ) : (
+                    <MapPin size={18} className="mt-0.5 text-primary" />
+                  )}
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">{order.city}</p>
-                    <p>{order.address}</p>
+                    <p>
+                      {order.delivery_mode === "PICKUP"
+                        ? "Retrait en boutique partenaire"
+                        : order.address}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">

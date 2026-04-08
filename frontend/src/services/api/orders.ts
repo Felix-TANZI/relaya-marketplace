@@ -11,6 +11,7 @@ export interface OrderItem {
 }
 
 export interface OrderCreateData {
+  delivery_method?: 'DELIVERY' | 'PICKUP';
   city: 'YAOUNDE' | 'DOUALA';
   address: string;
   customer_phone: string;

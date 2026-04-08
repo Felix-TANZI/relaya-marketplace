@@ -3,6 +3,7 @@
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
 export type FulfillmentStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+export type DeliveryMethod = 'DELIVERY' | 'PICKUP';
 
 export interface OrderItemDetail {
   id: number;
@@ -18,6 +19,7 @@ export interface Order {
   user: number;
   customer_email: string | null;
   customer_phone: string;
+  delivery_mode?: DeliveryMethod;
   city: string;
   address: string;
   note: string | null;

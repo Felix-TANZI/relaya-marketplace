@@ -7,6 +7,7 @@ import {
   CreditCard,
   MapPin,
   Package,
+  Store,
   Truck,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
@@ -208,8 +209,10 @@ export default function OrdersHistoryPage() {
                         {formatDate(order.created_at)}
                       </span>
                       <span className="inline-flex items-center gap-2">
-                        <MapPin size={14} />
-                        {order.city}
+                        {order.delivery_mode === "PICKUP" ? <Store size={14} /> : <MapPin size={14} />}
+                        {order.delivery_mode === "PICKUP"
+                          ? `Retrait boutique · ${order.city}`
+                          : order.city}
                       </span>
                       <span>{order.items.length} article{order.items.length > 1 ? "s" : ""}</span>
                     </div>

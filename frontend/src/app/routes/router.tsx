@@ -66,38 +66,28 @@ export const router = createBrowserRouter([
         index: true,
         element: <HomePage />,
       },
+      // ── Pages publiques (pas besoin d'être connecté) ──
       {
         path: "catalog",
-        element: (
-          <ProtectedRoute>
-            <CatalogPage />
-          </ProtectedRoute>
-        ),
+        element: <CatalogPage />,
       },
       {
         path: "categories",
-        element: (
-          <ProtectedRoute>
-            <CategoriesPage />
-          </ProtectedRoute>
-        ),
+        element: <CategoriesPage />,
       },
       {
         path: "product/:id",
-        element: (
-          <ProtectedRoute>
-            <ProductDetailPage />
-          </ProtectedRoute>
-        ),
+        element: <ProductDetailPage />,
       },
       {
         path: "cart",
-        element: (
-          <ProtectedRoute>
-            <CartPage />
-          </ProtectedRoute>
-        ),
+        element: <CartPage />,
       },
+      {
+        path: "search",
+        element: <SearchPage />,
+      },
+      // ── Pages protégées (connexion requise) ──
       {
         path: "checkout",
         element: (
@@ -127,14 +117,6 @@ export const router = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <OrderDetailPage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: "search",
-        element: (
-          <ProtectedRoute>
-            <SearchPage />
           </ProtectedRoute>
         ),
       },

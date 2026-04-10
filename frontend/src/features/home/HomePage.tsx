@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -19,6 +20,8 @@ import {
   Users,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+
+const TrackingMap = lazy(() => import("@/components/TrackingMap"));
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product, type ProductListResponse } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";
@@ -284,6 +287,9 @@ export default function HomePage() {
                   {t('home.order_eta')}
                 </p>
               </div>
+              <Suspense fallback={<div className="h-[220px] rounded-2xl bg-gray-100 dark:bg-gray-800 animate-pulse" />}>
+                <TrackingMap />
+              </Suspense>
               <div className="grid gap-3 min-[480px]:grid-cols-3">
                 <div className="rounded-2xl border border-gray-100 p-4 dark:border-gray-800">
                   <p className="text-xs font-medium text-gray-400">10:15</p>

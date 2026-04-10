@@ -55,9 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Clear auth tokens
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    // Clear user-specific data to prevent session leakage
+    localStorage.removeItem('belivay_favorite_product_ids');
+    localStorage.removeItem('belivay_notif_count');
+    localStorage.removeItem('belivay-profile-avatar');
     setUser(null);
+    // Notify other components
+    window.dispatchEvent(new Event('belivay-favorites-updated'));
+    window.dispatchEvent(new Event('belivay-avatar-updated'));
   };
 
   return (

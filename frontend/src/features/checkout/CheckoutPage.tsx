@@ -3,12 +3,14 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
 
 export default function CheckoutPage() {
   const { t, i18n } = useTranslation();
   const { items, total, clearCart } = useCart();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState<"info" | "payment" | "success">("info");
   const [loading, setLoading] = useState(false);
@@ -16,9 +18,9 @@ export default function CheckoutPage() {
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    phone: "",
+    firstName: user?.first_name || "",
+    lastName: user?.last_name || "",
+    phone: user?.phone || "",
     address: "",
     city: "Yaoundé",
     paymentMethod: "momo",

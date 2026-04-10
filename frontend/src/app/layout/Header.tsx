@@ -139,13 +139,13 @@ export default function Header() {
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
   const clientNavItems = [
-    { label: "Accueil", to: "/" },
-    { label: "Promotions", to: "/catalog?promo=1" },
-    { label: "Categories", to: "/categories" },
-    { label: "Vendeurs", to: "/vendors" },
-    { label: "Commandes", to: "/orders" },
-    { label: "Favoris", to: "/wishlist" },
-    { label: "Mon compte", to: "/profile" },
+    { label: t("header_nav.home"), to: "/" },
+    { label: t("header_nav.promotions"), to: "/catalog?promo=1" },
+    { label: t("header_nav.categories"), to: "/categories" },
+    { label: t("header_nav.vendors"), to: "/vendors" },
+    { label: t("header_nav.orders"), to: "/orders" },
+    { label: t("header_nav.favorites"), to: "/wishlist" },
+    { label: t("header_nav.my_account"), to: "/profile" },
   ];
 
   return (
@@ -258,7 +258,7 @@ export default function Header() {
               className="hidden lg:inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-text-light transition-all hover:bg-bg-light dark:text-text-dark dark:hover:bg-bg-dark-alt"
             >
               <GraduationCap size={18} />
-              Guide
+              {t("header_nav.guide")}
             </button>
 
             {/* User Menu */}
@@ -311,7 +311,7 @@ export default function Header() {
                         </div>
                         <div className="min-w-0">
                           <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                            Connecté en tant que
+                            {t("header_nav.connected_as")}
                           </p>
                           <p className="font-semibold text-text-light dark:text-text-dark truncate">
                             {displayName}

@@ -1,16 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, LayoutGrid, Package, MessageCircle, User, ShoppingCart } from "lucide-react";
+import { Home, LayoutGrid, Package, MessageCircle, User } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useCart } from "@/context/CartContext";
 
 const NAV_ITEMS = [
-  { icon: Home, label: "Accueil", to: "/" },
-  { icon: LayoutGrid, label: "Catégories", to: "/categories" },
-  { icon: Package, label: "Commande", to: "/orders" },
-  { icon: MessageCircle, label: "Contacts", to: "/contact" },
-  { icon: User, label: "Profil", to: "/profile" },
+  { icon: Home, labelKey: "mobile_nav.home", to: "/" },
+  { icon: LayoutGrid, labelKey: "mobile_nav.categories", to: "/categories" },
+  { icon: Package, labelKey: "mobile_nav.orders", to: "/orders" },
+  { icon: MessageCircle, labelKey: "mobile_nav.contacts", to: "/contact" },
+  { icon: User, labelKey: "mobile_nav.profile", to: "/profile" },
 ];
 
 export default function MobileBottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const { items } = useCart();
   const totalItems = items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
@@ -37,7 +39,7 @@ export default function MobileBottomNav() {
                   </span>
                 )}
               </div>
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </Link>
           );
         })}

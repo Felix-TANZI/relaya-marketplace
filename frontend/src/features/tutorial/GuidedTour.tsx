@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   ArrowRight,
@@ -28,6 +29,7 @@ function getVisibleTarget(selector: string | null) {
 }
 
 export default function GuidedTour() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -158,7 +160,7 @@ export default function GuidedTour() {
   if (!isOpen || !step) return null;
 
   return (
-    <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label="Visite guidée">
+    <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label={t("tour.aria_label")}>
       {/* Overlay - click to close */}
       <div className="absolute inset-0 bg-black/60" onClick={closeTour} />
 
@@ -193,12 +195,12 @@ export default function GuidedTour() {
             <div>
               <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-primary">
                 <Compass size={13} />
-                Étape {stepIndex + 1} sur {total}
+                {t("tour.step_of", { current: stepIndex + 1, total })}
               </div>
               <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
               {step.routeLabel && <p className="mt-1 text-xs font-medium text-gray-400">{step.routeLabel}</p>}
             </div>
-            <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label="Fermer">
+            <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label={t("common.close")}>
               <X size={18} />
             </button>
           </div>
@@ -223,19 +225,19 @@ export default function GuidedTour() {
           {/* Actions */}
           <div className="mt-5 flex items-center justify-between gap-3">
             <button onClick={closeTour} className="text-sm font-medium text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
-              Ignorer
+              {t("tour.skip")}
             </button>
             <div className="flex items-center gap-2">
               {stepIndex > 0 && (
                 <button onClick={() => setStepIndex(s => Math.max(0, s - 1))} className="inline-flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-                  <ArrowLeft size={16} /> Précédent
+                  <ArrowLeft size={16} /> {t("tour.previous")}
                 </button>
               )}
               <button
                 onClick={() => stepIndex === total - 1 ? closeTour() : setStepIndex(s => s + 1)}
                 className="inline-flex items-center gap-1 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
               >
-                {stepIndex === total - 1 ? (<><Check size={16} /> Terminer</>) : (<>Suivant <ArrowRight size={16} /></>)}
+                {stepIndex === total - 1 ? (<><Check size={16} /> {t("tour.finish")}</>) : (<>{t("tour.next")} <ArrowRight size={16} /></>)}
               </button>
             </div>
           </div>

@@ -92,7 +92,7 @@ export default function HomePage() {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] dark:bg-gray-950">
+    <div className="min-h-screen overflow-x-hidden bg-[#f8f5f1] dark:bg-gray-950">
       <section className="border-b border-orange-100 bg-white dark:border-gray-800 dark:bg-gray-900">
         <div className="container mx-auto flex gap-3 overflow-x-auto px-4 py-3 scrollbar-hide sm:grid sm:grid-cols-3 sm:overflow-visible sm:py-4">
           {trustCards.map((card) => {
@@ -138,49 +138,49 @@ export default function HomePage() {
 
       <section className="container mx-auto px-4 py-8">
         <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-          <div className="overflow-hidden rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 lg:p-8">
-            <div className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-gray-800">
+          <div className="overflow-hidden rounded-2xl bg-gradient-to-br from-primary to-orange-400 p-5 shadow-sm sm:rounded-[2rem] sm:p-6 lg:p-8">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-semibold text-white">
               <Flame size={14} />
               {t('home.promo_badge')}
             </div>
-            <h1 className="mt-4 max-w-3xl text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-6xl">
+            <h1 className="mt-3 max-w-3xl text-xl font-bold tracking-tight text-white sm:text-3xl lg:text-5xl">
               {t('home.hero_title')}
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-300">
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/80 sm:text-base sm:leading-7">
               {t('home.hero_desc')}
             </p>
 
-            <div className="mt-6 flex flex-wrap gap-3">
+            <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 to="/catalog?promo=1"
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
+                className="inline-flex items-center gap-2 rounded-2xl bg-white px-5 py-2.5 text-sm font-semibold text-primary shadow-md transition-all hover:bg-gray-50"
               >
-                <Gift size={18} />
+                <Gift size={16} />
                 {t('home.see_promos')}
               </Link>
               <Link
                 to="/categories"
-                className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                className="inline-flex items-center gap-2 rounded-2xl border border-white/30 bg-white/15 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/25"
               >
-                <Store size={18} />
+                <Store size={16} />
                 {t('home.explore_categories')}
               </Link>
             </div>
 
-            <div className="mt-8 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">
                   {t('home.info_tracking')}
                 </p>
-                <p className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
+                <p className="mt-1 text-sm font-bold text-white">
                   {t('home.info_tracking_value')}
                 </p>
               </div>
-              <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-gray-800">
-                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              <div className="rounded-2xl bg-white/15 p-3 backdrop-blur-sm">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/70">
                   {t('home.info_payment')}
                 </p>
-                <p className="mt-2 text-lg font-bold text-gray-900 dark:text-white">
+                <p className="mt-1 text-sm font-bold text-white">
                   {t('home.info_payment_value')}
                 </p>
               </div>
@@ -197,17 +197,17 @@ export default function HomePage() {
                 {t('home.see_all')}
               </Link>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-2">
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 xl:grid-cols-2 xl:gap-3">
               {categoryTiles.map((category) => (
                 <Link
                   key={category.name}
                   to={category.link}
-                  className="rounded-2xl border border-gray-100 bg-[#fcfbf8] p-4 transition-all hover:border-orange-200 hover:bg-orange-50 dark:border-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
+                  className="flex flex-col items-center gap-2 rounded-2xl border border-gray-100 bg-[#fcfbf8] p-3 text-center transition-all hover:border-orange-200 hover:bg-orange-50 dark:border-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700 sm:p-4"
                 >
-                  <div className={`mb-3 flex h-12 w-12 items-center justify-center rounded-xl ${category.color}`}>
-                    <category.icon size={24} />
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-xl sm:h-12 sm:w-12 ${category.color}`}>
+                    <category.icon size={20} />
                   </div>
-                  <p className="text-sm font-semibold text-gray-800 dark:text-white">
+                  <p className="text-[11px] font-semibold leading-tight text-gray-800 dark:text-white sm:text-sm">
                     {category.name}
                   </p>
                 </Link>

@@ -89,9 +89,19 @@ class Order(TimeStampedModel):
     customer_phone = models.CharField(max_length=20)
 
     # Livraison
+    class DeliveryMethod(models.TextChoices):
+        DELIVERY = "DELIVERY", "Livraison à domicile"
+        PICKUP   = "PICKUP",   "Retrait en boutique"
+
     city    = models.CharField(max_length=50)
     address = models.CharField(max_length=255)
     note    = models.TextField(blank=True, null=True)
+    delivery_method = models.CharField(
+        max_length=20,
+        choices=DeliveryMethod.choices,
+        default=DeliveryMethod.DELIVERY,
+        verbose_name="Mode de réception",
+    )
 
     # Statuts
     payment_status = models.CharField(

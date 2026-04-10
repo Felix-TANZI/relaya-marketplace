@@ -94,13 +94,13 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-[#f8f5f1] dark:bg-gray-950">
       <section className="border-b border-orange-100 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="container mx-auto grid gap-3 px-4 py-4 md:grid-cols-3">
+        <div className="container mx-auto flex gap-3 overflow-x-auto px-4 py-3 scrollbar-hide sm:grid sm:grid-cols-3 sm:overflow-visible sm:py-4">
           {trustCards.map((card) => {
             const Icon = card.icon;
             return (
               <div
                 key={card.title}
-                className="flex items-center gap-3 rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800"
+                className="flex min-w-[200px] flex-shrink-0 items-center gap-3 rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800 sm:min-w-0"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <Icon size={18} />
@@ -143,7 +143,7 @@ export default function HomePage() {
               <Flame size={14} />
               {t('home.promo_badge')}
             </div>
-            <h1 className="mt-4 max-w-3xl text-4xl font-bold tracking-tight text-gray-900 dark:text-white lg:text-6xl">
+            <h1 className="mt-4 max-w-3xl text-2xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl lg:text-6xl">
               {t('home.hero_title')}
             </h1>
             <p className="mt-4 max-w-2xl text-base leading-7 text-gray-600 dark:text-gray-300">

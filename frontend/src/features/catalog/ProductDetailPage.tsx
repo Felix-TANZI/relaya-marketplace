@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
@@ -60,6 +60,7 @@ function formatDate(value: string) {
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { addItem } = useCart();
   const { showToast } = useToast();
   const { user } = useAuth();
@@ -169,7 +170,7 @@ export default function ProductDetailPage() {
 
   const handleBuyNow = () => {
     handleAddToCart();
-    window.location.href = "/checkout";
+    navigate("/cart");
   };
 
   const handleSubmitReview = async (event: React.FormEvent) => {

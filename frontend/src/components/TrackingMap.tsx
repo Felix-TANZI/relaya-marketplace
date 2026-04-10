@@ -69,7 +69,7 @@ export default function TrackingMap({
   const allPoints = [vendorLocation, deliveryPos, customerLocation];
 
   return (
-    <div className={`overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 ${className}`}>
+    <div className={`relative z-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 ${className}`}>
       <MapContainer
         center={deliveryPos}
         zoom={8}

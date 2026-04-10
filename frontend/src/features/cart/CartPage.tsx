@@ -7,6 +7,7 @@ import {
   Plus,
   ShieldCheck,
   ShoppingCart,
+  Store,
   Trash2,
   Truck,
 } from "lucide-react";
@@ -221,12 +222,19 @@ export default function CartPage() {
             <div className="mt-5 space-y-3">
               <Link to="/checkout" className="block">
                 <Button id="checkout" variant="primary" size="lg" className="w-full rounded-2xl">
-                  {t("cart.checkout")}
+                  <Truck size={18} />
+                  Passer commande (avec livraison)
                   <ArrowRight size={18} />
                 </Button>
               </Link>
+              <Link to="/checkout?mode=pickup" className="block">
+                <Button variant="secondary" size="lg" className="w-full rounded-2xl">
+                  <Store size={18} />
+                  Payer sans livraison (retrait en boutique)
+                </Button>
+              </Link>
               <Link to="/catalog" className="block">
-                <Button variant="secondary" size="md" className="w-full rounded-2xl">
+                <Button variant="ghost" size="md" className="w-full rounded-2xl">
                   Continuer mes achats
                 </Button>
               </Link>

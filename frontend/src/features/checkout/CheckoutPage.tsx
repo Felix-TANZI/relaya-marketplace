@@ -192,7 +192,6 @@ export default function CheckoutPage() {
                       Payez maintenant et récupérez votre commande directement chez le vendeur.
                       Vous recevrez un SMS avec l'adresse exacte et les horaires de retrait sur votre numéro <strong>{formData.phone || user?.phone || "enregistré"}</strong>.
                     </p>
-                    <p className="mt-2 text-sm font-semibold text-green-800 dark:text-green-200">Frais de livraison : Gratuit</p>
                   </div>
                 </div>
               </section>

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, type ComponentType } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -21,7 +21,12 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
-const TrackingMap = lazy(() => import("@/components/TrackingMap"));
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TrackingMap = lazy(() =>
+  import("@/components/TrackingMap").catch(() => ({
+    default: () => <div className="flex h-[220px] items-center justify-center rounded-2xl bg-gray-100 text-sm text-gray-400 dark:bg-gray-800">Carte indisponible</div>,
+  })) as any
+);
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product, type ProductListResponse } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";

@@ -39,6 +39,9 @@ urlpatterns = [
     path('orders/<int:order_id>/status/',        views.update_order_status,       name='update-order-status'),
     path('orders/<int:order_id>/fulfillment-status/', views.update_fulfillment_status, name='update-fulfillment-status'),
     path('orders/<int:order_id>/payment-status/',     views.update_payment_status,     name='update-payment-status'),
+    
+    # Note interne vendeur sur une commande
+    path('orders/<int:order_id>/note/', views.vendor_order_note, name='vendor-order-note'),
 
     #  ADMINISTRATION 
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),

@@ -199,6 +199,12 @@ export interface PlatformSettings {
   updated_by_name:             string;
 }
 
+
+export interface VendorOrderNote {
+  order_id:   number;
+  content:    string;        // Vide si aucune note
+  updated_at: string | null; // null si jamais sauvegardée
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -355,6 +361,32 @@ export const vendorsApi = {
   getPlatformSettings: async (): Promise<PlatformSettings> => {
     const token = localStorage.getItem('access_token');
     return http<PlatformSettings>('/api/vendors/admin/settings/', {
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Note interne vendeur ──────────────────────────────────────────────────
+
+  /**
+   * Récupère la note interne du vendeur sur une commande.
+   * Retourne { content: '' } si aucune note n'a encore été écrite.
+   */
+  getNote: async (orderId: number): Promise<VendorOrderNote> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrderNote>(`/api/vendors/orders/${orderId}/note/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Enregistre ou met à jour la note interne sur une commande.
+   * Passer content='' pour effacer la note.
+   */
+  saveNote: async (orderId: number, content: string): Promise<VendorOrderNote> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrderNote>(`/api/vendors/orders/${orderId}/note/`, {
+      method: 'PATCH',
+      body:   JSON.stringify({ content }),
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     });
   },

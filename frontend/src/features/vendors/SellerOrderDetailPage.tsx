@@ -7,7 +7,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft, Package, MapPin, Phone, FileText,
   RefreshCw, CheckCircle, Clock, Truck, PackageCheck,
-  XCircle, AlertTriangle, User, DollarSign, StickyNote,
+  XCircle, AlertTriangle, User, DollarSign, StickyNote, Save,
 } from 'lucide-react';
 import { vendorsApi, type VendorOrder, type FulfillmentStatus } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
@@ -140,12 +140,24 @@ export default function SellerOrderDetailPage() {
   const [loading,    setLoading]    = useState(true);
   const [updating,   setUpdating]   = useState(false);
 
+  // ── Note interne ──
+  const [note,        setNote]        = useState<string>('');
+  const [noteDraft,   setNoteDraft]   = useState<string>('');
+  const [noteSaving,  setNoteSaving]  = useState(false);
+
+
   const loadOrder = useCallback(async () => {
     if (!id) return;
     try {
       setLoading(true);
-      const data = await vendorsApi.getOrderDetail(parseInt(id));
+      const [data, noteData] = await Promise.all([
+        vendorsApi.getOrderDetail(parseInt(id)),
+        vendorsApi.getNote(parseInt(id)),
+      ]);
       setOrder(data);
+      setNote(noteData.content);
+      setNoteDraft(noteData.content);
+
     } catch {
       showToast('Commande introuvable', 'error');
       navigate('/seller/orders');
@@ -168,6 +180,19 @@ export default function SellerOrderDetailPage() {
 
   const handleInvoice = () => {
     if (order) openInvoice([order], shopName);
+  };
+
+  const handleSaveNote = async () => {
+    if (!order) return;
+    try {
+      setNoteSaving(true);
+      const saved = await vendorsApi.saveNote(order.id, noteDraft);
+      setNote(saved.content);
+      setNoteDraft(saved.content);
+      showToast('Note sauvegardée', 'success');
+    } catch {
+      showToast('Erreur lors de la sauvegarde', 'error');
+    } finally { setNoteSaving(false); }
   };
 
   // ── Skeleton ──
@@ -480,6 +505,95 @@ export default function SellerOrderDetailPage() {
           ))}
         </div>
       </InfoCard>
+
+
+      {/* ═══ NOTE INTERNE VENDEUR ═══ */}
+      <div className="rounded-2xl overflow-hidden"
+        style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(28,18,9,0.06)' }}>
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: `1px solid ${T.border}` }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+              style={{ background: 'rgba(124,58,237,0.1)' }}>
+              <StickyNote size={15} style={{ color: '#7C3AED' }} />
+            </div>
+            <div>
+              <span className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                Note interne
+              </span>
+              <span className="ml-2 text-[10px] font-bold rounded-full px-2 py-0.5"
+                style={{ background: 'rgba(124,58,237,0.1)', color: '#7C3AED' }}>
+                Visible uniquement par vous
+              </span>
+            </div>
+          </div>
+          {noteDraft !== note && (
+            <span className="text-[11px] font-medium" style={{ color: T.amber }}>
+              Modifications non sauvegardées
+            </span>
+          )}
+        </div>
+
+        {/* Zone de texte */}
+        <div className="px-5 py-4">
+          <textarea
+            value={noteDraft}
+            onChange={e => setNoteDraft(e.target.value)}
+            placeholder="Ex: Client régulier - préférence emballage cadeau · Livraison après 18h..."
+            maxLength={2000}
+            rows={4}
+            className="w-full resize-none rounded-xl px-4 py-3 text-[13px] leading-relaxed outline-none transition-all"
+            style={{
+              background:  T.cream,
+              border:      `1px solid ${T.border}`,
+              color:       T.text,
+              fontFamily:  'Inter, sans-serif',
+            }}
+            onFocus={e  => { e.currentTarget.style.borderColor = '#7C3AED'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(124,58,237,0.08)'; }}
+            onBlur={e   => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = 'none'; }}
+          />
+
+          {/* Footer : compteur + bouton */}
+          <div className="flex items-center justify-between mt-3">
+            <p className="text-[11px]" style={{ color: T.mutedL }}>
+              {noteDraft.length}/2 000 caractères
+            </p>
+            <div className="flex gap-2">
+              {noteDraft !== note && noteDraft !== '' && (
+                <button
+                  onClick={() => setNoteDraft(note)}
+                  className="px-3 py-1.5 rounded-xl text-[12px] font-semibold transition-all"
+                  style={{ background: T.creamAlt, color: T.muted }}>
+                  Annuler
+                </button>
+              )}
+              <button
+                onClick={handleSaveNote}
+                disabled={noteSaving || noteDraft === note}
+                className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-[12.5px] font-bold text-white transition-all disabled:opacity-50"
+                style={{ background: '#7C3AED', boxShadow: '0 2px 8px rgba(124,58,237,0.3)' }}>
+                {noteSaving
+                  ? <RefreshCw size={12} className="animate-spin" />
+                  : <Save size={12} />}
+                {noteSaving ? 'Sauvegarde...' : 'Sauvegarder'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Info */}
+        <div className="px-5 py-3 flex items-start gap-2"
+          style={{ background: 'rgba(124,58,237,0.04)', borderTop: `1px solid ${T.border}` }}>
+          <StickyNote size={12} style={{ color: '#7C3AED', flexShrink: 0, marginTop: 1 }} />
+          <p className="text-[11px] leading-relaxed" style={{ color: T.muted }}>
+            Cette note est strictement privée. Elle n'est ni visible par l'acheteur, ni par l'équipe BelivaY,
+            ni par d'autres vendeurs. Vous pouvez l'utiliser pour noter des instructions de préparation,
+            des préférences client ou tout autre mémo interne.
+          </p>
+        </div>
+      </div>
 
       {/* ═══ PIED DE PAGE ═══ */}
       <div className="rounded-2xl px-5 py-4 flex flex-wrap items-center justify-between gap-3"

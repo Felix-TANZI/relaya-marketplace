@@ -14,7 +14,7 @@ from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import VendorProfile
+from .models import VendorProfile, VendorOrderNote
 from .serializers import (
     VendorProfileSerializer, 
     VendorApplicationSerializer,
@@ -360,6 +360,68 @@ def vendor_order_detail(request, order_id):
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get or save vendor internal note on an order",
+    description="GET → note existante. PATCH { content } → crée ou met à jour. content='' → efface.",
+    responses={200: {'type': 'object', 'properties': {
+        'order_id':   {'type': 'integer'},
+        'content':    {'type': 'string'},
+        'updated_at': {'type': 'string', 'format': 'date-time'},
+    }}},
+)
+@api_view(['GET', 'PATCH'])
+@permission_classes([IsAuthenticated])
+def vendor_order_note(request, order_id):
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        order = Order.objects.filter(
+            id=order_id,
+            items__product__vendor=request.user,
+        ).distinct().first()
+        if not order:
+            return Response(
+                {'detail': 'Commande introuvable ou ne contient pas vos produits.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        if request.method == 'GET':
+            note = VendorOrderNote.objects.filter(order=order, vendor=request.user).first()
+            return Response({
+                'order_id':   order_id,
+                'content':    note.content    if note else '',
+                'updated_at': note.updated_at if note else None,
+            })
+
+        content = request.data.get('content', '').strip()
+        if len(content) > 2000:
+            return Response(
+                {'detail': 'La note ne peut pas dépasser 2 000 caractères.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        note, _ = VendorOrderNote.objects.get_or_create(
+            order=order, vendor=request.user, defaults={'content': content},
+        )
+        if note.content != content:
+            note.content = content
+            note.save(update_fields=['content', 'updated_at'])
+        return Response({
+            'order_id':   order_id,
+            'content':    note.content,
+            'updated_at': note.updated_at,
+        })
+
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )    
 
 
 @extend_schema(

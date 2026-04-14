@@ -33,6 +33,18 @@ urlpatterns = [
     path('products/<int:product_id>/images/<int:image_id>/set-primary/',
          views.set_primary_image, name='set-primary-image'),
 
+     # Attributs d'une catégorie (pour formulaire produit)
+     path('products/attributes/', views.vendor_product_attributes, name='vendor-product-attributes'),
+
+     # Export CSV liste produits
+     path('products/export/csv/', views.vendor_export_products_csv, name='vendor-export-products-csv'),
+
+     # Import CSV produits
+     path('products/import/csv/', views.vendor_import_products_csv, name='vendor-import-products-csv'),
+     
+     # Fiche produit PDF/HTML
+     path('products/<int:product_id>/pdf/', views.vendor_product_pdf, name='vendor-product-pdf'),    
+
     #  GESTION DES COMMANDES 
     path('orders/',                              views.vendor_orders,             name='vendor-orders'),
     path('orders/<int:order_id>/',               views.vendor_order_detail,       name='vendor-order-detail'),

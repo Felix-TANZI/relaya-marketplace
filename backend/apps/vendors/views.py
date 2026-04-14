@@ -13,6 +13,8 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
 from datetime import timedelta, date
+from rest_framework.decorators import action
+from django.http import HttpResponse
 
 from .models import VendorProfile, VendorOrderNote
 from .serializers import (
@@ -162,6 +164,100 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             raise PermissionError("Vous devez être vendeur pour créer des produits.")
         
         serializer.save(vendor=self.request.user)
+
+    class _ProductActionsMixin:
+        """Actions personnalisées pour les produits du vendeur"""
+ 
+    @action(detail=True, methods=['post'], url_path='duplicate')
+    def duplicate(self, request, pk=None):
+        """
+        Duplique un produit avec toutes ses images et attributs.
+        Nouveau titre : "Copie de {titre original}"
+        Nouveau SKU : auto-généré après création
+        Stock initial : 0 (le vendeur doit le renseigner)
+        """
+        try:
+            original = self.get_object()
+            from apps.catalog.models import Inventory, ProductAttributeValue, ProductImage
+            from django.utils.text import slugify
+ 
+            # Créer le duplicata
+            copy = original.__class__.objects.create(
+                title             = f"Copie de {original.title}",
+                slug              = '',  # auto-généré dans save()
+                description       = original.description,
+                short_description = original.short_description,
+                price_xaf         = original.price_xaf,
+                compare_at_price  = original.compare_at_price,
+                promo_end_date    = None,  # On ne duplique pas la promo
+                discount          = original.discount,
+                stock_threshold   = original.stock_threshold,
+                is_active         = False,  # Inactif jusqu'à validation vendeur
+                category          = original.category,
+                vendor            = request.user,
+                sku               = '',  # auto-généré dans save()
+            )
+ 
+            # Stock initial à 0
+            Inventory.objects.create(product=copy, quantity=0)
+ 
+            # Dupliquer les valeurs d'attributs
+            for attr_val in original.attribute_values.all():
+                ProductAttributeValue.objects.create(
+                    product         = copy,
+                    attribute       = attr_val.attribute,
+                    selected_values = attr_val.selected_values,
+                )
+ 
+            # Note : on ne duplique pas les images (fichiers physiques)
+            # Le vendeur devra en rajouter manuellement
+ 
+            from apps.catalog.serializers import ProductSerializer
+            serializer = ProductSerializer(copy, context={'request': request})
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+ 
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    @action(detail=True, methods=['patch'], url_path='stock')
+    def update_stock(self, request, pk=None):
+        """
+        Met à jour le stock d'un produit directement depuis la liste.
+        Body : { "quantity": 42 }
+        Aussi accepte stock_threshold optionnel : { "quantity": 42, "stock_threshold": 3 }
+        """
+        try:
+            product   = self.get_object()
+            from apps.catalog.models import Inventory
+ 
+            quantity = request.data.get('quantity')
+            if quantity is None:
+                return Response({'detail': 'Le champ "quantity" est requis.'}, status=400)
+            try:
+                quantity = int(quantity)
+                if quantity < 0:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return Response({'detail': '"quantity" doit être un entier positif ou nul.'}, status=400)
+ 
+            inventory, _ = Inventory.objects.get_or_create(product=product)
+            inventory.quantity = quantity
+            inventory.save(update_fields=['quantity', 'updated_at'])
+ 
+            # Seuil alerte optionnel
+            threshold = request.data.get('stock_threshold')
+            if threshold is not None:
+                try:
+                    product.stock_threshold = int(threshold) if threshold != '' else None
+                    product.save(update_fields=['stock_threshold', 'updated_at'])
+                except (ValueError, TypeError):
+                    pass
+ 
+            from apps.catalog.serializers import ProductSerializer
+            return Response(ProductSerializer(product, context={'request': request}).data)
+ 
+        except Exception as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)    
 
 
 @extend_schema(
@@ -877,6 +973,388 @@ def update_payment_status(request, order_id):
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+# Vues standalone
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get product attributes for a category",
+    description=(
+        "Retourne les attributs définis par l'admin pour une catégorie donnée. "
+        "Le vendeur choisit ses valeurs parmi celles définies ici. "
+        "Endpoint : GET /api/vendors/products/attributes/?category={id}"
+    ),
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_product_attributes(request):
+    """
+    Liste les attributs disponibles pour une catégorie (créés par l'admin).
+    Utilisé dans le formulaire produit pour charger les attributs dynamiquement.
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuvé."}, status=403)
+ 
+        from apps.catalog.models import ProductAttribute
+ 
+        category_id = request.query_params.get('category')
+        if not category_id:
+            return Response({'detail': 'Paramètre "category" requis.'}, status=400)
+ 
+        attrs = ProductAttribute.objects.filter(
+            category_id=category_id,
+        ).order_by('display_order', 'name')
+ 
+        data = [
+            {
+                'id':             a.id,
+                'name':           a.name,
+                'attribute_type': a.attribute_type,
+                'values':         a.values,
+                'is_required':    a.is_required,
+                'display_order':  a.display_order,
+            }
+            for a in attrs
+        ]
+        return Response(data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Export vendor products as CSV",
+    description="Télécharge la liste complète des produits du vendeur en CSV.",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_export_products_csv(request):
+    """Export CSV de tous les produits du vendeur."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuvé."}, status=403)
+ 
+        from apps.catalog.models import Product
+        import csv, io
+ 
+        products = Product.objects.filter(
+            vendor=request.user,
+        ).select_related('category').prefetch_related('inventory', 'attribute_values__attribute')
+ 
+        response = HttpResponse(content_type='text/csv; charset=utf-8')
+        response['Content-Disposition'] = (
+            f'attachment; filename="belivay_produits_{request.user.username}.csv"'
+        )
+        response.write('\uFEFF')  # BOM pour Excel
+ 
+        writer = csv.writer(response)
+        writer.writerow([
+            'ID', 'SKU', 'Titre', 'Catégorie', 'Prix (FCFA)', 'Prix barré (FCFA)',
+            'Remise (%)', 'Stock', 'Seuil alerte', 'Fin promo', 'Statut',
+            'Note moyenne', 'Nombre avis', 'Description courte',
+        ])
+ 
+        from django.db.models import Avg
+        from apps.catalog.models import ProductReview
+ 
+        for p in products:
+            stock = getattr(p.inventory, 'quantity', 0) if hasattr(p, 'inventory') else 0
+            try:
+                stock = p.inventory.quantity
+            except Exception:
+                stock = 0
+ 
+            rating = ProductReview.objects.filter(
+                product=p, is_approved=True
+            ).aggregate(avg=Avg('rating'))['avg']
+            reviews_count = ProductReview.objects.filter(product=p, is_approved=True).count()
+ 
+            writer.writerow([
+                p.id, p.sku, p.title, p.category.name,
+                p.price_xaf, p.compare_at_price or '',
+                p.discount_percent, stock,
+                p.stock_threshold if p.stock_threshold is not None else '',
+                p.promo_end_date or '',
+                'Actif' if p.is_active else 'Inactif',
+                round(rating, 1) if rating else '',
+                reviews_count, p.short_description,
+            ])
+ 
+        return response
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Import products from CSV",
+    description=(
+        "Importe des produits depuis un fichier CSV. "
+        "Colonnes requises : Titre, Catégorie (nom), Prix (FCFA), Stock. "
+        "Colonnes optionnelles : Description, Description courte, Prix barré, SKU, Seuil alerte. "
+        "Format attendu : UTF-8 avec BOM. Max 500 lignes."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_import_products_csv(request):
+    """Import CSV de produits pour le vendeur."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuvé."}, status=403)
+ 
+        file = request.FILES.get('file')
+        if not file:
+            return Response({'detail': 'Fichier CSV requis. Champ attendu : "file".'}, status=400)
+ 
+        if not file.name.endswith('.csv'):
+            return Response({'detail': 'Seuls les fichiers .csv sont acceptés.'}, status=400)
+ 
+        import csv, io
+        from apps.catalog.models import Product, Category, Inventory
+ 
+        content = file.read().decode('utf-8-sig')  # utf-8-sig gère le BOM Excel
+        reader  = csv.DictReader(io.StringIO(content))
+ 
+        created_count = 0
+        errors        = []
+ 
+        for i, row in enumerate(reader, start=2):  # Ligne 2 = première donnée
+            if i > 502:  # Max 500 lignes
+                errors.append({'ligne': i, 'erreur': 'Limite de 500 produits par import atteinte.'})
+                break
+ 
+            titre = (row.get('Titre') or '').strip()
+            if not titre:
+                errors.append({'ligne': i, 'erreur': 'Le titre est obligatoire.'})
+                continue
+ 
+            cat_name = (row.get('Catégorie') or '').strip()
+            category = Category.objects.filter(name__iexact=cat_name, is_active=True).first()
+            if not category:
+                errors.append({'ligne': i, 'erreur': f'Catégorie introuvable : "{cat_name}".'})
+                continue
+ 
+            try:
+                price = int(row.get('Prix (FCFA)', '0').replace(' ', '').replace('\u202f', '') or 0)
+            except ValueError:
+                errors.append({'ligne': i, 'erreur': 'Prix invalide.'})
+                continue
+ 
+            if price < 100:
+                errors.append({'ligne': i, 'erreur': f'Prix trop faible : {price} FCFA.'})
+                continue
+ 
+            try:
+                stock = int(row.get('Stock', '0') or 0)
+            except ValueError:
+                stock = 0
+ 
+            compare_at = None
+            if row.get('Prix barré (FCFA)'):
+                try:
+                    compare_at = int(row['Prix barré (FCFA)'].replace(' ', '') or 0)
+                    if compare_at <= price:
+                        compare_at = None
+                except ValueError:
+                    compare_at = None
+ 
+            threshold = None
+            if row.get('Seuil alerte'):
+                try:
+                    threshold = int(row['Seuil alerte'])
+                except ValueError:
+                    threshold = None
+ 
+            product = Product.objects.create(
+                title             = titre[:200],
+                description       = (row.get('Description') or '').strip(),
+                short_description = (row.get('Description courte') or '').strip()[:300],
+                price_xaf         = price,
+                compare_at_price  = compare_at,
+                category          = category,
+                vendor            = request.user,
+                is_active         = False,  # Inactif par défaut — modération
+                stock_threshold   = threshold,
+                sku               = (row.get('SKU') or '').strip()[:60],
+            )
+            Inventory.objects.create(product=product, quantity=stock)
+            created_count += 1
+ 
+        return Response({
+            'created': created_count,
+            'errors':  errors[:50],  # Max 50 erreurs retournées
+            'message': f'{created_count} produit(s) importé(s). {len(errors)} erreur(s).',
+        }, status=status.HTTP_201_CREATED if created_count > 0 else status.HTTP_400_BAD_REQUEST)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Download product PDF sheet",
+    description=(
+        "Génère un PDF de la fiche produit incluant : infos, prix, stock, attributs, "
+        "note moyenne, nombre d'avis. Téléchargeable par le vendeur."
+    ),
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_product_pdf(request, product_id):
+    """
+    Génère une fiche produit HTML (imprimable / téléchargeable).
+    Retourne un fichier HTML si ?format=html, sinon JSON avec le contenu HTML.
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuvé."}, status=403)
+ 
+        from apps.catalog.models import Product, ProductReview
+        from django.db.models import Avg
+ 
+        try:
+            product = Product.objects.select_related(
+                'category', 'vendor__vendor_profile',
+            ).prefetch_related(
+                'images', 'attribute_values__attribute', 'inventory',
+            ).get(id=product_id, vendor=request.user)
+        except Product.DoesNotExist:
+            return Response({'detail': 'Produit introuvable.'}, status=404)
+ 
+        # Stats avis
+        reviews = ProductReview.objects.filter(product=product, is_approved=True)
+        rating  = reviews.aggregate(avg=Avg('rating'))['avg']
+        rating  = round(rating, 1) if rating else None
+ 
+        try:
+            stock = product.inventory.quantity
+        except Exception:
+            stock = 0
+ 
+        threshold = product.get_effective_stock_threshold()
+        shop_name = vendor_profile.business_name
+ 
+        # Attributs
+        attrs_html = ''
+        for av in product.attribute_values.all():
+            vals = ', '.join(av.selected_values) if av.selected_values else '—'
+            attrs_html += f'<tr><td>{av.attribute.name}</td><td><strong>{vals}</strong></td></tr>'
+ 
+        # Image principale
+        primary_img = product.images.filter(is_primary=True).first()
+        img_url     = request.build_absolute_uri(primary_img.image.url) if primary_img else ''
+        img_tag     = f'<img src="{img_url}" style="max-width:280px;border-radius:12px;object-fit:cover;">' if img_url else '<div style="width:280px;height:220px;background:#F5F0E8;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#7C6E5A;font-size:13px;">Aucune image</div>'
+ 
+        # Prix barré
+        promo_html = ''
+        if product.compare_at_price:
+            pct = product.discount_percent
+            promo_html = f'<span style="text-decoration:line-through;color:#7C6E5A;font-size:15px;">{product.compare_at_price:,} FCFA</span> <span style="background:#FFF3E8;color:#F47920;font-size:12px;font-weight:800;padding:2px 8px;border-radius:20px;">-{pct}%</span>'.replace(',', '\u202f')
+ 
+        # Fin de promo
+        promo_end_html = f'<p style="color:#D97706;font-size:12px;">Promotion jusqu\'au {product.promo_end_date.strftime("%d/%m/%Y")}</p>' if product.promo_end_date else ''
+ 
+        # Étoiles
+        stars_html = ''
+        if rating:
+            full  = int(rating)
+            stars_html = '★' * full + '☆' * (5 - full) + f' {rating}/5 ({reviews.count()} avis)'
+ 
+        html = f'''<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Fiche produit — {product.title}</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@700;800&display=swap');
+  * {{ margin:0; padding:0; box-sizing:border-box; }}
+  body {{ font-family: sans-serif; background:#F5F0E8; color:#1A1209; padding:32px; }}
+  .card {{ background:#fff; border-radius:20px; padding:32px; max-width:780px; margin:0 auto; box-shadow:0 4px 24px rgba(28,18,9,0.10); }}
+  .header {{ display:flex; justify-content:space-between; align-items:center; border-bottom:3px solid #F47920; padding-bottom:16px; margin-bottom:24px; }}
+  .logo {{ font-family:Poppins,sans-serif; font-size:26px; font-weight:800; color:#F47920; }}
+  .content {{ display:grid; grid-template-columns:280px 1fr; gap:24px; }}
+  .info h1 {{ font-family:Poppins,sans-serif; font-size:22px; font-weight:800; margin-bottom:6px; }}
+  .price {{ font-family:Poppins,sans-serif; font-size:28px; font-weight:800; color:#F47920; margin:12px 0; }}
+  .badge {{ display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; }}
+  .badge-green {{ background:#DCFCE7; color:#16A34A; }}
+  .badge-red {{ background:#FEE2E2; color:#DC2626; }}
+  .badge-amber {{ background:#FEF3C7; color:#D97706; }}
+  table {{ width:100%; border-collapse:collapse; margin-top:16px; }}
+  th, td {{ padding:8px 12px; text-align:left; border-bottom:1px solid #E8E2D9; font-size:13px; }}
+  th {{ background:#F5F0E8; font-weight:700; width:40%; }}
+  .stars {{ color:#F47920; font-size:16px; margin:8px 0; }}
+  .footer {{ margin-top:24px; padding-top:16px; border-top:1px solid #E8E2D9; font-size:10.5px; color:#7C6E5A; text-align:center; }}
+  @media print {{ body {{ padding:0; }} .card {{ box-shadow:none; }} }}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="header">
+    <div>
+      <div class="logo">BelivaY</div>
+      <div style="font-size:12px;color:#7C6E5A;">Fiche produit vendeur</div>
+    </div>
+    <div style="text-align:right;">
+      <div style="font-size:11px;color:#7C6E5A;">SKU : <strong>{product.sku or "—"}</strong></div>
+      <div style="font-size:11px;color:#7C6E5A;">Ref : <strong>BLV-{product.id:05d}</strong></div>
+      <div style="font-size:11px;color:#7C6E5A;">Boutique : <strong>{shop_name}</strong></div>
+    </div>
+  </div>
+  <div class="content">
+    <div>{img_tag}</div>
+    <div class="info">
+      <div>
+        <span class="badge" style="background:#FFF3E8;color:#F47920;">{product.category.name}</span>
+        {'<span class="badge badge-green" style="margin-left:6px;">Actif</span>' if product.is_active else '<span class="badge badge-amber" style="margin-left:6px;">Inactif</span>'}
+      </div>
+      <h1 style="margin-top:8px;">{product.title}</h1>
+      {f'<p style="color:#7C6E5A;font-size:13px;margin-top:4px;">{product.short_description}</p>' if product.short_description else ''}
+      {f'<div class="stars">{stars_html}</div>' if stars_html else ''}
+      <div class="price">{product.price_xaf:,} FCFA</div>
+      {promo_html}
+      {promo_end_html}
+      <table>
+        <tr><th>Stock disponible</th><td><strong>{'<span class="badge badge-red">Rupture</span>' if stock == 0 else f"{stock} unités"}</strong></td></tr>
+        <tr><th>Seuil alerte</th><td>{threshold} unités</td></tr>
+        <tr><th>Catégorie</th><td>{product.category.name}</td></tr>
+        {attrs_html}
+        <tr><th>Date création</th><td>{product.created_at.strftime("%d/%m/%Y")}</td></tr>
+      </table>
+    </div>
+  </div>
+  {f'<div style="margin-top:20px;"><h3 style="font-size:14px;font-weight:700;margin-bottom:8px;">Description</h3><p style="font-size:13px;line-height:1.7;color:#1A1209;">{product.description}</p></div>' if product.description else ''}
+  <div class="footer">
+    BelivaY &copy; {__import__("datetime").date.today().year} — Marketplace de confiance pour l'Afrique Centrale<br>
+    Fiche générée le {__import__("datetime").date.today().strftime("%d/%m/%Y")}<br>
+    Ce document est à usage interne vendeur — non destiné à la revente.
+  </div>
+</div>
+<script>
+  // Auto-print si ouvert directement
+  if (window.location.search.includes('print=1')) window.print();
+</script>
+</body>
+</html>'''
+ 
+        output_format = request.query_params.get('format', 'html')
+        if output_format == 'html':
+            return HttpResponse(html, content_type='text/html; charset=utf-8')
+ 
+        # JSON pour le frontend (overlay iframe)
+        return Response({'html': html, 'filename': f'fiche_{product.sku or product.id}.html'})
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+
     
 #  LITIGES VENDEUR
  

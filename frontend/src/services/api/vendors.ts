@@ -341,6 +341,53 @@ export interface VendorDisputeReplyPayload {
   reply_text:      string;
   proposed_amount?: number;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PRODUITS VENDEUR — TYPES ENRICHIS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ProductAttribute {
+  id:             number;
+  name:           string;
+  attribute_type: 'SIZE' | 'COLOR' | 'MATERIAL' | 'OTHER';
+  values:         string[];    // Valeurs définies par l'admin
+  is_required:    boolean;
+  display_order:  number;
+}
+
+export interface ProductAttributeValue {
+  attribute:       ProductAttribute;
+  selected_values: string[];   // Valeurs choisies par le vendeur
+}
+
+export interface VendorProductEnriched {
+  id:                number;
+  title:             string;
+  slug:              string;
+  description:       string;
+  short_description: string;
+  sku:               string;
+  price_xaf:         number;
+  compare_at_price:  number | null;  // Prix barré
+  promo_end_date:    string | null;  // YYYY-MM-DD
+  discount:          number;         // Legacy (%)
+  discount_percent:  number;         // Calculé depuis compare_at_price ou discount
+  is_on_promotion:   boolean;
+  is_active:         boolean;
+  stock_quantity:    number;
+  stock_threshold:   number | null;  // Seuil alerte par produit (null = global)
+  category: {
+    id:   number;
+    name: string;
+    slug: string;
+  };
+  images:           ProductImage[];
+  attribute_values: ProductAttributeValue[];
+  rating_average:   number | null;
+  reviews_count:    number;
+  created_at:       string;
+  updated_at:       string;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -547,6 +594,102 @@ export const vendorsApi = {
     });
   },
 
+
+  // ── Produits — actions enrichies ─────────────────────────────────────────
+
+  /**
+   * Récupère les attributs disponibles pour une catégorie.
+   * Utilisé dans le formulaire produit pour charger les options dynamiquement.
+   */
+  getProductAttributes: async (categoryId: number): Promise<ProductAttribute[]> => {
+    const token = localStorage.getItem('access_token');
+    return http<ProductAttribute[]>(`/api/vendors/products/attributes/?category=${categoryId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Duplique un produit (nouveau titre, stock=0, inactif). */
+  duplicateProduct: async (productId: number): Promise<VendorProductEnriched> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorProductEnriched>(`/api/vendors/products/${productId}/duplicate/`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Met à jour le stock directement depuis la liste (sans formulaire).
+   * Aussi accepte stock_threshold optionnel.
+   */
+  updateProductStock: async (
+    productId: number,
+    quantity: number,
+    stockThreshold?: number | null,
+  ): Promise<VendorProductEnriched> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorProductEnriched>(`/api/vendors/products/${productId}/stock/`, {
+      method: 'PATCH',
+      body:   JSON.stringify({ quantity, stock_threshold: stockThreshold }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Télécharge la liste produits en CSV. */
+  exportProductsCSV: async (): Promise<Blob> => {
+    const token = localStorage.getItem('access_token');
+    const res   = await fetch('/api/vendors/products/export/csv/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) throw new Error('Erreur export CSV');
+    return res.blob();
+  },
+
+  /** Importe des produits depuis un fichier CSV. */
+  importProductsCSV: async (file: File): Promise<{ created: number; errors: { ligne: number; erreur: string }[]; message: string }> => {
+    const token = localStorage.getItem('access_token');
+    const form  = new FormData();
+    form.append('file', file);
+    return http(`/api/vendors/products/import/csv/`, {
+      method: 'POST',
+      body:   form,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Ouvre la fiche produit HTML dans un overlay imprimable.
+   * Même approche que openInvoice dans orderUtils.ts.
+   */
+  openProductSheet: async (productId: number): Promise<void> => {
+    const token = localStorage.getItem('access_token');
+    const data  = await http<{ html: string; filename: string }>(
+      `/api/vendors/products/${productId}/pdf/`,
+      { headers: { Authorization: `Bearer ${token}` } },
+    );
+    // Ouvrir dans un overlay iframe imprimable
+    const iframe = document.createElement('iframe');
+    Object.assign(iframe.style, {
+      position: 'fixed', inset: '0', width: '100%', height: '100%',
+      border: 'none', zIndex: '9999', background: '#F5F0E8',
+    });
+    document.body.appendChild(iframe);
+    iframe.contentDocument?.open();
+    iframe.contentDocument?.write(data.html);
+    iframe.contentDocument?.close();
+    // Bouton fermeture
+    const closeBtn = document.createElement('button');
+    Object.assign(closeBtn.style, {
+      position: 'fixed', top: '16px', right: '16px', zIndex: '10000',
+      padding: '8px 18px', background: '#F47920', color: '#fff',
+      border: 'none', borderRadius: '12px', cursor: 'pointer', fontWeight: '700',
+    });
+    closeBtn.textContent = 'Fermer';
+    closeBtn.onclick = () => {
+      document.body.removeChild(iframe);
+      document.body.removeChild(closeBtn);
+    };
+    document.body.appendChild(closeBtn);
+  },
   // ── Litiges vendeur ──────────────────────────────────────────────────────
 
   /** Liste des litiges sur les commandes du vendeur. */

@@ -479,6 +479,17 @@ class PlatformSettings(models.Model):
         verbose_name="Montant minimum commande (FCFA)",
     )
 
+    # ── Stock ─────────────────────────────────────────────────────────────────
+    default_stock_threshold = models.IntegerField(
+        default=5,
+        verbose_name="Seuil alerte stock par défaut",
+        help_text=(
+            "Quantité en dessous de laquelle un produit est signalé comme 'stock faible'. "
+            "Chaque vendeur peut définir son propre seuil par produit ; "
+            "si non renseigné, c'est ce seuil global qui s'applique."
+        ),
+    )
+
     # ── Délais escrow & litiges (configurable admin) ─────────────────────────
     vendor_reply_h = models.IntegerField(
         default=72,

@@ -89,19 +89,9 @@ class Order(TimeStampedModel):
     customer_phone = models.CharField(max_length=20)
 
     # Livraison
-    class DeliveryMethod(models.TextChoices):
-        DELIVERY = "DELIVERY", "Livraison à domicile"
-        PICKUP   = "PICKUP",   "Retrait en boutique"
-
     city    = models.CharField(max_length=50)
     address = models.CharField(max_length=255)
     note    = models.TextField(blank=True, null=True)
-    delivery_method = models.CharField(
-        max_length=20,
-        choices=DeliveryMethod.choices,
-        default=DeliveryMethod.DELIVERY,
-        verbose_name="Mode de réception",
-    )
 
     # Statuts
     payment_status = models.CharField(
@@ -433,6 +423,27 @@ class PlatformSettings(models.Model):
     minimum_order_amount_xaf = models.IntegerField(
         default=5000,
         verbose_name="Montant minimum commande (FCFA)",
+    )
+
+    # ── Retrait vendeur ────────────────────────────────────────────────────
+    withdrawal_fee_percent = models.DecimalField(
+        max_digits=4,
+        decimal_places=2,
+        default=1.50,
+        verbose_name="Frais de retrait MoMo (%)",
+        help_text=(
+            "Frais prélevés sur chaque demande de retrait Mobile Money. "
+            "Taux préférentiel BelivaY (Orange/MTN). "
+            "Configurable depuis l'interface admin."
+        ),
+    )
+    minimum_withdrawal_amount_xaf = models.IntegerField(
+        default=1000,
+        verbose_name="Montant minimum de retrait (FCFA)",
+        help_text=(
+            "Montant minimum qu'un vendeur peut retirer en une seule demande. "
+            "Configurable depuis l'interface admin."
+        ),
     )
     default_delivery_days = models.IntegerField(
         default=3,

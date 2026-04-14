@@ -89,3 +89,103 @@ class VendorOrderNote(models.Model):
 
     def __str__(self):
         return f"Note de {self.vendor.username} sur commande #{self.order_id}"
+
+
+class WithdrawalRequest(models.Model):
+    """
+    Demande de retrait de fonds par un vendeur.
+
+    Logique métier :
+      - Un seul retrait PENDING à la fois par vendeur.
+        Raison : simplifie la gestion admin manuelle (version initiale sans
+        API MoMo automatique), évite les doublons et les dépassements de solde.
+        Quand l'API MoMo sera intégrée, cette contrainte pourra être levée.
+
+      - Les frais (withdrawal_fee_percent) sont lus depuis PlatformSettings
+        au moment de la création — snapshot pour garantir la cohérence même si
+        le taux change ensuite.
+
+      - Statuts possibles :
+          PENDING   → soumise, en attente de traitement admin
+          APPROVED  → admin a validé et exécuté le virement
+          REJECTED  → admin a rejeté (admin_note obligatoire)
+          CANCELLED → vendeur a annulé avant traitement
+
+      - La libération automatique est prévue (quand l'API MoMo sera branchée)
+        selon les délais de PlatformSettings.
+    """
+
+    class Operator(models.TextChoices):
+        ORANGE_MONEY = "ORANGE_MONEY", "Orange Money"
+        MTN_MOMO    = "MTN_MOMO",    "MTN Mobile Money"
+
+    class Status(models.TextChoices):
+        PENDING   = "PENDING",   "En attente"
+        APPROVED  = "APPROVED",  "Approuvé et versé"
+        REJECTED  = "REJECTED",  "Rejeté"
+        CANCELLED = "CANCELLED", "Annulé par le vendeur"
+
+    vendor = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="withdrawal_requests",
+        verbose_name="Vendeur",
+    )
+
+    # Montants — tous en FCFA entiers
+    amount_xaf  = models.PositiveIntegerField(verbose_name="Montant demandé (FCFA)")
+    fee_percent_snapshot = models.DecimalField(
+        max_digits=4, decimal_places=2,
+        verbose_name="Taux de frais appliqué (%)",
+        help_text="Snapshot du taux en vigueur au moment de la demande.",
+    )
+    fee_amount_xaf = models.PositiveIntegerField(
+        verbose_name="Frais prélevés (FCFA)",
+        help_text="fee_percent_snapshot × amount_xaf / 100, arrondi.",
+    )
+    net_amount_xaf = models.PositiveIntegerField(
+        verbose_name="Montant net versé (FCFA)",
+        help_text="amount_xaf - fee_amount_xaf.",
+    )
+
+    # Moyen de paiement
+    operator     = models.CharField(max_length=20, choices=Operator.choices, verbose_name="Opérateur")
+    phone_number = models.CharField(max_length=20, verbose_name="Numéro Mobile Money")
+
+    # Statut
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.PENDING,
+        verbose_name="Statut",
+    )
+
+    # Référence unique lisible (générée à la sauvegarde)
+    reference = models.CharField(
+        max_length=30, unique=True, blank=True,
+        verbose_name="Référence",
+        help_text="Générée automatiquement : BLV-WD-{année}-{id}.",
+    )
+
+    # Gestion admin
+    admin_note   = models.TextField(blank=True, default="", verbose_name="Note admin")
+    processed_at = models.DateTimeField(null=True, blank=True, verbose_name="Date de traitement")
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering            = ["-created_at"]
+        verbose_name        = "Demande de Retrait"
+        verbose_name_plural = "Demandes de Retrait"
+
+    def __str__(self):
+        return f"{self.reference or f'WD-{self.id}'} — {self.vendor.username} — {self.amount_xaf} FCFA ({self.status})"
+
+    def save(self, *args, **kwargs):
+        """Génère la référence lisible à la première sauvegarde."""
+        super().save(*args, **kwargs)
+        if not self.reference:
+            from django.utils import timezone
+            year = timezone.now().year
+            self.reference = f"BLV-WD-{year}-{self.pk:05d}"
+            # Mise à jour ciblée pour éviter la récursion
+            WithdrawalRequest.objects.filter(pk=self.pk).update(reference=self.reference)

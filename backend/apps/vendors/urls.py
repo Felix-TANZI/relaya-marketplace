@@ -43,6 +43,18 @@ urlpatterns = [
     # Note interne vendeur sur une commande
     path('orders/<int:order_id>/note/', views.vendor_order_note, name='vendor-order-note'),
 
+    # Résumé financier (KPIs, escrow, projection, graphique 30j)
+    path('payments/summary/', views.vendor_payment_summary, name='vendor-payment-summary'),
+ 
+    # Historique des demandes de retrait
+    path('withdrawals/', views.vendor_withdrawal_list, name='vendor-withdrawal-list'),
+ 
+    # Créer une demande de retrait
+    path('withdrawals/create/', views.vendor_withdrawal_create, name='vendor-withdrawal-create'),
+ 
+    # Annuler une demande de retrait PENDING
+    path('withdrawals/<int:withdrawal_id>/cancel/', views.vendor_withdrawal_cancel, name='vendor-withdrawal-cancel'),
+
     #  ADMINISTRATION 
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),
     path('admin/vendors/<int:vendor_id>/',           views.admin_vendor_detail,      name='admin-vendor-detail'),

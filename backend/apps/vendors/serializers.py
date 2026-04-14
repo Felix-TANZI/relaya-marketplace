@@ -810,3 +810,141 @@ class PlatformSettingsSerializer(serializers.ModelSerializer):
             'updated_by',
             'updated_by_name',
         ]
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PAIEMENTS VENDEUR — RÉSUMÉ ET RETRAITS
+# ─────────────────────────────────────────────────────────────────────────────
+
+class VendorPaymentSummarySerializer(serializers.Serializer):
+    """
+    KPIs financiers du vendeur calculés côté backend depuis ses commandes.
+    Aucune valeur n'est codée en dur : les taux viennent de PlatformSettings.
+    """
+    # Solde libéré (commandes RELEASED_TO_VENDOR)
+    total_released_xaf         = serializers.IntegerField()
+
+    # Fonds bloqués en escrow (commandes payées, pas encore livrées/confirmées)
+    total_blocked_xaf          = serializers.IntegerField()
+
+    # En attente de libération (BUYER_CONFIRMED / AUTO_CONFIRMED, 24h restantes)
+    total_release_pending_xaf  = serializers.IntegerField()
+
+    # Revenus bruts totaux (tous statuts, hors annulés/remboursés)
+    total_gross_xaf            = serializers.IntegerField()
+
+    # Commission totale prélevée (toutes commandes libérées)
+    total_commission_xaf       = serializers.IntegerField()
+
+    # Nombre de commandes libérées
+    released_orders_count      = serializers.IntegerField()
+
+    # Nombre de commandes en escrow
+    blocked_orders_count       = serializers.IntegerField()
+
+    # Taux de commission actuel (depuis PlatformSettings)
+    commission_rate            = serializers.DecimalField(max_digits=5, decimal_places=2)
+
+    # Frais de retrait MoMo actuels (depuis PlatformSettings)
+    withdrawal_fee_percent     = serializers.DecimalField(max_digits=4, decimal_places=2)
+
+    # Montant minimum de retrait (depuis PlatformSettings)
+    minimum_withdrawal_xaf     = serializers.IntegerField()
+
+    # Projection mensuelle (moyenne des 3 derniers mois de net libéré)
+    projection_monthly_xaf     = serializers.IntegerField()
+
+    # Graphique 30 jours : liste de {date, released, blocked}
+    chart_30_days              = serializers.ListField(child=serializers.DictField())
+
+    # Retrait en cours (PENDING) — null si aucun
+    pending_withdrawal         = serializers.DictField(allow_null=True)
+
+
+class WithdrawalRequestSerializer(serializers.ModelSerializer):
+    """Lecture d'une demande de retrait."""
+    operator_display = serializers.CharField(source='get_operator_display', read_only=True)
+    status_display   = serializers.CharField(source='get_status_display',   read_only=True)
+
+    class Meta:
+        from apps.vendors.models import WithdrawalRequest
+        model  = WithdrawalRequest
+        fields = [
+            'id', 'reference',
+            'amount_xaf', 'fee_percent_snapshot', 'fee_amount_xaf', 'net_amount_xaf',
+            'operator', 'operator_display', 'phone_number',
+            'status', 'status_display',
+            'admin_note', 'processed_at',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+
+class WithdrawalRequestCreateSerializer(serializers.Serializer):
+    """
+    Création d'une demande de retrait.
+    Les frais et le net sont calculés côté backend depuis PlatformSettings.
+    """
+    amount_xaf   = serializers.IntegerField(min_value=1, help_text="Montant à retirer en FCFA.")
+    operator     = serializers.ChoiceField(
+        choices=['ORANGE_MONEY', 'MTN_MOMO'],
+        help_text="Opérateur Mobile Money : ORANGE_MONEY ou MTN_MOMO.",
+    )
+    phone_number = serializers.CharField(
+        max_length=20,
+        help_text="Numéro Mobile Money au format +237 6XX XXX XXX.",
+    )
+
+    def validate_phone_number(self, value):
+        """Valide le format du numéro camerounais."""
+        cleaned = value.replace(' ', '').replace('-', '')
+        if not (cleaned.startswith('+237') or cleaned.startswith('237')):
+            raise serializers.ValidationError(
+                "Le numéro doit commencer par +237 (ex : +237 690 000 000)."
+            )
+        local = cleaned.lstrip('+').lstrip('237')
+        if len(local) != 9 or not local.isdigit():
+            raise serializers.ValidationError(
+                "Numéro invalide. Format attendu : +237 6XX XXX XXX (9 chiffres locaux)."
+            )
+        return cleaned  # Stocké normalisé
+
+    def validate(self, data):
+        from apps.orders.models import PlatformSettings
+        from apps.vendors.models import WithdrawalRequest
+
+        vendor   = self.context['vendor']
+        settings = PlatformSettings.get_settings()
+
+        # Vérifier montant minimum
+        min_xaf = settings.minimum_withdrawal_amount_xaf
+        if data['amount_xaf'] < min_xaf:
+            raise serializers.ValidationError(
+                f"Le montant minimum de retrait est {min_xaf:,} FCFA.".replace(',', ' ')
+            )
+
+        # Vérifier qu'il n'y a pas déjà un retrait PENDING
+        existing = WithdrawalRequest.objects.filter(
+            vendor=vendor, status=WithdrawalRequest.Status.PENDING
+        ).first()
+        if existing:
+            raise serializers.ValidationError(
+                f"Vous avez déjà une demande en attente ({existing.reference}). "
+                "Annulez-la avant d'en créer une nouvelle."
+            )
+
+        # Calculer les frais (snapshot au moment de la demande)
+        fee_percent = float(settings.withdrawal_fee_percent)
+        fee_xaf     = round(data['amount_xaf'] * fee_percent / 100)
+        net_xaf     = data['amount_xaf'] - fee_xaf
+
+        data['fee_percent_snapshot'] = settings.withdrawal_fee_percent
+        data['fee_amount_xaf']       = fee_xaf
+        data['net_amount_xaf']       = net_xaf
+
+        return data
+
+    def create(self, validated_data):
+        from apps.vendors.models import WithdrawalRequest
+        vendor = self.context['vendor']
+        return WithdrawalRequest.objects.create(vendor=vendor, **validated_data)

@@ -21,6 +21,7 @@ import SellerDashboardPage from "./features/vendors/SellerDashboardPage";
 import ProductFormPage from "./features/vendors/ProductFormPage";
 import SellerOrdersPage from "./features/vendors/SellerOrdersPage";
 import SellerOrderDetailPage  from "./features/vendors/SellerOrderDetailPage";
+import SellerPaymentsPage from './features/vendors/SellerPaymentsPage';
 import HelpPage from "./features/help/HelpPage";
 import ContactPage from "./features/contact/ContactPage";
 import AboutPage from "./features/about/AboutPage";
@@ -114,6 +115,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="seller/payments" element={<ProtectedRoute><SellerPaymentsPage /></ProtectedRoute>} />
 
           {/* Routes publiques (redirect si déjà connecté) */}
           <Route

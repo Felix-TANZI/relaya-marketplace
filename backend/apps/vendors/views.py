@@ -12,7 +12,7 @@ from django.contrib.auth.models import User
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, date
 
 from .models import VendorProfile, VendorOrderNote
 from .serializers import (
@@ -24,6 +24,9 @@ from .serializers import (
     UpdatePaymentStatusSerializer,
     AdminProductUpdateSerializer,
     PlatformSettingsSerializer,
+    VendorPaymentSummarySerializer,
+    WithdrawalRequestSerializer,
+    WithdrawalRequestCreateSerializer,
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
@@ -421,7 +424,286 @@ def vendor_order_note(request, order_id):
         return Response(
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND,
-        )    
+        ) 
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Vendor payment summary",
+    description=(
+        "Résumé financier du vendeur : KPIs escrow, solde libéré, "
+        "commission (taux depuis PlatformSettings), projection 30 jours, "
+        "graphique 30 jours et retrait en cours."
+    ),
+    responses={200: VendorPaymentSummarySerializer},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_payment_summary(request):
+    """
+    Agrège les données financières du vendeur depuis ses commandes.
+    Toutes les valeurs de configuration viennent de PlatformSettings.
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Order, PlatformSettings
+        from apps.vendors.models import WithdrawalRequest
+ 
+        vendor      = request.user
+        settings    = PlatformSettings.get_settings()
+        now         = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+ 
+        # ── Commandes du vendeur (contient au moins un de ses articles) ─────
+        qs = Order.objects.filter(items__product__vendor=vendor).distinct()
+ 
+        def vendor_net(order_qs):
+            """Somme des vendor_net_amount pour les commandes du queryset."""
+            total = 0
+            for o in order_qs.prefetch_related('items__product'):
+                items = o.items.filter(product__vendor=vendor)
+                subtotal = sum(i.line_total_xaf for i in items)
+                rate     = float(o.commission_rate_snapshot)
+                comm     = round(subtotal * rate / 100)
+                total   += subtotal - comm
+            return total
+ 
+        def vendor_gross(order_qs):
+            total = 0
+            for o in order_qs.prefetch_related('items__product'):
+                total += sum(i.line_total_xaf for i in o.items.filter(product__vendor=vendor))
+            return total
+ 
+        def vendor_commission(order_qs):
+            total = 0
+            for o in order_qs.prefetch_related('items__product'):
+                items    = o.items.filter(product__vendor=vendor)
+                subtotal = sum(i.line_total_xaf for i in items)
+                rate     = float(o.commission_rate_snapshot)
+                total   += round(subtotal * rate / 100)
+            return total
+ 
+        # ── KPIs principaux ────────────────────────────────────────────────
+        released_qs = qs.filter(escrow_status='RELEASED')
+        blocked_qs  = qs.filter(escrow_status='BLOCKED')
+        pending_qs  = qs.filter(escrow_status='RELEASE_PENDING')
+ 
+        total_released         = vendor_net(released_qs)
+        total_blocked          = vendor_net(blocked_qs)
+        total_release_pending  = vendor_net(pending_qs)
+ 
+        total_gross      = vendor_gross(released_qs)
+        total_commission = vendor_commission(released_qs)
+ 
+        # ── Projection mensuelle (moyenne des 3 derniers mois) ─────────────
+        three_months_ago  = now - timedelta(days=90)
+        recent_released   = released_qs.filter(updated_at__gte=three_months_ago)
+        recent_net        = vendor_net(recent_released)
+        # Moyenne mensuelle = total 90j / 3 mois
+        projection_monthly = round(recent_net / 3) if recent_net > 0 else 0
+ 
+        # ── Graphique 30 jours ────────────────────────────────────────────
+        chart_30_days = []
+        for i in range(30):
+            day       = today_start - timedelta(days=29 - i)
+            day_end   = day + timedelta(days=1)
+ 
+            day_released_qs = qs.filter(
+                escrow_status='RELEASED',
+                updated_at__gte=day,
+                updated_at__lt=day_end,
+            )
+            day_blocked_qs = qs.filter(
+                escrow_status='BLOCKED',
+                created_at__gte=day,
+                created_at__lt=day_end,
+            )
+ 
+            chart_30_days.append({
+                'date':     day.date().isoformat(),
+                'released': vendor_net(day_released_qs),
+                'blocked':  vendor_net(day_blocked_qs),
+            })
+ 
+        # ── Retrait en cours ───────────────────────────────────────────────
+        pending_withdrawal_obj = WithdrawalRequest.objects.filter(
+            vendor=vendor, status=WithdrawalRequest.Status.PENDING
+        ).first()
+ 
+        pending_withdrawal = None
+        if pending_withdrawal_obj:
+            pending_withdrawal = {
+                'id':          pending_withdrawal_obj.id,
+                'reference':   pending_withdrawal_obj.reference,
+                'amount_xaf':  pending_withdrawal_obj.amount_xaf,
+                'fee_xaf':     pending_withdrawal_obj.fee_amount_xaf,
+                'net_xaf':     pending_withdrawal_obj.net_amount_xaf,
+                'operator':    pending_withdrawal_obj.operator,
+                'phone':       pending_withdrawal_obj.phone_number,
+                'created_at':  pending_withdrawal_obj.created_at,
+            }
+ 
+        data = {
+            'total_released_xaf':        total_released,
+            'total_blocked_xaf':         total_blocked,
+            'total_release_pending_xaf': total_release_pending,
+            'total_gross_xaf':           total_gross,
+            'total_commission_xaf':      total_commission,
+            'released_orders_count':     released_qs.count(),
+            'blocked_orders_count':      blocked_qs.count(),
+            'commission_rate':           settings.platform_commission_percent,
+            'withdrawal_fee_percent':    settings.withdrawal_fee_percent,
+            'minimum_withdrawal_xaf':    settings.minimum_withdrawal_amount_xaf,
+            'projection_monthly_xaf':    projection_monthly,
+            'chart_30_days':             chart_30_days,
+            'pending_withdrawal':        pending_withdrawal,
+        }
+ 
+        serializer = VendorPaymentSummarySerializer(data)
+        return Response(serializer.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+#  RETRAITS VENDEUR
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="List vendor withdrawal requests",
+    description="Historique de toutes les demandes de retrait du vendeur.",
+    responses={200: WithdrawalRequestSerializer(many=True)},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_withdrawal_list(request):
+    """Liste les demandes de retrait du vendeur connecté."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.vendors.models import WithdrawalRequest
+        withdrawals = WithdrawalRequest.objects.filter(
+            vendor=request.user
+        ).order_by('-created_at')
+ 
+        serializer = WithdrawalRequestSerializer(withdrawals, many=True)
+        return Response(serializer.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Create withdrawal request",
+    description=(
+        "Crée une demande de retrait Mobile Money. "
+        "Les frais sont calculés depuis PlatformSettings (withdrawal_fee_percent). "
+        "Un seul retrait PENDING autorisé à la fois par vendeur."
+    ),
+    request=WithdrawalRequestCreateSerializer,
+    responses={201: WithdrawalRequestSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_withdrawal_create(request):
+    """
+    Crée une demande de retrait.
+ 
+    Règle : un seul retrait PENDING à la fois.
+    Raison : gestion admin manuelle dans cette version (sans API MoMo automatique).
+    Simplifie le traitement et évite les doublons / dépassements de solde.
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        serializer = WithdrawalRequestCreateSerializer(
+            data=request.data,
+            context={'vendor': request.user},
+        )
+ 
+        if serializer.is_valid():
+            withdrawal = serializer.save()
+            result = WithdrawalRequestSerializer(withdrawal)
+            return Response(result.data, status=status.HTTP_201_CREATED)
+ 
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Cancel a withdrawal request",
+    description="Annule une demande de retrait PENDING. Seule une demande PENDING peut être annulée.",
+    responses={200: WithdrawalRequestSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_withdrawal_cancel(request, withdrawal_id):
+    """Annule une demande de retrait en attente."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.vendors.models import WithdrawalRequest
+        try:
+            withdrawal = WithdrawalRequest.objects.get(
+                id=withdrawal_id, vendor=request.user,
+            )
+        except WithdrawalRequest.DoesNotExist:
+            return Response(
+                {'detail': 'Demande de retrait introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        if withdrawal.status != WithdrawalRequest.Status.PENDING:
+            return Response(
+                {'detail': f"Impossible d'annuler une demande avec le statut '{withdrawal.get_status_display()}'."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        withdrawal.status = WithdrawalRequest.Status.CANCELLED
+        withdrawal.save(update_fields=['status', 'updated_at'])
+ 
+        result = WithdrawalRequestSerializer(withdrawal)
+        return Response(result.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
 
 
 @extend_schema(

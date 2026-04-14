@@ -205,6 +205,77 @@ export interface VendorOrderNote {
   content:    string;        // Vide si aucune note
   updated_at: string | null; // null si jamais sauvegardée
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAIEMENTS & RETRAITS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ChartDataPoint {
+  date:     string; // ISO date YYYY-MM-DD
+  released: number; // Montant net libéré ce jour
+  blocked:  number; // Montant net bloqué ce jour
+}
+
+export interface PendingWithdrawal {
+  id:         number;
+  reference:  string;
+  amount_xaf: number;
+  fee_xaf:    number;
+  net_xaf:    number;
+  operator:   'ORANGE_MONEY' | 'MTN_MOMO';
+  phone:      string;
+  created_at: string;
+}
+
+export interface VendorPaymentSummary {
+  // Soldes
+  total_released_xaf:        number; // Fonds libérés (versés)
+  total_blocked_xaf:         number; // En escrow (bloqué)
+  total_release_pending_xaf: number; // En cours de libération (24h)
+  total_gross_xaf:           number; // CA brut total (libéré)
+  total_commission_xaf:      number; // Commission BelivaY prélevée
+  released_orders_count:     number;
+  blocked_orders_count:      number;
+
+  // Paramètres depuis PlatformSettings (jamais codés en dur)
+  commission_rate:         string; // Decimal → string
+  withdrawal_fee_percent:  string; // Decimal → string
+  minimum_withdrawal_xaf:  number;
+
+  // Projection et graphique
+  projection_monthly_xaf: number;
+  chart_30_days:          ChartDataPoint[];
+
+  // Retrait en cours (null si aucun)
+  pending_withdrawal: PendingWithdrawal | null;
+}
+
+export type WithdrawalOperator = 'ORANGE_MONEY' | 'MTN_MOMO';
+export type WithdrawalStatus  = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface WithdrawalRequest {
+  id:                  number;
+  reference:           string;
+  amount_xaf:          number;
+  fee_percent_snapshot: string;
+  fee_amount_xaf:      number;
+  net_amount_xaf:      number;
+  operator:            WithdrawalOperator;
+  operator_display:    string;
+  phone_number:        string;
+  status:              WithdrawalStatus;
+  status_display:      string;
+  admin_note:          string;
+  processed_at:        string | null;
+  created_at:          string;
+  updated_at:          string;
+}
+
+export interface WithdrawalCreatePayload {
+  amount_xaf:   number;
+  operator:     WithdrawalOperator;
+  phone_number: string;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -365,6 +436,51 @@ export const vendorsApi = {
     });
   },
 
+
+  // ── Paiements & Escrow ───────────────────────────────────────────────────
+
+  /**
+   * Résumé financier complet du vendeur.
+   * Toutes les valeurs de configuration (taux, frais, min) viennent
+   * de PlatformSettings — jamais codées en dur côté frontend.
+   */
+  getPaymentSummary: async (): Promise<VendorPaymentSummary> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorPaymentSummary>('/api/vendors/payments/summary/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Liste des demandes de retrait du vendeur. */
+  getWithdrawals: async (): Promise<WithdrawalRequest[]> => {
+    const token = localStorage.getItem('access_token');
+    return http<WithdrawalRequest[]>('/api/vendors/withdrawals/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Soumet une demande de retrait Mobile Money.
+   * Les frais sont calculés côté backend (PlatformSettings.withdrawal_fee_percent).
+   * Un seul retrait PENDING autorisé à la fois.
+   */
+  createWithdrawal: async (data: WithdrawalCreatePayload): Promise<WithdrawalRequest> => {
+    const token = localStorage.getItem('access_token');
+    return http<WithdrawalRequest>('/api/vendors/withdrawals/create/', {
+      method: 'POST',
+      body:   JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Annule une demande de retrait PENDING. */
+  cancelWithdrawal: async (withdrawalId: number): Promise<WithdrawalRequest> => {
+    const token = localStorage.getItem('access_token');
+    return http<WithdrawalRequest>(`/api/vendors/withdrawals/${withdrawalId}/cancel/`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
   // ── Note interne vendeur ──────────────────────────────────────────────────
 
   /**

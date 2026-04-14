@@ -276,6 +276,71 @@ export interface WithdrawalCreatePayload {
   operator:     WithdrawalOperator;
   phone_number: string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LITIGES VENDEUR
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type DisputeStatus    = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'CLOSED';
+export type VendorReplyType  = 'ACCEPT' | 'CONTEST' | 'COMPROMISE';
+export type DisputeSenderRole = 'VENDOR' | 'ADMIN' | 'SYSTEM';
+
+export interface VendorDisputeMessage {
+  id:             number;
+  sender_display: string;   // "Admin BelivaY" pour les admins, nom boutique pour vendeur
+  sender_role:    DisputeSenderRole;
+  message:        string;
+  created_at:     string;
+}
+
+export interface VendorDisputeEvidence {
+  id:               number;
+  file_url:         string;
+  description:      string;
+  uploaded_by_name: string;
+  created_at:       string;
+}
+
+export interface VendorDisputeListItem {
+  id:                   number;
+  order:                number;
+  order_ref:            string;    // "BLV-00042"
+  order_total_xaf:      number;
+  vendor_escrow_amount: number;    // Montant vendeur en escrow sur cette commande
+  reason:               string;
+  reason_display:       string;
+  status:               DisputeStatus;
+  status_display:       string;
+  description:          string;    // Plainte acheteur — visible vendeur
+  vendor_contacted:     boolean;   // Admin a initié le contact
+  vendor_replied:       boolean;   // Vendeur a soumis sa réponse formelle
+  vendor_reply_type:    VendorReplyType | null;
+  vendor_reply_display: string | null;
+  vendor_deadline_iso:  string;    // ISO datetime — deadline réponse vendeur
+  hours_remaining:      number;    // Heures restantes (0 si dépassé)
+  assigned_admin_name:  string | null;
+  unread_messages:      number;
+  created_at:           string;
+  updated_at:           string;
+}
+
+export interface VendorDisputeDetail extends VendorDisputeListItem {
+  resolution:            string | null;
+  resolution_note:       string | null;
+  refund_amount_xaf:     number | null;
+  vendor_reply_text:     string;
+  vendor_proposed_amount: number | null;
+  vendor_replied_at:     string | null;
+  messages:              VendorDisputeMessage[];
+  evidences:             VendorDisputeEvidence[];
+  resolved_at:           string | null;
+}
+
+export interface VendorDisputeReplyPayload {
+  reply_type:      VendorReplyType;
+  reply_text:      string;
+  proposed_amount?: number;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -479,6 +544,64 @@ export const vendorsApi = {
     return http<WithdrawalRequest>(`/api/vendors/withdrawals/${withdrawalId}/cancel/`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Litiges vendeur ──────────────────────────────────────────────────────
+
+  /** Liste des litiges sur les commandes du vendeur. */
+  getDisputes: async (filter?: 'urgent' | 'mediation' | 'closed'): Promise<VendorDisputeListItem[]> => {
+    const token = localStorage.getItem('access_token');
+    const qs    = filter ? `?filter=${filter}` : '';
+    return http<VendorDisputeListItem[]>(`/api/vendors/disputes/${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Détail d'un litige avec messages et pièces jointes. */
+  getDisputeDetail: async (disputeId: number): Promise<VendorDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorDisputeDetail>(`/api/vendors/disputes/${disputeId}/`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Soumet la réponse formelle du vendeur (formulaire séparé du chat).
+   * Ne génère pas de message dans le fil de discussion.
+   */
+  submitDisputeReply: async (disputeId: number, data: VendorDisputeReplyPayload): Promise<VendorDisputeDetail> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorDisputeDetail>(`/api/vendors/disputes/${disputeId}/reply/`, {
+      method: 'POST',
+      body:   JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Envoyer un message à l'admin dans le cadre d'un litige. */
+  sendDisputeMessage: async (disputeId: number, message: string): Promise<VendorDisputeMessage> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorDisputeMessage>(`/api/vendors/disputes/${disputeId}/messages/`, {
+      method: 'POST',
+      body:   JSON.stringify({ message }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /**
+   * Upload une pièce jointe pour un litige.
+   * Utilise FormData (multipart/form-data).
+   */
+  uploadDisputeEvidence: async (disputeId: number, file: File, description?: string): Promise<VendorDisputeEvidence> => {
+    const token = localStorage.getItem('access_token');
+    const form  = new FormData();
+    form.append('file', file);
+    if (description) form.append('description', description);
+    return http<VendorDisputeEvidence>(`/api/vendors/disputes/${disputeId}/evidences/`, {
+      method: 'POST',
+      body:   form,
+      headers: { Authorization: `Bearer ${token}` }, // pas de Content-Type → auto multipart
     });
   },
   // ── Note interne vendeur ──────────────────────────────────────────────────

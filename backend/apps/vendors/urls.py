@@ -55,6 +55,14 @@ urlpatterns = [
     # Annuler une demande de retrait PENDING
     path('withdrawals/<int:withdrawal_id>/cancel/', views.vendor_withdrawal_cancel, name='vendor-withdrawal-cancel'),
 
+
+    # LITIGES VENDEUR
+    path('disputes/',                               views.vendor_dispute_list,           name='vendor-dispute-list'),
+    path('disputes/<int:dispute_id>/',              views.vendor_dispute_detail,         name='vendor-dispute-detail'),
+    path('disputes/<int:dispute_id>/reply/',        views.vendor_dispute_reply,          name='vendor-dispute-reply'),
+    path('disputes/<int:dispute_id>/messages/',     views.vendor_dispute_send_message,   name='vendor-dispute-message'),
+    path('disputes/<int:dispute_id>/evidences/',    views.vendor_dispute_upload_evidence, name='vendor-dispute-evidence'),
+
     #  ADMINISTRATION 
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),
     path('admin/vendors/<int:vendor_id>/',           views.admin_vendor_detail,      name='admin-vendor-detail'),

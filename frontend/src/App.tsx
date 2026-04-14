@@ -22,6 +22,7 @@ import ProductFormPage from "./features/vendors/ProductFormPage";
 import SellerOrdersPage from "./features/vendors/SellerOrdersPage";
 import SellerOrderDetailPage  from "./features/vendors/SellerOrderDetailPage";
 import SellerPaymentsPage from './features/vendors/SellerPaymentsPage';
+import SellerDisputesPage from './features/vendors/SellerDisputesPage';
 import HelpPage from "./features/help/HelpPage";
 import ContactPage from "./features/contact/ContactPage";
 import AboutPage from "./features/about/AboutPage";
@@ -116,6 +117,7 @@ function App() {
             }
           />
           <Route path="seller/payments" element={<ProtectedRoute><SellerPaymentsPage /></ProtectedRoute>} />
+          <Route path="seller/disputes" element={<ProtectedRoute><SellerDisputesPage /></ProtectedRoute>} />
 
           {/* Routes publiques (redirect si déjà connecté) */}
           <Route

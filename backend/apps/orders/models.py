@@ -320,6 +320,42 @@ class Dispute(models.Model):
     resolved_at       = models.DateTimeField(blank=True, null=True)
     refund_amount_xaf = models.IntegerField(blank=True, null=True)
 
+    # ── Prise en charge admin ──────────────────────────────────────────────
+    # Tous les admins peuvent voir et intervenir sur tous les litiges.
+    # assigned_admin identifie qui a initié le premier contact avec une partie,
+    # ce qui permet aux autres admins de savoir qui suit le dossier.
+    assigned_admin = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='assigned_disputes',
+        verbose_name="Admin en charge",
+    )
+    vendor_contacted = models.BooleanField(
+        default=False,
+        verbose_name="Vendeur contacté",
+        help_text="Passe à True dès que l'admin envoie le premier message au vendeur.",
+    )
+
+    # ── Réponse formelle du vendeur (formulaire séparé du chat) ───────────
+    class VendorReplyType(models.TextChoices):
+        ACCEPT     = 'ACCEPT',     'Accepter le remboursement'
+        CONTEST    = 'CONTEST',    'Contester le litige'
+        COMPROMISE = 'COMPROMISE', 'Proposer un compromis'
+
+    vendor_replied         = models.BooleanField(default=False, verbose_name="Vendeur a répondu formellement")
+    vendor_reply_type      = models.CharField(
+        max_length=12, choices=VendorReplyType.choices,
+        null=True, blank=True, verbose_name="Type de réponse vendeur",
+    )
+    vendor_reply_text      = models.TextField(blank=True, default='', verbose_name="Explication vendeur")
+    vendor_proposed_amount = models.IntegerField(
+        null=True, blank=True,
+        verbose_name="Montant proposé par le vendeur (FCFA)",
+        help_text="Rempli uniquement si vendor_reply_type = COMPROMISE.",
+    )
+    vendor_replied_at      = models.DateTimeField(null=True, blank=True, verbose_name="Date réponse vendeur")
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -333,11 +369,29 @@ class Dispute(models.Model):
 
 
 class DisputeMessage(models.Model):
-    """Message dans un fil de litige."""
+    """
+    Message dans un fil de litige.
+    Le vendeur ne communique qu'avec l'admin (jamais directement avec le client).
+    sender_role permet d'afficher "Admin BelivaY" côté vendeur sans exposer
+    le nom réel de l'admin — tous les admins apparaissent comme "Admin BelivaY".
+    """
+    class SenderRole(models.TextChoices):
+        VENDOR = 'VENDOR', 'Vendeur'
+        ADMIN  = 'ADMIN',  'Admin BelivaY'
+        SYSTEM = 'SYSTEM', 'Système'
+        # CLIENT et LIVREUR ajoutés quand leurs espaces seront développés
+
     dispute     = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="messages")
     sender      = models.ForeignKey(User, on_delete=models.CASCADE)
     message     = models.TextField()
-    is_internal = models.BooleanField(default=False)
+    is_internal = models.BooleanField(
+        default=False,
+        help_text="True = note interne admin uniquement, invisible pour le vendeur.",
+    )
+    sender_role = models.CharField(
+        max_length=10, choices=SenderRole.choices, default=SenderRole.ADMIN,
+        verbose_name="Rôle de l'expéditeur",
+    )
     created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -423,6 +477,28 @@ class PlatformSettings(models.Model):
     minimum_order_amount_xaf = models.IntegerField(
         default=5000,
         verbose_name="Montant minimum commande (FCFA)",
+    )
+
+    # ── Délais escrow & litiges (configurable admin) ─────────────────────────
+    vendor_reply_h = models.IntegerField(
+        default=72,
+        verbose_name="Délai réponse vendeur (h)",
+        help_text="Heures accordées au vendeur pour répondre à un litige avant décision auto en faveur de l'acheteur.",
+    )
+    escrow_auto_confirm_h = models.IntegerField(
+        default=48,
+        verbose_name="Auto-confirmation escrow (h)",
+        help_text="Heures sans litige après livraison avant confirmation automatique.",
+    )
+    escrow_release_h = models.IntegerField(
+        default=24,
+        verbose_name="Libération fonds post-confirmation (h)",
+        help_text="Heures après confirmation avant libération des fonds au vendeur.",
+    )
+    litige_window_days = models.IntegerField(
+        default=7,
+        verbose_name="Fenêtre ouverture litige (jours)",
+        help_text="Jours après livraison pendant lesquels l'acheteur peut ouvrir un litige.",
     )
 
     # ── Retrait vendeur ────────────────────────────────────────────────────

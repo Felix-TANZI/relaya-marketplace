@@ -948,3 +948,203 @@ class WithdrawalRequestCreateSerializer(serializers.Serializer):
         from apps.vendors.models import WithdrawalRequest
         vendor = self.context['vendor']
         return WithdrawalRequest.objects.create(vendor=vendor, **validated_data)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# LITIGES VENDEUR
+# ─────────────────────────────────────────────────────────────────────────────
+
+class VendorDisputeMessageSerializer(serializers.ModelSerializer):
+    """
+    Serializer message litige côté vendeur.
+    - Les messages is_internal=True sont filtrés en amont (jamais exposés).
+    - Le nom de l'expéditeur est anonymisé : un admin apparaît comme "Admin BelivaY".
+    """
+    sender_display = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.orders.models import DisputeMessage
+        model  = DisputeMessage
+        fields = ['id', 'sender_display', 'sender_role', 'message', 'created_at']
+        read_only_fields = fields
+
+    def get_sender_display(self, obj):
+        if obj.sender_role == 'ADMIN':
+            return 'Admin BelivaY'
+        if obj.sender_role == 'SYSTEM':
+            return 'BelivaY'
+        # VENDOR : on affiche le nom de la boutique si dispo
+        if hasattr(obj.sender, 'vendor_profile'):
+            return obj.sender.vendor_profile.business_name
+        return obj.sender.get_full_name() or obj.sender.username
+
+
+class VendorDisputeEvidenceSerializer(serializers.ModelSerializer):
+    """Pièce justificative jointe à un litige (lecture)."""
+    uploaded_by_name = serializers.CharField(
+        source='uploaded_by.get_full_name', read_only=True,
+    )
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.orders.models import DisputeEvidence
+        model  = DisputeEvidence
+        fields = ['id', 'file_url', 'description', 'uploaded_by_name', 'created_at']
+        read_only_fields = fields
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if request and obj.file:
+            return request.build_absolute_uri(obj.file.url)
+        return obj.file.url if obj.file else None
+
+
+class VendorDisputeListSerializer(serializers.ModelSerializer):
+    """
+    Litige dans la liste — données essentielles.
+    Inclut la description de la plainte acheteur (visible par le vendeur).
+    """
+    order_ref            = serializers.SerializerMethodField()
+    order_total_xaf      = serializers.IntegerField(source='order.total_xaf', read_only=True)
+    vendor_escrow_amount = serializers.SerializerMethodField()
+    reason_display       = serializers.CharField(source='get_reason_display', read_only=True)
+    status_display       = serializers.CharField(source='get_status_display', read_only=True)
+    vendor_reply_display = serializers.SerializerMethodField()
+    # Deadline réponse vendeur (calculé depuis created_at + vendor_reply_h)
+    vendor_deadline_iso  = serializers.SerializerMethodField()
+    hours_remaining      = serializers.SerializerMethodField()
+    assigned_admin_name  = serializers.SerializerMethodField()
+    unread_messages      = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.orders.models import Dispute
+        model  = Dispute
+        fields = [
+            'id', 'order', 'order_ref', 'order_total_xaf', 'vendor_escrow_amount',
+            'reason', 'reason_display', 'status', 'status_display',
+            'description',                    # Plainte acheteur — visible vendeur
+            'vendor_contacted', 'vendor_replied',
+            'vendor_reply_type', 'vendor_reply_display',
+            'vendor_deadline_iso', 'hours_remaining',
+            'assigned_admin_name', 'unread_messages',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = fields
+
+    def get_order_ref(self, obj):
+        return f"BLV-{obj.order_id:05d}"
+
+    def get_vendor_escrow_amount(self, obj):
+        """Montant vendeur bloqué en escrow pour cette commande."""
+        vendor = self.context.get('vendor')
+        if not vendor:
+            return 0
+        items    = obj.order.items.filter(product__vendor=vendor)
+        subtotal = sum(i.line_total_xaf for i in items)
+        rate     = float(obj.order.commission_rate_snapshot)
+        return round(subtotal * (1 - rate / 100))
+
+    def get_vendor_reply_display(self, obj):
+        if not obj.vendor_reply_type:
+            return None
+        labels = {
+            'ACCEPT':     'Remboursement accepté',
+            'CONTEST':    'Contesté',
+            'COMPROMISE': 'Compromis proposé',
+        }
+        return labels.get(obj.vendor_reply_type, obj.vendor_reply_type)
+
+    def get_vendor_deadline_iso(self, obj):
+        """Deadline réponse vendeur depuis PlatformSettings."""
+        from apps.orders.models import PlatformSettings
+        from datetime import timedelta
+        settings   = PlatformSettings.get_settings()
+        deadline   = obj.created_at + timedelta(hours=settings.vendor_reply_h)
+        return deadline.isoformat()
+
+    def get_hours_remaining(self, obj):
+        """Heures restantes avant deadline. Négatif si dépassé."""
+        from apps.orders.models import PlatformSettings
+        from datetime import timedelta
+        from django.utils import timezone
+        settings       = PlatformSettings.get_settings()
+        deadline       = obj.created_at + timedelta(hours=settings.vendor_reply_h)
+        remaining      = deadline - timezone.now()
+        return max(0, int(remaining.total_seconds() / 3600))
+
+    def get_assigned_admin_name(self, obj):
+        if obj.assigned_admin:
+            return obj.assigned_admin.get_full_name() or obj.assigned_admin.username
+        return None
+
+    def get_unread_messages(self, obj):
+        """Nombre de messages admin non lus par le vendeur (approximatif)."""
+        return obj.messages.filter(
+            sender_role='ADMIN',
+            is_internal=False,
+        ).count()
+
+
+class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
+    """
+    Détail complet d'un litige côté vendeur.
+    Messages filtrés : is_internal=False et sender_role != SYSTEM uniquement.
+    """
+    messages  = serializers.SerializerMethodField()
+    evidences = VendorDisputeEvidenceSerializer(many=True, read_only=True)
+
+    class Meta(VendorDisputeListSerializer.Meta):
+        fields = VendorDisputeListSerializer.Meta.fields + [
+            'resolution', 'resolution_note', 'refund_amount_xaf',
+            'vendor_reply_text', 'vendor_proposed_amount', 'vendor_replied_at',
+            'messages', 'evidences',
+            'resolved_at',
+        ]
+
+    def get_messages(self, obj):
+        """
+        Filtrer les messages visibles pour le vendeur :
+        - is_internal=False (pas de notes admin internes)
+        - sender_role != SYSTEM (pas de messages système automatiques)
+        """
+        qs = obj.messages.filter(
+            is_internal=False,
+        ).exclude(sender_role='SYSTEM').order_by('created_at')
+        return VendorDisputeMessageSerializer(
+            qs, many=True, context=self.context,
+        ).data
+
+
+class VendorDisputeReplySerializer(serializers.Serializer):
+    """
+    Réponse formelle du vendeur à un litige (formulaire séparé du chat).
+    Ne génère pas de message automatique — enregistre uniquement la position.
+    """
+    reply_type = serializers.ChoiceField(
+        choices=['ACCEPT', 'CONTEST', 'COMPROMISE'],
+        help_text="ACCEPT | CONTEST | COMPROMISE",
+    )
+    reply_text = serializers.CharField(
+        min_length=20, max_length=5000,
+        help_text="Explication détaillée de la position du vendeur (min 20 chars).",
+    )
+    proposed_amount = serializers.IntegerField(
+        required=False, allow_null=True, min_value=1,
+        help_text="Montant proposé en FCFA — requis si reply_type = COMPROMISE.",
+    )
+
+    def validate(self, data):
+        if data['reply_type'] == 'COMPROMISE':
+            if not data.get('proposed_amount'):
+                raise serializers.ValidationError(
+                    {'proposed_amount': "Le montant proposé est requis pour un compromis."}
+                )
+        return data
+
+
+class VendorDisputeMessageCreateSerializer(serializers.Serializer):
+    """Envoi d'un message dans le fil de discussion avec l'admin."""
+    message = serializers.CharField(
+        min_length=1, max_length=5000,
+        help_text="Message envoyé à l'admin dans le cadre du litige.",
+    )

@@ -27,6 +27,12 @@ from .serializers import (
     VendorPaymentSummarySerializer,
     WithdrawalRequestSerializer,
     WithdrawalRequestCreateSerializer,
+    VendorDisputeListSerializer,
+    VendorDisputeDetailSerializer,
+    VendorDisputeReplySerializer,
+    VendorDisputeMessageCreateSerializer,
+    VendorDisputeEvidenceSerializer,
+    VendorDisputeMessageSerializer,
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
@@ -871,6 +877,365 @@ def update_payment_status(request, order_id):
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+    
+#  LITIGES VENDEUR
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="List vendor disputes",
+    description=(
+        "Liste les litiges ouverts par des acheteurs sur les commandes du vendeur. "
+        "Seuls les litiges dont le statut n'est pas CLOSED et dont la commande "
+        "contient au moins un produit du vendeur sont retournés. "
+        "Le vendeur voit la description de la plainte (description de l'acheteur)."
+    ),
+    responses={200: VendorDisputeListSerializer(many=True)},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_dispute_list(request):
+    """
+    Liste les litiges sur les commandes du vendeur.
+    Filtres query params :
+      - status : OPEN | IN_PROGRESS | RESOLVED | CLOSED
+      - filter : urgent (réponse vendeur requise) | mediation | closed
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Dispute
+ 
+        # Litiges sur commandes contenant des produits du vendeur
+        disputes = Dispute.objects.filter(
+            order__items__product__vendor=request.user,
+        ).distinct().select_related(
+            'order', 'assigned_admin',
+        ).prefetch_related(
+            'messages', 'evidences',
+        ).order_by('-created_at')
+ 
+        # Filtre par statut Django
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            disputes = disputes.filter(status=status_filter)
+ 
+        # Filtre sémantique (URL vendeur)
+        semantic = request.query_params.get('filter')
+        if semantic == 'urgent':
+            # Litige actif sans réponse formelle du vendeur
+            disputes = disputes.filter(status__in=['OPEN', 'IN_PROGRESS'], vendor_replied=False)
+        elif semantic == 'mediation':
+            # Vendeur a répondu, en attente décision BelivaY
+            disputes = disputes.filter(status='IN_PROGRESS', vendor_replied=True)
+        elif semantic == 'closed':
+            disputes = disputes.filter(status__in=['RESOLVED', 'CLOSED'])
+ 
+        serializer = VendorDisputeListSerializer(
+            disputes, many=True,
+            context={'request': request, 'vendor': request.user},
+        )
+        return Response(serializer.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get vendor dispute detail",
+    description=(
+        "Détail complet d'un litige vendeur. "
+        "Messages filtrés : is_internal=False et sender_role != SYSTEM. "
+        "Les admins apparaissent comme 'Admin BelivaY'."
+    ),
+    responses={200: VendorDisputeDetailSerializer},
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_dispute_detail(request, dispute_id):
+    """Détail d'un litige spécifique du vendeur."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Dispute
+ 
+        try:
+            dispute = Dispute.objects.filter(
+                order__items__product__vendor=request.user,
+            ).distinct().select_related(
+                'order', 'assigned_admin',
+            ).prefetch_related(
+                'messages__sender', 'evidences',
+            ).get(id=dispute_id)
+        except Dispute.DoesNotExist:
+            return Response(
+                {'detail': 'Litige introuvable ou ne concerne pas vos produits.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        serializer = VendorDisputeDetailSerializer(
+            dispute,
+            context={'request': request, 'vendor': request.user},
+        )
+        return Response(serializer.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Vendor formal reply to dispute",
+    description=(
+        "Enregistre la réponse formelle du vendeur (formulaire séparé du chat). "
+        "Ne génère pas de message dans le fil de discussion. "
+        "Disponible uniquement si l'admin a contacté le vendeur (vendor_contacted=True). "
+        "Une seule réponse formelle par litige — écrasée si soumise à nouveau."
+    ),
+    request=VendorDisputeReplySerializer,
+    responses={200: VendorDisputeDetailSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_dispute_reply(request, dispute_id):
+    """
+    Position formelle du vendeur sur le litige.
+    Conditions :
+      - admin a contacté le vendeur (vendor_contacted = True)
+      - litige encore actif (OPEN ou IN_PROGRESS)
+    """
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Dispute
+        from django.utils import timezone
+ 
+        try:
+            dispute = Dispute.objects.filter(
+                order__items__product__vendor=request.user,
+            ).distinct().get(id=dispute_id)
+        except Dispute.DoesNotExist:
+            return Response(
+                {'detail': 'Litige introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        # Vérifier que l'admin a bien initié le contact
+        if not dispute.vendor_contacted:
+            return Response(
+                {'detail': "L'admin BelivaY n'a pas encore pris contact avec vous sur ce litige."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        # Vérifier que le litige est encore actif
+        if dispute.status in ['RESOLVED', 'CLOSED']:
+            return Response(
+                {'detail': 'Ce litige est déjà clôturé.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        serializer = VendorDisputeReplySerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+        # Enregistrer la réponse formelle (pas de message dans le chat)
+        dispute.vendor_replied         = True
+        dispute.vendor_reply_type      = serializer.validated_data['reply_type']
+        dispute.vendor_reply_text      = serializer.validated_data['reply_text']
+        dispute.vendor_proposed_amount = serializer.validated_data.get('proposed_amount')
+        dispute.vendor_replied_at      = timezone.now()
+ 
+        # Si vendeur accepte → passer IN_PROGRESS pour que l'admin finalise
+        if dispute.vendor_reply_type == 'ACCEPT' and dispute.status == 'OPEN':
+            dispute.status = 'IN_PROGRESS'
+ 
+        dispute.save(update_fields=[
+            'vendor_replied', 'vendor_reply_type', 'vendor_reply_text',
+            'vendor_proposed_amount', 'vendor_replied_at', 'status', 'updated_at',
+        ])
+ 
+        result = VendorDisputeDetailSerializer(
+            dispute,
+            context={'request': request, 'vendor': request.user},
+        )
+        return Response(result.data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Vendor send message in dispute",
+    description=(
+        "Envoie un message dans le fil de discussion admin ↔ vendeur. "
+        "Disponible uniquement si l'admin a contacté le vendeur (vendor_contacted=True)."
+    ),
+    request=VendorDisputeMessageCreateSerializer,
+    responses={201: VendorDisputeMessageSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_dispute_send_message(request, dispute_id):
+    """Envoyer un message à l'admin dans le cadre d'un litige."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Dispute, DisputeMessage
+ 
+        try:
+            dispute = Dispute.objects.filter(
+                order__items__product__vendor=request.user,
+            ).distinct().get(id=dispute_id)
+        except Dispute.DoesNotExist:
+            return Response(
+                {'detail': 'Litige introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        if not dispute.vendor_contacted:
+            return Response(
+                {'detail': "L'admin BelivaY n'a pas encore initié la discussion."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        if dispute.status in ['RESOLVED', 'CLOSED']:
+            return Response(
+                {'detail': 'Ce litige est clôturé. La messagerie est désactivée.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        serializer = VendorDisputeMessageCreateSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+ 
+        message = DisputeMessage.objects.create(
+            dispute     = dispute,
+            sender      = request.user,
+            message     = serializer.validated_data['message'],
+            is_internal = False,
+            sender_role = DisputeMessage.SenderRole.VENDOR,
+        )
+ 
+        dispute.updated_at = timezone.now()
+        dispute.save(update_fields=['updated_at'])
+ 
+        result = VendorDisputeMessageSerializer(message, context={'request': request})
+        return Response(result.data, status=status.HTTP_201_CREATED)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Vendor upload dispute evidence",
+    description=(
+        "Upload une pièce justificative (image, PDF, capture d'écran) "
+        "pour un litige depuis le formulaire de réponse ou le chat. "
+        "Formats acceptés : jpg, jpeg, png, gif, webp, pdf. Max 10 Mo."
+    ),
+    responses={201: VendorDisputeEvidenceSerializer},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_dispute_upload_evidence(request, dispute_id):
+    """Upload une pièce jointe pour un litige."""
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+ 
+        from apps.orders.models import Dispute, DisputeEvidence
+ 
+        try:
+            dispute = Dispute.objects.filter(
+                order__items__product__vendor=request.user,
+            ).distinct().get(id=dispute_id)
+        except Dispute.DoesNotExist:
+            return Response(
+                {'detail': 'Litige introuvable.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        if dispute.status in ['RESOLVED', 'CLOSED']:
+            return Response(
+                {'detail': 'Ce litige est clôturé. Les pièces jointes ne sont plus acceptées.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        file = request.FILES.get('file')
+        if not file:
+            return Response(
+                {'detail': 'Aucun fichier fourni. Champ attendu : "file".'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        # Validation type et taille
+        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
+        if file.content_type not in allowed_types:
+            return Response(
+                {'detail': f"Type de fichier non autorisé ({file.content_type}). Formats acceptés : JPG, PNG, GIF, WEBP, PDF."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if file.size > 10 * 1024 * 1024:  # 10 Mo
+            return Response(
+                {'detail': 'Fichier trop volumineux. Taille maximum : 10 Mo.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        description = request.data.get('description', '')[:255]
+ 
+        evidence = DisputeEvidence.objects.create(
+            dispute     = dispute,
+            uploaded_by = request.user,
+            file        = file,
+            description = description,
+        )
+ 
+        result = VendorDisputeEvidenceSerializer(evidence, context={'request': request})
+        return Response(result.data, status=status.HTTP_201_CREATED)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response(
+            {'detail': 'Profil vendeur introuvable.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )    
     
 #  ADMINISTRATION VENDEURS 
 

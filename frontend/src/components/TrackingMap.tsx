@@ -11,11 +11,11 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const vendorIcon = new L.Icon({
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
+const vendorIcon = new L.DivIcon({
+  html: '<div style="background:#1F2937;width:32px;height:32px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏪</div>',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16],
+  className: "",
 });
 
 const deliveryIcon = new L.DivIcon({
@@ -32,16 +32,87 @@ const customerIcon = new L.DivIcon({
   className: "",
 });
 
-interface TrackingMapProps {
-  vendorLocation?: [number, number];
-  customerLocation?: [number, number];
-  currentLocation?: [number, number];
-  className?: string;
+/* ═══════════════════════════════════════════
+   GPS coordinates for Yaoundé & Douala neighborhoods
+═══════════════════════════════════════════ */
+const NEIGHBORHOODS: Record<string, [number, number]> = {
+  // ── Yaoundé ──
+  "mokolo":       [3.8720, 11.5130],
+  "biyemassi":    [3.8350, 11.4820],
+  "bastos":       [3.8900, 11.5050],
+  "mvan":         [3.8180, 11.5050],
+  "essos":        [3.8660, 11.5350],
+  "nlongkak":     [3.8780, 11.5180],
+  "melen":        [3.8580, 11.4970],
+  "ngoa ekelle":  [3.8550, 11.4900],
+  "nkolbisson":   [3.8600, 11.4650],
+  "ekounou":      [3.8480, 11.5400],
+  "emana":        [3.9050, 11.5250],
+  "nkoldongo":    [3.8650, 11.5280],
+  "mvog-ada":     [3.8560, 11.5160],
+  "tsinga":       [3.8820, 11.5060],
+  "obili":        [3.8620, 11.4940],
+  "mendong":      [3.8400, 11.4750],
+  "nkomo":        [3.8300, 11.5150],
+  "soa":          [3.9700, 11.5900],
+  "nsimeyong":    [3.8400, 11.4950],
+  "etoudi":       [3.8950, 11.5150],
+  "omnisport":    [3.8850, 11.5380],
+  "mimboman":     [3.8730, 11.5450],
+  "awae":         [3.8350, 11.5280],
+  "efoulan":      [3.8480, 11.4880],
+  "centre ville": [3.8667, 11.5167],
+  "yaounde":      [3.8667, 11.5167],
+
+  // ── Douala ──
+  "akwa":         [4.0480, 9.7050],
+  "bonanjo":      [4.0420, 9.6920],
+  "deido":        [4.0580, 9.7130],
+  "bonapriso":    [4.0350, 9.6950],
+  "makepe":       [4.0670, 9.7380],
+  "bepanda":      [4.0600, 9.7350],
+  "bonaberi":     [4.0700, 9.6800],
+  "ndokotti":     [4.0500, 9.7250],
+  "pk8":          [4.0350, 9.7550],
+  "logbessou":    [4.0800, 9.7500],
+  "douala":       [4.0511, 9.7679],
+};
+
+// Default: Mokolo (centre commercial, point de départ par défaut)
+const MOKOLO: [number, number] = NEIGHBORHOODS["mokolo"];
+const DEFAULT_DEST: [number, number] = NEIGHBORHOODS["biyemassi"];
+
+/** Resolve an address string to GPS coordinates */
+function resolveAddress(address?: string | null, city?: string | null): [number, number] {
+  if (!address && !city) return DEFAULT_DEST;
+  const search = `${address || ""} ${city || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  // Search for neighborhood match
+  for (const [name, coords] of Object.entries(NEIGHBORHOODS)) {
+    if (search.includes(name)) return coords;
+  }
+  // If city is Douala, return Douala center
+  if (search.includes("douala")) return NEIGHBORHOODS["douala"];
+  // Default to Yaoundé center
+  return NEIGHBORHOODS["yaounde"];
 }
 
-// Default locations in Cameroon
-const YAOUNDE: [number, number] = [3.8480, 11.5021];
-const DOUALA: [number, number] = [4.0511, 9.7679];
+interface TrackingMapProps {
+  /** Override vendor/origin location */
+  vendorLocation?: [number, number];
+  /** Override customer destination */
+  customerLocation?: [number, number];
+  /** Override current delivery truck position */
+  currentLocation?: [number, number];
+  /** Client address string (e.g. "Biyemassi, Yaoundé") — used to resolve GPS */
+  destinationAddress?: string | null;
+  /** Client city */
+  destinationCity?: string | null;
+  /** Vendor label */
+  originLabel?: string;
+  /** Destination label */
+  destinationLabel?: string;
+  className?: string;
+}
 
 function FitBounds({ points }: { points: [number, number][] }) {
   const map = useMap();
@@ -55,41 +126,54 @@ function FitBounds({ points }: { points: [number, number][] }) {
 }
 
 export default function TrackingMap({
-  vendorLocation = YAOUNDE,
-  customerLocation = DOUALA,
+  vendorLocation,
+  customerLocation,
   currentLocation,
+  destinationAddress,
+  destinationCity,
+  originLabel = "Mokolo — Centre BelivaY",
+  destinationLabel,
   className = "",
 }: TrackingMapProps) {
+  // Origin: always Mokolo by default
+  const origin = vendorLocation || MOKOLO;
+
+  // Destination: resolve from address string, or use explicit prop, or default
+  const destination = customerLocation || resolveAddress(destinationAddress, destinationCity);
+
+  // Delivery truck: midway between origin and destination
   const deliveryPos = currentLocation || [
-    (vendorLocation[0] + customerLocation[0]) / 2 + 0.02,
-    (vendorLocation[1] + customerLocation[1]) / 2 - 0.01,
+    (origin[0] + destination[0]) / 2 + (Math.random() * 0.01 - 0.005),
+    (origin[1] + destination[1]) / 2 + (Math.random() * 0.01 - 0.005),
   ] as [number, number];
 
-  const routePoints: [number, number][] = [vendorLocation, deliveryPos, customerLocation];
-  const allPoints = [vendorLocation, deliveryPos, customerLocation];
+  const routePoints: [number, number][] = [origin, deliveryPos, destination];
+
+  // Build destination label from address
+  const destLabel = destinationLabel || destinationAddress || "Adresse de livraison";
 
   return (
     <div className={`relative z-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 ${className}`}>
       <MapContainer
         center={deliveryPos}
-        zoom={8}
+        zoom={13}
         style={{ height: "280px", width: "100%" }}
         scrollWheelZoom={false}
         attributionControl={false}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <FitBounds points={allPoints} />
+        <FitBounds points={[origin, deliveryPos, destination]} />
 
-        <Marker position={vendorLocation} icon={vendorIcon}>
-          <Popup>🏪 Boutique vendeur</Popup>
+        <Marker position={origin} icon={vendorIcon}>
+          <Popup>{originLabel}</Popup>
         </Marker>
 
         <Marker position={deliveryPos} icon={deliveryIcon}>
           <Popup>🚚 Position actuelle du livreur</Popup>
         </Marker>
 
-        <Marker position={customerLocation} icon={customerIcon}>
-          <Popup>📍 Adresse de livraison</Popup>
+        <Marker position={destination} icon={customerIcon}>
+          <Popup>📍 {destLabel}</Popup>
         </Marker>
 
         <Polyline

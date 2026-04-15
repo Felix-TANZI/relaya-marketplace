@@ -217,7 +217,19 @@ export default function OrdersHistoryPage() {
                 )}
               </div>
               <Suspense fallback={<div className="h-[300px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />}>
-                <TrackingMap className="h-[300px] lg:h-[400px]" />
+                {(() => {
+                  const mapOrder = selectedOrderId
+                    ? orders.find((o) => o.id === selectedOrderId)
+                    : activeDeliveries[0];
+                  return (
+                    <TrackingMap
+                      className="h-[300px] lg:h-[400px]"
+                      destinationAddress={mapOrder?.address}
+                      destinationCity={mapOrder?.city}
+                      destinationLabel={mapOrder ? `${mapOrder.address}, ${mapOrder.city}` : undefined}
+                    />
+                  );
+                })()}
               </Suspense>
               {activeDeliveries.length > 0 && (
                 <div className="mt-3 space-y-2">

@@ -151,6 +151,26 @@ export default {
     escrow_step2_desc: 'Real-time tracked delivery',
     escrow_step3_title: 'You confirm → Seller paid',
     escrow_step3_desc: 'Otherwise: full refund',
+
+    // Flash sales
+    flash_title: 'Flash Sales',
+    flash_subtitle: 'Limited-time offers',
+    flash_ends_in: 'Ends in',
+    flash_filter_all: 'All',
+    flash_see_all: 'See all deals',
+
+    // Premium vendors
+    premium_title: 'Premium Sellers',
+    premium_subtitle: 'Products from our Gold certified sellers',
+    premium_collection: 'Premium Collection',
+    premium_exclusive: 'Premium Exclusives',
+
+    // Category carousels
+    cat_carousel_title: 'By category',
+    recommended_title: 'Recommended for you',
+    recommended_badge: 'AI',
+    new_products: 'New products',
+    view_all: 'See all',
   },
 
   // Product

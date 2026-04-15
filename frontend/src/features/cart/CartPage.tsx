@@ -230,7 +230,7 @@ export default function CartPage() {
               <Link to="/checkout?mode=pickup" className="block">
                 <Button variant="secondary" size="lg" className="w-full rounded-2xl">
                   <Store size={18} />
-                  Payer sans livraison (retrait en boutique)
+                  Payer maintenant (retrait au centre BelivaY)
                 </Button>
               </Link>
               <Link to="/catalog" className="block">

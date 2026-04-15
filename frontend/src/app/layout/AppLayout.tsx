@@ -4,6 +4,7 @@ import Footer from './Footer';
 import ClientTutorial from '@/features/tutorial/ClientTutorial';
 import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 import MobileBottomNav from '@/components/MobileBottomNav';
+import BackToTop from '@/components/BackToTop';
 
 export default function AppLayout() {
   return (
@@ -16,6 +17,7 @@ export default function AppLayout() {
       <GlobalAssistant />
       <ClientTutorial />
       <MobileBottomNav />
+      <BackToTop />
     </div>
   );
 }

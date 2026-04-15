@@ -43,10 +43,10 @@ export default function CheckoutPage() {
       const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
       const order = await ordersApi.create({
         city: cityMap[formData.city] || 'YAOUNDE',
-        address: isPickup ? 'Retrait en boutique' : formData.address,
+        address: isPickup ? 'Retrait au centre BelivaY' : formData.address,
         customer_phone: formData.phone,
         customer_email: '',
-        note: isPickup ? 'CLICK_AND_COLLECT - Retrait en boutique' : '',
+        note: isPickup ? 'CLICK_AND_COLLECT - Retrait au centre BelivaY' : '',
         cart_items: items.map((item) => ({ product_id: item.id, qty: item.quantity })),
       });
       clearCart();
@@ -89,7 +89,7 @@ export default function CheckoutPage() {
           <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{t('checkout.success_message')}</p>
           <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm dark:border-gray-800 dark:bg-gray-900">
             <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-              {isPickup ? "Retrait en boutique" : t('checkout.delivery_details')}
+              {isPickup ? "Retrait au centre BelivaY" : t('checkout.delivery_details')}
             </h3>
             <div className="space-y-2 text-sm text-gray-500">
               <div className="flex items-center gap-2"><User size={14} className="text-gray-400" /><span>{formData.firstName} {formData.lastName}</span></div>
@@ -127,7 +127,7 @@ export default function CheckoutPage() {
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Paiement</p>
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-                {isPickup ? "Payer et retirer en boutique" : t('checkout.title')}
+                {isPickup ? "Payer et retirer au centre BelivaY" : t('checkout.title')}
               </h1>
             </div>
           </div>
@@ -187,10 +187,11 @@ export default function CheckoutPage() {
                     <Store size={24} />
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Retrait en boutique</h3>
+                    <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Retrait au centre BelivaY</h3>
                     <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                      Payez maintenant et récupérez votre commande directement chez le vendeur.
-                      Vous recevrez un SMS avec l'adresse exacte et les horaires de retrait sur votre numéro <strong>{formData.phone || user?.phone || "enregistré"}</strong>.
+                      Payez maintenant et récupérez votre commande dans un centre BelivaY proche de chez vous.
+                      Le vendeur et l'acheteur ne se rencontrent jamais directement — BelivaY assure la confidentialité.
+                      Vous recevrez un SMS avec l'adresse du centre et les horaires de retrait sur votre numéro <strong>{formData.phone || user?.phone || "enregistré"}</strong>.
                     </p>
                     <p className="mt-2 text-sm font-semibold text-green-800 dark:text-green-200"></p>
                   </div>
@@ -208,8 +209,9 @@ export default function CheckoutPage() {
               </div>
               <div className="space-y-3">
                 {[
-                  { id: "momo", name: t('checkout.payment_momo'), icon: <CreditCard size={20} /> },
-                  { id: "orange", name: t('checkout.payment_orange'), icon: <CreditCard size={20} /> },
+                  { id: "momo", name: t('checkout.payment_momo'), icon: <Phone size={20} /> },
+                  { id: "orange", name: t('checkout.payment_orange'), icon: <Phone size={20} /> },
+                  { id: "card", name: "Carte bancaire (Visa / Mastercard)", icon: <CreditCard size={20} /> },
                 ].map((method) => (
                   <button key={method.id} type="button" onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
                     className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${formData.paymentMethod === method.id ? "border-primary bg-primary/5 dark:bg-primary/10" : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800"}`}>

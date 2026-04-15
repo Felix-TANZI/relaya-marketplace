@@ -163,19 +163,43 @@ export default function Header() {
             </span>
           </Link>
 
-          {/* Search Bar - Desktop (hidden on search page) */}
+          {/* Search Bar - Desktop with category filter (hidden on search page) */}
           {!isSearchPage && (
-            <button
+            <div
               id="search"
               data-tutorial="header-search"
-              onClick={() => navigate("/search")}
-              className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center gap-3 px-6 py-3 rounded-xl bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all text-left"
+              className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all overflow-hidden bg-bg-light dark:bg-bg-dark-alt"
             >
-              <Search size={20} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-400 dark:text-gray-500">
-                {t("header.search_placeholder")}
-              </span>
-            </button>
+              <select
+                onChange={(e) => {
+                  if (e.target.value) navigate(`/catalog?search=${e.target.value}`);
+                }}
+                defaultValue=""
+                className="h-full border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-xs font-bold text-gray-600 dark:text-gray-300 outline-none cursor-pointer min-w-[90px]"
+              >
+                <option value="">Tout</option>
+                <option value="mode+femme">Femme</option>
+                <option value="homme">Homme</option>
+                <option value="electronique">Tech</option>
+                <option value="beaute">Beauté</option>
+                <option value="chaussures">Chaussures</option>
+                <option value="maison">Maison</option>
+              </select>
+              <button
+                onClick={() => navigate("/search")}
+                className="flex flex-1 items-center gap-3 px-4 py-3 text-left"
+              >
+                <span className="text-sm text-gray-400 dark:text-gray-500 flex-1">
+                  {t("header.search_placeholder")}
+                </span>
+              </button>
+              <button
+                onClick={() => navigate("/search")}
+                className="flex h-full items-center justify-center bg-primary px-4 text-white hover:bg-primary-dark transition-colors"
+              >
+                <Search size={16} />
+              </button>
+            </div>
           )}
 
           {/* Right Actions */}

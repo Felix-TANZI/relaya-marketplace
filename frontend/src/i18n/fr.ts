@@ -151,6 +151,26 @@ export default {
     escrow_step2_desc: 'Livraison suivie en temps réel',
     escrow_step3_title: 'Vous confirmez → Vendeur payé',
     escrow_step3_desc: 'Sinon : remboursement intégral',
+
+    // Flash sales
+    flash_title: 'Ventes Flash',
+    flash_subtitle: 'Offres limitées dans le temps',
+    flash_ends_in: 'Expire dans',
+    flash_filter_all: 'Tout',
+    flash_see_all: 'Voir toutes les promos',
+
+    // Premium vendors
+    premium_title: 'Vendeurs Premium',
+    premium_subtitle: 'Produits de nos vendeurs certifiés Or',
+    premium_collection: 'Collection Premium',
+    premium_exclusive: 'Exclusivités Premium',
+
+    // Category carousels
+    cat_carousel_title: 'Par catégorie',
+    recommended_title: 'Recommandés pour vous',
+    recommended_badge: 'IA',
+    new_products: 'Nouveaux produits',
+    view_all: 'Voir tout',
   },
 
   // Product

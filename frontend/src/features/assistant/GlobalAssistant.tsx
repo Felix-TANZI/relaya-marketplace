@@ -470,6 +470,7 @@ export default function GlobalAssistant() {
           onClick={() => setIsOpen((current) => !current)}
           className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-110 hover:bg-primary-dark"
           aria-label="Ouvrir l'assistant BelivaY"
+          data-tutorial="chatbot"
         >
           {isOpen ? <X size={20} /> : <Bot size={22} />}
           {/* Sparkle dot */}

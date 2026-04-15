@@ -74,6 +74,16 @@ export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
     routeLabel: "Panier",
   },
   {
+    id: "chatbot",
+    route: "/",
+    selector: "#chatbot-fab, .chatbot-fab, [data-tutorial='chatbot']",
+    title: "Votre assistant BelivaY",
+    description:
+      "Le chatbot est disponible sur toutes les pages. Posez-lui vos questions sur les produits, la livraison, le paiement ou les retours.",
+    helper: "Cliquez sur la bulle en bas à droite pour démarrer une conversation. Il peut aussi vous guider vers les pages de l'application.",
+    routeLabel: "Accueil",
+  },
+  {
     id: "checkout",
     route: "/checkout",
     selector: "#checkout",

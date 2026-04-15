@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  AlertTriangle,
   Bell,
   Calendar,
   Camera,
-  CreditCard,
   Heart,
   Mail,
   MapPin,
+  MessageSquare,
   Package,
   Phone,
   Save,
@@ -37,6 +38,7 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<"profile" | "disputes">("profile");
   const [formData, setFormData] = useState({
     email: "",
     first_name: "",
@@ -158,23 +160,7 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900" data-tutorial="profile-header">
-          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-            Compte client
-          </p>
-          <div className="mt-3 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                Gérez votre espace personnel
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                Profil, préférences, commandes et raccourcis essentiels depuis un seul tableau de bord.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
+        <div className="grid gap-6 xl:grid-cols-[260px_1fr]">
           <aside className="space-y-6">
             <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="text-center">
@@ -208,35 +194,60 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Raccourcis</h3>
-              <div className="mt-4 space-y-3">
+            <div className="overflow-hidden rounded-[1.75rem] border border-orange-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="py-2">
                 {[
-                  { to: "/orders", label: t("profile.menu.orders"), icon: Package },
-                  { to: "/wishlist", label: t("profile.menu.favorites"), icon: Heart },
-                  { to: "/notifications", label: t("profile.menu.notifications"), icon: Bell },
-                ].map(({ to, label, icon: Icon }) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className="flex items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-orange-50 hover:text-primary dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                  >
-                    <span className="inline-flex items-center gap-3">
-                      <Icon size={16} className="text-primary" />
-                      {label}
-                    </span>
-                    <span>→</span>
-                  </Link>
-                ))}
+                  { key: "profile" as const, label: "Mon Profil", icon: User },
+                  { key: "orders" as const, label: t("profile.menu.orders"), icon: Package, to: "/orders" },
+                  { key: "wishlist" as const, label: t("profile.menu.favorites"), icon: Heart, to: "/wishlist" },
+                  { key: "notifications" as const, label: t("profile.menu.notifications"), icon: Bell, to: "/notifications" },
+                  { key: "disputes" as const, label: "Mes Litiges", icon: AlertTriangle },
+                ].map((item) => {
+                  const isActive = !item.to && activeSection === item.key;
+                  if (item.to) {
+                    return (
+                      <Link
+                        key={item.key}
+                        to={item.to}
+                        className="flex items-center justify-between px-4 py-2.5 text-[12.5px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
+                      >
+                        <span className="inline-flex items-center gap-3">
+                          <item.icon size={13} className="opacity-60" />
+                          {item.label}
+                        </span>
+                        <span className="text-gray-300">›</span>
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      key={item.key}
+                      onClick={() => setActiveSection(item.key as "profile" | "disputes")}
+                      className={`relative flex w-full items-center justify-between px-4 py-2.5 text-[12.5px] font-semibold transition-colors ${
+                        isActive
+                          ? "bg-orange-50 text-primary dark:bg-primary/10"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
+                      }`}
+                    >
+                      {isActive && <div className="absolute left-0 top-0 bottom-0 w-[3px] rounded-r bg-primary" />}
+                      <span className="inline-flex items-center gap-3">
+                        <item.icon size={13} className="opacity-60" />
+                        {item.label}
+                      </span>
+                      <span className="text-gray-300">›</span>
+                    </button>
+                  );
+                })}
+                <div className="mx-4 my-1 h-px bg-gray-100 dark:bg-gray-800" />
                 <button
                   onClick={() => window.dispatchEvent(new Event("belivay-open-tutorial"))}
-                  className="flex w-full items-center justify-between rounded-2xl bg-[#fffaf5] px-4 py-3 text-sm font-medium text-gray-700 transition hover:bg-orange-50 hover:text-primary dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
+                  className="flex w-full items-center justify-between px-4 py-2.5 text-[12.5px] font-semibold text-gray-600 transition-colors hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
                 >
                   <span className="inline-flex items-center gap-3">
-                    <ShieldCheck size={16} className="text-primary" />
-                    Relancer la visite guidée
+                    <ShieldCheck size={13} className="opacity-60" />
+                    Visite guidée
                   </span>
-                  <span>→</span>
+                  <span className="text-gray-300">›</span>
                 </button>
               </div>
             </div>
@@ -250,6 +261,57 @@ export default function ProfilePage() {
           </aside>
 
           <section className="space-y-6">
+            {activeSection === "disputes" ? (
+              /* ══ DISPUTES SECTION ══ */
+              <div className="space-y-4">
+                <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+                        <AlertTriangle size={20} className="text-amber-500" />
+                        Mes Litiges
+                      </h3>
+                      <p className="mt-1 text-sm text-gray-500">Gérez vos réclamations et litiges avec les vendeurs.</p>
+                    </div>
+                    <Button variant="primary" className="rounded-2xl" onClick={() => showToast("Fonctionnalité en cours de développement", "warning")}>
+                      <MessageSquare size={14} />
+                      Nouveau litige
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Empty state */}
+                <div className="rounded-[1.75rem] border border-gray-100 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                  <AlertTriangle size={40} className="mx-auto mb-4 text-gray-300" />
+                  <h4 className="text-lg font-bold text-gray-900 dark:text-white">Aucun litige en cours</h4>
+                  <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
+                    Si vous rencontrez un problème avec un produit ou un vendeur, vous pouvez ouvrir un litige depuis les détails de votre commande.
+                  </p>
+                  <Link to="/orders" className="mt-4 inline-flex">
+                    <Button variant="secondary" className="rounded-2xl">
+                      <Package size={14} />
+                      Voir mes commandes
+                    </Button>
+                  </Link>
+                </div>
+
+                {/* Info card */}
+                <div className="rounded-[1.75rem] border border-amber-100 bg-amber-50 p-5 dark:border-amber-900/30 dark:bg-amber-900/10">
+                  <h4 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300">
+                    <ShieldCheck size={14} />
+                    Comment fonctionne un litige ?
+                  </h4>
+                  <ul className="space-y-2 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+                    <li>1. Ouvrez un litige depuis les détails de votre commande</li>
+                    <li>2. Décrivez le problème rencontré avec le produit ou le vendeur</li>
+                    <li>3. L'équipe BelivaY examine votre réclamation sous 48h</li>
+                    <li>4. Si le litige est fondé, l'Escrow vous rembourse intégralement</li>
+                  </ul>
+                </div>
+              </div>
+            ) : (
+            /* ══ PROFILE SECTION ══ */
+            <div className="space-y-6">
             <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -359,6 +421,8 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+            </div>
+            )}
           </section>
         </div>
       </div>

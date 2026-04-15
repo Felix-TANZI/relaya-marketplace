@@ -5,6 +5,7 @@ import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, 
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
+import { saveMockOrder } from '@/data/mockOrders';
 import { useToast } from '@/context/ToastContext';
 
 /* ── Confetti ── */
@@ -77,7 +78,34 @@ export default function CheckoutPage() {
       });
       orderId = order.id;
     } catch {
-      // API unavailable — use mock
+      // API unavailable — save mock order to localStorage so it shows in orders page
+      saveMockOrder({
+        id: orderId,
+        user: 1,
+        customer_email: null,
+        customer_phone: formData.phone,
+        city: formData.city,
+        address: isPickup ? 'Retrait au centre BelivaY' : formData.address,
+        note: isPickup ? 'CLICK_AND_COLLECT' : null,
+        payment_status: 'PAID',
+        fulfillment_status: 'PROCESSING',
+        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
+        subtotal_xaf: total,
+        delivery_fee_xaf: shippingCost,
+        total_xaf: finalTotal,
+        is_paid: true,
+        can_be_fulfilled: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        items: items.map((item, idx) => ({
+          id: idx + 1,
+          product: item.id,
+          title_snapshot: item.name,
+          price_xaf_snapshot: item.price,
+          qty: item.quantity,
+          line_total_xaf: item.price * item.quantity,
+        })),
+      });
     }
     clearCart();
     setPayOverlay(false);

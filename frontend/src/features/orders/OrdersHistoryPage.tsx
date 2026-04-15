@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
+import { getMockOrders, demoOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,10 +41,20 @@ export default function OrdersHistoryPage() {
   useEffect(() => {
     ordersApi
       .getMyOrders()
-      .then((data) => setOrders(data))
-      .catch(() => setError(t("orders.error_message")))
+      .then((data) => {
+        // Merge API orders with any mock orders from checkout
+        const mockOrd = getMockOrders();
+        const apiIds = new Set(data.map((o: Order) => o.id));
+        const merged = [...data, ...mockOrd.filter((m) => !apiIds.has(m.id))];
+        setOrders(merged);
+      })
+      .catch(() => {
+        // API unavailable — use mock + demo orders
+        const mockOrd = getMockOrders();
+        setOrders(mockOrd.length > 0 ? mockOrd : [...getMockOrders(), ...demoOrders]);
+      })
       .finally(() => setLoading(false));
-  }, [t]);
+  }, []);
 
   /* ── Tabs config ── */
   const tabs: { key: TabKey; label: string; emoji: string; statuses: FulfillmentStatus[] }[] = [

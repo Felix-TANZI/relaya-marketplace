@@ -13,10 +13,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
+import { mockProducts } from "@/data/mockProducts";
 
 export default function CartPage() {
   const { t, i18n } = useTranslation();
-  const { items, removeItem, updateQuantity, total, itemCount } = useCart();
+  const { items, removeItem, updateQuantity, total, itemCount, addItem } = useCart();
 
   const shippingCost = items.length > 0 ? 2000 : 0;
   const totalWithShipping = total + shippingCost;
@@ -170,6 +171,83 @@ export default function CartPage() {
               </article>
             ))}
           </section>
+
+          {/* Cross-sell: complementary products */}
+          {items.length > 0 && (() => {
+            // Map categories to complementary categories
+            const complementMap: Record<string, string[]> = {
+              "chaussures": ["mode-femme", "mode-homme", "beaute-sante"],
+              "mode-femme": ["chaussures", "beaute-sante", "maison-deco"],
+              "mode-homme": ["chaussures", "electronique"],
+              "telephones": ["electronique", "maison-deco"],
+              "electronique": ["telephones", "maison-deco"],
+              "beaute-sante": ["mode-femme", "supermarche"],
+              "maison-deco": ["electronique", "supermarche"],
+              "supermarche": ["beaute-sante", "maison-deco"],
+            };
+            const cartItemIds = new Set(items.map(i => i.id));
+            const cartCategories = new Set<string>();
+            for (const item of items) {
+              // Try to find category from mock products
+              const mock = mockProducts.find(m => m.id === item.id);
+              if (mock?.category?.slug) cartCategories.add(mock.category.slug);
+            }
+            const targetCats = new Set<string>();
+            cartCategories.forEach(cat => {
+              (complementMap[cat] || []).forEach(c => targetCats.add(c));
+            });
+            // If no matches found, show random complementary products
+            if (targetCats.size === 0) {
+              mockProducts.slice(0, 4).forEach(p => { if (p.category?.slug) targetCats.add(p.category.slug); });
+            }
+            const suggestions = mockProducts
+              .filter(p => !cartItemIds.has(p.id) && p.category?.slug && targetCats.has(p.category.slug))
+              .slice(0, 6);
+            if (suggestions.length === 0) return null;
+            return (
+              <section className="col-span-full rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <div className="mb-4 flex items-center gap-2">
+                  <div className="h-5 w-[3px] rounded bg-primary" />
+                  <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">Complétez votre commande</h3>
+                  <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[10px] font-bold text-primary dark:bg-primary/10">Suggéré</span>
+                </div>
+                <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
+                  {suggestions.map((product) => {
+                    const price = product.price_final || product.price_xaf;
+                    return (
+                      <div key={product.id} className="w-[130px] flex-shrink-0 cursor-pointer transition-transform hover:-translate-y-0.5">
+                        <Link to={`/product/${product.slug}`}>
+                          <div className="mb-2 flex h-[80px] items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-2xl dark:border-gray-700 dark:bg-gray-800">
+                            <Package size={24} className="text-gray-300" />
+                          </div>
+                          <p className="line-clamp-2 text-[11px] font-bold leading-tight text-gray-800 dark:text-white">
+                            {product.title}
+                          </p>
+                          <p className="mt-1 text-xs font-extrabold text-primary">
+                            {price.toLocaleString("fr-FR")} XAF
+                          </p>
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            addItem({
+                              id: product.id,
+                              name: product.title,
+                              price: product.price_final || product.price_xaf,
+                              quantity: 1,
+                            });
+                          }}
+                          className="mt-1.5 w-full rounded-lg bg-primary px-2 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-primary-dark"
+                        >
+                          + Ajouter
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            );
+          })()}
 
           <aside
             className="h-fit rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 xl:sticky xl:top-24"

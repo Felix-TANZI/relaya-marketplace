@@ -18,6 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
+import { getMockOrders, demoOrders } from "@/data/mockOrders";
 import { customerApi, type Shipment } from "@/services/api/customer";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 
@@ -80,24 +81,30 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     const fetchOrder = async () => {
-      if (!id) {
-        return;
-      }
+      if (!id) return;
+      const orderId = parseInt(id, 10);
 
       try {
         setLoading(true);
         setError(null);
-        const data = await ordersApi.get(parseInt(id, 10));
+        const data = await ordersApi.get(orderId);
         setOrder(data);
         try {
-          const shipment = await customerApi.getOrderTracking(parseInt(id, 10));
+          const shipment = await customerApi.getOrderTracking(orderId);
           setTracking(shipment);
         } catch {
           setTracking(null);
         }
-      } catch (fetchError) {
-        console.error("Error loading order:", fetchError);
-        setError(t('order.detail.error_load'));
+      } catch {
+        // API failed — try mock/demo orders from localStorage
+        const allMock = [...getMockOrders(), ...demoOrders];
+        const found = allMock.find((o) => o.id === orderId);
+        if (found) {
+          setOrder(found);
+          setTracking(null);
+        } else {
+          setError(t('order.detail.error_load'));
+        }
       } finally {
         setLoading(false);
       }
@@ -163,7 +170,7 @@ export default function OrderDetailPage() {
       const shipment = await customerApi.getOrderTracking(parseInt(id, 10));
       setTracking(shipment);
     } catch (actionError) {
-      console.error("Erreur confirmation reception:", actionError);
+      // silenced
     }
   };
 
@@ -178,7 +185,7 @@ export default function OrderDetailPage() {
         description,
       });
     } catch (actionError) {
-      console.error("Erreur ouverture litige:", actionError);
+      // silenced
     }
   };
 

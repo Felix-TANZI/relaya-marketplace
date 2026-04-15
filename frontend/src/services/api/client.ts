@@ -68,8 +68,8 @@ const response = await fetch(url, {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => null);
-    console.error('API Error Details:', errorData);
-    throw new Error(`API Error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
+    // Silent in production — no console.error spam
+    throw new Error(`API Error: ${response.status} ${response.statusText}`);
   }
 
   return response.json();

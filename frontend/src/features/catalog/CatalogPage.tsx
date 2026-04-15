@@ -159,7 +159,7 @@ export default function CatalogPage() {
         const response = await productsApi.listCategories();
         setCategories(response.results || []);
       } catch (fetchError) {
-        console.error("Error loading categories:", fetchError);
+        // silenced
       } finally {
         setCategoriesLoading(false);
       }
@@ -189,7 +189,7 @@ export default function CatalogPage() {
         setProducts(response.results || []);
         setTotalCount(response.count || 0);
       } catch (fetchError) {
-        console.error("Error loading products:", fetchError);
+        // silenced
         setError(t('catalog_page.load_error'));
       } finally {
         setLoading(false);

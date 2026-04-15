@@ -438,7 +438,7 @@ export default function GlobalAssistant() {
     try {
       await handleLocalHelp(trimmedPrompt);
     } catch (error) {
-      console.error("Erreur assistant global:", error);
+      // silenced;
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",

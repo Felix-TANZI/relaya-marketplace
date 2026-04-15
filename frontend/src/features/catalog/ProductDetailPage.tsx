@@ -101,7 +101,7 @@ export default function ProductDetailPage() {
         const response = await productsApi.listCategories();
         setCategories(response.results || []);
       } catch (error) {
-        console.error("Error loading categories:", error);
+        // silenced;
       }
     };
 
@@ -128,7 +128,7 @@ export default function ProductDetailPage() {
         const recommended = await productsApi.list({ page_size: 3 });
         setYouMayLike(recommended.results?.filter((item) => item.id !== data.id) || []);
       } catch (error) {
-        console.error("Error loading product:", error);
+        // silenced;
         showToast(t("product_detail.loading_error"), "error");
       } finally {
         setLoading(false);
@@ -145,7 +145,7 @@ export default function ProductDetailPage() {
         const data = await http<ProductReview[]>(`/api/catalog/products/${id}/reviews/`);
         setReviews(data);
       } catch (error) {
-        console.error("Error loading reviews:", error);
+        // silenced;
       }
     };
 
@@ -202,7 +202,7 @@ export default function ProductDetailPage() {
       );
       setReviews(data);
     } catch (error) {
-      console.error("Error submitting review:", error);
+      // silenced;
       showToast(t("product_detail.review_error"), "error");
     } finally {
       setSubmittingReview(false);

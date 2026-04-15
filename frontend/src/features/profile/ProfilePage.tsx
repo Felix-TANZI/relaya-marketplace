@@ -60,7 +60,7 @@ export default function ProfilePage() {
         });
         setProfileAvatar(data.avatar_url || getStoredProfileAvatar());
       } catch (error) {
-        console.error("Erreur chargement profil:", error);
+        // silenced;
         showToast(t("profile.load_error"), "error");
       } finally {
         setLoading(false);
@@ -78,7 +78,7 @@ export default function ProfilePage() {
       setIsEditing(false);
       showToast(t("profile.update_success"), "success");
     } catch (error) {
-      console.error("Erreur mise à jour profil:", error);
+      // silenced;
       showToast(t("profile.update_error"), "error");
     } finally {
       setSaving(false);
@@ -111,7 +111,7 @@ export default function ProfilePage() {
         showToast(t("profile.avatar_success"), "success");
       })
       .catch((error) => {
-        console.error("Erreur upload avatar:", error);
+        // silenced;
         showToast(t("profile.avatar_error"), "error");
       });
   };
@@ -127,7 +127,7 @@ export default function ProfilePage() {
         showToast(t("profile.avatar_removed"), "success");
       })
       .catch((error) => {
-        console.error("Erreur suppression avatar:", error);
+        // silenced;
         showToast(t("profile.avatar_remove_error"), "error");
       });
   };

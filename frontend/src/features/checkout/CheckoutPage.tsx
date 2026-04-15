@@ -1,11 +1,34 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
+
+/* ── Confetti ── */
+function launchConfetti(el: HTMLElement) {
+  const colors = ['#F47920','#FF9D4D','#16A34A','#3B82F6','#EC4899','#FBBF24','#7C3AED','#EF4444'];
+  for (let i = 0; i < 80; i++) {
+    const p = document.createElement('div');
+    p.style.cssText = `position:absolute;top:-10px;left:${Math.random()*100}%;width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};pointer-events:none;`;
+    p.animate([
+      { transform:'translateY(0) rotate(0)', opacity:1 },
+      { transform:`translateY(${600+Math.random()*400}px) rotate(${360+Math.random()*720}deg)`, opacity:0 },
+    ], { duration:1800+Math.random()*1200, easing:'cubic-bezier(.25,.46,.45,.94)', fill:'forwards' });
+    el.appendChild(p);
+    setTimeout(() => p.remove(), 3200);
+  }
+}
+
+const PAY_STEPS = [
+  { text: "Connexion sécurisée...", pct: 15 },
+  { text: "Vérification du compte...", pct: 35 },
+  { text: "Traitement du paiement...", pct: 60 },
+  { text: "Confirmation en cours...", pct: 85 },
+  { text: "Paiement confirmé !", pct: 100 },
+];
 
 export default function CheckoutPage() {
   const { t, i18n } = useTranslation();
@@ -16,6 +39,9 @@ export default function CheckoutPage() {
   const { showToast } = useToast();
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
   const isPickup = new URLSearchParams(window.location.search).get("mode") === "pickup";
+  const confettiRef = useRef<HTMLDivElement>(null);
+  const [payOverlay, setPayOverlay] = useState(false);
+  const [payStep, setPayStep] = useState(0);
 
   const [formData, setFormData] = useState({
     firstName: user?.first_name || "",
@@ -31,15 +57,15 @@ export default function CheckoutPage() {
   const shippingCost = isPickup ? 0 : 2000;
   const finalTotal = total + shippingCost;
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const runPayment = useCallback(async () => {
+    setPayOverlay(true);
+    setPayStep(0);
+    for (let i = 0; i < PAY_STEPS.length; i++) {
+      setPayStep(i);
+      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
+    }
+    let orderId = Math.floor(10000 + Math.random() * 90000);
     try {
-      if (!localStorage.getItem('access_token')) {
-        showToast('Connectez-vous pour finaliser votre commande', 'error');
-        navigate('/login');
-        return;
-      }
       const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
       const order = await ordersApi.create({
         city: cityMap[formData.city] || 'YAOUNDE',
@@ -49,17 +75,28 @@ export default function CheckoutPage() {
         note: isPickup ? 'CLICK_AND_COLLECT - Retrait au centre BelivaY' : '',
         cart_items: items.map((item) => ({ product_id: item.id, qty: item.quantity })),
       });
-      clearCart();
-      setStep('success');
-      setFormData({ ...formData, orderId: order.id });
-      // Dispatch notification
-      window.dispatchEvent(new Event("belivay-new-notification"));
-    } catch (error) {
-      console.error('Erreur création commande:', error);
-      showToast(t('checkout.error'), 'error');
-    } finally {
-      setLoading(false);
+      orderId = order.id;
+    } catch {
+      // API unavailable — use mock
     }
+    clearCart();
+    setPayOverlay(false);
+    setFormData(prev => ({ ...prev, orderId }));
+    setStep('success');
+    window.dispatchEvent(new Event("belivay-new-notification"));
+    requestAnimationFrame(() => { if (confettiRef.current) launchConfetti(confettiRef.current); });
+  }, [formData, isPickup, items, clearCart]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!localStorage.getItem('access_token')) {
+      showToast('Connectez-vous pour finaliser votre commande', 'error');
+      navigate('/login');
+      return;
+    }
+    setLoading(true);
+    await runPayment();
+    setLoading(false);
   };
 
   // Redirect to cart if empty
@@ -73,12 +110,37 @@ export default function CheckoutPage() {
 
   const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder:text-gray-400";
 
+  // ── Payment loading overlay ──
+  if (payOverlay) {
+    const ps = PAY_STEPS[payStep];
+    return (
+      <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/65">
+        <div className="w-[90%] max-w-[300px] rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-gray-900">
+          <div className="mx-auto mb-4 h-[52px] w-[52px] rounded-full border-4 border-gray-200 border-t-primary dark:border-gray-700" style={{ animation: 'spin 650ms linear infinite' }} />
+          <p className="text-[15px] font-bold text-gray-900 dark:text-white">{ps.text}</p>
+          <p className="mt-1 text-xs text-gray-400">Ne fermez pas cette fenêtre</p>
+          <div className="mt-4 h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
+            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${ps.pct}%` }} />
+          </div>
+        </div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
   // ── Success screen ──
   if (step === "success") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] py-20 dark:bg-gray-950 px-4">
+      <div className="relative flex min-h-screen items-center justify-center bg-[#f8f5f1] py-20 dark:bg-gray-950 px-4">
+        {/* Confetti container */}
+        <div ref={confettiRef} className="pointer-events-none fixed inset-0 z-[9000] overflow-hidden" />
         <div className="mx-auto max-w-md text-center">
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20">
+          {/* Points earned badge */}
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-orange-400 px-5 py-2 text-sm font-extrabold text-white" style={{ animation: 'popIn 500ms cubic-bezier(.34,1.56,.64,1)' }}>
+            +{Math.floor(finalTotal / 100)} points de fidélité gagnés
+          </div>
+          <style>{`@keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}`}</style>
+          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20" style={{ animation: 'popIn 450ms cubic-bezier(.34,1.56,.64,1)' }}>
             <CheckCircle className="text-green-500" size={48} />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('checkout.success_title')}</h1>

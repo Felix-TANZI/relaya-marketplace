@@ -114,7 +114,7 @@ export default function ProductCard({
         await customerApi.removeFavorite(favorite.id);
       }
     } catch (error) {
-      console.error('Erreur mise a jour favoris:', error);
+      // silenced;
       const revertedFavoriteIds = toggleFavoriteProduct(product.id);
       setIsFavorite(revertedFavoriteIds.includes(product.id));
     }

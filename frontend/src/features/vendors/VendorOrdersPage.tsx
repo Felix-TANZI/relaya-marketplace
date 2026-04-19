@@ -6,9 +6,14 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Package, Eye, Filter, CreditCard, Truck } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
-import { vendorsApi, type VendorOrder, type VendorOrderFilters } from '@/services/api/vendors';
+import {
+  vendorsApi,
+  type FulfillmentStatus,
+  type PaymentStatus,
+  type VendorOrder,
+  type VendorOrderFilters,
+} from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
-import type { PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function VendorOrdersPage() {
   const { t } = useTranslation();
@@ -72,16 +77,36 @@ export default function VendorOrdersPage() {
 
   const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: t('vendor.fulfillmentPending') };
-      case 'PROCESSING':
+      case 'CREATED':
+        return { variant: 'warning' as const, text: 'Creee' };
+      case 'PAID_IN_ESCROW':
+        return { variant: 'warning' as const, text: 'Payee' };
+      case 'VENDOR_ACKNOWLEDGED':
+        return { variant: 'default' as const, text: 'Confirmee' };
+      case 'PREPARING':
         return { variant: 'default' as const, text: t('vendor.fulfillmentProcessing') };
-      case 'SHIPPED':
-        return { variant: 'success' as const, text: t('vendor.fulfillmentShipped') };
+      case 'READY_FOR_PICKUP':
+        return { variant: 'success' as const, text: 'Prete' };
+      case 'DRIVER_ASSIGNED':
+        return { variant: 'default' as const, text: 'Livreur assigne' };
+      case 'PICKED_UP':
+        return { variant: 'default' as const, text: 'Recuperee' };
+      case 'OUT_FOR_DELIVERY':
+        return { variant: 'default' as const, text: 'En livraison' };
       case 'DELIVERED':
         return { variant: 'success' as const, text: t('vendor.fulfillmentDelivered') };
+      case 'BUYER_CONFIRMED':
+        return { variant: 'success' as const, text: 'Confirmee par acheteur' };
+      case 'AUTO_CONFIRMED':
+        return { variant: 'success' as const, text: 'Confirmee automatiquement' };
+      case 'RELEASED_TO_VENDOR':
+        return { variant: 'success' as const, text: 'Fonds liberes' };
+      case 'DISPUTED':
+        return { variant: 'error' as const, text: 'Litige' };
       case 'CANCELLED':
         return { variant: 'error' as const, text: t('vendor.fulfillmentCancelled') };
+      case 'REFUNDED':
+        return { variant: 'default' as const, text: t('vendor.paymentRefunded') };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -178,11 +203,21 @@ export default function VendorOrdersPage() {
                   className="w-full px-4 py-2 rounded-lg bg-dark-accent text-dark-text border border-dark-accent focus:border-holo-cyan focus:outline-none"
                 >
                   <option value="">{t('vendor.all')}</option>
-                  <option value="PENDING">{t('vendor.fulfillmentPending')}</option>
-                  <option value="PROCESSING">{t('vendor.fulfillmentProcessing')}</option>
-                  <option value="SHIPPED">{t('vendor.fulfillmentShipped')}</option>
+                  <option value="CREATED">Creee</option>
+                  <option value="PAID_IN_ESCROW">Payee</option>
+                  <option value="VENDOR_ACKNOWLEDGED">Confirmee</option>
+                  <option value="PREPARING">{t('vendor.fulfillmentProcessing')}</option>
+                  <option value="READY_FOR_PICKUP">Prete</option>
+                  <option value="DRIVER_ASSIGNED">Livreur assigne</option>
+                  <option value="PICKED_UP">Recuperee</option>
+                  <option value="OUT_FOR_DELIVERY">En livraison</option>
                   <option value="DELIVERED">{t('vendor.fulfillmentDelivered')}</option>
+                  <option value="BUYER_CONFIRMED">Confirmee par acheteur</option>
+                  <option value="AUTO_CONFIRMED">Confirmee automatiquement</option>
+                  <option value="RELEASED_TO_VENDOR">Fonds liberes</option>
+                  <option value="DISPUTED">Litige</option>
                   <option value="CANCELLED">{t('vendor.fulfillmentCancelled')}</option>
+                  <option value="REFUNDED">{t('vendor.paymentRefunded')}</option>
                 </select>
               </div>
             </div>

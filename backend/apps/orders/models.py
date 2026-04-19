@@ -490,28 +490,6 @@ class PlatformSettings(models.Model):
         ),
     )
 
-    # ── Délais escrow & litiges (configurable admin) ─────────────────────────
-    vendor_reply_h = models.IntegerField(
-        default=72,
-        verbose_name="Délai réponse vendeur (h)",
-        help_text="Heures accordées au vendeur pour répondre à un litige avant décision auto en faveur de l'acheteur.",
-    )
-    escrow_auto_confirm_h = models.IntegerField(
-        default=48,
-        verbose_name="Auto-confirmation escrow (h)",
-        help_text="Heures sans litige après livraison avant confirmation automatique.",
-    )
-    escrow_release_h = models.IntegerField(
-        default=24,
-        verbose_name="Libération fonds post-confirmation (h)",
-        help_text="Heures après confirmation avant libération des fonds au vendeur.",
-    )
-    litige_window_days = models.IntegerField(
-        default=7,
-        verbose_name="Fenêtre ouverture litige (jours)",
-        help_text="Jours après livraison pendant lesquels l'acheteur peut ouvrir un litige.",
-    )
-
     # ── Retrait vendeur ────────────────────────────────────────────────────
     withdrawal_fee_percent = models.DecimalField(
         max_digits=4,

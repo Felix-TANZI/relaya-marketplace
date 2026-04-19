@@ -1,5 +1,5 @@
 // frontend/src/app/layout/SellerLayout.tsx
-// Espace vendeur BelivaY 
+// Espace vendeur BelivaY — même ADN que l'espace client (chaud, orange, propre).
 // Sidebar brun foncé chaleureux + fond crème + orange dominant.
 
 import { useState, useEffect, useRef } from 'react';
@@ -14,7 +14,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
-import SellerSplash from '@/features/vendors/SellerSplash';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -89,7 +88,7 @@ function SidebarNavItem({
   return (
     <NavLink
       to={item.path}
-      end={item.path === '/seller/dashboard'}
+      end
       onClick={onClick}
       className={({ isActive }) => [
         'flex items-center gap-3 px-3 py-[10px] mx-3 rounded-xl text-[13px] font-medium transition-all duration-150',
@@ -266,8 +265,6 @@ export default function SellerLayout() {
   ];
 
   return (
-    <>
-      <SellerSplash />
     <div className="min-h-screen" style={{ background: T.cream }}>
 
       {/* ═══ TOPBAR ═══ */}
@@ -451,6 +448,5 @@ export default function SellerLayout() {
         </div>
       </div>
     </div>
-    </>
   );
 }

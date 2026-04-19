@@ -541,6 +541,19 @@ export const vendorsApi = {
    * Charge les paramètres depuis l'API.
    * Aucune valeur (commission, délais, frais) n'est codée en dur dans le frontend.
    */
+  /**
+   * Mettre à jour le statut d'une commande (compatibilité ascendante)
+   * Préférer updateFulfillmentStatus pour les nouvelles pages.
+   */
+  updateOrderStatus: async (orderId: number, status: string): Promise<VendorOrder> => {
+    const token = localStorage.getItem('access_token');
+    return http<VendorOrder>(`/api/vendors/orders/${orderId}/status/`, {
+      method: 'PATCH',
+      body:   JSON.stringify({ status }),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
   getPlatformSettings: async (): Promise<PlatformSettings> => {
     const token = localStorage.getItem('access_token');
     return http<PlatformSettings>('/api/vendors/admin/settings/', {

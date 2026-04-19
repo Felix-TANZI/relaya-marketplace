@@ -190,22 +190,6 @@ export const router = createBrowserRouter([
         element: <BecomeSellerPage />,
       },
       {
-        path: 'vendors',
-        element: (
-          <ProtectedRoute>
-            <VendorsShowcasePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
-        path: 'vendors',
-        element: (
-          <ProtectedRoute>
-            <VendorsShowcasePage />
-          </ProtectedRoute>
-        ),
-      },
-      {
         path: "*",
         element: <NotFoundPage />,
       },

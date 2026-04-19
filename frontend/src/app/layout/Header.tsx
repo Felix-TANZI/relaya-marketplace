@@ -142,7 +142,6 @@ export default function Header() {
     { label: t("header_nav.home"), to: "/" },
     { label: t("header_nav.promotions"), to: "/catalog?promo=1" },
     { label: t("header_nav.categories"), to: "/categories" },
-    { label: t("header_nav.vendors"), to: "/vendors" },
     { label: t("header_nav.orders"), to: "/orders" },
     { label: t("header_nav.favorites"), to: "/wishlist" },
     { label: t("header_nav.my_account"), to: "/profile" },
@@ -536,16 +535,6 @@ export default function Header() {
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 Categories
-              </span>
-            </Link>
-
-            <Link
-              to="/vendors"
-              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="font-medium text-text-light dark:text-text-dark">
-                Vendeurs
               </span>
             </Link>
 

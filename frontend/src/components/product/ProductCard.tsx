@@ -1,4 +1,4 @@
-import { Heart, ShoppingCart, Star, Store, Truck } from "lucide-react";
+import { Heart, ShoppingCart, Star, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -47,11 +47,14 @@ interface Product {
 interface ProductCardProps {
   product: Product;
   showPromo?: boolean;
+  /** Compact mode for V29 horizontal scroll sections */
+  compact?: boolean;
 }
 
 export default function ProductCard({
   product,
   showPromo = false,
+  compact = false,
 }: ProductCardProps) {
   const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
@@ -72,15 +75,9 @@ export default function ProductCard({
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
-  const productSnippet = (
-    product.short_description ||
-    product.description ||
-    t("product_card.marketplace_price")
-  ).trim();
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
-
     addItem({
       id: product.id,
       name: product.title,
@@ -93,48 +90,125 @@ export default function ProductCard({
   const handleToggleFavorite = async (event: React.MouseEvent) => {
     event.preventDefault();
     event.stopPropagation();
-
     const nextFavoriteIds = toggleFavoriteProduct(product.id);
     const nextIsFavorite = nextFavoriteIds.includes(product.id);
     setIsFavorite(nextIsFavorite);
-
-    if (!localStorage.getItem('access_token')) {
-      return;
-    }
-
+    if (!localStorage.getItem('access_token')) return;
     try {
       if (nextIsFavorite) {
         await customerApi.addFavorite(product.id);
         return;
       }
-
       const favorites = await customerApi.getFavorites();
       const favorite = favorites.find((item) => item.product.id === product.id);
-      if (favorite) {
-        await customerApi.removeFavorite(favorite.id);
-      }
-    } catch (error) {
-      // silenced;
-      const revertedFavoriteIds = toggleFavoriteProduct(product.id);
-      setIsFavorite(revertedFavoriteIds.includes(product.id));
+      if (favorite) await customerApi.removeFavorite(favorite.id);
+    } catch {
+      const reverted = toggleFavoriteProduct(product.id);
+      setIsFavorite(reverted.includes(product.id));
     }
   };
 
   useEffect(() => {
-    const syncFavoriteState = () => setIsFavorite(isFavoriteProduct(product.id));
-
-    window.addEventListener(
-      "belivay-favorites-updated",
-      syncFavoriteState as EventListener,
-    );
-
-    return () => {
-      window.removeEventListener(
-        "belivay-favorites-updated",
-        syncFavoriteState as EventListener,
-      );
-    };
+    const sync = () => setIsFavorite(isFavoriteProduct(product.id));
+    window.addEventListener("belivay-favorites-updated", sync as EventListener);
+    return () => window.removeEventListener("belivay-favorites-updated", sync as EventListener);
   }, [product.id]);
+
+  /* ── COMPACT MODE (V29 horizontal scroll) ── */
+  if (compact) {
+    return (
+      <Link to={`/product/${product.id}`} className="group block h-full">
+        <article className="flex h-full flex-col overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,.04)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
+          {/* Image */}
+          <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700/50">
+            {/* Badges */}
+            {showPromo && product.discount ? (
+              <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
+                <span className="rounded-full bg-primary px-1.5 py-0.5 text-[8.5px] font-bold text-white">
+                  -{product.discount}%
+                </span>
+              </div>
+            ) : null}
+            {/* Verified badge */}
+            <div className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white bg-green-500 shadow-sm">
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+            {/* Favorite */}
+            <button
+              onClick={handleToggleFavorite}
+              className={`absolute bottom-2 right-2 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full backdrop-blur-sm transition-all ${isFavorite ? 'bg-pink-50 opacity-100' : 'bg-white/90 opacity-0 group-hover:opacity-100'}`}
+            >
+              <Heart size={11} className={isFavorite ? "fill-pink-500 text-pink-500" : "text-gray-600"} />
+            </button>
+            {/* Image */}
+            {!imageError && displayImage ? (
+              <img
+                src={displayImage}
+                alt={product.title}
+                loading="lazy"
+                className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-110"
+                onError={() => setImageError(true)}
+              />
+            ) : (
+              <div className="flex h-full items-center justify-center text-3xl">
+                <ShoppingCart size={28} className="text-gray-300" />
+              </div>
+            )}
+          </div>
+          {/* Body */}
+          <div className="flex flex-1 flex-col p-1.5">
+            <h3 className="mb-0.5 line-clamp-2 text-[10.5px] font-bold leading-tight text-gray-900 dark:text-white">
+              {product.title}
+            </h3>
+            <div className="mb-0.5 flex items-center gap-1 text-[9px] font-semibold text-gray-400">
+              <span className="h-1 w-1 flex-shrink-0 rounded-full bg-green-500" />
+              <span className="truncate">Belivay</span>
+            </div>
+            <div className="mb-1 flex items-baseline gap-1">
+              <span className="text-[12px] font-extrabold text-primary">
+                {finalPrice.toLocaleString("fr-FR")}
+              </span>
+              <span className="text-[8.5px] font-extrabold text-primary">FCFA</span>
+            </div>
+            {/* Stars + delivery */}
+            <div className="mb-1 flex items-center justify-between text-[8.5px]">
+              <span className="flex items-center gap-0.5">
+                <Star size={9} className="fill-amber-400 text-amber-400" />
+                <span className="font-semibold text-gray-600">
+                  {product.rating_average?.toFixed(1) || "—"} {hasReviews && `(${product.reviews_count})`}
+                </span>
+              </span>
+              <span className="flex items-center gap-0.5 font-semibold text-green-600">
+                <Truck size={9} />
+                24h
+              </span>
+            </div>
+            {/* CTA */}
+            <button
+              onClick={handleAddToCart}
+              disabled={!inStock}
+              className={`mt-auto rounded-md px-1 py-1 text-[9.5px] font-extrabold transition-all ${
+                inStock
+                  ? "bg-primary text-white hover:bg-primary-dark active:scale-95"
+                  : "bg-gray-200 text-gray-400"
+              }`}
+            >
+              {inStock ? "+ Panier" : "Épuisé"}
+            </button>
+          </div>
+        </article>
+      </Link>
+    );
+  }
+
+  /* ── DEFAULT MODE (full-size) ── */
+  const productSnippet = (
+    product.short_description ||
+    product.description ||
+    t("product_card.marketplace_price")
+  ).trim();
 
   return (
     <Link to={`/product/${product.id}`} className="group block h-full">
@@ -152,125 +226,65 @@ export default function ProductCard({
               </span>
             ) : null}
           </div>
-
           <button
             onClick={handleToggleFavorite}
             className="absolute right-3 top-3 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/90 text-gray-500 shadow-md backdrop-blur-sm transition-all hover:scale-105 hover:text-red-500 dark:bg-gray-800/90 dark:text-gray-300"
           >
-            <Heart
-              size={18}
-              className={isFavorite ? "fill-red-500 text-red-500" : ""}
-            />
+            <Heart size={18} className={isFavorite ? "fill-red-500 text-red-500" : ""} />
           </button>
-
           {!imageError && displayImage ? (
             <img
               src={displayImage}
               alt={product.title}
+              loading="lazy"
               className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
               onError={() => setImageError(true)}
             />
           ) : (
             <div className="flex h-full w-full items-center justify-center">
-              <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white text-primary shadow-sm dark:bg-gray-800">
-                <ShoppingCart size={36} />
-              </div>
+              <ShoppingCart size={36} className="text-primary" />
             </div>
           )}
         </div>
-
-        <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            {product.category ? (
-              <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-primary dark:bg-primary/10">
-                {product.category.name}
-              </span>
-            ) : (
-              <span className="rounded-full bg-gray-100 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:bg-gray-700 dark:text-gray-300">
-                {t('product_card.catalog')}
-              </span>
-            )}
-
-            <span className="flex items-center gap-1 text-[11px] font-medium text-gray-400 dark:text-gray-500">
-              <Store size={12} />
-              Belivay
-            </span>
-          </div>
-
-          <div className="space-y-2">
-            <h3 className="line-clamp-2 min-h-[3rem] text-[15px] font-semibold leading-6 text-gray-900 transition-colors group-hover:text-primary dark:text-white">
-              {product.title}
-            </h3>
-            <p className="line-clamp-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-              {productSnippet}
-            </p>
-          </div>
-
+        <div className="flex flex-1 flex-col gap-3 p-4">
+          <h3 className="line-clamp-2 min-h-[3rem] text-[14px] font-semibold leading-snug text-gray-900 transition-colors group-hover:text-primary dark:text-white">
+            {product.title}
+          </h3>
+          <p className="line-clamp-1 text-xs leading-5 text-gray-500 dark:text-gray-400">{productSnippet}</p>
           <div className="grid gap-2 text-xs sm:grid-cols-2">
-            <div className="flex items-center gap-2 rounded-2xl bg-[#fff7ef] px-3 py-2 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
-              <Star size={13} className="fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold">
+            <div className="flex items-center gap-1.5 rounded-xl bg-[#fff7ef] px-2 py-1.5 text-gray-700 dark:bg-gray-900 dark:text-gray-300">
+              <Star size={11} className="fill-yellow-400 text-yellow-400" />
+              <span className="text-[11px] font-semibold">
                 {hasReviews && product.rating_average
-                  ? `${product.rating_average.toFixed(1)} · ${product.reviews_count} ${t("product_card.reviews")}`
+                  ? `${product.rating_average.toFixed(1)} · ${product.reviews_count}`
                   : t("product_card.new_on_marketplace")}
               </span>
             </div>
-
-            <div className="flex items-center gap-2 rounded-2xl bg-green-50 px-3 py-2 text-green-700 dark:bg-green-900/20 dark:text-green-300">
-              <Truck size={13} />
-              <span className="font-semibold">{t("product_card.max_72h")}</span>
+            <div className="flex items-center gap-1.5 rounded-xl bg-green-50 px-2 py-1.5 text-green-700 dark:bg-green-900/20 dark:text-green-300">
+              <Truck size={11} />
+              <span className="text-[11px] font-semibold">24-72h</span>
             </div>
           </div>
-
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <div className="text-xl font-bold text-gray-900 dark:text-white">
-                {finalPrice.toLocaleString()} FCFA
-              </div>
-              {product.discount ? (
-                <div className="text-xs text-gray-400 line-through dark:text-gray-500">
-                  {product.price_xaf.toLocaleString()} FCFA
-                </div>
-              ) : (
-                <div className="text-xs text-gray-400 dark:text-gray-500">
-                  {t('product_card.marketplace_price')}
-                </div>
-              )}
-            </div>
-
-            <div className="flex flex-col items-end gap-2 text-right">
-              <span
-                className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
-                  inStock
-                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
-                    : "bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300"
-                }`}
-              >
-                {inStock ? t("product_card.max_72h") : t("product_card.unavailable")}
-              </span>
-              <span className="text-[11px] text-gray-400 dark:text-gray-500">
-                Belivay Express
-              </span>
-            </div>
-          </div>
-
-          <div className="mt-auto flex items-center gap-2">
-            <button
-              onClick={handleAddToCart}
-              disabled={!inStock}
-              className={`add-to-cart flex w-full items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold transition-all ${
-                inStock
-                  ? "bg-primary text-white hover:bg-primary-dark"
-                  : "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
-              }`}
-            >
-              <ShoppingCart size={18} />
-              {inStock ? t('product_card.add_to_cart') : t('product_card.unavailable')}
-            </button>
-            <span className="hidden rounded-2xl border border-[#f0e3d6] px-3 py-3 text-xs font-semibold text-gray-500 sm:inline-flex dark:border-gray-700 dark:text-gray-400">
-              Voir
+          <div className="flex items-baseline gap-2">
+            <span className="text-lg font-extrabold text-primary">
+              {finalPrice.toLocaleString("fr-FR")} FCFA
             </span>
+            {product.discount ? (
+              <span className="text-xs text-gray-400 line-through">
+                {product.price_xaf.toLocaleString("fr-FR")}
+              </span>
+            ) : null}
           </div>
+          <button
+            onClick={handleAddToCart}
+            disabled={!inStock}
+            className={`add-to-cart mt-auto flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all ${
+              inStock ? "bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5" : "cursor-not-allowed bg-gray-200 text-gray-500"
+            }`}
+          >
+            <ShoppingCart size={16} />
+            {inStock ? t('product_card.add_to_cart') : t('product_card.unavailable')}
+          </button>
         </div>
       </article>
     </Link>

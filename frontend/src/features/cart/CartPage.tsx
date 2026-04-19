@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
-import { mockProducts } from "@/data/mockProducts";
+import { V29_PRODUCTS as mockProducts } from "@/data/v29Products";
 
 export default function CartPage() {
   const { t, i18n } = useTranslation();
@@ -176,14 +176,16 @@ export default function CartPage() {
           {items.length > 0 && (() => {
             // Map categories to complementary categories
             const complementMap: Record<string, string[]> = {
-              "chaussures": ["mode-femme", "mode-homme", "beaute-sante"],
-              "mode-femme": ["chaussures", "beaute-sante", "maison-deco"],
-              "mode-homme": ["chaussures", "electronique"],
-              "telephones": ["electronique", "maison-deco"],
-              "electronique": ["telephones", "maison-deco"],
-              "beaute-sante": ["mode-femme", "supermarche"],
-              "maison-deco": ["electronique", "supermarche"],
-              "supermarche": ["beaute-sante", "maison-deco"],
+              "shoes": ["femme", "homme", "beaute"],
+              "femme": ["shoes", "beaute", "maison"],
+              "homme": ["shoes", "tech"],
+              "phone": ["tech", "maison"],
+              "tech": ["phone", "maison"],
+              "beaute": ["femme", "super"],
+              "maison": ["tech", "super"],
+              "super": ["beaute", "maison"],
+              "sport": ["shoes", "homme"],
+              "bebe": ["femme", "super"],
             };
             const cartItemIds = new Set(items.map(i => i.id));
             const cartCategories = new Set<string>();

@@ -17,7 +17,8 @@ import {
   Heart,
   Package,
   LogOut,
-  Settings,
+  Filter,
+  Mic,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
@@ -31,11 +32,36 @@ import {
 import { getFavoriteProductIds } from "@/lib/favorites";
 import { customerApi } from "@/services/api/customer";
 
+const SEARCH_FILTER_CATEGORIES = [
+  "Accessoires",
+  "Alimentation",
+  "Chaussures",
+  "Sport",
+  "Vêtements",
+  "Électronique",
+];
+
+function parseSearchValue(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(/^\[([^\]]+)\]\s*(.*)$/);
+  if (!match) {
+    return { category: "", details: trimmed };
+  }
+  return {
+    category: match[1].trim(),
+    details: match[2].trim(),
+  };
+}
+
+function composeSearchValue(category: string, details: string) {
+  if (!category) return details.trim();
+  return details.trim() ? `[${category}] ${details.trim()}` : `[${category}] `;
+}
+
 export default function Header() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const isSearchPage = location.pathname === "/search";
   const { items } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -44,7 +70,11 @@ export default function Header() {
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [notifCount, setNotifCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFilterOpen, setSearchFilterOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const desktopSearchRef = useRef<HTMLDivElement>(null);
+  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   const totalItems = items.reduce(
     (sum: number, item: { quantity: number }) => sum + item.quantity,
@@ -102,6 +132,27 @@ export default function Header() {
     };
   }, []);
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const details = params.get("q") ?? params.get("search") ?? "";
+    const category = params.get("category_label") ?? "";
+    setSearchQuery(composeSearchValue(category, details));
+  }, [location.search]);
+
+  useEffect(() => {
+    const handleOutsideSearch = (event: MouseEvent) => {
+      const target = event.target as Node;
+      const clickedDesktop = desktopSearchRef.current?.contains(target);
+      const clickedMobile = mobileSearchRef.current?.contains(target);
+      if (!clickedDesktop && !clickedMobile) {
+        setSearchFilterOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleOutsideSearch);
+    return () => document.removeEventListener("mousedown", handleOutsideSearch);
+  }, []);
+
   // Notification count
   useEffect(() => {
     // Start with default unread count (welcome + fallback notifications)
@@ -136,15 +187,45 @@ export default function Header() {
     navigate("/");
   };
 
+  const handleSearch = () => {
+    const { category, details } = parseSearchValue(searchQuery);
+    const params = new URLSearchParams();
+    if (details) params.set("q", details);
+    if (category) params.set("category_label", category);
+    navigate(params.toString() ? `/search?${params.toString()}` : "/search");
+  };
+
+  const handleSearchKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") handleSearch();
+  };
+
+  const handleVoiceSearch = () => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = "fr-FR";
+    rec.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      const { category } = parseSearchValue(searchQuery);
+      setSearchQuery(composeSearchValue(category, transcript));
+    };
+    rec.start();
+  };
+
+  const handleCategorySelect = (category: string) => {
+    const { details } = parseSearchValue(searchQuery);
+    setSearchQuery(composeSearchValue(category, details));
+    setSearchFilterOpen(false);
+  };
+
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
   const clientNavItems = [
     { label: t("header_nav.home"), to: "/" },
-    { label: t("header_nav.promotions"), to: "/catalog?promo=1" },
-    { label: t("header_nav.categories"), to: "/categories" },
+    { label: "Promotions", to: "/promotions" },
     { label: t("header_nav.orders"), to: "/orders" },
     { label: t("header_nav.favorites"), to: "/wishlist" },
-    { label: t("header_nav.my_account"), to: "/profile" },
+    { label: "Mon compte", to: "/profile" },
   ];
 
   return (
@@ -153,53 +234,161 @@ export default function Header() {
         {/* Top Bar */}
         <div className="flex items-center justify-between py-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold text-xl">B</span>
-            </div>
-            <span className="text-2xl font-display font-bold text-text-light dark:text-text-dark">
-              Belivay
-            </span>
+          <Link to="/" className="flex items-center flex-shrink-0" aria-label="Accueil BelivaY">
+            <img
+              src="/belivay-logo.png"
+              alt="BelivaY"
+              style={{ height: "40px", width: "auto", display: "block", objectFit: "contain" }}
+            />
           </Link>
 
-          {/* Search Bar - Desktop with category filter (hidden on search page) */}
-          {!isSearchPage && (
+          {/* Search Bar - Desktop — style v29 */}
+          <div
+            id="search"
+            data-tutorial="header-search"
+            className="hidden lg:flex flex-1 mx-8 items-center"
+            ref={desktopSearchRef}
+            style={{ maxWidth: "560px", position: "relative" }}
+          >
             <div
-              id="search"
-              data-tutorial="header-search"
-              className="hidden lg:flex flex-1 max-w-2xl mx-8 items-center rounded-xl border border-gray-200 dark:border-gray-700 hover:border-primary hover:ring-2 hover:ring-primary/20 transition-all overflow-hidden bg-bg-light dark:bg-bg-dark-alt"
+              className="search-bar-v29 flex w-full"
+              style={{
+                height: "42px",
+                border: "1.5px solid #E5E7EB",
+                borderRadius: "10px",
+                overflow: "hidden",
+                background: "#fff",
+                transition: "border-color 150ms, box-shadow 150ms",
+              }}
+              onFocus={(e) => {
+                const el = e.currentTarget;
+                el.style.borderColor = "#F47920";
+                el.style.boxShadow = "0 0 0 3px rgba(244,121,32,.22)";
+              }}
+              onBlur={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  const el = e.currentTarget;
+                  el.style.borderColor = "#E5E7EB";
+                  el.style.boxShadow = "none";
+                }
+              }}
             >
-              <select
-                onChange={(e) => {
-                  if (e.target.value) navigate(`/catalog?search=${e.target.value}`);
+              {/* Filter funnel button */}
+              <button
+                type="button"
+                onClick={() => setSearchFilterOpen((open) => !open)}
+                title="Filtres"
+                aria-label="Ouvrir les filtres"
+                style={{
+                  padding: "0 12px",
+                  background: "#F9FAFB",
+                  borderRight: "1.5px solid #E5E7EB",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 150ms",
+                  color: "#4B5563",
                 }}
-                defaultValue=""
-                className="h-full border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 px-3 py-3 text-xs font-bold text-gray-600 dark:text-gray-300 outline-none cursor-pointer min-w-[90px]"
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#F3F4F6")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#F9FAFB")}
               >
-                <option value="">Tout</option>
-                <option value="mode+femme">Femme</option>
-                <option value="homme">Homme</option>
-                <option value="electronique">Tech</option>
-                <option value="beaute">Beauté</option>
-                <option value="chaussures">Chaussures</option>
-                <option value="maison">Maison</option>
-              </select>
-              <button
-                onClick={() => navigate("/search")}
-                className="flex flex-1 items-center gap-3 px-4 py-3 text-left"
-              >
-                <span className="text-sm text-gray-400 dark:text-gray-500 flex-1">
-                  {t("header.search_placeholder")}
-                </span>
+                <Filter size={15} strokeWidth={2.5} />
               </button>
+
+              {/* Text input */}
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={handleSearchKey}
+                placeholder={t("header.search_placeholder") || "Rechercher votre produit"}
+                aria-label="Rechercher"
+                style={{
+                  flex: 1,
+                  padding: "0 12px",
+                  fontSize: "13.5px",
+                  color: "#1F2937",
+                  background: "transparent",
+                  border: "none",
+                  outline: "none",
+                  minWidth: 0,
+                }}
+              />
+
+              {/* Voice search button */}
               <button
-                onClick={() => navigate("/search")}
-                className="flex h-full items-center justify-center bg-primary px-4 text-white hover:bg-primary-dark transition-colors"
+                onClick={handleVoiceSearch}
+                title="Recherche vocale"
+                aria-label="Recherche vocale"
+                style={{
+                  padding: "0 8px",
+                  background: "transparent",
+                  border: "none",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  color: "#9CA3AF",
+                  transition: "color 150ms",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#F47920")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
               >
-                <Search size={16} />
+                <Mic size={15} strokeWidth={2} />
+              </button>
+
+              {/* Orange search button */}
+              <button
+                onClick={handleSearch}
+                aria-label="Lancer la recherche"
+                style={{
+                  width: "44px",
+                  background: "#F47920",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  cursor: "pointer",
+                  transition: "background 150ms",
+                  border: "none",
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "#C85E14")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "#F47920")}
+              >
+                <Search size={16} color="#fff" strokeWidth={2.5} />
               </button>
             </div>
-          )}
+
+            {searchFilterOpen && (
+              <div className="absolute left-0 right-0 top-[calc(100%+7px)] z-50 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
+                <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
+                  Catégories
+                </div>
+                <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                  {SEARCH_FILTER_CATEGORIES.map((category) => {
+                    const isActive = parseSearchValue(searchQuery).category === category;
+                    return (
+                      <button
+                        key={category}
+                        type="button"
+                        onClick={() => handleCategorySelect(category)}
+                        className={`rounded-xl px-3 py-3 text-left text-[12px] font-bold transition-all ${
+                          isActive
+                            ? "bg-orange-50 text-primary"
+                            : "text-gray-700 hover:bg-gray-50 hover:text-primary"
+                        }`}
+                      >
+                        {category}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-2 lg:gap-4">
@@ -389,20 +578,6 @@ export default function Header() {
                     </Link>
 
                     <Link
-                      to="/notifications"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Bell
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        Notifications
-                      </span>
-                    </Link>
-
-                    <Link
                       to="/help"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
                       onClick={() => setUserMenuOpen(false)}
@@ -431,22 +606,6 @@ export default function Header() {
                         Support WhatsApp
                       </span>
                     </a>
-
-                    {user.is_vendor && (
-                      <Link
-                        to="/vendor/dashboard"
-                        className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                        onClick={() => setUserMenuOpen(false)}
-                      >
-                        <Settings
-                          size={18}
-                          className="text-text-light-secondary dark:text-text-dark-secondary"
-                        />
-                        <span className="text-text-light dark:text-text-dark">
-                          {t("header.seller_dashboard")}
-                        </span>
-                      </Link>
-                    )}
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                       <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
@@ -495,21 +654,94 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Search Bar - Mobile (hidden on search page) */}
-        {!isSearchPage && (
-          <button
-            onClick={() => navigate("/search")}
-            id="search-mobile"
-            className="lg:hidden pb-4 w-full"
+        {/* Search Bar - Mobile — style v29 */}
+        <div id="search-mobile" className="lg:hidden pb-3 w-full" ref={mobileSearchRef}>
+          <div
+            className="flex w-full"
+            style={{
+              height: "40px",
+              border: "1.5px solid #E5E7EB",
+              borderRadius: "10px",
+              overflow: "hidden",
+              background: "#fff",
+            }}
           >
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg bg-bg-light dark:bg-bg-dark-alt border border-gray-200 dark:border-gray-700 hover:border-primary transition-all">
-              <Search size={18} className="text-gray-400 flex-shrink-0" />
-              <span className="text-sm text-gray-400 dark:text-gray-500">
-                {t("header.search_placeholder")}
-              </span>
+            <button
+              type="button"
+              onClick={() => setSearchFilterOpen((open) => !open)}
+              style={{
+                width: "42px",
+                background: "#F9FAFB",
+                borderRight: "1.5px solid #E5E7EB",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "#4B5563",
+                cursor: "pointer",
+              }}
+            >
+              <Filter size={15} strokeWidth={2.5} />
+            </button>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={handleSearchKey}
+              placeholder={t("header.search_placeholder") || "Rechercher votre produit"}
+              style={{
+                flex: 1,
+                padding: "0 12px",
+                fontSize: "13px",
+                color: "#1F2937",
+                background: "transparent",
+                border: "none",
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleSearch}
+              style={{
+                width: "42px",
+                background: "#F47920",
+                flexShrink: 0,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                cursor: "pointer",
+                border: "none",
+              }}
+            >
+              <Search size={15} color="#fff" strokeWidth={2.5} />
+            </button>
+          </div>
+          {searchFilterOpen && (
+            <div className="mt-2 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
+              <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
+                Catégories
+              </div>
+              <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                {SEARCH_FILTER_CATEGORIES.map((category) => {
+                  const isActive = parseSearchValue(searchQuery).category === category;
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => handleCategorySelect(category)}
+                      className={`rounded-xl px-3 py-3 text-left text-[12px] font-bold transition-all ${
+                        isActive
+                          ? "bg-orange-50 text-primary"
+                          : "text-gray-700 hover:bg-gray-50 hover:text-primary"
+                      }`}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </button>
-        )}
+          )}
+        </div>
 
         <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
           {clientNavItems.map((item) => (
@@ -529,16 +761,6 @@ export default function Header() {
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-bg-dark">
           <nav className="container mx-auto px-4 py-4 space-y-2">
             <Link
-              to="/categories"
-              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="font-medium text-text-light dark:text-text-dark">
-                Categories
-              </span>
-            </Link>
-
-            <Link
               to="/catalog"
               className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
               onClick={() => setMobileMenuOpen(false)}
@@ -548,7 +770,7 @@ export default function Header() {
               </span>
             </Link>
             <Link
-              to="/catalog?promo=1"
+              to="/promotions"
               className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -560,21 +782,12 @@ export default function Header() {
             {user ? (
               <>
                 <Link
-                  to="/profile"
+                  to="/profile?tab=disputes"
                   className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
                   onClick={() => setMobileMenuOpen(false)}
                 >
                   <span className="font-medium text-text-light dark:text-text-dark">
-                    {t("header.profile")}
-                  </span>
-                </Link>
-                <Link
-                  to="/notifications"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    Notifications
+                    Litiges ouverts
                   </span>
                 </Link>
                 <Link
@@ -586,17 +799,6 @@ export default function Header() {
                     {t("header.orders")}
                   </span>
                 </Link>
-                {user.is_vendor && (
-                  <Link
-                    to="/vendor/dashboard"
-                    className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                    onClick={() => setMobileMenuOpen(false)}
-                  >
-                    <span className="font-medium text-text-light dark:text-text-dark">
-                      {t("header.seller_dashboard")}
-                    </span>
-                  </Link>
-                )}
                 <Link
                   to="/wishlist"
                   className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"

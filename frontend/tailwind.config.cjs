@@ -8,26 +8,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ── Palette principale de l'app client (inchangée) ──
+        // ── Palette principale client alignée sur la maquette v29 ──
         primary: {
-          DEFAULT: '#F59E0B',
-          light: '#FCD34D',
-          dark: '#D97706',
+          DEFAULT: '#F47920',
+          light: '#F8A45E',
+          dark: '#C85E14',
         },
         secondary: {
-          DEFAULT: '#8B5CF6',
-          light: '#A78BFA',
-          dark: '#7C3AED',
+          DEFAULT: '#1D4ED8',
+          light: '#60A5FA',
+          dark: '#1E40AF',
         },
         bg: {
-          light: '#F3F1F9',
-          'light-alt': '#E9E4F5',
-          dark: '#1A1625',
-          'dark-alt': '#231D2E',
+          light: '#F3F4F6',
+          'light-alt': '#F9FAFB',
+          dark: '#090E1A',
+          'dark-alt': '#111827',
         },
         text: {
           light: '#1F2937',
-          'light-secondary': '#6B7280',
+          'light-secondary': '#4B5563',
           dark: '#F9FAFB',
           'dark-secondary': '#D1D5DB',
         },
@@ -85,11 +85,11 @@ module.exports = {
       },
 
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
-        display: ['Poppins', 'Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        display: ['Syne', '"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
         // Typographie spécifique espace vendeur (Plus Jakarta Sans + Syne via CDN ou Google Fonts)
-        'vendor-body':    ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
-        'vendor-display': ['Syne', 'Poppins', 'sans-serif'],
+        'vendor-body':    ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+        'vendor-display': ['Syne', '"Plus Jakarta Sans"', 'sans-serif'],
       },
 
       borderRadius: {

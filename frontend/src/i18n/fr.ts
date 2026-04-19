@@ -1111,10 +1111,10 @@ export default {
   // Mobile Nav
   mobile_nav: {
     home: 'Accueil',
-    categories: 'Catégories',
+    promotions: 'Promos',
     orders: 'Commande',
-    contacts: 'Contacts',
-    profile: 'Profil',
+    favorites: 'Favoris',
+    disputes: 'Litiges',
   },
 
   // Header Nav

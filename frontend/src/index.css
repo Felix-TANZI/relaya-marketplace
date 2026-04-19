@@ -1,30 +1,51 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Syne:wght@600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --belivay-orange: #f47920;
+    --belivay-orange-dark: #c85e14;
+    --belivay-surface: #ffffff;
+    --belivay-page: #f3f4f6;
+    --belivay-text: #1f2937;
+  }
+
   * {
     @apply border-gray-200 dark:border-gray-700;
   }
   
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+  }
+
   body {
     @apply bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Poppins', 'Inter', system-ui, sans-serif;
+    font-family: 'Syne', 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+
+  a {
+    text-decoration: none;
+  }
+
+  ::selection {
+    @apply bg-primary text-white;
+  }
+
+  ::-moz-selection {
+    @apply bg-primary text-white;
   }
 }
 
 @layer utilities {
-  /* Smooth scrolling */
-  html {
-    scroll-behavior: smooth;
-  }
-
   /* Hide scrollbar but keep functionality */
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
@@ -187,13 +208,4 @@
   img:not([src*=".svg"]) {
     opacity: 0.9;
   }
-}
-
-/* Selection color */
-::selection {
-  @apply bg-primary text-white;
-}
-
-::-moz-selection {
-  @apply bg-primary text-white;
 }

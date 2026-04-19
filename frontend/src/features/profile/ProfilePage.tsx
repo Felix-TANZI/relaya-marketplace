@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
@@ -21,6 +21,7 @@ import {
 import { Button, Input } from "@/components/ui";
 import { authApi, type User as UserType } from "@/services/api/auth";
 import { useToast } from "@/context/ToastContext";
+import { customerApi, type CustomerNotification } from "@/services/api/customer";
 import {
   getStoredProfileAvatar,
   getUserDisplayName,
@@ -28,9 +29,188 @@ import {
   setStoredProfileAvatar,
 } from "@/lib/profileAvatar";
 
+/* ══ DISPUTE SECTION with integrated chat ══ */
+function DisputeSection({
+  supportMessages,
+  formatDate,
+}: {
+  supportMessages: CustomerNotification[];
+  formatDate: (d: string) => string;
+}) {
+  const navigate = useNavigate();
+  const [chatMsg, setChatMsg] = useState("");
+  const [chatHistory, setChatHistory] = useState<{ from: "user" | "support"; text: string; time: string }[]>([
+    { from: "support", text: "Bonjour ! Je suis l'assistant BelivaY. Comment puis-je vous aider avec votre commande ou un litige ?", time: new Date().toISOString() },
+  ]);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const sendMessage = () => {
+    const text = chatMsg.trim();
+    if (!text) return;
+    const now = new Date().toISOString();
+    setChatHistory((h) => [...h, { from: "user", text, time: now }]);
+    setChatMsg("");
+    setTimeout(() => {
+      setChatHistory((h) => [...h, {
+        from: "support",
+        text: "Merci pour votre message. Un conseiller BelivaY va traiter votre demande dans les 24h. Vous serez notifié par email.",
+        time: new Date().toISOString(),
+      }]);
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 800);
+  };
+
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
+              <AlertTriangle size={20} className="text-amber-500" />
+              Litiges ouverts
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              Réclamations en cours · Réponse garantie sous 24h
+            </p>
+          </div>
+          <Link to="/orders">
+            <Button variant="secondary" className="rounded-2xl">
+              <Package size={14} />
+              Voir mes commandes
+            </Button>
+          </Link>
+        </div>
+      </div>
+
+      <div className="grid gap-4 xl:grid-cols-[1fr_1fr]">
+        {/* Aucun litige + notifications */}
+        <div className="space-y-3">
+          <div className="rounded-[1.75rem] border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <AlertTriangle size={36} className="mx-auto mb-3 text-gray-300" />
+            <h4 className="text-base font-bold text-gray-900 dark:text-white">Aucun litige en cours</h4>
+            <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
+              Ouvrez un litige depuis les détails d'une commande en cas de problème.
+            </p>
+          </div>
+
+          {supportMessages.length > 0 && (
+            <div className="rounded-[1.75rem] border border-blue-100 bg-white p-5 shadow-sm dark:border-blue-900/40 dark:bg-gray-900">
+              <div className="mb-3 flex items-center gap-2">
+                <Bell size={16} className="text-blue-500" />
+                <h4 className="text-sm font-semibold text-gray-900 dark:text-white">Messages BelivaY</h4>
+              </div>
+              <div className="space-y-2">
+                {supportMessages.map((n) => (
+                  <div key={n.id} className="rounded-xl border border-blue-100 bg-blue-50/70 p-3 dark:border-blue-900/40 dark:bg-blue-950/20">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <p className="text-[12.5px] font-bold text-gray-900 dark:text-white">{n.title}</p>
+                        <p className="mt-0.5 text-[12px] text-gray-600 dark:text-gray-300">{n.message}</p>
+                      </div>
+                      {!n.is_read && (
+                        <span className="rounded-full bg-primary px-2 py-0.5 text-[9px] font-extrabold text-white">Nouveau</span>
+                      )}
+                    </div>
+                    <p className="mt-2 text-[11px] text-gray-400">{formatDate(n.created_at)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Chat intégré */}
+        <div className="flex flex-col overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900" style={{ minHeight: "400px" }}>
+          {/* Chat header */}
+          <div className="flex items-center gap-3 border-b border-gray-100 bg-gradient-to-r from-primary/90 to-orange-500 px-5 py-3 dark:border-gray-800">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20">
+              <MessageSquare size={15} className="text-white" />
+            </div>
+            <div>
+              <p className="text-[13px] font-bold text-white">Support BelivaY</p>
+              <p className="text-[10px] text-white/70">Réponse sous 24h · Équipe disponible</p>
+            </div>
+            <div className="ml-auto flex items-center gap-1.5">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />
+              <span className="text-[10px] text-white/80">En ligne</span>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div className="flex-1 overflow-y-auto p-4 space-y-3" style={{ maxHeight: "280px" }}>
+            {chatHistory.map((msg, i) => (
+              <div key={i} className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}>
+                {msg.from === "support" && (
+                  <div className="mr-2 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
+                    <ShieldCheck size={12} className="text-primary" />
+                  </div>
+                )}
+                <div
+                  className={`max-w-[80%] rounded-2xl px-3 py-2 text-[12.5px] leading-relaxed ${
+                    msg.from === "user"
+                      ? "rounded-br-sm bg-primary text-white"
+                      : "rounded-bl-sm bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                  }`}
+                >
+                  {msg.text}
+                  <p className={`mt-1 text-[10px] ${msg.from === "user" ? "text-white/60" : "text-gray-400"}`}>
+                    {formatDate(msg.time)}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          {/* Input */}
+          <div className="border-t border-gray-100 p-3 dark:border-gray-800">
+            <div className="flex items-end gap-2">
+              <textarea
+                value={chatMsg}
+                onChange={(e) => setChatMsg(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder="Décrivez votre problème… (Entrée pour envoyer)"
+                rows={2}
+                className="flex-1 resize-none rounded-xl border border-gray-200 px-3 py-2 text-[12.5px] outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+              />
+              <button
+                onClick={sendMessage}
+                disabled={!chatMsg.trim()}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-primary text-white transition-all hover:bg-orange-700 disabled:opacity-40"
+              >
+                <MessageSquare size={15} />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Info card */}
+      <div className="rounded-[1.75rem] border border-amber-100 bg-amber-50 p-5 dark:border-amber-900/30 dark:bg-amber-900/10">
+        <h4 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300">
+          <ShieldCheck size={14} />
+          Comment fonctionne un litige ?
+        </h4>
+        <ul className="space-y-1.5 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
+          <li>1. Ouvrez un litige depuis les détails de votre commande</li>
+          <li>2. Décrivez le problème via le chat ci-dessus</li>
+          <li>3. L'équipe BelivaY examine votre réclamation sous 24h</li>
+          <li>4. Si le litige est fondé, l'Escrow vous rembourse intégralement</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { showToast } = useToast();
 
   const [user, setUser] = useState<UserType | null>(null);
@@ -38,7 +218,10 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
-  const [activeSection, setActiveSection] = useState<"profile" | "disputes">("profile");
+  const [supportMessages, setSupportMessages] = useState<CustomerNotification[]>([]);
+  const [activeSection, setActiveSection] = useState<"profile" | "disputes">(
+    searchParams.get("tab") === "disputes" ? "disputes" : "profile",
+  );
   const [formData, setFormData] = useState({
     email: "",
     first_name: "",
@@ -69,6 +252,32 @@ export default function ProfilePage() {
 
     void fetchProfile();
   }, [showToast, t]);
+
+  useEffect(() => {
+    const nextSection = searchParams.get("tab") === "disputes" ? "disputes" : "profile";
+    setActiveSection(nextSection);
+  }, [searchParams]);
+
+  useEffect(() => {
+    const fetchSupportMessages = async () => {
+      try {
+        const notifications = await customerApi.getNotifications();
+        setSupportMessages(
+          notifications.filter(
+            (notification) =>
+              notification.notification_type === "SUPPORT" ||
+              /support|litige|belivay/i.test(
+                `${notification.title} ${notification.message}`,
+              ),
+          ),
+        );
+      } catch {
+        setSupportMessages([]);
+      }
+    };
+
+    void fetchSupportMessages();
+  }, []);
 
   const handleSave = async () => {
     try {
@@ -156,6 +365,25 @@ export default function ProfilePage() {
 
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
+  const fallbackSupportMessages = [
+    {
+      id: 0,
+      title: "Message BelivaY",
+      message:
+        "Tous vos échanges support et le suivi de réclamation apparaissent ici dès qu'un litige est ouvert.",
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      action_url: "",
+      is_read: false,
+      notification_type: "SUPPORT" as const,
+    },
+  ];
+  const displayedSupportMessages =
+    supportMessages.length > 0 ? supportMessages : fallbackSupportMessages;
+  const changeSection = (section: "profile" | "disputes") => {
+    setActiveSection(section);
+    setSearchParams(section === "disputes" ? { tab: "disputes" } : {});
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
@@ -222,7 +450,7 @@ export default function ProfilePage() {
                   return (
                     <button
                       key={item.key}
-                      onClick={() => setActiveSection(item.key as "profile" | "disputes")}
+                      onClick={() => changeSection(item.key as "profile" | "disputes")}
                       className={`relative flex w-full items-center justify-between px-4 py-2.5 text-[12.5px] font-semibold transition-colors ${
                         isActive
                           ? "bg-orange-50 text-primary dark:bg-primary/10"
@@ -263,52 +491,10 @@ export default function ProfilePage() {
           <section className="space-y-6">
             {activeSection === "disputes" ? (
               /* ══ DISPUTES SECTION ══ */
-              <div className="space-y-4">
-                <div className="rounded-[1.75rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="flex items-center gap-2 text-xl font-semibold text-gray-900 dark:text-white">
-                        <AlertTriangle size={20} className="text-amber-500" />
-                        Mes Litiges
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">Gérez vos réclamations et litiges avec les vendeurs.</p>
-                    </div>
-                    <Button variant="primary" className="rounded-2xl" onClick={() => showToast("Fonctionnalité en cours de développement", "warning")}>
-                      <MessageSquare size={14} />
-                      Nouveau litige
-                    </Button>
-                  </div>
-                </div>
-
-                {/* Empty state */}
-                <div className="rounded-[1.75rem] border border-gray-100 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                  <AlertTriangle size={40} className="mx-auto mb-4 text-gray-300" />
-                  <h4 className="text-lg font-bold text-gray-900 dark:text-white">Aucun litige en cours</h4>
-                  <p className="mx-auto mt-2 max-w-sm text-sm text-gray-500">
-                    Si vous rencontrez un problème avec un produit ou un vendeur, vous pouvez ouvrir un litige depuis les détails de votre commande.
-                  </p>
-                  <Link to="/orders" className="mt-4 inline-flex">
-                    <Button variant="secondary" className="rounded-2xl">
-                      <Package size={14} />
-                      Voir mes commandes
-                    </Button>
-                  </Link>
-                </div>
-
-                {/* Info card */}
-                <div className="rounded-[1.75rem] border border-amber-100 bg-amber-50 p-5 dark:border-amber-900/30 dark:bg-amber-900/10">
-                  <h4 className="mb-2 flex items-center gap-2 text-sm font-bold text-amber-800 dark:text-amber-300">
-                    <ShieldCheck size={14} />
-                    Comment fonctionne un litige ?
-                  </h4>
-                  <ul className="space-y-2 text-xs leading-relaxed text-amber-700 dark:text-amber-400">
-                    <li>1. Ouvrez un litige depuis les détails de votre commande</li>
-                    <li>2. Décrivez le problème rencontré avec le produit ou le vendeur</li>
-                    <li>3. L'équipe BelivaY examine votre réclamation sous 48h</li>
-                    <li>4. Si le litige est fondé, l'Escrow vous rembourse intégralement</li>
-                  </ul>
-                </div>
-              </div>
+              <DisputeSection
+                supportMessages={displayedSupportMessages}
+                formatDate={formatDate}
+              />
             ) : (
             /* ══ PROFILE SECTION ══ */
             <div className="space-y-6">

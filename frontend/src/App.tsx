@@ -18,6 +18,7 @@ import PublicRoute    from "./components/auth/PublicRoute";
 
 // ── Pages publiques ────────────────────────────────────────────────────────
 import HomePage          from "./features/home/HomePage";
+import SearchPage        from "./features/search/SearchPage";
 import CatalogPage       from "./features/catalog/CatalogPage";
 import ProductDetailPage from "./features/catalog/ProductDetailPage";
 import CartPage          from "./features/cart/CartPage";
@@ -77,7 +78,8 @@ function App() {
 
           {/* Pages publiques */}
           <Route index element={<HomePage />} />
-          <Route path="catalog"     element={<CatalogPage />} />
+          <Route path="search"      element={<SearchPage />} />
+          <Route path="catalog"     element={<Navigate to="/" replace />} />
           <Route path="product/:id" element={<ProductDetailPage />} />
           <Route path="cart"        element={<CartPage />} />
           <Route path="help"        element={<HelpPage />} />

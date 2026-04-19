@@ -26,6 +26,7 @@ import LoginPage         from "./features/auth/LoginPage";
 import RegisterPage      from "./features/auth/RegisterPage";
 import HelpPage          from "./features/help/HelpPage";
 import ContactPage       from "./features/contact/ContactPage";
+import PublicShopPage  from "./features/catalog/PublicShopPage";
 import AboutPage         from "./features/about/AboutPage";
 
 // ── Pages utilisateur (authentifié) ────────────────────────────────────────
@@ -83,6 +84,7 @@ function App() {
           <Route path="help"        element={<HelpPage />} />
           <Route path="contact"     element={<ContactPage />} />
           <Route path="about"       element={<AboutPage />} />
+          <Route path="boutique/:slug"  element={<PublicShopPage />} />
 
           {/* Authentification */}
           <Route path="login"    element={<PublicRoute><LoginPage /></PublicRoute>} />

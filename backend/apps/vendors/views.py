@@ -9,6 +9,8 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.db import models
 from django.db.models import Sum, Count, Q, Avg, F
 from django.contrib.auth.models import User
+from .models import VendorProfile, VendorOrderNote, WithdrawalRequest, \
+    SubscriptionPlan, VendorSubscription
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
 from django.utils import timezone
@@ -3182,3 +3184,542 @@ def admin_update_settings(request):
         return Response(serializer.data)
     
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+
+# MA BOUTIQUE
+
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Update shop info",
+    description="Met a jour les informations de la boutique (nom, description, WhatsApp, ville, delai, retours).",
+)
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def vendor_update_shop(request):
+    """Met a jour les informations modifiables de la boutique."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuve."}, status=403)
+ 
+        ALLOWED_FIELDS = [
+            'business_name', 'business_description', 'whatsapp_phone',
+            'city', 'address', 'preparation_delay', 'return_policy', 'is_online',
+        ]
+        for field in ALLOWED_FIELDS:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+ 
+        profile.save()
+ 
+        from apps.vendors.serializers import VendorProfileSerializer
+        return Response(VendorProfileSerializer(profile).data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Upload shop profile photo",
+    description="Upload la photo de profil de la boutique. Champ : 'photo'. Max 5 Mo.",
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_upload_shop_photo(request):
+    """Upload la photo de profil de la boutique."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuve."}, status=403)
+ 
+        photo = request.FILES.get('photo')
+        if not photo:
+            return Response({'detail': 'Champ "photo" requis.'}, status=400)
+ 
+        allowed = ['image/jpeg', 'image/png', 'image/webp']
+        if photo.content_type not in allowed:
+            return Response({'detail': 'Format non supporte. Utilisez JPG, PNG ou WEBP.'}, status=400)
+        if photo.size > 5 * 1024 * 1024:
+            return Response({'detail': 'Fichier trop volumineux. Maximum 5 Mo.'}, status=400)
+ 
+        # Supprimer l'ancienne photo si elle existe
+        if profile.profile_photo:
+            try:
+                profile.profile_photo.delete(save=False)
+            except Exception:
+                pass
+ 
+        profile.profile_photo = photo
+        profile.save(update_fields=['profile_photo', 'updated_at'])
+ 
+        request_obj = request
+        photo_url = request_obj.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
+        return Response({'photo_url': photo_url}, status=201)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Upload shop banner",
+    description="Upload la banniere de la boutique. Champ : 'banner'. Max 8 Mo. 1200x300px recommande.",
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_upload_shop_banner(request):
+    """Upload la banniere de la boutique."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuve."}, status=403)
+ 
+        banner = request.FILES.get('banner')
+        if not banner:
+            return Response({'detail': 'Champ "banner" requis.'}, status=400)
+ 
+        allowed = ['image/jpeg', 'image/png', 'image/webp']
+        if banner.content_type not in allowed:
+            return Response({'detail': 'Format non supporte. JPG, PNG ou WEBP uniquement.'}, status=400)
+        if banner.size > 8 * 1024 * 1024:
+            return Response({'detail': 'Fichier trop volumineux. Maximum 8 Mo.'}, status=400)
+ 
+        if profile.banner_image:
+            try:
+                profile.banner_image.delete(save=False)
+            except Exception:
+                pass
+ 
+        profile.banner_image = banner
+        profile.save(update_fields=['banner_image', 'updated_at'])
+ 
+        request_obj = request
+        banner_url = request_obj.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
+        return Response({'banner_url': banner_url}, status=201)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get shop QR data",
+    description="Retourne l'URL publique et le slug de la boutique pour generer le QR code cote frontend.",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_qr(request):
+    """Retourne les donnees pour le QR code de la boutique."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        return Response({
+            'slug':       profile.shop_slug,
+            'public_url': profile.public_url or f"https://belivay.com/boutique/{profile.shop_slug}",
+            'shop_name':  profile.business_name,
+        })
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Public"],
+    summary="Get public shop page",
+    description="Page publique d'une boutique vendeur. Accessible sans authentification.",
+)
+@api_view(['GET'])
+@permission_classes([])  # Public — pas d'auth requise
+def public_shop(request, slug):
+    """
+    Page publique d'une boutique.
+    Retourne : infos boutique + produits actifs + stats.
+    """
+    try:
+        profile = VendorProfile.objects.select_related('user', 'current_plan').get(
+            shop_slug=slug,
+            status='APPROVED',
+            is_online=True,
+        )
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Boutique introuvable ou hors ligne.'}, status=404)
+ 
+    from apps.catalog.models import Product
+    from apps.catalog.serializers import ProductSerializer
+    from apps.catalog.models import ProductReview
+    from django.db.models import Avg, Count
+ 
+    products = Product.objects.filter(
+        vendor=profile.user, is_active=True,
+    ).select_related('category').prefetch_related('images', 'inventory').order_by('-created_at')
+ 
+    stats = products.aggregate(
+        total    = Count('id'),
+        avg_rating = Avg('reviews__rating'),
+    )
+    reviews_count = ProductReview.objects.filter(
+        product__vendor=profile.user, is_approved=True,
+    ).count()
+ 
+    banner_url = request.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
+    photo_url  = request.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
+ 
+    data = {
+        'slug':               profile.shop_slug,
+        'business_name':      profile.business_name,
+        'business_description': profile.business_description,
+        'city':               profile.city,
+        'whatsapp_phone':     profile.whatsapp_phone,
+        'preparation_delay':  profile.preparation_delay,
+        'return_policy':      profile.return_policy,
+        'banner_url':         banner_url,
+        'photo_url':          photo_url,
+        'certification_tier': profile.certification_tier,
+        'is_online':          profile.is_online,
+        'member_since':       profile.approved_at.isoformat() if profile.approved_at else profile.created_at.isoformat(),
+        'stats': {
+            'total_products': stats['total'] or 0,
+            'avg_rating':     round(stats['avg_rating'], 1) if stats['avg_rating'] else None,
+            'reviews_count':  reviews_count,
+        },
+        'products': ProductSerializer(products[:20], many=True, context={'request': request}).data,
+    }
+    return Response(data)
+ 
+ 
+
+# CERTIFICATIONS
+
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get vendor certification data",
+    description=(
+        "Calcule dynamiquement les points de certification depuis les donnees reelles. "
+        "Met a jour le cache total_points et certification_tier sur VendorProfile."
+    ),
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_certifications(request):
+    """
+    Calcul dynamique des points de certification.
+ 
+    Baremes :
+      +5  par vente confirmee (commande DELIVERED/AUTO_CONFIRMED)
+      +10 par avis 5 etoiles approuve
+      +5  par avis 4 etoiles approuve
+      +2  par mois d'anciennete (depuis approved_at)
+      +50 bonus si 0 litige sur les 30 derniers jours
+      +20 si taux de livraison >= 95% (30 derniers jours)
+      +10 si taux de livraison >= 85%
+ 
+    Tiers :
+      Bronze  : 0 - 499 pts
+      Argent  : 500 - 999 pts
+      Or      : 1000 - 1999 pts
+      Diamant : 2000+ pts
+    """
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuve."}, status=403)
+ 
+        from apps.orders.models import Order, OrderItem, Dispute
+        from apps.catalog.models import ProductReview
+        from django.utils import timezone
+        from datetime import timedelta
+ 
+        now         = timezone.now()
+        last_30days = now - timedelta(days=30)
+ 
+        # ── 1. Points ventes ─────────────────────────────────────────────────
+        completed_statuses = [
+            'DELIVERED', 'BUYER_CONFIRMED', 'AUTO_CONFIRMED', 'RELEASED_TO_VENDOR',
+        ]
+        orders_completed = OrderItem.objects.filter(
+            product__vendor=request.user,
+            order__fulfillment_status__in=completed_statuses,
+        ).values('order').distinct().count()
+        points_sales = orders_completed * 5
+ 
+        # ── 2. Points avis ───────────────────────────────────────────────────
+        reviews_5 = ProductReview.objects.filter(
+            product__vendor=request.user, rating=5, is_approved=True,
+        ).count()
+        reviews_4 = ProductReview.objects.filter(
+            product__vendor=request.user, rating=4, is_approved=True,
+        ).count()
+        points_reviews = reviews_5 * 10 + reviews_4 * 5
+ 
+        # ── 3. Points anciennete ─────────────────────────────────────────────
+        if profile.approved_at:
+            months = max(0, (now - profile.approved_at).days // 30)
+        else:
+            months = max(0, (now - profile.created_at).days // 30)
+        points_seniority = months * 2
+ 
+        # ── 4. Bonus 0 litige sur 30 jours ──────────────────────────────────
+        recent_disputes = Dispute.objects.filter(
+            order__items__product__vendor=request.user,
+            created_at__gte=last_30days,
+        ).distinct().count()
+        points_no_dispute = 50 if recent_disputes == 0 else 0
+ 
+        # ── 5. Bonus taux de livraison ───────────────────────────────────────
+        orders_30 = OrderItem.objects.filter(
+            product__vendor=request.user,
+            order__created_at__gte=last_30days,
+        ).values('order').distinct().count()
+ 
+        orders_delivered_30 = OrderItem.objects.filter(
+            product__vendor=request.user,
+            order__created_at__gte=last_30days,
+            order__fulfillment_status__in=completed_statuses,
+        ).values('order').distinct().count()
+ 
+        delivery_rate = (
+            round(orders_delivered_30 / orders_30 * 100, 1)
+            if orders_30 > 0 else 100.0
+        )
+        if delivery_rate >= 95:
+            points_delivery = 20
+        elif delivery_rate >= 85:
+            points_delivery = 10
+        else:
+            points_delivery = 0
+ 
+        # ── Total ─────────────────────────────────────────────────────────────
+        total = (
+            points_sales + points_reviews + points_seniority
+            + points_no_dispute + points_delivery
+        )
+        tier  = VendorProfile.tier_from_points(total)
+        next_threshold = VendorProfile.next_tier_threshold(total)
+ 
+        # Mettre a jour le cache
+        VendorProfile.objects.filter(pk=profile.pk).update(
+            total_points       = total,
+            certification_tier = tier,
+        )
+ 
+        # ── Reponse detaillee ─────────────────────────────────────────────────
+        TIER_LABELS   = {'BRONZE': 'Bronze', 'SILVER': 'Argent', 'GOLD': 'Or', 'DIAMOND': 'Diamant'}
+        TIER_NEXT     = {'BRONZE': 'SILVER', 'SILVER': 'GOLD', 'GOLD': 'DIAMOND', 'DIAMOND': None}
+        TIER_BENEFITS = {
+            'BRONZE':  ['Vente sur BelivaY', 'QR Code boutique', 'Support standard', 'Commission standard'],
+            'SILVER':  ['Badge Argent visible', 'Commission -1%', 'Support prioritaire', '2 boosts/mois offerts'],
+            'GOLD':    ['Badge Or visible', 'Commission -2%', 'Support dedie', '5 boosts/mois offerts', 'Mise en avant catalogue'],
+            'DIAMOND': ['Badge Diamant exclusif', 'Commission -3%', 'Support VIP 24/7', 'Boosts illimites', 'Page boutique Premium'],
+        }
+ 
+        tiers_info = []
+        for t, label in TIER_LABELS.items():
+            thresholds = {'BRONZE': 0, 'SILVER': 500, 'GOLD': 1000, 'DIAMOND': 2000}
+            tiers_info.append({
+                'code':        t,
+                'label':       label,
+                'threshold':   thresholds[t],
+                'benefits':    TIER_BENEFITS[t],
+                'is_current':  t == tier,
+                'is_unlocked': total >= thresholds[t],
+            })
+ 
+        return Response({
+            'total_points':     total,
+            'current_tier':     tier,
+            'current_tier_label': TIER_LABELS[tier],
+            'next_tier':        TIER_NEXT[tier],
+            'next_tier_label':  TIER_LABELS.get(TIER_NEXT[tier], None),
+            'next_threshold':   next_threshold,
+            'progress_pct':     min(100, round(total / next_threshold * 100)) if tier != 'DIAMOND' else 100,
+            'points_remaining': max(0, next_threshold - total) if tier != 'DIAMOND' else 0,
+            'breakdown': {
+                'sales':       {'points': points_sales,      'detail': f"{orders_completed} ventes x 5 pts"},
+                'reviews':     {'points': points_reviews,    'detail': f"{reviews_5} avis 5★ x 10 + {reviews_4} avis 4★ x 5"},
+                'seniority':   {'points': points_seniority,  'detail': f"{months} mois d'anciennete x 2 pts"},
+                'no_dispute':  {'points': points_no_dispute, 'detail': f"{'0 litige / 30j → +50' if recent_disputes == 0 else f'{recent_disputes} litige(s) / 30j'}"},
+                'delivery':    {'points': points_delivery,   'detail': f"Taux livraison {delivery_rate}%"},
+            },
+            'tiers': tiers_info,
+            'how_to_earn': [
+                {'action': 'Vendre un produit',                'points': '+5 pts par vente'},
+                {'action': 'Recevoir un avis 5 etoiles',      'points': '+10 pts'},
+                {'action': 'Recevoir un avis 4 etoiles',      'points': '+5 pts'},
+                {'action': 'Anciennete (chaque mois)',         'points': '+2 pts/mois'},
+                {'action': '0 litige sur 30 jours',           'points': '+50 pts bonus'},
+                {'action': 'Taux livraison >= 95% (30 jours)','points': '+20 pts bonus'},
+                {'action': 'Taux livraison >= 85% (30 jours)','points': '+10 pts bonus'},
+            ],
+        })
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+# PLANS & ABONNEMENTS
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="List subscription plans",
+    description="Retourne les plans actifs et le plan courant du vendeur.",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_list_plans(request):
+    """Liste les plans disponibles + infos plan courant du vendeur."""
+    try:
+        profile = VendorProfile.objects.select_related('current_plan').get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+    from apps.vendors.models import SubscriptionPlan
+ 
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('display_order')
+ 
+    plans_data = []
+    for p in plans:
+        plans_data.append({
+            'id':               p.id,
+            'code':             p.code,
+            'name':             p.name,
+            'description':      p.description,
+            'price_monthly_xaf': p.price_monthly_xaf,
+            'price_annual_xaf': p.price_annual_xaf,
+            'commission_rate':  float(p.commission_rate),
+            'max_products':     p.max_products,
+            'max_boosts_month': p.max_boosts_month,
+            'features':         p.features,
+            'is_current':       profile.current_plan_id == p.id,
+            'is_popular':       p.code == 'PRO',
+        })
+ 
+    # Plan courant
+    current_plan_data = None
+    if profile.current_plan:
+        current_plan_data = {
+            'code':         profile.current_plan.code,
+            'name':         profile.current_plan.name,
+            'expires_at':   profile.plan_expires_at.isoformat() if profile.plan_expires_at else None,
+        }
+ 
+    return Response({
+        'plans':        plans_data,
+        'current_plan': current_plan_data or {'code': 'FREE', 'name': 'Gratuit', 'expires_at': None},
+        'active_plan_code': profile.active_plan_code,
+    })
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Subscribe to a plan",
+    description=(
+        "Initie une souscription a un plan. "
+        "Le vendeur declare son paiement MoMo. "
+        "L'admin valide manuellement et active le plan. "
+        "Body : { plan_code, billing_cycle, operator, phone_number }"
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_subscribe_plan(request):
+    """
+    Initie une souscription a un plan.
+    Cree un VendorSubscription en statut PENDING.
+    L'admin confirme et active le plan depuis son espace.
+    """
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': "Compte vendeur non approuve."}, status=403)
+ 
+        from apps.vendors.models import SubscriptionPlan, VendorSubscription
+ 
+        plan_code     = request.data.get('plan_code')
+        billing_cycle = request.data.get('billing_cycle', 'MONTHLY')
+        operator      = request.data.get('operator')
+        phone_number  = request.data.get('phone_number', '')
+ 
+        if not plan_code:
+            return Response({'detail': '"plan_code" est requis.'}, status=400)
+        if operator not in ['ORANGE_MONEY', 'MTN_MOMO']:
+            return Response({'detail': '"operator" doit etre ORANGE_MONEY ou MTN_MOMO.'}, status=400)
+        if billing_cycle not in ['MONTHLY', 'ANNUAL']:
+            return Response({'detail': '"billing_cycle" doit etre MONTHLY ou ANNUAL.'}, status=400)
+ 
+        try:
+            plan = SubscriptionPlan.objects.get(code=plan_code, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response({'detail': f'Plan "{plan_code}" introuvable ou inactif.'}, status=404)
+ 
+        if plan.code == 'FREE':
+            return Response({'detail': 'Le plan gratuit ne necessite pas de souscription.'}, status=400)
+ 
+        # Verifier qu'il n'y a pas deja un PENDING en attente
+        pending = VendorSubscription.objects.filter(
+            vendor=profile, sub_status='PENDING',
+        ).first()
+        if pending:
+            return Response({
+                'detail': f'Vous avez deja une souscription en attente ({pending.payment_reference}). Attendez la confirmation admin ou annulez-la.',
+            }, status=400)
+ 
+        amount = plan.price_annual_xaf if billing_cycle == 'ANNUAL' else plan.price_monthly_xaf
+ 
+        sub = VendorSubscription.objects.create(
+            vendor        = profile,
+            plan          = plan,
+            billing_cycle = billing_cycle,
+            amount_paid_xaf = amount,
+            operator      = operator,
+            phone_number  = phone_number,
+            sub_status    = 'PENDING',
+        )
+ 
+        return Response({
+            'message':   'Souscription initiee. Un admin BelivaY va confirmer votre paiement sous 24h.',
+            'reference': sub.payment_reference,
+            'plan':      plan.name,
+            'amount':    amount,
+            'operator':  operator,
+            'status':    'PENDING',
+        }, status=201)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Get subscription history",
+    description="Historique des abonnements du vendeur.",
+)
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_subscription_history(request):
+    """Historique des abonnements du vendeur."""
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        from apps.vendors.models import VendorSubscription
+ 
+        subs = VendorSubscription.objects.filter(vendor=profile).select_related('plan').order_by('-created_at')[:20]
+ 
+        data = [{
+            'id':               s.id,
+            'reference':        s.payment_reference,
+            'plan_name':        s.plan.name,
+            'plan_code':        s.plan.code,
+            'billing_cycle':    s.billing_cycle,
+            'amount_paid_xaf':  s.amount_paid_xaf,
+            'operator':         s.operator,
+            'sub_status':       s.sub_status,
+            'started_at':       s.started_at.isoformat() if s.started_at else None,
+            'expires_at':       s.expires_at.isoformat() if s.expires_at else None,
+            'created_at':       s.created_at.isoformat(),
+        } for s in subs]
+ 
+        return Response(data)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)

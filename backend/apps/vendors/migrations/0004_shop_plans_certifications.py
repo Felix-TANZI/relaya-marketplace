@@ -3,6 +3,22 @@
 import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
+from django.utils.text import slugify
+
+
+def populate_shop_slugs(apps, schema_editor):
+    VendorProfile = apps.get_model('vendors', 'VendorProfile')
+    seen = set()
+    for vp in VendorProfile.objects.all():
+        base = slugify(vp.business_name) or f'boutique-{vp.id}'
+        slug = base
+        counter = 1
+        while slug in seen:
+            slug = f'{base}-{counter}'
+            counter += 1
+        seen.add(slug)
+        vp.shop_slug = slug
+        vp.save(update_fields=['shop_slug'])
 
 
 class Migration(migrations.Migration):
@@ -78,7 +94,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='vendorprofile',
             name='shop_slug',
-            field=models.SlugField(blank=True, help_text='URL : belivay.com/boutique/{slug}. Auto-genere depuis le nom.', max_length=120, unique=True, verbose_name='Slug URL'),
+            field=models.SlugField(blank=True, help_text='URL : belivay.com/boutique/{slug}. Auto-genere depuis le nom.', max_length=120, verbose_name='Slug URL'),
+        ),
+        migrations.RunPython(populate_shop_slugs, migrations.RunPython.noop),
+        migrations.RunSQL(
+            sql='ALTER TABLE vendors_vendorprofile ADD CONSTRAINT vendors_vendorprofile_shop_slug_uniq UNIQUE (shop_slug);',
+            reverse_sql='ALTER TABLE vendors_vendorprofile DROP CONSTRAINT IF EXISTS vendors_vendorprofile_shop_slug_uniq;',
         ),
         migrations.AddField(
             model_name='vendorprofile',

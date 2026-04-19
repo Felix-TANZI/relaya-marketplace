@@ -1,11 +1,12 @@
 import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { type Product } from "@/services/api/products";
 
 interface HomeSectionProps {
   title: string;
-  emoji: string;
+  icon?: LucideIcon;
   badge?: string;
   badgeColor?: string;
   products: Product[];
@@ -15,7 +16,7 @@ interface HomeSectionProps {
 
 export default function HomeSection({
   title,
-  emoji,
+  icon: Icon,
   badge,
   badgeColor = "bg-red-50 text-red-600",
   products,
@@ -68,7 +69,7 @@ export default function HomeSection({
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className="h-[18px] w-[3px] rounded bg-primary" />
-          <span className="text-sm">{emoji}</span>
+          {Icon && <Icon size={15} className="text-primary" />}
           <h3 className="text-[13px] font-extrabold text-gray-900 dark:text-white">{title}</h3>
           {badge && (
             <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badgeColor}`}>

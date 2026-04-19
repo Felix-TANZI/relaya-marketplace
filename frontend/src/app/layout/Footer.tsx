@@ -65,8 +65,8 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/become-seller" className="text-gray-300 hover:text-primary transition-colors text-sm">
-                  {t('footer.become_seller')}
+                <Link to="/wishlist" className="text-gray-300 hover:text-primary transition-colors text-sm">
+                  Mes favoris
                 </Link>
               </li>
             </ul>

@@ -1132,10 +1132,10 @@ export default {
   // Mobile Nav
   mobile_nav: {
     home: 'Home',
-    categories: 'Categories',
+    promotions: 'Promos',
     orders: 'Orders',
-    contacts: 'Contacts',
-    profile: 'Profile',
+    favorites: 'Favorites',
+    disputes: 'Disputes',
   },
 
   // Header Nav

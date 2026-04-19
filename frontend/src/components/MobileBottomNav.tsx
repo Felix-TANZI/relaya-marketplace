@@ -1,21 +1,18 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, LayoutGrid, Package, MessageCircle, User } from "lucide-react";
+import { Home, Package, Heart, TriangleAlert, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useCart } from "@/context/CartContext";
 
 const NAV_ITEMS = [
   { icon: Home, labelKey: "mobile_nav.home", to: "/" },
-  { icon: LayoutGrid, labelKey: "mobile_nav.categories", to: "/categories" },
+  { icon: Tag, labelKey: "mobile_nav.promotions", to: "/promotions" },
   { icon: Package, labelKey: "mobile_nav.orders", to: "/orders" },
-  { icon: MessageCircle, labelKey: "mobile_nav.contacts", to: "/contact" },
-  { icon: User, labelKey: "mobile_nav.profile", to: "/profile" },
+  { icon: Heart, labelKey: "mobile_nav.favorites", to: "/wishlist" },
+  { icon: TriangleAlert, labelKey: "mobile_nav.disputes", to: "/profile?tab=disputes" },
 ];
 
 export default function MobileBottomNav() {
   const { t } = useTranslation();
   const location = useLocation();
-  const { items } = useCart();
-  const totalItems = items.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg dark:border-gray-800 dark:bg-gray-900/95 lg:hidden">
@@ -33,11 +30,6 @@ export default function MobileBottomNav() {
             >
               <div className="relative">
                 <Icon size={20} strokeWidth={isActive ? 2.5 : 1.8} />
-                {item.to === "/cart" && totalItems > 0 && (
-                  <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
-                    {totalItems > 9 ? "9+" : totalItems}
-                  </span>
-                )}
               </div>
               <span>{t(item.labelKey)}</span>
             </Link>

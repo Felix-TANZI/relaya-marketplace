@@ -388,6 +388,87 @@ export interface VendorProductEnriched {
   created_at:       string;
   updated_at:       string;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOUTIQUE / PLANS / CERTIFICATIONS
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ShopInfo {
+  slug:                 string;
+  business_name:        string;
+  business_description: string;
+  city:                 string;
+  whatsapp_phone:       string;
+  preparation_delay:    '24H' | '48H' | '72H' | 'CUSTOM';
+  return_policy:        string;
+  banner_url:           string | null;
+  photo_url:            string | null;
+  certification_tier:   'BRONZE' | 'SILVER' | 'GOLD' | 'DIAMOND';
+  is_online:            boolean;
+  public_url:           string | null;
+  shop_slug:            string;
+}
+
+export interface PublicShop extends ShopInfo {
+  member_since: string;
+  stats: {
+    total_products: number;
+    avg_rating:     number | null;
+    reviews_count:  number;
+  };
+  products: VendorProduct[];
+}
+
+export interface SubscriptionPlan {
+  id:               number;
+  code:             'FREE' | 'STARTER' | 'PRO' | 'BUSINESS';
+  name:             string;
+  description:      string;
+  price_monthly_xaf: number;
+  price_annual_xaf:  number;
+  commission_rate:  number;
+  max_products:     number | null;
+  max_boosts_month: number;
+  features:         string[];
+  is_current:       boolean;
+  is_popular:       boolean;
+}
+
+export interface PlansResponse {
+  plans:            SubscriptionPlan[];
+  current_plan:     { code: string; name: string; expires_at: string | null };
+  active_plan_code: string;
+}
+
+export interface SubscribePayload {
+  plan_code:     string;
+  billing_cycle: 'MONTHLY' | 'ANNUAL';
+  operator:      'ORANGE_MONEY' | 'MTN_MOMO';
+  phone_number:  string;
+}
+
+export interface CertificationTierInfo {
+  code:        string;
+  label:       string;
+  threshold:   number;
+  benefits:    string[];
+  is_current:  boolean;
+  is_unlocked: boolean;
+}
+
+export interface CertificationData {
+  total_points:       number;
+  current_tier:       string;
+  current_tier_label: string;
+  next_tier:          string | null;
+  next_tier_label:    string | null;
+  next_threshold:     number;
+  progress_pct:       number;
+  points_remaining:   number;
+  breakdown: Record<string, { points: number; detail: string }>;
+  tiers:     CertificationTierInfo[];
+  how_to_earn: { action: string; points: string }[];
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -760,6 +841,77 @@ export const vendorsApi = {
       headers: { Authorization: `Bearer ${token}` }, // pas de Content-Type → auto multipart
     });
   },
+
+  // ── Boutique ──────────────────────────────────────────────────────────────
+
+  updateShop: async (data: Partial<ShopInfo>): Promise<ShopInfo> => {
+    const token = localStorage.getItem('access_token');
+    return http<ShopInfo>('/api/vendors/shop/update/', {
+      method: 'PATCH',
+      body:   JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  uploadShopPhoto: async (file: File): Promise<{ photo_url: string }> => {
+    const token = localStorage.getItem('access_token');
+    const form  = new FormData();
+    form.append('photo', file);
+    return http<{ photo_url: string }>('/api/vendors/shop/photo/', {
+      method: 'POST', body: form,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  uploadShopBanner: async (file: File): Promise<{ banner_url: string }> => {
+    const token = localStorage.getItem('access_token');
+    const form  = new FormData();
+    form.append('banner', file);
+    return http<{ banner_url: string }>('/api/vendors/shop/banner/', {
+      method: 'POST', body: form,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  getShopQr: async (): Promise<{ slug: string; public_url: string; shop_name: string }> => {
+    const token = localStorage.getItem('access_token');
+    return http('/api/vendors/shop/qr/', { headers: { Authorization: `Bearer ${token}` } });
+  },
+
+  // ── Certifications ────────────────────────────────────────────────────────
+
+  getCertifications: async (): Promise<CertificationData> => {
+    const token = localStorage.getItem('access_token');
+    return http<CertificationData>('/api/vendors/certifications/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Plans ─────────────────────────────────────────────────────────────────
+
+  getPlans: async (): Promise<PlansResponse> => {
+    const token = localStorage.getItem('access_token');
+    return http<PlansResponse>('/api/vendors/plans/', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  subscribePlan: async (data: SubscribePayload): Promise<{
+    message: string; reference: string; plan: string; amount: number; status: string;
+  }> => {
+    const token = localStorage.getItem('access_token');
+    return http('/api/vendors/plans/subscribe/', {
+      method: 'POST',
+      body:   JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    });
+  },
+
+  getSubscriptionHistory: async () => {
+    const token = localStorage.getItem('access_token');
+    return http('/api/vendors/plans/history/', { headers: { Authorization: `Bearer ${token}` } });
+  },
+
   // ── Note interne vendeur ──────────────────────────────────────────────────
 
   /**

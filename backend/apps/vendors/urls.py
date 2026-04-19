@@ -117,6 +117,23 @@ urlpatterns = [
     path('admin/disputes/<int:dispute_id>/message/',       views.admin_add_dispute_message,  name='admin-add-dispute-message'),
     path('admin/disputes/<int:dispute_id>/resolve/',       views.admin_resolve_dispute,      name='admin-resolve-dispute'),
 
+    # BOUTIQUE
+    path('shop/update/',          views.vendor_update_shop,        name='vendor-shop-update'),
+    path('shop/photo/',           views.vendor_upload_shop_photo,   name='vendor-shop-photo'),
+    path('shop/banner/',          views.vendor_upload_shop_banner,  name='vendor-shop-banner'),
+    path('shop/qr/',              views.vendor_shop_qr,             name='vendor-shop-qr'),
+
+    # CERTIFICATIONS
+    path('certifications/',       views.vendor_certifications,      name='vendor-certifications'),
+
+    # PLANS
+    path('plans/',                views.vendor_list_plans,          name='vendor-plans'),
+    path('plans/subscribe/',      views.vendor_subscribe_plan,      name='vendor-subscribe'),
+    path('plans/history/',        views.vendor_subscription_history,name='vendor-sub-history'),
+
+    # BOUTIQUE PUBLIQUE
+    path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
+
     #  ADMINISTRATION - PARAMÈTRES 
     path('admin/settings/',         views.admin_get_settings,    name='admin-get-settings'),
     path('admin/settings/update/',  views.admin_update_settings, name='admin-update-settings'),

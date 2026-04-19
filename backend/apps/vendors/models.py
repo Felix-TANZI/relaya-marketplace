@@ -1,89 +1,60 @@
 # backend/apps/vendors/models.py
-# Modèles pour la gestion des vendeurs sur la plateforme BelivaY.
 
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.text import slugify
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PLAN D'ABONNEMENT (créé par l'admin uniquement)
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── PLAN D'ABONNEMENT ────────────────────────────────────────────────────────
 
 class SubscriptionPlan(models.Model):
-    """
-    Plans d'abonnement BelivaY pour les vendeurs.
-    Créés et gérés par l'admin uniquement.
-    """
-
     class PlanCode(models.TextChoices):
         FREE     = 'FREE',     'Gratuit'
         STARTER  = 'STARTER',  'Starter'
         PRO      = 'PRO',      'Pro'
         BUSINESS = 'BUSINESS', 'Business'
 
-    code              = models.CharField(
-        max_length=20, choices=PlanCode.choices, unique=True,
-        verbose_name="Code plan",
+    code               = models.CharField(max_length=20, choices=PlanCode.choices, unique=True)
+    name               = models.CharField(max_length=100)
+    description        = models.TextField(blank=True)
+    price_monthly_xaf  = models.PositiveIntegerField(default=0, help_text="0 = gratuit")
+    price_annual_xaf   = models.PositiveIntegerField(default=0)
+    commission_rate    = models.DecimalField(max_digits=5, decimal_places=2, default=10.00)
+    max_products       = models.PositiveIntegerField(null=True, blank=True, help_text="null = illimité")
+    max_boosts_month   = models.PositiveIntegerField(default=0)
+    features           = models.JSONField(default=list)
+    # Durée configurable par l'admin
+    plan_duration_days = models.PositiveIntegerField(
+        default=30,
+        verbose_name="Durée du plan (jours)",
+        help_text="Durée d'un abonnement mensuel en jours."
     )
-    name              = models.CharField(max_length=100, verbose_name="Nom du plan")
-    description       = models.TextField(blank=True, verbose_name="Description")
-    price_monthly_xaf = models.PositiveIntegerField(
-        default=0, verbose_name="Prix mensuel (FCFA)",
-        help_text="0 = plan gratuit",
+    # Essai gratuit par plan
+    trial_days         = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Jours d'essai gratuit",
+        help_text="0 = pas d'essai. Activé quand le vendeur choisit le plan pour la première fois."
     )
-    price_annual_xaf  = models.PositiveIntegerField(
-        default=0, verbose_name="Prix annuel (FCFA)",
-        help_text="0 = plan gratuit. Typiquement prix_mensuel x 10 (2 mois offerts).",
-    )
-    commission_rate   = models.DecimalField(
-        max_digits=5, decimal_places=2, default=10.00,
-        verbose_name="Taux de commission (%)",
-    )
-    max_products      = models.PositiveIntegerField(
-        null=True, blank=True, verbose_name="Produits maximum",
-        help_text="null = illimite",
-    )
-    max_boosts_month  = models.PositiveIntegerField(
-        default=0, verbose_name="Boosts max/mois",
-    )
-    features          = models.JSONField(
-        default=list, verbose_name="Fonctionnalites",
-        help_text='Liste JSON. Ex: ["QR Code boutique", "Support prioritaire"]',
-    )
-    is_active         = models.BooleanField(default=True, verbose_name="Plan actif")
-    display_order     = models.PositiveIntegerField(default=0, verbose_name="Ordre affichage")
+    is_active          = models.BooleanField(default=True)
+    display_order      = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering            = ['display_order', 'price_monthly_xaf']
-        verbose_name        = "Plan d'abonnement"
+        ordering = ['display_order', 'price_monthly_xaf']
+        verbose_name = "Plan d'abonnement"
         verbose_name_plural = "Plans d'abonnement"
 
     def __str__(self):
-        return f"{self.name} ({self.price_monthly_xaf:,} FCFA/mois)"
+        trial_info = f" · {self.trial_days}j essai" if self.trial_days else ""
+        return f"{self.name} ({self.price_monthly_xaf:,} FCFA/mois{trial_info})"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# PROFIL VENDEUR
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── PROFIL VENDEUR ───────────────────────────────────────────────────────────
 
 class VendorProfile(models.Model):
-    """
-    Profil vendeur : donnees boutique, certification, plan.
-
-    Slug : auto-genere depuis business_name, unique, modifiable.
-           URL publique : belivay.com/boutique/{slug}
-
-    Certification : total_points calcule dynamiquement a chaque appel API.
-                    certification_tier deduit des points.
-
-    Plan : current_plan FK vers SubscriptionPlan (null = FREE).
-    """
-
     STATUS_CHOICES = [
         ('PENDING',   'En attente'),
-        ('APPROVED',  'Approuve'),
-        ('REJECTED',  'Rejete'),
+        ('APPROVED',  'Approuvé'),
+        ('REJECTED',  'Rejeté'),
         ('SUSPENDED', 'Suspendu'),
     ]
 
@@ -99,66 +70,33 @@ class VendorProfile(models.Model):
         GOLD    = 'GOLD',    'Or'
         DIAMOND = 'DIAMOND', 'Diamant'
 
-    class PreparationDelay(models.TextChoices):
-        H24    = '24H',    '24h ouvrables'
-        H48    = '48H',    '48h ouvrables'
-        H72    = '72H',    '72h ouvrables'
-        CUSTOM = 'CUSTOM', 'Sur commande'
-
-    # ── Identite de base ─────────────────────────────────────────────────────
-    user                 = models.OneToOneField(
-        User, on_delete=models.CASCADE, related_name='vendor_profile',
-    )
+    # ── Identité (champs SENSIBLES — modification via ShopModificationRequest) ──
+    user                 = models.OneToOneField(User, on_delete=models.CASCADE, related_name='vendor_profile')
     business_name        = models.CharField(max_length=255, verbose_name="Nom de la boutique")
-    business_description = models.TextField(verbose_name="Description de la boutique")
-    phone                = models.CharField(max_length=20, verbose_name="Telephone principal")
-    address              = models.TextField(verbose_name="Adresse")
-    city                 = models.CharField(max_length=100, verbose_name="Ville principale")
-    id_document          = models.CharField(max_length=255, blank=True, verbose_name="Document identite")
+    business_description = models.TextField(verbose_name="Description")
+    phone                = models.CharField(max_length=20)
+    address              = models.TextField()
+    city                 = models.CharField(max_length=100)
+    id_document          = models.CharField(max_length=255, blank=True)
 
     # ── Boutique publique ────────────────────────────────────────────────────
-    shop_slug         = models.SlugField(
-        max_length=120, unique=True, blank=True,
-        verbose_name="Slug URL",
-        help_text="URL : belivay.com/boutique/{slug}. Auto-genere depuis le nom.",
-    )
-    banner_image      = models.ImageField(
-        upload_to='vendors/banners/%Y/%m/', null=True, blank=True,
-        verbose_name="Banniere",
-    )
-    profile_photo     = models.ImageField(
-        upload_to='vendors/photos/%Y/%m/', null=True, blank=True,
-        verbose_name="Photo de boutique",
-    )
-    whatsapp_phone    = models.CharField(
-        max_length=20, blank=True, verbose_name="Telephone WhatsApp",
-    )
-    preparation_delay = models.CharField(
-        max_length=10, choices=PreparationDelay.choices, default=PreparationDelay.H72,
-        verbose_name="Delai de preparation",
-    )
-    return_policy     = models.TextField(
-        blank=True, default='', verbose_name="Politique de retour",
-    )
-    is_online         = models.BooleanField(
-        default=True, verbose_name="Boutique en ligne",
-    )
+    shop_slug         = models.SlugField(max_length=120, unique=True, blank=True)
+    banner_image      = models.ImageField(upload_to='vendors/banners/%Y/%m/', null=True, blank=True)
+    profile_photo     = models.ImageField(upload_to='vendors/photos/%Y/%m/', null=True, blank=True)
+    whatsapp_phone    = models.CharField(max_length=20, blank=True)
+    is_online         = models.BooleanField(default=True)
 
-    # ── Certification (cache — recalcule dynamiquement) ───────────────────────
-    total_points       = models.PositiveIntegerField(
-        default=0, verbose_name="Points de certification (cache)",
-    )
+    # ── Certification (cache recalculé dynamiquement) ────────────────────────
+    total_points       = models.PositiveIntegerField(default=0)
     certification_tier = models.CharField(
-        max_length=10, choices=CertificationTier.choices, default=CertificationTier.BRONZE,
-        verbose_name="Niveau de certification",
+        max_length=10, choices=CertificationTier.choices, default=CertificationTier.BRONZE
     )
 
     # ── Plan ─────────────────────────────────────────────────────────────────
     current_plan    = models.ForeignKey(
-        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='subscribers', verbose_name="Plan actuel",
+        SubscriptionPlan, on_delete=models.SET_NULL, null=True, blank=True, related_name='subscribers'
     )
-    plan_expires_at = models.DateTimeField(null=True, blank=True, verbose_name="Expiration du plan")
+    plan_expires_at = models.DateTimeField(null=True, blank=True)
 
     # ── Statut ───────────────────────────────────────────────────────────────
     status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default='PENDING')
@@ -167,7 +105,7 @@ class VendorProfile(models.Model):
     approved_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
-        verbose_name        = "Profil Vendeur"
+        verbose_name = "Profil Vendeur"
         verbose_name_plural = "Profils Vendeurs"
 
     def __str__(self):
@@ -179,7 +117,7 @@ class VendorProfile(models.Model):
 
     @property
     def public_url(self):
-        return f"https://belivay.com/boutique/{self.shop_slug}" if self.shop_slug else None
+        return f"https://belivay.com?ref={self.shop_slug}" if self.shop_slug else None
 
     @property
     def active_plan_code(self):
@@ -191,14 +129,13 @@ class VendorProfile(models.Model):
         return 'FREE'
 
     def save(self, *args, **kwargs):
-        # Auto-generer le slug depuis business_name si absent
         if not self.shop_slug and self.business_name:
             base = slugify(self.business_name)
             slug = base
-            n    = 1
+            n = 1
             while VendorProfile.objects.filter(shop_slug=slug).exclude(pk=self.pk).exists():
                 slug = f"{base}-{n}"
-                n   += 1
+                n += 1
             self.shop_slug = slug
         super().save(*args, **kwargs)
 
@@ -217,114 +154,242 @@ class VendorProfile(models.Model):
         return 2000
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# HISTORIQUE ABONNEMENTS
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── HISTORIQUE ABONNEMENTS ───────────────────────────────────────────────────
 
 class VendorSubscription(models.Model):
-    """
-    Chaque souscription ou renouvellement cree une entree.
-    PENDING  : vendeur a initie le paiement, admin doit valider.
-    ACTIVE   : paiement confirme par l'admin.
-    EXPIRED  : date expiree.
-    CANCELLED: annule avant expiration.
-    """
-
     class BillingCycle(models.TextChoices):
         MONTHLY = 'MONTHLY', 'Mensuel'
         ANNUAL  = 'ANNUAL',  'Annuel'
+        TRIAL   = 'TRIAL',   'Essai gratuit'
 
     class SubStatus(models.TextChoices):
         PENDING   = 'PENDING',   'En attente de paiement'
         ACTIVE    = 'ACTIVE',    'Actif'
-        EXPIRED   = 'EXPIRED',   'Expire'
-        CANCELLED = 'CANCELLED', 'Annule'
+        EXPIRED   = 'EXPIRED',   'Expiré'
+        CANCELLED = 'CANCELLED', 'Annulé'
 
-    vendor            = models.ForeignKey(
-        VendorProfile, on_delete=models.CASCADE, related_name='subscriptions',
+    vendor            = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='subscriptions')
+    plan              = models.ForeignKey(SubscriptionPlan, on_delete=models.PROTECT, related_name='subscriptions')
+    billing_cycle     = models.CharField(max_length=10, choices=BillingCycle.choices, default=BillingCycle.MONTHLY)
+    is_trial          = models.BooleanField(
+        default=False,
+        verbose_name="Essai gratuit",
+        help_text="Si True, c'est un essai gratuit — pas de paiement requis."
     )
-    plan              = models.ForeignKey(
-        SubscriptionPlan, on_delete=models.PROTECT, related_name='subscriptions',
-    )
-    billing_cycle     = models.CharField(
-        max_length=10, choices=BillingCycle.choices, default=BillingCycle.MONTHLY,
-    )
-    amount_paid_xaf   = models.PositiveIntegerField(default=0, verbose_name="Montant paye (FCFA)")
+    amount_paid_xaf   = models.PositiveIntegerField(default=0)
     operator          = models.CharField(
         max_length=20, blank=True,
-        choices=[('ORANGE_MONEY', 'Orange Money'), ('MTN_MOMO', 'MTN MoMo')],
+        choices=[('ORANGE_MONEY', 'Orange Money'), ('MTN_MOMO', 'MTN MoMo')]
     )
-    phone_number      = models.CharField(max_length=20, blank=True, verbose_name="Numero MoMo")
-    payment_reference = models.CharField(
-        max_length=60, blank=True,
-        help_text="Auto-genere : BLV-SUB-{year}-{id}",
+    phone_number      = models.CharField(max_length=20, blank=True)
+    payment_reference = models.CharField(max_length=60, blank=True)
+    sub_status        = models.CharField(max_length=12, choices=SubStatus.choices, default=SubStatus.PENDING)
+    started_at        = models.DateTimeField(null=True, blank=True)
+    expires_at        = models.DateTimeField(null=True, blank=True)
+    confirmed_by      = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='confirmed_subscriptions'
     )
-    sub_status        = models.CharField(
-        max_length=12, choices=SubStatus.choices, default=SubStatus.PENDING,
-    )
-    started_at    = models.DateTimeField(null=True, blank=True)
-    expires_at    = models.DateTimeField(null=True, blank=True)
-    confirmed_by  = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True,
-        related_name='confirmed_subscriptions',
-    )
-    confirmed_at  = models.DateTimeField(null=True, blank=True)
-    created_at    = models.DateTimeField(auto_now_add=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering            = ['-created_at']
-        verbose_name        = "Abonnement Vendeur"
+        ordering = ['-created_at']
+        verbose_name = "Abonnement Vendeur"
         verbose_name_plural = "Abonnements Vendeurs"
 
     def __str__(self):
-        return f"{self.vendor.business_name} - {self.plan.name} ({self.sub_status})"
+        trial_tag = " [ESSAI]" if self.is_trial else ""
+        return f"{self.vendor.business_name} - {self.plan.name}{trial_tag} ({self.sub_status})"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         if not self.payment_reference:
             import datetime
             year = self.created_at.year if self.created_at else datetime.date.today().year
-            self.payment_reference = f"BLV-SUB-{year}-{self.pk:05d}"
-            VendorSubscription.objects.filter(pk=self.pk).update(
-                payment_reference=self.payment_reference,
-            )
+            prefix = "BLV-TRIAL" if self.is_trial else "BLV-SUB"
+            self.payment_reference = f"{prefix}-{year}-{self.pk:05d}"
+            VendorSubscription.objects.filter(pk=self.pk).update(payment_reference=self.payment_reference)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# NOTE INTERNE VENDEUR SUR COMMANDE
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── TYPE DE DOCUMENT REQUIS (prédefini par l'admin) ─────────────────────────
+
+class RequiredDocumentType(models.Model):
+    """
+    Types de documents que l'admin peut demander au vendeur
+    lors d'une demande de modification de champs sensibles.
+    Ex : RCCM, CNI, Justificatif de domicile, Acte de naissance...
+    """
+    name        = models.CharField(max_length=100, verbose_name="Nom du document")
+    description = models.TextField(blank=True, verbose_name="Description / instructions")
+    is_active   = models.BooleanField(default=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Type de document requis"
+        verbose_name_plural = "Types de documents requis"
+
+    def __str__(self):
+        return self.name
+
+
+# ─── DEMANDE DE MODIFICATION DE CHAMPS SENSIBLES ─────────────────────────────
+
+class ShopModificationRequest(models.Model):
+    """
+    Le vendeur soumet une demande pour modifier des champs sensibles
+    (nom, description, ville, adresse).
+
+    Workflow :
+      PENDING      → l'admin reçoit la demande
+      DOCS_REQUIRED→ l'admin spécifie les documents à fournir
+      DOCS_UPLOADED→ le vendeur a uploadé les documents demandés
+      APPROVED     → l'admin approuve, les champs sont mis à jour automatiquement
+      REJECTED     → l'admin rejette avec une raison
+    """
+
+    class Status(models.TextChoices):
+        PENDING       = 'PENDING',       'En attente'
+        DOCS_REQUIRED = 'DOCS_REQUIRED', 'Documents requis'
+        DOCS_UPLOADED = 'DOCS_UPLOADED', 'Documents fournis'
+        APPROVED      = 'APPROVED',      'Approuvée'
+        REJECTED      = 'REJECTED',      'Rejetée'
+
+    # Champs sensibles modifiables via cette procédure
+    SENSITIVE_FIELDS = ['business_name', 'business_description', 'city', 'address']
+
+    vendor        = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='modification_requests')
+    # JSON : {'business_name': 'Nouveau Nom', 'city': 'Douala'}
+    fields_requested = models.JSONField(
+        verbose_name="Champs à modifier",
+        help_text='Ex: {"business_name": "Nouveau Nom", "city": "Douala"}'
+    )
+    reason        = models.TextField(verbose_name="Justification du vendeur")
+    status        = models.CharField(max_length=15, choices=Status.choices, default=Status.PENDING)
+    # Message de l'admin (raison du rejet ou instructions pour les docs)
+    admin_note    = models.TextField(blank=True, verbose_name="Note de l'admin")
+    # Documents spécifiquement demandés par l'admin
+    required_docs = models.ManyToManyField(
+        RequiredDocumentType, blank=True, verbose_name="Documents requis par l'admin"
+    )
+    approved_by   = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name='approved_mod_requests'
+    )
+    approved_at   = models.DateTimeField(null=True, blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    updated_at    = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Demande de modification"
+        verbose_name_plural = "Demandes de modification"
+
+    def __str__(self):
+        fields = ', '.join(self.fields_requested.keys()) if self.fields_requested else '?'
+        return f"{self.vendor.business_name} — [{fields}] ({self.status})"
+
+    def apply_approved_changes(self):
+        """Applique les champs approuvés sur VendorProfile."""
+        allowed = self.SENSITIVE_FIELDS
+        for field, value in (self.fields_requested or {}).items():
+            if field in allowed:
+                setattr(self.vendor, field, value)
+        self.vendor.save()
+
+
+class ShopModificationDocument(models.Model):
+    """Pièces jointes uploadées par le vendeur en réponse à une demande."""
+    modification_request = models.ForeignKey(
+        ShopModificationRequest, on_delete=models.CASCADE, related_name='documents'
+    )
+    document_type = models.ForeignKey(
+        RequiredDocumentType, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="Type de document"
+    )
+    file        = models.FileField(
+        upload_to='vendors/mod_docs/%Y/%m/',
+        verbose_name="Fichier"
+    )
+    description = models.CharField(max_length=255, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Document de modification"
+        verbose_name_plural = "Documents de modification"
+
+    def __str__(self):
+        doc_type = self.document_type.name if self.document_type else "Document"
+        return f"{doc_type} — {self.modification_request}"
+
+
+# ─── EMPLACEMENTS PHYSIQUES ───────────────────────────────────────────────────
+
+class VendorLocation(models.Model):
+    """
+    Emplacement physique d'une boutique.
+    Ex : "Safara Mokolo", "Safara Essos", "Safara Bastos"
+    """
+    vendor               = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='locations')
+    name                 = models.CharField(max_length=200, verbose_name="Nom de l'emplacement")
+    address              = models.TextField(verbose_name="Adresse complète")
+    phone                = models.CharField(max_length=20, verbose_name="Téléphone de l'emplacement")
+    email                = models.EmailField(blank=True, verbose_name="Email de l'emplacement")
+    representative_name  = models.CharField(max_length=200, verbose_name="Nom du représentant")
+    representative_phone = models.CharField(max_length=20, verbose_name="Téléphone du représentant")
+    # Coordonnées GPS
+    latitude             = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Latitude",
+        help_text="Ex: 3.848 (Yaoundé). Remplissez pour activer la carte."
+    )
+    longitude            = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Longitude",
+        help_text="Ex: 11.502 (Yaoundé)"
+    )
+    is_active            = models.BooleanField(default=True)
+    created_at           = models.DateTimeField(auto_now_add=True)
+    updated_at           = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['name']
+        verbose_name = "Emplacement de boutique"
+        verbose_name_plural = "Emplacements de boutique"
+
+    def __str__(self):
+        return f"{self.vendor.business_name} — {self.name}"
+
+
+# ─── NOTE INTERNE VENDEUR / COMMANDE ─────────────────────────────────────────
 
 class VendorOrderNote(models.Model):
-    order   = models.ForeignKey('orders.Order', on_delete=models.CASCADE, related_name='vendor_notes')
-    vendor  = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='order_notes')
-    content = models.TextField(max_length=2000)
+    order      = models.ForeignKey('orders.Order', on_delete=models.CASCADE, related_name='vendor_notes')
+    vendor     = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='order_notes')
+    content    = models.TextField(max_length=2000)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together     = ('order', 'vendor')
-        verbose_name        = "Note Interne Vendeur"
+        unique_together = ('order', 'vendor')
+        verbose_name = "Note Interne Vendeur"
         verbose_name_plural = "Notes Internes Vendeurs"
 
     def __str__(self):
-        return f"Note {self.vendor.business_name} - Commande #{self.order.id}"
+        return f"Note {self.vendor.business_name} — Commande #{self.order.id}"
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# DEMANDE DE RETRAIT
-# ─────────────────────────────────────────────────────────────────────────────
+# ─── DEMANDE DE RETRAIT ───────────────────────────────────────────────────────
 
 class WithdrawalRequest(models.Model):
-
     class Operator(models.TextChoices):
         ORANGE_MONEY = 'ORANGE_MONEY', 'Orange Money'
         MTN_MOMO     = 'MTN_MOMO',     'MTN MoMo'
 
     class WithdrawalStatus(models.TextChoices):
         PENDING   = 'PENDING',   'En attente'
-        APPROVED  = 'APPROVED',  'Approuve'
-        REJECTED  = 'REJECTED',  'Rejete'
-        CANCELLED = 'CANCELLED', 'Annule'
+        APPROVED  = 'APPROVED',  'Approuvé'
+        REJECTED  = 'REJECTED',  'Rejeté'
+        CANCELLED = 'CANCELLED', 'Annulé'
 
     vendor               = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='withdrawals')
     amount_xaf           = models.PositiveIntegerField()
@@ -341,12 +406,12 @@ class WithdrawalRequest(models.Model):
     updated_at           = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering            = ['-created_at']
-        verbose_name        = "Demande de Retrait"
+        ordering = ['-created_at']
+        verbose_name = "Demande de Retrait"
         verbose_name_plural = "Demandes de Retrait"
 
     def __str__(self):
-        return f"{self.reference} - {self.vendor.business_name} ({self.status})"
+        return f"{self.reference} — {self.vendor.business_name} ({self.status})"
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)

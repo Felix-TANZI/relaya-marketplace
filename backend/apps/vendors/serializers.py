@@ -16,8 +16,13 @@
 
 import hashlib
 from rest_framework import serializers
-from .models import VendorProfile
 from apps.orders.models import Order, OrderItem
+from .models import (
+    VendorProfile, VendorOrderNote, WithdrawalRequest,
+    SubscriptionPlan, VendorSubscription,
+    RequiredDocumentType, ShopModificationRequest,
+    ShopModificationDocument, VendorLocation,
+)    
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -25,17 +30,60 @@ from apps.orders.models import Order, OrderItem
 # ─────────────────────────────────────────────────────────────────────────────
 
 class VendorProfileSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True)
-    email    = serializers.EmailField(source='user.email',    read_only=True)
-
+    """Serializer complet du profil vendeur — inclut les nouvelles URLs photos."""
+    username    = serializers.CharField(source='user.username', read_only=True)
+    email       = serializers.EmailField(source='user.email',    read_only=True)
+    # URLs absolues des images
+    photo_url   = serializers.SerializerMethodField()
+    banner_url  = serializers.SerializerMethodField()
+    # Propriétés calculées
+    public_url       = serializers.SerializerMethodField()
+    active_plan_code = serializers.SerializerMethodField()
+    current_plan_name = serializers.SerializerMethodField()
+ 
     class Meta:
         model = VendorProfile
         fields = [
-            'id', 'username', 'email', 'business_name', 'business_description',
-            'phone', 'address', 'city', 'id_document', 'status',
-            'created_at', 'updated_at', 'approved_at',
+            'id', 'username', 'email',
+            'business_name', 'business_description', 'phone', 'address', 'city',
+            'id_document', 'status', 'created_at', 'updated_at', 'approved_at',
+            # Boutique publique
+            'shop_slug', 'photo_url', 'banner_url', 'whatsapp_phone', 'is_online',
+            'public_url',
+            # Certification
+            'total_points', 'certification_tier',
+            # Plan
+            'active_plan_code', 'current_plan_name', 'plan_expires_at',
         ]
-        read_only_fields = ['id', 'status', 'created_at', 'updated_at', 'approved_at']
+        read_only_fields = [
+            'id', 'status', 'created_at', 'updated_at', 'approved_at',
+            'shop_slug', 'total_points', 'certification_tier',
+        ]
+ 
+    def get_photo_url(self, obj):
+        request = self.context.get('request')
+        if obj.profile_photo:
+            url = obj.profile_photo.url
+            return request.build_absolute_uri(url) if request else url
+        return None
+ 
+    def get_banner_url(self, obj):
+        request = self.context.get('request')
+        if obj.banner_image:
+            url = obj.banner_image.url
+            return request.build_absolute_uri(url) if request else url
+        return None
+ 
+    def get_public_url(self, obj):
+        return obj.public_url
+ 
+    def get_active_plan_code(self, obj):
+        return obj.active_plan_code
+ 
+    def get_current_plan_name(self, obj):
+        if obj.current_plan:
+            return obj.current_plan.name
+        return 'Gratuit'
 
 
 class VendorApplicationSerializer(serializers.ModelSerializer):
@@ -1148,3 +1196,63 @@ class VendorDisputeMessageCreateSerializer(serializers.Serializer):
         min_length=1, max_length=5000,
         help_text="Message envoyé à l'admin dans le cadre du litige.",
     )
+
+
+class VendorLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = VendorLocation
+        fields = [
+            'id', 'name', 'address', 'phone', 'email',
+            'representative_name', 'representative_phone',
+            'latitude', 'longitude', 'is_active', 'created_at',
+        ]
+        read_only_fields = ['id', 'created_at']
+ 
+ 
+class RequiredDocumentTypeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = RequiredDocumentType
+        fields = ['id', 'name', 'description']
+ 
+ 
+class ShopModificationDocumentSerializer(serializers.ModelSerializer):
+    document_type_name = serializers.CharField(source='document_type.name', read_only=True)
+    file_url = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model  = ShopModificationDocument
+        fields = ['id', 'document_type', 'document_type_name', 'file_url', 'description', 'uploaded_at']
+        read_only_fields = ['id', 'uploaded_at']
+ 
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if obj.file:
+            url = obj.file.url
+            return request.build_absolute_uri(url) if request else url
+        return None
+ 
+ 
+class ShopModificationRequestSerializer(serializers.ModelSerializer):
+    documents     = ShopModificationDocumentSerializer(many=True, read_only=True)
+    required_docs = RequiredDocumentTypeSerializer(many=True, read_only=True)
+ 
+    class Meta:
+        model  = ShopModificationRequest
+        fields = [
+            'id', 'fields_requested', 'reason', 'status',
+            'admin_note', 'required_docs', 'documents',
+            'approved_at', 'created_at', 'updated_at',
+        ]
+        read_only_fields = ['id', 'status', 'admin_note', 'required_docs', 'approved_at', 'created_at', 'updated_at']
+ 
+ 
+class SubscriptionPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = SubscriptionPlan
+        fields = [
+            'id', 'code', 'name', 'description',
+            'price_monthly_xaf', 'price_annual_xaf',
+            'commission_rate', 'max_products', 'max_boosts_month',
+            'features', 'trial_days', 'plan_duration_days',
+            'display_order',
+        ]    

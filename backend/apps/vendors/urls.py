@@ -118,6 +118,7 @@ urlpatterns = [
     path('admin/disputes/<int:dispute_id>/resolve/',       views.admin_resolve_dispute,      name='admin-resolve-dispute'),
 
     # BOUTIQUE
+    path('shop/',                views.vendor_get_shop,               name='vendor-get-shop'),
     path('shop/update/',          views.vendor_update_shop,        name='vendor-shop-update'),
     path('shop/photo/',           views.vendor_upload_shop_photo,   name='vendor-shop-photo'),
     path('shop/banner/',          views.vendor_upload_shop_banner,  name='vendor-shop-banner'),
@@ -130,6 +131,23 @@ urlpatterns = [
     path('plans/',                views.vendor_list_plans,          name='vendor-plans'),
     path('plans/subscribe/',      views.vendor_subscribe_plan,      name='vendor-subscribe'),
     path('plans/history/',        views.vendor_subscription_history,name='vendor-sub-history'),
+
+    # LOCATIONS
+    path('locations/', views.vendor_locations_list, name='vendor-locations'),
+    path('locations/create/', views.vendor_location_create, name='vendor-location-create'),
+    path('locations/<int:location_id>/update/', views.vendor_location_update, name='vendor-location-update'),
+    path('locations/<int:location_id>/delete/', views.vendor_location_delete, name='vendor-location-delete'),
+
+    # MOD REQUESTS
+    path('mod-requests/', views.vendor_mod_requests_list, name='vendor-mod-requests'),
+    path('mod-requests/create/', views.vendor_mod_request_create, name='vendor-mod-request-create'),
+    path('mod-requests/<int:request_id>/docs/', views.vendor_mod_request_upload_docs, name='vendor-mod-request-docs'),
+
+    # DOC TYPES
+    path('doc-types/', views.vendor_doc_types_list, name='vendor-doc-types'),
+
+    # TRIAL PLAN
+    path('plans/trial/', views.vendor_trial_activate, name='vendor-trial'),
 
     # BOUTIQUE PUBLIQUE
     path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),

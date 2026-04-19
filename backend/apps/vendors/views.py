@@ -19,6 +19,19 @@ from rest_framework.decorators import action
 from django.http import HttpResponse
 
 from .models import VendorProfile, VendorOrderNote
+from .models import (
+    WithdrawalRequest,
+    SubscriptionPlan, VendorSubscription,
+    RequiredDocumentType, ShopModificationRequest,
+    ShopModificationDocument, VendorLocation,
+)
+from .serializers import (
+    VendorLocationSerializer,
+    ShopModificationRequestSerializer, ShopModificationDocumentSerializer,
+    RequiredDocumentTypeSerializer, SubscriptionPlanSerializer,
+)
+from django.core.mail import send_mail
+from django.conf import settings as django_settings
 from .serializers import (
     VendorProfileSerializer, 
     VendorApplicationSerializer,
@@ -3386,7 +3399,384 @@ def public_shop(request, slug):
         'products': ProductSerializer(products[:20], many=True, context={'request': request}).data,
     }
     return Response(data)
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# BOUTIQUE — RÉCUPÉRATION PROFIL COMPLET
+# ══════════════════════════════════════════════════════════════════════════════
  
+@extend_schema(tags=["Vendors"], summary="Get full shop profile")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_get_shop(request):
+    """
+    Retourne le profil complet de la boutique avec photo_url et banner_url.
+    C'est cet endpoint (et non /api/vendors/profile/) qui doit être utilisé
+    par la page Ma Boutique pour récupérer les URLs des images.
+    """
+    try:
+        profile = VendorProfile.objects.select_related('current_plan').get(user=request.user)
+        serializer = VendorProfileSerializer(profile, context={'request': request})
+        return Response(serializer.data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Update shop editable fields")
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def vendor_update_shop(request):
+    """
+    Met à jour uniquement les champs NON-SENSIBLES de la boutique :
+    whatsapp_phone, is_online.
+    Les champs sensibles (business_name, description, city, address)
+    passent par ShopModificationRequest.
+    """
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        EDITABLE = ['whatsapp_phone', 'is_online']
+        for field in EDITABLE:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+        profile.save()
+ 
+        return Response(VendorProfileSerializer(profile, context={'request': request}).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Upload shop profile photo")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_upload_shop_photo(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        photo = request.FILES.get('photo')
+        if not photo:
+            return Response({'detail': 'Champ "photo" requis.'}, status=400)
+        if photo.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
+            return Response({'detail': 'Format non supporté. JPG, PNG ou WEBP.'}, status=400)
+        if photo.size > 5 * 1024 * 1024:
+            return Response({'detail': 'Fichier trop volumineux. Max 5 Mo.'}, status=400)
+ 
+        if profile.profile_photo:
+            try: profile.profile_photo.delete(save=False)
+            except Exception: pass
+ 
+        profile.profile_photo = photo
+        profile.save(update_fields=['profile_photo', 'updated_at'])
+ 
+        photo_url = request.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
+        return Response({'photo_url': photo_url}, status=201)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Upload shop banner")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_upload_shop_banner(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        banner = request.FILES.get('banner')
+        if not banner:
+            return Response({'detail': 'Champ "banner" requis.'}, status=400)
+        if banner.content_type not in ['image/jpeg', 'image/png', 'image/webp']:
+            return Response({'detail': 'Format non supporté.'}, status=400)
+        if banner.size > 8 * 1024 * 1024:
+            return Response({'detail': 'Fichier trop volumineux. Max 8 Mo.'}, status=400)
+ 
+        if profile.banner_image:
+            try: profile.banner_image.delete(save=False)
+            except Exception: pass
+ 
+        profile.banner_image = banner
+        profile.save(update_fields=['banner_image', 'updated_at'])
+ 
+        banner_url = request.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
+        return Response({'banner_url': banner_url}, status=201)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Get shop QR data")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_shop_qr(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        qr_url = f"https://belivay.com?ref={profile.shop_slug}" if profile.shop_slug else "https://belivay.com"
+        return Response({
+            'slug':       profile.shop_slug,
+            'public_url': qr_url,
+            'shop_name':  profile.business_name,
+        })
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+# ══════════════════════════════════════════════════════════════════════════════
+# EMPLACEMENTS PHYSIQUES
+# ══════════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Vendors"], summary="List vendor locations")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_locations_list(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        locations = VendorLocation.objects.filter(vendor=profile)
+        return Response(VendorLocationSerializer(locations, many=True).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Create vendor location")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_location_create(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        serializer = VendorLocationSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(vendor=profile)
+            return Response(serializer.data, status=201)
+        return Response(serializer.errors, status=400)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Update vendor location")
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def vendor_location_update(request, location_id):
+    try:
+        profile   = VendorProfile.objects.get(user=request.user)
+        location  = VendorLocation.objects.get(id=location_id, vendor=profile)
+        serializer = VendorLocationSerializer(location, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+    except VendorLocation.DoesNotExist:
+        return Response({'detail': 'Emplacement introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Delete vendor location")
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def vendor_location_delete(request, location_id):
+    try:
+        profile  = VendorProfile.objects.get(user=request.user)
+        location = VendorLocation.objects.get(id=location_id, vendor=profile)
+        location.delete()
+        return Response(status=204)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+    except VendorLocation.DoesNotExist:
+        return Response({'detail': 'Emplacement introuvable.'}, status=404)
+ 
+ 
+# ══════════════════════════════════════════════════════════════════════════════
+# DEMANDES DE MODIFICATION DE CHAMPS SENSIBLES
+# ══════════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Vendors"], summary="List modification requests")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_mod_requests_list(request):
+    try:
+        profile  = VendorProfile.objects.get(user=request.user)
+        requests = ShopModificationRequest.objects.filter(vendor=profile).prefetch_related(
+            'documents', 'required_docs'
+        )
+        return Response(ShopModificationRequestSerializer(requests, many=True, context={'request': request}).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Create modification request")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_mod_request_create(request):
+    """
+    Crée une demande de modification de champs sensibles.
+    Body : {
+        fields_requested: {'business_name': 'Nouveau Nom', 'city': 'Douala'},
+        reason: 'Changement de dénomination sociale',
+    }
+    Le vendeur peut aussi uploader des pièces jointes initiales via des fichiers multipart.
+    """
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        import json
+ 
+        # Parser fields_requested depuis la requête (multipart ou JSON)
+        fields_requested = request.data.get('fields_requested')
+        if isinstance(fields_requested, str):
+            try:
+                fields_requested = json.loads(fields_requested)
+            except json.JSONDecodeError:
+                return Response({'detail': 'fields_requested doit être un objet JSON.'}, status=400)
+ 
+        reason = request.data.get('reason', '').strip()
+ 
+        if not fields_requested:
+            return Response({'detail': '"fields_requested" est requis.'}, status=400)
+        if not reason:
+            return Response({'detail': '"reason" est requis.'}, status=400)
+ 
+        # Vérifier que les champs sont bien sensibles
+        allowed = ShopModificationRequest.SENSITIVE_FIELDS
+        invalid = [f for f in fields_requested if f not in allowed]
+        if invalid:
+            return Response({
+                'detail': f'Champs non autorisés : {invalid}. Champs sensibles : {allowed}'
+            }, status=400)
+ 
+        # Vérifier qu'il n'y a pas de demande PENDING ou DOCS_REQUIRED en cours
+        pending = ShopModificationRequest.objects.filter(
+            vendor=profile,
+            status__in=['PENDING', 'DOCS_REQUIRED', 'DOCS_UPLOADED']
+        ).first()
+        if pending:
+            return Response({
+                'detail': f'Vous avez déjà une demande en cours (#{pending.id}, statut: {pending.status}). Attendez sa résolution.',
+            }, status=400)
+ 
+        mod_request = ShopModificationRequest.objects.create(
+            vendor           = profile,
+            fields_requested = fields_requested,
+            reason           = reason,
+            status           = 'PENDING',
+        )
+ 
+        # Upload pièces jointes initiales si présentes
+        files = request.FILES.getlist('files')
+        for f in files:
+            ShopModificationDocument.objects.create(
+                modification_request = mod_request,
+                file                 = f,
+                description          = f.name,
+            )
+ 
+        # Notification email au vendeur
+        try:
+            send_mail(
+                subject=f'[BelivaY] Demande de modification #{mod_request.id} reçue',
+                message=(
+                    f'Bonjour {profile.business_name},\n\n'
+                    f'Votre demande de modification (#{mod_request.id}) a bien été reçue.\n'
+                    f'Champs demandés : {", ".join(fields_requested.keys())}\n\n'
+                    f'Un administrateur BelivaY va l\'examiner sous 48h.\n\n'
+                    f'Cordialement,\nL\'équipe BelivaY'
+                ),
+                from_email=getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'noreply@belivay.com'),
+                recipient_list=[profile.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+ 
+        return Response(
+            ShopModificationRequestSerializer(mod_request, context={'request': request}).data,
+            status=201
+        )
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Upload documents for modification request")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_mod_request_upload_docs(request, request_id):
+    """
+    Le vendeur uploade des documents en réponse à une demande de docs de l'admin.
+    Passe le statut à DOCS_UPLOADED.
+    Body (multipart) : files[], doc_type_ids[] (optionnel)
+    """
+    try:
+        profile     = VendorProfile.objects.get(user=request.user)
+        mod_request = ShopModificationRequest.objects.get(id=request_id, vendor=profile)
+ 
+        if mod_request.status not in ['DOCS_REQUIRED', 'PENDING']:
+            return Response({'detail': f'Impossible d\'uploader des documents pour ce statut ({mod_request.status}).'}, status=400)
+ 
+        files        = request.FILES.getlist('files')
+        doc_type_ids = request.data.getlist('doc_type_ids')
+ 
+        if not files:
+            return Response({'detail': 'Au moins un fichier requis.'}, status=400)
+ 
+        for i, f in enumerate(files):
+            doc_type = None
+            if i < len(doc_type_ids):
+                try:
+                    doc_type = RequiredDocumentType.objects.get(id=int(doc_type_ids[i]))
+                except (RequiredDocumentType.DoesNotExist, ValueError):
+                    pass
+            ShopModificationDocument.objects.create(
+                modification_request = mod_request,
+                file                 = f,
+                document_type        = doc_type,
+                description          = f.name,
+            )
+ 
+        mod_request.status = 'DOCS_UPLOADED'
+        mod_request.save()
+ 
+        # Notification email
+        try:
+            send_mail(
+                subject=f'[BelivaY] Documents ajoutés — Demande #{mod_request.id}',
+                message=(
+                    f'Bonjour {profile.business_name},\n\n'
+                    f'Vos documents ont bien été reçus pour la demande #{mod_request.id}.\n'
+                    f'Un administrateur va les examiner sous 48h.\n\n'
+                    f'Cordialement,\nL\'équipe BelivaY'
+                ),
+                from_email=getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'noreply@belivay.com'),
+                recipient_list=[profile.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+ 
+        return Response(
+            ShopModificationRequestSerializer(mod_request, context={'request': request}).data
+        )
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+    except ShopModificationRequest.DoesNotExist:
+        return Response({'detail': 'Demande introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="List predefined document types")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_doc_types_list(request):
+    """Liste les types de documents prédéfinis (pour les formulaires d'upload)."""
+    doc_types = RequiredDocumentType.objects.filter(is_active=True)
+    return Response(RequiredDocumentTypeSerializer(doc_types, many=True).data)
+
  
 
 # CERTIFICATIONS
@@ -3723,3 +4113,309 @@ def vendor_subscription_history(request):
  
     except VendorProfile.DoesNotExist:
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+    
+
+# ══════════════════════════════════════════════════════════════════════════════
+# PLANS — avec essai gratuit
+# ══════════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Vendors"], summary="List subscription plans")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_list_plans(request):
+    """
+    Retourne les plans disponibles avec :
+    - is_current : le vendeur est sur ce plan
+    - trial_available : l'essai est disponible pour ce plan (trial_days > 0 et pas déjà utilisé)
+    - trial_used : le vendeur a déjà utilisé l'essai de ce plan
+    """
+    try:
+        profile = VendorProfile.objects.select_related('current_plan').get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+    plans = SubscriptionPlan.objects.filter(is_active=True).order_by('display_order')
+ 
+    # Plans pour lesquels l'essai a déjà été utilisé
+    used_trial_plan_ids = set(
+        VendorSubscription.objects.filter(
+            vendor=profile, is_trial=True
+        ).values_list('plan_id', flat=True)
+    )
+ 
+    plans_data = []
+    for p in plans:
+        trial_used      = p.id in used_trial_plan_ids
+        trial_available = p.trial_days > 0 and not trial_used and p.code != 'FREE'
+        plans_data.append({
+            'id':               p.id,
+            'code':             p.code,
+            'name':             p.name,
+            'description':      p.description,
+            'price_monthly_xaf': p.price_monthly_xaf,
+            'price_annual_xaf': p.price_annual_xaf,
+            'commission_rate':  float(p.commission_rate),
+            'max_products':     p.max_products,
+            'max_boosts_month': p.max_boosts_month,
+            'features':         p.features,
+            'trial_days':       p.trial_days,
+            'plan_duration_days': p.plan_duration_days,
+            'is_current':       profile.current_plan_id == p.id,
+            'is_popular':       p.code == 'PRO',
+            'trial_available':  trial_available,
+            'trial_used':       trial_used,
+        })
+ 
+    current_plan_data = None
+    if profile.current_plan:
+        is_trial = VendorSubscription.objects.filter(
+            vendor=profile, plan=profile.current_plan, is_trial=True, sub_status='ACTIVE'
+        ).exists()
+        current_plan_data = {
+            'code':       profile.current_plan.code,
+            'name':       profile.current_plan.name,
+            'expires_at': profile.plan_expires_at.isoformat() if profile.plan_expires_at else None,
+            'is_trial':   is_trial,
+        }
+ 
+    return Response({
+        'plans':            plans_data,
+        'current_plan':     current_plan_data or {'code': 'FREE', 'name': 'Gratuit', 'expires_at': None, 'is_trial': False},
+        'active_plan_code': profile.active_plan_code,
+    })
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Activate free trial for a plan")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_trial_activate(request):
+    """
+    Active l'essai gratuit d'un plan.
+    Body : { plan_code: 'PRO' }
+ 
+    Règles :
+    - Le plan doit avoir trial_days > 0
+    - Le vendeur n'a pas encore utilisé l'essai de ce plan
+    - Un seul essai actif à la fois
+    """
+    try:
+        profile   = VendorProfile.objects.get(user=request.user)
+        plan_code = request.data.get('plan_code')
+ 
+        if not plan_code:
+            return Response({'detail': '"plan_code" requis.'}, status=400)
+ 
+        try:
+            plan = SubscriptionPlan.objects.get(code=plan_code, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response({'detail': f'Plan "{plan_code}" introuvable.'}, status=404)
+ 
+        if plan.trial_days == 0:
+            return Response({'detail': 'Ce plan n\'a pas d\'essai gratuit.'}, status=400)
+ 
+        if plan.code == 'FREE':
+            return Response({'detail': 'Le plan gratuit ne nécessite pas d\'essai.'}, status=400)
+ 
+        # Vérifier que l'essai n'a pas déjà été utilisé
+        already_tried = VendorSubscription.objects.filter(
+            vendor=profile, plan=plan, is_trial=True
+        ).exists()
+        if already_tried:
+            return Response({'detail': f'Vous avez déjà utilisé l\'essai du plan {plan.name}.'}, status=400)
+ 
+        # Annuler tout essai actif sur un autre plan
+        VendorSubscription.objects.filter(
+            vendor=profile, is_trial=True, sub_status='ACTIVE'
+        ).update(sub_status='CANCELLED')
+ 
+        from django.utils import timezone
+        from datetime import timedelta
+ 
+        now        = timezone.now()
+        expires_at = now + timedelta(days=plan.trial_days)
+ 
+        sub = VendorSubscription.objects.create(
+            vendor          = profile,
+            plan            = plan,
+            billing_cycle   = 'TRIAL',
+            is_trial        = True,
+            amount_paid_xaf = 0,
+            sub_status      = 'ACTIVE',
+            started_at      = now,
+            expires_at      = expires_at,
+        )
+ 
+        # Activer le plan sur le profil
+        profile.current_plan    = plan
+        profile.plan_expires_at = expires_at
+        profile.save(update_fields=['current_plan', 'plan_expires_at', 'updated_at'])
+ 
+        # Notification email
+        try:
+            send_mail(
+                subject=f'[BelivaY] Essai gratuit {plan.name} activé !',
+                message=(
+                    f'Bonjour {profile.business_name},\n\n'
+                    f'Votre essai gratuit de {plan.trial_days} jours pour le plan {plan.name} est maintenant actif.\n'
+                    f'Il expire le {expires_at.strftime("%d/%m/%Y")}.\n\n'
+                    f'Profitez de toutes les fonctionnalités {plan.name} !\n\n'
+                    f'Cordialement,\nL\'équipe BelivaY'
+                ),
+                from_email=getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'noreply@belivay.com'),
+                recipient_list=[profile.user.email],
+                fail_silently=True,
+            )
+        except Exception:
+            pass
+ 
+        return Response({
+            'message':    f'Essai gratuit {plan.trial_days} jours activé !',
+            'plan':       plan.name,
+            'expires_at': expires_at.isoformat(),
+            'reference':  sub.payment_reference,
+        }, status=201)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Subscribe to a plan")
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_subscribe_plan(request):
+    """
+    Initie une souscription payante.
+    Body : { plan_code, billing_cycle, operator, phone_number }
+    """
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        if not profile.is_active_vendor:
+            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
+ 
+        plan_code     = request.data.get('plan_code')
+        billing_cycle = request.data.get('billing_cycle', 'MONTHLY')
+        operator      = request.data.get('operator')
+        phone_number  = request.data.get('phone_number', '')
+ 
+        if not plan_code:
+            return Response({'detail': '"plan_code" est requis.'}, status=400)
+        if operator not in ['ORANGE_MONEY', 'MTN_MOMO']:
+            return Response({'detail': '"operator" doit être ORANGE_MONEY ou MTN_MOMO.'}, status=400)
+        if billing_cycle not in ['MONTHLY', 'ANNUAL']:
+            return Response({'detail': '"billing_cycle" doit être MONTHLY ou ANNUAL.'}, status=400)
+ 
+        try:
+            plan = SubscriptionPlan.objects.get(code=plan_code, is_active=True)
+        except SubscriptionPlan.DoesNotExist:
+            return Response({'detail': f'Plan "{plan_code}" introuvable.'}, status=404)
+ 
+        if plan.code == 'FREE':
+            return Response({'detail': 'Le plan gratuit ne nécessite pas de souscription.'}, status=400)
+ 
+        # Vérifier pas de PENDING en attente
+        pending = VendorSubscription.objects.filter(
+            vendor=profile, sub_status='PENDING', is_trial=False
+        ).first()
+        if pending:
+            return Response({
+                'detail': f'Souscription en attente : {pending.payment_reference}. Attendez la confirmation admin.',
+            }, status=400)
+ 
+        amount = plan.price_annual_xaf if billing_cycle == 'ANNUAL' else plan.price_monthly_xaf
+ 
+        sub = VendorSubscription.objects.create(
+            vendor          = profile,
+            plan            = plan,
+            billing_cycle   = billing_cycle,
+            is_trial        = False,
+            amount_paid_xaf = amount,
+            operator        = operator,
+            phone_number    = phone_number,
+            sub_status      = 'PENDING',
+        )
+ 
+        return Response({
+            'message':   'Souscription enregistrée. Un admin BelivaY va confirmer votre paiement sous 24h.',
+            'reference': sub.payment_reference,
+            'plan':      plan.name,
+            'amount':    amount,
+            'operator':  operator,
+            'status':    'PENDING',
+        }, status=201)
+ 
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+@extend_schema(tags=["Vendors"], summary="Subscription history")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_subscription_history(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        subs    = VendorSubscription.objects.filter(vendor=profile).select_related('plan').order_by('-created_at')[:20]
+        data = [{
+            'id':             s.id,
+            'reference':      s.payment_reference,
+            'plan_name':      s.plan.name,
+            'plan_code':      s.plan.code,
+            'billing_cycle':  s.billing_cycle,
+            'is_trial':       s.is_trial,
+            'amount_paid_xaf': s.amount_paid_xaf,
+            'operator':       s.operator,
+            'sub_status':     s.sub_status,
+            'started_at':     s.started_at.isoformat() if s.started_at else None,
+            'expires_at':     s.expires_at.isoformat() if s.expires_at else None,
+            'created_at':     s.created_at.isoformat(),
+        } for s in subs]
+        return Response(data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+ 
+ 
+# ══════════════════════════════════════════════════════════════════════════════
+# PAGE PUBLIQUE BOUTIQUE
+# ══════════════════════════════════════════════════════════════════════════════
+ 
+@api_view(['GET'])
+@permission_classes([])
+def public_shop(request, slug):
+    """Page publique d'une boutique — accessible sans authentification."""
+    try:
+        profile = VendorProfile.objects.select_related('user', 'current_plan').get(
+            shop_slug=slug, status='APPROVED', is_online=True,
+        )
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Boutique introuvable ou hors ligne.'}, status=404)
+ 
+    from apps.catalog.models import Product
+    from apps.catalog.serializers import ProductSerializer
+    from django.db.models import Avg, Count
+ 
+    products = Product.objects.filter(vendor=profile.user, is_active=True).order_by('-created_at')
+    stats    = products.aggregate(total=Count('id'), avg_rating=Avg('reviews__rating'))
+ 
+    banner_url = request.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None
+    photo_url  = request.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
+ 
+    locations = VendorLocation.objects.filter(vendor=profile, is_active=True)
+    locations_data = VendorLocationSerializer(locations, many=True).data
+ 
+    return Response({
+        'slug':               profile.shop_slug,
+        'business_name':      profile.business_name,
+        'business_description': profile.business_description,
+        'city':               profile.city,
+        'whatsapp_phone':     profile.whatsapp_phone,
+        'banner_url':         banner_url,
+        'photo_url':          photo_url,
+        'certification_tier': profile.certification_tier,
+        'is_online':          profile.is_online,
+        'member_since':       profile.approved_at.isoformat() if profile.approved_at else profile.created_at.isoformat(),
+        'stats': {
+            'total_products': stats['total'] or 0,
+            'avg_rating':     round(stats['avg_rating'], 1) if stats['avg_rating'] else None,
+        },
+        'locations':  locations_data,
+        'products':   ProductSerializer(products[:20], many=True, context={'request': request}).data,
+    })    

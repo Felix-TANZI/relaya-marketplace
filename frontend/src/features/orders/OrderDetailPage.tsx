@@ -1,19 +1,24 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft,
   AlertCircle,
+  AlertTriangle,
+  Bike,
   CheckCircle,
   Clock3,
   CreditCard,
+  Home,
   MapPin,
   MessageCircleMore,
   Package,
   Phone,
   ShieldCheck,
   Store,
+  Send,
   Truck,
+  Warehouse,
   UserCircle2,
   XCircle,
 } from "lucide-react";
@@ -21,6 +26,14 @@ import { ordersApi } from "@/services/api/orders";
 import { getMockOrders, demoOrders } from "@/data/mockOrders";
 import { customerApi, type Shipment } from "@/services/api/customer";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
+import {
+  addDisputeMessage,
+  formatRemainingDisputeTime,
+  getDisputeEligibility,
+  getOrderDisputes,
+  openOrderDispute,
+  type StoredOrderDispute,
+} from "@/lib/orderDisputes";
 
 export default function OrderDetailPage() {
   const { t } = useTranslation();
@@ -30,6 +43,13 @@ export default function OrderDetailPage() {
   const [tracking, setTracking] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [disputes, setDisputes] = useState<StoredOrderDispute[]>([]);
+  const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
+  const [showDisputeComposer, setShowDisputeComposer] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("Produit non conforme");
+  const [disputeDraft, setDisputeDraft] = useState("");
+  const [disputeReply, setDisputeReply] = useState("");
+  const disputeSectionRef = useRef<HTMLElement | null>(null);
 
   function getPaymentInfo(status: PaymentStatus) {
     switch (status) {
@@ -113,6 +133,23 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id, t]);
 
+  useEffect(() => {
+    if (!order) return;
+    const syncDisputes = () => {
+      const next = getOrderDisputes(order.id);
+      setDisputes(next);
+      setActiveDisputeId((current) => current ?? next[0]?.id ?? null);
+    };
+
+    syncDisputes();
+    window.addEventListener("belivay-disputes-updated", syncDisputes);
+    return () => window.removeEventListener("belivay-disputes-updated", syncDisputes);
+  }, [order]);
+
+  const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
+  const activeDispute =
+    disputes.find((dispute) => dispute.id === activeDisputeId) ?? disputes[0] ?? null;
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
@@ -175,18 +212,51 @@ export default function OrderDetailPage() {
   };
 
   const handleOpenDispute = async () => {
-    if (!id) return;
-    const description = window.prompt(t('order.detail.dispute_prompt'));
-    if (!description) return;
+    if (activeDispute) {
+      disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    setShowDisputeComposer(true);
+    window.setTimeout(() => {
+      disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 30);
+  };
+
+  const handleCreateDispute = async () => {
+    if (!disputeDraft.trim()) return;
+
+    const createdDispute = openOrderDispute(order, disputeReason, disputeDraft.trim());
 
     try {
-      await customerApi.createOrderDispute(parseInt(id, 10), {
+      await customerApi.createOrderDispute(order.id, {
         reason: "OTHER",
-        description,
+        description: disputeDraft.trim(),
       });
-    } catch (actionError) {
-      // silenced
+    } catch {
+      // Frontend fallback kept in localStorage.
     }
+
+    setShowDisputeComposer(false);
+    setDisputeDraft("");
+    setDisputes(getOrderDisputes(order.id));
+    setActiveDisputeId(createdDispute.id);
+  };
+
+  const handleSendDisputeReply = async () => {
+    if (!activeDispute || !disputeReply.trim()) return;
+
+    addDisputeMessage(activeDispute.id, disputeReply.trim());
+    try {
+      const numericDisputeId = Number(activeDispute.id);
+      if (Number.isFinite(numericDisputeId)) {
+        await customerApi.addDisputeMessage(numericDisputeId, disputeReply.trim());
+      }
+    } catch {
+      // Frontend fallback kept in localStorage.
+    }
+    setDisputes(getOrderDisputes(order.id));
+    setDisputeReply("");
   };
 
   return (
@@ -257,15 +327,15 @@ export default function OrderDetailPage() {
                   <div className="flex items-center justify-center gap-6 text-5xl">
                     {order.delivery_mode === "PICKUP" ? (
                       <>
-                        <span>🛒</span>
-                        <span>🏪</span>
-                        <span>📦</span>
+                        <Package className="text-primary" size={44} strokeWidth={1.75} />
+                        <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
+                        <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
                       </>
                     ) : (
                       <>
-                        <span>📍</span>
-                        <span>🛵</span>
-                        <span>🏠</span>
+                        <MapPin className="text-primary" size={44} strokeWidth={1.75} />
+                        <Bike className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
+                        <Home className="text-primary" size={44} strokeWidth={1.75} />
                       </>
                     )}
                   </div>
@@ -315,10 +385,11 @@ export default function OrderDetailPage() {
                 </button>
                 <button
                   onClick={handleOpenDispute}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                  disabled={!activeDispute && !disputeEligibility.eligible}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                 >
                   <MessageCircleMore size={18} />
-                  {t('order.detail.open_dispute')}
+                  {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
                 </button>
                 {order.fulfillment_status !== "DELIVERED" && (
                   <button
@@ -356,6 +427,153 @@ export default function OrderDetailPage() {
                   </div>
                 ))}
               </div>
+            </section>
+
+            <section
+              ref={disputeSectionRef}
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">
+                    Litige commande
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
+                    Chat de litige pour cette commande
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Le litige se declenche ici, depuis la commande recue. Vous avez 24h apres reception pour ouvrir la discussion de mediation.
+                  </p>
+                </div>
+                <div className={`rounded-full px-4 py-2 text-xs font-bold ${
+                  disputeEligibility.eligible
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                }`}>
+                  {disputeEligibility.eligible
+                    ? `Fenetre ouverte · ${formatRemainingDisputeTime(disputeEligibility.remainingMs)} restantes`
+                    : disputeEligibility.message}
+                </div>
+              </div>
+
+              {showDisputeComposer && !activeDispute ? (
+                <div className="mt-5 rounded-[1.5rem] border border-orange-200 bg-[#fff8f2] p-5 dark:border-gray-700 dark:bg-gray-800/60">
+                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+                    <input
+                      value={disputeReason}
+                      onChange={(event) => setDisputeReason(event.target.value)}
+                      className="rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                      placeholder="Motif du litige"
+                    />
+                    <textarea
+                      value={disputeDraft}
+                      onChange={(event) => setDisputeDraft(event.target.value)}
+                      className="min-h-[108px] rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                      placeholder="Explique le probleme constate apres reception du colis."
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateDispute()}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                    >
+                      <AlertTriangle size={17} />
+                      Ouvrir le litige
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDisputeComposer(false)}
+                      className="inline-flex items-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {disputes.length > 0 ? (
+                <div className="mt-5 grid gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
+                  <div className="space-y-3">
+                    {disputes.map((dispute) => (
+                      <button
+                        type="button"
+                        key={dispute.id}
+                        onClick={() => setActiveDisputeId(dispute.id)}
+                        className={`w-full rounded-[1.4rem] border p-4 text-left transition ${
+                          activeDispute?.id === dispute.id
+                            ? "border-primary bg-[#fff4eb] dark:bg-primary/10"
+                            : "border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 dark:border-gray-700 dark:bg-gray-950"
+                        }`}
+                      >
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
+                          {dispute.orderLabel}
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-gray-900 dark:text-white">
+                          {dispute.reason}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+                          {dispute.messages[dispute.messages.length - 1]?.text}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="rounded-[1.6rem] border border-gray-200 bg-[#fcfbf8] p-4 dark:border-gray-700 dark:bg-gray-950">
+                    {activeDispute ? (
+                      <>
+                        <div className="mb-4 border-b border-gray-200 pb-4 dark:border-gray-800">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            {activeDispute.orderLabel} · {activeDispute.reason}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Conversation de mediation ouverte pour cette commande.
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          {activeDispute.messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`max-w-[88%] rounded-[1.1rem] px-4 py-3 text-sm leading-6 ${
+                                message.author === "Vous"
+                                  ? "ml-auto bg-[#fff1e5] text-gray-900 dark:bg-primary/10 dark:text-white"
+                                  : "bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300"
+                              }`}
+                            >
+                              <div className="mb-1 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
+                                {message.author} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                              </div>
+                              {message.text}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                          <input
+                            value={disputeReply}
+                            onChange={(event) => setDisputeReply(event.target.value)}
+                            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                            placeholder="Repondre au litige..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSendDisputeReply()}
+                            className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark"
+                            aria-label="Envoyer la reponse"
+                          >
+                            <Send size={16} />
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ) : !showDisputeComposer ? (
+                <div className="mt-5 rounded-[1.5rem] border border-dashed border-orange-200 bg-[#fffaf6] p-5 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300">
+                  Aucun litige ouvert sur cette commande. {disputeEligibility.eligible ? "Utilisez le bouton ci-dessus pour demarrer le chat de mediation." : "La fenetre d'ouverture n'est plus disponible."}
+                </div>
+              ) : null}
             </section>
           </div>
 

@@ -5,7 +5,7 @@ export default function BackToTop() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const onScroll = () => setVisible(window.scrollY > 400);
+    const onScroll = () => setVisible(window.scrollY > 220);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -15,10 +15,10 @@ export default function BackToTop() {
   return (
     <button
       onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-      className="fixed bottom-20 right-20 z-[70] flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-500 shadow-lg transition-all hover:-translate-y-0.5 hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:border-primary dark:hover:text-primary lg:bottom-6 lg:right-6"
+      className="fixed bottom-20 right-[4.9rem] z-[79] flex h-12 w-12 items-center justify-center rounded-2xl border border-[#f3d7c3] bg-white text-[#c85e14] shadow-[0_18px_38px_rgba(15,23,42,.14)] transition-all hover:-translate-y-1 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-900 dark:text-primary lg:bottom-7 lg:right-[5.2rem]"
       aria-label="Retour en haut"
     >
-      <ArrowUp size={18} />
+      <ArrowUp size={20} />
     </button>
   );
 }

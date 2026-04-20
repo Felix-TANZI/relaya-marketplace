@@ -117,7 +117,7 @@ export default function ProductCard({
   /* ── COMPACT MODE (V29 horizontal scroll) ── */
   if (compact) {
     return (
-      <Link to={`/product/${product.id}`} className="group block h-full">
+      <Link to={`/product/${product.id}?mock=1`} className="group block h-full">
         <article className="flex h-full flex-col overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,.04)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700/50">
@@ -138,7 +138,7 @@ export default function ProductCard({
             {/* Favorite */}
             <button
               onClick={handleToggleFavorite}
-              className={`absolute bottom-2 right-2 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full backdrop-blur-sm transition-all ${isFavorite ? 'bg-pink-50 opacity-100' : 'bg-white/90 opacity-0 group-hover:opacity-100'}`}
+              className={`absolute bottom-2 right-2 z-10 flex h-[22px] w-[22px] items-center justify-center rounded-full backdrop-blur-sm transition-all ${isFavorite ? 'bg-pink-50 opacity-100 dark:bg-pink-500/20' : 'bg-white/90 opacity-0 group-hover:opacity-100 dark:bg-gray-800/90'}`}
             >
               <Heart size={11} className={isFavorite ? "fill-pink-500 text-pink-500" : "text-gray-600"} />
             </button>
@@ -176,7 +176,7 @@ export default function ProductCard({
             <div className="mb-1 flex items-center justify-between text-[8.5px]">
               <span className="flex items-center gap-0.5">
                 <Star size={9} className="fill-amber-400 text-amber-400" />
-                <span className="font-semibold text-gray-600">
+                <span className="font-semibold text-gray-600 dark:text-gray-300">
                   {product.rating_average?.toFixed(1) || "—"} {hasReviews && `(${product.reviews_count})`}
                 </span>
               </span>
@@ -192,7 +192,7 @@ export default function ProductCard({
               className={`mt-auto rounded-md px-1 py-1 text-[9.5px] font-extrabold transition-all ${
                 inStock
                   ? "bg-primary text-white hover:bg-primary-dark active:scale-95"
-                  : "bg-gray-200 text-gray-400"
+                  : "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
               }`}
             >
               {inStock ? "+ Panier" : "Épuisé"}
@@ -270,7 +270,7 @@ export default function ProductCard({
               {finalPrice.toLocaleString("fr-FR")} FCFA
             </span>
             {product.discount ? (
-              <span className="text-xs text-gray-400 line-through">
+              <span className="text-xs text-gray-400 line-through dark:text-gray-500">
                 {product.price_xaf.toLocaleString("fr-FR")}
               </span>
             ) : null}
@@ -279,7 +279,7 @@ export default function ProductCard({
             onClick={handleAddToCart}
             disabled={!inStock}
             className={`add-to-cart mt-auto flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all ${
-              inStock ? "bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5" : "cursor-not-allowed bg-gray-200 text-gray-500"
+              inStock ? "bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5" : "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
             }`}
           >
             <ShoppingCart size={16} />

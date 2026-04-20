@@ -57,12 +57,17 @@ export default function OrdersHistoryPage() {
   }, []);
 
   /* ── Tabs config ── */
-  const tabs: { key: TabKey; label: string; emoji: string; statuses: FulfillmentStatus[] }[] = [
-    { key: "all", label: "Toutes", emoji: "", statuses: [] },
-    { key: "in_delivery", label: "En livraison", emoji: "🚚", statuses: ["SHIPPED"] },
-    { key: "preparing", label: "En cours", emoji: "📦", statuses: ["PENDING", "PROCESSING"] },
-    { key: "delivered", label: "Livrées", emoji: "✅", statuses: ["DELIVERED"] },
-    { key: "cancelled", label: "Annulées", emoji: "❌", statuses: ["CANCELLED"] },
+  const tabs: {
+    key: TabKey;
+    label: string;
+    icon?: typeof Truck;
+    statuses: FulfillmentStatus[];
+  }[] = [
+    { key: "all", label: "Toutes", statuses: [] },
+    { key: "in_delivery", label: "En livraison", icon: Truck, statuses: ["SHIPPED"] },
+    { key: "preparing", label: "En cours", icon: Package, statuses: ["PENDING", "PROCESSING"] },
+    { key: "delivered", label: "Livrées", icon: Calendar, statuses: ["DELIVERED"] },
+    { key: "cancelled", label: "Annulées", icon: X, statuses: ["CANCELLED"] },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -186,7 +191,7 @@ export default function OrdersHistoryPage() {
                   : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
               }`}
             >
-              {tab.emoji && <span>{tab.emoji}</span>}
+              {tab.icon ? <tab.icon size={14} /> : null}
               {tab.label}
               <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
                 activeTab === tab.key

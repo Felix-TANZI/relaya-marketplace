@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
@@ -7,20 +7,16 @@ import CategorySidebar from "@/components/home/CategorySidebar";
 import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import ProductCard from "@/components/product/ProductCard";
 import {
-  AlertTriangle, ShoppingCart, ShieldCheck, Star, Truck,
-  Flame, Sparkles, Shirt, Laptop, Sparkle, Home, Footprints, Bot,
-  LayoutGrid, Globe, Smartphone,
+  AlertTriangle, ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
+  Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe,
 } from "lucide-react";
 import {
   V29_PRODUCTS,
   getByCat,
   getTopProducts,
   getNewProducts,
-  getRecommended,
 } from "@/data/v29Products";
 import type { LucideIcon } from "lucide-react";
-
-const PAGE_SIZE = 24;
 
 const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
   { slug: "all",    icon: LayoutGrid, name: "Tout" },
@@ -33,10 +29,13 @@ const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const mainRef = useRef<HTMLElement | null>(null);
   const [activeCat, setActiveCat] = useState("all");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [page, setPage] = useState(1);
-  const loaderRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [mainTop, setMainTop] = useState(0);
+  const [mainHeight, setMainHeight] = useState(0);
+  const [topOffset, setTopOffset] = useState(132);
 
   const allFiltered = useMemo(
     () => activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat),
@@ -44,35 +43,41 @@ export default function HomePage() {
   );
 
   const visibleProducts = useMemo(
-    () => allFiltered.slice(0, page * PAGE_SIZE),
-    [allFiltered, page]
+    () => allFiltered.slice(0, visibleCount),
+    [allFiltered, visibleCount]
   );
-
-  const hasMore = visibleProducts.length < allFiltered.length;
-
-  /* Infinite scroll via IntersectionObserver */
-  const loadMore = useCallback(() => {
-    if (hasMore) setPage((p) => p + 1);
-  }, [hasMore]);
-
-  useEffect(() => {
-    const el = loaderRef.current;
-    if (!el) return;
-    const obs = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) loadMore(); },
-      { rootMargin: "200px" }
-    );
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, [loadMore]);
-
-  /* Reset page when category changes */
-  useEffect(() => { setPage(1); }, [activeCat]);
+  const hasMoreProducts = visibleCount < allFiltered.length;
 
   /* CSS fixed-top offset */
   useEffect(() => {
     document.documentElement.style.setProperty("--belivay-fixed-top", "100px");
   }, []);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [activeCat]);
+
+  useEffect(() => {
+    const updateMetrics = () => {
+      const main = mainRef.current;
+      const header = document.querySelector("header");
+      if (!main) return;
+
+      const rect = main.getBoundingClientRect();
+      setMainTop(rect.top + window.scrollY);
+      setMainHeight(main.offsetHeight);
+      setTopOffset(Math.round((header?.getBoundingClientRect().bottom ?? 120) + 12));
+    };
+
+    updateMetrics();
+    window.addEventListener("resize", updateMetrics);
+    const timer = window.setInterval(updateMetrics, 350);
+
+    return () => {
+      window.removeEventListener("resize", updateMetrics);
+      window.clearInterval(timer);
+    };
+  }, [activeCat, visibleCount]);
 
   /* ── Carousel slides ── */
   const slides = [
@@ -98,160 +103,170 @@ export default function HomePage() {
   const newProds = useMemo(() => getNewProducts(), []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="flex min-h-screen">
-        {/* LEFT SIDEBAR */}
-        <CategorySidebar
-          activeCategory={activeCat}
-          onSelectCategory={(slug) => { setActiveCat(slug); window.scrollTo({ top: 400, behavior: "smooth" }); }}
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed((c) => !c)}
-        />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
+      <div className="mx-auto max-w-[1560px] px-3 pb-12 pt-3 lg:px-4">
+        <div className="flex items-stretch gap-4">
+          <CategorySidebar
+            activeCategory={activeCat}
+            onSelectCategory={(slug) => {
+              setActiveCat(slug);
+              window.scrollTo({ top: 180, behavior: "smooth" });
+            }}
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((c) => !c)}
+            trackTop={mainTop}
+            trackHeight={mainHeight}
+            topOffset={topOffset}
+          />
 
-        {/* MAIN CONTENT */}
-        <main className="min-w-0 flex-1 lg:pr-[280px]">
-          {/* Carousel */}
-          <div className="px-3 pt-3 lg:px-4">
-            <PromoCarousel slides={slides} autoPlayMs={5000} />
-          </div>
+          <main ref={mainRef} className="min-w-0 flex-1 space-y-4">
+            <section className="overflow-hidden rounded-[30px] border border-[#f1d2bb] bg-white shadow-[0_16px_42px_rgba(244,121,32,.08)] dark:border-gray-800 dark:bg-gray-900">
+              <div className="p-3 sm:p-4">
+                <PromoCarousel slides={slides} autoPlayMs={5000} />
+              </div>
 
-          {/* Quick category pills */}
-          <div className="border-b border-gray-200 bg-white px-3 py-2 dark:border-gray-800 dark:bg-gray-900 lg:px-4">
-            <div className="flex gap-1.5 overflow-x-auto scrollbar-hide">
-              <button
-                onClick={() => navigate("/categories")}
-                className="flex flex-shrink-0 items-center gap-1 rounded-full border border-gray-200 bg-white px-3 py-1.5 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800"
-              >
-                <LayoutGrid size={13} />
-                Catégories
-              </button>
-              {QUICK_PILLS.map((p) => {
-                const Icon = p.icon;
-                return (
+              <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-3 sm:px-4 dark:border-gray-800 dark:bg-gray-900/80">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   <button
-                    key={p.slug}
-                    onClick={() => setActiveCat(p.slug)}
-                    className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] font-bold transition-all ${
-                      activeCat === p.slug
-                        ? "border-primary bg-orange-50 text-orange-700 shadow-sm dark:bg-primary/10"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
-                    }`}
+                    onClick={() => navigate("/categories")}
+                    className="flex flex-shrink-0 items-center gap-1 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
-                    <Icon size={13} />
-                    {p.name}
+                    <LayoutGrid size={13} />
+                    Catégories
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                  {QUICK_PILLS.map((p) => {
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={p.slug}
+                        onClick={() => setActiveCat(p.slug)}
+                        className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] font-bold transition-all ${
+                          activeCat === p.slug
+                            ? "border-primary bg-[#fff1e5] text-[#c85e14] shadow-sm dark:bg-primary/10 dark:text-primary"
+                            : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        <Icon size={13} />
+                        {p.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
 
-          {/* Content area */}
-          <div className="px-3 pb-10 pt-3 lg:px-4">
-            <TrustBannersStrip />
+              <div className="grid gap-3 bg-white px-3 py-4 sm:px-4 md:grid-cols-4 dark:bg-gray-900">
+                {[
+                  { icon: ShoppingCart, num: "15 240", label: "Produits" },
+                  { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés" },
+                  { icon: Star, num: "4.8 / 5", label: "Note moyenne" },
+                  { icon: Truck, num: "24–72h", label: "Livraison" },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-[20px] border border-[#f3e4d7] bg-[#fffaf6] p-4 dark:border-gray-800 dark:bg-gray-800">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1e5] text-primary dark:bg-primary/10">
+                        <Icon size={18} />
+                      </div>
+                      <p className="mt-3 text-[22px] font-black leading-none text-[#c85e14]">{item.num}</p>
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a6b55] dark:text-gray-400">{item.label}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
 
-            {/* Litiges card */}
-            <div className="mb-4 overflow-hidden rounded-2xl border border-orange-100 bg-gradient-to-r from-white via-orange-50 to-orange-100/70 p-4 shadow-sm dark:border-gray-800 dark:from-gray-900 dark:via-gray-900 dark:to-primary/10">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <section className="overflow-hidden rounded-[28px] border border-[#f3dcc7] bg-[linear-gradient(135deg,#fff,#fff6ed)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.06)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
                   <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-primary">
                     Compte client
                   </p>
                   <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-                    Litiges ouverts et messages BelivaY
+                    Litiges ouverts et suivi commande
                   </h2>
                   <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Le suivi du support est regroupé dans votre compte, section litiges ouverts.
+                    Les litiges se déclenchent depuis une commande livrée, puis se consultent dans votre compte.
                   </p>
                 </div>
                 <button
-                  onClick={() => navigate("/profile?tab=disputes")}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(244,121,32,.26)] transition-all hover:-translate-y-0.5 hover:bg-primary-dark"
+                  onClick={() => navigate("/profile?panel=messages&tab=litige")}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(244,121,32,.26)] transition-all hover:-translate-y-0.5 hover:bg-primary-dark"
                 >
                   <AlertTriangle size={16} />
-                  Ouvrir mes litiges
+                  Voir mes litiges
                 </button>
               </div>
-            </div>
+              <TrustBannersStrip />
+            </section>
 
-            {/* Proof bar */}
-            <div className="mb-3 grid grid-cols-2 gap-1 rounded-xl border border-gray-100 bg-white p-2 shadow-[0_1px_4px_rgba(0,0,0,.03)] dark:border-gray-800 dark:bg-gray-900 sm:grid-cols-4 sm:gap-0 sm:divide-x sm:divide-gray-100 dark:sm:divide-gray-800">
-              {[
-                { icon: ShoppingCart, num: "15 240", label: "Produits" },
-                { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés" },
-                { icon: Star, num: "4.8 / 5", label: "Note moyenne" },
-                { icon: Truck, num: "24–72h", label: "Livraison" },
-              ].map((item) => {
-                const Icon = item.icon;
-                return (
-                  <div key={item.label} className="flex items-center gap-2 px-2 py-1">
-                    <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-50 to-orange-100/50 text-primary dark:bg-primary/10">
-                      <Icon size={14} />
-                    </div>
-                    <div>
-                      <p className="text-sm font-extrabold leading-tight text-primary">{item.num}</p>
-                      <p className="text-[9.5px] font-semibold text-gray-400">{item.label}</p>
-                    </div>
+            <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <HomeSection
+                title="Produits populaires"
+                icon={Flame}
+                badge={`${V29_PRODUCTS.length} produits`}
+                badgeColor="bg-red-50 text-red-600"
+                products={popular}
+                rows={2}
+              />
+            </section>
+
+            <section className="rounded-[28px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <HomeSection
+                title="Nouveaux Arrivages"
+                icon={Sparkles}
+                badge="Nouveau"
+                badgeColor="bg-green-50 text-green-700"
+                products={newProds}
+                rows={1}
+              />
+            </section>
+
+            <section className="overflow-hidden rounded-[28px] border border-[#dbe7f3] bg-[linear-gradient(180deg,#f7fbff,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-[18px] w-[3px] rounded bg-primary" />
+                  <Globe size={16} className="text-primary" />
+                  <div>
+                    <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">
+                      {activeCat === "all" ? "Catalogue de l'accueil" : `${QUICK_PILLS.find((p) => p.slug === activeCat)?.name ?? activeCat}`}
+                    </h3>
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400">
+                      Sélection finie pour garder le footer visible et une lecture claire de la page.
+                    </p>
                   </div>
-                );
-              })}
-            </div>
-
-            {/* Featured horizontal sections */}
-            <HomeSection
-              title="Produits populaires"
-              icon={Flame}
-              badge={`${V29_PRODUCTS.length} produits`}
-              badgeColor="bg-red-50 text-red-600"
-              products={popular}
-              rows={2}
-            />
-            <HomeSection
-              title="Nouveaux Arrivages"
-              icon={Sparkles}
-              badge="Nouveau"
-              badgeColor="bg-green-50 text-green-700"
-              products={newProds}
-              rows={1}
-            />
-
-            {/* ── Infinite scroll vertical grid ── */}
-            <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,.03)] dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-3 flex items-center gap-2">
-                <div className="h-[18px] w-[3px] rounded bg-primary" />
-                <Globe size={15} className="text-primary" />
-                <h3 className="text-[13px] font-extrabold text-gray-900 dark:text-white">
-                  {activeCat === "all" ? "Tous les produits" : `${QUICK_PILLS.find(p => p.slug === activeCat)?.name ?? activeCat}`}
-                </h3>
-                <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-bold text-orange-700">
-                  {allFiltered.length} produits
+                </div>
+                <span className="rounded-full bg-[#e9f2fb] px-3 py-1 text-[11px] font-bold text-[#2b6aa6] dark:bg-gray-800 dark:text-blue-300">
+                  {allFiltered.length} produits au total
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {visibleProducts.map((p) => (
                   <ProductCard key={p.id} product={p} showPromo compact />
                 ))}
               </div>
 
-              {/* Infinite scroll sentinel */}
-              <div ref={loaderRef} className="mt-4 flex justify-center">
-                {hasMore ? (
-                  <div className="flex items-center gap-2 text-sm text-gray-400">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                    Chargement…
-                  </div>
+              <div className="mt-5 flex justify-center">
+                {hasMoreProducts ? (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((count) => Math.min(count + 20, allFiltered.length))}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#cfe1f2] bg-white px-5 py-3 text-sm font-bold text-[#245f95] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-blue-300"
+                  >
+                    Voir plus d'articles
+                    <ArrowRight size={16} />
+                  </button>
                 ) : (
-                  <p className="text-xs text-gray-400">
-                    Tous les produits sont affichés ({allFiltered.length})
-                  </p>
+                  <span className="rounded-full border border-[#d6e5f2] bg-white px-5 py-3 text-sm font-bold text-[#5e7891] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    Tous les articles de cette sélection sont affichés
+                  </span>
                 )}
               </div>
-            </div>
-          </div>
-        </main>
+            </section>
+          </main>
 
-        {/* RIGHT FLASH PANEL */}
-        <FlashPanel />
+          <FlashPanel trackTop={mainTop} trackHeight={mainHeight} topOffset={topOffset} />
+        </div>
       </div>
     </div>
   );

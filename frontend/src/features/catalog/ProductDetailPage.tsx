@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useNavigate } from "react-router-dom";
+import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ChevronDown,
@@ -21,6 +21,7 @@ import { useToast } from "@/context/ToastContext";
 import { productsApi, type Category, type Product } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";
 import { http } from "@/services/api/http";
+import { V29_PRODUCTS } from "@/data/v29Products";
 
 interface ProductReview {
   id: number;
@@ -60,6 +61,7 @@ function formatDate(value: string) {
 
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
   const { showToast } = useToast();
@@ -71,6 +73,7 @@ export default function ProductDetailPage() {
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
   const [youMayLike, setYouMayLike] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [isMockProduct, setIsMockProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
@@ -112,10 +115,32 @@ export default function ProductDetailPage() {
     const fetchProduct = async () => {
       if (!id) return;
 
+      const productId = Number(id);
+      const shouldUseMock = searchParams.get("mock") === "1";
+
+      if (shouldUseMock) {
+        const fallback = V29_PRODUCTS.find((item) => item.id === productId) ?? null;
+        if (fallback) {
+          setLoading(true);
+          setProduct(fallback);
+          setIsMockProduct(true);
+          setReviews([]);
+          setSimilarProducts(
+            V29_PRODUCTS.filter(
+              (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
+            ).slice(0, 4),
+          );
+          setYouMayLike(V29_PRODUCTS.filter((item) => item.id !== fallback.id).slice(0, 3));
+          setLoading(false);
+          return;
+        }
+      }
+
       try {
         setLoading(true);
-        const data = await productsApi.get(Number(id));
+        const data = await productsApi.get(productId);
         setProduct(data);
+        setIsMockProduct(false);
 
         if (data.category) {
           const similar = await productsApi.list({
@@ -128,29 +153,48 @@ export default function ProductDetailPage() {
         const recommended = await productsApi.list({ page_size: 3 });
         setYouMayLike(recommended.results?.filter((item) => item.id !== data.id) || []);
       } catch (error) {
-        // silenced;
-        showToast(t("product_detail.loading_error"), "error");
+        const fallback = V29_PRODUCTS.find((item) => item.id === productId) ?? null;
+
+        if (fallback) {
+          setProduct(fallback);
+          setIsMockProduct(true);
+          setReviews([]);
+
+          const mockSimilar = V29_PRODUCTS.filter(
+            (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
+          ).slice(0, 4);
+          const mockRecommended = V29_PRODUCTS.filter((item) => item.id !== fallback.id).slice(0, 3);
+
+          setSimilarProducts(mockSimilar);
+          setYouMayLike(mockRecommended);
+        } else {
+          showToast(t("product_detail.loading_error"), "error");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     void fetchProduct();
-  }, [id, showToast, t]);
+  }, [id, searchParams, showToast, t]);
 
   useEffect(() => {
     const fetchReviews = async () => {
-      if (!id) return;
+      if (!id || isMockProduct) {
+        setReviews([]);
+        return;
+      }
       try {
         const data = await http<ProductReview[]>(`/api/catalog/products/${id}/reviews/`);
         setReviews(data);
       } catch (error) {
         // silenced;
+        setReviews([]);
       }
     };
 
     void fetchReviews();
-  }, [id]);
+  }, [id, isMockProduct]);
 
   const handleAddToCart = () => {
     if (!product) return;

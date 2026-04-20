@@ -10,7 +10,7 @@ export default function AppLayout() {
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden bg-bg-light dark:bg-bg-dark transition-colors">
       <Header />
-      <main className="flex-1 overflow-x-hidden pb-16 lg:pb-0">
+      <main className="flex-1 overflow-x-hidden pt-[132px] pb-16 lg:pb-0">
         <Outlet />
       </main>
       <Footer />

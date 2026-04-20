@@ -64,7 +64,7 @@ export default function HomeSection({
       : "flex";
 
   return (
-    <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,.03)] dark:border-gray-800 dark:bg-gray-900">
+    <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,.03)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -92,7 +92,7 @@ export default function HomeSection({
         {canLeft && (
           <button
             onClick={() => scroll(-1)}
-            className="absolute -left-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow-lg transition-all hover:bg-white dark:bg-gray-800/95"
+            className="absolute -left-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow-lg transition-all hover:bg-white dark:bg-gray-800/95 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <ChevronLeft size={16} />
           </button>
@@ -100,7 +100,7 @@ export default function HomeSection({
         {canRight && (
           <button
             onClick={() => scroll(1)}
-            className="absolute -right-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow-lg transition-all hover:bg-white dark:bg-gray-800/95"
+            className="absolute -right-1 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 text-gray-600 shadow-lg transition-all hover:bg-white dark:bg-gray-800/95 dark:text-gray-200 dark:hover:bg-gray-700"
           >
             <ChevronRight size={16} />
           </button>

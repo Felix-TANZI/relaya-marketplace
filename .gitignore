@@ -1,10 +1,6 @@
-# ════════════════════════════════════════════════════════════════
 # BelivaY — .gitignore
-# Placé à la racine : relaya-marketplace/.gitignore
-# ════════════════════════════════════════════════════════════════
 
-
-# ─── Variables d'environnement (CRITIQUE) ────────────────────────
+#  Variables d'environnement (CRITIQUE) 
 # .env contient : clé secrète Django, password BDD, clé SMTP, API keys
 .env
 .env.*
@@ -15,7 +11,7 @@ frontend/.env.*
 !frontend/.env.example
 
 
-# ─── Python ──────────────────────────────────────────────────────
+#  Python
 __pycache__/
 *.py[cod]
 *.pyc
@@ -25,7 +21,7 @@ __pycache__/
 .eggs/
 
 
-# ─── Django ──────────────────────────────────────────────────────
+#  Django
 # Fichiers générés ou contenant des données utilisateur
 *.sqlite3
 db.sqlite3
@@ -34,14 +30,14 @@ mediafiles/     # alias utilisé en prod
 staticfiles/    # fichiers static collectés par collectstatic
 
 
-# ─── Environnements virtuels Python ──────────────────────────────
+#  Environnements virtuels Python
 .venv/
 venv/
 env/
 ENV/
 
 
-# ─── Node.js / Frontend ──────────────────────────────────────────
+#  Node.js / Frontend
 node_modules/
 frontend/node_modules/
 frontend/dist/
@@ -51,7 +47,7 @@ dist-ssr/
 *.local
 
 
-# ─── Logs ────────────────────────────────────────────────────────
+#  Logs──
 logs/
 *.log
 npm-debug.log*
@@ -61,7 +57,7 @@ pnpm-debug.log*
 lerna-debug.log*
 
 
-# ─── SSL / Certificats Let's Encrypt ─────────────────────────────
+#  SSL / Certificats Let's Encrypt ──
 # Générés par certbot — JAMAIS commités
 certbot/
 *.pem
@@ -70,35 +66,35 @@ certbot/
 *.csr
 
 
-# ─── Docker ──────────────────────────────────────────────────────
+#  Docker
 # Overrides locaux non partagés
 docker-compose.override.yml
 
 
-# ─── Sauvegardes base de données ─────────────────────────────────
+#  Sauvegardes base de données
 *.sql
 *.dump
 *.bak
 
 
-# ─── Fichiers temporaires ─────────────────────────────────────────
+#  Fichiers temporaires──
 *.tmp
 *.temp
 *~
 
 
-# ─── Tests & Coverage Python ─────────────────────────────────────
+#  Tests & Coverage Python─
 .coverage
 htmlcov/
 .pytest_cache/
 
 
-# ─── OS ──────────────────────────────────────────────────────────
+#  OS─
 .DS_Store
 Thumbs.db
 
 
-# ─── Éditeurs ────────────────────────────────────────────────────
+#  Éditeurs ─
 .vscode/*
 !.vscode/extensions.json
 .idea/

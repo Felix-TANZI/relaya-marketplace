@@ -373,7 +373,6 @@ export default function SellerSettingsPage() {
       setMomoPhone(vendorData.default_withdrawal_phone || '');
     } catch (e) { console.error(e); showToastRef.current('Erreur de chargement', 'error'); }
     finally  { setLoading(false); }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Dépendances vides — load est stable pour toute la durée de vie du composant
 
   const loadSessions = useCallback(async () => {

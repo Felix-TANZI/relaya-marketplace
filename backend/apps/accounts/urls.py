@@ -9,6 +9,7 @@ from .views import (
     me,
     profile,
     update_profile,
+    change_password,
     AvatarUploadView,
     FavoritesListCreateView,
     FavoriteDestroyView,
@@ -25,6 +26,7 @@ urlpatterns = [
     path("me/", me, name="auth-me"), # Current user info
     path("profile/", profile, name="auth-profile"), # User profile retrieval
     path("profile/update/", update_profile, name="auth-profile-update"), # User profile update
+    path("change-password/", change_password, name="auth-change-password"),
     path("profile/avatar/", AvatarUploadView.as_view(), name="auth-profile-avatar"),
     path("favorites/", FavoritesListCreateView.as_view(), name="client-favorites"),
     path("favorites/<int:pk>/", FavoriteDestroyView.as_view(), name="client-favorite-delete"),

@@ -182,3 +182,34 @@ class NotificationMarkAllReadView(APIView):
     def post(self, request):
         UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return Response({"detail": "Notifications marked as read"})
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Change user password",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    user          = request.user
+    old_password  = request.data.get("old_password", "")
+    new_password  = request.data.get("new_password", "")
+    new_password2 = request.data.get("new_password2", "")
+
+    if not user.check_password(old_password):
+        return Response({"old_password": ["Mot de passe actuel incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_password != new_password2:
+        return Response({"new_password2": ["Les nouveaux mots de passe ne correspondent pas."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        validate_password(new_password, user)
+    except DjangoValidationError as e:
+        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_password)
+    user.save()
+    return Response({"detail": "Mot de passe modifié avec succès."}, status=status.HTTP_200_OK)

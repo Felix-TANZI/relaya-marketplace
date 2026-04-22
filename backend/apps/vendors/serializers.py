@@ -54,6 +54,8 @@ class VendorProfileSerializer(serializers.ModelSerializer):
             'total_points', 'certification_tier',
             # Plan
             'active_plan_code', 'current_plan_name', 'plan_expires_at',
+            # Paramètres de paiement
+            'default_withdrawal_operator', 'default_withdrawal_phone',
         ]
         read_only_fields = [
             'id', 'status', 'created_at', 'updated_at', 'approved_at',

@@ -1,4 +1,4 @@
-export default {
+﻿export default {
   // Header
   header: {
     search_placeholder: 'Rechercher des produits...',

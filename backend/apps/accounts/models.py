@@ -19,6 +19,25 @@ class UserProfile(models.Model):
     # Préférences
     newsletter_subscribed = models.BooleanField(default=True)
     sms_notifications = models.BooleanField(default=True)
+
+        # ── Double authentification ──────────────────────────────────────────────
+    two_factor_enabled = models.BooleanField(
+        default=False,
+        verbose_name="Double authentification activée"
+    )
+    two_factor_method = models.CharField(
+        max_length=10,
+        choices=[('EMAIL', 'Email'), ('SMS', 'SMS'), ('WHATSAPP', 'WhatsApp')],
+        default='EMAIL',
+        blank=True,
+        verbose_name="Méthode 2FA",
+    )
+    two_factor_phone = models.CharField(
+        max_length=20,
+        blank=True,
+        verbose_name="Numéro pour 2FA SMS/WhatsApp",
+        help_text="Renseigné par l'utilisateur. Vérification à venir."
+    )
     
     # Modération
     is_banned = models.BooleanField(default=False)
@@ -119,3 +138,59 @@ class UserNotification(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.title}"
+
+
+class UserSession(models.Model):
+    """
+    Session active par appareil, créée/mise à jour par SessionTrackingMiddleware.
+    Révocable individuellement (blacklist token) ou en masse.
+    """
+    user          = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    jti           = models.CharField(max_length=255, unique=True, verbose_name="JWT ID")
+    device_name   = models.CharField(max_length=200, blank=True, verbose_name="Appareil")
+    browser       = models.CharField(max_length=100, blank=True, verbose_name="Navigateur")
+    os_name       = models.CharField(max_length=100, blank=True, verbose_name="Système")
+    ip_address    = models.GenericIPAddressField(null=True, blank=True)
+    created_at    = models.DateTimeField(auto_now_add=True)
+    last_activity = models.DateTimeField(auto_now=True)
+    is_active     = models.BooleanField(default=True)
+ 
+    class Meta:
+        ordering = ['-last_activity']
+        verbose_name = "Session utilisateur"
+        verbose_name_plural = "Sessions utilisateurs"
+ 
+    def __str__(self):
+        return f"{self.user.username} — {self.device_name} ({self.ip_address})"
+ 
+ 
+class OTPCode(models.Model):
+    """
+    Code OTP à 6 chiffres, usage unique, valide 10 minutes.
+    Utilisé pour la 2FA (connexion, activation, désactivation).
+    """
+    PURPOSE_CHOICES = [
+        ('2FA_LOGIN',   'Connexion 2FA'),
+        ('2FA_ENABLE',  'Activation 2FA'),
+        ('2FA_DISABLE', 'Désactivation 2FA'),
+    ]
+ 
+    user       = models.ForeignKey(User, on_delete=models.CASCADE, related_name='otp_codes')
+    code       = models.CharField(max_length=6)
+    purpose    = models.CharField(max_length=15, choices=PURPOSE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_used    = models.BooleanField(default=False)
+ 
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Code OTP"
+        verbose_name_plural = "Codes OTP"
+ 
+    def __str__(self):
+        return f"{self.user.username} — {self.purpose} — {self.code}"
+ 
+    @property
+    def is_valid(self) -> bool:
+        from django.utils import timezone
+        return not self.is_used and self.expires_at > timezone.now()

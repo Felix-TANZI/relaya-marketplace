@@ -166,19 +166,28 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
   const [verifying,setVerifying]= useState(false);
   const [countdown,setCountdown]= useState(0);
 
-  // Envoyer le code au montage
-  useEffect(() => { sendCode(); }, []); // eslint-disable-line
+  // Guard contre le double-appel de React StrictMode en développement.
+  // StrictMode monte les composants deux fois — sans ce ref, sendCode() serait
+  // appelé deux fois d'affilée, envoyant deux emails et deux toast "code envoyé".
+  const hasSentRef = useRef(false);
+  useEffect(() => {
+    if (hasSentRef.current) return;
+    hasSentRef.current = true;
+    sendCode();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const sendCode = async () => {
     try {
       setSending(true);
       const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/auth/2fa/send-code/', {
+      // Utiliser http() (qui inclut API_BASE_URL) plutôt que fetch() natif
+      // pour garantir que la requête passe bien par le backend Django (port 8000).
+      await http('/api/auth/2fa/send-code/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ purpose }),
       });
-      if (!res.ok) throw new Error('Erreur envoi');
       showToast(`Code envoyé à ${email}`, 'success');
       setCountdown(60);
     } catch { showToast('Erreur lors de l\'envoi du code', 'error'); }
@@ -333,6 +342,11 @@ export default function SellerSettingsPage() {
   // Section 8 — Divers
   const [copiedSlug, setCopiedSlug] = useState(false);
 
+  // Ref stable vers showToast — évite de recréer `load` à chaque render si
+  // showToast change de référence, ce qui causerait une boucle infinie de requêtes.
+  const showToastRef = useRef(showToast);
+  showToastRef.current = showToast;
+
   const load = useCallback(async () => {
     try {
       setLoading(true);
@@ -357,9 +371,10 @@ export default function SellerSettingsPage() {
       setSmsNotif(profileData.sms_notifications       ?? true);
       setMomoOp(vendorData.default_withdrawal_operator || '');
       setMomoPhone(vendorData.default_withdrawal_phone || '');
-    } catch (e) { console.error(e); showToast('Erreur de chargement', 'error'); }
+    } catch (e) { console.error(e); showToastRef.current('Erreur de chargement', 'error'); }
     finally  { setLoading(false); }
-  }, [showToast]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Dépendances vides — load est stable pour toute la durée de vie du composant
 
   const loadSessions = useCallback(async () => {
     try {
@@ -716,7 +731,7 @@ export default function SellerSettingsPage() {
             <input value={oldPwd} onChange={e => setOldPwd(e.target.value)}
               type={showOld ? 'text' : 'password'}
               placeholder="Saisissez votre mot de passe actuel"
-              autoComplete="current-password"
+              autoComplete="off"
               style={{ ...inp, paddingRight: 42 }}/>
             <button type="button" onClick={() => setShowOld(!showOld)}
               className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: T.mutedL }}>
@@ -923,7 +938,7 @@ export default function SellerSettingsPage() {
               <input value={disablePwd} onChange={e => setDisablePwd(e.target.value)}
                 type={showDisablePwd ? 'text' : 'password'}
                 placeholder="Votre mot de passe actuel"
-                autoComplete="current-password"
+                autoComplete="off"
                 style={{ ...inp, paddingRight: 42 }}/>
               <button type="button" onClick={() => setShowDisablePwd(!showDisablePwd)}
                 className="absolute right-3 top-1/2 -translate-y-1/2" style={{ color: T.mutedL }}>

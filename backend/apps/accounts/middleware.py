@@ -1,6 +1,8 @@
 # backend/apps/accounts/middleware.py
-# Middleware de suivi des sessions actives.
-# Crée ou met à jour un UserSession pour chaque requête JWT authentifiée.
+# Correction par rapport à la version précédente :
+# Le middleware déduplique maintenant les sessions par EMPREINTE APPAREIL
+# (user + device_name + ip_address) au lieu de créer une nouvelle entrée
+# pour chaque JTI. Résultat : un seul enregistrement par appareil réel.
 
 import logging
 import re
@@ -67,7 +69,12 @@ def get_client_ip(request) -> str:
 class SessionTrackingMiddleware:
     """
     Crée ou met à jour un UserSession pour chaque requête JWT authentifiée.
-    Ne bloque rien — log seulement en cas d'erreur.
+
+    Logique de déduplication :
+    - On cherche une session active pour (user, device_name, ip_address).
+    - Si elle existe → on met à jour son JTI et last_activity (auto via auto_now).
+    - Si elle n'existe pas → on en crée une nouvelle.
+    - On ne crée JAMAIS deux entrées pour le même appareil réel.
     """
 
     def __init__(self, get_response):
@@ -94,17 +101,34 @@ class SessionTrackingMiddleware:
                 device_name, browser, os_name = parse_user_agent(ua_string)
                 ip          = get_client_ip(request) or None
 
-                UserSession.objects.update_or_create(
-                    jti=jti,
-                    defaults={
-                        'user':        request.user,
-                        'device_name': device_name,
-                        'browser':     browser,
-                        'os_name':     os_name,
-                        'ip_address':  ip,
-                        'is_active':   True,
-                    },
-                )
+                # Chercher une session existante pour cet appareil exact
+                existing = UserSession.objects.filter(
+                    user=request.user,
+                    device_name=device_name,
+                    ip_address=ip,
+                    is_active=True,
+                ).order_by('-last_activity').first()
+
+                if existing:
+                    # Mettre à jour le JTI (nouveau token après refresh)
+                    # et last_activity (auto_now le fait automatiquement au save)
+                    if existing.jti != jti:
+                        existing.jti = jti
+                        existing.save(update_fields=['jti', 'last_activity'])
+                    # Sinon on ne fait rien — last_activity se met à jour au save
+                    # et on ne veut pas sauvegarder à chaque requête (perf)
+                else:
+                    # Nouvel appareil → nouvelle session
+                    UserSession.objects.create(
+                        user=request.user,
+                        jti=jti,
+                        device_name=device_name,
+                        browser=browser,
+                        os_name=os_name,
+                        ip_address=ip,
+                        is_active=True,
+                    )
+
             except Exception as exc:
                 logger.debug('SessionTracking skipped: %s', exc)
 

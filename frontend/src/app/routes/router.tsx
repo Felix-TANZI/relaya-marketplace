@@ -28,7 +28,7 @@ import HelpPage from "@/features/help/HelpPage";
 import AboutPage from "@/features/about/AboutPage";
 import SearchPage from "@/features/search/SearchPage";
 import PromotionsPage from "@/features/promotions/PromotionsPage";
-import CourierDashboardPage from "@/features/courier/CourierDashboardPage";
+import DriverApp from "@/features/driver/DriverApp";
 
 // ─────────────────────────────
 // AUTH PAGES
@@ -148,9 +148,16 @@ export const router = createBrowserRouter([
     ],
   },
 
+  // Espace livreur — maquette BelivaY v7 (iframe plein écran sur
+  // /livreur/index.html, voir DriverApp). /courier et /driver pointent
+  // tous deux sur la nouvelle expérience pour préserver les liens existants.
   {
     path: "/courier",
-    element: <ProtectedRoute><CourierDashboardPage /></ProtectedRoute>,
+    element: <ProtectedRoute><DriverApp /></ProtectedRoute>,
+  },
+  {
+    path: "/driver/*",
+    element: <ProtectedRoute><DriverApp /></ProtectedRoute>,
   },
 
 

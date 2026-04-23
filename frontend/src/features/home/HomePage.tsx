@@ -8,7 +8,7 @@ import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import ProductCard from "@/components/product/ProductCard";
 import {
   AlertTriangle, ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
-  Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe,
+  Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
 } from "lucide-react";
 import {
   V29_PRODUCTS,
@@ -127,6 +127,13 @@ export default function HomePage() {
 
               <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-3 sm:px-4 dark:border-gray-800 dark:bg-gray-900/80">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#fff1e5] px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-primary hover:text-white dark:bg-primary/10"
+                  >
+                    <UserCircle size={13} />
+                    Mon compte
+                  </button>
                   <button
                     onClick={() => navigate("/categories")}
                     className="flex flex-shrink-0 items-center gap-1 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"

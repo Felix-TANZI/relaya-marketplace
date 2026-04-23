@@ -225,7 +225,6 @@ export default function Header() {
     { label: "Promotions", to: "/promotions" },
     { label: t("header_nav.orders"), to: "/orders" },
     { label: t("header_nav.favorites"), to: "/wishlist" },
-    { label: "Mon compte", to: "/profile" },
   ];
 
   return (

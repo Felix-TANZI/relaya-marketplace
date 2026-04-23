@@ -38,14 +38,21 @@ const T = {
 const TIER_COLORS: Record<string, string> = {
   BRONZE: '#CD7F32', SILVER: '#7C8490', GOLD: '#C8A000', DIAMOND: '#2563EB',
 };
-const TIER_LABELS: Record<string, string> = {
-  BRONZE: 'Bronze', SILVER: 'Argent', GOLD: 'Or', DIAMOND: 'Diamant',
+const TIER_LABEL_KEYS: Record<string, string> = {
+  BRONZE: 'seller_settings.tier_bronze', SILVER: 'seller_settings.tier_silver',
+  GOLD: 'seller_settings.tier_gold',     DIAMOND: 'seller_settings.tier_diamond',
 };
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  APPROVED:  { label: 'Approuvé',   color: T.green,  bg: T.greenL  },
-  PENDING:   { label: 'En attente', color: T.amber,  bg: T.amberL  },
-  REJECTED:  { label: 'Rejeté',     color: T.red,    bg: T.redL    },
-  SUSPENDED: { label: 'Suspendu',   color: T.muted,  bg: T.creamAlt },
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  APPROVED:  'seller_settings.status_approved',
+  PENDING:   'seller_settings.status_pending',
+  REJECTED:  'seller_settings.status_rejected',
+  SUSPENDED: 'seller_settings.status_suspended',
+};
+const STATUS_CFG: Record<string, { color: string; bg: string }> = {
+  APPROVED:  { color: T.green, bg: T.greenL   },
+  PENDING:   { color: T.amber, bg: T.amberL   },
+  REJECTED:  { color: T.red,   bg: T.redL     },
+  SUSPENDED: { color: T.muted, bg: T.creamAlt },
 };
 
 const inp: React.CSSProperties = {
@@ -85,10 +92,10 @@ function timeAgo(dateStr: string): string {
 }
 
 // ─── Indicateur de force du mot de passe ──────────────────────────────────────
-type StrengthInfo = { score: number; label: string; color: string; bars: string[] };
+type StrengthInfo = { score: number; labelKey: string; color: string; bars: string[] };
 
 function getPasswordStrength(pwd: string): StrengthInfo {
-  if (!pwd) return { score: 0, label: '', color: '', bars: ['','','','',''] };
+  if (!pwd) return { score: 0, labelKey: '', color: '', bars: ['','','','',''] };
 
   let score = 0;
   if (pwd.length >= 8)          score++;
@@ -98,12 +105,12 @@ function getPasswordStrength(pwd: string): StrengthInfo {
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
 
   const levels = [
-    { label: '',           color: '',       bars: [T.border, T.border, T.border, T.border, T.border] },
-    { label: 'Très faible', color: T.red,   bars: [T.red,    T.border, T.border, T.border, T.border] },
-    { label: 'Faible',      color: '#F97316',bars: ['#F97316','#F97316',T.border, T.border, T.border] },
-    { label: 'Moyen',       color: T.amber, bars: [T.amber,  T.amber,  T.amber,  T.border, T.border] },
-    { label: 'Fort',        color: T.blue,  bars: [T.blue,   T.blue,   T.blue,   T.blue,   T.border] },
-    { label: 'Très fort',   color: T.green, bars: [T.green,  T.green,  T.green,  T.green,  T.green]  },
+    { labelKey: '',                                  color: '',        bars: [T.border, T.border, T.border, T.border, T.border] },
+    { labelKey: 'seller_settings.strength_very_weak',   color: T.red,    bars: [T.red,    T.border, T.border, T.border, T.border] },
+    { labelKey: 'seller_settings.strength_weak',        color: '#F97316', bars: ['#F97316','#F97316',T.border, T.border, T.border] },
+    { labelKey: 'seller_settings.strength_medium',      color: T.amber,  bars: [T.amber,  T.amber,  T.amber,  T.border, T.border] },
+    { labelKey: 'seller_settings.strength_strong',      color: T.blue,   bars: [T.blue,   T.blue,   T.blue,   T.blue,   T.border] },
+    { labelKey: 'seller_settings.strength_very_strong', color: T.green,  bars: [T.green,  T.green,  T.green,  T.green,  T.green]  },
   ];
 
   return { score, ...levels[score] };
@@ -161,6 +168,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
   onVerified: (code: string) => void; onClose: () => void;
 }) {
   const { showToast } = useToast();
+  const { t } = useTranslation();
   const [code,     setCode]     = useState('');
   const [sending,  setSending]  = useState(false);
   const [verifying,setVerifying]= useState(false);
@@ -271,7 +279,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
               <button type="button" onClick={sendCode} disabled={sending}
                 className="text-[12px] font-semibold disabled:opacity-50"
                 style={{ color: T.orange }}>
-                {sending ? 'Envoi…' : 'Renvoyer le code'}
+                {sending ? t('seller_settings.sending') : t('seller_settings.resend_code')}
               </button>
             )}
           </div>
@@ -286,7 +294,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
 export default function SellerSettingsPage() {
   const { user, logout }       = useAuth();
   const { theme, toggleTheme } = useTheme();
-  const { i18n }               = useTranslation();
+  const { i18n, t }            = useTranslation();
   const { showToast }          = useToast();
   const navigate               = useNavigate();
   const avatarRef              = useRef<HTMLInputElement>(null);
@@ -565,17 +573,17 @@ export default function SellerSettingsPage() {
         <h1 className="flex items-center gap-2 font-black text-[22px]"
           style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
           <Settings size={20} style={{ color: T.orange }}/>
-          Paramètres
+          {t('seller_settings.page_title')}
         </h1>
         <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
-          Compte, sécurité et préférences
+          {t('seller_settings.page_subtitle')}
         </p>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 1 — PROFIL PERSONNEL
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Profil personnel" icon={<User size={15}/>}>
+      <Section title={t('seller_settings.section_profile')} icon={<User size={15}/>}>
 
         {/* Avatar */}
         <div className="flex items-center gap-4 mb-6">
@@ -607,7 +615,7 @@ export default function SellerSettingsPage() {
               <button type="button" onClick={handleAvatarRemove}
                 className="flex items-center gap-1.5 text-[11.5px] mt-1.5 font-semibold"
                 style={{ color: T.red }}>
-                <Trash2 size={11}/>Supprimer la photo
+                <Trash2 size={11}/>{t('seller_settings.remove_photo')}
               </button>
             )}
           </div>
@@ -616,53 +624,53 @@ export default function SellerSettingsPage() {
         {/* Username lecture seule */}
         <div className="mb-4 rounded-xl px-4 py-3" style={{ background: T.creamAlt }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-0.5" style={{ color: T.mutedL }}>
-            Identifiant BelivaY
+            {t('seller_settings.belivay_id')}
           </p>
           <p className="font-bold text-[13.5px]" style={{ color: T.text }}>@{user?.username || '—'}</p>
-          <p className="text-[11px] mt-0.5" style={{ color: T.mutedL }}>Identifiant unique — non modifiable</p>
+          <p className="text-[11px] mt-0.5" style={{ color: T.mutedL }}>{t('seller_settings.belivay_id_help')}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-3 mb-3">
           <div>
-            <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Prénom</label>
-            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Prénom" style={inp}/>
+            <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('seller_settings.first_name')}</label>
+            <input value={firstName} onChange={e => setFirstName(e.target.value)} placeholder={t('seller_settings.first_name')} style={inp}/>
           </div>
           <div>
-            <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Nom</label>
-            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Nom" style={inp}/>
+            <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('seller_settings.last_name')}</label>
+            <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder={t('seller_settings.last_name')} style={inp}/>
           </div>
         </div>
         <div className="mb-3">
-          <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Email</label>
+          <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('seller_settings.email')}</label>
           <input value={email} onChange={e => setEmail(e.target.value)} type="email" placeholder="votre@email.com" style={inp}/>
         </div>
         <div className="mb-3">
-          <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Téléphone personnel</label>
+          <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('seller_settings.phone')}</label>
           <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+237 6XX XXX XXX" style={inp}/>
         </div>
         <div className="mb-5">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-            Bio <span style={{ color: T.mutedL }}>(optionnel)</span>
+            {t('seller_settings.bio')} <span style={{ color: T.mutedL }}>{t('seller_settings.bio_optional')}</span>
           </label>
           <textarea value={bio} onChange={e => setBio(e.target.value)} rows={3}
-            placeholder="Présentez-vous brièvement…" style={{ ...inp, resize: 'none' }}/>
+            placeholder={t('seller_settings.bio_placeholder')} style={{ ...inp, resize: 'none' }}/>
         </div>
 
         <button type="button" onClick={handleSaveProfile} disabled={savingProfile}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: T.orange, boxShadow: '0 3px 10px rgba(244,121,32,0.3)' }}>
-          {savingProfile ? <><RefreshCw size={13} className="animate-spin"/>Enregistrement…</> : <><Save size={13}/>Enregistrer</>}
+          {savingProfile ? <><RefreshCw size={13} className="animate-spin"/>{t('seller_settings.saving')}</> : <><Save size={13}/>{t('seller_settings.save')}</>}
         </button>
       </Section>
 
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 2 — PRÉFÉRENCES INTERFACE
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Préférences" icon={<Globe size={15}/>} accent={T.blue}>
+      <Section title={t('seller_settings.section_preferences')} icon={<Globe size={15}/>} accent={T.blue}>
         <div className="flex items-center justify-between py-3" style={{ borderBottom: `1px solid ${T.border}` }}>
           <div>
-            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>Langue</p>
-            <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>Français / English</p>
+            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>{t('seller_settings.language_title')}</p>
+            <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>{t('seller_settings.language_sub')}</p>
           </div>
           <div className="flex gap-2">
             {(['fr', 'en'] as const).map(lang => (
@@ -676,11 +684,11 @@ export default function SellerSettingsPage() {
         </div>
         <div className="flex items-center justify-between py-3">
           <div>
-            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>Thème</p>
-            <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>Clair ou sombre</p>
+            <p className="font-semibold text-[13.5px]" style={{ color: T.text }}>{t('seller_settings.theme_title')}</p>
+            <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>{t('seller_settings.theme_sub')}</p>
           </div>
           <div className="flex gap-2">
-            {([{ key: 'light', label: 'Clair', icon: <Sun size={13}/> }, { key: 'dark', label: 'Sombre', icon: <Moon size={13}/> }] as const).map(opt => (
+            {([{ key: 'light', label: t('seller_settings.theme_light'), icon: <Sun size={13}/> }, { key: 'dark', label: t('seller_settings.theme_dark'), icon: <Moon size={13}/> }] as const).map(opt => (
               <button key={opt.key} type="button" onClick={() => { if (theme !== opt.key) toggleTheme(); }}
                 className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-[12.5px] font-bold transition-all"
                 style={{ background: theme === opt.key ? T.sidebar : T.cream, color: theme === opt.key ? T.white : T.muted, border: `1px solid ${theme === opt.key ? T.sidebar : T.border}` }}>
@@ -694,11 +702,11 @@ export default function SellerSettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 3 — NOTIFICATIONS
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Notifications" icon={<Bell size={15}/>}>
+      <Section title={t('seller_settings.section_notifications')} icon={<Bell size={15}/>}>
         <div className="space-y-4">
           {[
-            { label: 'Newsletter BelivaY', desc: 'Nouvelles fonctionnalités, conseils vendeur', value: newsletter, setter: setNewsletter },
-            { label: 'Notifications SMS',  desc: 'Alertes commandes, confirmations paiement',  value: smsNotif, setter: setSmsNotif },
+            { label: t('seller_settings.newsletter_label'), desc: t('seller_settings.newsletter_desc'), value: newsletter, setter: setNewsletter },
+            { label: t('seller_settings.sms_label'),        desc: t('seller_settings.sms_desc'),        value: smsNotif,   setter: setSmsNotif },
           ].map(item => (
             <div key={item.label} className="flex items-center justify-between gap-4">
               <div>
@@ -712,24 +720,24 @@ export default function SellerSettingsPage() {
         <button type="button" onClick={handleSaveNotifications} disabled={savingNotif}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white mt-5 disabled:opacity-50"
           style={{ background: T.orange, boxShadow: '0 3px 10px rgba(244,121,32,0.3)' }}>
-          {savingNotif ? <><RefreshCw size={13} className="animate-spin"/>Enregistrement…</> : <><Save size={13}/>Enregistrer</>}
+          {savingNotif ? <><RefreshCw size={13} className="animate-spin"/>{t('seller_settings.saving')}</> : <><Save size={13}/>{t('seller_settings.save')}</>}
         </button>
       </Section>
 
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 4 — SÉCURITÉ (mot de passe)
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Changer le mot de passe" icon={<Shield size={15}/>} accent={T.violet}>
+      <Section title={t('seller_settings.section_password')} icon={<Shield size={15}/>} accent={T.violet}>
 
         {/* Ancien mot de passe */}
         <div className="mb-3">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-            Mot de passe actuel
+            {t('seller_settings.current_password')}
           </label>
           <div className="relative">
             <input value={oldPwd} onChange={e => setOldPwd(e.target.value)}
               type={showOld ? 'text' : 'password'}
-              placeholder="Saisissez votre mot de passe actuel"
+              placeholder={t('seller_settings.current_password_ph')}
               autoComplete="off"
               style={{ ...inp, paddingRight: 42 }}/>
             <button type="button" onClick={() => setShowOld(!showOld)}
@@ -742,12 +750,12 @@ export default function SellerSettingsPage() {
         {/* Nouveau mot de passe */}
         <div className="mb-3">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-            Nouveau mot de passe
+            {t('seller_settings.new_password')}
           </label>
           <div className="relative">
             <input value={newPwd} onChange={e => setNewPwd(e.target.value)}
               type={showNew ? 'text' : 'password'}
-              placeholder="Nouveau mot de passe"
+              placeholder={t('seller_settings.new_password_ph')}
               autoComplete="new-password"
               style={{ ...inp, paddingRight: 42 }}/>
             <button type="button" onClick={() => setShowNew(!showNew)}
@@ -766,20 +774,20 @@ export default function SellerSettingsPage() {
                       style={{ background: color }}/>
                   ))}
                 </div>
-                {strength.label && (
+                {strength.labelKey && (
                   <span className="text-[11.5px] font-bold flex-shrink-0"
                     style={{ color: strength.color }}>
-                    {strength.label}
+                    {t(strength.labelKey)}
                   </span>
                 )}
               </div>
               {/* Critères */}
               <div className="grid grid-cols-1 gap-1">
                 {[
-                  { ok: newPwd.length >= 8,          text: 'Minimum 8 caractères'        },
-                  { ok: /[A-Z]/.test(newPwd),        text: 'Au moins une majuscule'       },
-                  { ok: /[0-9]/.test(newPwd),        text: 'Au moins un chiffre'          },
-                  { ok: /[^A-Za-z0-9]/.test(newPwd), text: 'Un caractère spécial (!@#$…)' },
+                  { ok: newPwd.length >= 8,          text: t('seller_settings.pwd_min')     },
+                  { ok: /[A-Z]/.test(newPwd),        text: t('seller_settings.pwd_upper')   },
+                  { ok: /[0-9]/.test(newPwd),        text: t('seller_settings.pwd_digit')   },
+                  { ok: /[^A-Za-z0-9]/.test(newPwd), text: t('seller_settings.pwd_special') },
                 ].map(c => (
                   <div key={c.text} className="flex items-center gap-1.5">
                     {c.ok
@@ -792,7 +800,7 @@ export default function SellerSettingsPage() {
               </div>
               {strength.score < 3 && (
                 <p className="text-[11.5px] font-semibold" style={{ color: T.amber }}>
-                  Mot de passe insuffisant — au moins 3 critères requis pour continuer.
+                  {t('seller_settings.pwd_weak_warning')}
                 </p>
               )}
             </div>
@@ -802,12 +810,12 @@ export default function SellerSettingsPage() {
         {/* Confirmation */}
         <div className="mb-5">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-            Confirmer le nouveau mot de passe
+            {t('seller_settings.confirm_password')}
           </label>
           <div className="relative">
             <input value={newPwd2} onChange={e => setNewPwd2(e.target.value)}
               type={showNew2 ? 'text' : 'password'}
-              placeholder="Confirmez le nouveau mot de passe"
+              placeholder={t('seller_settings.confirm_password_ph')}
               autoComplete="new-password"
               style={{ ...inp, paddingRight: 42, borderColor: newPwd2 && newPwd !== newPwd2 ? T.red : T.border }}/>
             <button type="button" onClick={() => setShowNew2(!showNew2)}
@@ -817,12 +825,12 @@ export default function SellerSettingsPage() {
           </div>
           {newPwd2 && newPwd !== newPwd2 && (
             <p className="text-[11.5px] mt-1 flex items-center gap-1" style={{ color: T.red }}>
-              <X size={11}/> Les mots de passe ne correspondent pas
+              <X size={11}/> {t('seller_settings.passwords_mismatch')}
             </p>
           )}
           {newPwd2 && newPwd === newPwd2 && (
             <p className="text-[11.5px] mt-1 flex items-center gap-1" style={{ color: T.green }}>
-              <Check size={11}/> Les mots de passe correspondent
+              <Check size={11}/> {t('seller_settings.passwords_match')}
             </p>
           )}
         </div>
@@ -830,14 +838,14 @@ export default function SellerSettingsPage() {
         <button type="button" onClick={handleChangePassword} disabled={savingPwd || !canSavePwd}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-40"
           style={{ background: T.violet, boxShadow: canSavePwd ? '0 3px 10px rgba(124,58,237,0.3)' : 'none' }}>
-          {savingPwd ? <><RefreshCw size={13} className="animate-spin"/>Modification…</> : <><Shield size={13}/>Changer le mot de passe</>}
+          {savingPwd ? <><RefreshCw size={13} className="animate-spin"/>{t('seller_settings.changing')}</> : <><Shield size={13}/>{t('seller_settings.change_password')}</>}
         </button>
       </Section>
 
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 5 — DOUBLE AUTHENTIFICATION
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Double authentification (2FA)" icon={<ShieldCheck size={15}/>} accent={T.green}>
+      <Section title={t('seller_settings.section_2fa')} icon={<ShieldCheck size={15}/>} accent={T.green}>
 
         {/* Statut */}
         <div className="flex items-center gap-3 mb-5 p-3 rounded-xl"
@@ -847,12 +855,12 @@ export default function SellerSettingsPage() {
             : <ShieldOff   size={18} style={{ color: T.muted }}/>}
           <div>
             <p className="font-bold text-[13.5px]" style={{ color: twoFA?.two_factor_enabled ? T.green : T.text }}>
-              {twoFA?.two_factor_enabled ? 'Double authentification activée' : 'Double authentification désactivée'}
+              {twoFA?.two_factor_enabled ? t('seller_settings.twofa_on') : t('seller_settings.twofa_off')}
             </p>
             <p className="text-[12px]" style={{ color: T.muted }}>
               {twoFA?.two_factor_enabled
                 ? `Via ${twoFA.two_factor_method === 'EMAIL' ? 'email' : twoFA.two_factor_method === 'SMS' ? 'SMS' : 'WhatsApp'}`
-                : 'Activez-la pour protéger votre compte contre les accès non autorisés.'}
+                : t('seller_settings.twofa_enable_cta')}
             </p>
           </div>
         </div>
@@ -957,7 +965,7 @@ export default function SellerSettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 6 — STATUT COMPTE VENDEUR
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Statut du compte vendeur" icon={<Store size={15}/>} accent={T.green}>
+      <Section title={t('seller_settings.section_status')} icon={<Store size={15}/>} accent={T.green}>
         <div className="space-y-3">
           <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: T.creamAlt }}>
             <div className="flex-1">
@@ -966,7 +974,7 @@ export default function SellerSettingsPage() {
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[12.5px] font-bold"
                   style={{ background: statusCfg.bg, color: statusCfg.color }}>
                   <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: statusCfg.color }}/>
-                  {statusCfg.label}
+                  {t(STATUS_LABEL_KEYS[vendor?.status || 'PENDING'] || 'seller_settings.status_pending')}
                 </span>
                 {vendor?.approved_at && (
                   <span className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -993,7 +1001,7 @@ export default function SellerSettingsPage() {
             <div className="flex items-center gap-2">
               <Award size={14} style={{ color: TIER_COLORS[tier] }}/>
               <div>
-                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>Certification {TIER_LABELS[tier]}</p>
+                <p className="text-[12.5px] font-bold" style={{ color: T.text }}>Certification {t(TIER_LABEL_KEYS[tier] || 'seller_settings.tier_bronze')}</p>
                 <p className="text-[11.5px]" style={{ color: T.mutedL }}>{vendor?.total_points ?? 0} points</p>
               </div>
             </div>
@@ -1033,7 +1041,7 @@ export default function SellerSettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 7 — MOBILE MONEY PRÉFÉRENTIEL
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Mobile Money préférentiel" icon={<Smartphone size={15}/>} accent={T.green}>
+      <Section title={t('seller_settings.section_momo')} icon={<Smartphone size={15}/>} accent={T.green}>
         <div className="rounded-xl p-3 mb-4" style={{ background: T.greenL, border: `1px solid rgba(22,163,74,0.2)` }}>
           <p className="text-[12px]" style={{ color: T.green }}>
             Pré-rempli automatiquement lors de vos demandes de retrait. Modifiable à chaque retrait si besoin.
@@ -1067,7 +1075,7 @@ export default function SellerSettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 8 — SESSION & APPAREILS CONNECTÉS
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Session & Appareils connectés" icon={<Lock size={15}/>}>
+      <Section title={t('seller_settings.section_sessions')} icon={<Lock size={15}/>}>
 
         {/* Déconnexion */}
         <div className="flex items-center justify-between mb-5 pb-5"
@@ -1178,7 +1186,7 @@ export default function SellerSettingsPage() {
       {/* ══════════════════════════════════════════════════════════════════════
           SECTION 9 — ZONE CRITIQUE
       ══════════════════════════════════════════════════════════════════════ */}
-      <Section title="Zone critique" icon={<AlertTriangle size={15}/>} accent={T.red}>
+      <Section title={t('seller_settings.section_danger')} icon={<AlertTriangle size={15}/>} accent={T.red}>
         <p className="font-semibold text-[13.5px] mb-1" style={{ color: T.text }}>Supprimer le compte vendeur</p>
         <p className="text-[12px] mb-3" style={{ color: T.muted }}>
           La suppression est définitive. Vos données sont archivées selon la réglementation camerounaise.

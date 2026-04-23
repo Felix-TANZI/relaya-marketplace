@@ -14,6 +14,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
+import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -38,47 +39,50 @@ interface NavItem {
 }
 interface NavSection { label: string; items: NavItem[] }
 
-// ─── NAV CONFIG ─────────────────────────────
-const NAV: NavSection[] = [
-  {
-    label: 'Ventes',
-    items: [
-      { label: 'Dashboard',        path: '/seller/dashboard',     icon: LayoutDashboard },
-      { label: 'Commandes',        path: '/seller/orders',        icon: ShoppingBag, badge: true },
-      { label: 'Paiements',        path: '/seller/payments',      icon: DollarSign },
-      { label: 'Litiges',          path: '/seller/disputes',      icon: Scale },
-    ],
-  },
-  {
-    label: 'Catalogue',
-    items: [
-      { label: 'Mes produits',     path: '/seller/products',      icon: Package },
-      { label: 'Ajouter un produit', path: '/seller/products/new', icon: Plus },
-    ],
-  },
-  {
-    label: 'Croissance',
-    items: [
-      { label: 'Analytiques IA',   path: '/seller/analytics',     icon: TrendingUp, locked: true },
-      { label: 'Boost & Pub',      path: '/seller/boost',         icon: Zap,        locked: true },
-    ],
-  },
-  {
-    label: 'Boutique',
-    items: [
-      { label: 'Ma boutique',      path: '/seller/shop',          icon: Store },
-      { label: 'Certifications',   path: '/seller/certifications',icon: Award },
-      { label: 'Plans & Tarifs',   path: '/seller/plans',         icon: CreditCard },
-    ],
-  },
-  {
-    label: 'Mon compte',
-    items: [
-      { label: 'Portefeuille',     path: '/seller/wallet',        icon: Wallet },
-      { label: 'Paramètres',       path: '/seller/settings',      icon: Settings },
-    ],
-  },
-];
+// ─── NAV CONFIG (i18n via buildNav(t)) ──────
+type TFn = (key: string) => string;
+function buildNav(t: TFn): NavSection[] {
+  return [
+    {
+      label: t('seller_layout.section_sales'),
+      items: [
+        { label: t('seller_layout.nav_dashboard'), path: '/seller/dashboard', icon: LayoutDashboard },
+        { label: t('seller_layout.nav_orders'),    path: '/seller/orders',    icon: ShoppingBag, badge: true },
+        { label: t('seller_layout.nav_payments'),  path: '/seller/payments',  icon: DollarSign },
+        { label: t('seller_layout.nav_disputes'),  path: '/seller/disputes',  icon: Scale },
+      ],
+    },
+    {
+      label: t('seller_layout.section_catalog'),
+      items: [
+        { label: t('seller_layout.nav_my_products'), path: '/seller/products',     icon: Package },
+        { label: t('seller_layout.nav_add_product'), path: '/seller/products/new', icon: Plus },
+      ],
+    },
+    {
+      label: t('seller_layout.section_growth'),
+      items: [
+        { label: t('seller_layout.nav_analytics'), path: '/seller/analytics', icon: TrendingUp, locked: true },
+        { label: t('seller_layout.nav_boost'),     path: '/seller/boost',     icon: Zap,        locked: true },
+      ],
+    },
+    {
+      label: t('seller_layout.section_shop'),
+      items: [
+        { label: t('seller_layout.nav_my_shop'),        path: '/seller/shop',           icon: Store },
+        { label: t('seller_layout.nav_certifications'), path: '/seller/certifications', icon: Award },
+        { label: t('seller_layout.nav_plans'),          path: '/seller/plans',          icon: CreditCard },
+      ],
+    },
+    {
+      label: t('seller_layout.section_account'),
+      items: [
+        { label: t('seller_layout.nav_wallet'),   path: '/seller/wallet',   icon: Wallet },
+        { label: t('seller_layout.nav_settings'), path: '/seller/settings', icon: Settings },
+      ],
+    },
+  ];
+}
 
 // ─── NAV ITEM (hors composant principal) ────
 function SidebarNavItem({
@@ -124,8 +128,8 @@ function SidebarNavItem({
 
 // ─── SIDEBAR CONTENT (hors composant principal) ─
 function SidebarContent({
-  shopName, onClose,
-}: { shopName: string; onClose?: () => void }) {
+  shopName, onClose, nav, t,
+}: { shopName: string; onClose?: () => void; nav: NavSection[]; t: TFn }) {
   return (
     <div className="flex flex-col h-full overflow-y-auto" style={{ background: T.sidebar }}>
 
@@ -141,7 +145,7 @@ function SidebarContent({
             />
             <div>
               <p className="text-[10px] font-semibold" style={{ color: T.orange }}>
-                Espace Vendeur
+                {t('seller_layout.space_label')}
               </p>
             </div>
           </div>
@@ -164,18 +168,18 @@ function SidebarContent({
             <p className="text-white font-semibold text-[12px] truncate">{shopName}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span className="text-[10px]" style={{ color: '#9E8A70' }}>Plan Gratuit · Actif</span>
+              <span className="text-[10px]" style={{ color: '#9E8A70' }}>{t('seller_layout.plan_free')}</span>
             </div>
           </div>
           <Link to="/seller/plans" className="text-[10px] font-bold hover:underline flex-shrink-0" style={{ color: T.orange }}>
-            Pro
+            {t('seller_layout.plan_pro')}
           </Link>
         </div>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 py-3">
-        {NAV.map((section) => (
+        {nav.map((section) => (
           <div key={section.label} className="mb-2">
             <p className="px-6 py-1.5 text-[9px] font-black uppercase tracking-[0.18em]" style={{ color: '#5A4A36' }}>
               {section.label}
@@ -195,14 +199,14 @@ function SidebarContent({
           <div className="flex gap-2 items-start relative">
             <Sparkles size={15} className="text-purple-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-white text-[12.5px] font-bold mb-0.5">Passer au Pro</p>
+              <p className="text-white text-[12.5px] font-bold mb-0.5">{t('seller_layout.upgrade_title')}</p>
               <p className="text-purple-300/60 text-[10.5px] mb-2.5 leading-relaxed">
-                Commission 10% · Analytics · 3 Boosts
+                {t('seller_layout.upgrade_desc')}
               </p>
               <Link to="/seller/plans" onClick={onClose}
                 className="flex items-center gap-1.5 w-fit text-white text-[11px] font-bold px-3 py-1.5 rounded-lg transition-all"
                 style={{ background: 'rgba(139,92,246,0.35)', border: '1px solid rgba(139,92,246,0.4)' }}>
-                Découvrir <ChevronRight size={11} />
+                {t('seller_layout.upgrade_cta')} <ChevronRight size={11} />
               </Link>
             </div>
           </div>
@@ -218,7 +222,7 @@ function SidebarContent({
           onMouseLeave={e => (e.currentTarget.style.color = '#7C6E5A')}
         >
           <ExternalLink size={13} />
-          Retour au site
+          {t('seller_layout.back_to_site')}
         </Link>
       </div>
     </div>
@@ -231,7 +235,7 @@ export default function SellerLayout() {
   const { user, logout }       = useAuth();
   const navigate               = useNavigate();
   const location               = useLocation();
-  const { i18n }               = useTranslation();
+  const { i18n, t }            = useTranslation();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [moreOpen,    setMoreOpen]    = useState(false);
@@ -253,13 +257,15 @@ export default function SellerLayout() {
     }
   }, [location.pathname]);
 
-  const shopName = profile?.business_name ?? user?.username ?? 'Ma Boutique';
+  const shopName = profile?.business_name ?? user?.username ?? t('seller_layout.shop_default');
+
+  const nav = buildNav(t);
 
   const MOBILE_TABS = [
-    { label: 'Accueil',   path: '/seller/dashboard', icon: LayoutDashboard },
-    { label: 'Produits',  path: '/seller/products',  icon: Package },
-    { label: 'Commandes', path: '/seller/orders',    icon: ShoppingBag },
-    { label: 'Paiements', path: '/seller/payments',  icon: DollarSign },
+    { label: t('seller_layout.nav_home'),     path: '/seller/dashboard', icon: LayoutDashboard },
+    { label: t('seller_layout.nav_products'), path: '/seller/products',  icon: Package },
+    { label: t('seller_layout.nav_orders'),   path: '/seller/orders',    icon: ShoppingBag },
+    { label: t('seller_layout.nav_payments'), path: '/seller/payments',  icon: DollarSign },
   ];
 
   return (
@@ -298,7 +304,7 @@ export default function SellerLayout() {
           <span className="text-gray-300">·</span>
           <span className="text-[12px] font-semibold px-2.5 py-1 rounded-full"
             style={{ background: `rgba(244,121,32,0.10)`, color: T.orange, border: `1px solid rgba(244,121,32,0.2)` }}>
-            Espace Vendeur
+            {t('seller_layout.space_label')}
           </span>
         </div>
 
@@ -347,7 +353,7 @@ export default function SellerLayout() {
       {/* ═══ SIDEBAR DESKTOP ═══ */}
       <aside className="hidden lg:flex flex-col fixed top-[62px] left-0 bottom-0 w-[232px] z-[800]"
         style={{ background: T.sidebar }}>
-        <SidebarContent shopName={shopName} />
+        <SidebarContent shopName={shopName} nav={nav} t={t} />
       </aside>
 
       {/* ═══ SIDEBAR MOBILE OVERLAY ═══ */}
@@ -356,7 +362,7 @@ export default function SellerLayout() {
         style={{ background: 'rgba(28,18,9,0.6)', backdropFilter: 'blur(4px)' }} />
       <aside className={`lg:hidden fixed top-0 left-0 bottom-0 z-[800] w-[78vw] max-w-[270px] flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
         style={{ background: T.sidebar }}>
-        <SidebarContent shopName={shopName} onClose={() => setSidebarOpen(false)} />
+        <SidebarContent shopName={shopName} nav={nav} t={t} onClose={() => setSidebarOpen(false)} />
       </aside>
 
       {/* ═══ MAIN ═══ */}
@@ -394,7 +400,7 @@ export default function SellerLayout() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center">
               <MoreHorizontal size={17} style={{ color: T.muted }} />
             </div>
-            <span className="text-[8px] font-semibold" style={{ color: T.muted }}>Plus</span>
+            <span className="text-[8px] font-semibold" style={{ color: T.muted }}>{t('seller_layout.more')}</span>
           </button>
         </div>
       </nav>
@@ -407,12 +413,12 @@ export default function SellerLayout() {
         style={{ background: T.topbar, paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)', borderTop: `1px solid ${T.border}` }}>
         <div className="w-8 h-1 rounded-full mx-auto mt-3 mb-4" style={{ background: T.border }} />
         {[
-          { label: 'Litiges',       path: '/seller/disputes',      icon: Scale,      sub: 'Résolution de conflits' },
-          { label: 'Ma boutique',   path: '/seller/shop',          icon: Store,      sub: 'Vitrine publique' },
-          { label: 'Analytiques',  path: '/seller/analytics',     icon: TrendingUp, sub: 'Statistiques avancées' },
-          { label: 'Boost',        path: '/seller/boost',         icon: Zap,        sub: 'Publicité & visibilité' },
-          { label: 'Plans',        path: '/seller/plans',         icon: CreditCard, sub: 'Starter · Pro · Elite' },
-          { label: 'Paramètres',   path: '/seller/settings',      icon: Settings,   sub: 'Compte & sécurité' },
+          { label: t('seller_layout.nav_disputes'),        path: '/seller/disputes',       icon: Scale,      sub: t('seller_layout.sub_disputes') },
+          { label: t('seller_layout.nav_shop'),            path: '/seller/shop',           icon: Store,      sub: t('seller_layout.sub_shop') },
+          { label: t('seller_layout.nav_analytics_short'), path: '/seller/analytics',      icon: TrendingUp, sub: t('seller_layout.sub_analytics') },
+          { label: t('seller_layout.nav_boost_short'),     path: '/seller/boost',          icon: Zap,        sub: t('seller_layout.sub_boost') },
+          { label: t('seller_layout.nav_plans_short'),     path: '/seller/plans',          icon: CreditCard, sub: t('seller_layout.sub_plans') },
+          { label: t('seller_layout.nav_settings_short'),  path: '/seller/settings',       icon: Settings,   sub: t('seller_layout.sub_settings') },
         ].map((item) => {
           const Icon = item.icon;
           return (
@@ -439,10 +445,13 @@ export default function SellerLayout() {
             className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-[13px] font-medium text-red-500 transition-all"
             style={{ background: 'rgba(239,68,68,0.05)' }}>
             <LogOut size={15} />
-            Déconnexion
+            {t('seller_layout.logout')}
           </button>
         </div>
       </div>
+
+      {/* ═══ CHATBOT VENDEUR (même assistant que côté client) ═══ */}
+      <GlobalAssistant />
     </div>
   );
 }

@@ -6,6 +6,39 @@ from django.contrib.auth.models import User
 from apps.catalog.models import Product
 
 
+class CourierProfile(models.Model):
+    class VehicleType(models.TextChoices):
+        MOTORBIKE = "MOTORBIKE", "Moto"
+        CAR       = "CAR", "Voiture"
+        BIKE      = "BIKE", "Velo"
+        TRICYCLE  = "TRICYCLE", "Tricycle"
+        VAN       = "VAN", "Camionnette"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="courier_profile")
+    phone = models.CharField(max_length=20)
+    city = models.CharField(max_length=80)
+    zones = models.JSONField(default=list, blank=True)
+    vehicle_type = models.CharField(
+        max_length=20,
+        choices=VehicleType.choices,
+        default=VehicleType.MOTORBIKE,
+    )
+    id_card = models.CharField(max_length=120)
+    is_active = models.BooleanField(default=True)
+    is_approved = models.BooleanField(default=False)
+    is_online = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Profil livreur"
+        verbose_name_plural = "Profils livreurs"
+
+    def __str__(self):
+        return f"Livreur {self.user.username} ({self.city})"
+
+
 class UserProfile(models.Model):
     """
     Profil étendu utilisateur (optionnel pour info supplémentaires)

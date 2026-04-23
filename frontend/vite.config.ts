@@ -13,6 +13,10 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     strictPort: true,
+    hmr: {
+      host: 'localhost',
+      clientPort: 5174,
+    },
   },
   build: {
     outDir: 'dist',

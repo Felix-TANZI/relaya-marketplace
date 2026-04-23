@@ -7,11 +7,63 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
-from .models import UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
+
+
+class CourierProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourierProfile
+        fields = [
+            "id",
+            "phone",
+            "city",
+            "zones",
+            "vehicle_type",
+            "id_card",
+            "is_active",
+            "is_approved",
+            "is_online",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "is_active", "is_approved", "is_online", "created_at", "updated_at"]
+
+
+class CourierApplicationSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=20)
+    city = serializers.CharField(max_length=80)
+    zones = serializers.ListField(
+        child=serializers.CharField(max_length=60),
+        allow_empty=False,
+    )
+    vehicle_type = serializers.ChoiceField(choices=CourierProfile.VehicleType.choices)
+    id_card = serializers.CharField(max_length=120)
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        courier, _ = CourierProfile.objects.update_or_create(
+            user=user,
+            defaults={
+                **validated_data,
+                "is_active": True,
+                "is_online": False,
+            },
+        )
+        return courier
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.is_online = False
+        instance.save()
+        return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
     is_vendor = serializers.SerializerMethodField()
+    is_courier = serializers.SerializerMethodField()
+    courier_status = serializers.SerializerMethodField()
+    courier_profile = serializers.SerializerMethodField()
     phone = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
     newsletter_subscribed = serializers.SerializerMethodField()
@@ -29,6 +81,9 @@ class UserSerializer(serializers.ModelSerializer):
             "last_name",
             "date_joined",
             "is_vendor",
+            "is_courier",
+            "courier_status",
+            "courier_profile",
             "phone",
             "avatar_url",
             "newsletter_subscribed",
@@ -41,6 +96,24 @@ class UserSerializer(serializers.ModelSerializer):
     def get_is_vendor(self, obj):
         """Vérifier si l'utilisateur a un profil vendeur actif"""
         return hasattr(obj, 'vendor_profile') and obj.vendor_profile.status == 'approved'
+
+    def get_is_courier(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        return bool(courier and courier.is_approved and courier.is_active)
+
+    def get_courier_status(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        if not courier:
+            return "not_applied"
+        if courier.is_approved and courier.is_active:
+            return "approved"
+        return "pending"
+
+    def get_courier_profile(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        if not courier:
+            return None
+        return CourierProfileSerializer(courier).data
 
     def _get_profile(self, obj):
         return getattr(obj, 'profile', None)
@@ -108,6 +181,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
     Serializer pour le profil utilisateur (lecture et modification)
     """
     is_vendor = serializers.SerializerMethodField()
+    is_courier = serializers.SerializerMethodField()
+    courier_status = serializers.SerializerMethodField()
+    courier_profile = serializers.SerializerMethodField()
     phone = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
     newsletter_subscribed = serializers.SerializerMethodField()
@@ -125,6 +201,9 @@ class UserProfileSerializer(serializers.ModelSerializer):
             'last_name',
             'date_joined',
             'is_vendor',
+            'is_courier',
+            'courier_status',
+            'courier_profile',
             'phone',
             'avatar_url',
             'newsletter_subscribed',
@@ -137,6 +216,24 @@ class UserProfileSerializer(serializers.ModelSerializer):
     def get_is_vendor(self, obj):
         """Vérifier si l'utilisateur a un profil vendeur actif"""
         return hasattr(obj, 'vendor_profile') and obj.vendor_profile.status == 'approved'
+
+    def get_is_courier(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        return bool(courier and courier.is_approved and courier.is_active)
+
+    def get_courier_status(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        if not courier:
+            return "not_applied"
+        if courier.is_approved and courier.is_active:
+            return "approved"
+        return "pending"
+
+    def get_courier_profile(self, obj):
+        courier = getattr(obj, "courier_profile", None)
+        if not courier:
+            return None
+        return CourierProfileSerializer(courier).data
 
     def _get_profile(self, obj):
         return getattr(obj, 'profile', None)

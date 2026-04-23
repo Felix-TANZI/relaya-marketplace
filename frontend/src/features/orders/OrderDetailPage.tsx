@@ -23,7 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
-import { getMockOrders, demoOrders } from "@/data/mockOrders";
+import { getResilientOrderById } from "@/data/mockOrders";
 import { customerApi, type Shipment } from "@/services/api/customer";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import {
@@ -116,9 +116,7 @@ export default function OrderDetailPage() {
           setTracking(null);
         }
       } catch {
-        // API failed — try mock/demo orders from localStorage
-        const allMock = [...getMockOrders(), ...demoOrders];
-        const found = allMock.find((o) => o.id === orderId);
+        const found = getResilientOrderById(orderId);
         if (found) {
           setOrder(found);
           setTracking(null);

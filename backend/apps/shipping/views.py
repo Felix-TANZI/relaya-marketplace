@@ -1,8 +1,12 @@
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from django.shortcuts import get_object_or_404
 
 from .serializers import (
+    CourierShipmentActionSerializer,
     ShipmentSerializer,
     ShipmentCreateSerializer,
     ShipmentEventSerializer,
@@ -19,6 +23,7 @@ from .models import Shipment
 )
 class ShipmentCreateView(generics.CreateAPIView):
     serializer_class = ShipmentCreateSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         s = self.get_serializer(data=request.data)
@@ -35,6 +40,7 @@ class ShipmentCreateView(generics.CreateAPIView):
 )
 class ShipmentEventCreateView(generics.CreateAPIView):
     serializer_class = ShipmentEventCreateSerializer
+    permission_classes = [IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         s = self.get_serializer(data=request.data)
@@ -50,6 +56,8 @@ class ShipmentEventCreateView(generics.CreateAPIView):
     responses={200: ShipmentSerializer},
 )
 class ShipmentTrackView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, *args, **kwargs):
         order_id = request.query_params.get("order_id")
         if not order_id:
@@ -60,4 +68,58 @@ class ShipmentTrackView(generics.GenericAPIView):
         except Shipment.DoesNotExist:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
 
+        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Mes livraisons assignees (livreur)")
+class CourierMyShipmentsView(generics.ListAPIView):
+    serializer_class = ShipmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        courier = getattr(self.request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+        return Shipment.objects.filter(courier=courier).select_related("order", "courier", "courier__user")
+
+
+@extend_schema(tags=["Shipping"], summary="Detail d'une livraison assignee (livreur)")
+class CourierShipmentDetailView(generics.RetrieveAPIView):
+    serializer_class = ShipmentSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "id"
+
+    def get_queryset(self):
+        courier = getattr(self.request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+        return Shipment.objects.filter(courier=courier).select_related("order", "courier", "courier__user")
+
+
+@extend_schema(
+    tags=["Shipping"],
+    summary="Action livreur sur une livraison assignee",
+    request=CourierShipmentActionSerializer,
+    responses={200: ShipmentSerializer},
+)
+class CourierShipmentActionView(generics.GenericAPIView):
+    serializer_class = CourierShipmentActionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        courier = getattr(request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+
+        shipment = get_object_or_404(
+            Shipment.objects.select_related("order", "courier", "courier__user"),
+            id=id,
+            courier=courier,
+        )
+        serializer = self.get_serializer(
+            data=request.data,
+            context={"shipment": shipment, "request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        shipment = serializer.save()
         return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)

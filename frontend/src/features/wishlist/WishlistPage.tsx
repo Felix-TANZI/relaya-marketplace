@@ -6,6 +6,7 @@ import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product } from "@/services/api/products";
 import { getFavoriteProductIds } from "@/lib/favorites";
 import { customerApi } from "@/services/api/customer";
+import { V29_PRODUCTS } from "@/data/v29Products";
 
 export default function WishlistPage() {
   const { t } = useTranslation();
@@ -17,9 +18,22 @@ export default function WishlistPage() {
       setLoading(true);
 
       if (localStorage.getItem("access_token")) {
-        const favorites = await customerApi.getFavorites();
-        setProducts(favorites.map((favorite) => favorite.product));
-        return;
+        try {
+          const favorites = await customerApi.getFavorites();
+          const apiProducts = favorites.map((favorite) => favorite.product);
+          const fallbackProducts = V29_PRODUCTS.filter((product) =>
+            getFavoriteProductIds().includes(product.id),
+          );
+          const knownIds = new Set(apiProducts.map((product) => product.id));
+
+          setProducts([
+            ...apiProducts,
+            ...fallbackProducts.filter((product) => !knownIds.has(product.id)),
+          ]);
+          return;
+        } catch {
+          // fall through to resilient local favorites
+        }
       }
 
       const ids = getFavoriteProductIds();
@@ -28,8 +42,20 @@ export default function WishlistPage() {
         return;
       }
 
-      const response = await productsApi.list({ page_size: 100 });
-      setProducts((response.results || []).filter((product) => ids.includes(product.id)));
+      const fallbackProducts = V29_PRODUCTS.filter((product) => ids.includes(product.id));
+
+      try {
+        const response = await productsApi.list({ page_size: 100 });
+        const apiProducts = (response.results || []).filter((product) => ids.includes(product.id));
+        const knownIds = new Set(apiProducts.map((product) => product.id));
+
+        setProducts([
+          ...apiProducts,
+          ...fallbackProducts.filter((product) => !knownIds.has(product.id)),
+        ]);
+      } catch {
+        setProducts(fallbackProducts);
+      }
     } finally {
       setLoading(false);
     }

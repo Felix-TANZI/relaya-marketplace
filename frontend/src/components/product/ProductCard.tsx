@@ -1,4 +1,18 @@
-import { Heart, ShoppingCart, Star, Truck } from "lucide-react";
+import {
+  Baby,
+  Dumbbell,
+  Footprints,
+  Heart,
+  House,
+  Laptop,
+  Shirt,
+  ShoppingBasket,
+  ShoppingCart,
+  Sparkles,
+  Smartphone,
+  Star,
+  Truck,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -51,6 +65,32 @@ interface ProductCardProps {
   compact?: boolean;
 }
 
+function getCompactCategoryIcon(categorySlug?: string | null) {
+  switch (categorySlug) {
+    case "femme":
+    case "homme":
+      return Shirt;
+    case "tech":
+      return Laptop;
+    case "phone":
+      return Smartphone;
+    case "beaute":
+      return Sparkles;
+    case "maison":
+      return House;
+    case "super":
+      return ShoppingBasket;
+    case "shoes":
+      return Footprints;
+    case "sport":
+      return Dumbbell;
+    case "bebe":
+      return Baby;
+    default:
+      return ShoppingCart;
+  }
+}
+
 export default function ProductCard({
   product,
   showPromo = false,
@@ -75,6 +115,7 @@ export default function ProductCard({
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
+  const CompactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -129,6 +170,9 @@ export default function ProductCard({
                 </span>
               </div>
             ) : null}
+            <div className="absolute left-2 bottom-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white/90 bg-white/90 text-primary shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/90">
+              <CompactCategoryIcon size={12} />
+            </div>
             {/* Verified badge */}
             <div className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white bg-green-500 shadow-sm">
               <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round">

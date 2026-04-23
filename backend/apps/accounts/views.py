@@ -10,6 +10,8 @@ from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .serializers import (
+    CourierApplicationSerializer,
+    CourierProfileSerializer,
     UserProfileSerializer,
     UserProfileUpdateSerializer,
     AvatarUploadSerializer,
@@ -21,7 +23,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from .serializers import UserSerializer, RegisterSerializer
-from .models import UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
 
 
 def get_or_create_profile(user):
@@ -182,3 +184,48 @@ class NotificationMarkAllReadView(APIView):
     def post(self, request):
         UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
         return Response({"detail": "Notifications marked as read"})
+
+
+@extend_schema(tags=["Client"], summary="Get courier application")
+class CourierApplicationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        courier = getattr(request.user, "courier_profile", None)
+        if not courier:
+            return Response({"application": None, "status": "not_applied"})
+        return Response(
+            {
+                "application": CourierProfileSerializer(courier).data,
+                "status": "approved" if courier.is_approved and courier.is_active else "pending",
+            }
+        )
+
+    def post(self, request):
+        serializer = CourierApplicationSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return Response(
+            {
+                "application": CourierProfileSerializer(courier).data,
+                "status": "approved" if courier.is_approved and courier.is_active else "pending",
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+    def patch(self, request):
+        courier = get_object_or_404(CourierProfile, user=request.user)
+        serializer = CourierApplicationSerializer(
+            courier,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return Response(
+            {
+                "application": CourierProfileSerializer(courier).data,
+                "status": "approved" if courier.is_approved and courier.is_active else "pending",
+            }
+        )

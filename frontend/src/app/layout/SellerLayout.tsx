@@ -134,14 +134,12 @@ function SidebarContent({
         <div className="flex items-center justify-between mb-4">
           {/* Logo BelivaY */}
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-white text-[14px]"
-              style={{ background: T.orange }}>
-              B
-            </div>
+            <img
+              src="/belivay-logo.png"
+              alt="BelivaY"
+              className="h-8 w-auto object-contain"
+            />
             <div>
-              <p className="text-white font-bold text-[15px]" style={{ fontFamily: 'Poppins,sans-serif' }}>
-                BelivaY
-              </p>
               <p className="text-[10px] font-semibold" style={{ color: T.orange }}>
                 Espace Vendeur
               </p>
@@ -288,13 +286,11 @@ export default function SellerLayout() {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 flex-shrink-0">
-          <div className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-white text-[14px]"
-            style={{ background: T.orange }}>
-            B
-          </div>
-          <span className="font-bold text-[16px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
-            Belivay
-          </span>
+          <img
+            src="/belivay-logo.png"
+            alt="BelivaY"
+            className="h-8 w-auto object-contain"
+          />
         </Link>
 
         {/* Séparateur + label espace */}

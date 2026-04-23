@@ -60,16 +60,12 @@ export default function LoginPage() {
           {/* Logo et Titre - SANS fond, juste text-shadow pour lisibilité */}
           <div className="text-center space-y-4">
             {/* Logo Belivay */}
-            <div className="inline-flex items-center gap-3">
-              <div className="w-14 h-14 bg-primary rounded-2xl flex items-center justify-center shadow-xl">
-                <span className="text-white font-bold text-2xl">B</span>
-              </div>
-              <span 
-                className="text-4xl font-display font-bold text-gray-900"
-                style={{ textShadow: '0 2px 10px rgba(255,255,255,0.9), 0 0 20px rgba(255,255,255,0.6)' }}
-              >
-                Belivay
-              </span>
+            <div className="inline-flex items-center justify-center">
+              <img
+                src="/belivay-logo.png"
+                alt="BelivaY"
+                className="h-14 w-auto object-contain drop-shadow-[0_2px_10px_rgba(255,255,255,0.9)]"
+              />
             </div>
             
             {/* Titre */}

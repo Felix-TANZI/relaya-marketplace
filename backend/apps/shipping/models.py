@@ -1,5 +1,6 @@
 from django.db import models
 from apps.orders.models import Order
+from apps.accounts.models import CourierProfile
 
 
 class Shipment(models.Model):
@@ -24,6 +25,13 @@ class Shipment(models.Model):
     status = models.CharField(max_length=32, choices=Status.choices, default=Status.CREATED)
 
     # Infos livreur (V1 simple)
+    courier = models.ForeignKey(
+        CourierProfile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="shipments",
+    )
     courier_name = models.CharField(max_length=120, blank=True, default="")
     courier_phone = models.CharField(max_length=32, blank=True, default="")
 

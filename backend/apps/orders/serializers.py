@@ -2,6 +2,7 @@
 # Serializers pour les commandes avec séparation payment_status et fulfillment_status
 
 from rest_framework import serializers
+from django.conf import settings as django_settings
 from .models import Order, OrderItem, Dispute, DisputeMessage
 from apps.catalog.models import Product
 
@@ -127,6 +128,7 @@ class OrderCreateSerializer(serializers.Serializer):
         """Créer une nouvelle commande"""
         from .models import PlatformSettings
         from apps.shipping.models import Shipment, ShipmentEvent
+        from apps.orders.models import OrderHistory
 
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
@@ -188,7 +190,7 @@ class OrderCreateSerializer(serializers.Serializer):
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,
             payment_status=Order.PaymentStatus.PENDING,
-            fulfillment_status=Order.FulfillmentStatus.PENDING,
+            fulfillment_status=Order.FulfillmentStatus.CREATED,
         )
         
         # Créer les articles de la commande
@@ -202,6 +204,28 @@ class OrderCreateSerializer(serializers.Serializer):
             message="Commande recuee et en attente de prise en charge",
             location=order.city,
         )
+
+        # En mode local/dev, on court-circuite le paiement externe pour fluidifier les tests.
+        if django_settings.DEBUG:
+            order.confirm_payment()
+            OrderHistory.objects.create(
+                order=order,
+                user=user,
+                action="Paiement simulé automatiquement (dev)",
+                field_name="payment_status",
+                old_value=Order.PaymentStatus.PENDING,
+                new_value=Order.PaymentStatus.PAID,
+            )
+
+            order.release_to_vendor()
+            OrderHistory.objects.create(
+                order=order,
+                user=user,
+                action="Fonds libérés automatiquement au vendeur (dev)",
+                field_name="escrow_status",
+                old_value=Order.EscrowStatus.BLOCKED,
+                new_value=Order.EscrowStatus.RELEASED,
+            )
         
         return order
 

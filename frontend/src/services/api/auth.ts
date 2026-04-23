@@ -11,12 +11,42 @@ export interface User {
   last_name: string;
   date_joined: string;
   is_vendor?: boolean;
+  is_courier?: boolean;
+  courier_status?: "not_applied" | "pending" | "approved";
+  courier_profile?: CourierProfile | null;
   phone?: string | null;
   avatar_url?: string | null;
   newsletter_subscribed?: boolean;
   sms_notifications?: boolean;
   loyalty_points?: number;
   loyalty_tier?: string;
+}
+
+export interface CourierProfile {
+  id: number;
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+  is_active: boolean;
+  is_approved: boolean;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourierApplicationPayload {
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+}
+
+export interface CourierApplicationResponse {
+  application: CourierProfile | null;
+  status: "not_applied" | "pending" | "approved";
 }
 
 export interface LoginCredentials {
@@ -128,6 +158,24 @@ export const authApi = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+  },
+
+  getCourierApplication: async (): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/');
+  },
+
+  applyCourier: async (data: CourierApplicationPayload): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateCourierApplication: async (data: Partial<CourierApplicationPayload>): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   },
 };

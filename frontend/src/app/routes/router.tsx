@@ -27,6 +27,8 @@ import ContactPage from "@/features/contact/ContactPage";
 import HelpPage from "@/features/help/HelpPage";
 import AboutPage from "@/features/about/AboutPage";
 import SearchPage from "@/features/search/SearchPage";
+import PromotionsPage from "@/features/promotions/PromotionsPage";
+import CourierDashboardPage from "@/features/courier/CourierDashboardPage";
 
 // ─────────────────────────────
 // AUTH PAGES
@@ -84,6 +86,7 @@ export const router = createBrowserRouter([
       { path: "product/:id", element: <ProductDetailPage /> },
       { path: "cart", element: <CartPage /> },
       { path: "search", element: <SearchPage /> },
+      { path: "promotions", element: <PromotionsPage /> },
 
       // PROTECTED
       {
@@ -143,6 +146,11 @@ export const router = createBrowserRouter([
       // FALLBACK
       { path: "*", element: <NotFoundPage /> },
     ],
+  },
+
+  {
+    path: "/courier",
+    element: <ProtectedRoute><CourierDashboardPage /></ProtectedRoute>,
   },
 
 

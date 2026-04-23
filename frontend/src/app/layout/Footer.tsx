@@ -21,10 +21,11 @@ export default function Footer() {
           {/* Brand */}
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl">B</span>
-              </div>
-              <span className="text-2xl font-display font-bold">Belivay</span>
+              <img
+                src="/belivay-logo.png"
+                alt="BelivaY"
+                className="h-10 w-auto object-contain"
+              />
             </div>
             <p className="text-gray-300 text-sm leading-relaxed">
               {t('footer.tagline')}

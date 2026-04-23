@@ -237,9 +237,9 @@ export const FLASH_DEALS = [
 
 /* ── Trust Banners ── */
 export const TRUST_BANNERS = [
-  { title: "🔒 Paiement Escrow", subtitle: "Argent protégé jusqu'à réception", img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=300&fit=crop&q=85" },
-  { title: "✅ Vendeurs Certifiés", subtitle: "Identité vérifiée, qualité garantie", img: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop&q=85" },
-  { title: "🚚 Livraison 24-72h", subtitle: "Suivi temps réel au Cameroun", img: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=300&fit=crop&q=85" },
-  { title: "↩️ Retour Gratuit 7j", subtitle: "Remboursement sous 72h", img: "https://images.unsplash.com/photo-1586880244406-556ebe35f282?w=600&h=300&fit=crop&q=85" },
-  { title: "💬 Support 7j/7", subtitle: "WhatsApp · Email · Chat", img: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=300&fit=crop&q=85" },
+  { title: "Paiement Escrow", subtitle: "Argent protégé jusqu'à réception", img: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&h=300&fit=crop&q=85" },
+  { title: "Vendeurs Certifiés", subtitle: "Identité vérifiée, qualité garantie", img: "https://images.unsplash.com/photo-1521791136064-7986c2920216?w=600&h=300&fit=crop&q=85" },
+  { title: "Livraison 24-72h", subtitle: "Suivi temps réel au Cameroun", img: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=600&h=300&fit=crop&q=85" },
+  { title: "Retour Gratuit 7j", subtitle: "Remboursement sous 72h", img: "https://images.unsplash.com/photo-1586880244406-556ebe35f282?w=600&h=300&fit=crop&q=85" },
+  { title: "Support 7j/7", subtitle: "WhatsApp · Email · Chat", img: "https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=600&h=300&fit=crop&q=85" },
 ];

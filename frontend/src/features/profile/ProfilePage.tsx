@@ -4,6 +4,7 @@ import {
   Award,
   BadgePercent,
   Bell,
+  Bike,
   Building2,
   CircleDollarSign,
   CreditCard,
@@ -47,6 +48,7 @@ type PanelId =
   | "fidelite"
   | "parrain"
   | "messages"
+  | "livreur"
   | "vendeur"
   | "securite";
 type MessageTab = "all" | "support" | "litige";
@@ -193,6 +195,13 @@ export default function ProfilePage() {
     phone: "",
     motivation: "",
   });
+  const [courierForm, setCourierForm] = useState({
+    phone: "",
+    city: "Yaoundé",
+    zones: "Bastos, Centre-ville, Mvog-Ada",
+    vehicle_type: "MOTORBIKE" as "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN",
+    id_card: "",
+  });
   const [addresses, setAddresses] = useState<AddressItem[]>([
     {
       id: "home",
@@ -217,7 +226,18 @@ export default function ProfilePage() {
   useEffect(() => {
     authApi
       .getProfile()
-      .then(setUser)
+      .then((profile) => {
+        setUser(profile);
+        if (profile.courier_profile) {
+          setCourierForm({
+            phone: profile.courier_profile.phone,
+            city: profile.courier_profile.city,
+            zones: profile.courier_profile.zones.join(", "),
+            vehicle_type: profile.courier_profile.vehicle_type,
+            id_card: profile.courier_profile.id_card,
+          });
+        }
+      })
       .catch(() => showToast("Erreur chargement profil", "error"))
       .finally(() => setLoading(false));
   }, [showToast]);
@@ -368,6 +388,37 @@ export default function ProfilePage() {
     showToast("Votre demande vendeur a été enregistrée.", "success");
   };
 
+  const handleCourierField = (
+    field: "phone" | "city" | "zones" | "vehicle_type" | "id_card",
+    value: string,
+  ) => {
+    setCourierForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleCourierApplication = async () => {
+    try {
+      const payload = {
+        phone: courierForm.phone,
+        city: courierForm.city,
+        zones: courierForm.zones.split(",").map((zone) => zone.trim()).filter(Boolean),
+        vehicle_type: courierForm.vehicle_type,
+        id_card: courierForm.id_card,
+      };
+
+      if (user?.courier_profile) {
+        await authApi.updateCourierApplication(payload);
+      } else {
+        await authApi.applyCourier(payload);
+      }
+
+      const profile = await authApi.getProfile();
+      setUser(profile);
+      showToast("Votre demande livreur a été enregistrée.", "success");
+    } catch {
+      showToast("Impossible d'enregistrer la demande livreur.", "error");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f3f4f6] px-4 py-8 dark:bg-gray-950">
@@ -492,6 +543,30 @@ export default function ProfilePage() {
             <Store size={14} className="mr-1" />
             Become a seller
           </ActionButton>
+        </div>
+      </section>
+
+      <section className="rounded-[16px] border border-[#d1fae5] bg-[linear-gradient(135deg,#ecfdf5,#ffffff)] p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-emerald-900/40 dark:bg-[linear-gradient(180deg,#0f2a21,#111827)]">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="font-display text-[18px] font-extrabold text-[#111827] dark:text-white">Devenir livreur</div>
+            <div className="mt-1 text-[13px] text-[#6b7280] dark:text-gray-400">
+              Postulez pour rejoindre le réseau de livraison BelivaY.
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            {user?.courier_status === "approved" ? (
+              <ActionButton variant="primary" onClick={() => navigate("/courier")}>
+                <Bike size={14} className="mr-1" />
+                Ouvrir l'espace livreur
+              </ActionButton>
+            ) : (
+              <ActionButton variant="primary" onClick={() => openPanel("livreur")}>
+                <Bike size={14} className="mr-1" />
+                Devenir livreur
+              </ActionButton>
+            )}
+          </div>
         </div>
       </section>
     </div>
@@ -971,6 +1046,106 @@ export default function ProfilePage() {
     </section>
   );
 
+  const renderLivreur = () => (
+    <section className="rounded-[16px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
+      <div className="mb-1 font-display text-[18px] font-extrabold text-[#111827] dark:text-white">
+        Devenir livreur
+      </div>
+      <div className="mb-5 text-[13px] text-[#6b7280] dark:text-gray-400">
+        Remplissez votre dossier. BelivaY validera ensuite votre profil avant activation.
+      </div>
+
+      <div className="mb-4 rounded-[12px] border border-[#d1fae5] bg-[#ecfdf5] p-4 text-[13px] leading-[1.7] text-[#166534] dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
+        Statut actuel :{" "}
+        <strong>
+          {user?.courier_status === "approved"
+            ? "Approuvé"
+            : user?.courier_status === "pending"
+              ? "En attente de validation"
+              : "Aucune demande envoyée"}
+        </strong>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Téléphone
+          </label>
+          <input
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={courierForm.phone}
+            onChange={(event) => handleCourierField("phone", event.target.value)}
+            placeholder="+237 6XX XXX XXX"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Ville
+          </label>
+          <input
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={courierForm.city}
+            onChange={(event) => handleCourierField("city", event.target.value)}
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Zones de livraison
+          </label>
+          <input
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={courierForm.zones}
+            onChange={(event) => handleCourierField("zones", event.target.value)}
+            placeholder="Bastos, Centre-ville, Mvog-Ada"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Type de véhicule
+          </label>
+          <select
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={courierForm.vehicle_type}
+            onChange={(event) => handleCourierField("vehicle_type", event.target.value)}
+          >
+            <option value="MOTORBIKE">Moto</option>
+            <option value="CAR">Voiture</option>
+            <option value="BIKE">Velo</option>
+            <option value="TRICYCLE">Tricycle</option>
+            <option value="VAN">Camionnette</option>
+          </select>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+          Pièce d'identité
+        </label>
+        <input
+          className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+          value={courierForm.id_card}
+          onChange={(event) => handleCourierField("id_card", event.target.value)}
+          placeholder="N° CNI, permis ou référence officielle"
+        />
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-3">
+        <ActionButton variant="primary" onClick={handleCourierApplication}>
+          <Bike size={14} className="mr-1" />
+          Envoyer la demande
+        </ActionButton>
+        {user?.courier_status === "approved" ? (
+          <ActionButton variant="outline" onClick={() => navigate("/courier")}>
+            Ouvrir l'espace livreur
+          </ActionButton>
+        ) : null}
+        <ActionButton variant="outline" onClick={() => openPanel("dashboard")}>
+          Retour au tableau de bord
+        </ActionButton>
+      </div>
+    </section>
+  );
+
   const renderSecurite = () => (
     <section className="rounded-[16px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
       <div className="mb-[18px] font-display text-[18px] font-extrabold text-[#111827]">Sécurité</div>
@@ -1016,6 +1191,8 @@ export default function ProfilePage() {
         return renderParrain();
       case "messages":
         return renderMessages();
+      case "livreur":
+        return renderLivreur();
       case "vendeur":
         return renderVendeur();
       case "securite":
@@ -1036,6 +1213,7 @@ export default function ProfilePage() {
     { id: "profil", label: "Mon Profil", suffix: "›", icon: User },
     { id: "adresses", label: "Mes Adresses", suffix: "›", icon: MapPin },
     { id: "paiements", label: "Mes Paiements", suffix: "›", icon: CreditCard },
+    { id: "livreur", label: "Devenir livreur", suffix: user?.courier_status === "approved" ? "Actif" : "›", tone: user?.courier_status === "approved" ? "green" : undefined, icon: Bike },
     { id: "vendeur", label: "Become a seller", suffix: "›", icon: Store },
     { id: "fidelite", label: "Fidélité & Badges", suffix: "›", icon: Star },
     { id: "parrain", label: "Parrainage", suffix: "+500 pts", tone: "green", icon: Gift },

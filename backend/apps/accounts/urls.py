@@ -15,6 +15,7 @@ from .views import (
     NotificationsListView,
     NotificationMarkReadView,
     NotificationMarkAllReadView,
+    CourierApplicationView,
 )
 
 urlpatterns = [
@@ -31,4 +32,5 @@ urlpatterns = [
     path("notifications/", NotificationsListView.as_view(), name="client-notifications"),
     path("notifications/<int:id>/read/", NotificationMarkReadView.as_view(), name="client-notification-read"),
     path("notifications/read-all/", NotificationMarkAllReadView.as_view(), name="client-notifications-read-all"),
+    path("courier/application/", CourierApplicationView.as_view(), name="client-courier-application"),
 ]

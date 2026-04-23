@@ -1,442 +1,452 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { productsApi, Product, Category } from "@/services/api/products";
+import {
+  ArrowRight,
+  Copy,
+  Gift,
+  Percent,
+  ShieldCheck,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import { useCart } from "@/context/CartContext";
+import { productsApi, type Category, type Product } from "@/services/api/products";
+import { getPromoProducts } from "@/data/v29Products";
 
-const MOCK_PRODUCTS: Product[] = [
-  { id: 1001, title: "Robe Wax Africaine Premium", slug: "robe-wax", description: "", price_xaf: 35000, discount: 40, price_final: 21000, stock_quantity: 10, is_active: true, category: { id: 1, name: "Mode Femme", slug: "femme", is_active: true }, media: [], rating_average: 4.8, reviews_count: 124, created_at: "", updated_at: "" },
-  { id: 1002, title: "Smartphone Samsung Galaxy A55", slug: "samsung-a55", description: "", price_xaf: 280000, discount: 25, price_final: 210000, stock_quantity: 5, is_active: true, category: { id: 2, name: "Électronique", slug: "electronique", is_active: true }, media: [], rating_average: 4.9, reviews_count: 89, created_at: "", updated_at: "" },
-  { id: 1003, title: "Crème Naturelle Karité Bio", slug: "creme-karite", description: "", price_xaf: 8500, discount: 30, price_final: 5950, stock_quantity: 50, is_active: true, category: { id: 3, name: "Beauté", slug: "beaute", is_active: true }, media: [], rating_average: 4.7, reviews_count: 203, created_at: "", updated_at: "" },
-  { id: 1004, title: "Ensemble Bazin Homme Brodé", slug: "bazin-homme", description: "", price_xaf: 55000, discount: 35, price_final: 35750, stock_quantity: 8, is_active: true, category: { id: 4, name: "Mode Homme", slug: "homme", is_active: true }, media: [], rating_average: 4.6, reviews_count: 67, created_at: "", updated_at: "" },
-  { id: 1005, title: "Casque Audio Bluetooth JBL", slug: "casque-jbl", description: "", price_xaf: 45000, discount: 20, price_final: 36000, stock_quantity: 15, is_active: true, category: { id: 2, name: "Électronique", slug: "electronique", is_active: true }, media: [], rating_average: 4.8, reviews_count: 156, created_at: "", updated_at: "" },
-  { id: 1006, title: "Sneakers Cuir Artisanal Douala", slug: "sneakers-cuir", description: "", price_xaf: 32000, discount: 28, price_final: 23040, stock_quantity: 12, is_active: true, category: { id: 5, name: "Chaussures", slug: "chaussures", is_active: true }, media: [], rating_average: 4.5, reviews_count: 45, created_at: "", updated_at: "" },
-  { id: 1007, title: "Sac à Main Wax Luxe", slug: "sac-wax", description: "", price_xaf: 22000, discount: 45, price_final: 12100, stock_quantity: 6, is_active: true, category: { id: 1, name: "Mode Femme", slug: "femme", is_active: true }, media: [], rating_average: 4.9, reviews_count: 78, created_at: "", updated_at: "" },
-  { id: 1008, title: "Tablette iPad 10e génération", slug: "ipad-10", description: "", price_xaf: 320000, discount: 15, price_final: 272000, stock_quantity: 3, is_active: true, category: { id: 2, name: "Électronique", slug: "electronique", is_active: true }, media: [], rating_average: 4.9, reviews_count: 211, created_at: "", updated_at: "" },
-  { id: 1009, title: "Huile Argan Pure 100ml", slug: "huile-argan", description: "", price_xaf: 12000, discount: 33, price_final: 8040, stock_quantity: 30, is_active: true, category: { id: 3, name: "Beauté", slug: "beaute", is_active: true }, media: [], rating_average: 4.7, reviews_count: 92, created_at: "", updated_at: "" },
-  { id: 1010, title: "Canapé Design 3 places", slug: "canape-design", description: "", price_xaf: 280000, discount: 35, price_final: 182000, stock_quantity: 2, is_active: true, category: { id: 6, name: "Maison", slug: "maison", is_active: true }, media: [], rating_average: 4.6, reviews_count: 34, created_at: "", updated_at: "" },
-  { id: 1011, title: "Montre Classique Homme Or", slug: "montre-or", description: "", price_xaf: 75000, discount: 22, price_final: 58500, stock_quantity: 7, is_active: true, category: { id: 4, name: "Mode Homme", slug: "homme", is_active: true }, media: [], rating_average: 4.8, reviews_count: 61, created_at: "", updated_at: "" },
-  { id: 1012, title: "Robot Cuisine Multifonction", slug: "robot-cuisine", description: "", price_xaf: 95000, discount: 40, price_final: 57000, stock_quantity: 4, is_active: true, category: { id: 6, name: "Maison", slug: "maison", is_active: true }, media: [], rating_average: 4.7, reviews_count: 88, created_at: "", updated_at: "" },
-  { id: 1013, title: "Parfum Oud Camerounais", slug: "parfum-oud", description: "", price_xaf: 18000, discount: 25, price_final: 13500, stock_quantity: 20, is_active: true, category: { id: 3, name: "Beauté", slug: "beaute", is_active: true }, media: [], rating_average: 4.9, reviews_count: 143, created_at: "", updated_at: "" },
-  { id: 1014, title: "Laptop HP ProBook 14\"", slug: "hp-probook", description: "", price_xaf: 450000, discount: 18, price_final: 369000, stock_quantity: 5, is_active: true, category: { id: 2, name: "Électronique", slug: "electronique", is_active: true }, media: [], rating_average: 4.6, reviews_count: 72, created_at: "", updated_at: "" },
-  { id: 1015, title: "Boubou Traditionnel Femme", slug: "boubou-femme", description: "", price_xaf: 28000, discount: 38, price_final: 17360, stock_quantity: 14, is_active: true, category: { id: 1, name: "Mode Femme", slug: "femme", is_active: true }, media: [], rating_average: 4.8, reviews_count: 97, created_at: "", updated_at: "" },
-];
-
-const PRODUCT_EMOJIS: Record<string, string> = {
-  "Mode Femme": "👗", "Électronique": "💻", "Beauté": "💄", "Mode Homme": "👔",
-  "Chaussures": "👟", "Maison": "🛋️",
+type PromoProduct = Product & {
+  score: number;
+  isPremium: boolean;
 };
 
 const CATEGORY_BANNERS = [
-  { label: "Flash Sale", title: "Mode Femme", disc: "Jusqu'à -40%", bg: "linear-gradient(140deg,#C84B11,#F47920)", slug: "femme" },
-  { label: "Tech Week", title: "Électronique", disc: "Jusqu'à -25%", bg: "linear-gradient(140deg,#1E3A5F,#1D4ED8)", slug: "electronique" },
-  { label: "Beauté Naturelle", title: "Beauté & Santé", disc: "Jusqu'à -30%", bg: "linear-gradient(140deg,#14532D,#16A34A)", slug: "beaute" },
-  { label: "Home Déco", title: "Maison & Bureau", disc: "Jusqu'à -35%", bg: "linear-gradient(140deg,#3B0764,#7C3AED)", slug: "maison" },
+  { slug: "all", eyebrow: "Top sélection", title: "Offres transversales", discount: "Jusqu'à -45%", bg: "from-[#111827] via-[#1f2937] to-[#0f172a]" },
+  { slug: "femme", eyebrow: "Flash mode", title: "Mode Femme", discount: "Jusqu'à -40%", bg: "from-[#c85e14] via-[#f47920] to-[#ffb36d]" },
+  { slug: "electronique", eyebrow: "Tech Week", title: "Électronique", discount: "Jusqu'à -25%", bg: "from-[#0f172a] via-[#1d4ed8] to-[#60a5fa]" },
+  { slug: "beaute", eyebrow: "Glow deals", title: "Beauté", discount: "Jusqu'à -30%", bg: "from-[#14532d] via-[#16a34a] to-[#86efac]" },
 ];
 
 function fmt(n: number) {
-  return new Intl.NumberFormat("fr-CM", { style: "currency", currency: "XAF", maximumFractionDigits: 0 }).format(n);
+  return new Intl.NumberFormat("fr-CM", {
+    style: "currency",
+    currency: "XAF",
+    maximumFractionDigits: 0,
+  }).format(n);
 }
 
 function useCountdown(endTime: number) {
   const [remaining, setRemaining] = useState(Math.max(0, endTime - Date.now()));
+
   useEffect(() => {
-    const id = setInterval(() => setRemaining(Math.max(0, endTime - Date.now())), 1000);
-    return () => clearInterval(id);
+    const id = window.setInterval(() => {
+      setRemaining(Math.max(0, endTime - Date.now()));
+    }, 1000);
+
+    return () => window.clearInterval(id);
   }, [endTime]);
-  const h = Math.floor(remaining / 3600000);
-  const m = Math.floor((remaining % 3600000) / 60000);
-  const s = Math.floor((remaining % 60000) / 1000);
-  return { h, m, s, done: remaining === 0 };
+
+  return {
+    hours: String(Math.floor(remaining / 3600000)).padStart(2, "0"),
+    minutes: String(Math.floor((remaining % 3600000) / 60000)).padStart(2, "0"),
+    seconds: String(Math.floor((remaining % 60000) / 1000)).padStart(2, "0"),
+  };
 }
 
-interface PromoProduct extends Product {
-  _score: number;
-  isPremium: boolean;
+function getProductImage(product: Product) {
+  return product.media?.[0]?.url || product.images?.[0]?.image_url || "";
+}
+
+function buildScoredList(list: Product[]) {
+  const scored: PromoProduct[] = [...list]
+    .map((product) => ({
+      ...product,
+      score: product.discount * 2 + (product.rating_average ?? 0) * 10 + (product.reviews_count ?? 0),
+      isPremium: false,
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  const premiumCount = Math.max(3, Math.ceil(scored.length * 0.25));
+  scored.forEach((product, index) => {
+    product.isPremium = index < premiumCount;
+  });
+
+  return scored;
 }
 
 export default function PromotionsPage() {
   const navigate = useNavigate();
   const { addItem } = useCart();
   const [allPromo, setAllPromo] = useState<Product[]>([]);
-  const [displayed, setDisplayed] = useState<PromoProduct[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [activeCat, setActiveCat] = useState<string>("all");
+  const [activeCat, setActiveCat] = useState("all");
   const [loading, setLoading] = useState(true);
   const [codeCopied, setCodeCopied] = useState(false);
-
+  const [usingFallbackPromos, setUsingFallbackPromos] = useState(false);
   const endTimeRef = useRef(Date.now() + 8 * 3600 * 1000);
   const countdown = useCountdown(endTimeRef.current);
 
   useEffect(() => {
-    Promise.all([
-      productsApi.list({ page_size: 100, is_active: true }),
-      productsApi.listCategories({ page_size: 50, is_active: true }),
-    ]).then(([prodRes, catRes]) => {
-      const promos = prodRes.results.filter((p) => p.discount > 0);
-      setAllPromo(promos);
-      setCategories(catRes.results);
-      setDisplayed(buildScoredList(promos));
-    }).finally(() => setLoading(false));
+    let mounted = true;
+
+    const load = async () => {
+      try {
+        const [prodRes, catRes] = await Promise.all([
+          productsApi.list({ page_size: 100, is_active: true }),
+          productsApi.listCategories({ page_size: 50, is_active: true }),
+        ]);
+
+        if (!mounted) return;
+
+        const promos = prodRes.results.filter((product) => product.discount > 0);
+        const fallbackPromos = getPromoProducts();
+
+        if (promos.length) {
+          setAllPromo(promos);
+          setCategories(catRes.results);
+          setUsingFallbackPromos(false);
+        } else {
+          const fallbackCategories = Array.from(
+            new Map(
+              fallbackPromos.map((product) => [
+                product.category?.slug ?? String(product.id),
+                product.category,
+              ]),
+            ).values(),
+          ).filter(Boolean) as Category[];
+
+          setAllPromo(fallbackPromos);
+          setCategories(fallbackCategories);
+          setUsingFallbackPromos(true);
+        }
+      } catch {
+        if (!mounted) return;
+
+        const fallbackPromos = getPromoProducts();
+        const fallbackCategories = Array.from(
+          new Map(
+            fallbackPromos.map((product) => [
+              product.category?.slug ?? String(product.id),
+              product.category,
+            ]),
+          ).values(),
+        ).filter(Boolean) as Category[];
+
+        setAllPromo(fallbackPromos);
+        setCategories(fallbackCategories);
+        setUsingFallbackPromos(true);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    };
+
+    void load();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  function buildScoredList(list: Product[]): PromoProduct[] {
-    const scored = list.map((p) => ({
-      ...p,
-      _score: p.discount * 2 + (p.rating_average ?? 0) * 10 + (p.reviews_count ?? 0),
-      isPremium: false,
-    }));
-    scored.sort((a, b) => b._score - a._score);
-    const premiumCount = Math.max(5, Math.ceil(scored.length * 0.3));
-    scored.forEach((p, i) => { p.isPremium = i < premiumCount; });
-    return scored;
-  }
+  const displayed = useMemo(() => {
+    const filtered =
+      activeCat === "all"
+        ? allPromo
+        : allPromo.filter((product) => {
+            const name = product.category?.name?.toLowerCase() ?? "";
+            const slug = product.category?.slug?.toLowerCase() ?? "";
+            return name.includes(activeCat.toLowerCase()) || slug.includes(activeCat.toLowerCase());
+          });
 
-  const filterByCat = useCallback((catSlug: string) => {
-    setActiveCat(catSlug);
-    const filtered = catSlug === "all"
-      ? allPromo
-      : allPromo.filter((p) => p.category?.slug?.toLowerCase().includes(catSlug.toLowerCase()) || p.category?.name?.toLowerCase().includes(catSlug.toLowerCase()));
-    setDisplayed(buildScoredList(filtered));
-  }, [allPromo]);
+    return buildScoredList(filtered);
+  }, [activeCat, allPromo]);
 
-  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
-    e.stopPropagation();
-    addItem({ id: product.id, name: product.title, price: product.price_final, quantity: 1, image: product.media?.[0]?.url });
-  };
+  const filterTabs = [
+    { key: "all", label: "Tout voir" },
+    ...categories.slice(0, 6).map((category) => ({ key: category.slug, label: category.name })),
+  ];
 
-  const copyCode = () => {
-    navigator.clipboard.writeText("BIENVENUE10").then(() => {
-      setCodeCopied(true);
-      setTimeout(() => setCodeCopied(false), 2000);
+  const handleAddToCart = (event: React.MouseEvent, product: Product) => {
+    event.stopPropagation();
+    addItem({
+      id: product.id,
+      name: product.title,
+      price: product.price_final,
+      quantity: 1,
+      image: getProductImage(product),
     });
   };
 
-  const getProductImage = (p: Product) => p.media?.[0]?.url || p.images?.[0]?.image_url;
+  const openProduct = (product: Product) => {
+    const mockSuffix = usingFallbackPromos ? "?mock=1" : "";
+    navigate(`/product/${product.id}${mockSuffix}`);
+  };
 
-  const catFilterTabs = [
-    { k: "all", l: "✨ Tout voir" },
-    ...categories.slice(0, 5).map((c) => ({ k: c.slug, l: c.name })),
-  ];
+  const copyCode = async () => {
+    await navigator.clipboard.writeText("BIENVENUE10");
+    setCodeCopied(true);
+    window.setTimeout(() => setCodeCopied(false), 1800);
+  };
 
   return (
-    <div style={{ padding: "20px 20px 72px", maxWidth: 1400, margin: "0 auto" }}>
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff_16%,#f8fafc_100%)] px-4 pb-24 pt-6 dark:bg-[linear-gradient(180deg,#020617_0%,#0f172a_22%,#020617_100%)]">
+      <div className="mx-auto flex max-w-[1480px] flex-col gap-6">
+        <section
+          className="overflow-hidden rounded-[32px] border border-[#f2d1bc] px-6 py-7 text-white shadow-[0_24px_60px_rgba(244,121,32,.22)] dark:border-orange-900/40"
+          style={{ background: "linear-gradient(135deg,#0a0500,#2d0e00,#4a1800)" }}
+        >
+          <div className="relative">
+            <div className="pointer-events-none absolute -left-10 bottom-[-72px] h-52 w-52 rounded-full bg-[#ff9d4d]/20 blur-3xl" />
+            <div className="pointer-events-none absolute right-[-70px] top-[-90px] h-72 w-72 rounded-full bg-[#f47920]/30 blur-3xl" />
 
-      {/* ── Hero + Countdown ── */}
-      <div style={{
-        background: "linear-gradient(135deg,#0a0500,#2d0e00,#4a1800)",
-        borderRadius: 16,
-        padding: "24px 28px",
-        marginBottom: 18,
-        position: "relative",
-        overflow: "hidden",
-        color: "#fff",
-        boxShadow: "0 12px 48px rgba(244,121,32,.25),inset 0 1px 0 rgba(255,255,255,.1)",
-      }}>
-        {/* decorative blobs */}
-        <div style={{ position: "absolute", top: -80, right: -80, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle,rgba(244,121,32,.4),transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: -60, left: -40, width: 240, height: 240, borderRadius: "50%", background: "radial-gradient(circle,rgba(255,157,77,.25),transparent 70%)", pointerEvents: "none" }} />
+            <div className="relative z-[1] text-[10.5px] font-black uppercase tracking-[0.1em] text-white/65">
+              Offres limitées
+            </div>
+            <h1 className="relative z-[1] mt-2 font-display text-[24px] font-extrabold tracking-tight sm:text-[30px]">
+              Promotions du Moment
+            </h1>
+            <p className="relative z-[1] mt-2 max-w-[760px] text-[13px] leading-7 text-white/75">
+              {displayed.length} offres actives · Mise à jour en temps réel · Escrow garanti sur tous les achats
+            </p>
 
-        <div style={{ fontSize: 10.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.1em", opacity: 0.65, marginBottom: 6 }}>
-          🔥 Offres Limitées
-        </div>
-        <div style={{ fontSize: 22, fontWeight: 800, marginBottom: 5, position: "relative", zIndex: 1 }}>
-          Promotions du Moment
-        </div>
-        <div style={{ fontSize: 13, opacity: 0.7, marginBottom: 16, position: "relative", zIndex: 1, lineHeight: 1.6 }}>
-          {displayed.length} offres actives · Mise à jour en temps réel · Escrow garanti sur tous les achats
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, position: "relative", zIndex: 1 }}>
-          {[
-            { val: String(countdown.h).padStart(2, "0"), lbl: "Heures" },
-            { val: String(countdown.m).padStart(2, "0"), lbl: "Min" },
-            { val: String(countdown.s).padStart(2, "0"), lbl: "Sec" },
-          ].map((block, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {i > 0 && <div style={{ fontSize: 20, fontWeight: 800, color: "#F47920", marginBottom: 12 }}>:</div>}
-              <div style={{ background: "rgba(255,255,255,.12)", border: "1px solid rgba(255,255,255,.2)", borderRadius: 10, padding: "8px 12px", textAlign: "center", backdropFilter: "blur(4px)", minWidth: 54 }}>
-                <div style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>{block.val}</div>
-                <div style={{ fontSize: 9.5, color: "rgba(255,255,255,.55)", fontWeight: 700, marginTop: 3, textTransform: "uppercase", letterSpacing: "0.05em" }}>{block.lbl}</div>
+            <div className="relative z-[1] mt-5 flex flex-wrap items-center gap-2">
+              {[countdown.hours, countdown.minutes, countdown.seconds].map((value, index) => (
+                <div key={`${value}-${index}`} className="contents">
+                  {index > 0 ? <div className="pb-3 text-[20px] font-black text-[#f47920]">:</div> : null}
+                  <div className="min-w-[64px] rounded-[12px] border border-white/20 bg-white/10 px-3 py-2 text-center backdrop-blur-[4px]">
+                    <div className="font-display text-[24px] font-extrabold leading-none text-white">{value}</div>
+                    <div className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.05em] text-white/55">
+                      {index === 0 ? "Heures" : index === 1 ? "Min" : "Sec"}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="ml-2 text-[12px] leading-[1.4] text-white/65">
+                Fin du
+                <br />
+                Flash Sale
               </div>
             </div>
-          ))}
-          <div style={{ marginLeft: 8, fontSize: 12, opacity: 0.65, lineHeight: 1.4 }}>
-            Fin du<br />Flash Sale
           </div>
-        </div>
-      </div>
+        </section>
 
-      {/* ── Promo code banner ── */}
-      <div style={{
-        background: "linear-gradient(110deg,#F0FDF4,#DCFCE7)",
-        border: "1px solid #86EFAC",
-        borderRadius: 12,
-        padding: "10px 14px",
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        marginBottom: 14,
-      }}>
-        <span style={{ fontSize: 24 }}>🎁</span>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontWeight: 800, fontSize: 13.5, color: "#15803D", marginBottom: 2 }}>
-            Code Bienvenue actif — BIENVENUE10
-          </div>
-          <div style={{ fontSize: 12, color: "#15803D", opacity: 0.8 }}>
-            -10% sur votre 1ère commande · Valable encore 48h · Applicable au checkout
-          </div>
-        </div>
-        <button
-          onClick={copyCode}
-          style={{ background: "#16A34A", color: "#fff", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 800, cursor: "pointer", whiteSpace: "nowrap" }}
+        <section
+          className="rounded-[18px] border border-[#86efac] px-4 py-3 shadow-[0_10px_22px_rgba(22,163,74,.08)] dark:border-emerald-900/40"
+          style={{ background: "linear-gradient(110deg,#f0fdf4,#dcfce7)" }}
         >
-          {codeCopied ? "✅ Copié !" : "📋 Copier"}
-        </button>
-      </div>
-
-      {/* ── Category Banners ── */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 8, marginBottom: 16 }}>
-        {CATEGORY_BANNERS.map((b) => (
-          <div
-            key={b.slug}
-            onClick={() => filterByCat(b.slug)}
-            style={{
-              background: b.bg,
-              borderRadius: 12,
-              padding: "16px 14px",
-              position: "relative",
-              overflow: "hidden",
-              cursor: "pointer",
-              minHeight: 100,
-              display: "flex",
-              flexDirection: "column",
-              justifyContent: "flex-end",
-              transition: "all .3s",
-              boxShadow: "0 6px 20px rgba(0,0,0,.12)",
-            }}
-            onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-6px) scale(1.02)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 16px 40px rgba(0,0,0,.25)"; }}
-            onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.transform = ""; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 6px 20px rgba(0,0,0,.12)"; }}
-          >
-            <div style={{ position: "absolute", top: -30, right: -30, width: 140, height: 140, borderRadius: "50%", background: "rgba(255,255,255,.09)", pointerEvents: "none" }} />
-            <div style={{ fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: "rgba(255,255,255,.8)", marginBottom: 3, position: "relative", zIndex: 1 }}>{b.label}</div>
-            <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", lineHeight: 1.3, position: "relative", zIndex: 1 }}>{b.title}</div>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,.2)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,.3)", borderRadius: 999, padding: "3px 9px", fontSize: 11, fontWeight: 800, color: "#fff", marginTop: 5, position: "relative", zIndex: 1 }}>{b.disc}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* ── Filter tabs + count ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
-        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-          {catFilterTabs.map((c) => (
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="text-[24px]">🎁</div>
+            <div className="min-w-0 flex-1">
+              <div className="text-[13.5px] font-extrabold text-[#15803d] dark:text-emerald-200">
+                Code Bienvenue actif — BIENVENUE10
+              </div>
+              <div className="text-[12px] text-[#15803d]/85 dark:text-emerald-100/80">
+                -10% sur votre 1ère commande · Valable encore 48h · Applicable au checkout
+              </div>
+            </div>
             <button
-              key={c.k}
-              onClick={() => filterByCat(c.k)}
+              type="button"
+              onClick={copyCode}
+              className="inline-flex items-center gap-2 rounded-[10px] bg-[#16a34a] px-4 py-2 text-[12px] font-extrabold text-white transition hover:bg-[#15803d]"
+            >
+              {codeCopied ? <Gift size={14} /> : <Copy size={14} />}
+              {codeCopied ? "Copié !" : "Copier"}
+            </button>
+          </div>
+        </section>
+
+        <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {CATEGORY_BANNERS.map((banner) => (
+            <button
+              key={banner.slug}
+              type="button"
+              onClick={() => setActiveCat(banner.slug)}
+              className={`group relative min-h-[110px] overflow-hidden rounded-[18px] p-4 text-left shadow-[0_10px_24px_rgba(15,23,42,.12)] transition hover:translate-y-[-5px] hover:scale-[1.01] ${
+                activeCat === banner.slug ? "ring-2 ring-[#f47920]" : ""
+              }`}
               style={{
-                padding: "7px 14px",
-                borderRadius: 999,
-                border: activeCat === c.k ? "none" : "1.5px solid #E5E7EB",
-                background: activeCat === c.k ? "#F47920" : "#fff",
-                color: activeCat === c.k ? "#fff" : "#374151",
-                fontWeight: 700,
-                fontSize: 12,
-                cursor: "pointer",
-                transition: "all .2s",
+                background:
+                  banner.slug === "all"
+                    ? "linear-gradient(140deg,#111827,#1f2937,#0f172a)"
+                    : banner.slug === "femme"
+                      ? "linear-gradient(140deg,#C84B11,#F47920)"
+                      : banner.slug === "electronique"
+                        ? "linear-gradient(140deg,#1E3A5F,#1D4ED8)"
+                        : "linear-gradient(140deg,#14532D,#16A34A)",
               }}
             >
-              {c.l}
+              <div className="absolute -right-7 -top-7 h-32 w-32 rounded-full bg-white/10" />
+              <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/35 to-transparent" />
+              <div className="relative z-[1]">
+                <div className="text-[10px] font-black uppercase tracking-[0.08em] text-white/80">
+                  {banner.eyebrow}
+                </div>
+                <div className="mt-6 text-[16px] font-extrabold text-white">{banner.title}</div>
+                <div className="mt-1 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-extrabold text-white">
+                  {banner.discount}
+                </div>
+              </div>
             </button>
           ))}
-        </div>
-        <div style={{ fontSize: 12, color: "#9CA3AF", fontWeight: 600 }}>
-          {displayed.length} produits en promo
-        </div>
-      </div>
+        </section>
 
-      {/* ── Section header ── */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, fontFamily: "inherit", fontSize: 16, fontWeight: 800 }}>
-          <div style={{ width: 3, height: 18, background: "#F47920", borderRadius: 2 }} />
-          Produits en promotion
-        </div>
-        <span
-          onClick={() => filterByCat("all")}
-          style={{ fontSize: 12, fontWeight: 700, color: "#F47920", cursor: "pointer" }}
+        <section
+          id="promo-grid"
+          className="rounded-[30px] border border-[#f0dfd2] bg-[linear-gradient(180deg,#ffffff,#fff8f3)] p-5 shadow-[0_18px_44px_rgba(15,23,42,.06)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0b1220)]"
         >
-          Tout voir
-        </span>
-      </div>
-
-      {/* ── Product Grid ── */}
-      {loading ? (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10 }}>
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} style={{ background: "#F3F4F6", borderRadius: 14, height: 240, animation: "pulse 1.5s infinite" }} />
-          ))}
-        </div>
-      ) : displayed.length === 0 ? (
-        <div style={{ textAlign: "center", padding: "60px 20px" }}>
-          <div style={{ fontSize: 48 }}>🏷️</div>
-          <div style={{ fontSize: 18, fontWeight: 800, marginTop: 12, color: "#111827" }}>Aucune promo</div>
-          <div style={{ fontSize: 14, color: "#6B7280", marginTop: 6 }}>Revenez bientôt !</div>
-        </div>
-      ) : (
-        <PromoGrid products={displayed} onAddToCart={handleAddToCart} onClickProduct={(id) => navigate(`/product/${id}`)} getImage={getProductImage} />
-      )}
-    </div>
-  );
-}
-
-function PromoGrid({ products, onAddToCart, onClickProduct, getImage }: {
-  products: PromoProduct[];
-  onAddToCart: (e: React.MouseEvent, p: Product) => void;
-  onClickProduct: (id: number) => void;
-  getImage: (p: Product) => string | undefined;
-}) {
-  const normal = products.filter((p) => !p.isPremium);
-  const premium = products.filter((p) => p.isPremium);
-
-  const rows: React.ReactNode[] = [];
-  let ni = 0, pi = 0;
-  let type: "normal" | "premium" = "normal";
-
-  while (ni < normal.length || pi < premium.length) {
-    if (type === "normal" && ni < normal.length) {
-      const batch = normal.slice(ni, ni + 6);
-      rows.push(
-        <div key={`n-${ni}`} style={{ display: "contents" }}>
-          {batch.map((p, i) => <PromoCard key={p.id} product={p} idx={ni + i} onAddToCart={onAddToCart} onClickProduct={onClickProduct} getImage={getImage} />)}
-        </div>
-      );
-      ni += 6;
-      type = "premium";
-    } else if (type === "premium" && pi < premium.length) {
-      const batch = premium.slice(pi, pi + 5);
-      rows.push(
-        <div key={`p-${pi}`} style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
-          {batch.map((p, i) => <PromoCard key={p.id} product={p} idx={pi + i} isPremiumRow onAddToCart={onAddToCart} onClickProduct={onClickProduct} getImage={getImage} />)}
-        </div>
-      );
-      pi += 5;
-      type = "normal";
-    } else {
-      if (ni < normal.length) {
-        const batch = normal.slice(ni, ni + 6);
-        rows.push(
-          <div key={`nr-${ni}`} style={{ display: "contents" }}>
-            {batch.map((p, i) => <PromoCard key={p.id} product={p} idx={ni + i} onAddToCart={onAddToCart} onClickProduct={onClickProduct} getImage={getImage} />)}
+          <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-wrap gap-2">
+              {filterTabs.map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveCat(tab.key)}
+                  className={`rounded-full px-4 py-2 text-[12px] font-bold transition ${
+                    activeCat === tab.key
+                      ? "bg-[#f47920] text-white"
+                      : "border border-[#e5e7eb] bg-white text-[#374151] hover:bg-[#fff4eb] hover:text-[#c85e14] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <div className="text-[12px] font-semibold text-[#9ca3af] dark:text-gray-400">
+              {displayed.length} produits en promo
+            </div>
           </div>
-        );
-        ni += 6;
-      }
-      if (pi < premium.length) {
-        const batch = premium.slice(pi, pi + 5);
-        rows.push(
-          <div key={`pr-${pi}`} style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "repeat(5,1fr)", gap: 10 }}>
-            {batch.map((p, i) => <PromoCard key={p.id} product={p} idx={pi + i} isPremiumRow onAddToCart={onAddToCart} onClickProduct={onClickProduct} getImage={getImage} />)}
+
+          <div className="mb-4 flex items-center justify-between">
+            <div className="flex items-center gap-2 font-display text-[16px] font-extrabold text-[#111827] dark:text-white">
+              <div className="h-[18px] w-[3px] rounded-full bg-[#f47920]" />
+              Produits en promotion
+            </div>
+            <button
+              type="button"
+              onClick={() => setActiveCat("all")}
+              className="text-[12px] font-bold text-[#f47920]"
+            >
+              Tout voir
+            </button>
           </div>
-        );
-        pi += 5;
-      }
-    }
-  }
 
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(6,1fr)", gap: 10 }}>
-      {rows}
-    </div>
-  );
-}
-
-function PromoCard({ product: p, isPremiumRow = false, onAddToCart, onClickProduct, getImage }: {
-  product: PromoProduct;
-  idx: number;
-  isPremiumRow?: boolean;
-  onAddToCart: (e: React.MouseEvent, p: Product) => void;
-  onClickProduct: (id: number) => void;
-  getImage: (p: Product) => string | undefined;
-}) {
-  const [hovered, setHovered] = useState(false);
-  const img = getImage(p);
-  const saved = p.price_xaf - p.price_final;
-  const stars = Math.round(p.rating_average ?? 0);
-
-  return (
-    <div
-      onClick={() => onClickProduct(p.id)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: "#fff",
-        borderRadius: 14,
-        border: hovered ? "1px solid #F47920" : p.isPremium ? "1px solid rgba(244,121,32,.2)" : "1px solid #E5E7EB",
-        overflow: "hidden",
-        cursor: "pointer",
-        transition: "all .25s",
-        position: "relative",
-        boxShadow: hovered
-          ? "0 8px 28px rgba(244,121,32,.15),0 2px 6px rgba(0,0,0,.05)"
-          : p.isPremium
-          ? "0 2px 10px rgba(244,121,32,.08)"
-          : "0 1px 6px rgba(0,0,0,.05)",
-        transform: hovered ? "translateY(-5px)" : "none",
-      }}
-    >
-      {/* Image */}
-      <div style={{ height: isPremiumRow ? 150 : 130, position: "relative", overflow: "hidden", background: "#F9FAFB", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        {img ? (
-          <img src={img} alt={p.title} style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }} />
-        ) : (
-          <span style={{ fontSize: 42 }}>🛍️</span>
-        )}
-        <span style={{
-          position: "absolute", top: 8, right: 8,
-          background: "linear-gradient(135deg,#EF4444,#B91C1C)",
-          color: "#fff", fontSize: 10, fontWeight: 800,
-          padding: "4px 8px", borderRadius: 999,
-        }}>
-          -{p.discount}%
-        </span>
-        {p.isPremium && (
-          <span style={{ position: "absolute", top: 8, left: 8, background: "#F47920", color: "#fff", fontSize: 8.5, fontWeight: 800, padding: "2px 7px", borderRadius: 999 }}>
-            ⭐ TOP
-          </span>
-        )}
-      </div>
-
-      {/* Body */}
-      <div style={{ padding: isPremiumRow ? "10px 12px 12px" : "9px 10px 10px" }}>
-        <div style={{ fontSize: 9.5, fontWeight: 700, color: "#F47920", marginBottom: 2, display: "flex", alignItems: "center", gap: 3 }}>
-          <span style={{ color: "#16A34A", fontWeight: 700 }}>✓</span>
-          {p.category?.name ?? "Produit"}
-        </div>
-        <div style={{ fontSize: isPremiumRow ? 12.5 : 11.5, fontWeight: 700, lineHeight: 1.35, marginBottom: 4, overflow: "hidden", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical" } as React.CSSProperties}>
-          {p.title}
-        </div>
-        <div style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 6 }}>
-          <span style={{ fontSize: isPremiumRow ? 15 : 13, fontWeight: 800, color: "#F47920" }}>{fmt(p.price_final)}</span>
-          {p.price_xaf !== p.price_final && (
-            <span style={{ fontSize: 10, color: "#9CA3AF", textDecoration: "line-through" }}>{fmt(p.price_xaf)}</span>
+          {loading ? (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {Array.from({ length: 8 }).map((_, index) => (
+                <div key={index} className="h-[360px] animate-pulse rounded-[26px] bg-[#f3f4f6] dark:bg-gray-800" />
+              ))}
+            </div>
+          ) : displayed.length === 0 ? (
+            <div className="mt-6 rounded-[24px] border border-dashed border-[#e5e7eb] bg-[#f9fafb] px-6 py-14 text-center dark:border-gray-700 dark:bg-gray-900/60">
+              <ShoppingBag size={40} className="mx-auto text-[#f47920]" />
+              <div className="mt-4 text-[20px] font-extrabold text-[#111827] dark:text-white">Aucune promotion active</div>
+              <p className="mt-2 text-[13px] text-[#6b7280] dark:text-gray-400">
+                Reviens bientôt, ou change de catégorie pour voir d’autres offres.
+              </p>
+            </div>
+          ) : (
+            <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {displayed.map((product) => (
+                <PromoProductCard
+                  key={product.id}
+                  product={product}
+                  onAddToCart={handleAddToCart}
+                  onOpen={() => openProduct(product)}
+                />
+              ))}
+            </div>
           )}
-        </div>
-        {saved > 0 && (
-          <div style={{ fontSize: 9.5, color: "#15803D", fontWeight: 700, background: "#DCFCE7", padding: "1px 5px", borderRadius: 4, display: "inline-block", marginBottom: 4 }}>
-            -{fmt(saved)}
-          </div>
-        )}
-        <div style={{ display: "flex", alignItems: "center", gap: 4, margin: "4px 0 6px" }}>
-          <span style={{ fontSize: 11, color: "#FBBF24" }}>{"★".repeat(stars)}{"☆".repeat(5 - stars)}</span>
-          <span style={{ fontSize: 9, color: "#9CA3AF" }}>({p.reviews_count ?? 0})</span>
-          <span style={{ marginLeft: "auto", fontSize: 9, color: "#16A34A" }}>🚚 Livraison rapide</span>
-        </div>
-        <button
-          onClick={(e) => onAddToCart(e, p)}
-          style={{ width: "100%", padding: 6, background: "#F47920", color: "#fff", border: "none", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "background .14s" }}
-          onMouseEnter={(e) => (e.currentTarget.style.background = "#E65A0D")}
-          onMouseLeave={(e) => (e.currentTarget.style.background = "#F47920")}
-        >
-          🛒 Ajouter
-        </button>
+        </section>
       </div>
     </div>
+  );
+}
+
+function PromoProductCard({
+  product,
+  onAddToCart,
+  onOpen,
+}: {
+  product: PromoProduct;
+  onAddToCart: (event: React.MouseEvent, product: Product) => void;
+  onOpen: () => void;
+}) {
+  const image = getProductImage(product);
+  const stars = Math.round(product.rating_average ?? 0);
+
+  return (
+    <article
+      role="button"
+      tabIndex={0}
+      onClick={onOpen}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          onOpen();
+        }
+      }}
+      className="group overflow-hidden rounded-[26px] border border-[#f0dfd2] bg-white shadow-[0_14px_32px_rgba(15,23,42,.05)] transition hover:translate-y-[-3px] hover:border-[#f47920] dark:border-gray-800 dark:bg-gray-900"
+    >
+      <div className="relative h-[220px] overflow-hidden bg-[linear-gradient(135deg,#fff7f0,#f9fafb)] dark:bg-[linear-gradient(135deg,#1f2937,#111827)]">
+        {image ? (
+          <img
+            src={image}
+            alt={product.title}
+            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-[48px]">🛍️</div>
+        )}
+        <div className="absolute left-3 top-3 rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold text-[#c85e14] dark:bg-gray-900/85 dark:text-primary">
+          {product.category?.name ?? "Produit"}
+        </div>
+        <div className="absolute right-3 top-3 rounded-full bg-[#ef4444] px-3 py-1 text-[10px] font-extrabold text-white">
+          -{product.discount}%
+        </div>
+      </div>
+
+      <div className="p-4">
+        <div className="mb-1 inline-flex items-center gap-2 text-[10px] font-bold text-[#f47920] dark:text-primary">
+          <ShieldCheck size={12} />
+          {product.category?.name ?? "Produit"}
+        </div>
+        <h3 className="line-clamp-2 min-h-[44px] text-[15px] font-extrabold leading-6 text-[#111827] dark:text-white">
+          {product.title}
+        </h3>
+        <div className="mt-3 flex items-end gap-2">
+          <span className="text-[20px] font-black text-[#f47920]">{fmt(product.price_final)}</span>
+          <span className="pb-1 text-[11px] font-semibold text-[#9ca3af] line-through">{fmt(product.price_xaf)}</span>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-[11px]">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2.5 py-1 font-bold text-[#166534] dark:bg-emerald-900/30 dark:text-emerald-300">
+            <Percent size={12} />
+            {product.discount}% off
+          </span>
+          <span className="inline-flex items-center gap-1 text-[#6b7280] dark:text-gray-400">
+            <Truck size={12} className="text-[#16a34a]" />
+            24-72h
+          </span>
+        </div>
+        <div className="mt-3 flex items-center gap-2 text-[11px] text-[#6b7280] dark:text-gray-400">
+          <span className="text-[#fbbf24]">{`${"★".repeat(stars)}${"☆".repeat(5 - stars)}`}</span>
+          <span>({product.reviews_count ?? 0})</span>
+        </div>
+        <div className="mt-4 flex gap-2">
+          <button
+            type="button"
+            onClick={(event) => onAddToCart(event, product)}
+            className="flex-1 rounded-full bg-[#f47920] px-4 py-2.5 text-[12px] font-extrabold text-white transition hover:bg-[#c85e14]"
+          >
+            Ajouter
+          </button>
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onOpen();
+            }}
+            className="rounded-full border border-[#f0dfd2] px-3 py-2.5 text-[#111827] transition hover:border-[#f47920] hover:text-[#c85e14] dark:border-gray-700 dark:text-white"
+          >
+            <ArrowRight size={15} />
+          </button>
+        </div>
+      </div>
+    </article>
   );
 }

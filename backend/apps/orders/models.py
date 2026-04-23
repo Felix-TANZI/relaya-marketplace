@@ -44,6 +44,10 @@ class Order(TimeStampedModel):
         FAILED   = "FAILED",   "Échec du paiement"
         REFUNDED = "REFUNDED", "Remboursé"
 
+    class DeliveryMethod(models.TextChoices):
+        DELIVERY = "DELIVERY", "Livraison"
+        PICKUP   = "PICKUP",   "Retrait en boutique"
+
     # ── Statuts fulfillment (cycle complet) ───────────────────────────────────
     class FulfillmentStatus(models.TextChoices):
         # Avant paiement
@@ -89,6 +93,12 @@ class Order(TimeStampedModel):
     customer_phone = models.CharField(max_length=20)
 
     # Livraison
+    delivery_method = models.CharField(
+        max_length=20,
+        choices=DeliveryMethod.choices,
+        default=DeliveryMethod.DELIVERY,
+        verbose_name="Mode de livraison",
+    )
     city    = models.CharField(max_length=50)
     address = models.CharField(max_length=255)
     note    = models.TextField(blank=True, null=True)

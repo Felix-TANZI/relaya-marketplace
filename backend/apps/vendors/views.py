@@ -4419,3 +4419,19 @@ def public_shop(request, slug):
         'locations':  locations_data,
         'products':   ProductSerializer(products[:20], many=True, context={'request': request}).data,
     })    
+
+
+@extend_schema(tags=["Vendors"], summary="Update vendor settings")
+@api_view(['PATCH'])
+@permission_classes([IsAuthenticated])
+def vendor_update_settings(request):
+    try:
+        profile = VendorProfile.objects.get(user=request.user)
+        ALLOWED = ['default_withdrawal_operator', 'default_withdrawal_phone']
+        for field in ALLOWED:
+            if field in request.data:
+                setattr(profile, field, request.data[field])
+        profile.save()
+        return Response(VendorProfileSerializer(profile, context={'request': request}).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=404)

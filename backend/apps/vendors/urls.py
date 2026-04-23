@@ -123,6 +123,9 @@ urlpatterns = [
     path('shop/photo/',           views.vendor_upload_shop_photo,   name='vendor-shop-photo'),
     path('shop/banner/',          views.vendor_upload_shop_banner,  name='vendor-shop-banner'),
     path('shop/qr/',              views.vendor_shop_qr,             name='vendor-shop-qr'),
+    
+    # PARAMÈTRES
+    path('settings/',             views.vendor_update_settings,    name='vendor-settings'),
 
     # CERTIFICATIONS
     path('certifications/',       views.vendor_certifications,      name='vendor-certifications'),

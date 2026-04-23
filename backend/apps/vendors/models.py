@@ -84,6 +84,16 @@ class VendorProfile(models.Model):
     banner_image      = models.ImageField(upload_to='vendors/banners/%Y/%m/', null=True, blank=True)
     profile_photo     = models.ImageField(upload_to='vendors/photos/%Y/%m/', null=True, blank=True)
     whatsapp_phone    = models.CharField(max_length=20, blank=True)
+    default_withdrawal_operator = models.CharField(
+        max_length=20,
+        choices=[('MTN_MOMO', 'MTN MoMo'), ('ORANGE_MONEY', 'Orange Money')],
+        blank=True,
+        verbose_name="Opérateur Mobile Money préférentiel",
+    )
+    default_withdrawal_phone = models.CharField(
+        max_length=20, blank=True,
+        verbose_name="Numéro Mobile Money préférentiel",
+    )        
     is_online         = models.BooleanField(default=True)
 
     # ── Certification (cache recalculé dynamiquement) ────────────────────────

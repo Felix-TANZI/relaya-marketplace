@@ -1549,166 +1549,215 @@ body{text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-o
   .lcard,.lsc,.lgoal,.lchart{box-shadow:none!important;border:1px solid #ddd!important;page-break-inside:avoid}
 }
 
-/* ══════════════════════════════════════════════════════════════════════════
-   VENDOR-STYLE RESKIN (BelivaY Espace Vendeur parité visuelle)
-   — Garde la structure / layout d'origine du livreur
-   — Remappe uniquement les tokens couleur/surface
-     • Vert #10B981 → Orange #F47920 (primaire marketplace)
-     • Fond GitHub dark → Fond crème #F5F0E8 (vendeur light)
-     • Sidebar GitHub → Brun foncé #1C1209 (vendeur)
-     • Texte → Brun profond #1A1209 + Brun muted #7C6E5A
-   ══════════════════════════════════════════════════════════════════════════ */
+/* ════════════════════════════════════════════════════════════════════════════
+   BELIVAY LIVREUR — PREMIUM PASS v2
+   Passe visuel "courier-pro" inspiré d'Uber Driver :
+     • Vert BelivaY conservé mais affiné en vert premium profond (#00A86B)
+     • Fond clair neutre (#F6F6F6), cartes blanches, bordures 1px discrètes
+     • Sidebar noire quasi pure avec indicateur actif vert
+     • Typographie système plus nette (Inter/SF), titres serrés
+     • Topbar noir minimaliste avec chip de statut vert (remplace le gradient vert criard)
+     • Ombres quasi absentes, radius 12px, densité info Uber-like
+   ════════════════════════════════════════════════════════════════════════════ */
 
-/* 1) Remap des tokens "vert livreur" → palette orange vendeur ───────────── */
+/* 1) Tokens de marque — vert premium + typo système ─────────────────────── */
 :root{
-  --bv-grn:    #F47920;
-  --bv-grn-dk: #C85E14;
-  --bv-grn-md: #E56C16;
-  --bv-grn-lt: #FFC896;
-  --font:    'Plus Jakarta Sans','Poppins',sans-serif;
-  --display: 'Syne','Poppins',sans-serif;
+  --bv-grn:    #00A86B;
+  --bv-grn-dk: #006341;
+  --bv-grn-md: #018A55;
+  --bv-grn-lt: #5EE0AA;
+  --font:    'Inter','SF Pro Text','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --display: 'Inter','SF Pro Display','Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,system-ui,sans-serif;
+  --topbar-h: 64px;
+  --sidebar-w: 248px;
 }
 
-/* 2) Thème clair — palette crème vendeur ────────────────────────────────── */
+/* 2) Thème clair — palette neutre Uber ──────────────────────────────────── */
 [data-theme="light"]{
-  --bg-primary:       #F5F0E8;
-  --bg-secondary:     #EDE7DC;
+  --bg-primary:       #F6F6F6;
+  --bg-secondary:     #EEEEEE;
   --bg-card:          #FFFFFF;
   --bg-card-elevated: #FFFFFF;
-  --bg-card-inner:    #FAF6EF;
-  --bg-surface-input: #F5F0E8;
-  --bg-surface-hover: #EDE7DC;
-  --bg-surface-active:#E8E2D9;
+  --bg-card-inner:    #FAFAFA;
+  --bg-surface-input: #FFFFFF;
+  --bg-surface-hover: #F0F0F0;
+  --bg-surface-active:#E4E4E4;
   --bg-modal:         #FFFFFF;
-  --bg-modal-head:    #FAF6EF;
-  --bg-sidebar:       #1C1209;
-  --bg-overlay:       rgba(28,18,9,.55);
-  --border-default:   #E8E2D9;
-  --border-strong:    #D8CFBF;
-  --border-muted:     #F0E9DD;
-  --text-primary:     #1A1209;
-  --text-secondary:   #7C6E5A;
-  --text-muted:       #B8A898;
-  --icon-primary:     #3A2817;
-  --icon-muted:       #B8A898;
-  --badge-grn-bg:     rgba(244,121,32,.10);
-  --badge-grn-text:   #B8540E;
-  --badge-grn-border: rgba(244,121,32,.28);
-  --alert-ok-bg:      #FFF3E8;
-  --alert-ok-border:  #FFD4A6;
-  --alert-ok-text:    #9A4800;
-  --coach-grn-bg:     #FFF3E8;
-  --coach-grn-border: #FFD4A6;
-  --chat-bubble-me:   linear-gradient(135deg,#F47920,#C85E14);
-  --tab-active-bg:    rgba(244,121,32,.12);
-  --tab-active-text:  #B8540E;
+  --bg-modal-head:    #FFFFFF;
+  --bg-sidebar:       #0B0B0B;
+  --bg-overlay:       rgba(0,0,0,.55);
+  --border-default:   #EDEDED;
+  --border-strong:    #D4D4D4;
+  --border-muted:     #F5F5F5;
+  --text-primary:     #0B0B0B;
+  --text-secondary:   #545454;
+  --text-muted:       #9A9A9A;
+  --icon-primary:     #0B0B0B;
+  --icon-muted:       #9A9A9A;
+  --badge-grn-bg:     rgba(0,168,107,.08);
+  --badge-grn-text:   #006341;
+  --badge-grn-border: rgba(0,168,107,.22);
+  --alert-ok-bg:      rgba(0,168,107,.06);
+  --alert-ok-border:  rgba(0,168,107,.18);
+  --alert-ok-text:    #006341;
+  --coach-grn-bg:     rgba(0,168,107,.04);
+  --coach-grn-border: rgba(0,168,107,.12);
+  --chat-bubble-me:   linear-gradient(135deg,#00A86B,#006341);
+  --tab-active-bg:    rgba(0,168,107,.10);
+  --tab-active-text:  #006341;
   --tab-active-border:var(--bv-grn);
-  --proof-bg:         #FAF6EF;
-  --proof-border:     #E8E2D9;
+  --proof-bg:         #FAFAFA;
+  --proof-border:     #EDEDED;
   --mnav-bg:          #FFFFFF;
-  --mnav-border:      #E8E2D9;
+  --mnav-border:      #EDEDED;
+  --skeleton: linear-gradient(90deg,#F0F0F0 0%,#F6F6F6 50%,#F0F0F0 100%);
 }
 
-/* 3) Sidebar brun foncé + texte crème ───────────────────────────────────── */
-[data-theme="light"] #lSide{color:#FAF6EF;border-right:1px solid rgba(255,255,255,.06)}
-[data-theme="light"] .lsi{color:#9E8A70}
-[data-theme="light"] .lsi:hover{background:rgba(244,121,32,.10);color:#FFF}
-[data-theme="light"] .lsi.on{background:rgba(244,121,32,.22);color:#FFF;border-left-color:var(--bv-grn);font-weight:800}
-[data-theme="light"] .lsb-av{background:linear-gradient(135deg,#F47920,#C85E14);border-color:rgba(244,121,32,.45)}
-[data-theme="light"] .lsb-name{color:#FFF}
-[data-theme="light"] .lsb-sub{color:#FFC896}
+/* 3) Base — typographie plus nette ──────────────────────────────────────── */
+body{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;letter-spacing:-.005em}
+[data-theme="light"] body{background:#F6F6F6;color:#0B0B0B}
 
-/* 4) Topbar : gradient orange (remplace le vert) ────────────────────────── */
-#lTop.available{background:linear-gradient(135deg,#C85E14 0%,#F47920 55%,#FF9D4D 100%)!important;box-shadow:0 2px 22px rgba(244,121,32,.25)!important}
-#lTop.busy    {background:linear-gradient(135deg,#2D1A00,#6B3B00 60%,#A8571A)!important}
-#lTop.pause   {background:linear-gradient(135deg,#1C1400,#3D2D00 60%,#5C4400)!important}
-#lTop.offline {background:linear-gradient(135deg,#1C1209,#2A1F12)!important}
-.ltb-dot.available{background:#FFE0C2;box-shadow:0 0 0 3px rgba(255,224,194,.28)}
-.ltb-lang,.ltb-status-btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22)}
-.ltb-lang:hover,.ltb-status-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.38)}
-.ltb-ico{background:rgba(255,255,255,.14)}
-.ltb-ico:hover{background:rgba(255,255,255,.22)}
+/* 4) Topbar — noir minimaliste, chip statut vert ────────────────────────── */
+#lTop{height:var(--topbar-h)!important;padding:0 20px!important;box-shadow:0 1px 0 rgba(0,0,0,.06)!important}
+#lTop.available{background:#0B0B0B!important}
+#lTop.busy     {background:#1A1A1A!important}
+#lTop.pause    {background:#2A2A2A!important}
+#lTop.offline  {background:#3A3A3A!important}
+.ltb-title{font-weight:700!important;letter-spacing:-.01em}
+.ltb-dot{width:8px!important;height:8px!important}
+.ltb-dot.available{background:#00E08A!important;box-shadow:0 0 0 3px rgba(0,224,138,.22)!important;animation:none!important}
+.ltb-dot.busy{background:#F5A623!important;box-shadow:0 0 0 3px rgba(245,166,35,.22)!important;animation:none!important}
+.ltb-dot.pause{background:#FF9500!important}
+.ltb-lang,.ltb-status-btn{background:rgba(255,255,255,.10)!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:999px!important;padding:6px 12px!important}
+.ltb-lang:hover,.ltb-status-btn:hover{background:rgba(255,255,255,.18)!important;border-color:rgba(255,255,255,.28)!important;transform:none!important}
+.ltb-ico{width:38px!important;height:38px!important;background:rgba(255,255,255,.10)!important;border-radius:10px!important}
+.ltb-ico:hover{background:rgba(255,255,255,.18)!important}
 
-/* 5) Cartes chaudes, radius 16, ombres douces ───────────────────────────── */
+/* 5) Sidebar noire — indicateur actif vert Uber ─────────────────────────── */
+[data-theme="light"] #lSide{background:#0B0B0B!important;border:none!important;color:#F5F5F5}
+[data-theme="light"] #lSide *{color:inherit}
+[data-theme="light"] .lsi{padding:11px 22px!important;font-size:13px!important;font-weight:500!important;color:#A0A0A0!important;border-left:3px solid transparent!important;letter-spacing:-.005em}
+[data-theme="light"] .lsi:hover{background:rgba(255,255,255,.06)!important;color:#FFFFFF!important}
+[data-theme="light"] .lsi.on{background:rgba(0,168,107,.12)!important;color:#5EE0AA!important;border-left-color:#00A86B!important;font-weight:700!important}
+[data-theme="light"] .lsi-ico{filter:grayscale(.2);opacity:.9}
+[data-theme="light"] .lsi.on .lsi-ico{filter:none;opacity:1}
+[data-theme="light"] .lsi-badge.red{background:#E11D48!important}
+[data-theme="light"] .lsi-badge.or{background:#F59E0B!important}
+[data-theme="light"] .lsb-av{width:44px!important;height:44px!important;background:linear-gradient(135deg,#00A86B,#006341)!important;border:2px solid rgba(0,168,107,.45)!important}
+[data-theme="light"] .lsb-name{color:#FFFFFF!important;font-weight:700!important;letter-spacing:-.01em}
+[data-theme="light"] .lsb-sub{color:#5EE0AA!important;font-weight:600}
+
+/* 6) Cartes — blanches, radius 12, bordure 1px, ombre minimale ──────────── */
 [data-theme="light"] .lcard,
 [data-theme="light"] .lsc,
 [data-theme="light"] .lgoal,
 [data-theme="light"] .lchart,
-[data-theme="light"] .lcourse{
-  background:#FFFFFF!important;border:1px solid #E8E2D9!important;border-radius:16px!important;
-  box-shadow:0 1px 3px rgba(26,18,9,.04),0 4px 16px rgba(26,18,9,.03)!important
+[data-theme="light"] .lcourse,
+[data-theme="light"] .lsg,
+[data-theme="light"] .lweather{
+  background:#FFFFFF!important;
+  border:1px solid #EDEDED!important;
+  border-radius:12px!important;
+  box-shadow:0 1px 2px rgba(0,0,0,.04)!important;
+  backdrop-filter:none!important;-webkit-backdrop-filter:none!important;
 }
-[data-theme="light"] .lsg{background:#FFFFFF!important;border:1px solid #E8E2D9!important;border-radius:14px!important}
+[data-theme="light"] .lcard:hover,
+[data-theme="light"] .lsg:hover{border-color:#D4D4D4!important;box-shadow:0 4px 14px rgba(0,0,0,.06)!important}
 
-/* 6) Boutons "btn-grn" + CTAs vert → orange ─────────────────────────────── */
-.btn-grn,.btn-primary{background:linear-gradient(135deg,#F47920,#C85E14)!important;color:#fff!important;box-shadow:0 3px 10px rgba(244,121,32,.3)!important}
-.btn-grn:hover,.btn-primary:hover{background:linear-gradient(135deg,#E56C16,#A8510E)!important}
-[data-theme="light"] .btn-ghost{background:#FAF6EF;color:#7C6E5A;border:1px solid #E8E2D9}
-[data-theme="light"] .btn-ghost:hover{background:#EDE7DC;color:#1A1209}
+/* 7) Typographie — bold Uber-style ──────────────────────────────────────── */
+[data-theme="light"] .lph-l h1{font-family:var(--display)!important;font-size:26px!important;font-weight:800!important;letter-spacing:-.022em!important;color:#0B0B0B!important}
+[data-theme="light"] .lph-l p{color:#545454!important;font-size:13.5px;font-weight:500}
+[data-theme="light"] .lcard-ttl{font-family:var(--display)!important;font-size:15px!important;font-weight:700!important;letter-spacing:-.01em!important;color:#0B0B0B!important}
+[data-theme="light"] .lsg-n{font-family:var(--display)!important;font-weight:800!important;letter-spacing:-.02em!important;color:#0B0B0B!important}
+[data-theme="light"] .lsg-lb{color:#9A9A9A!important;font-size:11px!important;font-weight:600!important;text-transform:uppercase;letter-spacing:.04em!important}
+[data-theme="light"] .lchart-ttl{font-family:var(--display)!important;font-weight:700!important;color:#0B0B0B!important}
 
-/* 7) Barres de progression + jauges ─────────────────────────────────────── */
-.lgoal-fill,.lcert-fill,.lperiod-btn.on,.ltl-dot.done,.lc-earn{color-scheme:normal}
-.lgoal-fill{background:linear-gradient(90deg,#F47920,#FF9D4D)!important}
-.lcert-fill{background:linear-gradient(90deg,#F47920,#FFA040)!important}
-.ltl-dot.done{background:#F47920!important;color:#fff}
-.lc-earn{color:#C85E14!important}
+/* 8) Boutons — solides, flat, vert premium ──────────────────────────────── */
+.btn-grn{background:#00A86B!important;color:#FFFFFF!important;font-weight:600!important;border-radius:10px!important;box-shadow:none!important;padding:10px 18px!important;font-size:13.5px!important;letter-spacing:-.005em}
+.btn-grn:hover{background:#006341!important;transform:none!important}
+[data-theme="light"] .btn-ghost{background:#F6F6F6!important;color:#0B0B0B!important;border:1px solid #EDEDED!important;font-weight:600!important;border-radius:10px!important}
+[data-theme="light"] .btn-ghost:hover{background:#EDEDED!important;border-color:#D4D4D4!important}
+.btn-or{background:#0B0B0B!important;color:#FFFFFF!important;border-radius:10px!important}
+.btn-or:hover{background:#1A1A1A!important}
 
-/* 8) Courses "available" / "active" en crème clair ──────────────────────── */
-[data-theme="light"] .lcourse.avail{background:linear-gradient(135deg,#fff,#FFF7EF)!important}
-[data-theme="light"] .lcourse.active{background:linear-gradient(135deg,#fff,#FFF3E8)!important;border-left:3px solid #F47920!important}
-[data-theme="light"] .lcbanner{background:linear-gradient(135deg,#FFF7EF,#FFE9D3)!important;border-color:#FFD4A6!important}
-[data-theme="light"] .lcbanner *{color:#9A4800!important}
-[data-theme="light"] .lcbanner.urgent{background:linear-gradient(135deg,#FEF2F2,#FEE2E2)!important;border-color:#FECACA!important}
+/* 9) Progress / jauges / timeline — vert plat ───────────────────────────── */
+.lgoal-fill{background:#00A86B!important;border-radius:4px}
+.lcert-fill{background:#00A86B!important;border-radius:4px}
+.ltl-dot.done{background:#00A86B!important;color:#fff}
+[data-theme="light"] .ltl-label{font-weight:600;color:#0B0B0B!important}
+.lc-earn{color:#006341!important;font-weight:800}
+[data-theme="light"] .lperiod-btn.on{border-color:#00A86B!important;background:rgba(0,168,107,.08)!important;color:#006341!important}
+
+/* 10) Courses — cartes épurées, bord gauche vert sur "active" ───────────── */
+[data-theme="light"] .lcourse.avail{background:#FFFFFF!important;border:1px solid #EDEDED!important}
+[data-theme="light"] .lcourse.active{background:#FFFFFF!important;border:1px solid #EDEDED!important;border-left:3px solid #00A86B!important}
+[data-theme="light"] .lcbanner{background:#F0FDF6!important;border:1px solid #BBF7D0!important;border-radius:12px!important}
+[data-theme="light"] .lcbanner *{color:#006341!important}
+[data-theme="light"] .lcbanner.urgent{background:#FEF2F2!important;border-color:#FECACA!important}
 [data-theme="light"] .lcbanner.urgent *{color:#991B1B!important}
+[data-theme="light"] .lweather{background:#FFFFFF!important;border:1px solid #EDEDED!important}
+[data-theme="light"] .lweather *{color:#0B0B0B!important}
 
-/* 9) Pilules / badges verts → orange (garder sémantique) ────────────────── */
-.badge.lb-grn,.lb-grn{background:var(--badge-grn-bg)!important;color:var(--badge-grn-text)!important;border-color:var(--badge-grn-border)!important}
+/* 11) Badges & pastilles — style chip discret ───────────────────────────── */
+.badge,.lb-grn,.lb-or,.lb-red,.lb-blue,.lb-gold{border-radius:999px!important;padding:3px 9px!important;font-size:11px!important;font-weight:700!important;letter-spacing:-.005em}
+.badge.lb-grn,.lb-grn{background:rgba(0,168,107,.10)!important;color:#006341!important;border:1px solid rgba(0,168,107,.2)!important}
 
-/* 10) Bottom-nav mobile : fond blanc, tab actif orange ─────────────────── */
-[data-theme="light"] #lMnav{background:#FFFFFF!important;border-top:1px solid #E8E2D9!important;box-shadow:0 -4px 20px rgba(26,18,9,.05)!important}
-[data-theme="light"] .lmn{color:#B8A898!important}
-[data-theme="light"] .lmn.on{color:#F47920!important}
-.lmn.on .lmn-ico{color:#F47920!important}
-.lmn-badge{background:#F47920!important}
+/* 12) Bottom-nav mobile — pur blanc, tab actif vert ─────────────────────── */
+[data-theme="light"] #lMnav{background:#FFFFFF!important;border-top:1px solid #EDEDED!important;box-shadow:0 -4px 14px rgba(0,0,0,.04)!important}
+[data-theme="light"] .lmn{color:#9A9A9A!important;font-weight:600}
+[data-theme="light"] .lmn.on{color:#00A86B!important}
+[data-theme="light"] .lmn.on .lmn-ico{transform:scale(1.08);color:#00A86B!important}
+[data-theme="light"] .lmn-lbl{font-size:10.5px;letter-spacing:-.005em}
+.lmn-badge{background:#E11D48!important}
 
-/* 11) Scrollbar en teinte vendeur ───────────────────────────────────────── */
-[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(244,121,32,.18)!important}
-[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:rgba(244,121,32,.32)!important}
+/* 13) Scrollbar discrète ────────────────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:#D4D4D4!important;border-radius:999px}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:#A0A0A0!important}
 
-/* 12) Titres & métriques : ton brun chaud ──────────────────────────────── */
-[data-theme="light"] .lph-l h1,
-[data-theme="light"] .lcard-ttl,
-[data-theme="light"] .lsg-n,
-[data-theme="light"] .lchart-ttl{color:#1A1209!important}
-[data-theme="light"] .lph-l p,[data-theme="light"] .lsg-lb{color:#7C6E5A!important}
-[data-theme="light"] .clr-grn{color:#C85E14!important}
+/* 14) Alertes & banners OK/INFO (fond vert pâle, sobre) ─────────────────── */
+[data-theme="light"] [class*="alert-ok"],
+[data-theme="light"] .lalert.ok{background:#F0FDF6!important;border:1px solid #BBF7D0!important;color:#006341!important;border-radius:10px!important}
 
-/* 13) Mode sombre optionnel (brun/orange) ─────────────────────────────── */
+/* 15) Thème sombre — Uber Driver after-dark (noir profond + vert) ───────── */
 [data-theme="dark"]{
-  --bg-primary:       #1A1209;
-  --bg-secondary:     #14100A;
-  --bg-card:          #2A1E12;
-  --bg-card-elevated: #332518;
-  --bg-card-inner:    #3D2E20;
-  --bg-surface-input: #3D2E20;
-  --bg-surface-hover: #45342A;
-  --bg-surface-active:#55413A;
-  --bg-modal:         #2A1E12;
-  --bg-modal-head:    #1A1209;
-  --bg-sidebar:       #0F0805;
-  --border-default:   #3D2E20;
-  --border-strong:    #4D3B27;
+  --bg-primary:       #0B0B0B;
+  --bg-secondary:     #141414;
+  --bg-card:          #161616;
+  --bg-card-elevated: #1C1C1C;
+  --bg-card-inner:    #1F1F1F;
+  --bg-surface-input: #1C1C1C;
+  --bg-surface-hover: #232323;
+  --bg-surface-active:#2A2A2A;
+  --bg-modal:         #161616;
+  --bg-modal-head:    #0B0B0B;
+  --bg-sidebar:       #050505;
+  --border-default:   #262626;
+  --border-strong:    #333333;
   --border-muted:     rgba(255,255,255,.04);
-  --text-primary:     #FAF6EF;
-  --text-secondary:   #D4C4AE;
-  --text-muted:       #8A7B65;
-  --badge-grn-bg:     rgba(244,121,32,.14);
-  --badge-grn-text:   #FF9D4D;
-  --badge-grn-border: rgba(244,121,32,.28);
-  --tab-active-bg:    rgba(244,121,32,.16);
-  --tab-active-text:  #FF9D4D;
+  --text-primary:     #F5F5F5;
+  --text-secondary:   #A0A0A0;
+  --text-muted:       #6B6B6B;
+  --badge-grn-bg:     rgba(0,168,107,.14);
+  --badge-grn-text:   #5EE0AA;
+  --badge-grn-border: rgba(0,168,107,.28);
+  --tab-active-bg:    rgba(0,168,107,.14);
+  --tab-active-text:  #5EE0AA;
   --tab-active-border:var(--bv-grn);
+  --chart-grid:       rgba(255,255,255,.04);
+  --chart-lbl:        #6B6B6B;
+  --skeleton: linear-gradient(90deg,#1C1C1C 0%,#232323 50%,#1C1C1C 100%);
 }
+[data-theme="dark"] .lcard,
+[data-theme="dark"] .lsc,
+[data-theme="dark"] .lgoal,
+[data-theme="dark"] .lchart,
+[data-theme="dark"] .lcourse,
+[data-theme="dark"] .lsg{background:#161616!important;border:1px solid #262626!important;border-radius:12px!important;box-shadow:none!important;backdrop-filter:none!important}
+[data-theme="dark"] #lTop.available{background:#050505!important;border-bottom:1px solid #1A1A1A!important}
+[data-theme="dark"] .lph-l h1,
+[data-theme="dark"] .lcard-ttl,
+[data-theme="dark"] .lsg-n,
+[data-theme="dark"] .lchart-ttl{color:#F5F5F5!important}
 
 </style>
 </head>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" data-theme="dark" style="color-scheme:dark">
+<html lang="fr" data-theme="light" style="color-scheme:light">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -1549,6 +1549,166 @@ body{text-rendering:optimizeLegibility;-webkit-font-smoothing:antialiased;-moz-o
   .lcard,.lsc,.lgoal,.lchart{box-shadow:none!important;border:1px solid #ddd!important;page-break-inside:avoid}
 }
 
+/* ══════════════════════════════════════════════════════════════════════════
+   VENDOR-STYLE RESKIN (BelivaY Espace Vendeur parité visuelle)
+   — Garde la structure / layout d'origine du livreur
+   — Remappe uniquement les tokens couleur/surface
+     • Vert #10B981 → Orange #F47920 (primaire marketplace)
+     • Fond GitHub dark → Fond crème #F5F0E8 (vendeur light)
+     • Sidebar GitHub → Brun foncé #1C1209 (vendeur)
+     • Texte → Brun profond #1A1209 + Brun muted #7C6E5A
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* 1) Remap des tokens "vert livreur" → palette orange vendeur ───────────── */
+:root{
+  --bv-grn:    #F47920;
+  --bv-grn-dk: #C85E14;
+  --bv-grn-md: #E56C16;
+  --bv-grn-lt: #FFC896;
+  --font:    'Plus Jakarta Sans','Poppins',sans-serif;
+  --display: 'Syne','Poppins',sans-serif;
+}
+
+/* 2) Thème clair — palette crème vendeur ────────────────────────────────── */
+[data-theme="light"]{
+  --bg-primary:       #F5F0E8;
+  --bg-secondary:     #EDE7DC;
+  --bg-card:          #FFFFFF;
+  --bg-card-elevated: #FFFFFF;
+  --bg-card-inner:    #FAF6EF;
+  --bg-surface-input: #F5F0E8;
+  --bg-surface-hover: #EDE7DC;
+  --bg-surface-active:#E8E2D9;
+  --bg-modal:         #FFFFFF;
+  --bg-modal-head:    #FAF6EF;
+  --bg-sidebar:       #1C1209;
+  --bg-overlay:       rgba(28,18,9,.55);
+  --border-default:   #E8E2D9;
+  --border-strong:    #D8CFBF;
+  --border-muted:     #F0E9DD;
+  --text-primary:     #1A1209;
+  --text-secondary:   #7C6E5A;
+  --text-muted:       #B8A898;
+  --icon-primary:     #3A2817;
+  --icon-muted:       #B8A898;
+  --badge-grn-bg:     rgba(244,121,32,.10);
+  --badge-grn-text:   #B8540E;
+  --badge-grn-border: rgba(244,121,32,.28);
+  --alert-ok-bg:      #FFF3E8;
+  --alert-ok-border:  #FFD4A6;
+  --alert-ok-text:    #9A4800;
+  --coach-grn-bg:     #FFF3E8;
+  --coach-grn-border: #FFD4A6;
+  --chat-bubble-me:   linear-gradient(135deg,#F47920,#C85E14);
+  --tab-active-bg:    rgba(244,121,32,.12);
+  --tab-active-text:  #B8540E;
+  --tab-active-border:var(--bv-grn);
+  --proof-bg:         #FAF6EF;
+  --proof-border:     #E8E2D9;
+  --mnav-bg:          #FFFFFF;
+  --mnav-border:      #E8E2D9;
+}
+
+/* 3) Sidebar brun foncé + texte crème ───────────────────────────────────── */
+[data-theme="light"] #lSide{color:#FAF6EF;border-right:1px solid rgba(255,255,255,.06)}
+[data-theme="light"] .lsi{color:#9E8A70}
+[data-theme="light"] .lsi:hover{background:rgba(244,121,32,.10);color:#FFF}
+[data-theme="light"] .lsi.on{background:rgba(244,121,32,.22);color:#FFF;border-left-color:var(--bv-grn);font-weight:800}
+[data-theme="light"] .lsb-av{background:linear-gradient(135deg,#F47920,#C85E14);border-color:rgba(244,121,32,.45)}
+[data-theme="light"] .lsb-name{color:#FFF}
+[data-theme="light"] .lsb-sub{color:#FFC896}
+
+/* 4) Topbar : gradient orange (remplace le vert) ────────────────────────── */
+#lTop.available{background:linear-gradient(135deg,#C85E14 0%,#F47920 55%,#FF9D4D 100%)!important;box-shadow:0 2px 22px rgba(244,121,32,.25)!important}
+#lTop.busy    {background:linear-gradient(135deg,#2D1A00,#6B3B00 60%,#A8571A)!important}
+#lTop.pause   {background:linear-gradient(135deg,#1C1400,#3D2D00 60%,#5C4400)!important}
+#lTop.offline {background:linear-gradient(135deg,#1C1209,#2A1F12)!important}
+.ltb-dot.available{background:#FFE0C2;box-shadow:0 0 0 3px rgba(255,224,194,.28)}
+.ltb-lang,.ltb-status-btn{background:rgba(255,255,255,.14);border-color:rgba(255,255,255,.22)}
+.ltb-lang:hover,.ltb-status-btn:hover{background:rgba(255,255,255,.22);border-color:rgba(255,255,255,.38)}
+.ltb-ico{background:rgba(255,255,255,.14)}
+.ltb-ico:hover{background:rgba(255,255,255,.22)}
+
+/* 5) Cartes chaudes, radius 16, ombres douces ───────────────────────────── */
+[data-theme="light"] .lcard,
+[data-theme="light"] .lsc,
+[data-theme="light"] .lgoal,
+[data-theme="light"] .lchart,
+[data-theme="light"] .lcourse{
+  background:#FFFFFF!important;border:1px solid #E8E2D9!important;border-radius:16px!important;
+  box-shadow:0 1px 3px rgba(26,18,9,.04),0 4px 16px rgba(26,18,9,.03)!important
+}
+[data-theme="light"] .lsg{background:#FFFFFF!important;border:1px solid #E8E2D9!important;border-radius:14px!important}
+
+/* 6) Boutons "btn-grn" + CTAs vert → orange ─────────────────────────────── */
+.btn-grn,.btn-primary{background:linear-gradient(135deg,#F47920,#C85E14)!important;color:#fff!important;box-shadow:0 3px 10px rgba(244,121,32,.3)!important}
+.btn-grn:hover,.btn-primary:hover{background:linear-gradient(135deg,#E56C16,#A8510E)!important}
+[data-theme="light"] .btn-ghost{background:#FAF6EF;color:#7C6E5A;border:1px solid #E8E2D9}
+[data-theme="light"] .btn-ghost:hover{background:#EDE7DC;color:#1A1209}
+
+/* 7) Barres de progression + jauges ─────────────────────────────────────── */
+.lgoal-fill,.lcert-fill,.lperiod-btn.on,.ltl-dot.done,.lc-earn{color-scheme:normal}
+.lgoal-fill{background:linear-gradient(90deg,#F47920,#FF9D4D)!important}
+.lcert-fill{background:linear-gradient(90deg,#F47920,#FFA040)!important}
+.ltl-dot.done{background:#F47920!important;color:#fff}
+.lc-earn{color:#C85E14!important}
+
+/* 8) Courses "available" / "active" en crème clair ──────────────────────── */
+[data-theme="light"] .lcourse.avail{background:linear-gradient(135deg,#fff,#FFF7EF)!important}
+[data-theme="light"] .lcourse.active{background:linear-gradient(135deg,#fff,#FFF3E8)!important;border-left:3px solid #F47920!important}
+[data-theme="light"] .lcbanner{background:linear-gradient(135deg,#FFF7EF,#FFE9D3)!important;border-color:#FFD4A6!important}
+[data-theme="light"] .lcbanner *{color:#9A4800!important}
+[data-theme="light"] .lcbanner.urgent{background:linear-gradient(135deg,#FEF2F2,#FEE2E2)!important;border-color:#FECACA!important}
+[data-theme="light"] .lcbanner.urgent *{color:#991B1B!important}
+
+/* 9) Pilules / badges verts → orange (garder sémantique) ────────────────── */
+.badge.lb-grn,.lb-grn{background:var(--badge-grn-bg)!important;color:var(--badge-grn-text)!important;border-color:var(--badge-grn-border)!important}
+
+/* 10) Bottom-nav mobile : fond blanc, tab actif orange ─────────────────── */
+[data-theme="light"] #lMnav{background:#FFFFFF!important;border-top:1px solid #E8E2D9!important;box-shadow:0 -4px 20px rgba(26,18,9,.05)!important}
+[data-theme="light"] .lmn{color:#B8A898!important}
+[data-theme="light"] .lmn.on{color:#F47920!important}
+.lmn.on .lmn-ico{color:#F47920!important}
+.lmn-badge{background:#F47920!important}
+
+/* 11) Scrollbar en teinte vendeur ───────────────────────────────────────── */
+[data-theme="light"] ::-webkit-scrollbar-thumb{background:rgba(244,121,32,.18)!important}
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover{background:rgba(244,121,32,.32)!important}
+
+/* 12) Titres & métriques : ton brun chaud ──────────────────────────────── */
+[data-theme="light"] .lph-l h1,
+[data-theme="light"] .lcard-ttl,
+[data-theme="light"] .lsg-n,
+[data-theme="light"] .lchart-ttl{color:#1A1209!important}
+[data-theme="light"] .lph-l p,[data-theme="light"] .lsg-lb{color:#7C6E5A!important}
+[data-theme="light"] .clr-grn{color:#C85E14!important}
+
+/* 13) Mode sombre optionnel (brun/orange) ─────────────────────────────── */
+[data-theme="dark"]{
+  --bg-primary:       #1A1209;
+  --bg-secondary:     #14100A;
+  --bg-card:          #2A1E12;
+  --bg-card-elevated: #332518;
+  --bg-card-inner:    #3D2E20;
+  --bg-surface-input: #3D2E20;
+  --bg-surface-hover: #45342A;
+  --bg-surface-active:#55413A;
+  --bg-modal:         #2A1E12;
+  --bg-modal-head:    #1A1209;
+  --bg-sidebar:       #0F0805;
+  --border-default:   #3D2E20;
+  --border-strong:    #4D3B27;
+  --border-muted:     rgba(255,255,255,.04);
+  --text-primary:     #FAF6EF;
+  --text-secondary:   #D4C4AE;
+  --text-muted:       #8A7B65;
+  --badge-grn-bg:     rgba(244,121,32,.14);
+  --badge-grn-text:   #FF9D4D;
+  --badge-grn-border: rgba(244,121,32,.28);
+  --tab-active-bg:    rgba(244,121,32,.16);
+  --tab-active-text:  #FF9D4D;
+  --tab-active-border:var(--bv-grn);
+}
 
 </style>
 </head>
@@ -2566,7 +2726,7 @@ var CFG={OTP_EXPIRE_MIN:10,OTP_MAX_TRIES:3,DAILY_TARGET:8000,MONTHLY_TARGET:1600
 /* ══ STATE ══ */
 var curPage="dashboard",livreurStatus="available",currentDelivery=null;
 var otpAttempts=0,slaIntervals={},chatMessages=[],courseTab="active",msgTab="client";
-var darkMode=lStore("bv_drv_dark",true),shiftStart=lStore("bv_shift_start",Date.now());
+var darkMode=lStore("bv_drv_dark",false),shiftStart=lStore("bv_shift_start",Date.now());
 var syncQueue=lStore("bv_sync_q",[]),terrainNotes=lStore("bv_notes",[]),auditLog=[];
 /* ══ DATA ══ */
 var LIVREUR={name:"Thierno Diallo",city:"Yaoundé",zone:"Bastos/Nlongkak",rating:4.7,totalDeliveries:342,avgTime:28,onTimeRate:91.2,completionRate:96.8,acceptRate:94,certPts:720,certTarget:1000};

@@ -4,8 +4,11 @@ from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from datetime import timedelta
 
 from .serializers import (
+    CourierDashboardSerializer,
     CourierShipmentActionSerializer,
     ShipmentSerializer,
     ShipmentCreateSerializer,
@@ -13,6 +16,7 @@ from .serializers import (
     ShipmentEventCreateSerializer,
 )
 from .models import Shipment
+from apps.accounts.models import CourierProfile
 
 
 @extend_schema(
@@ -123,3 +127,203 @@ class CourierShipmentActionView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         shipment = serializer.save()
         return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+
+
+def _courier_payout_xaf(shipment: Shipment) -> int:
+    return round((shipment.order.total_xaf or 0) * 0.08)
+
+
+def _shipment_delivery_minutes(shipment: Shipment) -> int:
+    picked_up_event = next((event for event in shipment.events.all() if event.status == Shipment.Status.PICKED_UP), None)
+    delivered_event = next((event for event in shipment.events.all() if event.status == Shipment.Status.DELIVERED), None)
+
+    start_dt = picked_up_event.created_at if picked_up_event else shipment.created_at
+    end_dt = delivered_event.created_at if delivered_event else shipment.updated_at
+    return max(1, round((end_dt - start_dt).total_seconds() / 60))
+
+
+def _traffic_label(now):
+    hour = now.hour
+    if 7 <= hour <= 9 or 16 <= hour <= 19:
+        return "Dense"
+    if 10 <= hour <= 15:
+        return "Fluide"
+    return "Modere"
+
+
+def _weather_label(now):
+    rainy_months = {3, 4, 5, 6, 7, 8, 9, 10}
+    if now.month in rainy_months:
+        return "26°C, pluie legere"
+    return "29°C, sec"
+
+
+def _leaderboard_tone(score: int) -> str:
+    if score >= 97:
+        return "text-emerald-300"
+    if score >= 92:
+        return "text-orange-300"
+    return "text-sky-300"
+
+
+def _leaderboard_badge(score: int) -> str:
+    if score >= 97:
+        return "Elite"
+    if score >= 92:
+        return "Top"
+    return "Stable"
+
+
+def _month_week_label(day: int) -> str:
+    if day <= 7:
+        return "S1"
+    if day <= 14:
+        return "S2"
+    if day <= 21:
+        return "S3"
+    return "S4"
+
+
+@extend_schema(tags=["Shipping"], summary="Dashboard livreur")
+class CourierDashboardView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CourierDashboardSerializer
+
+    def get(self, request, *args, **kwargs):
+        courier = getattr(request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        shipments = list(
+            Shipment.objects.filter(courier=courier)
+            .select_related("order", "courier", "courier__user")
+            .prefetch_related("events")
+            .order_by("-updated_at")
+        )
+
+        active_shipments = [shipment for shipment in shipments if shipment.status in [Shipment.Status.ASSIGNED, Shipment.Status.PICKED_UP, Shipment.Status.OUT_FOR_DELIVERY]]
+        delivered_shipments = [shipment for shipment in shipments if shipment.status == Shipment.Status.DELIVERED]
+        failed_shipments = [shipment for shipment in shipments if shipment.status == Shipment.Status.FAILED]
+
+        today_delivered = [shipment for shipment in delivered_shipments if shipment.updated_at >= today_start]
+        month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        month_delivered = [shipment for shipment in delivered_shipments if shipment.updated_at >= month_start]
+        today_earnings = sum(_courier_payout_xaf(shipment) for shipment in today_delivered)
+        month_earnings = sum(_courier_payout_xaf(shipment) for shipment in month_delivered)
+        average_payout = round(sum(_courier_payout_xaf(shipment) for shipment in delivered_shipments) / len(delivered_shipments)) if delivered_shipments else 0
+        monthly_target = max(75000, average_payout * 25 if average_payout else 75000)
+        monthly_goal_percent = min(100, round((month_earnings / monthly_target) * 100)) if monthly_target else 0
+
+        if courier.is_online:
+            anchor_dt = min((shipment.updated_at for shipment in active_shipments), default=now)
+            online_minutes = max(1, round((now - anchor_dt).total_seconds() / 60))
+        else:
+            online_minutes = 0
+
+        average_delivery_minutes = round(
+            sum(_shipment_delivery_minutes(shipment) for shipment in delivered_shipments) / len(delivered_shipments)
+        ) if delivered_shipments else 0
+
+        completed_count = len(delivered_shipments) + len(failed_shipments)
+        performance_percent = round((len(delivered_shipments) / completed_count) * 100) if completed_count else 100
+
+        # Estimation provisoire issue du volume de missions. A remplacer par du GPS réel plus tard.
+        distance_km = round((len(today_delivered) * 4.8) + (len(active_shipments) * 2.6), 1)
+
+        approved_couriers = CourierProfile.objects.filter(is_approved=True, is_active=True).select_related("user")
+        leaderboard = []
+        for profile in approved_couriers:
+            courier_shipments = list(
+                Shipment.objects.filter(courier=profile)
+                .select_related("order", "courier", "courier__user")
+            )
+            courier_delivered = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.DELIVERED]
+            courier_failed = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.FAILED]
+            total_completed = len(courier_delivered) + len(courier_failed)
+            score = round((len(courier_delivered) / total_completed) * 100) if total_completed else 0
+            leaderboard.append(
+                {
+                    "name": profile.user.get_full_name().strip() or profile.user.username,
+                    "score": f"{score}%",
+                    "badge": _leaderboard_badge(score),
+                    "tone": _leaderboard_tone(score),
+                    "_sort_score": score,
+                    "_sort_volume": len(courier_delivered),
+                }
+            )
+
+        leaderboard = sorted(
+            leaderboard,
+            key=lambda item: (item["_sort_score"], item["_sort_volume"]),
+            reverse=True,
+        )[:3]
+        for item in leaderboard:
+            item.pop("_sort_score", None)
+            item.pop("_sort_volume", None)
+
+        zone_heatmap = []
+        courier_zones = courier.zones or [courier.city]
+        recent_shipments = [shipment for shipment in shipments if shipment.created_at >= now - timedelta(days=30)]
+        zone_counts = []
+        for zone in courier_zones:
+            count = sum(
+                1
+                for shipment in recent_shipments
+                if zone.lower() in (shipment.order.address or "").lower()
+                or zone.lower() in (shipment.order.city or "").lower()
+            )
+            zone_counts.append((zone, count))
+
+        max_count = max((count for _, count in zone_counts), default=0)
+        for zone, count in zone_counts:
+            percent = round((count / max_count) * 100) if max_count else 0
+            zone_heatmap.append(
+                {
+                    "zone": zone,
+                    "demand_percent": percent,
+                    "hint": "Demande observee sur les 30 derniers jours",
+                }
+            )
+
+        weekly_buckets = {
+            "S1": {"label": "S1", "earnings_xaf": 0, "deliveries": 0, "percent": 0},
+            "S2": {"label": "S2", "earnings_xaf": 0, "deliveries": 0, "percent": 0},
+            "S3": {"label": "S3", "earnings_xaf": 0, "deliveries": 0, "percent": 0},
+            "S4": {"label": "S4", "earnings_xaf": 0, "deliveries": 0, "percent": 0},
+        }
+        weekly_target = max(1, round(monthly_target / 4))
+        for shipment in month_delivered:
+            label = _month_week_label(shipment.updated_at.day)
+            weekly_buckets[label]["earnings_xaf"] += _courier_payout_xaf(shipment)
+            weekly_buckets[label]["deliveries"] += 1
+
+        weekly_progress = []
+        for label in ["S1", "S2", "S3", "S4"]:
+            bucket = weekly_buckets[label]
+            bucket["percent"] = min(100, round((bucket["earnings_xaf"] / weekly_target) * 100)) if weekly_target else 0
+            weekly_progress.append(bucket)
+
+        recommended_departure_dt = (now + timedelta(minutes=12)).replace(second=0, microsecond=0)
+        data = {
+            "active_shipments": len(active_shipments),
+            "delivered_shipments": len(delivered_shipments),
+            "today_earnings_xaf": today_earnings,
+            "month_earnings_xaf": month_earnings,
+            "monthly_target_xaf": monthly_target,
+            "monthly_goal_percent": monthly_goal_percent,
+            "average_payout_xaf": average_payout,
+            "online_minutes": online_minutes,
+            "status_label": "En ligne" if courier.is_online else "Hors ligne",
+            "distance_km": distance_km,
+            "average_delivery_minutes": average_delivery_minutes,
+            "performance_percent": performance_percent,
+            "recommended_departure": recommended_departure_dt.strftime("%H:%M"),
+            "traffic_label": _traffic_label(now),
+            "weather_label": _weather_label(now),
+            "leaderboard": leaderboard,
+            "zone_heatmap": zone_heatmap,
+            "weekly_progress": weekly_progress,
+        }
+        return Response(CourierDashboardSerializer(data).data, status=status.HTTP_200_OK)

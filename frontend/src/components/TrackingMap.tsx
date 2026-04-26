@@ -12,21 +12,37 @@ L.Icon.Default.mergeOptions({
 });
 
 const vendorIcon = new L.DivIcon({
-  html: '<div style="background:#1F2937;width:32px;height:32px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🏪</div>',
+  html: `
+    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#1F2937,#111827);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <div style="width:12px;height:12px;border-radius:4px;background:#F8FAFC;position:relative">
+        <span style="position:absolute;left:-2px;right:-2px;top:-4px;height:4px;border-radius:4px 4px 0 0;background:#F47920"></span>
+      </div>
+    </div>
+  `,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   className: "",
 });
 
 const deliveryIcon = new L.DivIcon({
-  html: '<div style="background:#F47920;width:32px;height:32px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">🚚</div>',
+  html: `
+    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#F47920,#C85E14);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <div style="width:16px;height:10px;border-radius:3px;background:#FFF;position:relative">
+        <span style="position:absolute;right:-5px;top:2px;width:5px;height:6px;border-radius:0 2px 2px 0;background:#FFE2CC"></span>
+      </div>
+    </div>
+  `,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   className: "",
 });
 
 const customerIcon = new L.DivIcon({
-  html: '<div style="background:#16A34A;width:32px;height:32px;border-radius:50%;border:3px solid #fff;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>',
+  html: `
+    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#16A34A,#15803D);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <div style="width:10px;height:10px;border-radius:50%;background:#FFF;box-shadow:0 0 0 4px rgba(255,255,255,.2)"></div>
+    </div>
+  `,
   iconSize: [32, 32],
   iconAnchor: [16, 16],
   className: "",
@@ -112,6 +128,7 @@ interface TrackingMapProps {
   /** Destination label */
   destinationLabel?: string;
   className?: string;
+  height?: number;
 }
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -134,6 +151,7 @@ export default function TrackingMap({
   originLabel = "Mokolo — Centre BelivaY",
   destinationLabel,
   className = "",
+  height = 280,
 }: TrackingMapProps) {
   // Origin: always Mokolo by default
   const origin = vendorLocation || MOKOLO;
@@ -157,7 +175,7 @@ export default function TrackingMap({
       <MapContainer
         center={deliveryPos}
         zoom={13}
-        style={{ height: "280px", width: "100%" }}
+        style={{ height: `${height}px`, width: "100%" }}
         scrollWheelZoom={false}
         attributionControl={false}
       >
@@ -169,11 +187,11 @@ export default function TrackingMap({
         </Marker>
 
         <Marker position={deliveryPos} icon={deliveryIcon}>
-          <Popup>🚚 Position actuelle du livreur</Popup>
+          <Popup>Position actuelle du livreur</Popup>
         </Marker>
 
         <Marker position={destination} icon={customerIcon}>
-          <Popup>📍 {destLabel}</Popup>
+          <Popup>{destLabel}</Popup>
         </Marker>
 
         <Polyline

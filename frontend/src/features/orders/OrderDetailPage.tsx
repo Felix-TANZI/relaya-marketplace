@@ -81,6 +81,13 @@ export default function OrderDetailPage() {
           bg: "bg-gray-100 dark:bg-gray-800",
           icon: CreditCard,
         };
+      default:
+        return {
+          label: t('order.detail.payment_pending'),
+          color: "text-gray-600",
+          bg: "bg-gray-100 dark:bg-gray-800",
+          icon: CreditCard,
+        };
     }
   }
 
@@ -96,6 +103,8 @@ export default function OrderDetailPage() {
         return { label: t('order.detail.fulfillment_delivered'), step: 3 };
       case "CANCELLED":
         return { label: t('order.detail.fulfillment_cancelled'), step: -1 };
+      default:
+        return { label: t('order.detail.fulfillment_processing'), step: 0 };
     }
   }
 
@@ -182,14 +191,23 @@ export default function OrderDetailPage() {
   const payment = getPaymentInfo(order.payment_status);
   const fulfillment = getFulfillmentInfo(order.fulfillment_status);
   const PaymentIcon = payment.icon;
-  const timelineSteps = tracking?.events?.length
-    ? tracking.events.map((event) => ({
-        time: new Date(event.created_at).toLocaleTimeString("fr-FR", {
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        label: event.message || event.status,
-      }))
+  const trackingEvents = Array.isArray(tracking?.events)
+    ? tracking.events
+        .filter((event): event is NonNullable<Shipment["events"]>[number] => Boolean(event))
+        .map((event) => ({
+          time: event.created_at
+            ? new Date(event.created_at).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "ETA",
+          label: event.message || event.status || t('order.detail.timeline.processing'),
+        }))
+        .filter((event) => Boolean(event.label))
+    : [];
+
+  const timelineSteps = trackingEvents.length
+    ? trackingEvents
     : [
         { time: "10:15", label: t('order.detail.timeline.received') },
         { time: "14:30", label: t('order.detail.timeline.processing') },

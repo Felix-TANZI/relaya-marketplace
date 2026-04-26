@@ -1,5 +1,6 @@
 import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   ArrowRight,
@@ -27,14 +28,20 @@ import {
   Settings2,
   ShieldCheck,
   Siren,
+  Sun,
+  Moon,
   Truck,
   User,
   Wallet,
   XCircle,
 } from "lucide-react";
+import TrackingMap from "@/components/TrackingMap";
+import { useTheme } from "@/context/ThemeContext";
 import { authApi, type CourierApplicationResponse, type User as AuthUser } from "@/services/api/auth";
 import {
   courierApi,
+  type CourierDashboard,
+  type CourierNotification,
   type CourierShipment,
   type CourierShipmentAction,
 } from "@/services/api/courier";
@@ -47,7 +54,6 @@ type CourierTab =
   | "scanner"
   | "map"
   | "gains"
-  | "lcompte"
   | "profil"
   | "formation"
   | "notifications"
@@ -72,7 +78,6 @@ const TAB_LABELS: Record<CourierTab, string> = {
   scanner: "Scanner QR",
   map: "Carte & Navigation",
   gains: "Gains & Rentabilite",
-  lcompte: "Mon Compte BelivaY",
   profil: "Mon Profil",
   formation: "Formation",
   notifications: "Notifications",
@@ -177,9 +182,11 @@ function SectionShell({
   accent?: string;
 }) {
   return (
-    <section className="rounded-[24px] border border-white/5 bg-[#161B22] p-5 shadow-[0_18px_48px_rgba(0,0,0,.18)]">
-      <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${accent}`}>{kicker}</p>
-      <h2 className="mt-1 text-[24px] font-extrabold tracking-tight text-white">{title}</h2>
+    <section className="relative overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(180deg,rgba(14,21,34,.98),rgba(9,14,26,.98))] p-5 shadow-[0_24px_64px_rgba(0,0,0,.34)]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.12),transparent_52%)]" />
+      <div className="pointer-events-none absolute right-0 top-0 h-28 w-40 bg-[radial-gradient(circle_at_top_right,rgba(110,231,183,.08),transparent_60%)]" />
+      <p className={`relative text-[11px] font-black uppercase tracking-[0.18em] ${accent}`}>{kicker}</p>
+      <h2 className="relative mt-1 text-[24px] font-extrabold tracking-tight text-white">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -197,12 +204,13 @@ function MetricCard({
   tone: string;
 }) {
   return (
-    <article className={`rounded-[20px] border p-4 ${tone}`}>
-      <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
+    <article className={`relative overflow-hidden rounded-[24px] border p-4 shadow-[0_18px_38px_rgba(0,0,0,.22)] ${tone}`}>
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,rgba(255,255,255,.12),transparent_65%)]" />
+      <div className="relative mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
         <Icon size={19} />
       </div>
-      <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">{label}</div>
-      <div className="mt-2 text-[24px] font-extrabold text-white">{value}</div>
+      <div className="relative text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">{label}</div>
+      <div className="relative mt-2 text-[24px] font-extrabold text-white">{value}</div>
     </article>
   );
 }
@@ -226,11 +234,15 @@ function InfoPill({
 
 export default function CourierDashboardPage() {
   const navigate = useNavigate();
+  const { i18n } = useTranslation();
+  const { theme, toggleTheme } = useTheme();
   const [tab, setTab] = useState<CourierTab>("dashboard");
   const [booting, setBooting] = useState(true);
   const [progress, setProgress] = useState(8);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [application, setApplication] = useState<CourierApplicationResponse | null>(null);
+  const [dashboard, setDashboard] = useState<CourierDashboard | null>(null);
+  const [notifications, setNotifications] = useState<CourierNotification[]>([]);
   const [shipments, setShipments] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -242,15 +254,23 @@ export default function CourierDashboardPage() {
       setProgress((value) => Math.min(value + 12, 94));
     }, 110);
 
-    Promise.allSettled([authApi.getProfile(), authApi.getCourierApplication(), courierApi.listMyShipments()])
-      .then(([profileResult, applicationResult, shipmentsResult]) => {
+    Promise.allSettled([
+      authApi.getProfile(),
+      authApi.getCourierApplication(),
+      courierApi.listMyShipments(),
+      courierApi.getDashboard(),
+      courierApi.getNotifications(),
+    ])
+      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, notificationsResult]) => {
         const resolvedShipments =
-          shipmentsResult.status === "fulfilled" && shipmentsResult.value.length
+          shipmentsResult.status === "fulfilled"
             ? shipmentsResult.value
             : MOCK_COURIER_SHIPMENTS;
 
         if (profileResult.status === "fulfilled") setUser(profileResult.value);
         if (applicationResult.status === "fulfilled") setApplication(applicationResult.value);
+        if (dashboardResult.status === "fulfilled") setDashboard(dashboardResult.value);
+        if (notificationsResult.status === "fulfilled") setNotifications(notificationsResult.value);
         setShipments(resolvedShipments);
         setSelectedShipmentId((current) => current ?? resolvedShipments[0]?.id ?? null);
       })
@@ -279,6 +299,13 @@ export default function CourierDashboardPage() {
   const availableShipments = useMemo(
     () => shipments.filter((shipment) => shipment.status === "CREATED"),
     [shipments],
+  );
+  const tourShipments = useMemo(
+    () =>
+      [...activeShipments, ...completedShipments].sort(
+        (left, right) => new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime(),
+      ),
+    [activeShipments, completedShipments],
   );
   const selectedShipment =
     shipments.find((shipment) => shipment.id === selectedShipmentId) ??
@@ -332,7 +359,6 @@ export default function CourierDashboardPage() {
     { id: "scanner", label: "Scanner QR", icon: ScanLine },
     { id: "map", label: "Carte & Navigation", icon: Map },
     { id: "gains", label: "Gains & Rentabilite", icon: BadgeDollarSign },
-    { id: "lcompte", label: "Mon Compte BelivaY", icon: Wallet },
     { id: "profil", label: "Mon Profil", icon: User },
     { id: "formation", label: "Formation", icon: BookOpen },
     { id: "notifications", label: "Notifications", icon: Bell },
@@ -354,44 +380,190 @@ export default function CourierDashboardPage() {
       label: "Livrees",
       value: earnings.deliveredCount,
       icon: CheckCircle2,
-      tone: "text-sky-300 bg-sky-500/10 border-sky-500/20",
+      tone: "text-green-300 bg-green-500/10 border-green-500/20",
     },
     {
       label: "Gains du jour",
       value: formatXaf(earnings.today),
       icon: Wallet,
-      tone: "text-orange-300 bg-orange-500/10 border-orange-500/20",
+      tone: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
     },
     {
       label: "Moyenne/course",
       value: formatXaf(earnings.average),
       icon: Gauge,
-      tone: "text-amber-300 bg-amber-500/10 border-amber-500/20",
+      tone: "text-lime-300 bg-lime-500/10 border-lime-500/20",
     },
   ];
 
-  const leaderboard = [
-    { name: "Boris M.", score: "96.8%", badge: "Elite", tone: "text-emerald-300" },
-    { name: `${firstName}`, score: "94.1%", badge: "Top 12", tone: "text-orange-300" },
-    { name: "Yann N.", score: "92.7%", badge: "Stable", tone: "text-sky-300" },
+  const leaderboard = dashboard?.leaderboard?.length
+    ? dashboard.leaderboard
+    : [{ name: `${firstName}`, score: "—", badge: "En attente", tone: "text-emerald-300" }];
+
+  const liveHeaderStats = [
+    {
+      label: "Temps en ligne",
+      value: `${Math.floor((dashboard?.online_minutes ?? 0) / 60)}h ${String((dashboard?.online_minutes ?? 0) % 60).padStart(2, "0")}`,
+      tone: "text-emerald-300",
+    },
+    { label: "Statut", value: dashboard?.status_label ?? (courierProfile?.is_online ? "En ligne" : "Hors ligne"), tone: "text-green-300" },
+    { label: "Parcourus", value: `${(dashboard?.distance_km ?? 0).toFixed(1)} km`, tone: "text-sky-300" },
+    { label: "Temps moyen / livraison", value: `${dashboard?.average_delivery_minutes ?? 0} min`, tone: "text-cyan-300" },
+    { label: "Performance", value: `${dashboard?.performance_percent ?? 0}%`, tone: "text-orange-300" },
   ];
 
-  const notifications = [
-    { title: "Nouvelle course premium", body: "Zone Bastos, retrait immediat, bonus +1500 FCFA.", tone: "text-orange-300" },
-    { title: "Controle qualite", body: "Ton score client est passe a 4.8/5 cette semaine.", tone: "text-emerald-300" },
-    { title: "Paiement programme", body: "Versement Mobile Money prevu a 18h30.", tone: "text-sky-300" },
-  ];
+  const unreadNotifications = notifications.filter((item) => !item.is_read).length;
 
   const disputes = [
     { ref: "LIT-203", label: "Commande #1058", status: "En mediation", tone: "text-orange-300", detail: "Client absent a la premiere tentative." },
     { ref: "LIT-188", label: "Commande #1042", status: "Justificatif envoye", tone: "text-sky-300", detail: "Photo depot et appel client horodates." },
   ];
 
+  const mapShipment = selectedShipment ?? activeShipments[0] ?? shipments[0] ?? null;
+  const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
+  const estimatedTourMinutes =
+    activeShipments.length > 0
+      ? activeShipments.length * Math.max(dashboard?.average_delivery_minutes ?? 24, 12)
+      : 0;
+  const activeDistanceKm =
+    activeShipments.length > 0
+      ? Number(
+          (
+            dashboard?.distance_km ??
+            activeShipments.reduce((sum, shipment) => sum + (shipment.city === courierProfile?.city ? 4.2 : 6.5), 0)
+          ).toFixed(1),
+        )
+      : 0;
+  const activeZones = Array.from(
+    new Set(
+      activeShipments
+        .map((shipment) => shipment.city || courierProfile?.city)
+        .filter((value): value is string => Boolean(value)),
+    ),
+  );
+  const completedToday = completedShipments.filter((shipment) => {
+    const updated = new Date(shipment.updated_at);
+    const now = new Date();
+    return (
+      updated.getFullYear() === now.getFullYear() &&
+      updated.getMonth() === now.getMonth() &&
+      updated.getDate() === now.getDate()
+    );
+  }).length;
+  const tourInsights = [
+    {
+      title: activeShipments.length > 1 ? "Regroupement detecte" : "Prochaine destination",
+      body:
+        activeShipments.length > 1
+          ? `${activeZones.join(", ") || courierProfile?.city || "Votre zone"} concentre ${activeShipments.length} livraison(s) active(s).`
+          : nextTourStop
+            ? `${nextTourStop.customer_name} · ${nextTourStop.delivery_address}`
+            : "Aucune livraison active pour le moment.",
+      tone: "border-orange-500/20 bg-orange-500/5",
+    },
+    {
+      title: "Fenetre conseillee",
+      body: dashboard?.recommended_departure
+        ? `Depart recommande a ${dashboard.recommended_departure} avec trafic ${dashboard.traffic_label?.toLowerCase() || "modere"}.`
+        : "La prochaine mission apparaitra ici des qu'une course est assignee.",
+      tone: "border-sky-500/20 bg-sky-500/5",
+    },
+    {
+      title: "Suivi terrain",
+      body:
+        activeShipments.length > 0
+          ? `${completedToday} mission(s) cloturee(s) aujourd'hui, ${activeShipments.length} encore en cours.`
+          : "Aucune mission en cours. Reste disponible pour recevoir de nouvelles assignations.",
+      tone: activeShipments.length > 0 ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/10 bg-white/[0.03]",
+    },
+  ];
+
+  function formatDuration(totalMinutes: number) {
+    if (!totalMinutes) return "0 min";
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    if (!hours) return `${minutes} min`;
+    return `${hours}h ${String(minutes).padStart(2, "0")} min`;
+  }
+
+  function notificationTone(type: CourierNotification["notification_type"]) {
+    switch (type) {
+      case "ORDER":
+        return "text-orange-300";
+      case "PAYMENT":
+        return "text-sky-300";
+      case "PROMOTION":
+        return "text-fuchsia-300";
+      case "SUPPORT":
+        return "text-amber-300";
+      default:
+        return "text-emerald-300";
+    }
+  }
+
+  async function handleNotificationClick(notification: CourierNotification) {
+    if (!notification.is_read) {
+      try {
+        const updated = await courierApi.markNotificationRead(notification.id);
+        setNotifications((current) =>
+          current.map((item) => (item.id === updated.id ? updated : item)),
+        );
+      } catch {
+        setNotifications((current) =>
+          current.map((item) =>
+            item.id === notification.id ? { ...item, is_read: true } : item,
+          ),
+        );
+      }
+    }
+
+    if (notification.action_url) {
+      navigate(notification.action_url);
+    }
+  }
+
+  async function handleMarkAllNotificationsRead() {
+    try {
+      await courierApi.markAllNotificationsRead();
+    } finally {
+      setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
+    }
+  }
+
   const renderDashboard = () => (
     <>
       <section className="grid gap-4 md:grid-cols-4">
-        {quickStats.map((item) => (
+        {[
+          {
+            ...quickStats[0],
+            value: dashboard?.active_shipments ?? quickStats[0].value,
+          },
+          {
+            ...quickStats[1],
+            value: dashboard?.delivered_shipments ?? quickStats[1].value,
+          },
+          {
+            ...quickStats[2],
+            value: formatXaf(dashboard?.today_earnings_xaf ?? earnings.today),
+          },
+          {
+            ...quickStats[3],
+            value: formatXaf(dashboard?.average_payout_xaf ?? earnings.average),
+          },
+        ].map((item) => (
           <MetricCard key={item.label} {...item} />
+        ))}
+      </section>
+
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+        {liveHeaderStats.map((item) => (
+          <article
+            key={item.label}
+            className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02))] px-5 py-4 shadow-[0_18px_38px_rgba(0,0,0,.2)]"
+          >
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/45">{item.label}</div>
+            <div className={`mt-2 text-[24px] font-extrabold ${item.tone}`}>{item.value}</div>
+          </article>
         ))}
       </section>
 
@@ -400,7 +572,7 @@ export default function CourierDashboardPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
               <div className="mb-3 flex items-center justify-between">
-                <span className="text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">Statut terrain</span>
+                <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
                 <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
                   {courierProfile?.is_online ? "Disponible" : "Hors ligne"}
                 </InfoPill>
@@ -408,20 +580,20 @@ export default function CourierDashboardPage() {
               <div className="space-y-2 text-[14px] text-white/85">
                 <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
                   <span>Depart conseille</span>
-                  <strong>08:15</strong>
+                  <strong>{dashboard?.recommended_departure ?? "—"}</strong>
                 </div>
                 <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
                   <span>Trafic</span>
-                  <strong>Fluide</strong>
+                  <strong>{dashboard?.traffic_label ?? "—"}</strong>
                 </div>
                 <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
                   <span>Meteo</span>
-                  <strong>27°C, sec</strong>
+                  <strong>{dashboard?.weather_label ?? "—"}</strong>
                 </div>
               </div>
             </div>
             <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-orange-300">Checklist pre-shift</div>
+              <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
               <div className="space-y-3">
                 {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
                   <div key={item} className="flex items-center gap-3 rounded-[14px] bg-black/10 px-4 py-3 text-[14px] text-white">
@@ -434,7 +606,7 @@ export default function CourierDashboardPage() {
           </div>
         </SectionShell>
 
-        <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-orange-300">
+        <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-green-300">
           <div className="space-y-3">
             {leaderboard.map((item, index) => (
               <div key={item.name} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-4">
@@ -459,23 +631,35 @@ export default function CourierDashboardPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
         <SectionShell kicker="Carte rapide" title="Zone chaude & disponibilites">
-          <div className="rounded-[24px] border border-emerald-500/10 bg-[radial-gradient(circle_at_top,_rgba(16,185,129,.22),_rgba(15,23,42,0)_55%),linear-gradient(180deg,#0c1520,#101a26)] p-5">
+          <div className="space-y-4">
+            <div className="overflow-hidden rounded-[26px] border border-emerald-500/15 bg-[#0b1220] p-2 shadow-[0_18px_48px_rgba(16,185,129,.08)]">
+              <TrackingMap
+                destinationAddress={mapShipment?.delivery_address}
+                destinationCity={mapShipment?.city}
+                destinationLabel={mapShipment?.customer_name || "Client"}
+                className="rounded-[22px] border-none"
+                height={300}
+              />
+            </div>
             <div className="grid gap-4 md:grid-cols-3">
-              {zones.map((zone, index) => (
-                <div key={zone} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">
+              {(dashboard?.zone_heatmap?.length
+                ? dashboard.zone_heatmap
+                : zones.map((zone) => ({ zone, demand_percent: 0, hint: "Demande observee sur les 30 derniers jours" }))
+              ).map((item) => (
+                <div key={item.zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">
                     <MapPin size={13} />
-                    {zone}
+                    {item.zone}
                   </div>
-                  <div className="mt-3 text-[28px] font-extrabold text-white">{78 - index * 9}%</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">Demande attendue entre 12h et 18h</div>
+                  <div className="mt-3 text-[28px] font-extrabold text-white">{item.demand_percent}%</div>
+                  <div className="mt-1 text-[12px] text-[#8B949E]">{item.hint}</div>
                 </div>
               ))}
             </div>
           </div>
         </SectionShell>
 
-        <SectionShell kicker="Courses" title="Missions disponibles" accent="text-sky-300">
+        <SectionShell kicker="Courses" title="Missions disponibles" accent="text-emerald-300">
           <div className="space-y-3">
             {(availableShipments.length ? availableShipments : activeShipments).slice(0, 4).map((shipment) => (
               <button
@@ -514,55 +698,63 @@ export default function CourierDashboardPage() {
           <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="flex flex-wrap items-center gap-3">
               <InfoPill icon={Route} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                7 stops
+                {tourShipments.length} stop{tourShipments.length > 1 ? "s" : ""}
               </InfoPill>
-              <InfoPill icon={Clock3}>3h 25 min</InfoPill>
-              <InfoPill icon={Navigation}>21 km</InfoPill>
+              <InfoPill icon={Clock3}>{formatDuration(estimatedTourMinutes)}</InfoPill>
+              <InfoPill icon={Navigation}>{activeDistanceKm.toFixed(1)} km</InfoPill>
             </div>
             <p className="mt-3 text-[14px] leading-7 text-white/80">
-              L'algorithme recommande de commencer par Bastos, puis de redescendre vers Centre-ville pour eviter
-              la congestion de 16h.
+              {nextTourStop
+                ? `Prochain arret conseille: ${nextTourStop.customer_name}, ${nextTourStop.delivery_address}.`
+                : "Aucune mission active pour le moment. Les prochaines livraisons assignees apparaitront ici."}
             </p>
           </div>
-          {activeShipments.concat(completedShipments).slice(0, 5).map((shipment, index) => (
-            <div key={shipment.id} className="flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
-                {index + 1}
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="font-bold text-white">{shipment.customer_name}</div>
-                  <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
-                    {statusLabel(shipment.status)}
-                  </span>
+          {tourShipments.length ? (
+            tourShipments.slice(0, 5).map((shipment, index) => (
+              <button
+                key={shipment.id}
+                type="button"
+                onClick={() => {
+                  setSelectedShipmentId(shipment.id);
+                  setTab("courses");
+                }}
+                className="flex w-full gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]"
+              >
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
+                  {index + 1}
                 </div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
-                <div className="mt-2 text-[12px] text-white/60">ETA recommandee: {10 + index * 8} min</div>
-              </div>
+                <div className="flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-white">{shipment.customer_name}</div>
+                      <div className="mt-1 text-[12px] text-[#8B949E]">Commande #{shipment.order}</div>
+                    </div>
+                    <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
+                      {statusLabel(shipment.status)}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px] text-white/60">
+                    <span>{shipment.city || courierProfile?.city || "Zone non renseignee"}</span>
+                    <span>•</span>
+                    <span>
+                      ETA recommandee: {formatDuration(Math.max((index + 1) * (dashboard?.average_delivery_minutes ?? 18), 12))}
+                    </span>
+                  </div>
+                </div>
+              </button>
+            ))
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+              Aucune etape de tournee disponible. Des qu'une livraison sera assignee au livreur, elle remontera ici.
             </div>
-          ))}
+          )}
         </div>
       </SectionShell>
 
       <SectionShell kicker="Terrain" title="Conseils live & regroupement" accent="text-orange-300">
         <div className="space-y-4">
-          {[
-            {
-              title: "Batching recommande",
-              body: "Les courses Bastos + Omnisports peuvent etre groupees sur le meme segment.",
-              tone: "border-orange-500/20 bg-orange-500/5",
-            },
-            {
-              title: "Client prioritaire",
-              body: "Commande #1054: client disponible jusqu'a 14h uniquement.",
-              tone: "border-sky-500/20 bg-sky-500/5",
-            },
-            {
-              title: "Zone a risque",
-              body: "Mvog-Ada: trafic dense, prevoir +12 minutes sur le passage principal.",
-              tone: "border-red-500/20 bg-red-500/5",
-            },
-          ].map((item) => (
+          {tourInsights.map((item) => (
             <div key={item.title} className={`rounded-[18px] border p-4 ${item.tone}`}>
               <div className="font-bold text-white">{item.title}</div>
               <div className="mt-2 text-[13px] leading-6 text-white/75">{item.body}</div>
@@ -572,10 +764,10 @@ export default function CourierDashboardPage() {
             <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">Prochaine action</div>
             <button
               type="button"
-              onClick={() => setTab("map")}
+              onClick={() => setTab(nextTourStop ? "courses" : "map")}
               className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
             >
-              Ouvrir la navigation
+              {nextTourStop ? "Ouvrir la mission active" : "Ouvrir la navigation"}
               <ChevronRight size={14} />
             </button>
           </div>
@@ -784,22 +976,29 @@ export default function CourierDashboardPage() {
   const renderMap = () => (
     <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
       <SectionShell kicker="Navigation" title="Carte & itineraire">
-        <div className="rounded-[26px] border border-white/5 bg-[linear-gradient(180deg,#0d1621,#121d2a)] p-5">
-          <div className="flex h-[360px] items-end rounded-[22px] border border-emerald-500/10 bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,.22),_rgba(15,23,42,0)_40%),radial-gradient(circle_at_bottom_right,_rgba(59,130,246,.18),_rgba(15,23,42,0)_32%),#0b1220] p-5">
-            <div className="grid gap-3 md:grid-cols-3">
-              {zones.map((zone, index) => (
-                <div key={zone} className="rounded-[18px] border border-white/5 bg-black/20 p-4">
-                  <div className="text-[12px] font-black uppercase tracking-[0.16em] text-[#6EE7B7]">{zone}</div>
-                  <div className="mt-3 text-[24px] font-extrabold text-white">{index + 3} hotspots</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">Heure optimale: {11 + index}h - {15 + index}h</div>
-                </div>
-              ))}
-            </div>
+        <div className="space-y-4">
+            <div className="overflow-hidden rounded-[26px] border border-emerald-500/15 bg-[#0b1220] p-2 shadow-[0_18px_48px_rgba(16,185,129,.08)]">
+            <TrackingMap
+              destinationAddress={mapShipment?.delivery_address}
+              destinationCity={mapShipment?.city}
+              destinationLabel={mapShipment?.customer_name || "Client"}
+              className="rounded-[22px] border-none"
+              height={420}
+            />
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
+            {zones.map((zone, index) => (
+              <div key={zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4">
+                <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300">{zone}</div>
+                <div className="mt-3 text-[24px] font-extrabold text-white">{index + 3} hotspots</div>
+                <div className="mt-1 text-[12px] text-[#8B949E]">Heure optimale: {11 + index}h - {15 + index}h</div>
+              </div>
+            ))}
           </div>
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Aide conduite" title="Meilleurs choix terrain" accent="text-orange-300">
+      <SectionShell kicker="Aide conduite" title="Meilleurs choix terrain" accent="text-green-300">
         <div className="space-y-3">
           {[
             "Contourner le carrefour Warda entre 17h10 et 18h.",
@@ -821,25 +1020,45 @@ export default function CourierDashboardPage() {
     <section className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
       <SectionShell kicker="Monetisation" title="Gains & rentabilite">
         <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard label="Total gains" value={formatXaf(earnings.total)} icon={Wallet} tone="text-emerald-300 bg-emerald-500/10 border-emerald-500/20" />
+          <MetricCard
+            label="Total gains"
+            value={formatXaf(dashboard?.month_earnings_xaf ?? earnings.total)}
+            icon={Wallet}
+            tone="text-emerald-300 bg-emerald-500/10 border-emerald-500/20"
+          />
           <MetricCard label="Aujourd'hui" value={formatXaf(earnings.today)} icon={BadgeDollarSign} tone="text-orange-300 bg-orange-500/10 border-orange-500/20" />
           <MetricCard label="En attente" value={formatXaf(earnings.pending)} icon={CreditCard} tone="text-sky-300 bg-sky-500/10 border-sky-500/20" />
         </div>
         <div className="mt-5 rounded-[22px] border border-white/5 bg-white/[0.03] p-5">
           <div className="mb-4 flex items-center justify-between">
             <div className="text-[12px] font-black uppercase tracking-[0.16em] text-[#8B949E]">Objectif du mois</div>
-            <div className="text-[13px] font-bold text-white">68%</div>
+            <div className="text-right">
+              <div className="text-[13px] font-bold text-white">{dashboard?.monthly_goal_percent ?? 0}%</div>
+              <div className="text-[11px] text-[#8B949E]">
+                {formatXaf(dashboard?.month_earnings_xaf ?? 0)} / {formatXaf(dashboard?.monthly_target_xaf ?? 0)}
+              </div>
+            </div>
           </div>
           <div className="h-3 rounded-full bg-white/5">
-            <div className="h-full w-[68%] rounded-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)]" />
+            <div
+              className="h-full rounded-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)]"
+              style={{ width: `${dashboard?.monthly_goal_percent ?? 0}%` }}
+            />
           </div>
           <div className="mt-4 grid gap-3 md:grid-cols-4">
-            {[35, 48, 61, 82].map((height, index) => (
-              <div key={height} className="rounded-[16px] border border-white/5 bg-black/10 p-3">
+            {(dashboard?.weekly_progress ?? []).map((week) => (
+              <div key={week.label} className="rounded-[16px] border border-white/5 bg-black/10 p-3">
                 <div className="flex h-28 items-end">
-                  <div className="w-full rounded-t-[14px] bg-[linear-gradient(180deg,#6EE7B7,#10B981)]" style={{ height: `${height}%` }} />
+                  <div
+                    className="w-full rounded-t-[14px] bg-[linear-gradient(180deg,#6EE7B7,#10B981)]"
+                    style={{ height: `${Math.max(week.percent, 8)}%` }}
+                  />
                 </div>
-                <div className="mt-3 text-center text-[12px] font-bold text-white">S{index + 1}</div>
+                <div className="mt-3 text-center text-[12px] font-bold text-white">{week.label}</div>
+                <div className="mt-1 text-center text-[11px] text-[#8B949E]">{formatXaf(week.earnings_xaf)}</div>
+                <div className="mt-1 text-center text-[10px] uppercase tracking-[0.12em] text-emerald-300">
+                  {week.deliveries} livraison{week.deliveries > 1 ? "s" : ""}
+                </div>
               </div>
             ))}
           </div>
@@ -859,53 +1078,6 @@ export default function CourierDashboardPage() {
               <div className={`text-[18px] font-extrabold ${shipment.status === "DELIVERED" ? "text-[#6EE7B7]" : "text-red-300"}`}>
                 {shipment.status === "DELIVERED" ? `+${formatXaf(Math.round(shipment.order_total_xaf * 0.08))}` : "0 FCFA"}
               </div>
-            </div>
-          ))}
-        </div>
-      </SectionShell>
-    </section>
-  );
-
-  const renderCompte = () => (
-    <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Wallet" title="Mon Compte BelivaY">
-        <div className="grid gap-4 md:grid-cols-3">
-          <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/5 p-4">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Solde dispo</div>
-            <div className="mt-2 text-[26px] font-extrabold text-[#6EE7B7]">{formatXaf(earnings.total)}</div>
-          </div>
-          <div className="rounded-[20px] border border-orange-500/20 bg-orange-500/5 p-4">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Retraits</div>
-            <div className="mt-2 text-[26px] font-extrabold text-orange-300">2</div>
-          </div>
-          <div className="rounded-[20px] border border-sky-500/20 bg-sky-500/5 p-4">
-            <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Compte MoMo</div>
-            <div className="mt-2 text-[18px] font-extrabold text-sky-300">{courierProfile?.phone || user?.phone || "Non lie"}</div>
-          </div>
-        </div>
-        <div className="mt-5 grid gap-3 md:grid-cols-2">
-          {[
-            "Demander un retrait Mobile Money",
-            "Rattacher un compte bancaire",
-            "Voir les bonus hebdomadaires",
-            "Consulter les prelevements et frais",
-          ].map((item) => (
-            <div key={item} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] text-white">
-              {item}
-            </div>
-          ))}
-        </div>
-      </SectionShell>
-
-      <SectionShell kicker="Confiance" title="Historique financier" accent="text-orange-300">
-        <div className="space-y-3">
-          {[
-            "Retrait Mobile Money · 45 000 FCFA · Reussi",
-            "Bonus performance · 5 000 FCFA · Credite",
-            "Commission course premium · 2 500 FCFA · Creditee",
-          ].map((item) => (
-            <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white/80">
-              {item}
             </div>
           ))}
         </div>
@@ -1016,16 +1188,52 @@ export default function CourierDashboardPage() {
 
   const renderNotifications = () => (
     <SectionShell kicker="Centre d'alertes" title="Notifications">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="text-[12px] text-[#8B949E]">
+          {notifications.length} notification{notifications.length > 1 ? "s" : ""} · {unreadNotifications} non lue{unreadNotifications > 1 ? "s" : ""}
+        </div>
+        {notifications.length > 0 ? (
+          <button
+            type="button"
+            onClick={handleMarkAllNotificationsRead}
+            className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-bold text-white"
+          >
+            Tout marquer comme lu
+          </button>
+        ) : null}
+      </div>
       <div className="space-y-3">
-        {notifications.map((item) => (
-          <div key={item.title} className="flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-            <Bell size={18} className={`mt-0.5 shrink-0 ${item.tone}`} />
-            <div>
-              <div className="font-bold text-white">{item.title}</div>
-              <div className="mt-1 text-[13px] leading-6 text-white/75">{item.body}</div>
-            </div>
+        {notifications.length ? (
+          notifications.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => handleNotificationClick(item)}
+              className={`flex w-full gap-4 rounded-[18px] border p-4 text-left transition hover:bg-white/[0.05] ${
+                item.is_read ? "border-white/5 bg-white/[0.03]" : "border-emerald-500/15 bg-emerald-500/5"
+              }`}
+            >
+              <Bell size={18} className={`mt-0.5 shrink-0 ${notificationTone(item.notification_type)}`} />
+              <div className="flex-1">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="font-bold text-white">{item.title}</div>
+                  <div className="text-[11px] text-[#8B949E]">
+                    {new Date(item.created_at).toLocaleString("fr-FR")}
+                  </div>
+                </div>
+                <div className="mt-1 text-[13px] leading-6 text-white/75">{item.message}</div>
+                <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
+                  {item.notification_type}
+                  {!item.is_read ? " · Nouveau" : ""}
+                </div>
+              </div>
+            </button>
+          ))
+        ) : (
+          <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+            Aucune notification disponible pour le moment.
           </div>
-        ))}
+        )}
       </div>
     </SectionShell>
   );
@@ -1255,8 +1463,6 @@ export default function CourierDashboardPage() {
         return renderMap();
       case "gains":
         return renderGains();
-      case "lcompte":
-        return renderCompte();
       case "profil":
         return renderProfil();
       case "formation":
@@ -1279,7 +1485,7 @@ export default function CourierDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0D1117] text-[#E6EDF3]">
+    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]">
       <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"
@@ -1287,23 +1493,63 @@ export default function CourierDashboardPage() {
         />
       </div>
 
-      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-4 bg-[linear-gradient(135deg,#021f16,#033b28_55%,#065F46)] px-4 shadow-[0_2px_22px_rgba(0,0,0,.4)]">
+      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-4 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-4 shadow-[0_2px_22px_rgba(0,0,0,.4)]">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-[#6EE7B7]">
-            <Bike size={20} />
+          <div className="flex h-10 items-center justify-center rounded-2xl bg-emerald-500/10 px-2">
+            <img
+              src="/belivay-logo.png"
+              alt="BelivaY"
+              className="h-7 w-auto"
+              style={{ filter: "brightness(0) saturate(100%) invert(63%) sepia(54%) saturate(673%) hue-rotate(104deg) brightness(93%) contrast(92%)" }}
+            />
           </div>
           <div>
-            <div className="text-[15px] font-extrabold tracking-tight">BelivaY Livreur</div>
-            <div className="text-[11px] text-white/70">
-              {isApprovedCourier ? "Toutes les vues operationnelles" : "Validation du profil en attente"}
-            </div>
+            <div className="text-[15px] font-extrabold tracking-tight text-emerald-300">Espace livreur</div>
+            <div className="text-[11px] text-white/70">{isApprovedCourier ? "" : "Validation du profil en attente"}</div>
           </div>
         </div>
 
-        <div className="ml-auto hidden items-center gap-3 md:flex">
+        <div className="ml-auto hidden items-center gap-2 md:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
             {courierProfile?.is_online ? "Disponible" : "Hors ligne"}
           </div>
+          <button
+            type="button"
+            onClick={() => setTab("notifications")}
+            className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            aria-label="Notifications"
+          >
+            <Bell size={16} />
+            {unreadNotifications > 0 ? (
+              <span className="absolute right-[-2px] top-[-2px] flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-black text-[#022c22]">
+                {unreadNotifications}
+              </span>
+            ) : null}
+          </button>
+          <button
+            type="button"
+            onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
+            className="flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15"
+            aria-label="Changer de langue"
+          >
+            {i18n.language.toUpperCase()}
+          </button>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            aria-label="Changer de thème"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={() => setTab("profil")}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
+            aria-label="Compte utilisateur"
+          >
+            <User size={16} />
+          </button>
           <button
             type="button"
             onClick={() => navigate("/profile?panel=livreur")}
@@ -1314,7 +1560,7 @@ export default function CourierDashboardPage() {
         </div>
       </header>
 
-      <aside className="fixed bottom-0 left-0 top-[59px] hidden w-[232px] border-r border-white/5 bg-[#0D1117] lg:block">
+      <aside className="fixed bottom-0 left-0 top-[59px] hidden w-[232px] border-r border-emerald-500/8 bg-[#0A1020] lg:block">
         <div className="m-4 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-4">
           <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-lg font-extrabold text-white">
             {user?.first_name?.[0] || user?.username?.[0] || "L"}
@@ -1322,7 +1568,7 @@ export default function CourierDashboardPage() {
           <div className="font-bold text-white">
             {user?.first_name || "Livreur"} {user?.last_name || ""}
           </div>
-          <div className="mt-1 text-[12px] text-[#6EE7B7]">
+          <div className="mt-1 text-[12px] text-emerald-300">
             {courierProfile ? `${courierProfile.city} · ${VEHICLE_LABELS[courierProfile.vehicle_type] || courierProfile.vehicle_type}` : "Demande a finaliser"}
           </div>
         </div>
@@ -1338,7 +1584,7 @@ export default function CourierDashboardPage() {
                 onClick={() => setTab(item.id)}
                 className={`mb-1 flex w-full items-center gap-3 rounded-[12px] px-4 py-3 text-left text-[13px] font-semibold transition ${
                   active
-                    ? "border-l-[3px] border-[#10B981] bg-emerald-500/10 text-[#6EE7B7]"
+                    ? "border-l-[3px] border-emerald-300 bg-emerald-500/10 text-emerald-300"
                     : "text-[#8B949E] hover:bg-white/5 hover:text-white"
                 }`}
               >
@@ -1363,10 +1609,10 @@ export default function CourierDashboardPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-5">
-            <section className="overflow-hidden rounded-[24px] border border-emerald-500/15 bg-[linear-gradient(135deg,#161B22,#0f2a21)] p-6 shadow-[0_18px_48px_rgba(0,0,0,.24)]">
+            <section className="overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-6 shadow-[0_20px_56px_rgba(0,0,0,.32)]">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-[#6EE7B7]">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300">
                     <ShieldCheck size={13} />
                     Acteur livreur
                   </div>
@@ -1379,19 +1625,19 @@ export default function CourierDashboardPage() {
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[18px] border border-white/5 bg-white/5 p-4">
+                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Ville</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-[#6EE7B7]">{courierProfile?.city || "Yaounde"}</div>
+                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">{courierProfile?.city || "Yaounde"}</div>
                   </div>
-                  <div className="rounded-[18px] border border-white/5 bg-white/5 p-4">
+                  <div className="rounded-[20px] border border-green-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Vehicule</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-orange-300">
+                    <div className="mt-2 text-[22px] font-extrabold text-green-300">
                       {courierProfile ? VEHICLE_LABELS[courierProfile.vehicle_type] || courierProfile.vehicle_type : "Moto"}
                     </div>
                   </div>
-                  <div className="rounded-[18px] border border-white/5 bg-white/5 p-4">
+                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Statut</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-sky-300">
+                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">
                       {isApprovedCourier ? "Actif" : "Pending"}
                     </div>
                   </div>

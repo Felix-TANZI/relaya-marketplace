@@ -235,3 +235,44 @@ class CourierShipmentActionSerializer(serializers.Serializer):
         )
 
         return shipment
+
+
+class CourierDashboardLeaderboardSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    score = serializers.CharField()
+    badge = serializers.CharField()
+    tone = serializers.CharField()
+
+
+class CourierDashboardZoneSerializer(serializers.Serializer):
+    zone = serializers.CharField()
+    demand_percent = serializers.IntegerField()
+    hint = serializers.CharField()
+
+
+class CourierDashboardWeekSerializer(serializers.Serializer):
+    label = serializers.CharField()
+    earnings_xaf = serializers.IntegerField()
+    deliveries = serializers.IntegerField()
+    percent = serializers.IntegerField()
+
+
+class CourierDashboardSerializer(serializers.Serializer):
+    active_shipments = serializers.IntegerField()
+    delivered_shipments = serializers.IntegerField()
+    today_earnings_xaf = serializers.IntegerField()
+    month_earnings_xaf = serializers.IntegerField()
+    monthly_target_xaf = serializers.IntegerField()
+    monthly_goal_percent = serializers.IntegerField()
+    average_payout_xaf = serializers.IntegerField()
+    online_minutes = serializers.IntegerField()
+    status_label = serializers.CharField()
+    distance_km = serializers.FloatField()
+    average_delivery_minutes = serializers.IntegerField()
+    performance_percent = serializers.IntegerField()
+    recommended_departure = serializers.CharField()
+    traffic_label = serializers.CharField()
+    weather_label = serializers.CharField()
+    leaderboard = CourierDashboardLeaderboardSerializer(many=True)
+    zone_heatmap = CourierDashboardZoneSerializer(many=True)
+    weekly_progress = CourierDashboardWeekSerializer(many=True)

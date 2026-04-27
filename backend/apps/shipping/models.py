@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 from apps.orders.models import Order
 from apps.accounts.models import CourierProfile
 
@@ -63,3 +64,27 @@ class ShipmentEvent(models.Model):
 
     def __str__(self):
         return f"ShipmentEvent(shipment={self.shipment_id}, status={self.status})"
+
+
+class ShipmentMessage(models.Model):
+    class Channel(models.TextChoices):
+        CLIENT = "CLIENT", "Client"
+        VENDOR = "VENDOR", "Vendeur"
+        SUPPORT = "SUPPORT", "Support"
+
+    class SenderRole(models.TextChoices):
+        COURIER = "COURIER", "Livreur"
+        SYSTEM = "SYSTEM", "Systeme"
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name="shipment_messages")
+    channel = models.CharField(max_length=16, choices=Channel.choices)
+    sender_role = models.CharField(max_length=16, choices=SenderRole.choices, default=SenderRole.COURIER)
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"ShipmentMessage(shipment={self.shipment_id}, channel={self.channel})"

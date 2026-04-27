@@ -64,6 +64,33 @@ export type CourierDashboardWeek = {
   percent: number;
 };
 
+export type CourierNetworkShop = {
+  vendor_id: number;
+  vendor_name: string;
+  shop_slug: string;
+  city: string;
+  address: string;
+  phone: string;
+  is_online: boolean;
+  location_name: string;
+  representative_name: string;
+  representative_phone: string;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export type CourierNetworkRelayPoint = {
+  name: string;
+  city: string;
+  address: string;
+  shipments_count: number;
+};
+
+export type CourierNetwork = {
+  shops: CourierNetworkShop[];
+  relay_points: CourierNetworkRelayPoint[];
+};
+
 export type CourierNotification = {
   id: number;
   title: string;
@@ -73,6 +100,29 @@ export type CourierNotification = {
   is_read: boolean;
   created_at: string;
   updated_at: string;
+};
+
+export type CourierDispute = {
+  id: number;
+  ref: string;
+  label: string;
+  status: string;
+  status_display: string;
+  reason: string;
+  reason_display: string;
+  detail: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CourierShipmentMessage = {
+  id: number;
+  shipment: number;
+  channel: "CLIENT" | "VENDOR" | "SUPPORT";
+  sender_role: "COURIER" | "SYSTEM";
+  sender_name: string;
+  message: string;
+  created_at: string;
 };
 
 export type CourierDashboard = {
@@ -101,8 +151,43 @@ export const courierApi = {
     return http<CourierDashboard>("/api/shipping/dashboard/");
   },
 
+  getNetwork: async (): Promise<CourierNetwork> => {
+    return http<CourierNetwork>("/api/shipping/network/");
+  },
+
   getNotifications: async (): Promise<CourierNotification[]> => {
     return http<CourierNotification[]>("/api/auth/notifications/");
+  },
+
+  getDisputes: async (): Promise<CourierDispute[]> => {
+    return http<CourierDispute[]>("/api/shipping/disputes/");
+  },
+
+  getShipmentMessages: async (
+    id: number,
+    channel?: "CLIENT" | "VENDOR" | "SUPPORT",
+  ): Promise<CourierShipmentMessage[]> => {
+    const qs = channel ? `?channel=${channel}` : "";
+    return http<CourierShipmentMessage[]>(`/api/shipping/my-shipments/${id}/messages/${qs}`);
+  },
+
+  sendShipmentMessage: async (
+    id: number,
+    payload: { channel: "CLIENT" | "VENDOR" | "SUPPORT"; message: string },
+  ): Promise<CourierShipmentMessage> => {
+    return http<CourierShipmentMessage>(`/api/shipping/my-shipments/${id}/messages/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  scanShipment: async (
+    payload: { code: string; action: "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED" },
+  ): Promise<CourierShipment> => {
+    return http<CourierShipment>("/api/shipping/scan/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   markNotificationRead: async (id: number): Promise<CourierNotification> => {

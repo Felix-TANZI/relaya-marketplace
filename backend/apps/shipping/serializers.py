@@ -1,7 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
-from apps.orders.models import Order
-from .models import Shipment, ShipmentEvent
+from apps.orders.models import Dispute, Order
+from .models import Shipment, ShipmentEvent, ShipmentMessage
 
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
@@ -276,3 +276,97 @@ class CourierDashboardSerializer(serializers.Serializer):
     leaderboard = CourierDashboardLeaderboardSerializer(many=True)
     zone_heatmap = CourierDashboardZoneSerializer(many=True)
     weekly_progress = CourierDashboardWeekSerializer(many=True)
+
+
+class CourierNetworkShopSerializer(serializers.Serializer):
+    vendor_id = serializers.IntegerField()
+    vendor_name = serializers.CharField()
+    shop_slug = serializers.CharField(allow_blank=True)
+    city = serializers.CharField(allow_blank=True)
+    address = serializers.CharField(allow_blank=True)
+    phone = serializers.CharField(allow_blank=True)
+    is_online = serializers.BooleanField()
+    location_name = serializers.CharField(allow_blank=True)
+    representative_name = serializers.CharField(allow_blank=True)
+    representative_phone = serializers.CharField(allow_blank=True)
+    latitude = serializers.FloatField(allow_null=True)
+    longitude = serializers.FloatField(allow_null=True)
+
+
+class CourierNetworkRelayPointSerializer(serializers.Serializer):
+    name = serializers.CharField()
+    city = serializers.CharField(allow_blank=True)
+    address = serializers.CharField(allow_blank=True)
+    shipments_count = serializers.IntegerField()
+
+
+class CourierNetworkSerializer(serializers.Serializer):
+    shops = CourierNetworkShopSerializer(many=True)
+    relay_points = CourierNetworkRelayPointSerializer(many=True)
+
+
+class CourierDisputeSerializer(serializers.ModelSerializer):
+    ref = serializers.SerializerMethodField()
+    label = serializers.SerializerMethodField()
+    detail = serializers.CharField(source="description", read_only=True)
+    status_display = serializers.SerializerMethodField()
+    reason_display = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Dispute
+        fields = [
+            "id",
+            "ref",
+            "label",
+            "status",
+            "status_display",
+            "reason",
+            "reason_display",
+            "detail",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_ref(self, obj):
+        return f"LIT-{obj.id:03d}"
+
+    def get_label(self, obj):
+        return f"Commande #{obj.order_id}"
+
+    def get_status_display(self, obj):
+        return obj.get_status_display()
+
+    def get_reason_display(self, obj):
+        return obj.get_reason_display()
+
+
+class ShipmentMessageSerializer(serializers.ModelSerializer):
+    sender_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShipmentMessage
+        fields = [
+            "id",
+            "shipment",
+            "channel",
+            "sender_role",
+            "sender_name",
+            "message",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_sender_name(self, obj):
+        full_name = obj.sender.get_full_name().strip()
+        return full_name or obj.sender.username
+
+
+class ShipmentMessageCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShipmentMessage
+        fields = ["channel", "message"]
+
+
+class CourierShipmentScanSerializer(serializers.Serializer):
+    code = serializers.CharField()
+    action = serializers.ChoiceField(choices=["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"])

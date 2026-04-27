@@ -5,18 +5,26 @@ from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Count
 from datetime import timedelta
 
 from .serializers import (
+    CourierDisputeSerializer,
     CourierDashboardSerializer,
+    CourierNetworkSerializer,
+    CourierShipmentScanSerializer,
     CourierShipmentActionSerializer,
+    ShipmentMessageCreateSerializer,
+    ShipmentMessageSerializer,
     ShipmentSerializer,
     ShipmentCreateSerializer,
     ShipmentEventSerializer,
     ShipmentEventCreateSerializer,
 )
-from .models import Shipment
+from .models import Shipment, ShipmentEvent, ShipmentMessage
 from apps.accounts.models import CourierProfile
+from apps.vendors.models import VendorLocation, VendorProfile
+from apps.orders.models import Dispute, DisputeMessage, Order
 
 
 @extend_schema(
@@ -129,6 +137,37 @@ class CourierShipmentActionView(generics.GenericAPIView):
         return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
 
 
+def _get_active_courier(user):
+    courier = getattr(user, "courier_profile", None)
+    if not courier or not courier.is_approved or not courier.is_active:
+        raise PermissionDenied("Courier account is not approved")
+    return courier
+
+
+def _resolve_scan_target(code: str, courier) -> Shipment:
+    raw = code.strip().upper()
+    if not raw:
+        raise PermissionDenied("Scan code is empty")
+
+    shipment_qs = Shipment.objects.filter(courier=courier).select_related("order", "courier", "courier__user")
+
+    try:
+        if raw.startswith("SHIP-"):
+            shipment_id = raw.replace("SHIP-", "", 1)
+            return get_object_or_404(shipment_qs, id=int(shipment_id))
+
+        if raw.startswith("BLV-"):
+            order_id = raw.replace("BLV-", "", 1)
+            return get_object_or_404(shipment_qs, order_id=int(order_id))
+
+        if raw.isdigit():
+            return shipment_qs.filter(id=int(raw)).first() or get_object_or_404(shipment_qs, order_id=int(raw))
+    except ValueError as exc:
+        raise PermissionDenied("Unsupported scan code format") from exc
+
+    raise PermissionDenied("Unsupported scan code format")
+
+
 def _courier_payout_xaf(shipment: Shipment) -> int:
     return round((shipment.order.total_xaf or 0) * 0.08)
 
@@ -190,9 +229,7 @@ class CourierDashboardView(generics.GenericAPIView):
     serializer_class = CourierDashboardSerializer
 
     def get(self, request, *args, **kwargs):
-        courier = getattr(request.user, "courier_profile", None)
-        if not courier or not courier.is_approved or not courier.is_active:
-            raise PermissionDenied("Courier account is not approved")
+        courier = _get_active_courier(request.user)
 
         now = timezone.now()
         today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -327,3 +364,183 @@ class CourierDashboardView(generics.GenericAPIView):
             "weekly_progress": weekly_progress,
         }
         return Response(CourierDashboardSerializer(data).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Reseau boutiques et points relais pour livreur")
+class CourierNetworkView(generics.GenericAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CourierNetworkSerializer
+
+    def get(self, request, *args, **kwargs):
+        _get_active_courier(request.user)
+
+        approved_vendors = list(
+            VendorProfile.objects.filter(status=VendorProfile.Status.APPROVED)
+            .select_related("user")
+            .order_by("business_name")
+        )
+        vendor_locations = list(
+            VendorLocation.objects.filter(vendor__status=VendorProfile.Status.APPROVED, is_active=True)
+            .select_related("vendor", "vendor__user")
+            .order_by("vendor__business_name", "name")
+        )
+
+        shops = []
+        vendors_with_locations = set()
+        for location in vendor_locations:
+            vendors_with_locations.add(location.vendor_id)
+            shops.append(
+                {
+                    "vendor_id": location.vendor_id,
+                    "vendor_name": location.vendor.business_name,
+                    "shop_slug": location.vendor.shop_slug or "",
+                    "city": location.vendor.city or "",
+                    "address": location.address or "",
+                    "phone": location.phone or location.vendor.phone or "",
+                    "is_online": bool(location.vendor.is_online),
+                    "location_name": location.name or "",
+                    "representative_name": location.representative_name or "",
+                    "representative_phone": location.representative_phone or "",
+                    "latitude": float(location.latitude) if location.latitude is not None else None,
+                    "longitude": float(location.longitude) if location.longitude is not None else None,
+                }
+            )
+
+        for vendor in approved_vendors:
+            if vendor.id in vendors_with_locations:
+                continue
+            shops.append(
+                {
+                    "vendor_id": vendor.id,
+                    "vendor_name": vendor.business_name,
+                    "shop_slug": vendor.shop_slug or "",
+                    "city": vendor.city or "",
+                    "address": vendor.address or "",
+                    "phone": vendor.phone or "",
+                    "is_online": bool(vendor.is_online),
+                    "location_name": "",
+                    "representative_name": "",
+                    "representative_phone": "",
+                    "latitude": None,
+                    "longitude": None,
+                }
+            )
+
+        relay_points = [
+            {
+                "name": item["relay_point"],
+                "city": item["order__city"] or "",
+                "address": item["relay_point"],
+                "shipments_count": item["shipments_count"],
+            }
+            for item in Shipment.objects.exclude(relay_point="")
+            .values("relay_point", "order__city")
+            .annotate(shipments_count=Count("id"))
+            .order_by("-shipments_count", "relay_point")
+        ]
+
+        data = {
+            "shops": shops,
+            "relay_points": relay_points,
+        }
+        return Response(CourierNetworkSerializer(data).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Litiges lies aux commandes du livreur")
+class CourierDisputeListView(generics.ListAPIView):
+    serializer_class = CourierDisputeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        courier = _get_active_courier(self.request.user)
+        return (
+            Dispute.objects.filter(order__shipment__courier=courier)
+            .select_related("order", "opened_by")
+            .order_by("-updated_at")
+            .distinct()
+        )
+
+
+@extend_schema(tags=["Shipping"], summary="Messages d'une livraison pour le livreur")
+class CourierShipmentMessageListCreateView(generics.GenericAPIView):
+    serializer_class = ShipmentMessageCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_shipment(self):
+        courier = _get_active_courier(self.request.user)
+        return get_object_or_404(
+            Shipment.objects.select_related("order", "courier", "courier__user"),
+            id=self.kwargs["id"],
+            courier=courier,
+        )
+
+    def get(self, request, id):
+        shipment = self.get_shipment()
+        channel = request.query_params.get("channel")
+        messages = shipment.messages.all()
+        if channel:
+            messages = messages.filter(channel=channel.upper())
+        return Response(ShipmentMessageSerializer(messages, many=True).data, status=status.HTTP_200_OK)
+
+    def post(self, request, id):
+        shipment = self.get_shipment()
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        message = ShipmentMessage.objects.create(
+            shipment=shipment,
+            sender=request.user,
+            channel=serializer.validated_data["channel"],
+            sender_role=ShipmentMessage.SenderRole.COURIER,
+            message=serializer.validated_data["message"],
+        )
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=shipment.status,
+            message=f"Message {message.channel.lower()} envoye par le livreur",
+            location=shipment.order.city,
+        )
+        return Response(ShipmentMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Shipping"], summary="Scanner QR de test pour une livraison")
+class CourierShipmentScanView(generics.GenericAPIView):
+    serializer_class = CourierShipmentScanSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        courier = _get_active_courier(request.user)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shipment = _resolve_scan_target(serializer.validated_data["code"], courier)
+        action = serializer.validated_data["action"]
+        order = shipment.order
+
+        if action == "PICKED_UP":
+            shipment.status = Shipment.Status.PICKED_UP
+            order.mark_picked_up()
+            event_message = "Colis scanne et pris en charge"
+        elif action == "OUT_FOR_DELIVERY":
+            shipment.status = Shipment.Status.OUT_FOR_DELIVERY
+            order.mark_out_for_delivery()
+            event_message = "Colis scanne et mis en livraison"
+        else:
+            shipment.status = Shipment.Status.DELIVERED
+            order.mark_delivered()
+            event_message = "Colis scanne et livre"
+
+        shipment.save(update_fields=["status", "updated_at"])
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=shipment.status,
+            message=event_message,
+            location=order.city,
+        )
+        ShipmentMessage.objects.create(
+            shipment=shipment,
+            sender=request.user,
+            channel=ShipmentMessage.Channel.SUPPORT,
+            sender_role=ShipmentMessage.SenderRole.SYSTEM,
+            message=f"Scan test effectue: {event_message}.",
+        )
+        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)

@@ -9,6 +9,7 @@ from .views import (
     profile,
     update_profile,
     AvatarUploadView,
+    CourierApplicationView,
     FavoritesListCreateView,
     FavoriteDestroyView,
     NotificationsListView,
@@ -44,6 +45,7 @@ urlpatterns = [
     path("profile/update/",      update_profile,                    name="auth-profile-update"),
     path("change-password/",     change_password,                   name="auth-change-password"),
     path("profile/avatar/",      AvatarUploadView.as_view(),        name="auth-profile-avatar"),
+    path("courier/application/", CourierApplicationView.as_view(),   name="courier-application"),
 
     # ── Sessions / Appareils ──────────────────────────────────────────────────
     path("sessions/",                   list_sessions,      name="auth-sessions-list"),

@@ -1,6 +1,10 @@
 from django.urls import path
 from .views import (
+    CourierDisputeListView,
     CourierDashboardView,
+    CourierNetworkView,
+    CourierShipmentMessageListCreateView,
+    CourierShipmentScanView,
     CourierMyShipmentsView,
     CourierShipmentActionView,
     CourierShipmentDetailView,
@@ -14,7 +18,11 @@ urlpatterns = [
     path("events/", ShipmentEventCreateView.as_view(), name="shipping-events"),
     path("track/", ShipmentTrackView.as_view(), name="shipping-track"),
     path("dashboard/", CourierDashboardView.as_view(), name="shipping-dashboard"),
+    path("network/", CourierNetworkView.as_view(), name="shipping-network"),
+    path("disputes/", CourierDisputeListView.as_view(), name="shipping-disputes"),
+    path("scan/", CourierShipmentScanView.as_view(), name="shipping-scan"),
     path("my-shipments/", CourierMyShipmentsView.as_view(), name="shipping-my-shipments"),
     path("my-shipments/<int:id>/", CourierShipmentDetailView.as_view(), name="shipping-my-shipments-detail"),
+    path("my-shipments/<int:id>/messages/", CourierShipmentMessageListCreateView.as_view(), name="shipping-my-shipments-messages"),
     path("my-shipments/<int:id>/action/", CourierShipmentActionView.as_view(), name="shipping-my-shipments-action"),
 ]

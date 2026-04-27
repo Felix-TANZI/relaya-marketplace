@@ -18,6 +18,8 @@ from django.core.mail import send_mail
 from django.conf import settings as django_settings
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
 from .serializers import (
+    CourierApplicationSerializer,
+    CourierProfileSerializer,
     UserProfileSerializer,
     UserProfileUpdateSerializer,
     AvatarUploadSerializer,
@@ -29,7 +31,7 @@ from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 
 from .serializers import UserSerializer, RegisterSerializer
-from .models import UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
 
 
 logger = logging.getLogger(__name__)
@@ -133,6 +135,45 @@ class AvatarUploadView(APIView):
         profile.avatar = None
         profile.save(update_fields=['avatar', 'updated_at'])
         return Response(UserProfileSerializer(request.user, context={'request': request}).data)
+
+
+@extend_schema(tags=["Auth"], summary="Get or submit courier application")
+class CourierApplicationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _response(self, courier):
+        if not courier:
+            return Response({"application": None, "status": "not_applied"})
+
+        status_label = "approved" if courier.is_approved and courier.is_active else "pending"
+        return Response(
+            {
+                "application": CourierProfileSerializer(courier).data,
+                "status": status_label,
+            }
+        )
+
+    def get(self, request):
+        courier = getattr(request.user, "courier_profile", None)
+        return self._response(courier)
+
+    def post(self, request):
+        serializer = CourierApplicationSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return self._response(courier)
+
+    def patch(self, request):
+        courier = get_object_or_404(CourierProfile, user=request.user)
+        serializer = CourierApplicationSerializer(
+            courier,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return self._response(courier)
 
 
 @extend_schema(tags=["Client"], summary="List favorite products")

@@ -4,7 +4,7 @@
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Shipment, ShipmentEvent
+from .models import Shipment, ShipmentEvent, ShipmentMessage
 
 
 # ─── INLINE : Événements d'une livraison ─────────────────────────────────────
@@ -88,3 +88,12 @@ class ShipmentEventAdmin(admin.ModelAdmin):
     search_fields = ('shipment__order__id', 'message', 'location')
     readonly_fields = ('created_at',)
     ordering      = ('-created_at',)
+
+
+@admin.register(ShipmentMessage)
+class ShipmentMessageAdmin(admin.ModelAdmin):
+    list_display = ("id", "shipment", "channel", "sender", "sender_role", "created_at")
+    list_filter = ("channel", "sender_role")
+    search_fields = ("shipment__order__id", "sender__username", "message")
+    readonly_fields = ("created_at",)
+    ordering = ("-created_at",)

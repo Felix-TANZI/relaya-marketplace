@@ -30,6 +30,7 @@ import {
   Siren,
   Sun,
   Moon,
+  Store,
   Truck,
   User,
   Wallet,
@@ -41,11 +42,13 @@ import { authApi, type CourierApplicationResponse, type User as AuthUser } from 
 import {
   courierApi,
   type CourierDashboard,
+  type CourierDispute,
+  type CourierNetwork,
   type CourierNotification,
   type CourierShipment,
   type CourierShipmentAction,
+  type CourierShipmentMessage,
 } from "@/services/api/courier";
-import { MOCK_COURIER_SHIPMENTS } from "@/data/mockCourier";
 
 type CourierTab =
   | "dashboard"
@@ -53,6 +56,7 @@ type CourierTab =
   | "courses"
   | "scanner"
   | "map"
+  | "reseau"
   | "gains"
   | "profil"
   | "formation"
@@ -77,6 +81,7 @@ const TAB_LABELS: Record<CourierTab, string> = {
   courses: "Courses",
   scanner: "Scanner QR",
   map: "Carte & Navigation",
+  reseau: "Boutiques & Points Relais",
   gains: "Gains & Rentabilite",
   profil: "Mon Profil",
   formation: "Formation",
@@ -242,10 +247,17 @@ export default function CourierDashboardPage() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [application, setApplication] = useState<CourierApplicationResponse | null>(null);
   const [dashboard, setDashboard] = useState<CourierDashboard | null>(null);
+  const [network, setNetwork] = useState<CourierNetwork | null>(null);
+  const [disputes, setDisputes] = useState<CourierDispute[]>([]);
   const [notifications, setNotifications] = useState<CourierNotification[]>([]);
+  const [messages, setMessages] = useState<CourierShipmentMessage[]>([]);
   const [shipments, setShipments] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [messageDraft, setMessageDraft] = useState("");
+  const [scanCode, setScanCode] = useState("");
+  const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
+  const [scanFeedback, setScanFeedback] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [messagesTab, setMessagesTab] = useState<"client" | "vendeur" | "support">("client");
 
@@ -259,17 +271,21 @@ export default function CourierDashboardPage() {
       authApi.getCourierApplication(),
       courierApi.listMyShipments(),
       courierApi.getDashboard(),
+      courierApi.getNetwork(),
+      courierApi.getDisputes(),
       courierApi.getNotifications(),
     ])
-      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, notificationsResult]) => {
+      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, networkResult, disputesResult, notificationsResult]) => {
         const resolvedShipments =
           shipmentsResult.status === "fulfilled"
             ? shipmentsResult.value
-            : MOCK_COURIER_SHIPMENTS;
+            : [];
 
         if (profileResult.status === "fulfilled") setUser(profileResult.value);
         if (applicationResult.status === "fulfilled") setApplication(applicationResult.value);
         if (dashboardResult.status === "fulfilled") setDashboard(dashboardResult.value);
+        if (networkResult.status === "fulfilled") setNetwork(networkResult.value);
+        if (disputesResult.status === "fulfilled") setDisputes(disputesResult.value);
         if (notificationsResult.status === "fulfilled") setNotifications(notificationsResult.value);
         setShipments(resolvedShipments);
         setSelectedShipmentId((current) => current ?? resolvedShipments[0]?.id ?? null);
@@ -283,10 +299,25 @@ export default function CourierDashboardPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    if (!selectedShipmentId) {
+      setMessages([]);
+      return;
+    }
+
+    const channel =
+      messagesTab === "client" ? "CLIENT" : messagesTab === "vendeur" ? "VENDOR" : "SUPPORT";
+
+    courierApi
+      .getShipmentMessages(selectedShipmentId, channel)
+      .then(setMessages)
+      .catch(() => setMessages([]));
+  }, [messagesTab, selectedShipmentId]);
+
   const courierProfile = application?.application ?? user?.courier_profile ?? null;
   const isApprovedCourier = application?.status === "approved" || Boolean(user?.is_courier);
   const firstName = user?.first_name || user?.username || "Livreur";
-  const zones = courierProfile?.zones?.length ? courierProfile.zones : ["Centre-ville", "Bastos", "Mvog-Ada"];
+  const zones = courierProfile?.zones?.length ? courierProfile.zones : [];
 
   const activeShipments = useMemo(
     () => shipments.filter((shipment) => ["ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(shipment.status)),
@@ -352,12 +383,46 @@ export default function CourierDashboardPage() {
     }
   };
 
+  const handleSendMessage = async () => {
+    if (!selectedShipmentId || !messageDraft.trim()) return;
+    const channel =
+      messagesTab === "client" ? "CLIENT" : messagesTab === "vendeur" ? "VENDOR" : "SUPPORT";
+
+    try {
+      const created = await courierApi.sendShipmentMessage(selectedShipmentId, {
+        channel,
+        message: messageDraft.trim(),
+      });
+      setMessages((current) => [...current, created]);
+      setMessageDraft("");
+    } catch {
+      // Keep the UI stable even if the request fails.
+    }
+  };
+
+  const handleScanShipment = async () => {
+    if (!scanCode.trim()) return;
+
+    try {
+      const updated = await courierApi.scanShipment({
+        code: scanCode.trim(),
+        action: scanAction,
+      });
+      setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
+      setSelectedShipmentId(updated.id);
+      setScanFeedback(`Scan traite pour la commande #${updated.order}.`);
+    } catch {
+      setScanFeedback("Le scan a echoue. Verifie le code et l'assignation de la mission.");
+    }
+  };
+
   const menu = [
     { id: "dashboard", label: "Vue d'ensemble", icon: Gauge },
     { id: "tournee", label: "Ma Tournee", icon: Route },
     { id: "courses", label: "Courses", icon: Package },
     { id: "scanner", label: "Scanner QR", icon: ScanLine },
     { id: "map", label: "Carte & Navigation", icon: Map },
+    { id: "reseau", label: "Boutiques & Points Relais", icon: Store },
     { id: "gains", label: "Gains & Rentabilite", icon: BadgeDollarSign },
     { id: "profil", label: "Mon Profil", icon: User },
     { id: "formation", label: "Formation", icon: BookOpen },
@@ -396,9 +461,7 @@ export default function CourierDashboardPage() {
     },
   ];
 
-  const leaderboard = dashboard?.leaderboard?.length
-    ? dashboard.leaderboard
-    : [{ name: `${firstName}`, score: "—", badge: "En attente", tone: "text-emerald-300" }];
+  const leaderboard = dashboard?.leaderboard ?? [];
 
   const liveHeaderStats = [
     {
@@ -413,11 +476,6 @@ export default function CourierDashboardPage() {
   ];
 
   const unreadNotifications = notifications.filter((item) => !item.is_read).length;
-
-  const disputes = [
-    { ref: "LIT-203", label: "Commande #1058", status: "En mediation", tone: "text-orange-300", detail: "Client absent a la premiere tentative." },
-    { ref: "LIT-188", label: "Commande #1042", status: "Justificatif envoye", tone: "text-sky-300", detail: "Photo depot et appel client horodates." },
-  ];
 
   const mapShipment = selectedShipment ?? activeShipments[0] ?? shipments[0] ?? null;
   const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
@@ -608,23 +666,29 @@ export default function CourierDashboardPage() {
 
         <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-green-300">
           <div className="space-y-3">
-            {leaderboard.map((item, index) => (
-              <div key={item.name} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-extrabold text-white">
-                    {index + 1}
+            {leaderboard.length ? (
+              leaderboard.map((item, index) => (
+                <div key={item.name} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 font-extrabold text-white">
+                      {index + 1}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white">{item.name}</div>
+                      <div className={`text-[12px] font-semibold ${item.tone}`}>{item.badge}</div>
+                    </div>
                   </div>
-                  <div>
-                    <div className="font-bold text-white">{item.name}</div>
-                    <div className={`text-[12px] font-semibold ${item.tone}`}>{item.badge}</div>
+                  <div className="text-right">
+                    <div className="text-[18px] font-extrabold text-white">{item.score}</div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">Performance</div>
                   </div>
                 </div>
-                <div className="text-right">
-                  <div className="text-[18px] font-extrabold text-white">{item.score}</div>
-                  <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">Performance</div>
-                </div>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+                Aucun classement backend disponible pour le moment.
               </div>
-            ))}
+            )}
           </div>
         </SectionShell>
       </section>
@@ -642,19 +706,22 @@ export default function CourierDashboardPage() {
               />
             </div>
             <div className="grid gap-4 md:grid-cols-3">
-              {(dashboard?.zone_heatmap?.length
-                ? dashboard.zone_heatmap
-                : zones.map((zone) => ({ zone, demand_percent: 0, hint: "Demande observee sur les 30 derniers jours" }))
-              ).map((item) => (
-                <div key={item.zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm">
-                  <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">
-                    <MapPin size={13} />
-                    {item.zone}
+              {dashboard?.zone_heatmap?.length ? (
+                dashboard.zone_heatmap.map((item) => (
+                  <div key={item.zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.025))] p-4 backdrop-blur-sm">
+                    <div className="flex items-center gap-2 text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">
+                      <MapPin size={13} />
+                      {item.zone}
+                    </div>
+                    <div className="mt-3 text-[28px] font-extrabold text-white">{item.demand_percent}%</div>
+                    <div className="mt-1 text-[12px] text-[#8B949E]">{item.hint}</div>
                   </div>
-                  <div className="mt-3 text-[28px] font-extrabold text-white">{item.demand_percent}%</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">{item.hint}</div>
+                ))
+              ) : (
+                <div className="rounded-[20px] border border-dashed border-white/10 p-4 text-[13px] text-[#8B949E] md:col-span-3">
+                  Aucune donnee de zone chaude n'est encore disponible.
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </SectionShell>
@@ -942,13 +1009,46 @@ export default function CourierDashboardPage() {
               <div className="mt-2 text-[12px] text-[#8B949E]">Le systeme confirme le retrait, la remise ou le retour.</div>
             </div>
           </div>
+          <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
+            <input
+              value={scanCode}
+              onChange={(event) => setScanCode(event.target.value)}
+              placeholder="Ex: BLV-12, SHIP-4 ou 12"
+              className="rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+            />
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["PICKED_UP", "Prise en charge"],
+                ["OUT_FOR_DELIVERY", "En livraison"],
+                ["DELIVERED", "Livree"],
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => setScanAction(value as "PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED")}
+                  className={`rounded-full border px-4 py-2 text-[12px] font-bold ${
+                    scanAction === value
+                      ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                      : "border-white/10 bg-white/5 text-white"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
           <div className="mt-5 flex flex-wrap gap-3">
-            <button type="button" className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white">
-              Simuler un scan
+            <button
+              type="button"
+              onClick={handleScanShipment}
+              className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
+            >
+              Traiter le scan test
             </button>
             <InfoPill icon={ScanLine}>Mode camera HD</InfoPill>
             <InfoPill icon={ShieldCheck}>Scan securise</InfoPill>
           </div>
+          {scanFeedback ? <div className="mt-4 text-[13px] text-emerald-300">{scanFeedback}</div> : null}
         </div>
       </SectionShell>
 
@@ -1015,6 +1115,114 @@ export default function CourierDashboardPage() {
       </SectionShell>
     </section>
   );
+
+  const renderReseau = () => {
+    const shops = network?.shops ?? [];
+    const relayPoints = network?.relay_points ?? [];
+
+    return (
+      <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
+        <SectionShell kicker="Reseau terrain" title="Boutiques partenaires">
+          <div className="mb-4 grid gap-3 md:grid-cols-3">
+            <div className="rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Boutiques</div>
+              <div className="mt-2 text-[24px] font-extrabold text-emerald-300">{shops.length}</div>
+            </div>
+            <div className="rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Points relais</div>
+              <div className="mt-2 text-[24px] font-extrabold text-sky-300">{relayPoints.length}</div>
+            </div>
+            <div className="rounded-[18px] border border-orange-500/15 bg-orange-500/5 p-4">
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Boutiques en ligne</div>
+              <div className="mt-2 text-[24px] font-extrabold text-orange-300">
+                {shops.filter((item) => item.is_online).length}
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {shops.length ? (
+              shops.map((shop) => (
+                <div key={`${shop.vendor_id}-${shop.location_name || shop.address}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-white">{shop.vendor_name}</div>
+                      <div className="mt-1 text-[12px] text-emerald-300">
+                        {shop.location_name || "Boutique principale"}
+                      </div>
+                    </div>
+                    <span
+                      className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+                        shop.is_online
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                          : "border-white/10 bg-white/5 text-white/65"
+                      }`}
+                    >
+                      {shop.is_online ? "En ligne" : "Hors ligne"}
+                    </span>
+                  </div>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Adresse</div>
+                      <div className="mt-1">{shop.address || "Adresse non renseignee"}</div>
+                    </div>
+                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Ville</div>
+                      <div className="mt-1">{shop.city || "Ville non renseignee"}</div>
+                    </div>
+                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Telephone</div>
+                      <div className="mt-1">{shop.phone || "Non renseigne"}</div>
+                    </div>
+                    <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Coordonnees GPS</div>
+                      <div className="mt-1">
+                        {shop.latitude !== null && shop.longitude !== null
+                          ? `${shop.latitude}, ${shop.longitude}`
+                          : "Non renseignees"}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+                Aucune boutique approuvee n'est encore remontee par le backend.
+              </div>
+            )}
+          </div>
+        </SectionShell>
+
+        <SectionShell kicker="Points relais" title="Relais BelivaY observes" accent="text-sky-300">
+          <div className="space-y-3">
+            {relayPoints.length ? (
+              relayPoints.map((relay) => (
+                <div key={`${relay.name}-${relay.city}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="font-bold text-white">{relay.name}</div>
+                      <div className="mt-1 text-[12px] text-[#8B949E]">{relay.city || "Ville non renseignee"}</div>
+                    </div>
+                    <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-sky-300">
+                      {relay.shipments_count} mission{relay.shipments_count > 1 ? "s" : ""}
+                    </div>
+                  </div>
+                  <div className="mt-3 rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
+                    {relay.address || relay.name}
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+                Aucun point relais n'est encore enregistre dans les shipments. Des qu'un `relay_point` sera utilise,
+                il apparaitra ici.
+              </div>
+            )}
+          </div>
+        </SectionShell>
+      </section>
+    );
+  };
 
   const renderGains = () => (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
@@ -1241,6 +1449,7 @@ export default function CourierDashboardPage() {
   const renderMessages = () => {
     const threadTitle =
       messagesTab === "client" ? "Client final" : messagesTab === "vendeur" ? "Vendeur expeditor" : "Support BelivaY";
+    const selectedShipmentLabel = selectedShipment ? `Commande #${selectedShipment.order}` : "Aucune mission selectionnee";
 
     return (
       <section className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
@@ -1266,40 +1475,70 @@ export default function CourierDashboardPage() {
             ))}
           </div>
           <div className="mt-4 space-y-3">
-            {[
-              "Commande #1054 · Derniere reponse 2 min",
-              "Commande #1048 · Reponse vendeur attendue",
-              "Support logistique · Ticket #SUP-18",
-            ].map((item) => (
-              <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white">
-                {item}
-              </div>
-            ))}
+            <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white">
+              {selectedShipmentLabel}
+            </div>
+            <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white/70">
+              Canal actif : {threadTitle}
+            </div>
           </div>
         </SectionShell>
 
         <SectionShell kicker="Conversation" title={threadTitle} accent="text-orange-300">
           <div className="space-y-3">
-            <div className="max-w-[80%] rounded-[18px] border border-white/5 bg-white/[0.03] px-4 py-3 text-[13px] text-white/80">
-              Bonjour, votre colis est bien pris en charge. Je vous tiens au courant.
-            </div>
-            <div className="ml-auto max-w-[80%] rounded-[18px] bg-[linear-gradient(135deg,#10B981,#065F46)] px-4 py-3 text-[13px] text-white">
-              Merci, j'arrive dans votre zone dans environ 10 minutes.
-            </div>
+            {selectedShipment ? (
+              messages.length ? (
+                messages.map((item) => (
+                  <div
+                    key={item.id}
+                    className={`max-w-[80%] rounded-[18px] px-4 py-3 text-[13px] ${
+                      item.sender_role === "COURIER"
+                        ? "ml-auto bg-[linear-gradient(135deg,#10B981,#065F46)] text-white"
+                        : "border border-white/5 bg-white/[0.03] text-white/80"
+                    }`}
+                  >
+                    <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">
+                      {item.sender_name}
+                    </div>
+                    <div>{item.message}</div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+                  Aucun message sur ce canal pour la mission selectionnee.
+                </div>
+              )
+            ) : (
+              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+                Selectionne d'abord une mission pour voir ou envoyer des messages.
+              </div>
+            )}
           </div>
           <div className="mt-5 flex flex-wrap gap-2">
             {QUICK_MESSAGES.map((item) => (
-              <button key={item} type="button" className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white">
+              <button
+                key={item}
+                type="button"
+                onClick={() => setMessageDraft(item)}
+                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white"
+              >
                 {item}
               </button>
             ))}
           </div>
           <div className="mt-5 flex gap-3">
             <input
+              value={messageDraft}
+              onChange={(event) => setMessageDraft(event.target.value)}
               placeholder="Ecrire un message..."
               className="flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
             />
-            <button type="button" className="rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117]">
+            <button
+              type="button"
+              onClick={handleSendMessage}
+              disabled={!selectedShipment}
+              className="rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117] disabled:cursor-not-allowed disabled:opacity-40"
+            >
               Envoyer
             </button>
           </div>
@@ -1349,17 +1588,26 @@ export default function CourierDashboardPage() {
     <section className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
       <SectionShell kicker="Mediation" title="Litiges livreur">
         <div className="space-y-3">
-          {disputes.map((item) => (
-            <div key={item.ref} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <div className="font-bold text-white">{item.ref} · {item.label}</div>
-                  <div className="mt-1 text-[13px] text-white/70">{item.detail}</div>
+          {disputes.length ? (
+            disputes.map((item) => (
+              <div key={item.id} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-bold text-white">{item.ref} · {item.label}</div>
+                    <div className="mt-1 text-[13px] text-white/70">{item.detail}</div>
+                    <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
+                      {item.reason_display} · {new Date(item.updated_at).toLocaleString("fr-FR")}
+                    </div>
+                  </div>
+                  <div className="text-[12px] font-bold text-orange-300">{item.status_display}</div>
                 </div>
-                <div className={`text-[12px] font-bold ${item.tone}`}>{item.status}</div>
               </div>
+            ))
+          ) : (
+            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
+              Aucun litige lie a tes commandes assignees pour le moment.
             </div>
-          ))}
+          )}
         </div>
       </SectionShell>
 
@@ -1461,6 +1709,8 @@ export default function CourierDashboardPage() {
         return renderScanner();
       case "map":
         return renderMap();
+      case "reseau":
+        return renderReseau();
       case "gains":
         return renderGains();
       case "profil":

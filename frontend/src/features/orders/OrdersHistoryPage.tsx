@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
-import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,10 +41,11 @@ export default function OrdersHistoryPage() {
     ordersApi
       .getMyOrders()
       .then((data) => {
-        setOrders(getResilientOrders(data));
+        setOrders(data);
       })
       .catch(() => {
-        setOrders(getResilientOrders());
+        setOrders([]);
+        setError("Impossible de charger les commandes depuis le backend.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -58,10 +58,10 @@ export default function OrdersHistoryPage() {
     statuses: FulfillmentStatus[];
   }[] = [
     { key: "all", label: "Toutes", statuses: [] },
-    { key: "in_delivery", label: "En livraison", icon: Truck, statuses: ["SHIPPED"] },
-    { key: "preparing", label: "En cours", icon: Package, statuses: ["PENDING", "PROCESSING"] },
-    { key: "delivered", label: "Livrées", icon: Calendar, statuses: ["DELIVERED"] },
-    { key: "cancelled", label: "Annulées", icon: X, statuses: ["CANCELLED"] },
+    { key: "in_delivery", label: "En livraison", icon: Truck, statuses: ["OUT_FOR_DELIVERY", "SHIPPED"] },
+    { key: "preparing", label: "En cours", icon: Package, statuses: ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"] },
+    { key: "delivered", label: "Livrées", icon: Calendar, statuses: ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"] },
+    { key: "cancelled", label: "Annulées", icon: X, statuses: ["CANCELLED", "REFUNDED"] },
   ];
 
   const filteredOrders = useMemo(() => {
@@ -73,10 +73,10 @@ export default function OrdersHistoryPage() {
   const tabCounts = useMemo(() => {
     const counts: Record<TabKey, number> = { all: orders.length, in_delivery: 0, preparing: 0, delivered: 0, cancelled: 0 };
     for (const o of orders) {
-      if (o.fulfillment_status === "SHIPPED") counts.in_delivery++;
-      else if (["PENDING", "PROCESSING"].includes(o.fulfillment_status)) counts.preparing++;
-      else if (o.fulfillment_status === "DELIVERED") counts.delivered++;
-      else if (o.fulfillment_status === "CANCELLED") counts.cancelled++;
+      if (["OUT_FOR_DELIVERY", "SHIPPED"].includes(o.fulfillment_status)) counts.in_delivery++;
+      else if (["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"].includes(o.fulfillment_status)) counts.preparing++;
+      else if (["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(o.fulfillment_status)) counts.delivered++;
+      else if (["CANCELLED", "REFUNDED"].includes(o.fulfillment_status)) counts.cancelled++;
     }
     return counts;
   }, [orders]);
@@ -84,11 +84,11 @@ export default function OrdersHistoryPage() {
   const stats = useMemo(() => ({
     totalSpent: orders.reduce((s, o) => s + o.total_xaf, 0),
     delivered: orders.filter((o) => o.fulfillment_status === "DELIVERED").length,
-    inProgress: orders.filter((o) => ["PENDING", "PROCESSING", "SHIPPED"].includes(o.fulfillment_status)).length,
+    inProgress: orders.filter((o) => ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY", "PENDING", "PROCESSING", "SHIPPED"].includes(o.fulfillment_status)).length,
   }), [orders]);
 
   const activeDeliveries = useMemo(
-    () => orders.filter((o) => ["SHIPPED", "PROCESSING"].includes(o.fulfillment_status)),
+    () => orders.filter((o) => ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP"].includes(o.fulfillment_status)),
     [orders],
   );
 
@@ -105,10 +105,23 @@ export default function OrdersHistoryPage() {
   const getFulfillmentBadge = (s: FulfillmentStatus) => {
     const map: Record<string, { v: "warning" | "success" | "error" | "default"; t: string; icon: typeof Package }> = {
       PENDING: { v: "warning", t: "En attente", icon: Package },
+      CREATED: { v: "warning", t: "Créée", icon: Package },
+      PAID_IN_ESCROW: { v: "warning", t: "Payée", icon: CreditCard },
+      VENDOR_ACKNOWLEDGED: { v: "default", t: "Confirmée vendeur", icon: Store },
+      PREPARING: { v: "default", t: "En préparation", icon: Package },
+      READY_FOR_PICKUP: { v: "default", t: "Prête", icon: Store },
+      DRIVER_ASSIGNED: { v: "default", t: "Livreur assigné", icon: Truck },
+      PICKED_UP: { v: "success", t: "Pris en charge", icon: Truck },
+      OUT_FOR_DELIVERY: { v: "success", t: "En livraison", icon: Truck },
       PROCESSING: { v: "default", t: "En préparation", icon: Package },
       SHIPPED: { v: "success", t: "En livraison", icon: Truck },
       DELIVERED: { v: "success", t: "Livré", icon: Package },
+      BUYER_CONFIRMED: { v: "success", t: "Réception confirmée", icon: Package },
+      AUTO_CONFIRMED: { v: "success", t: "Confirmée automatiquement", icon: Package },
+      RELEASED_TO_VENDOR: { v: "success", t: "Terminée", icon: Package },
       CANCELLED: { v: "error", t: "Annulé", icon: AlertCircle },
+      REFUNDED: { v: "default", t: "Remboursé", icon: AlertCircle },
+      DISPUTED: { v: "warning", t: "Litige", icon: AlertCircle },
     };
     return map[s] || { v: "default" as const, t: s, icon: Package };
   };
@@ -266,7 +279,7 @@ export default function OrdersHistoryPage() {
             {filteredOrders.map((order) => {
               const pBadge = getPaymentBadge(order.payment_status);
               const fBadge = getFulfillmentBadge(order.fulfillment_status);
-              const isActive = ["SHIPPED", "PROCESSING"].includes(order.fulfillment_status);
+              const isActive = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP"].includes(order.fulfillment_status);
 
               return (
                 <article
@@ -300,7 +313,7 @@ export default function OrdersHistoryPage() {
                   </div>
 
                   {/* Live delivery banner */}
-                  {order.fulfillment_status === "SHIPPED" && (
+                  {["OUT_FOR_DELIVERY", "SHIPPED"].includes(order.fulfillment_status) && (
                     <div className="mx-4 my-2 flex items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 dark:bg-gray-800">
                       <div className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-green-400" />
                       <p className="flex-1 text-xs text-white">Livraison en cours vers {order.city || "votre adresse"}</p>

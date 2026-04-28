@@ -24,6 +24,9 @@ class CourierProfile(models.Model):
         default=VehicleType.MOTORBIKE,
     )
     id_card = models.CharField(max_length=120)
+    preferred_language = models.CharField(max_length=8, default="fr", blank=True)
+    gps_permission_granted = models.BooleanField(default=False)
+    camera_permission_granted = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     is_approved = models.BooleanField(default=False)
     is_online = models.BooleanField(default=False)

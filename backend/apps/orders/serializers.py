@@ -3,6 +3,7 @@
 
 from rest_framework import serializers
 from django.conf import settings as django_settings
+from django.db.models import Count, Q
 from .models import Order, OrderItem, Dispute, DisputeMessage
 from apps.catalog.models import Product
 
@@ -129,6 +130,7 @@ class OrderCreateSerializer(serializers.Serializer):
         from .models import PlatformSettings
         from apps.shipping.models import Shipment, ShipmentEvent
         from apps.orders.models import OrderHistory
+        from apps.accounts.models import CourierProfile, UserNotification
 
         cart_items = validated_data.pop('cart_items')
         user = self.context['request'].user if self.context['request'].user.is_authenticated else None
@@ -226,6 +228,47 @@ class OrderCreateSerializer(serializers.Serializer):
                 old_value=Order.EscrowStatus.BLOCKED,
                 new_value=Order.EscrowStatus.RELEASED,
             )
+
+        if delivery_mode == 'DELIVERY':
+            active_statuses = [
+                Shipment.Status.ASSIGNED,
+                Shipment.Status.PICKED_UP,
+                Shipment.Status.OUT_FOR_DELIVERY,
+            ]
+            city = (order.city or "").strip()
+            courier = (
+                CourierProfile.objects.filter(
+                    is_active=True,
+                    is_approved=True,
+                    is_online=True,
+                )
+                .filter(Q(city__iexact=city) | Q(zones__icontains=city))
+                .annotate(active_shipments_count=Count("shipments", filter=Q(shipments__status__in=active_statuses)))
+                .order_by("active_shipments_count", "updated_at")
+                .select_related("user")
+                .first()
+            )
+
+            if courier:
+                shipment.courier = courier
+                shipment.courier_name = courier.user.get_full_name().strip() or courier.user.username
+                shipment.courier_phone = courier.phone
+                shipment.status = Shipment.Status.ASSIGNED
+                shipment.save(update_fields=["courier", "courier_name", "courier_phone", "status", "updated_at"])
+                order.assign_driver()
+                ShipmentEvent.objects.create(
+                    shipment=shipment,
+                    status=Shipment.Status.ASSIGNED,
+                    message="Livraison assignee automatiquement au livreur disponible",
+                    location=order.city,
+                )
+                UserNotification.objects.create(
+                    user=courier.user,
+                    title=f"Nouvelle livraison #{order.id}",
+                    message=f"Une commande est disponible dans ta tournee: {order.city} - {order.address}.",
+                    notification_type=UserNotification.NotificationType.ORDER,
+                    action_url="/courier",
+                )
         
         return order
 

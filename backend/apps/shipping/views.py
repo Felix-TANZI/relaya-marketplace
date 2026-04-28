@@ -12,6 +12,9 @@ from .serializers import (
     CourierDisputeSerializer,
     CourierDashboardSerializer,
     CourierNetworkSerializer,
+    CourierSettingsSerializer,
+    CourierSOSAlertSerializer,
+    CourierSOSCreateSerializer,
     CourierShipmentScanSerializer,
     CourierShipmentActionSerializer,
     ShipmentMessageCreateSerializer,
@@ -21,10 +24,11 @@ from .serializers import (
     ShipmentEventSerializer,
     ShipmentEventCreateSerializer,
 )
-from .models import Shipment, ShipmentEvent, ShipmentMessage
+from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
 from apps.accounts.models import CourierProfile
+from apps.accounts.models import UserNotification
 from apps.vendors.models import VendorLocation, VendorProfile
-from apps.orders.models import Dispute, DisputeMessage, Order
+from apps.orders.models import Dispute, Order
 
 
 @extend_schema(
@@ -544,3 +548,55 @@ class CourierShipmentScanView(generics.GenericAPIView):
             message=f"Scan test effectue: {event_message}.",
         )
         return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Parametres livreur")
+class CourierSettingsView(generics.GenericAPIView):
+    serializer_class = CourierSettingsSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        courier = _get_active_courier(request.user)
+        return Response(CourierSettingsSerializer(courier).data, status=status.HTTP_200_OK)
+
+    def patch(self, request, *args, **kwargs):
+        courier = _get_active_courier(request.user)
+        serializer = self.get_serializer(courier, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+
+        UserNotification.objects.create(
+            user=request.user,
+            title="Parametres livreur mis a jour",
+            message="Tes reglages livreur ont ete synchronises avec le backend.",
+            notification_type=UserNotification.NotificationType.SYSTEM,
+            action_url="/courier",
+        )
+        return Response(CourierSettingsSerializer(courier).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Declencher une alerte SOS livreur")
+class CourierSOSAlertView(generics.GenericAPIView):
+    serializer_class = CourierSOSCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        courier = _get_active_courier(request.user)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        alert = CourierSOSAlert.objects.create(
+            courier=courier,
+            message=serializer.validated_data.get("message", ""),
+            location=serializer.validated_data.get("location", ""),
+            latitude=serializer.validated_data.get("latitude"),
+            longitude=serializer.validated_data.get("longitude"),
+        )
+        UserNotification.objects.create(
+            user=request.user,
+            title="Alerte SOS envoyee",
+            message="Le support securite BelivaY a recu ton alerte SOS.",
+            notification_type=UserNotification.NotificationType.SUPPORT,
+            action_url="/courier",
+        )
+        return Response(CourierSOSAlertSerializer(alert).data, status=status.HTTP_201_CREATED)

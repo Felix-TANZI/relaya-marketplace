@@ -35,33 +35,9 @@ export interface CourierProfile {
   zones: string[];
   vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
   id_card: string;
-  is_active: boolean;
-  is_approved: boolean;
-  is_online: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface CourierApplicationPayload {
-  phone: string;
-  city: string;
-  zones: string[];
-  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
-  id_card: string;
-}
-
-export interface CourierApplicationResponse {
-  application: CourierProfile | null;
-  status: "not_applied" | "pending" | "approved";
-}
-
-export interface CourierProfile {
-  id: number;
-  phone: string;
-  city: string;
-  zones: string[];
-  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
-  id_card: string;
+  preferred_language?: "fr" | "en";
+  gps_permission_granted?: boolean;
+  camera_permission_granted?: boolean;
   is_active: boolean;
   is_approved: boolean;
   is_online: boolean;

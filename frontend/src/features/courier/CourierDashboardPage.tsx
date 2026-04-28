@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ComponentType, type ReactNode, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -48,6 +48,7 @@ import {
   type CourierShipment,
   type CourierShipmentAction,
   type CourierShipmentMessage,
+  type CourierSettings,
 } from "@/services/api/courier";
 
 type CourierTab =
@@ -248,8 +249,11 @@ export default function CourierDashboardPage() {
   const [application, setApplication] = useState<CourierApplicationResponse | null>(null);
   const [dashboard, setDashboard] = useState<CourierDashboard | null>(null);
   const [network, setNetwork] = useState<CourierNetwork | null>(null);
+  const [courierSettings, setCourierSettings] = useState<CourierSettings | null>(null);
   const [disputes, setDisputes] = useState<CourierDispute[]>([]);
+  const [selectedDispute, setSelectedDispute] = useState<CourierDispute | null>(null);
   const [notifications, setNotifications] = useState<CourierNotification[]>([]);
+  const [selectedNotification, setSelectedNotification] = useState<CourierNotification | null>(null);
   const [messages, setMessages] = useState<CourierShipmentMessage[]>([]);
   const [shipments, setShipments] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
@@ -259,6 +263,12 @@ export default function CourierDashboardPage() {
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionFeedback, setActionFeedback] = useState("");
+  const [contactLoading, setContactLoading] = useState(false);
+  const [settingsSaving, setSettingsSaving] = useState<string | null>(null);
+  const [settingsFeedback, setSettingsFeedback] = useState("");
+  const [sosLoading, setSosLoading] = useState(false);
+  const [sosFeedback, setSosFeedback] = useState("");
   const [messagesTab, setMessagesTab] = useState<"client" | "vendeur" | "support">("client");
 
   useEffect(() => {
@@ -272,10 +282,11 @@ export default function CourierDashboardPage() {
       courierApi.listMyShipments(),
       courierApi.getDashboard(),
       courierApi.getNetwork(),
+      courierApi.getSettings(),
       courierApi.getDisputes(),
       courierApi.getNotifications(),
     ])
-      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, networkResult, disputesResult, notificationsResult]) => {
+      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, networkResult, settingsResult, disputesResult, notificationsResult]) => {
         const resolvedShipments =
           shipmentsResult.status === "fulfilled"
             ? shipmentsResult.value
@@ -285,6 +296,7 @@ export default function CourierDashboardPage() {
         if (applicationResult.status === "fulfilled") setApplication(applicationResult.value);
         if (dashboardResult.status === "fulfilled") setDashboard(dashboardResult.value);
         if (networkResult.status === "fulfilled") setNetwork(networkResult.value);
+        if (settingsResult.status === "fulfilled") setCourierSettings(settingsResult.value);
         if (disputesResult.status === "fulfilled") setDisputes(disputesResult.value);
         if (notificationsResult.status === "fulfilled") setNotifications(notificationsResult.value);
         setShipments(resolvedShipments);
@@ -318,6 +330,13 @@ export default function CourierDashboardPage() {
   const isApprovedCourier = application?.status === "approved" || Boolean(user?.is_courier);
   const firstName = user?.first_name || user?.username || "Livreur";
   const zones = courierProfile?.zones?.length ? courierProfile.zones : [];
+  const currentCourierCity = courierSettings?.city ?? courierProfile?.city ?? "Yaounde";
+  const currentCourierZones = courierSettings?.zones?.length ? courierSettings.zones : zones;
+  const currentCourierVehicle = courierSettings?.vehicle_type ?? courierProfile?.vehicle_type ?? "MOTORBIKE";
+  const currentCourierLanguage = courierSettings?.preferred_language ?? courierProfile?.preferred_language ?? (i18n.language.startsWith("en") ? "en" : "fr");
+  const currentGpsGranted = courierSettings?.gps_permission_granted ?? courierProfile?.gps_permission_granted ?? false;
+  const currentCameraGranted = courierSettings?.camera_permission_granted ?? courierProfile?.camera_permission_granted ?? false;
+  const currentIsOnline = courierSettings?.is_online ?? courierProfile?.is_online ?? false;
 
   const activeShipments = useMemo(
     () => shipments.filter((shipment) => ["ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY"].includes(shipment.status)),
@@ -343,6 +362,11 @@ export default function CourierDashboardPage() {
     activeShipments[0] ??
     shipments[0] ??
     null;
+  const selectedShipmentAccepted = Boolean(
+    selectedShipment?.events.some((event) =>
+      event.status === "ASSIGNED" && ["ACCEPT", "ACCEPTED", "Acceptee", "Accept"].includes(event.message),
+    ),
+  );
 
   const earnings = useMemo(() => {
     const delivered = shipments.filter((shipment) => shipment.status === "DELIVERED");
@@ -360,6 +384,7 @@ export default function CourierDashboardPage() {
   const handleShipmentAction = async (action: CourierShipmentAction) => {
     if (!selectedShipment) return;
     setActionLoading(action);
+    setActionFeedback("");
 
     try {
       const updated = await courierApi.actOnShipment(selectedShipment.id, {
@@ -369,6 +394,19 @@ export default function CourierDashboardPage() {
       });
       setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
       if (action === "NOTE") setNoteDraft("");
+      setActionFeedback(
+        action === "ACCEPT"
+          ? "Mission acceptee et synchronisee."
+          : action === "PICKED_UP"
+            ? "Colis marque comme pris en charge."
+            : action === "OUT_FOR_DELIVERY"
+              ? "Course marquee en livraison."
+              : action === "DELIVERED"
+                ? "Colis remis au client et livraison certifiee."
+                : action === "NOTE"
+                  ? "Note enregistree sur la mission."
+                  : "Action synchronisee.",
+      );
     } catch {
       setShipments((current) =>
         current.map((shipment) =>
@@ -378,9 +416,20 @@ export default function CourierDashboardPage() {
         ),
       );
       if (action === "NOTE") setNoteDraft("");
+      setActionFeedback("Action appliquee localement. La synchronisation backend sera a reverifier.");
     } finally {
       setActionLoading(null);
     }
+  };
+
+  const handleContactClient = () => {
+    if (!selectedShipment?.customer_phone) return;
+    setContactLoading(true);
+    setActionFeedback("Ouverture de l'appel client...");
+    window.setTimeout(() => {
+      window.location.href = `tel:${selectedShipment.customer_phone}`;
+      setContactLoading(false);
+    }, 450);
   };
 
   const handleSendMessage = async () => {
@@ -560,23 +609,23 @@ export default function CourierDashboardPage() {
   }
 
   async function handleNotificationClick(notification: CourierNotification) {
+    setSelectedNotification(notification);
+
     if (!notification.is_read) {
       try {
         const updated = await courierApi.markNotificationRead(notification.id);
         setNotifications((current) =>
           current.map((item) => (item.id === updated.id ? updated : item)),
         );
+        setSelectedNotification(updated);
       } catch {
         setNotifications((current) =>
           current.map((item) =>
             item.id === notification.id ? { ...item, is_read: true } : item,
           ),
         );
+        setSelectedNotification({ ...notification, is_read: true });
       }
-    }
-
-    if (notification.action_url) {
-      navigate(notification.action_url);
     }
   }
 
@@ -585,6 +634,44 @@ export default function CourierDashboardPage() {
       await courierApi.markAllNotificationsRead();
     } finally {
       setNotifications((current) => current.map((item) => ({ ...item, is_read: true })));
+    }
+  }
+
+  async function updateCourierSettings(
+    label: string,
+    payload: Partial<Omit<CourierSettings, "id" | "updated_at">>,
+  ) {
+    setSettingsSaving(label);
+    setSettingsFeedback("");
+    try {
+      const updated = await courierApi.updateSettings(payload);
+      setCourierSettings(updated);
+      if (payload.preferred_language) {
+        i18n.changeLanguage(payload.preferred_language);
+      }
+      setSettingsFeedback("Reglage synchronise avec le backend.");
+    } catch {
+      setSettingsFeedback("Impossible de synchroniser ce reglage pour le moment.");
+    } finally {
+      setSettingsSaving(null);
+    }
+  }
+
+  async function handleSOSAlert() {
+    setSosLoading(true);
+    setSosFeedback("");
+    try {
+      const alert = await courierApi.triggerSOS({
+        message: "Alerte SOS declenchee depuis l'espace livreur.",
+        location: currentCourierCity,
+      });
+      setSosFeedback(`Alerte SOS #${alert.id} envoyee au support securite.`);
+      const latestNotifications = await courierApi.getNotifications();
+      setNotifications(latestNotifications);
+    } catch {
+      setSosFeedback("Impossible d'envoyer l'alerte SOS. Contacte le support par telephone.");
+    } finally {
+      setSosLoading(false);
     }
   }
 
@@ -904,40 +991,53 @@ export default function CourierDashboardPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
-              {selectedShipment.status === "ASSIGNED" ? (
+              {selectedShipment.status === "ASSIGNED" && !selectedShipmentAccepted ? (
                 <>
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("ACCEPT")}
-                    className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
+                    disabled={Boolean(actionLoading)}
+                    className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
+                    {actionLoading === "ACCEPT" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
                     {actionLoading === "ACCEPT" ? "Validation..." : "Accepter la mission"}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("DECLINE")}
-                    className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300"
+                    disabled={Boolean(actionLoading)}
+                    className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Refuser
+                    {actionLoading === "DECLINE" ? "Refus..." : "Refuser"}
                   </button>
                 </>
+              ) : null}
+              {selectedShipment.status === "ASSIGNED" && selectedShipmentAccepted ? (
+                <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-[12px] font-extrabold text-emerald-300">
+                  <BadgeCheck size={14} />
+                  Mission acceptee
+                </div>
               ) : null}
               {(selectedShipment.status === "PICKED_UP" || selectedShipment.status === "ASSIGNED") && (
                 <button
                   type="button"
                   onClick={() => handleShipmentAction("PICKED_UP")}
-                  className="rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300"
+                  disabled={Boolean(actionLoading)}
+                  className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Marquer pris en charge
+                  {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
+                  {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
                 </button>
               )}
               {selectedShipment.status === "PICKED_UP" && (
                 <button
                   type="button"
                   onClick={() => handleShipmentAction("OUT_FOR_DELIVERY")}
-                  className="rounded-full border border-orange-500/25 bg-orange-500/10 px-5 py-3 text-[12px] font-extrabold text-orange-300"
+                  disabled={Boolean(actionLoading)}
+                  className="inline-flex items-center gap-2 rounded-full border border-orange-500/25 bg-orange-500/10 px-5 py-3 text-[12px] font-extrabold text-orange-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  Marquer en cours de livraison
+                  {actionLoading === "OUT_FOR_DELIVERY" ? <LoaderCircle size={14} className="animate-spin" /> : <Truck size={14} />}
+                  {actionLoading === "OUT_FOR_DELIVERY" ? "Mise a jour..." : "Marquer en cours de livraison"}
                 </button>
               )}
               {selectedShipment.status === "OUT_FOR_DELIVERY" && (
@@ -945,27 +1045,37 @@ export default function CourierDashboardPage() {
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("DELIVERED")}
-                    className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
+                    disabled={Boolean(actionLoading)}
+                    className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Marquer livree
+                    {actionLoading === "DELIVERED" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                    {actionLoading === "DELIVERED" ? "Certification..." : "Certifier colis remis"}
                   </button>
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("FAILED")}
-                    className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300"
+                    disabled={Boolean(actionLoading)}
+                    className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    Marquer echec
+                    {actionLoading === "FAILED" ? "Signalement..." : "Marquer echec"}
                   </button>
                 </>
               )}
-              <a
-                href={`tel:${selectedShipment.customer_phone}`}
-                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white"
+              <button
+                type="button"
+                onClick={handleContactClient}
+                disabled={contactLoading || !selectedShipment.customer_phone}
+                className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                <Phone size={14} />
-                Contacter le client
-              </a>
+                {contactLoading ? <LoaderCircle size={14} className="animate-spin" /> : <Phone size={14} />}
+                {contactLoading ? "Ouverture..." : "Contacter le client"}
+              </button>
             </div>
+            {actionFeedback ? (
+              <div className="mt-4 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[13px] font-semibold text-emerald-300 animate-pulse">
+                {actionFeedback}
+              </div>
+            ) : null}
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
@@ -981,10 +1091,11 @@ export default function CourierDashboardPage() {
                 <button
                   type="button"
                   onClick={() => handleShipmentAction("NOTE")}
-                  className="inline-flex items-center justify-center gap-2 rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117]"
+                  disabled={Boolean(actionLoading) || !noteDraft.trim()}
+                  className="inline-flex items-center justify-center gap-2 rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "NOTE" ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                  Enregistrer
+                  {actionLoading === "NOTE" ? "Enregistrement..." : "Enregistrer"}
                 </button>
               </div>
             </div>
@@ -1590,18 +1701,24 @@ export default function CourierDashboardPage() {
         <div className="space-y-3">
           {disputes.length ? (
             disputes.map((item) => (
-              <div key={item.id} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setSelectedDispute(item)}
+                className="flex w-full gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]"
+              >
+                <ShieldCheck size={18} className="mt-0.5 shrink-0 text-orange-300" />
+                <div className="flex-1">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="font-bold text-white">{item.ref} · {item.label}</div>
-                    <div className="mt-1 text-[13px] text-white/70">{item.detail}</div>
-                    <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
-                      {item.reason_display} · {new Date(item.updated_at).toLocaleString("fr-FR")}
-                    </div>
+                    <div className="text-[12px] font-bold text-orange-300">{item.status_display}</div>
                   </div>
-                  <div className="text-[12px] font-bold text-orange-300">{item.status_display}</div>
+                  <div className="mt-1 text-[13px] leading-6 text-white/75">{item.detail}</div>
+                  <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
+                    {item.reason_display} · {new Date(item.updated_at).toLocaleString("fr-FR")}
+                  </div>
                 </div>
-              </div>
+              </button>
             ))
           ) : (
             <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
@@ -1632,28 +1749,42 @@ export default function CourierDashboardPage() {
     <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
       <SectionShell kicker="Urgence" title="Securite SOS">
         <div className="rounded-[26px] border border-red-500/20 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,.18),_transparent_48%),#1c1013] p-6 text-center">
-          <button type="button" className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-red-400/30 bg-red-500/15 text-red-300 shadow-[0_0_0_14px_rgba(239,68,68,.06)]">
-            <Siren size={54} />
+          <button
+            type="button"
+            onClick={handleSOSAlert}
+            disabled={sosLoading || !isApprovedCourier}
+            className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-red-400/30 bg-red-500/15 text-red-300 shadow-[0_0_0_14px_rgba(239,68,68,.06)] transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {sosLoading ? <LoaderCircle size={54} className="animate-spin" /> : <Siren size={54} />}
           </button>
           <div className="mt-5 text-[22px] font-extrabold text-white">Declencher une alerte SOS</div>
           <div className="mt-2 text-[13px] leading-6 text-white/70">
-            Utilise cette action pour contacter les contacts d'urgence et le support securite.
+            Envoie une alerte backend au support securite avec ton profil livreur et ta zone actuelle.
           </div>
+          {sosFeedback ? <div className="mt-4 text-[13px] font-semibold text-red-200">{sosFeedback}</div> : null}
         </div>
       </SectionShell>
 
       <SectionShell kicker="Protection" title="Contacts & procedures" accent="text-sky-300">
         <div className="space-y-3">
-          {[
-            "Contact urgence 1: +237 6 90 00 00 00",
-            "Contact urgence 2: +237 6 80 00 00 00",
-            "Support surete BelivaY: 24/7",
-            "Mode nuit automatique apres 19h",
-          ].map((item) => (
-            <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white/80">
-              {item}
-            </div>
-          ))}
+          <div className="grid gap-3 md:grid-cols-2">
+            {[
+              ["Livreur", firstName],
+              ["Ville", currentCourierCity],
+              ["Mode disponible", currentIsOnline ? "Actif" : "Inactif"],
+              ["GPS", currentGpsGranted ? "Autorise" : "A verifier"],
+              ["Camera", currentCameraGranted ? "Autorisee" : "A verifier"],
+              ["Support surete", "24/7"],
+            ].map(([label, value]) => (
+              <div key={label} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+                <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{label}</div>
+                <div className="mt-2 text-[14px] font-bold text-white">{value}</div>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4 text-[13px] leading-6 text-white/80">
+            Chaque alerte SOS est enregistree en base et ajoute une notification support a ton compte.
+          </div>
         </div>
       </SectionShell>
     </section>
@@ -1661,37 +1792,86 @@ export default function CourierDashboardPage() {
 
   const renderParametres = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Configuration" title="Parametres">
+      <SectionShell kicker="Configuration backend" title="Parametres livreur">
         <div className="grid gap-3 md:grid-cols-2">
-          {[
-            "Compte",
-            "Vehicule",
-            "Notifications",
-            "Affichage",
-            "Statistiques",
-            "Securite",
-            "Langue",
-            "A propos",
-          ].map((item) => (
-            <div key={item} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4 font-semibold text-white">
-              {item}
+          {([
+            ["Ville", currentCourierCity, MapPin],
+            ["Vehicule", VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle, Bike],
+            ["Statut", currentIsOnline ? "Disponible" : "Hors ligne", Gauge],
+            ["Langue", currentCourierLanguage.toUpperCase(), Settings2],
+            ["GPS", currentGpsGranted ? "Autorise" : "Non autorise", Navigation],
+            ["Camera", currentCameraGranted ? "Autorisee" : "Non autorisee", ScanLine],
+          ] as Array<[string, string, ComponentType<{ size?: number; className?: string }>]>) .map(([label, value, Icon]) => (
+            <div key={String(label)} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+              <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">
+                <Icon size={14} />
+                {label}
+              </div>
+              <div className="mt-2 text-[18px] font-extrabold text-white">{value}</div>
             </div>
           ))}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Actions rapides" title="Reglages frequents" accent="text-orange-300">
+      <SectionShell kicker="Actions backend" title="Reglages frequents" accent="text-orange-300">
         <div className="space-y-3">
-          {[
-            "Activer / desactiver le mode disponible",
-            "Choisir la langue d'interface",
-            "Mettre a jour la zone principale",
-            "Verifier les permissions GPS et camera",
-          ].map((item) => (
-            <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white/80">
-              {item}
+          <button
+            type="button"
+            onClick={() => updateCourierSettings("online", { is_online: !currentIsOnline })}
+            className="flex w-full items-center justify-between rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+          >
+            <span>{currentIsOnline ? "Desactiver le mode disponible" : "Activer le mode disponible"}</span>
+            {settingsSaving === "online" ? <LoaderCircle size={15} className="animate-spin" /> : <ChevronRight size={15} />}
+          </button>
+          <div className="grid gap-2 md:grid-cols-2">
+            {(["fr", "en"] as const).map((language) => (
+              <button
+                key={language}
+                type="button"
+                onClick={() => updateCourierSettings("language", { preferred_language: language })}
+                className={`rounded-[16px] border p-4 text-left text-[13px] font-bold transition ${
+                  currentCourierLanguage === language
+                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                    : "border-white/5 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]"
+                }`}
+              >
+                Interface {language.toUpperCase()}
+              </button>
+            ))}
+          </div>
+          <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+            <label className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">Zone principale</label>
+            <div className="mt-3 flex gap-2">
+              <input
+                defaultValue={currentCourierCity}
+                onBlur={(event) => {
+                  const city = event.target.value.trim();
+                  if (city && city !== currentCourierCity) {
+                    updateCourierSettings("city", { city, zones: [city, ...currentCourierZones.filter((zone) => zone !== city)] });
+                  }
+                }}
+                className="min-w-0 flex-1 rounded-[12px] border border-white/10 bg-[#0D1117] px-3 py-2 text-[13px] text-white outline-none"
+              />
+              {settingsSaving === "city" ? <LoaderCircle size={18} className="mt-2 animate-spin text-orange-300" /> : null}
             </div>
-          ))}
+          </div>
+          <div className="grid gap-2 md:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => updateCourierSettings("gps", { gps_permission_granted: !currentGpsGranted })}
+              className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+            >
+              GPS: {currentGpsGranted ? "autorise" : "a verifier"}
+            </button>
+            <button
+              type="button"
+              onClick={() => updateCourierSettings("camera", { camera_permission_granted: !currentCameraGranted })}
+              className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
+            >
+              Camera: {currentCameraGranted ? "autorisee" : "a verifier"}
+            </button>
+          </div>
+          {settingsFeedback ? <div className="text-[13px] font-semibold text-emerald-300">{settingsFeedback}</div> : null}
         </div>
       </SectionShell>
     </section>
@@ -1809,6 +1989,72 @@ export default function CourierDashboardPage() {
           </button>
         </div>
       </header>
+
+      {selectedNotification ? (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-[520px] rounded-[24px] border border-emerald-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className={`mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] ${notificationTone(selectedNotification.notification_type)}`}>
+                  {selectedNotification.notification_type}
+                </div>
+                <h3 className="text-[22px] font-extrabold text-white">{selectedNotification.title}</h3>
+                <div className="mt-1 text-[12px] text-[#8B949E]">
+                  {new Date(selectedNotification.created_at).toLocaleString("fr-FR")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedNotification(null)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                aria-label="Fermer la notification"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85">
+              {selectedNotification.message}
+            </div>
+            {selectedNotification.action_url ? (
+              <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
+                Reference backend : {selectedNotification.action_url}
+              </div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {selectedDispute ? (
+        <div className="fixed inset-0 z-[1200] flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-[520px] rounded-[24px] border border-orange-500/15 bg-[#0D1117] p-5 shadow-[0_28px_80px_rgba(0,0,0,.45)]">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <div className="mb-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-black uppercase tracking-[0.14em] text-orange-300">
+                  {selectedDispute.status_display}
+                </div>
+                <h3 className="text-[22px] font-extrabold text-white">{selectedDispute.ref} · {selectedDispute.label}</h3>
+                <div className="mt-1 text-[12px] text-[#8B949E]">
+                  {new Date(selectedDispute.updated_at).toLocaleString("fr-FR")}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedDispute(null)}
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
+                aria-label="Fermer le litige"
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-[14px] leading-7 text-white/85">
+              {selectedDispute.detail}
+            </div>
+            <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
+              Motif : {selectedDispute.reason_display}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <aside className="fixed bottom-0 left-0 top-[59px] hidden w-[232px] border-r border-emerald-500/8 bg-[#0A1020] lg:block">
         <div className="m-4 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-4">

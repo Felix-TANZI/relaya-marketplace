@@ -94,8 +94,20 @@ class ConfirmReceiptView(APIView):
 
     def post(self, request, id):
         order = get_object_or_404(Order, id=id, user=request.user)
-        order.fulfillment_status = Order.FulfillmentStatus.DELIVERED
-        order.save(update_fields=['fulfillment_status', 'updated_at'])
+        if order.fulfillment_status not in [
+            Order.FulfillmentStatus.DELIVERED,
+            Order.FulfillmentStatus.BUYER_CONFIRMED,
+            Order.FulfillmentStatus.AUTO_CONFIRMED,
+            Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+        ]:
+            return Response(
+                {"detail": "La commande doit d'abord etre marquee livree par le livreur."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_status = order.fulfillment_status
+        if order.fulfillment_status == Order.FulfillmentStatus.DELIVERED:
+            order.buyer_confirm()
 
         shipment, _ = Shipment.objects.get_or_create(order=order)
         shipment.status = Shipment.Status.DELIVERED
@@ -112,8 +124,8 @@ class ConfirmReceiptView(APIView):
             user=request.user,
             action="Reception confirmee",
             field_name="fulfillment_status",
-            old_value="",
-            new_value=Order.FulfillmentStatus.DELIVERED,
+            old_value=old_status,
+            new_value=Order.FulfillmentStatus.BUYER_CONFIRMED,
         )
 
         UserNotification.objects.create(
@@ -144,6 +156,30 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
+        dispute_window_hours = 24
+        allowed_statuses = [
+            Order.FulfillmentStatus.DELIVERED,
+            Order.FulfillmentStatus.BUYER_CONFIRMED,
+        ]
+        if order.fulfillment_status not in allowed_statuses:
+            return Response(
+                {"detail": "Le litige s'ouvre seulement apres reception du colis."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        expires_at = order.updated_at + timezone.timedelta(hours=dispute_window_hours)
+        if timezone.now() > expires_at:
+            return Response(
+                {"detail": "Le delai de 24h apres reception est depasse pour cette commande."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if Dispute.objects.filter(order=order, opened_by=request.user).exclude(status="CLOSED").exists():
+            return Response(
+                {"detail": "Un litige est deja ouvert pour cette commande."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         dispute = Dispute.objects.create(

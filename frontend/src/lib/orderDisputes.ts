@@ -2,6 +2,7 @@ import type { Order } from "@/types/order";
 
 const STORAGE_KEY = "belivay_order_disputes";
 const DISPUTE_WINDOW_MS = 24 * 60 * 60 * 1000;
+const DISPUTABLE_STATUSES = ["DELIVERED", "BUYER_CONFIRMED"] as const;
 
 export interface StoredDisputeMessage {
   id: string;
@@ -59,12 +60,12 @@ export function getDisputeEligibility(order: Order | null) {
     };
   }
 
-  if (order.fulfillment_status !== "DELIVERED") {
+  if (!DISPUTABLE_STATUSES.includes(order.fulfillment_status as (typeof DISPUTABLE_STATUSES)[number])) {
     return {
       eligible: false,
       expiresAt: null,
       remainingMs: 0,
-      message: "Le litige s'ouvre seulement après réception de la commande.",
+      message: "Le litige s'ouvre seulement apres reception du colis.",
     };
   }
 
@@ -100,6 +101,7 @@ export function openOrderDispute(
   order: Order,
   reason: string,
   description: string,
+  disputeId?: number | string,
 ) {
   const existing = getOrderDisputes(order.id)[0];
   if (existing) return existing;
@@ -111,7 +113,7 @@ export function openOrderDispute(
 
   const now = new Date().toISOString();
   const dispute: StoredOrderDispute = {
-    id: `dispute-${order.id}-${Date.now()}`,
+    id: disputeId ? String(disputeId) : `dispute-${order.id}-${Date.now()}`,
     orderId: order.id,
     orderLabel: `CMD-${order.id}`,
     reason,

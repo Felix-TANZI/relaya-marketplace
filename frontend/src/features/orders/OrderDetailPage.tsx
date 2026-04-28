@@ -23,8 +23,8 @@ import {
   XCircle,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
-import { getResilientOrderById } from "@/data/mockOrders";
 import { customerApi, type Shipment } from "@/services/api/customer";
+import TrackingMap from "@/components/TrackingMap";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import {
   addDisputeMessage,
@@ -125,13 +125,7 @@ export default function OrderDetailPage() {
           setTracking(null);
         }
       } catch {
-        const found = getResilientOrderById(orderId);
-        if (found) {
-          setOrder(found);
-          setTracking(null);
-        } else {
-          setError(t('order.detail.error_load'));
-        }
+        setError(t('order.detail.error_load'));
       } finally {
         setLoading(false);
       }
@@ -216,11 +210,11 @@ export default function OrderDetailPage() {
       ];
 
   const handleConfirmReceipt = async () => {
-    if (!id) return;
+    if (!order) return;
     try {
-      const updatedOrder = await customerApi.confirmReceipt(parseInt(id, 10));
+      const updatedOrder = await customerApi.confirmReceipt(order.id);
       setOrder(updatedOrder);
-      const shipment = await customerApi.getOrderTracking(parseInt(id, 10));
+      const shipment = await customerApi.getOrderTracking(order.id);
       setTracking(shipment);
     } catch (actionError) {
       // silenced
@@ -242,21 +236,20 @@ export default function OrderDetailPage() {
   const handleCreateDispute = async () => {
     if (!disputeDraft.trim()) return;
 
-    const createdDispute = openOrderDispute(order, disputeReason, disputeDraft.trim());
-
     try {
-      await customerApi.createOrderDispute(order.id, {
+      const backendDispute = await customerApi.createOrderDispute(order.id, {
         reason: "OTHER",
         description: disputeDraft.trim(),
       });
+      openOrderDispute(order, disputeReason, disputeDraft.trim(), backendDispute.id);
     } catch {
-      // Frontend fallback kept in localStorage.
+      openOrderDispute(order, disputeReason, disputeDraft.trim());
     }
 
     setShowDisputeComposer(false);
     setDisputeDraft("");
     setDisputes(getOrderDisputes(order.id));
-    setActiveDisputeId(createdDispute.id);
+    setActiveDisputeId(getOrderDisputes(order.id)[0]?.id ?? null);
   };
 
   const handleSendDisputeReply = async () => {
@@ -334,33 +327,45 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
-              <div className="mb-6 h-56 rounded-[1.75rem] bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 ring-1 ring-orange-100 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900 dark:ring-gray-800">
-                <div className="flex h-full flex-col justify-between">
-                  <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                    <span>{t('order.detail.city_label')}: {order.city}</span>
-                    <span>{order.delivery_mode === "PICKUP" ? "Point de retrait" : t('order.detail.area_label')}</span>
+              <div className="mb-6 overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+                {order.delivery_mode === "PICKUP" ? (
+                  <div className="flex h-56 flex-col justify-between bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>{t('order.detail.city_label')}: {order.city}</span>
+                      <span>Point de retrait</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-6 text-5xl">
+                      <Package className="text-primary" size={44} strokeWidth={1.75} />
+                      <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
+                      <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
+                    </div>
+                    <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
+                      Retrait en boutique : {order.city}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-center gap-6 text-5xl">
-                    {order.delivery_mode === "PICKUP" ? (
-                      <>
-                        <Package className="text-primary" size={44} strokeWidth={1.75} />
-                        <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
-                        <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
-                      </>
-                    ) : (
-                      <>
-                        <MapPin className="text-primary" size={44} strokeWidth={1.75} />
-                        <Bike className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
-                        <Home className="text-primary" size={44} strokeWidth={1.75} />
-                      </>
-                    )}
+                ) : (
+                  <div className="relative">
+                    <TrackingMap
+                      destinationAddress={order.address}
+                      destinationCity={order.city}
+                      destinationLabel={`Adresse de livraison : ${order.address}`}
+                      originLabel={tracking?.courier_name ? `Livreur : ${tracking.courier_name}` : "Position livreur"}
+                      height={280}
+                      className="rounded-none border-0"
+                    />
+                    <div className="absolute left-3 right-3 top-3 z-[500] flex flex-wrap gap-2">
+                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
+                        Ville: {order.city}
+                      </span>
+                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
+                        Zone suivie
+                      </span>
+                    </div>
+                    <div className="border-t border-orange-100 bg-white px-4 py-3 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                      Adresse de livraison : {order.address}
+                    </div>
                   </div>
-                  <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
-                    {order.delivery_mode === "PICKUP"
-                      ? `Retrait en boutique : ${order.city}`
-                      : `${t('order.detail.delivery_address')} : ${order.address}`}
-                  </div>
-                </div>
+                )}
               </div>
 
               <div className="space-y-4">
@@ -407,7 +412,7 @@ export default function OrderDetailPage() {
                   <MessageCircleMore size={18} />
                   {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
                 </button>
-                {order.fulfillment_status !== "DELIVERED" && (
+                {order.fulfillment_status === "DELIVERED" && (
                   <button
                     onClick={handleConfirmReceipt}
                     className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"

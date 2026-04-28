@@ -146,6 +146,31 @@ export type CourierDashboard = {
   weekly_progress: CourierDashboardWeek[];
 };
 
+export type CourierSettings = {
+  id: number;
+  is_online: boolean;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  preferred_language: "fr" | "en";
+  gps_permission_granted: boolean;
+  camera_permission_granted: boolean;
+  updated_at: string;
+};
+
+export type CourierSOSAlert = {
+  id: number;
+  courier: number;
+  courier_name: string;
+  status: "OPEN" | "ACKNOWLEDGED" | "RESOLVED";
+  message: string;
+  location: string;
+  latitude: string | null;
+  longitude: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export const courierApi = {
   getDashboard: async (): Promise<CourierDashboard> => {
     return http<CourierDashboard>("/api/shipping/dashboard/");
@@ -153,6 +178,29 @@ export const courierApi = {
 
   getNetwork: async (): Promise<CourierNetwork> => {
     return http<CourierNetwork>("/api/shipping/network/");
+  },
+
+  getSettings: async (): Promise<CourierSettings> => {
+    return http<CourierSettings>("/api/shipping/settings/");
+  },
+
+  updateSettings: async (payload: Partial<Omit<CourierSettings, "id" | "updated_at">>): Promise<CourierSettings> => {
+    return http<CourierSettings>("/api/shipping/settings/", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  triggerSOS: async (payload: {
+    message?: string;
+    location?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+  }): Promise<CourierSOSAlert> => {
+    return http<CourierSOSAlert>("/api/shipping/sos/", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   getNotifications: async (): Promise<CourierNotification[]> => {

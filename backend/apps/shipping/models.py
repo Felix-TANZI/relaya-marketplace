@@ -88,3 +88,27 @@ class ShipmentMessage(models.Model):
 
     def __str__(self):
         return f"ShipmentMessage(shipment={self.shipment_id}, channel={self.channel})"
+
+
+class CourierSOSAlert(models.Model):
+    class Status(models.TextChoices):
+        OPEN = "OPEN", "Ouverte"
+        ACKNOWLEDGED = "ACKNOWLEDGED", "Prise en charge"
+        RESOLVED = "RESOLVED", "Resolue"
+
+    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name="sos_alerts")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.OPEN)
+    message = models.TextField(blank=True, default="")
+    location = models.CharField(max_length=160, blank=True, default="")
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Alerte SOS livreur"
+        verbose_name_plural = "Alertes SOS livreur"
+
+    def __str__(self):
+        return f"SOS #{self.id} - {self.courier.user.username} - {self.status}"

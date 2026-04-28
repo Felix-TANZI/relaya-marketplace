@@ -1,7 +1,8 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from apps.orders.models import Dispute, Order
-from .models import Shipment, ShipmentEvent, ShipmentMessage
+from apps.accounts.models import UserNotification
+from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
 
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
@@ -80,11 +81,19 @@ class ShipmentSerializer(serializers.ModelSerializer):
         return obj.order.fulfillment_status
 
     def get_vendor_names(self, obj):
-        return list(
-            obj.order.items.select_related("product__vendor")
-            .values_list("product__vendor__shop_name", flat=True)
-            .distinct()
-        )
+        names = []
+        items = obj.order.items.select_related("product__vendor__vendor_profile")
+        for item in items:
+            vendor_user = getattr(item.product, "vendor", None)
+            if not vendor_user:
+                continue
+            vendor_profile = getattr(vendor_user, "vendor_profile", None)
+            names.append(
+                vendor_profile.business_name
+                if vendor_profile and vendor_profile.business_name
+                else vendor_user.get_full_name().strip() or vendor_user.username
+            )
+        return list(dict.fromkeys(names))
 
 
 class ShipmentCreateSerializer(serializers.Serializer):
@@ -141,6 +150,18 @@ class ShipmentCreateSerializer(serializers.Serializer):
             message="Shipment created" if created else "Shipment updated",
             location="",
         )
+
+        if shipment.courier_id:
+            UserNotification.objects.create(
+                user=shipment.courier.user,
+                title=f"Nouvelle livraison #{shipment.order_id}",
+                message=(
+                    f"Une commande a ete assignee a ta tournee: "
+                    f"{shipment.order.city} - {shipment.order.address}."
+                ),
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url="/courier",
+            )
 
         return shipment
 
@@ -370,3 +391,73 @@ class ShipmentMessageCreateSerializer(serializers.ModelSerializer):
 class CourierShipmentScanSerializer(serializers.Serializer):
     code = serializers.CharField()
     action = serializers.ChoiceField(choices=["PICKED_UP", "OUT_FOR_DELIVERY", "DELIVERED"])
+
+
+class CourierSettingsSerializer(serializers.Serializer):
+    is_online = serializers.BooleanField(required=False)
+    city = serializers.CharField(max_length=80, required=False)
+    zones = serializers.ListField(
+        child=serializers.CharField(max_length=60),
+        required=False,
+        allow_empty=False,
+    )
+    vehicle_type = serializers.ChoiceField(choices=[], required=False)
+    preferred_language = serializers.ChoiceField(choices=["fr", "en"], required=False)
+    gps_permission_granted = serializers.BooleanField(required=False)
+    camera_permission_granted = serializers.BooleanField(required=False)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        from apps.accounts.models import CourierProfile
+
+        self.fields["vehicle_type"].choices = CourierProfile.VehicleType.choices
+
+    def to_representation(self, courier):
+        return {
+            "id": courier.id,
+            "is_online": courier.is_online,
+            "city": courier.city,
+            "zones": courier.zones or [],
+            "vehicle_type": courier.vehicle_type,
+            "preferred_language": courier.preferred_language or "fr",
+            "gps_permission_granted": courier.gps_permission_granted,
+            "camera_permission_granted": courier.camera_permission_granted,
+            "updated_at": courier.updated_at,
+        }
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save(update_fields=[*validated_data.keys(), "updated_at"])
+        return instance
+
+
+class CourierSOSAlertSerializer(serializers.ModelSerializer):
+    courier_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = CourierSOSAlert
+        fields = [
+            "id",
+            "courier",
+            "courier_name",
+            "status",
+            "message",
+            "location",
+            "latitude",
+            "longitude",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "courier", "courier_name", "status", "created_at", "updated_at"]
+
+    def get_courier_name(self, obj):
+        full_name = obj.courier.user.get_full_name().strip()
+        return full_name or obj.courier.user.username
+
+
+class CourierSOSCreateSerializer(serializers.Serializer):
+    message = serializers.CharField(required=False, allow_blank=True, default="")
+    location = serializers.CharField(required=False, allow_blank=True, default="")
+    latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+    longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)

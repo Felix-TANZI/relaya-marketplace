@@ -630,5 +630,9 @@ def verify_2fa_login(request):
             'ip_address': get_client_ip(request) or None, 'is_active': True,
         },
     )
+    
+    # Mettre à jour last_login (simplejwt ne le fait pas en mode manuel)
+    from django.contrib.auth.models import update_last_login
+    update_last_login(None, user)
  
     return Response({'access': str(access), 'refresh': str(refresh)})

@@ -4,22 +4,55 @@
 import { http } from './http';
 
 export interface User {
-  id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  date_joined: string;
-  is_vendor?: boolean;
+  id:                     number;
+  username:               string;
+  email:                  string;
+  first_name:             string;
+  last_name:              string;
+  date_joined:            string;
+  // Rôles — retournés par /api/auth/me/
+  is_staff?:              boolean;   // true = accès espace admin
+  is_superuser?:          boolean;   // true = super-administrateur
+  is_vendor?:             boolean;   // true = compte vendeur actif
+  // Profil étendu
   is_courier?: boolean;
   courier_status?: "not_applied" | "pending" | "approved";
   courier_profile?: CourierProfile | null;
-  phone?: string | null;
-  avatar_url?: string | null;
+  phone?:                 string | null;
+  bio?:                   string | null;
+  avatar_url?:            string | null;
   newsletter_subscribed?: boolean;
-  sms_notifications?: boolean;
-  loyalty_points?: number;
-  loyalty_tier?: string;
+  sms_notifications?:     boolean;
+  // Fidélité client
+  loyalty_points?:        number;
+  loyalty_tier?:          string;
+}
+
+export interface CourierProfile {
+  id: number;
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+  is_active: boolean;
+  is_approved: boolean;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourierApplicationPayload {
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+}
+
+export interface CourierApplicationResponse {
+  application: CourierProfile | null;
+  status: "not_applied" | "pending" | "approved";
 }
 
 export interface CourierProfile {

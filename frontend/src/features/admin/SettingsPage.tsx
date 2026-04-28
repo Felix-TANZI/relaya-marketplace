@@ -1,465 +1,511 @@
 // frontend/src/features/admin/SettingsPage.tsx
-// Gestion des paramètres système de la plateforme
+// Paramètres plateforme BelivaY — admin
+// Sections : Frais livraison · Commission · Paiements · Emails · Maintenance
 
 import { useEffect, useState, useCallback } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
-  DollarSign,
-  Truck,
-  CreditCard,
-  Mail,
-  AlertTriangle,
-  Plus,
-  Trash2,
-  Save,
-  Clock,
+  Save, RefreshCw, Plus, Trash2, AlertTriangle,
+  Truck, DollarSign, CreditCard, Mail, Shield,
+  CheckCircle, Clock, Smartphone,
 } from 'lucide-react';
-import { Card} from '@/components/ui';
 import { adminApi, type PlatformSettings } from '@/services/api/admin';
+import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// SOUS-COMPOSANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function Section({ title, icon: Icon, children, T }: {
+  title: string;
+  icon: React.ElementType;
+  children: React.ReactNode;
+  T: ReturnType<typeof useAdminTheme>;
+}) {
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+      <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
+        <Icon size={14} style={{ color: T.red }} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{title}</span>
+      </div>
+      <div className="p-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function Label({ children, hint }: { children: React.ReactNode; hint?: string }) {
+  return (
+    <div className="mb-1.5">
+      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#9CA3AF' }}>{children}</span>
+      {hint && <p style={{ fontSize: 11, color: '#6B7280', marginTop: 2 }}>{hint}</p>}
+    </div>
+  );
+}
+
+function Toggle({ checked, onChange, label, description, T }: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+  label: string;
+  description?: string;
+  T: ReturnType<typeof useAdminTheme>;
+}) {
+  return (
+    <div
+      className="flex items-center justify-between gap-4 p-4 rounded-xl cursor-pointer transition-all"
+      style={{ background: checked ? T.red + '08' : T.cardAlt, border: `1px solid ${checked ? T.red + '30' : T.border}` }}
+      onClick={() => onChange(!checked)}
+    >
+      <div>
+        <p style={{ fontSize: 13.5, fontWeight: 600, color: T.text }}>{label}</p>
+        {description && <p style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>{description}</p>}
+      </div>
+      {/* Toggle switch */}
+      <div style={{
+        width: 44, height: 24, borderRadius: 12, flexShrink: 0,
+        background: checked ? T.red : T.border,
+        position: 'relative', transition: 'background 0.2s ease',
+        cursor: 'pointer',
+      }}>
+        <div style={{
+          width: 18, height: 18, borderRadius: '50%', background: '#fff',
+          position: 'absolute', top: 3,
+          left: checked ? 23 : 3,
+          transition: 'left 0.2s ease',
+          boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
 export default function SettingsPage() {
-  const { t } = useTranslation();
+  const T             = useAdminTheme();
   const { showToast } = useToast();
 
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const [loading,  setLoading]  = useState(true);
+  const [saving,   setSaving]   = useState(false);
+  const [dirty,    setDirty]    = useState(false);
 
-  // États formulaire
-  const [formData, setFormData] = useState({
+  // Formulaire
+  const [form, setForm] = useState({
     platform_commission_percent: '10.00',
-    minimum_order_amount_xaf: 1000,
-    default_delivery_days: 3,
-    mtn_momo_enabled: true,
-    orange_money_enabled: true,
-    admin_email: 'admin@relaya.cm',
-    support_email: 'support@relaya.cm',
-    maintenance_mode: false,
-    maintenance_message: '',
+    minimum_order_amount_xaf:    5000,
+    default_delivery_days:       3,
+    mtn_momo_enabled:            true,
+    orange_money_enabled:        true,
+    admin_email:                 'admin@belivay.cm',
+    support_email:               'support@belivay.cm',
+    maintenance_mode:            false,
+    maintenance_message:         '',
   });
 
   // Frais de livraison par ville
-  const [deliveryFees, setDeliveryFees] = useState<Record<string, number>>({});
+  const [fees,    setFees]    = useState<Record<string, number>>({});
   const [newCity, setNewCity] = useState('');
-  const [newFee, setNewFee] = useState('');
+  const [newFee,  setNewFee]  = useState('');
 
-  const loadSettings = useCallback(async () => {
+  // ── Chargement ───────────────────────────────────────────────────────────
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      setLoading(true);
       const data = await adminApi.getSettings();
       setSettings(data);
-      setFormData({
+      setForm({
         platform_commission_percent: data.platform_commission_percent,
-        minimum_order_amount_xaf: data.minimum_order_amount_xaf,
-        default_delivery_days: data.default_delivery_days,
-        mtn_momo_enabled: data.mtn_momo_enabled,
-        orange_money_enabled: data.orange_money_enabled,
-        admin_email: data.admin_email,
-        support_email: data.support_email,
-        maintenance_mode: data.maintenance_mode,
-        maintenance_message: data.maintenance_message,
+        minimum_order_amount_xaf:    data.minimum_order_amount_xaf,
+        default_delivery_days:       data.default_delivery_days,
+        mtn_momo_enabled:            data.mtn_momo_enabled,
+        orange_money_enabled:        data.orange_money_enabled,
+        admin_email:                 data.admin_email,
+        support_email:               data.support_email,
+        maintenance_mode:            data.maintenance_mode,
+        maintenance_message:         data.maintenance_message,
       });
-      setDeliveryFees(data.delivery_fees || {});
-    } catch (error) {
-      console.error('Erreur chargement paramètres:', error);
-      showToast(t('admin.settings_load_error'), 'error');
+      setFees(data.delivery_fees ?? {});
+      setDirty(false);
+    } catch {
+      showToast('Erreur chargement des paramètres', 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast, t]);
+  }, [showToast]);
 
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
+  useEffect(() => { load(); }, [load]);
 
+  // ── Helpers ───────────────────────────────────────────────────────────────
+  const set = <K extends keyof typeof form>(key: K, value: typeof form[K]) => {
+    setForm(f => ({ ...f, [key]: value }));
+    setDirty(true);
+  };
+
+  const addCity = () => {
+    const city = newCity.trim();
+    const fee  = parseInt(newFee, 10);
+    if (!city || isNaN(fee) || fee < 0) {
+      showToast('Renseignez un nom de ville et un montant valide', 'error');
+      return;
+    }
+    setFees(prev => ({ ...prev, [city]: fee }));
+    setNewCity(''); setNewFee('');
+    setDirty(true);
+  };
+
+  const removeCity = (city: string) => {
+    setFees(prev => { const f = { ...prev }; delete f[city]; return f; });
+    setDirty(true);
+  };
+
+  // ── Sauvegarde ────────────────────────────────────────────────────────────
   const handleSave = async () => {
+    setSaving(true);
     try {
-      setSaving(true);
-      await adminApi.updateSettings({
-        ...formData,
-        delivery_fees: deliveryFees,
-      });
-      showToast(t('admin.settings_saved'), 'success');
-      loadSettings();
-    } catch (error) {
-      console.error('Erreur sauvegarde:', error);
-      showToast(t('admin.save_error'), 'error');
+      await adminApi.updateSettings({ ...form, delivery_fees: fees });
+      showToast('Paramètres sauvegardés', 'success');
+      await load();
+    } catch {
+      showToast('Erreur lors de la sauvegarde', 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleAddCity = () => {
-    if (!newCity.trim() || !newFee) {
-      showToast(t('admin.city_fee_required'), 'error');
-      return;
-    }
-
-    setDeliveryFees((prev) => ({
-      ...prev,
-      [newCity.trim()]: parseInt(newFee),
-    }));
-
-    setNewCity('');
-    setNewFee('');
+  // ── Input style ───────────────────────────────────────────────────────────
+  const inp: React.CSSProperties = {
+    background: T.input, color: T.text,
+    border: `1px solid ${T.inputBorder}`,
+    borderRadius: 12, padding: '10px 14px',
+    fontSize: 13.5, outline: 'none', width: '100%',
+    fontFamily: "'Plus Jakarta Sans',sans-serif",
   };
 
-  const handleRemoveCity = (city: string) => {
-    setDeliveryFees((prev) => {
-      const updated = { ...prev };
-      delete updated[city];
-      return updated;
-    });
-  };
+  const fmtDate = (d: string) =>
+    new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
-  };
-
-  const formatDateTime = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin" />
-      </div>
-    );
-  }
-
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display font-bold text-4xl mb-2">
-            <span className="text-gradient animate-gradient-bg">{t('admin.system_settings')}</span>
+    <div className="space-y-6">
+
+      {/* ── En-tête ─────────────────────────────────────────────────────── */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
+            Paramètres Plateforme
           </h1>
-          <p className="text-dark-text-secondary">
-            {t('admin.settings_subtitle')}
-          </p>
+          {settings && (
+            <p style={{ fontSize: 12.5, color: T.muted, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock size={12} />
+              Dernière modification : {fmtDate(settings.updated_at)}
+              {settings.updated_by_name && ` par ${settings.updated_by_name}`}
+            </p>
+          )}
         </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button onClick={() => load()}
+            className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
+            <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={saving || loading || !dirty}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all"
+            style={{
+              background: dirty ? 'linear-gradient(135deg,#DC2626,#991B1B)' : T.border,
+              opacity: saving ? 0.7 : 1,
+              cursor: dirty ? 'pointer' : 'not-allowed',
+              boxShadow: dirty ? '0 4px 16px rgba(220,38,38,0.35)' : 'none',
+            }}>
+            {saving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+            {saving ? 'Sauvegarde…' : 'Sauvegarder'}
+          </button>
+        </div>
+      </div>
 
-        {/* Dernière modification */}
-        {settings && (
-          <Card className="mb-6 bg-holo-cyan/5 border-holo-cyan/20">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Clock className="text-holo-cyan" size={20} />
-                <div>
-                  <p className="text-sm font-medium">{t('admin.last_modified')}</p>
-                  <p className="text-xs text-dark-text-tertiary">
-                    Par {settings.updated_by_name} • {formatDateTime(settings.updated_at)}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all disabled:opacity-50 flex items-center gap-2"
-              >
-                {saving ? (
-                  <div className="w-4 h-4 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <Save size={16} />
-                )}
-                {t('admin.save')}
-              </button>
-            </div>
-          </Card>
-        )}
+      {/* Alerte maintenance active */}
+      {form.maintenance_mode && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <AlertTriangle size={18} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>Mode maintenance actif</p>
+            <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>La plateforme est inaccessible aux visiteurs. Désactivez dès que les travaux sont terminés.</p>
+          </div>
+        </div>
+      )}
 
-        <div className="space-y-6">
-          {/* Frais de Livraison */}
-          <Card>
-            <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-              <Truck className="text-holo-cyan" size={24} />
-              {t('admin.delivery_fees_title')}
-            </h3>
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <div style={{ width: 40, height: 40, borderRadius: '50%', border: `3px solid ${T.border}`, borderTopColor: T.red, animation: 'spin 0.8s linear infinite' }} />
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-            {/* Liste des villes */}
-            <div className="space-y-2 mb-4">
-              {Object.keys(deliveryFees).length === 0 ? (
-                <p className="text-dark-text-tertiary text-center py-6">
-                  {t('admin.no_city')}
+          {/* ── COLONNE GAUCHE ─────────────────────────────────────────── */}
+          <div className="space-y-5">
+
+            {/* Frais de livraison */}
+            <Section title="Frais de livraison par ville" icon={Truck} T={T}>
+              {Object.keys(fees).length === 0 ? (
+                <p style={{ fontSize: 13, color: T.muted, textAlign: 'center', padding: '12px 0' }}>
+                  Aucune ville configurée
                 </p>
               ) : (
-                Object.entries(deliveryFees).map(([city, fee]) => (
-                  <div
-                    key={city}
-                    className="flex items-center justify-between p-3 rounded-xl bg-dark-bg-tertiary border border-white/10"
-                  >
-                    <div>
-                      <p className="font-medium">{city}</p>
-                      <p className="text-sm text-dark-text-tertiary">
-                        {formatCurrency(fee)}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveCity(city)}
-                      className="p-2 rounded-lg hover:bg-red-500/10 text-red-400 transition-all"
+                <div className="space-y-2 mb-4">
+                  {Object.entries(fees).sort(([a], [b]) => a.localeCompare(b)).map(([city, amount]) => (
+                    <div
+                      key={city}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl"
+                      style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}
                     >
-                      <Trash2 size={16} />
-                    </button>
-                  </div>
-                ))
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{ background: 'rgba(59,130,246,0.12)' }}>
+                          <Truck size={13} style={{ color: '#3B82F6' }} />
+                        </div>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: T.text }}>{city}</span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
+                          {new Intl.NumberFormat('fr-FR').format(amount)} FCFA
+                        </span>
+                        <button
+                          onClick={() => removeCity(city)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                          style={{ color: '#EF4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                          <Trash2 size={12} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </div>
 
-            {/* Ajouter ville */}
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder={t('admin.city_name')}
-                value={newCity}
-                onChange={(e) => setNewCity(e.target.value)}
-                className="flex-1 px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all"
-              />
-              <input
-                type="number"
-                placeholder={t('admin.amount_fcfa')}
-                value={newFee}
-                onChange={(e) => setNewFee(e.target.value)}
-                className="w-40 px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-holo-cyan transition-all"
-              />
-              <button
-                onClick={handleAddCity}
-                className="px-4 py-2 bg-holo-cyan text-dark-bg rounded-xl hover:bg-holo-cyan/90 transition-all flex items-center gap-2"
-              >
-                <Plus size={16} />
-                {t('admin.add')}
-              </button>
-            </div>
-          </Card>
-
-          {/* Commission & Montants */}
-          <Card>
-            <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-              <DollarSign className="text-holo-purple" size={24} />
-              {t('admin.commission_title')}
-            </h3>
-            <div className="space-y-4">
+              {/* Ajouter une ville */}
               <div>
-                <label className="block text-sm text-dark-text-tertiary mb-2">
-                  {t('admin.platform_commission')}
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={formData.platform_commission_percent}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      platform_commission_percent: e.target.value,
-                    }))
-                  }
-                  className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
-                />
-                <p className="text-xs text-dark-text-tertiary mt-1">
-                  {t('admin.commission_desc')}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm text-dark-text-tertiary mb-2">
-                  {t('admin.min_order')}
-                </label>
-                <input
-                  type="number"
-                  value={formData.minimum_order_amount_xaf}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      minimum_order_amount_xaf: parseInt(e.target.value) || 0,
-                    }))
-                  }
-                  className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm text-dark-text-tertiary mb-2">
-                  {t('admin.default_delivery_days')}
-                </label>
-                <input
-                  type="number"
-                  value={formData.default_delivery_days}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      default_delivery_days: parseInt(e.target.value) || 1,
-                    }))
-                  }
-                  className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
-                />
-              </div>
-            </div>
-          </Card>
-
-          {/* Méthodes de Paiement */}
-          <Card>
-            <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-              <CreditCard className="text-holo-pink" size={24} />
-              {t('admin.payment_methods')}
-            </h3>
-            <div className="space-y-3">
-              <label className="flex items-center justify-between p-4 rounded-xl bg-dark-bg-tertiary border border-white/10 cursor-pointer hover:border-white/20 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-yellow-500/10 flex items-center justify-center">
-                    <span className="text-2xl">📱</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{t('admin.mtn_momo')}</p>
-                    <p className="text-sm text-dark-text-tertiary">
-                      {t('admin.mtn_desc')}
-                    </p>
-                  </div>
+                <Label>Ajouter une ville</Label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newCity}
+                    onChange={e => setNewCity(e.target.value)}
+                    placeholder="Ex : Bafoussam"
+                    style={{ ...inp, flex: 1 }}
+                    onFocus={e => (e.target.style.borderColor = T.red)}
+                    onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                    onKeyDown={e => { if (e.key === 'Enter') addCity(); }}
+                  />
+                  <input
+                    type="number"
+                    value={newFee}
+                    onChange={e => setNewFee(e.target.value)}
+                    placeholder="FCFA"
+                    style={{ ...inp, width: 110 }}
+                    onFocus={e => (e.target.style.borderColor = T.red)}
+                    onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                    onKeyDown={e => { if (e.key === 'Enter') addCity(); }}
+                  />
+                  <button
+                    onClick={addCity}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white flex-shrink-0"
+                    style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
+                    <Plus size={14} /> Ajouter
+                  </button>
                 </div>
-                <input
-                  type="checkbox"
-                  checked={formData.mtn_momo_enabled}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, mtn_momo_enabled: e.target.checked }))
-                  }
-                  className="w-5 h-5"
-                />
-              </label>
+              </div>
+            </Section>
 
-              <label className="flex items-center justify-between p-4 rounded-xl bg-dark-bg-tertiary border border-white/10 cursor-pointer hover:border-white/20 transition-all">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center">
-                    <span className="text-2xl">🍊</span>
-                  </div>
-                  <div>
-                    <p className="font-medium">{t('admin.orange_money')}</p>
-                    <p className="text-sm text-dark-text-tertiary">
-                      {t('admin.orange_desc')}
-                    </p>
-                  </div>
-                </div>
-                <input
-                  type="checkbox"
-                  checked={formData.orange_money_enabled}
-                  onChange={(e) =>
-                    setFormData((prev) => ({
-                      ...prev,
-                      orange_money_enabled: e.target.checked,
-                    }))
-                  }
-                  className="w-5 h-5"
-                />
-              </label>
-            </div>
-          </Card>
-
-          {/* Emails */}
-          <Card>
-            <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-              <Mail className="text-holo-cyan" size={24} />
-              {t('admin.contact_emails')}
-            </h3>
-            <div className="space-y-4">
+            {/* Commission & Montants */}
+            <Section title="Commission & Montants" icon={DollarSign} T={T}>
               <div>
-                <label className="block text-sm text-dark-text-tertiary mb-2">
-                  {t('admin.admin_email')}
-                </label>
+                <Label hint="Pourcentage prélevé sur chaque vente. Ne s'applique qu'aux nouvelles commandes.">
+                  Commission plateforme (%)
+                </Label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.5"
+                    min="0"
+                    max="50"
+                    value={form.platform_commission_percent}
+                    onChange={e => set('platform_commission_percent', e.target.value)}
+                    style={inp}
+                    onFocus={e => (e.target.style.borderColor = T.red)}
+                    onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                  />
+                  <span style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', color: T.muted, fontSize: 13 }}>%</span>
+                </div>
+              </div>
+
+              <div>
+                <Label hint="Montant minimum qu'un client doit commander. En dessous, la commande est bloquée.">
+                  Montant minimum de commande (FCFA)
+                </Label>
+                <input
+                  type="number"
+                  min="0"
+                  step="500"
+                  value={form.minimum_order_amount_xaf}
+                  onChange={e => set('minimum_order_amount_xaf', Number(e.target.value))}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                />
+              </div>
+
+              <div>
+                <Label hint="Délai affiché au client pour estimer la date de livraison.">
+                  Délai de livraison par défaut (jours)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="30"
+                  value={form.default_delivery_days}
+                  onChange={e => set('default_delivery_days', Number(e.target.value))}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                />
+              </div>
+            </Section>
+          </div>
+
+          {/* ── COLONNE DROITE ─────────────────────────────────────────── */}
+          <div className="space-y-5">
+
+            {/* Méthodes de paiement */}
+            <Section title="Méthodes de paiement Mobile Money" icon={CreditCard} T={T}>
+              <Toggle
+                checked={form.mtn_momo_enabled}
+                onChange={v => set('mtn_momo_enabled', v)}
+                label="MTN Mobile Money"
+                description="Activer/désactiver les paiements via MTN MoMo"
+                T={T}
+              />
+              <Toggle
+                checked={form.orange_money_enabled}
+                onChange={v => set('orange_money_enabled', v)}
+                label="Orange Money"
+                description="Activer/désactiver les paiements via Orange Money"
+                T={T}
+              />
+              {!form.mtn_momo_enabled && !form.orange_money_enabled && (
+                <div className="flex items-center gap-2 p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <AlertTriangle size={14} style={{ color: '#EF4444', flexShrink: 0 }} />
+                  <p style={{ fontSize: 12, color: '#EF4444' }}>Aucune méthode de paiement active — les clients ne pourront pas passer de commandes.</p>
+                </div>
+              )}
+            </Section>
+
+            {/* Emails de contact */}
+            <Section title="Emails de contact" icon={Mail} T={T}>
+              <div>
+                <Label hint="Email des notifications système et des alertes admin.">
+                  Email administrateur
+                </Label>
                 <input
                   type="email"
-                  value={formData.admin_email}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, admin_email: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
+                  value={form.admin_email}
+                  onChange={e => set('admin_email', e.target.value)}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
                 />
               </div>
 
               <div>
-                <label className="block text-sm text-dark-text-tertiary mb-2">
-                  {t('admin.support_email')}
-                </label>
+                <Label hint="Email visible par les clients pour les demandes de support.">
+                  Email support client
+                </Label>
                 <input
                   type="email"
-                  value={formData.support_email}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, support_email: e.target.value }))
-                  }
-                  className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
+                  value={form.support_email}
+                  onChange={e => set('support_email', e.target.value)}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
                 />
               </div>
-            </div>
-          </Card>
+            </Section>
 
-          {/* Maintenance */}
-          <Card className="border-2 border-yellow-500/30">
-            <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-              <AlertTriangle className="text-yellow-400" size={24} />
-              {t('admin.maintenance_mode')}
-            </h3>
-            <div className="space-y-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.maintenance_mode}
-                  onChange={(e) =>
-                    setFormData((prev) => ({ ...prev, maintenance_mode: e.target.checked }))
-                  }
-                  className="w-5 h-5"
-                />
-                <div>
-                  <p className="font-medium">{t('admin.enable_maintenance')}</p>
-                  <p className="text-sm text-dark-text-tertiary">
-                    {t('admin.maintenance_desc')}
-                  </p>
-                </div>
-              </label>
+            {/* Maintenance */}
+            <Section title="Mode Maintenance" icon={Shield} T={T}>
+              <Toggle
+                checked={form.maintenance_mode}
+                onChange={v => set('maintenance_mode', v)}
+                label="Activer le mode maintenance"
+                description="La plateforme sera inaccessible aux visiteurs — à utiliser avec précaution."
+                T={T}
+              />
 
-              {formData.maintenance_mode && (
+              {form.maintenance_mode && (
                 <div>
-                  <label className="block text-sm text-dark-text-tertiary mb-2">
-                    {t('admin.maintenance_msg_label')}
-                  </label>
+                  <Label hint="Message affiché sur la page de maintenance.">
+                    Message aux visiteurs
+                  </Label>
                   <textarea
-                    value={formData.maintenance_message}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        maintenance_message: e.target.value,
-                      }))
-                    }
-                    rows={4}
-                    placeholder="Site en maintenance, nous revenons bientôt..."
-                    className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text placeholder-dark-text-tertiary focus:outline-none focus:border-yellow-500 transition-all resize-none"
+                    value={form.maintenance_message}
+                    onChange={e => { set('maintenance_message', e.target.value); }}
+                    rows={3}
+                    placeholder="Ex : BelivaY est en maintenance. Retour prévu dans 1 heure."
+                    style={{ ...inp, resize: 'vertical' }}
+                    onFocus={e => (e.target.style.borderColor = T.red)}
+                    onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
                   />
                 </div>
               )}
-            </div>
-          </Card>
+            </Section>
 
-          {/* Bouton Sauvegarder Final */}
-          <div className="flex justify-end">
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-8 py-3 bg-holo-cyan text-dark-bg font-bold rounded-xl hover:bg-holo-cyan/90 transition-all disabled:opacity-50 flex items-center gap-2"
-            >
-              {saving ? (
-                <div className="w-5 h-5 border-2 border-dark-bg border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <Save size={20} />
-              )}
-              {t('admin.save_settings')}
-            </button>
+            {/* Récapitulatif config actuelle */}
+            {settings && (
+              <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+                <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 12 }}>
+                  Configuration actuelle
+                </p>
+                <div className="space-y-2.5">
+                  {[
+                    { label: 'Commission',      value: `${settings.platform_commission_percent}%`,                          icon: DollarSign,   color: T.red },
+                    { label: 'Commande min.',   value: `${new Intl.NumberFormat('fr-FR').format(settings.minimum_order_amount_xaf)} FCFA`, icon: Shield, color: '#3B82F6' },
+                    { label: 'Délai livraison', value: `${settings.default_delivery_days} jour(s)`,                         icon: Truck,        color: '#F47920' },
+                    { label: 'MTN MoMo',        value: settings.mtn_momo_enabled ? 'Actif' : 'Inactif',                     icon: Smartphone,   color: settings.mtn_momo_enabled ? '#10B981' : '#EF4444' },
+                    { label: 'Orange Money',    value: settings.orange_money_enabled ? 'Actif' : 'Inactif',                  icon: Smartphone,   color: settings.orange_money_enabled ? '#10B981' : '#EF4444' },
+                    { label: 'Maintenance',     value: settings.maintenance_mode ? 'ACTIVÉE' : 'Désactivée',                 icon: settings.maintenance_mode ? AlertTriangle : CheckCircle, color: settings.maintenance_mode ? '#EF4444' : '#10B981' },
+                  ].map((item, i) => {
+                    const Icon = item.icon;
+                    return (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Icon size={12} style={{ color: item.color, flexShrink: 0 }} />
+                          <span style={{ fontSize: 12.5, color: T.muted }}>{item.label}</span>
+                        </div>
+                        <span style={{ fontSize: 12.5, fontWeight: 700, color: item.color }}>{item.value}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
+
+      {/* Bouton flottant si dirty */}
+      {dirty && !loading && (
+        <div className="fixed bottom-6 right-6 z-50">
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 px-6 py-3 rounded-2xl text-[13.5px] font-semibold text-white shadow-2xl"
+            style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)', boxShadow: '0 8px 30px rgba(220,38,38,0.5)' }}>
+            {saving ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
+            {saving ? 'Sauvegarde…' : 'Sauvegarder les modifications'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

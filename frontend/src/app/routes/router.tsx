@@ -1,150 +1,198 @@
 // frontend/src/app/routes/router.tsx
+// Routeur principal BelivaY.
+// Architecture :
+//   AppLayout    → pages publiques + auth + client
+//   SellerLayout → /seller/*
+//   AdminLayout  → /admin/* (AdminRoute = ProtectedRoute + is_staff check)
 
-import { createBrowserRouter, Navigate } from "react-router-dom";
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 
-// ─────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // LAYOUTS
-// ─────────────────────────────
-import AppLayout from "@/app/layout/AppLayout";
-import SellerLayout from "@/app/layout/SellerLayout";
+// ─────────────────────────────────────────────────────────────────────────────
+import AppLayout    from '@/app/layout/AppLayout';
+import SellerLayout from '@/app/layout/SellerLayout';
+import AdminLayout  from '@/features/admin/AdminLayout';
 
-// ─────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// GUARDS
+// ─────────────────────────────────────────────────────────────────────────────
+import ProtectedRoute from '@/components/auth/ProtectedRoute';
+import PublicRoute    from '@/components/auth/PublicRoute';
+
+// ─────────────────────────────────────────────────────────────────────────────
 // CLIENT PAGES
-// ─────────────────────────────
-import HomePage from "@/features/home/HomePage";
-import CatalogPage from "@/features/catalog/CatalogPage";
-import CategoriesPage from "@/features/categories/CategoriesPage";
-import ProductDetailPage from "@/features/catalog/ProductDetailPage";
-import CartPage from "@/features/cart/CartPage";
-import CheckoutPage from "@/features/checkout/CheckoutPage";
-import CheckoutConfirmPage from "@/features/checkout/CheckoutConfirmPage";
-import NotificationsPage from "@/features/notifications/NotificationsPage";
-import OrdersHistoryPage from "@/features/orders/OrdersHistoryPage";
-import OrderDetailPage from "@/features/orders/OrderDetailPage";
-import WishlistPage from "@/features/wishlist/WishlistPage";
-import ProfilePage from "@/features/profile/ProfilePage";
-import ContactPage from "@/features/contact/ContactPage";
-import HelpPage from "@/features/help/HelpPage";
-import AboutPage from "@/features/about/AboutPage";
-import SearchPage from "@/features/search/SearchPage";
+// ─────────────────────────────────────────────────────────────────────────────
+import HomePage               from '@/features/home/HomePage';
+import CatalogPage            from '@/features/catalog/CatalogPage';
+import CategoriesPage         from '@/features/categories/CategoriesPage';
+import ProductDetailPage      from '@/features/catalog/ProductDetailPage';
+import CartPage               from '@/features/cart/CartPage';
+import CheckoutPage           from '@/features/checkout/CheckoutPage';
+import CheckoutConfirmPage    from '@/features/checkout/CheckoutConfirmPage';
+import OrdersHistoryPage      from '@/features/orders/OrdersHistoryPage';
+import OrderDetailPage        from '@/features/orders/OrderDetailPage';
+import WishlistPage           from '@/features/wishlist/WishlistPage';
+import ProfilePage            from '@/features/profile/ProfilePage';
+import NotificationsPage      from '@/features/notifications/NotificationsPage';
+import SearchPage             from '@/features/search/SearchPage';
+import ContactPage            from '@/features/contact/ContactPage';
+import HelpPage               from '@/features/help/HelpPage';
+import AboutPage              from '@/features/about/AboutPage';
+import BecomeSellerPage       from '@/features/vendors/BecomeSellerPage';
+import NotFoundPage           from '@/features/system/NotFoundPage';
 import PromotionsPage from "@/features/promotions/PromotionsPage";
 import DriverApp from "@/features/driver/DriverApp";
 
-// ─────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
 // AUTH PAGES
-// ─────────────────────────────
-import LoginPage from "@/features/auth/LoginPage";
-import RegisterPage from "@/features/auth/RegisterPage";
-import PublicRoute from "@/components/auth/PublicRoute";
-import ProtectedRoute from "@/components/auth/ProtectedRoute";
+// ─────────────────────────────────────────────────────────────────────────────
+import LoginPage    from '@/features/auth/LoginPage';
+import RegisterPage from '@/features/auth/RegisterPage';
 
-// ─────────────────────────────
-// VENDOR (SELLER) PAGES
-// ─────────────────────────────
-import SellerDashboardPage from "@/features/vendors/SellerDashboardPage";
-import SellerProductsPage from "@/features/vendors/SellerProductsPage";
-import ProductFormPage from "@/features/vendors/ProductFormPage";
-import VendorOrdersPage from "@/features/vendors/SellerOrdersPage";
-import VendorOrderDetailPage from "@/features/vendors/SellerOrderDetailPage";
-import SellerPaymentsPage from "@/features/vendors/SellerPaymentsPage";
-import SellerDisputesPage from "@/features/vendors/SellerDisputesPage";
-import SellerShopPage from "@/features/vendors/SellerShopPage";
-import SellerAnalyticsPage from "@/features/vendors/SellerAnalyticsPage";
-import SellerBoostPage from "@/features/vendors/SellerBoostPage";
-import SellerCertificationsPage from "@/features/vendors/SellerCertificationsPage";
-import SellerPlansPage from "@/features/vendors/SellerPlansPage";
-import SellerSettingsPage from "@/features/vendors/SellerSettingsPage";
-import SellerWalletPage from "@/features/vendors/SellerWalletPage";
+// ─────────────────────────────────────────────────────────────────────────────
+// SELLER PAGES
+// ─────────────────────────────────────────────────────────────────────────────
+import SellerDashboardPage      from '@/features/vendors/SellerDashboardPage';
+import SellerProductsPage       from '@/features/vendors/SellerProductsPage';
+import ProductFormPage          from '@/features/vendors/ProductFormPage';
+import SellerOrdersPage         from '@/features/vendors/SellerOrdersPage';
+import SellerOrderDetailPage    from '@/features/vendors/SellerOrderDetailPage';
+import SellerPaymentsPage       from '@/features/vendors/SellerPaymentsPage';
+import SellerDisputesPage       from '@/features/vendors/SellerDisputesPage';
+import SellerShopPage           from '@/features/vendors/SellerShopPage';
+import SellerAnalyticsPage      from '@/features/vendors/SellerAnalyticsPage';
+import SellerBoostPage          from '@/features/vendors/SellerBoostPage';
+import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
+import SellerPlansPage          from '@/features/vendors/SellerPlansPage';
+import SellerSettingsPage       from '@/features/vendors/SellerSettingsPage';
+import SellerWalletPage         from '@/features/vendors/SellerWalletPage';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — PARTAGÉ
+// ─────────────────────────────────────────────────────────────────────────────
+import AdminDashboardPage  from '@/features/admin/AdminDashboardPage';
+import FinancesPage        from '@/features/admin/finances/FinancesPage';
+import AccountPage        from '@/features/admin/finances/AccountPage';
+import PlansPage          from '@/features/admin/finances/PlansPage';
+import AdminStub           from '@/features/admin/_AdminStub';
+import VendorsListPage    from '@/features/admin/vendors/VendorsListPage';
+import KYCPage            from '@/features/admin/vendors/KYCPage';
+import WithdrawalsPage      from '@/features/admin/vendors/WithdrawalsPage';
+import ModificationsPage    from '@/features/admin/vendors/ModificationsPage';
+import CertificationsPage      from '@/features/admin/vendors/CertificationsPage';
+import VendorDetailPage    from '@/features/admin/vendors/VendorDetailPage';
+import OrdersListPage      from '@/features/admin/operations/OrdersListPage';
+import AdminOrderDetailPage  from '@/features/admin/operations/OrderDetailPage';
+import DisputesListPage      from '@/features/admin/operations/DisputesListPage';
+import CataloguePage         from '@/features/admin/operations/CataloguePage';
+import ReviewsPage          from '@/features/admin/operations/ReviewsPage';
+import AdminCategoriesPage  from '@/features/admin/operations/CategoriesPage';
+import AuditPage              from '@/features/admin/system/AuditPage';
+import NotificationsAdminPage  from '@/features/admin/system/NotificationsPage';
+import LiveUsersPage           from '@/features/admin/LiveUsersPage';
+import LiveMapPage            from '@/features/admin/LiveMapPage';
+import VendorsMapPage          from '@/features/admin/vendors/VendorsMapPage';
+import CustomersOverviewPage   from '@/features/admin/customers/CustomersOverviewPage';
+import CustomersBroadcastPage  from '@/features/admin/customers/CustomersBroadcastPage';
+import CustomersLoyaltyPage    from '@/features/admin/customers/CustomersLoyaltyPage';
+import VendorsOverviewPage     from '@/features/admin/vendors/VendorsOverviewPage';
+import SubscriptionsPage      from '@/features/admin/vendors/SubscriptionsPage';
+import AdminDisputeDetailPage from '@/features/admin/operations/DisputeDetailPage';
 
-// ─────────────────────────────
-// AUTRES
-// ─────────────────────────────
-import BecomeSellerPage from "@/features/vendors/BecomeSellerPage";
-import NotFoundPage from "@/features/system/NotFoundPage";
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — CLIENT MANAGEMENT (pages complètes)
+// ─────────────────────────────────────────────────────────────────────────────
+import CustomersListPage   from '@/features/admin/customers/CustomersListPage';
+import CustomerDetailPage  from '@/features/admin/customers/CustomerDetailPage';
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — OPERATIONS (pages existantes, conservées)
+// ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+// ADMIN — USERS (pages existantes)
+// ─────────────────────────────────────────────────────────────────────────────
+import UsersManagementPage from '@/features/admin/UsersManagementPage';
+import UserDetailPage      from '@/features/admin/UserDetailPage';
+import SettingsPage        from '@/features/admin/SettingsPage';
 
-// ─────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// STUBS — icônes pour les pages à venir
+// ─────────────────────────────────────────────────────────────────────────────
+import {
+  Megaphone, MapPin, Truck, BarChart3, TrendingUp, Zap,
+  Bot, Shield, HeadphonesIcon, Terminal,
+} from 'lucide-react';
+
+// ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
-// ─────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const router = createBrowserRouter([
 
-
-  // ═══════════════════════════════════════
-  // 🔵 CLIENT AREA
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CLIENT AREA
+  // ═══════════════════════════════════════════════════════════════════════════
   {
-    path: "/",
+    path: '/',
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
 
-      // PUBLIC
-      { path: "catalog", element: <CatalogPage /> },
-      { path: "categories", element: <CategoriesPage /> },
-      { path: "product/:id", element: <ProductDetailPage /> },
-      { path: "cart", element: <CartPage /> },
-      { path: "search", element: <SearchPage /> },
+      // Public
+      { path: 'catalog',         element: <CatalogPage /> },
+      { path: 'categories',      element: <CategoriesPage /> },
+      { path: 'product/:id',     element: <ProductDetailPage /> },
+      { path: 'cart',            element: <CartPage /> },
+      { path: 'search',          element: <SearchPage /> },
       { path: "promotions", element: <PromotionsPage /> },
+      { path: 'contact',         element: <ContactPage /> },
+      { path: 'help',            element: <HelpPage /> },
+      { path: 'about',           element: <AboutPage /> },
+      { path: 'become-seller',   element: <BecomeSellerPage /> },
 
-      // PROTECTED
-      {
-        path: "checkout",
-        element: <ProtectedRoute><CheckoutPage /></ProtectedRoute>,
-      },
-      {
-        path: "checkout/confirm",
-        element: <ProtectedRoute><CheckoutConfirmPage /></ProtectedRoute>,
-      },
-      {
-        path: "orders",
-        element: <ProtectedRoute><OrdersHistoryPage /></ProtectedRoute>,
-      },
-      {
-        path: "orders/:id",
-        element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute>,
-      },
-      {
-        path: "wishlist",
-        element: <ProtectedRoute><WishlistPage /></ProtectedRoute>,
-      },
-      {
-        path: "notifications",
-        element: <ProtectedRoute><NotificationsPage /></ProtectedRoute>,
-      },
-      {
-        path: "profile",
-        element: <ProtectedRoute><ProfilePage /></ProtectedRoute>,
-      },
-      {
-        path: "contact",
-        element: <ProtectedRoute><ContactPage /></ProtectedRoute>,
-      },
-      {
-        path: "help",
-        element: <ProtectedRoute><HelpPage /></ProtectedRoute>,
-      },
-      {
-        path: "about",
-        element: <ProtectedRoute><AboutPage /></ProtectedRoute>,
-      },
+      // Auth
+      { path: 'login',    element: <PublicRoute><LoginPage /></PublicRoute> },
+      { path: 'register', element: <PublicRoute><RegisterPage /></PublicRoute> },
 
-      // AUTH
-      {
-        path: "login",
-        element: <PublicRoute><LoginPage /></PublicRoute>,
-      },
-      {
-        path: "register",
-        element: <PublicRoute><RegisterPage /></PublicRoute>,
-      },
+      // Protected (client)
+      { path: 'checkout',         element: <ProtectedRoute><CheckoutPage /></ProtectedRoute> },
+      { path: 'checkout/confirm', element: <ProtectedRoute><CheckoutConfirmPage /></ProtectedRoute> },
+      { path: 'orders',           element: <ProtectedRoute><OrdersHistoryPage /></ProtectedRoute> },
+      { path: 'orders/:id',       element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
+      { path: 'wishlist',         element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
+      { path: 'notifications',    element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
+      { path: 'profile',          element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
 
-      // SELLER ENTRY
-      { path: "become-seller", element: <BecomeSellerPage /> },
+      // Fallback
+      { path: '*', element: <NotFoundPage /> },
+    ],
+  },
 
-      // FALLBACK
-      { path: "*", element: <NotFoundPage /> },
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SELLER AREA
+  // ═══════════════════════════════════════════════════════════════════════════
+  {
+    path: '/seller',
+    element: <SellerLayout />,
+    children: [
+      { index: true, element: <Navigate to="/seller/dashboard" replace /> },
+      { path: 'dashboard',            element: <SellerDashboardPage /> },
+      { path: 'products',             element: <SellerProductsPage /> },
+      { path: 'products/new',         element: <ProductFormPage /> },
+      { path: 'products/:id/edit',    element: <ProductFormPage /> },
+      { path: 'orders',               element: <SellerOrdersPage /> },
+      { path: 'orders/:id',           element: <SellerOrderDetailPage /> },
+      { path: 'payments',             element: <SellerPaymentsPage /> },
+      { path: 'disputes',             element: <SellerDisputesPage /> },
+      { path: 'shop',                 element: <SellerShopPage /> },
+      { path: 'analytics',            element: <SellerAnalyticsPage /> },
+      { path: 'boost',                element: <SellerBoostPage /> },
+      { path: 'certifications',       element: <SellerCertificationsPage /> },
+      { path: 'plans',                element: <SellerPlansPage /> },
+      { path: 'settings',             element: <SellerSettingsPage /> },
+      { path: 'wallet',               element: <SellerWalletPage /> },
     ],
   },
 
@@ -164,56 +212,125 @@ export const router = createBrowserRouter([
 
 
 
-  // ═══════════════════════════════════════
-  // 🟠 SELLER AREA
-  // ═══════════════════════════════════════
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ADMIN AREA
+  // ═══════════════════════════════════════════════════════════════════════════
   {
-    path: "/seller",
-    element: <SellerLayout />,
+    path: '/admin',
+    element: <ProtectedRoute><AdminLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <Navigate to="/seller/dashboard" replace /> },
+      { index: true, element: <Navigate to="/admin/dashboard" replace /> },
 
-      // DASHBOARD
-      { path: "dashboard", element: <SellerDashboardPage /> },
+      // ── OVERVIEW ──────────────────────────────────────────────────────────
+      { path: 'dashboard', element: <AdminDashboardPage /> },
+      { path: 'live', element: <LiveUsersPage /> },
+      { path: 'live/map', element: <LiveMapPage /> },
 
-      // PRODUCTS
-      { path: "products", element: <SellerProductsPage /> },
-      { path: "products/new", element: <ProductFormPage /> },
-      { path: "products/:id/edit", element: <ProductFormPage /> },
+      // ── CLIENT MANAGEMENT ─────────────────────────────────────────────────
+      { path: 'customers/overview', element: <CustomersOverviewPage /> },
+      { path: 'customers',           element: <CustomersListPage /> },
+      { path: 'customers/:id', element: <CustomerDetailPage /> },
+      { path: 'customers/loyalty', element: <CustomersLoyaltyPage /> },
+      { path: 'customers/broadcast', element: <CustomersBroadcastPage /> },
 
-      // ORDERS
-      { path: "orders", element: <VendorOrdersPage /> },
-      { path: "orders/:id", element: <VendorOrderDetailPage /> },
+      // ── VENDOR MANAGEMENT ─────────────────────────────────────────────────
+      { path: 'vendors/overview', element: <VendorsOverviewPage /> },
+      { path: 'vendors', element: <VendorsListPage /> },
+      { path: 'vendors/map', element: <VendorsMapPage /> },
+      { path: 'vendors/kyc', element: <KYCPage /> },
+      { path: 'vendors/withdrawals', element: <WithdrawalsPage /> },
+      { path: 'vendors/subscriptions', element: <SubscriptionsPage /> },
+      { path: 'vendors/certifications', element: <CertificationsPage /> },
+      { path: 'vendors/modifications', element: <ModificationsPage /> },
+      { path: 'vendors/:id', element: <VendorDetailPage /> },
 
-      // PAYMENTS
-      { path: "payments", element: <SellerPaymentsPage /> },
+      // ── DELIVERY MANAGEMENT (SOON) ────────────────────────────────────────
+      {
+        path: 'deliveries/overview',
+        element: <AdminStub title="Vue d'ensemble — Livreurs" description="Dashboard livreurs en cours de développement. Bientôt disponible." icon={Truck} />,
+      },
+      {
+        path: 'deliveries',
+        element: <AdminStub title="Tous les Livreurs" description="Liste complète des livreurs en cours de développement. Bientôt disponible." icon={Truck} />,
+      },
+      {
+        path: 'deliveries/zones',
+        element: <AdminStub title="Zones & Routing" description="Gestion des zones de livraison en cours de développement. Bientôt disponible." icon={MapPin} />,
+      },
+      {
+        path: 'deliveries/performance',
+        element: <AdminStub title="Performance Livreurs" description="Métriques de performance des livreurs en cours de développement. Bientôt disponible." icon={BarChart3} />,
+      },
 
-      // DISPUTES
-      { path: "disputes", element: <SellerDisputesPage /> },
+      // ── OPERATIONS ────────────────────────────────────────────────────────
+      { path: 'orders',       element: <OrdersListPage /> },
+      { path: 'orders/:id',   element: <AdminOrderDetailPage /> },
+      {
+        path: 'orders/map',
+        element: <AdminStub
+          title="Carte Commandes & Livraisons"
+          description="Carte Leaflet affichant toutes les commandes actives par ville de livraison, colorées par statut. Filtres par statut, date et opérateur de paiement."
+          icon={MapPin}
+          backHref="/admin/orders"
+          backLabel="Retour commandes"
+        />,
+      },
+      { path: 'disputes',     element: <DisputesListPage /> },
+      { path: 'disputes/:id', element: <AdminDisputeDetailPage /> },
+      { path: 'catalogue',    element: <CataloguePage /> },
+      { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
+      { path: 'catalogue/reviews', element: <ReviewsPage /> },
 
-      // SHOP
-      { path: "shop", element: <SellerShopPage /> },
+      // ── FINANCES ──────────────────────────────────────────────────────────
+      { path: 'finances', element: <FinancesPage /> },
+      { path: 'account', element: <AccountPage /> },
+      { path: 'plans', element: <PlansPage /> },
 
-      // ANALYTICS
-      { path: "analytics", element: <SellerAnalyticsPage /> },
+      // ── GROWTH (SOON) ─────────────────────────────────────────────────────
+      {
+        path: 'analytics',
+        element: <AdminStub title="Analytics & Tendances" description="Bientôt disponible." icon={TrendingUp} />,
+      },
+      {
+        path: 'boost',
+        element: <AdminStub title="Boost & Campagnes" description="Bientôt disponible." icon={Zap} />,
+      },
+      {
+        path: 'marketing',
+        element: <AdminStub title="Marketing & Communication" description="Bientôt disponible." icon={Megaphone} />,
+      },
+      {
+        path: 'ia',
+        element: <AdminStub title="IA Conseiller" description="Bientôt disponible." icon={Bot} />,
+      },
 
-      // BOOST
-      { path: "boost", element: <SellerBoostPage /> },
+      // ── SECURITY (SOON) ───────────────────────────────────────────────────
+      {
+        path: 'security',
+        element: <AdminStub title="Sécurité & Fraude" description="Bientôt disponible." icon={Shield} />,
+      },
 
-      // CERTIFICATIONS
-      { path: "certifications", element: <SellerCertificationsPage /> },
+      // ── SYSTEM ────────────────────────────────────────────────────────────
+      { path: 'notifications', element: <NotificationsAdminPage /> },
+      {
+        path: 'support',
+        element: <AdminStub title="Support & Tickets" description="Bientôt disponible." icon={HeadphonesIcon} />,
+      },
+      { path: 'audit', element: <AuditPage /> },
+      {
+        path: 'logs',
+        element: <AdminStub
+          title="Logs Système"
+          description="Logs d'application par niveau (ERROR, WARNING, INFO, DEBUG) et par service (API, auth, paiements, email). Rafraîchissement auto toutes les 30s."
+          icon={Terminal}
+        />,
+      },
+      { path: 'settings', element: <SettingsPage /> },
 
-      // PLANS
-      { path: "plans", element: <SellerPlansPage /> },
-
-      // SETTINGS
-      { path: "settings", element: <SellerSettingsPage /> },
-
-      // WALLET
-      { path: "wallet", element: <SellerWalletPage /> },
-
-    
-      
+      // ── Anciennes routes (rétrocompatibilité) ─────────────────────────────
+      { path: 'users',     element: <UsersManagementPage /> },
+      { path: 'users/:id', element: <UserDetailPage /> },
+      { path: 'products',  element: <CataloguePage /> },
     ],
   },
 ]);

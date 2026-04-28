@@ -1865,7 +1865,6 @@ def admin_dashboard_stats(request):
     Dashboard admin : statistiques globales de la plateforme
     Réservé aux administrateurs (is_staff=True)
     """
-    from apps.vendors.serializers import AdminDashboardStatsSerializer
     
     # Calcul des dates
     now = timezone.now()
@@ -1964,8 +1963,7 @@ def admin_dashboard_stats(request):
         'failed_payments': failed_payments,
     }
     
-    serializer = AdminDashboardStatsSerializer(stats)
-    return Response(serializer.data)
+    return Response(stats)
 
 
 @extend_schema(
@@ -2000,15 +1998,17 @@ def admin_analytics(request):
         day = today_start - timedelta(days=29-i)
         day_end = day + timedelta(days=1)
         
-        daily_revenue = Order.objects.filter(
+        daily_orders = Order.objects.filter(
             payment_status='PAID',
             created_at__gte=day,
             created_at__lt=day_end
-        ).aggregate(total=Sum('total_xaf'))['total'] or 0
+        )
+        daily_revenue = daily_orders.aggregate(total=Sum('total_xaf'))['total'] or 0
         
         revenue_chart.append({
             'date': day.date(),
-            'revenue': daily_revenue
+            'revenue': daily_revenue,
+            'orders': daily_orders.count(),
         })
     
     #  TOP 5 PRODUITS 
@@ -2142,6 +2142,1490 @@ def admin_analytics(request):
     
     serializer = AdminAnalyticsSerializer(analytics)
     return Response(serializer.data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Customer statistics for admin dashboard",
+    description="KPIs clients + graphiques inscriptions, distribution rôles et plans.",
+    responses={200: 'object'},
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_customers_stats(request):
+    """
+    Statistiques clients pour la page admin Customers List.
+    Retourne :
+      - kpis        : compteurs globaux
+      - registrations_chart : inscriptions jour par jour (30j)
+      - role_distribution   : acheteurs / vendeurs / staff
+      - plan_distribution   : répartition plans (parmi les vendeurs)
+    """
+    now         = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago    = now - timedelta(days=7)
+    month_ago   = now - timedelta(days=30)
+ 
+    # ── KPIs ────────────────────────────────────────────────────────────────
+    total           = User.objects.count()
+    active_30d      = User.objects.filter(last_login__gte=month_ago).count()
+    new_week        = User.objects.filter(date_joined__gte=week_ago).count()
+    new_month       = User.objects.filter(date_joined__gte=month_ago).count()
+    vendors_count   = VendorProfile.objects.count()
+    pending_vendors = VendorProfile.objects.filter(status='PENDING').count()
+ 
+    # Bannis via UserProfile (accès safe)
+    try:
+        from apps.accounts.models import UserProfile as UP
+        banned = UP.objects.filter(is_banned=True).count()
+    except Exception:
+        banned = 0
+ 
+    # ── Graphique inscriptions 30j ───────────────────────────────────────────
+    registrations_chart = []
+    for i in range(30):
+        day     = today_start - timedelta(days=29 - i)
+        day_end = day + timedelta(days=1)
+        count   = User.objects.filter(
+            date_joined__gte=day, date_joined__lt=day_end
+        ).count()
+        registrations_chart.append({
+            'date':  day.date().isoformat(),
+            'count': count,
+        })
+ 
+    # ── Distribution rôles ───────────────────────────────────────────────────
+    staff_count  = User.objects.filter(is_staff=True).count()
+    vendor_ids   = set(VendorProfile.objects.values_list('user_id', flat=True))
+    buyer_only   = User.objects.filter(is_staff=False).exclude(id__in=vendor_ids).count()
+    vendor_buyer = User.objects.filter(is_staff=False, id__in=vendor_ids).count()
+ 
+    role_distribution = [
+        {'role': 'Acheteurs',       'count': buyer_only},
+        {'role': 'Vendeurs',        'count': vendor_buyer},
+        {'role': 'Staff / Admin',   'count': staff_count},
+    ]
+ 
+    # ── Distribution plans vendeurs ──────────────────────────────────────────
+    plan_counts = {}
+    for vp in VendorProfile.objects.select_related('current_plan').all():
+        code = vp.active_plan_code   # 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS'
+        plan_counts[code] = plan_counts.get(code, 0) + 1
+ 
+    # Ordre d'affichage fixe
+    plan_distribution = [
+        {'plan': code, 'count': plan_counts.get(code, 0)}
+        for code in ['FREE', 'STARTER', 'PRO', 'BUSINESS']
+        if code in plan_counts
+    ]
+ 
+    return Response({
+        'kpis': {
+            'total':           total,
+            'active_30d':      active_30d,
+            'banned':          banned,
+            'vendors':         vendors_count,
+            'pending_vendors': pending_vendors,
+            'new_this_week':   new_week,
+            'new_this_month':  new_month,
+        },
+        'registrations_chart': registrations_chart,
+        'role_distribution':   role_distribution,
+        'plan_distribution':   plan_distribution,
+    })
+
+
+
+@extend_schema(tags=["Admin"], summary="Live connected users with GPS")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_live_users(request):
+    import json
+    from django.core.cache import cache
+    from django.utils import timezone
+ 
+    now = timezone.now()
+    ACTIVE_USERS_KEY = 'belivay_active_users'
+    USER_KEY_PREFIX  = 'belivay_user_'
+ 
+    active_ids = cache.get(ACTIVE_USERS_KEY, [])
+    if isinstance(active_ids, str):
+        try:
+            active_ids = json.loads(active_ids)
+        except Exception:
+            active_ids = []
+ 
+    users_list = []
+    valid_ids  = []
+ 
+    for uid in active_ids:
+        raw = cache.get(f'{USER_KEY_PREFIX}{uid}')
+        if raw is None:
+            continue
+        valid_ids.append(uid)
+        try:
+            data = json.loads(raw) if isinstance(raw, str) else raw
+        except Exception:
+            continue
+ 
+        session_min = 1
+        last_seen_str = data.get('last_seen', '')
+        if last_seen_str:
+            try:
+                from datetime import datetime, timezone as dt_tz
+                last_seen = datetime.fromisoformat(last_seen_str)
+                if last_seen.tzinfo is None:
+                    last_seen = last_seen.replace(tzinfo=dt_tz.utc)
+                now_utc = now.replace(tzinfo=dt_tz.utc) if now.tzinfo is None else now
+                session_min = max(1, int((now_utc - last_seen).total_seconds() // 60))
+            except Exception:
+                pass
+ 
+        users_list.append({
+            'id':          data.get('user_id', uid),
+            'username':    data.get('username', f'user_{uid}'),
+            'full_name':   data.get('full_name', ''),
+            'role':        data.get('role', 'buyer'),
+            'city':        data.get('city'),
+            # Localisation exacte
+            'lat':         data.get('lat'),
+            'lng':         data.get('lng'),
+            'accuracy':    data.get('accuracy'),
+            'has_gps':     data.get('has_gps', False),
+            'page':        data.get('page', 'Application'),
+            'device':      data.get('device', 'desktop'),
+            'last_seen':   last_seen_str,
+            'session_min': session_min,
+        })
+ 
+    if len(valid_ids) != len(active_ids):
+        cache.set(ACTIVE_USERS_KEY, valid_ids, 360)
+ 
+    users_list.sort(key=lambda x: x.get('last_seen', ''), reverse=True)
+ 
+    buyers  = sum(1 for u in users_list if u['role'] == 'buyer')
+    vendors = sum(1 for u in users_list if u['role'] == 'vendor')
+    admins  = sum(1 for u in users_list if u['role'] == 'admin')
+    gps_count = sum(1 for u in users_list if u.get('has_gps'))
+ 
+    city_counts: dict = {}
+    for u in users_list:
+        c = u.get('city') or 'Inconnue'
+        city_counts[c] = city_counts.get(c, 0) + 1
+ 
+    by_city = sorted(
+        [{'city': c, 'count': n} for c, n in city_counts.items()],
+        key=lambda x: -x['count']
+    )[:8]
+ 
+    page_counts: dict = {}
+    for u in users_list:
+        p = u.get('page', 'Application')
+        page_counts[p] = page_counts.get(p, 0) + 1
+ 
+    by_page = sorted(
+        [{'page': p, 'count': n} for p, n in page_counts.items()],
+        key=lambda x: -x['count']
+    )[:8]
+ 
+    device_counts: dict = {}
+    for u in users_list:
+        d = u.get('device', 'desktop')
+        device_counts[d] = device_counts.get(d, 0) + 1
+ 
+    return Response({
+        'total_online': len(users_list),
+        'buyers':       buyers,
+        'vendors':      vendors,
+        'admins':       admins,
+        'gps_count':    gps_count,
+        'by_city':      by_city,
+        'by_page':      by_page,
+        'by_device':    [{'device': d, 'count': n} for d, n in device_counts.items()],
+        'users':        users_list,
+        'last_updated': now.isoformat(),
+    })
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Vendors map — distribution by city")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_vendors_map(request):
+    """
+    Distribution géographique des vendeurs par ville.
+    Retourne les données pour la visualisation SVG Cameroun.
+    """
+    from django.db.models import Sum, Count
+ 
+    approved = VendorProfile.objects.filter(status='APPROVED').select_related('user')
+    all_vp   = VendorProfile.objects.select_related('user')
+ 
+    # Agréger par ville
+    city_data: dict = {}
+    for vp in all_vp:
+        city = vp.city or 'Autre'
+        if city not in city_data:
+            city_data[city] = {'city': city, 'count': 0, 'approved': 0, 'pending': 0, 'gmv': 0, 'lat': 0, 'lng': 0}
+        city_data[city]['count'] += 1
+        if vp.status == 'APPROVED':
+            city_data[city]['approved'] += 1
+            city_data[city]['gmv'] += getattr(vp, 'total_revenue', 0) or 0
+        if vp.status == 'PENDING':
+            city_data[city]['pending'] += 1
+ 
+    # Coordonnées approximatives des villes camerounaises (lat/lng)
+    COORDS = {
+        'Yaoundé':    {'lat': 3.848,  'lng': 11.502},
+        'Douala':     {'lat': 4.050,  'lng': 9.768 },
+        'Bafoussam':  {'lat': 5.478,  'lng': 10.417},
+        'Bamenda':    {'lat': 5.959,  'lng': 10.146},
+        'Garoua':     {'lat': 9.301,  'lng': 13.397},
+        'Maroua':     {'lat': 10.595, 'lng': 14.316},
+        'Ngaoundéré': {'lat': 7.323,  'lng': 13.584},
+        'Bertoua':    {'lat': 4.578,  'lng': 13.686},
+        'Ebolowa':    {'lat': 2.900,  'lng': 11.150},
+        'Kribi':      {'lat': 2.939,  'lng': 9.909 },
+        'Limbé':      {'lat': 4.024,  'lng': 9.204 },
+    }
+ 
+    cities_list = []
+    for city, data in city_data.items():
+        coords = COORDS.get(city, {'lat': 4.5, 'lng': 11.5})
+        cities_list.append({**data, **coords})
+ 
+    cities_list.sort(key=lambda x: -x['count'])
+ 
+    # Liste des boutiques pour le panneau latéral
+    vendors_list = []
+    for vp in approved[:100]:
+        vendors_list.append({
+            'id':                vp.id,
+            'business_name':     vp.business_name,
+            'city':              vp.city or 'N/A',
+            'status':            vp.status,
+            'certification_tier':vp.certification_tier or 'BRONZE',
+            'total_revenue':     getattr(vp, 'total_revenue', 0) or 0,
+        })
+ 
+    top_city = cities_list[0]['city'] if cities_list else 'N/A'
+ 
+    return Response({
+        'cities':        cities_list,
+        'vendors':       vendors_list,
+        'total_approved':approved.count(),
+        'total_cities':  len([c for c in cities_list if c['approved'] > 0]),
+        'top_city':      top_city,
+    })  
+
+
+    
+def _get_target_customers(filters: dict):
+    """
+    Retourne un queryset d'utilisateurs selon les filtres :
+      - audience : 'all' | 'city' | 'tier' | 'user'
+      - city     : str (si audience == 'city')
+      - tier     : str BRONZE|SILVER|GOLD|DIAMOND (si audience == 'tier')
+      - user_id  : int (si audience == 'user')
+    N'inclut que les acheteurs actifs non bannis.
+    """
+    audience = filters.get('audience', 'all')
+ 
+    # Base : acheteurs actifs non bannis
+    qs = User.objects.filter(is_active=True, is_staff=False)
+ 
+    if audience == 'all':
+        pass  # Tous les clients
+ 
+    elif audience == 'city':
+        city = filters.get('city', '')
+        if city:
+            # Cherche dans le profil vendeur ou le profil utilisateur
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(vendor_profile__city__iexact=city) |
+                Q(profile__city__iexact=city)
+            ).distinct()
+ 
+    elif audience == 'tier':
+        tier = filters.get('tier', 'BRONZE')
+        # Le tier est dans VendorProfile pour les vendeurs
+        # Pour les acheteurs, on utilise loyalty_tier dans UserProfile si disponible
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(vendor_profile__certification_tier=tier) |
+            Q(profile__loyalty_tier=tier)
+        ).distinct()
+ 
+    elif audience == 'user':
+        user_id = filters.get('user_id')
+        if user_id:
+            qs = qs.filter(id=user_id)
+        else:
+            qs = qs.none()
+ 
+    # Exclure les utilisateurs bannis
+    qs = qs.exclude(profile__is_banned=True)
+ 
+    return qs
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Preview customer broadcast audience count")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_customers_broadcast_preview(request):
+    """
+    Retourne le nombre d'utilisateurs qui recevront le broadcast
+    selon les filtres fournis — sans envoyer.
+    """
+    filters = {
+        'audience': request.data.get('audience', 'all'),
+        'city':     request.data.get('city', ''),
+        'tier':     request.data.get('tier', ''),
+        'user_id':  request.data.get('user_id'),
+    }
+    qs = _get_target_customers(filters)
+    count = qs.count()
+ 
+    # Exemple de destinataires (max 5) pour l'aperçu
+    sample = list(qs.values('id', 'username', 'email')[:5])
+ 
+    return Response({
+        'count':  count,
+        'sample': sample,
+    })
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Broadcast notification to customers")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_customers_broadcast(request):
+    """
+    Envoie une notification à l'audience cible.
+    Crée un UserNotification pour chaque destinataire.
+    Stocke l'historique dans le cache Redis (max 50 entrées).
+    """
+    import json
+    from django.core.cache import cache
+    from apps.accounts.models import UserNotification
+ 
+    title     = request.data.get('title', '').strip()
+    message   = request.data.get('message', '').strip()
+    notif_type= request.data.get('type', 'PROMOTION')  # PROMOTION | SYSTEM | ORDER
+    action_url= request.data.get('action_url', '')
+    filters   = {
+        'audience': request.data.get('audience', 'all'),
+        'city':     request.data.get('city', ''),
+        'tier':     request.data.get('tier', ''),
+        'user_id':  request.data.get('user_id'),
+    }
+ 
+    if not title or not message:
+        return Response({'detail': 'Titre et message requis.'}, status=400)
+ 
+    qs    = _get_target_customers(filters)
+    users = list(qs)
+    count = len(users)
+ 
+    if count == 0:
+        return Response({'detail': 'Aucun utilisateur ciblé avec ces filtres.'}, status=400)
+ 
+    # Créer les notifications en bulk
+    notifications = [
+        UserNotification(
+            user=u,
+            title=title,
+            message=message,
+            notification_type=notif_type,
+            action_url=action_url,
+        )
+        for u in users
+    ]
+    UserNotification.objects.bulk_create(notifications, batch_size=500)
+ 
+    # Stocker dans l'historique cache (max 50)
+    HISTORY_KEY = 'belivay_broadcast_history'
+    history = cache.get(HISTORY_KEY, [])
+    if isinstance(history, str):
+        try:
+            history = json.loads(history)
+        except Exception:
+            history = []
+ 
+    history.insert(0, {
+        'id':          timezone.now().timestamp(),
+        'title':       title,
+        'message':     message[:120] + ('…' if len(message) > 120 else ''),
+        'audience':    filters['audience'],
+        'city':        filters.get('city', ''),
+        'tier':        filters.get('tier', ''),
+        'type':        notif_type,
+        'sent_to':     count,
+        'sent_by':     request.user.username,
+        'sent_at':     timezone.now().isoformat(),
+    })
+    cache.set(HISTORY_KEY, history[:50], 86400 * 30)  # 30 jours
+ 
+    return Response({
+        'detail': f'Notification envoyée à {count} utilisateur{"s" if count > 1 else ""}.',
+        'sent_to': count,
+    })
+ 
+ 
+@extend_schema(tags=["Admin"], summary="History of customer broadcasts")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_customers_broadcast_history(request):
+    """Retourne les 50 derniers broadcasts envoyés aux clients."""
+    import json
+    from django.core.cache import cache
+ 
+    HISTORY_KEY = 'belivay_broadcast_history'
+    history = cache.get(HISTORY_KEY, [])
+    if isinstance(history, str):
+        try:
+            history = json.loads(history)
+        except Exception:
+            history = []
+ 
+    return Response({'history': history})    
+
+
+
+# Barème client (acheteurs) — cohérent avec accounts/serializers.py
+CLIENT_TIER_THRESHOLDS = {
+    'BRONZE':   (0,    499),
+    'SILVER':   (500,  999),
+    'GOLD':     (1000, 1999),
+    'DIAMOND':  (2000, None),
+}
+ 
+ 
+def _client_tier_from_points(points: int) -> str:
+    if points >= 2000: return 'DIAMOND'
+    if points >= 1000: return 'GOLD'
+    if points >= 500:  return 'SILVER'
+    return 'BRONZE'
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Customer loyalty stats & top clients")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_customers_loyalty(request):
+    """
+    Stats fidélité clients acheteurs :
+    - Distribution par tier
+    - Top 20 clients par points
+    - Récents montants en points
+    Points = orders_count * 100 (formule actuelle dans accounts/serializers.py)
+    """
+    from django.db.models import Count, Sum, Q
+    from django.contrib.auth.models import User
+ 
+    # Acheteurs actifs (non staff, non bannis)
+    buyers = User.objects.filter(
+        is_active=True, is_staff=False
+    ).prefetch_related('orders').exclude(
+        Q(profile__is_banned=True)
+    )
+ 
+    # Calculer les points et tier pour chaque acheteur
+    tier_counts = {'BRONZE': 0, 'SILVER': 0, 'GOLD': 0, 'DIAMOND': 0}
+    top_clients_raw = []
+    total_points_all = 0
+ 
+    for user in buyers:
+        orders_count = user.orders.filter(payment_status='PAID').count()
+        points       = orders_count * 100
+        tier         = _client_tier_from_points(points)
+        tier_counts[tier] += 1
+        total_points_all  += points
+ 
+        top_clients_raw.append({
+            'id':          user.id,
+            'username':    user.username,
+            'full_name':   f"{user.first_name} {user.last_name}".strip() or user.username,
+            'email':       user.email,
+            'points':      points,
+            'tier':        tier,
+            'orders_count':orders_count,
+            'date_joined': user.date_joined.isoformat(),
+        })
+ 
+    # Trier par points décroissants et prendre les 20 premiers
+    top_clients_raw.sort(key=lambda x: -x['points'])
+    top_clients = top_clients_raw[:20]
+ 
+    total_buyers = len(top_clients_raw)
+    avg_points   = round(total_points_all / total_buyers, 1) if total_buyers > 0 else 0
+ 
+    # Répartition en pourcentage
+    distribution = []
+    for tier_key, (low, high) in CLIENT_TIER_THRESHOLDS.items():
+        count = tier_counts[tier_key]
+        distribution.append({
+            'tier':    tier_key,
+            'label':   {'BRONZE': 'Bronze', 'SILVER': 'Argent', 'GOLD': 'Or', 'DIAMOND': 'Diamant'}[tier_key],
+            'count':   count,
+            'pct':     round(count / total_buyers * 100, 1) if total_buyers > 0 else 0,
+            'min_pts': low,
+            'max_pts': high,
+        })
+ 
+    return Response({
+        'total_buyers':  total_buyers,
+        'avg_points':    avg_points,
+        'tier_counts':   tier_counts,
+        'distribution':  distribution,
+        'top_clients':   top_clients,
+        'earning_rule':  '1 commande payée = 100 points',
+        'thresholds': {
+            'BRONZE':  0,
+            'SILVER':  500,
+            'GOLD':    1000,
+            'DIAMOND': 2000,
+        },
+    })          
+
+
+#  ADMINISTRATION - STATISTIQUES VENDEURS
+@extend_schema(
+    tags=["Admin"],
+    summary="Vendor statistics for admin",
+    description="KPIs vendeurs + graphique GMV 30j + distributions statuts/plans/certifications.",
+    responses={200: 'object'},
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_vendors_stats(request):
+    from apps.catalog.models import Product
+    from apps.orders.models import OrderItem
+    from django.db.models import Sum
+ 
+    now        = timezone.now()
+    today_start= now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_ago   = now - timedelta(days=7)
+    month_ago  = now - timedelta(days=30)
+ 
+    # ── KPIs ────────────────────────────────────────────────────────────────
+    total     = VendorProfile.objects.count()
+    pending   = VendorProfile.objects.filter(status='PENDING').count()
+    approved  = VendorProfile.objects.filter(status='APPROVED').count()
+    rejected  = VendorProfile.objects.filter(status='REJECTED').count()
+    suspended = VendorProfile.objects.filter(status='SUSPENDED').count()
+    new_week  = VendorProfile.objects.filter(created_at__gte=week_ago).count()
+    new_month = VendorProfile.objects.filter(created_at__gte=month_ago).count()
+ 
+    # GMV total (revenus générés par tous les vendeurs)
+    gmv_total = OrderItem.objects.aggregate(t=Sum('line_total_xaf'))['t'] or 0
+    gmv_month = OrderItem.objects.filter(
+        order__created_at__gte=month_ago
+    ).aggregate(t=Sum('line_total_xaf'))['t'] or 0
+ 
+    # ── Graphique GMV 30 jours ───────────────────────────────────────────────
+    gmv_chart = []
+    for i in range(30):
+        day     = today_start - timedelta(days=29 - i)
+        day_end = day + timedelta(days=1)
+        revenue = OrderItem.objects.filter(
+            order__created_at__gte=day,
+            order__created_at__lt=day_end,
+            order__payment_status='PAID',
+        ).aggregate(t=Sum('line_total_xaf'))['t'] or 0
+        gmv_chart.append({'date': day.date().isoformat(), 'revenue': revenue})
+ 
+    # ── Distribution statuts ─────────────────────────────────────────────────
+    status_distribution = [
+        {'status': 'APPROVED',  'label': 'Approuvés',   'count': approved},
+        {'status': 'PENDING',   'label': 'En attente',  'count': pending},
+        {'status': 'SUSPENDED', 'label': 'Suspendus',   'count': suspended},
+        {'status': 'REJECTED',  'label': 'Rejetés',     'count': rejected},
+    ]
+ 
+    # ── Distribution plans ───────────────────────────────────────────────────
+    plan_counts = {}
+    for vp in VendorProfile.objects.select_related('current_plan').all():
+        code = vp.active_plan_code
+        plan_counts[code] = plan_counts.get(code, 0) + 1
+ 
+    plan_distribution = [
+        {'plan': code, 'count': plan_counts.get(code, 0)}
+        for code in ['FREE', 'STARTER', 'PRO', 'BUSINESS']
+        if code in plan_counts
+    ]
+ 
+    # ── Distribution certifications ──────────────────────────────────────────
+    cert_distribution = []
+    for tier in ['BRONZE', 'SILVER', 'GOLD', 'DIAMOND']:
+        count = VendorProfile.objects.filter(certification_tier=tier).count()
+        if count > 0:
+            cert_distribution.append({'tier': tier, 'count': count})
+ 
+    return Response({
+        'kpis': {
+            'total':     total,
+            'pending':   pending,
+            'approved':  approved,
+            'rejected':  rejected,
+            'suspended': suspended,
+            'new_week':  new_week,
+            'new_month': new_month,
+            'gmv_total': gmv_total,
+            'gmv_month': gmv_month,
+        },
+        'gmv_chart':            gmv_chart,
+        'status_distribution':  status_distribution,
+        'plan_distribution':    plan_distribution,
+        'cert_distribution':    cert_distribution,
+    })    
+
+
+#  ADMINISTRATION - STATISTIQUES FINANCIÈRES
+@extend_schema(
+    tags=["Admin"],
+    summary="Financial statistics for admin",
+    description="KPIs financiers + graphique commissions 30j + top vendeurs + retraits en attente.",
+    responses={200: 'object'},
+)
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_finances_stats(request):
+    """
+    Statistiques financières globales pour l'admin BelivaY.
+    Retourne :
+      - kpis            : commissions, GMV, escrow en cours, retraits pendants
+      - commissions_chart : commissions jour par jour (30j)
+      - top_vendors       : top 10 contributeurs (commission)
+      - pending_withdrawals : retraits vendeurs en attente
+    """
+    from apps.orders.models import Order, PlatformSettings
+    from apps.vendors.models import WithdrawalRequest
+    from django.db.models import Sum, F, ExpressionWrapper, DecimalField
+ 
+    now         = timezone.now()
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    month_ago   = now - timedelta(days=30)
+    week_ago    = now - timedelta(days=7)
+ 
+    settings = PlatformSettings.get_settings()
+ 
+    # ── Commandes payées ─────────────────────────────────────────────────────
+    paid_orders = Order.objects.filter(payment_status='PAID')
+ 
+    # Commission totale = SUM(subtotal_xaf * commission_rate_snapshot / 100)
+    def commission_sum(qs):
+        total = 0
+        for o in qs.only('subtotal_xaf', 'commission_rate_snapshot'):
+            total += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+        return total
+ 
+    total_commission  = commission_sum(paid_orders)
+    month_commission  = commission_sum(paid_orders.filter(created_at__gte=month_ago))
+    week_commission   = commission_sum(paid_orders.filter(created_at__gte=week_ago))
+ 
+    # GMV total
+    gmv_total = paid_orders.aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+    gmv_month = paid_orders.filter(created_at__gte=month_ago).aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    # Escrow en cours (BLOCKED)
+    escrow_blocked = Order.objects.filter(escrow_status='BLOCKED').aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    # Retraits vendeurs pendants
+    pending_withdrawals_qs = WithdrawalRequest.objects.filter(status='PENDING')
+    pending_withdrawals_amount = pending_withdrawals_qs.aggregate(t=Sum('amount_xaf'))['t'] or 0
+    pending_withdrawals_count  = pending_withdrawals_qs.count()
+ 
+    # Retraits approuvés total (fonds versés aux vendeurs)
+    approved_withdrawals_total = WithdrawalRequest.objects.filter(
+        status='APPROVED'
+    ).aggregate(t=Sum('net_amount_xaf'))['t'] or 0
+ 
+    # ── Graphique commissions 30j ────────────────────────────────────────────
+    commissions_chart = []
+    for i in range(30):
+        day     = today_start - timedelta(days=29 - i)
+        day_end = day + timedelta(days=1)
+        day_orders = paid_orders.filter(created_at__gte=day, created_at__lt=day_end)
+        day_commission = commission_sum(day_orders)
+        day_gmv = day_orders.aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+        commissions_chart.append({
+            'date':       day.date().isoformat(),
+            'commission': day_commission,
+            'gmv':        day_gmv,
+        })
+ 
+    # ── Top vendeurs (par commission générée) ────────────────────────────────
+    # On agrège par vendeur via les items de commandes payées
+    from apps.orders.models import OrderItem
+    from django.contrib.auth.models import User
+ 
+    vendor_commissions = {}
+    for item in OrderItem.objects.filter(
+        order__payment_status='PAID'
+    ).select_related('order', 'product__vendor', 'product__vendor__vendor_profile'):
+        vendor = item.product.vendor
+        commission = round(item.line_total_xaf * float(item.order.commission_rate_snapshot) / 100)
+        key = vendor.id
+        if key not in vendor_commissions:
+            profile = getattr(vendor, 'vendor_profile', None)
+            vendor_commissions[key] = {
+                'vendor_id':      key,
+                'vendor_name':    vendor.username,
+                'business_name':  profile.business_name if profile else vendor.username,
+                'total_gmv':      0,
+                'total_commission': 0,
+            }
+        vendor_commissions[key]['total_gmv']        += item.line_total_xaf
+        vendor_commissions[key]['total_commission'] += commission
+ 
+    top_vendors = sorted(
+        vendor_commissions.values(),
+        key=lambda x: x['total_commission'],
+        reverse=True
+    )[:10]
+ 
+    # ── Retraits en attente (liste) ──────────────────────────────────────────
+    pending_list = []
+    for wr in pending_withdrawals_qs.select_related('vendor__user').order_by('-created_at')[:10]:
+        pending_list.append({
+            'id':           wr.id,
+            'reference':    wr.reference,
+            'vendor_id':    wr.vendor.id,
+            'business_name':wr.vendor.business_name,
+            'amount_xaf':   wr.amount_xaf,
+            'net_amount_xaf': wr.net_amount_xaf,
+            'operator':     wr.operator,
+            'phone':        wr.phone_number,
+            'created_at':   wr.created_at.isoformat(),
+        })
+ 
+    return Response({
+        'kpis': {
+            'total_commission':          total_commission,
+            'month_commission':          month_commission,
+            'week_commission':           week_commission,
+            'gmv_total':                 gmv_total,
+            'gmv_month':                 gmv_month,
+            'escrow_blocked':            escrow_blocked,
+            'pending_withdrawals_amount':pending_withdrawals_amount,
+            'pending_withdrawals_count': pending_withdrawals_count,
+            'approved_withdrawals_total':approved_withdrawals_total,
+            'commission_rate':           str(settings.platform_commission_percent),
+        },
+        'commissions_chart': commissions_chart,
+        'top_vendors':        top_vendors,
+        'pending_withdrawals':pending_list,
+    })
+
+
+
+@extend_schema(tags=["Admin"], summary="List all withdrawal requests (admin)")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_withdrawals(request):
+    """Liste toutes les demandes de retrait avec filtre optionnel par statut."""
+    from apps.vendors.models import WithdrawalRequest
+ 
+    qs = WithdrawalRequest.objects.select_related(
+        'vendor', 'vendor__user'
+    ).order_by('-created_at')
+ 
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+ 
+    result = []
+    for wr in qs:
+        result.append({
+            'id':               wr.id,
+            'reference':        wr.reference,
+            'vendor_id':        wr.vendor.id,
+            'business_name':    wr.vendor.business_name,
+            'user_email':       wr.vendor.user.email,
+            'amount_xaf':       wr.amount_xaf,
+            'fee_amount_xaf':   wr.fee_amount_xaf,
+            'net_amount_xaf':   wr.net_amount_xaf,
+            'operator':         wr.operator,
+            'phone_number':     wr.phone_number,
+            'status':           wr.status,
+            'admin_note':       wr.admin_note,
+            'processed_at':     wr.processed_at.isoformat() if wr.processed_at else None,
+            'created_at':       wr.created_at.isoformat(),
+        })
+ 
+    return Response(result)
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Approve a withdrawal request")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_withdrawal(request, wd_id):
+    """Approuve un retrait (statut → APPROVED). Admin confirme le virement MoMo effectué."""
+    from apps.vendors.models import WithdrawalRequest
+ 
+    try:
+        wr = WithdrawalRequest.objects.get(id=wd_id)
+    except WithdrawalRequest.DoesNotExist:
+        return Response({'detail': 'Retrait introuvable.'}, status=404)
+ 
+    if wr.status != 'PENDING':
+        return Response({'detail': f"Impossible d'approuver un retrait en statut '{wr.status}'."}, status=400)
+ 
+    wr.status       = 'APPROVED'
+    wr.admin_note   = request.data.get('admin_note', '')
+    wr.processed_at = timezone.now()
+    wr.save()
+ 
+    return Response({'id': wr.id, 'status': wr.status, 'processed_at': wr.processed_at.isoformat()})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Reject a withdrawal request")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_withdrawal(request, wd_id):
+    """Rejette un retrait (statut → REJECTED) avec motif obligatoire."""
+    from apps.vendors.models import WithdrawalRequest
+ 
+    try:
+        wr = WithdrawalRequest.objects.get(id=wd_id)
+    except WithdrawalRequest.DoesNotExist:
+        return Response({'detail': 'Retrait introuvable.'}, status=404)
+ 
+    if wr.status != 'PENDING':
+        return Response({'detail': f"Impossible de rejeter un retrait en statut '{wr.status}'."}, status=400)
+ 
+    reason = request.data.get('reason', '').strip()
+    if not reason:
+        return Response({'detail': 'Le motif de rejet est requis.'}, status=400)
+ 
+    wr.status       = 'REJECTED'
+    wr.admin_note   = reason
+    wr.processed_at = timezone.now()
+    wr.save()
+ 
+    return Response({'id': wr.id, 'status': wr.status, 'admin_note': wr.admin_note})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="KYC queue — pending vendors")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_kyc_queue(request):
+    """
+    File d'attente KYC : vendeurs en attente de validation.
+    Retourne le profil complet + document d'identité pour chaque vendeur PENDING.
+    """
+    status_filter = request.query_params.get('status', 'PENDING')
+ 
+    vendors = VendorProfile.objects.filter(
+        status=status_filter
+    ).select_related('user', 'current_plan').order_by('created_at')
+ 
+    result = []
+    for vp in vendors:
+        days_waiting = (timezone.now() - vp.created_at).days
+        result.append({
+            'id':               vp.id,
+            'user_id':          vp.user.id,
+            'user_email':       vp.user.email,
+            'user_full_name':   f"{vp.user.first_name} {vp.user.last_name}".strip() or vp.user.username,
+            'business_name':    vp.business_name,
+            'business_description': vp.business_description,
+            'phone':            vp.phone,
+            'city':             vp.city,
+            'address':          vp.address,
+            'id_document':      vp.id_document,
+            'status':           vp.status,
+            'days_waiting':     days_waiting,
+            'created_at':       vp.created_at.isoformat(),
+            'approved_at':      vp.approved_at.isoformat() if vp.approved_at else None,
+        })
+ 
+    kpis = {
+        'pending':   VendorProfile.objects.filter(status='PENDING').count(),
+        'approved':  VendorProfile.objects.filter(status='APPROVED').count(),
+        'rejected':  VendorProfile.objects.filter(status='REJECTED').count(),
+        'suspended': VendorProfile.objects.filter(status='SUSPENDED').count(),
+    }
+ 
+    return Response({'kpis': kpis, 'vendors': result})   
+
+
+#  ADMINISTRATION - LISTE PLANS ABONNEMENT
+@extend_schema(tags=["Admin"], summary="List all subscription plans with subscriber counts")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_plans(request):
+    from apps.vendors.models import SubscriptionPlan, VendorProfile
+ 
+    plans = SubscriptionPlan.objects.all().order_by('display_order')
+    result = []
+    for p in plans:
+        count = VendorProfile.objects.filter(current_plan=p).count()
+        result.append({
+            'id':                p.id,
+            'code':              p.code,
+            'name':              p.name,
+            'description':       p.description,
+            'price_monthly_xaf': p.price_monthly_xaf,
+            'price_annual_xaf':  p.price_annual_xaf,
+            'commission_rate':   float(p.commission_rate),
+            'max_products':      p.max_products,
+            'max_boosts_month':  p.max_boosts_month,
+            'trial_days':        p.trial_days,
+            'plan_duration_days':p.plan_duration_days,
+            'features':          p.features,
+            'is_active':         p.is_active,
+            'display_order':     p.display_order,
+            'subscribers_count': count,
+        })
+    return Response(result)
+ 
+
+#  ADMINISTRATION - MISE À JOUR PLAN ABONNEMENT 
+@extend_schema(tags=["Admin"], summary="Update a subscription plan")
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_plan(request, plan_id):
+    from apps.vendors.models import SubscriptionPlan
+ 
+    try:
+        plan = SubscriptionPlan.objects.get(id=plan_id)
+    except SubscriptionPlan.DoesNotExist:
+        return Response({'detail': 'Plan introuvable.'}, status=404)
+ 
+    ALLOWED = [
+        'description', 'price_monthly_xaf', 'price_annual_xaf',
+        'commission_rate', 'max_products', 'max_boosts_month',
+        'trial_days', 'plan_duration_days', 'features',
+        'is_active', 'display_order',
+    ]
+    for field in ALLOWED:
+        if field in request.data:
+            setattr(plan, field, request.data[field])
+    plan.save()
+ 
+    return Response({'id': plan.id, 'code': plan.code, 'updated': True})
+
+
+#  ADMINISTRATION - GESTION AVIS
+@extend_schema(tags=["Admin"], summary="List all product reviews")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_reviews(request):
+    from apps.catalog.models import ProductReview
+ 
+    qs = ProductReview.objects.select_related(
+        'product', 'product__vendor', 'user'
+    ).order_by('-created_at')
+ 
+    is_approved = request.query_params.get('is_approved')
+    if is_approved is not None:
+        qs = qs.filter(is_approved=is_approved.lower() == 'true')
+ 
+    rating = request.query_params.get('rating')
+    if rating:
+        qs = qs.filter(rating=int(rating))
+ 
+    result = []
+    for r in qs:
+        result.append({
+            'id':                   r.id,
+            'product_id':           r.product.id,
+            'product_title':        r.product.title,
+            'product_slug':         r.product.slug,
+            'vendor_name':          r.product.vendor.username,
+            'user_id':              r.user.id,
+            'user_name':            r.user.username,
+            'rating':               r.rating,
+            'title':                r.title,
+            'comment':              r.comment,
+            'is_approved':          r.is_approved,
+            'is_verified_purchase': r.is_verified_purchase,
+            'created_at':           r.created_at.isoformat(),
+        })
+ 
+    return Response(result)
+ 
+
+#  ADMINISTRATION - STATISTIQUES AVIS 
+@extend_schema(tags=["Admin"], summary="Review statistics")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_reviews_stats(request):
+    from apps.catalog.models import ProductReview
+    from django.db.models import Avg, Count
+ 
+    qs     = ProductReview.objects.all()
+    total  = qs.count()
+    approved = qs.filter(is_approved=True).count()
+    avg    = qs.aggregate(a=Avg('rating'))['a'] or 0
+ 
+    by_rating = {}
+    for r in range(1, 6):
+        by_rating[str(r)] = qs.filter(rating=r).count()
+ 
+    return Response({
+        'total':      total,
+        'approved':   approved,
+        'pending':    total - approved,
+        'avg_rating': round(avg, 1),
+        'by_rating':  by_rating,
+    })
+ 
+
+#  ADMINISTRATION - GESTION AVIS 
+@extend_schema(tags=["Admin"], summary="Toggle review approval")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_toggle_review(request, review_id):
+    from apps.catalog.models import ProductReview
+ 
+    try:
+        r = ProductReview.objects.get(id=review_id)
+    except ProductReview.DoesNotExist:
+        return Response({'detail': 'Avis introuvable.'}, status=404)
+ 
+    r.is_approved = not r.is_approved
+    r.save(update_fields=['is_approved'])
+    return Response({'id': r.id, 'is_approved': r.is_approved})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Delete a review")
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_review(request, review_id):
+    from apps.catalog.models import ProductReview
+ 
+    try:
+        r = ProductReview.objects.get(id=review_id)
+    except ProductReview.DoesNotExist:
+        return Response({'detail': 'Avis introuvable.'}, status=404)
+ 
+    r.delete()
+    return Response(status=204)
+
+
+#  ADMINISTRATION - JOURNAL D'AUDIT
+@extend_schema(tags=["Admin"], summary="Admin audit log")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_audit_log(request):
+    """
+    Journal d'audit : toutes les actions admin tracées via OrderHistory.
+    Filtres : entity_type (user|vendor|order|product|review|settings|withdrawal).
+    Retourne les 500 dernières entrées (paginables côté frontend).
+    """
+    from apps.orders.models import OrderHistory
+ 
+    # On utilise OrderHistory qui trace déjà les actions admin sur les commandes.
+    # Pour les autres entités, les actions sont tracées manuellement dans les vues.
+ 
+    entity_type = request.query_params.get('entity_type')
+ 
+    qs = OrderHistory.objects.select_related('user').order_by('-timestamp')[:500]
+ 
+    result = []
+    for h in qs:
+        result.append({
+            'id':          h.id,
+            'admin_id':    h.user.id if h.user else None,
+            'admin_name':  h.user.username if h.user else 'System',
+            'action':      h.action,
+            'entity_type': 'order',
+            'entity_id':   h.order_id,
+            'old_value':   h.old_value or None,
+            'new_value':   h.new_value or None,
+            'ip_address':  h.ip_address,
+            'created_at':  h.timestamp.isoformat(),
+        })
+ 
+    return Response(result)
+
+
+
+@extend_schema(tags=["Admin"], summary="List all vendor subscriptions")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_subscriptions(request):
+    from apps.vendors.models import VendorSubscription
+ 
+    qs = VendorSubscription.objects.select_related(
+        'vendor', 'vendor__user', 'plan', 'confirmed_by'
+    ).order_by('-created_at')
+ 
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        qs = qs.filter(sub_status=status_filter)
+ 
+    result = []
+    for s in qs:
+        result.append({
+            'id':              s.id,
+            'reference':       s.payment_reference,
+            'vendor_id':       s.vendor.id,
+            'business_name':   s.vendor.business_name,
+            'user_email':      s.vendor.user.email,
+            'plan_code':       s.plan.code,
+            'plan_name':       s.plan.name,
+            'billing_cycle':   s.billing_cycle,
+            'is_trial':        s.is_trial,
+            'amount_paid_xaf': s.amount_paid_xaf,
+            'operator':        s.operator,
+            'phone_number':    s.phone_number,
+            'sub_status':      s.sub_status,
+            'started_at':      s.started_at.isoformat() if s.started_at else None,
+            'expires_at':      s.expires_at.isoformat() if s.expires_at else None,
+            'confirmed_at':    s.confirmed_at.isoformat() if s.confirmed_at else None,
+            'created_at':      s.created_at.isoformat(),
+        })
+ 
+    return Response(result)
+ 
+
+#  ADMINISTRATION - APPROBATION ABONNEMENT VENDEUR 
+@extend_schema(tags=["Admin"], summary="Approve and activate a vendor subscription")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_subscription(request, sub_id):
+    from apps.vendors.models import VendorSubscription
+ 
+    try:
+        sub = VendorSubscription.objects.select_related('plan', 'vendor').get(id=sub_id)
+    except VendorSubscription.DoesNotExist:
+        return Response({'detail': 'Abonnement introuvable.'}, status=404)
+ 
+    if sub.sub_status != 'PENDING':
+        return Response({'detail': f"Impossible d'approuver un abonnement en statut '{sub.sub_status}'."}, status=400)
+ 
+    duration = sub.plan.plan_duration_days
+    if sub.billing_cycle == 'ANNUAL':
+        duration = sub.plan.plan_duration_days * 12
+ 
+    now        = timezone.now()
+    expires_at = now + timedelta(days=duration)
+ 
+    sub.sub_status   = 'ACTIVE'
+    sub.started_at   = now
+    sub.expires_at   = expires_at
+    sub.confirmed_by = request.user
+    sub.confirmed_at = now
+    sub.save()
+ 
+    # Activer le plan sur le profil vendeur
+    VendorProfile.objects.filter(pk=sub.vendor.pk).update(
+        current_plan    = sub.plan,
+        plan_expires_at = expires_at,
+    )
+ 
+    return Response({'id': sub.id, 'sub_status': 'ACTIVE', 'expires_at': expires_at.isoformat()})
+ 
+
+#  ADMINISTRATION - REJET ABONNEMENT VENDEUR 
+@extend_schema(tags=["Admin"], summary="Reject a vendor subscription")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_subscription(request, sub_id):
+    from apps.vendors.models import VendorSubscription
+ 
+    try:
+        sub = VendorSubscription.objects.get(id=sub_id)
+    except VendorSubscription.DoesNotExist:
+        return Response({'detail': 'Abonnement introuvable.'}, status=404)
+ 
+    if sub.sub_status != 'PENDING':
+        return Response({'detail': f"Impossible de rejeter un abonnement en statut '{sub.sub_status}'."}, status=400)
+ 
+    sub.sub_status   = 'CANCELLED'
+    sub.confirmed_by = request.user
+    sub.confirmed_at = timezone.now()
+    sub.save()
+ 
+    return Response({'id': sub.id, 'sub_status': 'CANCELLED'})
+
+
+#  ADMINISTRATION - ENVOI NOTIFICATIONS
+@extend_schema(tags=["Admin"], summary="Send broadcast notification to users")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_broadcast_notification(request):
+    """
+    Envoie une notification à une audience.
+    Body : { audience: 'all'|'customers'|'vendors'|'active_vendors', title, message }
+    Stocke en BDD (modèle Notification si existant) ou envoie par email.
+    """
+    from django.contrib.auth.models import User
+ 
+    audience = request.data.get('audience', 'all')
+    title    = request.data.get('title', '').strip()
+    message  = request.data.get('message', '').strip()
+ 
+    if not title or not message:
+        return Response({'detail': 'title et message sont requis.'}, status=400)
+ 
+    # Sélection des destinataires
+    users = User.objects.filter(is_active=True)
+    if audience == 'customers':
+        users = users.filter(is_staff=False).exclude(vendor_profile__isnull=False)
+    elif audience == 'vendors':
+        users = users.filter(vendor_profile__isnull=False)
+    elif audience == 'active_vendors':
+        users = users.filter(vendor_profile__status='APPROVED')
+ 
+    count = users.count()
+ 
+    # Ici : créer les notifications en BDD ou envoyer emails
+    # Pour l'instant on retourne le décompte (intégration email/push à compléter)
+ 
+    return Response({
+        'success':    True,
+        'recipients': count,
+        'audience':   audience,
+        'title':      title,
+    })
+
+
+
+@extend_schema(tags=["Admin"], summary="List all shop modification requests")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_modifications(request):
+    """Liste toutes les demandes de modification de boutique."""
+    from apps.vendors.models import ShopModificationRequest
+ 
+    status_filter = request.query_params.get('status', 'PENDING')
+ 
+    qs = ShopModificationRequest.objects.select_related(
+        'vendor', 'vendor__user', 'approved_by'
+    ).order_by('-created_at')
+ 
+    if status_filter != 'all':
+        qs = qs.filter(status=status_filter)
+ 
+    kpis = {
+        'pending':       ShopModificationRequest.objects.filter(status='PENDING').count(),
+        'docs_required': ShopModificationRequest.objects.filter(status='DOCS_REQUIRED').count(),
+        'docs_uploaded': ShopModificationRequest.objects.filter(status='DOCS_UPLOADED').count(),
+        'approved':      ShopModificationRequest.objects.filter(status='APPROVED').count(),
+        'rejected':      ShopModificationRequest.objects.filter(status='REJECTED').count(),
+    }
+ 
+    result = []
+    for m in qs:
+        # Valeurs actuelles des champs demandés
+        current_values = {}
+        for field in (m.fields_requested or {}).keys():
+            current_values[field] = getattr(m.vendor, field, None)
+ 
+        result.append({
+            'id':              m.id,
+            'vendor_id':       m.vendor.id,
+            'business_name':   m.vendor.business_name,
+            'user_email':      m.vendor.user.email,
+            'fields_requested':m.fields_requested,
+            'current_values':  current_values,
+            'reason':          m.reason,
+            'status':          m.status,
+            'admin_note':      m.admin_note,
+            'approved_by':     m.approved_by.username if m.approved_by else None,
+            'approved_at':     m.approved_at.isoformat() if m.approved_at else None,
+            'created_at':      m.created_at.isoformat(),
+        })
+ 
+    return Response({'kpis': kpis, 'modifications': result})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Approve a shop modification request")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_modification(request, mod_id):
+    """Approuve une demande — applique les changements sur VendorProfile."""
+    from apps.vendors.models import ShopModificationRequest
+ 
+    try:
+        mod = ShopModificationRequest.objects.select_related('vendor').get(id=mod_id)
+    except ShopModificationRequest.DoesNotExist:
+        return Response({'detail': 'Demande introuvable.'}, status=404)
+ 
+    if mod.status not in ['PENDING', 'DOCS_REQUIRED', 'DOCS_UPLOADED']:
+        return Response({'detail': f"Impossible d'approuver une demande en statut '{mod.status}'."}, status=400)
+ 
+    mod.status      = 'APPROVED'
+    mod.approved_by = request.user
+    mod.approved_at = timezone.now()
+    mod.admin_note  = request.data.get('admin_note', '')
+    mod.save()
+ 
+    # Appliquer les changements sur le profil
+    mod.apply_approved_changes()
+ 
+    return Response({'id': mod.id, 'status': 'APPROVED', 'fields_applied': list(mod.fields_requested.keys())})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Reject a shop modification request")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_modification(request, mod_id):
+    """Rejette une demande avec un motif obligatoire."""
+    from apps.vendors.models import ShopModificationRequest
+ 
+    try:
+        mod = ShopModificationRequest.objects.get(id=mod_id)
+    except ShopModificationRequest.DoesNotExist:
+        return Response({'detail': 'Demande introuvable.'}, status=404)
+ 
+    if mod.status not in ['PENDING', 'DOCS_REQUIRED', 'DOCS_UPLOADED']:
+        return Response({'detail': f"Impossible de rejeter une demande en statut '{mod.status}'."}, status=400)
+ 
+    reason = request.data.get('reason', '').strip()
+    if not reason:
+        return Response({'detail': 'Le motif de rejet est requis.'}, status=400)
+ 
+    mod.status     = 'REJECTED'
+    mod.admin_note = reason
+    mod.save()
+ 
+    return Response({'id': mod.id, 'status': 'REJECTED', 'admin_note': mod.admin_note}) 
+
+
+    
+@extend_schema(tags=["Admin"], summary="Certifications stats & vendor ranking")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_certifications_stats(request):
+    """
+    Retourne :
+      - stats : répartition par tier + total approuvés + moyenne points
+      - vendors : liste de tous les vendeurs approuvés triée par points décroissants
+    """
+    approved = VendorProfile.objects.filter(status='APPROVED').select_related('user')
+ 
+    by_tier = {'BRONZE': 0, 'SILVER': 0, 'GOLD': 0, 'DIAMOND': 0}
+    total_points_sum = 0
+    vendors_list = []
+ 
+    for vp in approved:
+        tier = vp.certification_tier or 'BRONZE'
+        by_tier[tier] = by_tier.get(tier, 0) + 1
+        pts = vp.total_points or 0
+        total_points_sum += pts
+        vendors_list.append({
+            'id':                vp.id,
+            'business_name':     vp.business_name,
+            'user_username':     vp.user.username,
+            'certification_tier':tier,
+            'total_points':      pts,
+            'city':              vp.city,
+            'status':            vp.status,
+        })
+ 
+    # Trier par points décroissants
+    vendors_list.sort(key=lambda x: x['total_points'], reverse=True)
+ 
+    total = approved.count()
+    avg   = round(total_points_sum / total, 1) if total > 0 else 0
+ 
+    return Response({
+        'stats': {
+            'by_tier':       by_tier,
+            'total_approved':total,
+            'avg_points':    avg,
+        },
+        'vendors': vendors_list,
+    })       
+
+
+
+@extend_schema(tags=["Admin"], summary="Platform account & system health stats")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_account_stats(request):
+    """
+    Statistiques globales du compte plateforme BelivaY :
+    - GMV, commissions, escrow, retraits
+    - Santé système (DB, utilisateurs, litiges, dernière commande)
+    """
+    from apps.orders.models import Order, Dispute
+    from apps.vendors.models import WithdrawalRequest
+    from apps.orders.models import PlatformSettings
+    from django.contrib.auth.models import User
+    from django.db.models import Sum
+ 
+    settings = PlatformSettings.get_settings()
+ 
+    # ── Finances ──────────────────────────────────────────────────────────────
+    paid_orders = Order.objects.filter(payment_status='PAID')
+ 
+    gmv_total = paid_orders.aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    # Commissions = SUM(subtotal_xaf * commission_rate_snapshot / 100)
+    total_commissions = 0
+    for o in paid_orders.only('subtotal_xaf', 'commission_rate_snapshot'):
+        total_commissions += round(o.subtotal_xaf * float(o.commission_rate_snapshot) / 100)
+ 
+    # Escrow
+    escrow_blocked = Order.objects.filter(
+        escrow_status='BLOCKED'
+    ).aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    escrow_release_pending = Order.objects.filter(
+        escrow_status='RELEASE_PENDING'
+    ).aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    escrow_released = Order.objects.filter(
+        escrow_status='RELEASED'
+    ).aggregate(t=Sum('subtotal_xaf'))['t'] or 0
+ 
+    # Retraits
+    withdrawals_approved = WithdrawalRequest.objects.filter(
+        status='APPROVED'
+    ).aggregate(t=Sum('net_amount_xaf'))['t'] or 0
+ 
+    pending_wd = WithdrawalRequest.objects.filter(status='PENDING')
+    pending_wd_count  = pending_wd.count()
+    pending_wd_amount = pending_wd.aggregate(t=Sum('amount_xaf'))['t'] or 0
+ 
+    net_revenue = total_commissions - withdrawals_approved
+ 
+    # ── Santé système ─────────────────────────────────────────────────────────
+    total_users    = User.objects.filter(is_active=True).count()
+    active_vendors = VendorProfile.objects.filter(status='APPROVED').count()
+    total_orders   = Order.objects.count()
+    paid_count     = paid_orders.count()
+    pending_disputes = Dispute.objects.filter(
+        status__in=['OPEN', 'IN_PROGRESS']
+    ).count() if hasattr(Order, 'disputes') else 0
+ 
+    last_order = Order.objects.order_by('-created_at').first()
+ 
+    # Test DB basique
+    try:
+        from django.db import connection
+        connection.cursor().execute("SELECT 1")
+        db_status = 'ok'
+    except Exception:
+        db_status = 'error'
+ 
+    return Response({
+        # Finances
+        'total_gmv':                    gmv_total,
+        'total_commissions_earned':     total_commissions,
+        'total_escrow_blocked':         escrow_blocked,
+        'total_escrow_release_pending': escrow_release_pending,
+        'total_escrow_released':        escrow_released,
+        'total_withdrawals_approved':   withdrawals_approved,
+        'net_platform_revenue':         net_revenue,
+        'pending_withdrawals_count':    pending_wd_count,
+        'pending_withdrawals_amount':   pending_wd_amount,
+        'commission_rate':              str(settings.platform_commission_percent),
+        # Système
+        'total_users':      total_users,
+        'active_vendors':   active_vendors,
+        'total_orders':     total_orders,
+        'paid_orders':      paid_count,
+        'pending_disputes': pending_disputes,
+        'maintenance_mode': settings.maintenance_mode,
+        'db_status':        db_status,
+        'last_order_at':    last_order.created_at.isoformat() if last_order else None,
+    })    
 
 
 #  ADMINISTRATION - GESTION PRODUITS 

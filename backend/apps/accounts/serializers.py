@@ -80,6 +80,8 @@ class UserSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "date_joined",
+            "is_staff",
+            "is_superuser",
             "is_vendor",
             "is_courier",
             "courier_status",

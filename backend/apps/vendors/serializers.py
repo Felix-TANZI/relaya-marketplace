@@ -30,62 +30,72 @@ from .models import (
 # ─────────────────────────────────────────────────────────────────────────────
 
 class VendorProfileSerializer(serializers.ModelSerializer):
-    """Serializer complet du profil vendeur — inclut les nouvelles URLs photos."""
-    username    = serializers.CharField(source='user.username', read_only=True)
-    email       = serializers.EmailField(source='user.email',    read_only=True)
-    # URLs absolues des images
-    photo_url   = serializers.SerializerMethodField()
-    banner_url  = serializers.SerializerMethodField()
-    # Propriétés calculées
-    public_url       = serializers.SerializerMethodField()
-    active_plan_code = serializers.SerializerMethodField()
-    current_plan_name = serializers.SerializerMethodField()
+    user_id        = serializers.SerializerMethodField()
+    user_email     = serializers.SerializerMethodField()
+    user_full_name = serializers.SerializerMethodField()
+    plan_code      = serializers.SerializerMethodField()
+    plan_name      = serializers.SerializerMethodField()
+    total_products = serializers.SerializerMethodField()
+    active_products= serializers.SerializerMethodField()
+    total_revenue  = serializers.SerializerMethodField()
+    total_orders   = serializers.SerializerMethodField()
  
     class Meta:
-        model = VendorProfile
+        model  = VendorProfile
         fields = [
-            'id', 'username', 'email',
-            'business_name', 'business_description', 'phone', 'address', 'city',
-            'id_document', 'status', 'created_at', 'updated_at', 'approved_at',
-            # Boutique publique
-            'shop_slug', 'photo_url', 'banner_url', 'whatsapp_phone', 'is_online',
-            'public_url',
-            # Certification
-            'total_points', 'certification_tier',
-            # Plan
-            'active_plan_code', 'current_plan_name', 'plan_expires_at',
-            # Paramètres de paiement
-            'default_withdrawal_operator', 'default_withdrawal_phone',
-        ]
-        read_only_fields = [
-            'id', 'status', 'created_at', 'updated_at', 'approved_at',
-            'shop_slug', 'total_points', 'certification_tier',
+            'id', 'user_id', 'user_email', 'user_full_name',
+            'business_name', 'business_description',
+            'phone', 'address', 'city', 'shop_slug',
+            'id_document', 'status',
+            'certification_tier',
+            'plan_code', 'plan_name',
+            'total_products', 'active_products',
+            'total_revenue', 'total_orders',
+            'created_at', 'updated_at', 'approved_at',
         ]
  
-    def get_photo_url(self, obj):
-        request = self.context.get('request')
-        if obj.profile_photo:
-            url = obj.profile_photo.url
-            return request.build_absolute_uri(url) if request else url
-        return None
+    def get_user_id(self, obj):
+        return obj.user_id
  
-    def get_banner_url(self, obj):
-        request = self.context.get('request')
-        if obj.banner_image:
-            url = obj.banner_image.url
-            return request.build_absolute_uri(url) if request else url
-        return None
+    def get_user_email(self, obj):
+        return obj.user.email
  
-    def get_public_url(self, obj):
-        return obj.public_url
+    def get_user_full_name(self, obj):
+        u = obj.user
+        return f"{u.first_name} {u.last_name}".strip() or u.username
  
-    def get_active_plan_code(self, obj):
-        return obj.active_plan_code
+    def get_plan_code(self, obj):
+        return obj.active_plan_code   # 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS'
  
-    def get_current_plan_name(self, obj):
-        if obj.current_plan:
-            return obj.current_plan.name
-        return 'Gratuit'
+    def get_plan_name(self, obj):
+        plan_names = {
+            'FREE':     'Gratuit',
+            'STARTER':  'Starter',
+            'PRO':      'Pro',
+            'BUSINESS': 'Business',
+        }
+        return plan_names.get(obj.active_plan_code, obj.active_plan_code)
+ 
+    def get_total_products(self, obj):
+        from apps.catalog.models import Product
+        return Product.objects.filter(vendor=obj.user).count()
+ 
+    def get_active_products(self, obj):
+        from apps.catalog.models import Product
+        return Product.objects.filter(vendor=obj.user, is_active=True).count()
+ 
+    def get_total_revenue(self, obj):
+        from django.db.models import Sum
+        from apps.orders.models import OrderItem
+        return OrderItem.objects.filter(
+            product__vendor=obj.user
+        ).aggregate(t=Sum('line_total_xaf'))['t'] or 0
+ 
+    def get_total_orders(self, obj):
+        from apps.orders.models import OrderItem
+        return OrderItem.objects.filter(
+            product__vendor=obj.user
+        ).values('order').distinct().count()
 
 
 class VendorApplicationSerializer(serializers.ModelSerializer):
@@ -374,50 +384,18 @@ class UpdatePaymentStatusSerializer(serializers.Serializer):
 # ADMINISTRATION — DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
 
-class AdminDashboardStatsSerializer(serializers.Serializer):
-    # Utilisateurs
-    total_users     = serializers.IntegerField()
-    new_users_today = serializers.IntegerField()
-    new_users_week  = serializers.IntegerField()
-    new_users_month = serializers.IntegerField()
-    # Vendeurs
-    total_vendors     = serializers.IntegerField()
-    pending_vendors   = serializers.IntegerField()
-    approved_vendors  = serializers.IntegerField()
-    rejected_vendors  = serializers.IntegerField()
-    suspended_vendors = serializers.IntegerField()
-    # Produits
-    total_products    = serializers.IntegerField()
-    active_products   = serializers.IntegerField()
-    inactive_products = serializers.IntegerField()
-    # Commandes
-    total_orders      = serializers.IntegerField()
-    pending_orders    = serializers.IntegerField()
-    processing_orders = serializers.IntegerField()
-    shipped_orders    = serializers.IntegerField()
-    delivered_orders  = serializers.IntegerField()
-    cancelled_orders  = serializers.IntegerField()
-    # Revenus
-    revenue_total   = serializers.IntegerField()
-    revenue_today   = serializers.IntegerField()
-    revenue_week    = serializers.IntegerField()
-    revenue_month   = serializers.IntegerField()
-    # Paiements
-    paid_orders     = serializers.IntegerField()
-    unpaid_orders   = serializers.IntegerField()
-    failed_payments = serializers.IntegerField()
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# ADMINISTRATION — UTILISATEURS
-# ─────────────────────────────────────────────────────────────────────────────
-
 class AdminUserListSerializer(serializers.ModelSerializer):
-    is_vendor     = serializers.SerializerMethodField()
-    vendor_status = serializers.SerializerMethodField()
-    orders_count  = serializers.SerializerMethodField()
-    total_spent   = serializers.SerializerMethodField()
-
+    is_vendor            = serializers.SerializerMethodField()
+    vendor_status        = serializers.SerializerMethodField()
+    vendor_business_name = serializers.SerializerMethodField()
+    vendor_plan          = serializers.SerializerMethodField()
+    orders_count         = serializers.SerializerMethodField()
+    total_spent          = serializers.SerializerMethodField()
+    is_banned            = serializers.SerializerMethodField()
+    loyalty_tier         = serializers.SerializerMethodField()
+    loyalty_points       = serializers.SerializerMethodField()
+    city                 = serializers.SerializerMethodField()
+ 
     class Meta:
         from django.contrib.auth.models import User
         model  = User
@@ -425,27 +403,71 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             'id', 'username', 'email', 'first_name', 'last_name',
             'is_staff', 'is_active', 'is_superuser',
             'date_joined', 'last_login',
-            'is_vendor', 'vendor_status',
+            # Rôles
+            'is_vendor', 'vendor_status', 'vendor_business_name', 'vendor_plan',
+            # Commandes & dépenses
             'orders_count', 'total_spent',
+            # Profil & fidélité
+            'is_banned', 'loyalty_tier', 'loyalty_points', 'city',
         ]
-
+ 
+    # ── Rôle vendeur ────────────────────────────────────────────────────────
     def get_is_vendor(self, obj):
         return hasattr(obj, 'vendor_profile')
-
+ 
     def get_vendor_status(self, obj):
         if hasattr(obj, 'vendor_profile'):
             return obj.vendor_profile.status
         return None
-
+ 
+    def get_vendor_business_name(self, obj):
+        if hasattr(obj, 'vendor_profile'):
+            return obj.vendor_profile.business_name
+        return None
+ 
+    def get_vendor_plan(self, obj):
+        """Retourne le code du plan actif : FREE | STARTER | PRO | BUSINESS"""
+        if hasattr(obj, 'vendor_profile'):
+            return obj.vendor_profile.active_plan_code
+        return None
+ 
+    # ── Commandes ───────────────────────────────────────────────────────────
     def get_orders_count(self, obj):
         return obj.orders.count()
-
+ 
     def get_total_spent(self, obj):
         from django.db.models import Sum
-        return obj.orders.filter(payment_status='PAID').aggregate(
-            t=Sum('total_xaf')
-        )['t'] or 0
-
+        return obj.orders.filter(
+            payment_status='PAID'
+        ).aggregate(t=Sum('total_xaf'))['t'] or 0
+ 
+    # ── Profil & fidélité ────────────────────────────────────────────────────
+    def get_is_banned(self, obj):
+        profile = getattr(obj, 'profile', None)
+        if profile:
+            return getattr(profile, 'is_banned', False)
+        return False
+ 
+    def get_loyalty_points(self, obj):
+        """Points = commandes payées × 100 (même logique que accounts/serializers.py)"""
+        return obj.orders.count() * 100
+ 
+    def get_loyalty_tier(self, obj):
+        points = self.get_loyalty_points(obj)
+        if points >= 2000: return 'DIAMOND'
+        if points >= 1000: return 'GOLD'
+        if points >= 500:  return 'SILVER'
+        return 'BRONZE'
+ 
+    def get_city(self, obj):
+        """Ville depuis VendorProfile (si vendeur) ou UserProfile"""
+        if hasattr(obj, 'vendor_profile'):
+            return obj.vendor_profile.city or None
+        profile = getattr(obj, 'profile', None)
+        if profile:
+            return getattr(profile, 'city', None)
+        return None
+    
 
 class AdminUserDetailSerializer(serializers.ModelSerializer):
     is_vendor      = serializers.SerializerMethodField()
@@ -453,7 +475,12 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
     profile        = serializers.SerializerMethodField()
     activity_logs  = serializers.SerializerMethodField()
     stats          = serializers.SerializerMethodField()
-
+    # Nouveaux champs
+    loyalty_points = serializers.SerializerMethodField()
+    loyalty_tier   = serializers.SerializerMethodField()
+    city           = serializers.SerializerMethodField()
+    recent_orders  = serializers.SerializerMethodField()
+ 
     class Meta:
         from django.contrib.auth.models import User
         model  = User
@@ -463,54 +490,90 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
             'date_joined', 'last_login',
             'is_vendor', 'vendor_profile', 'profile',
             'activity_logs', 'stats',
+            'loyalty_points', 'loyalty_tier', 'city', 'recent_orders',
         ]
-
+ 
     def get_is_vendor(self, obj):
         return hasattr(obj, 'vendor_profile')
-
+ 
     def get_vendor_profile(self, obj):
         if hasattr(obj, 'vendor_profile'):
             return VendorProfileSerializer(obj.vendor_profile).data
         return None
-
+ 
     def get_profile(self, obj):
         if hasattr(obj, 'profile'):
+            p = obj.profile
             return {
-                'phone':                 obj.profile.phone,
-                'bio':                   obj.profile.bio,
-                'is_banned':             obj.profile.is_banned,
-                'ban_reason':            obj.profile.ban_reason,
-                'banned_at':             obj.profile.banned_at,
-                'banned_by':             obj.profile.banned_by.username if obj.profile.banned_by else None,
-                'newsletter_subscribed': obj.profile.newsletter_subscribed,
+                'phone':                 p.phone,
+                'bio':                   p.bio,
+                'is_banned':             p.is_banned,
+                'ban_reason':            p.ban_reason,
+                'banned_at':             p.banned_at,
+                'banned_by':             p.banned_by.username if p.banned_by else None,
+                'newsletter_subscribed': p.newsletter_subscribed,
             }
         return None
-
+ 
     def get_activity_logs(self, obj):
         return []
-
+ 
     def get_stats(self, obj):
         from django.db.models import Sum
         orders     = obj.orders.all()
         paid       = orders.filter(payment_status='PAID')
         total_paid = paid.count()
         total_xaf  = paid.aggregate(t=Sum('total_xaf'))['t'] or 0
+        avg        = round(total_xaf / total_paid, 2) if total_paid > 0 else 0
+ 
+        vendor_stats = {}
+        if hasattr(obj, 'vendor_profile'):
+            from apps.catalog.models import Product
+            products        = Product.objects.filter(vendor=obj)
+            vendor_stats = {
+                'total_products':  products.count(),
+                'active_products': products.filter(is_active=True).count(),
+            }
+ 
         return {
             'total_orders':        orders.count(),
             'paid_orders':         total_paid,
             'pending_orders':      orders.filter(payment_status='PENDING').count(),
             'total_spent':         total_xaf,
-            'average_order_value': int(total_xaf / total_paid) if total_paid else 0,
+            'average_order_value': avg,
+            **vendor_stats,
         }
-
-
-class AdminUserUpdateSerializer(serializers.Serializer):
-    is_staff     = serializers.BooleanField(required=False)
-    is_active    = serializers.BooleanField(required=False)
-    is_superuser = serializers.BooleanField(required=False)
-    first_name   = serializers.CharField(required=False, allow_blank=True)
-    last_name    = serializers.CharField(required=False, allow_blank=True)
-    email        = serializers.EmailField(required=False)
+ 
+    def get_loyalty_points(self, obj):
+        return obj.orders.count() * 100
+ 
+    def get_loyalty_tier(self, obj):
+        pts = self.get_loyalty_points(obj)
+        if pts >= 2000: return 'DIAMOND'
+        if pts >= 1000: return 'GOLD'
+        if pts >= 500:  return 'SILVER'
+        return 'BRONZE'
+ 
+    def get_city(self, obj):
+        if hasattr(obj, 'vendor_profile'):
+            return obj.vendor_profile.city or None
+        profile = getattr(obj, 'profile', None)
+        return getattr(profile, 'city', None) if profile else None
+ 
+    def get_recent_orders(self, obj):
+        """5 dernières commandes de l'utilisateur"""
+        orders = obj.orders.order_by('-created_at')[:5]
+        result = []
+        for o in orders:
+            result.append({
+                'id':                 o.id,
+                'total_xaf':          o.total_xaf,
+                'payment_status':     o.payment_status,
+                'fulfillment_status': o.fulfillment_status,
+                'created_at':         o.created_at.isoformat(),
+                'items_count':        o.items.count(),
+            })
+        return result    
 
 
 # ─────────────────────────────────────────────────────────────────────────────

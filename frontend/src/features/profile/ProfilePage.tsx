@@ -31,6 +31,7 @@ import {
   X,
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";
+import { vendorsApi, type VendorProfile } from "@/services/api/vendors";
 import { useToast } from "@/context/ToastContext";
 import { getStoredProfileAvatar, getUserDisplayName, getUserInitials } from "@/lib/profileAvatar";
 import {
@@ -187,12 +188,16 @@ export default function ProfilePage() {
   const [chatDraft, setChatDraft] = useState("");
   const [supportConversations, setSupportConversations] = useState(INITIAL_SUPPORT_CONVERSATIONS);
   const [disputes, setDisputes] = useState<StoredOrderDispute[]>(() => getStoredOrderDisputes());
+  const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
+  const [sellerSubmitting, setSellerSubmitting] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [sellerForm, setSellerForm] = useState({
     shopName: "",
     category: "Mode & accessoires",
     city: "Yaoundé",
     phone: "",
+    address: "",
+    idDocument: "",
     motivation: "",
   });
   const [courierForm, setCourierForm] = useState({
@@ -237,6 +242,7 @@ export default function ProfilePage() {
             id_card: profile.courier_profile.id_card,
           });
         }
+        vendorsApi.getProfile().then(setVendorProfile).catch(() => setVendorProfile(null));
       })
       .catch(() => showToast("Erreur chargement profil", "error"))
       .finally(() => setLoading(false));
@@ -258,6 +264,7 @@ export default function ProfilePage() {
   const displayName = useMemo(() => getUserDisplayName(user), [user]);
   const userInitials = useMemo(() => getUserInitials(user), [user]);
   const avatar = user?.avatar_url || getStoredProfileAvatar();
+  const isVendor = Boolean(user?.is_vendor || vendorProfile);
   const normalizedAddresses = addresses.map((address) => ({
     ...address,
     person: address.person || displayName,
@@ -378,14 +385,36 @@ export default function ProfilePage() {
   };
 
   const handleSellerField = (
-    field: "shopName" | "category" | "city" | "phone" | "motivation",
+    field: "shopName" | "category" | "city" | "phone" | "address" | "idDocument" | "motivation",
     value: string,
   ) => {
     setSellerForm((current) => ({ ...current, [field]: value }));
   };
 
-  const handleSellerApplication = () => {
-    showToast("Votre demande vendeur a été enregistrée.", "success");
+  const handleSellerApplication = async () => {
+    if (sellerSubmitting || isVendor) return;
+
+    try {
+      setSellerSubmitting(true);
+      const vendor = await vendorsApi.apply({
+        business_name: sellerForm.shopName,
+        business_description: sellerForm.motivation || `Categorie principale : ${sellerForm.category}`,
+        phone: sellerForm.phone,
+        address: sellerForm.address,
+        city: sellerForm.city,
+        id_document: sellerForm.idDocument,
+      });
+      const profile = await authApi.getProfile().catch(() => user);
+      setVendorProfile(vendor);
+      if (profile) setUser({ ...profile, is_vendor: true });
+      window.dispatchEvent(new Event("belivay-vendor-updated"));
+      showToast("Votre compte vendeur est activé.", "success");
+      openPanel("dashboard");
+    } catch {
+      showToast("Impossible d'enregistrer la demande vendeur.", "error");
+    } finally {
+      setSellerSubmitting(false);
+    }
   };
 
   const handleCourierField = (
@@ -534,15 +563,26 @@ export default function ProfilePage() {
       <section className="rounded-[16px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
-            <div className="font-display text-[18px] font-extrabold text-[#111827] dark:text-white">Devenir vendeur</div>
+            <div className="font-display text-[18px] font-extrabold text-[#111827] dark:text-white">
+              {isVendor ? "Vous êtes vendeur" : "Devenir vendeur"}
+            </div>
             <div className="mt-1 text-[13px] text-[#6b7280] dark:text-gray-400">
-              Ouvrez votre boutique BelivaY depuis votre compte client.
+              {isVendor
+                ? `Votre boutique ${vendorProfile?.business_name || "BelivaY"} est activée.`
+                : "Ouvrez votre boutique BelivaY depuis votre compte client."}
             </div>
           </div>
-          <ActionButton variant="primary" onClick={() => openPanel("vendeur")}>
-            <Store size={14} className="mr-1" />
-            Become a seller
-          </ActionButton>
+          {isVendor ? (
+            <ActionButton variant="primary" onClick={() => navigate("/seller/dashboard")}>
+              <Store size={14} className="mr-1" />
+              Ouvrir l'espace vendeur
+            </ActionButton>
+          ) : (
+            <ActionButton variant="primary" onClick={() => openPanel("vendeur")}>
+              <Store size={14} className="mr-1" />
+              Devenir vendeur
+            </ActionButton>
+          )}
         </div>
       </section>
 
@@ -970,14 +1010,38 @@ export default function ProfilePage() {
 
   const renderVendeur = () => (
     <section className="rounded-[16px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
-      <div className="mb-1 font-display text-[18px] font-extrabold text-[#111827] dark:text-white">
-        Devenir vendeur
-      </div>
-      <div className="mb-5 text-[13px] text-[#6b7280] dark:text-gray-400">
-        Remplissez cette demande pour lancer votre boutique sur BelivaY.
-      </div>
+      {isVendor ? (
+        <>
+          <div className="mb-1 font-display text-[18px] font-extrabold text-[#111827] dark:text-white">
+            Vous êtes vendeur
+          </div>
+          <div className="mb-5 text-[13px] text-[#6b7280] dark:text-gray-400">
+            Le formulaire vendeur disparaît parce que votre boutique est déjà activée.
+          </div>
+          <div className="rounded-[14px] border border-[#d1fae5] bg-[#ecfdf5] p-4 text-[13px] leading-7 text-[#166534] dark:border-emerald-900/40 dark:bg-emerald-950/30 dark:text-emerald-200">
+            Statut actuel : <strong>Vendeur actif</strong>
+            {vendorProfile?.business_name ? ` · ${vendorProfile.business_name}` : ""}
+          </div>
+          <div className="mt-5 flex flex-wrap gap-3">
+            <ActionButton variant="primary" onClick={() => navigate("/seller/dashboard")}>
+              <Store size={14} className="mr-1" />
+              Ouvrir l'espace vendeur
+            </ActionButton>
+            <ActionButton variant="outline" onClick={() => openPanel("dashboard")}>
+              Retour au tableau de bord
+            </ActionButton>
+          </div>
+        </>
+      ) : (
+        <>
+          <div className="mb-1 font-display text-[18px] font-extrabold text-[#111827] dark:text-white">
+            Devenir vendeur
+          </div>
+          <div className="mb-5 text-[13px] text-[#6b7280] dark:text-gray-400">
+            Remplissez cette demande pour lancer votre boutique sur BelivaY.
+          </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-4 md:grid-cols-2">
         <div>
           <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
             Nom de boutique
@@ -1020,9 +1084,31 @@ export default function ProfilePage() {
             placeholder="+237 6XX XXX XXX"
           />
         </div>
-      </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Adresse boutique
+          </label>
+          <input
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={sellerForm.address}
+            onChange={(event) => handleSellerField("address", event.target.value)}
+            placeholder="Ex: Marché central, entrée principale"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
+            Pièce d'identité
+          </label>
+          <input
+            className="w-full rounded-[10px] border border-[#e5e7eb] bg-white px-[14px] py-3 text-[13.5px] text-[#1f2937] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
+            value={sellerForm.idDocument}
+            onChange={(event) => handleSellerField("idDocument", event.target.value)}
+            placeholder="N° CNI, RCCM ou référence officielle"
+          />
+        </div>
+          </div>
 
-      <div className="mt-4">
+          <div className="mt-4">
         <label className="mb-1 block text-[11px] font-bold uppercase tracking-[.04em] text-[#6b7280] dark:text-gray-400">
           Pourquoi voulez-vous devenir vendeur ?
         </label>
@@ -1032,17 +1118,19 @@ export default function ProfilePage() {
           onChange={(event) => handleSellerField("motivation", event.target.value)}
           placeholder="Presentez votre activite, vos produits et votre objectif sur BelivaY."
         />
-      </div>
+          </div>
 
-      <div className="mt-5 flex flex-wrap gap-3">
+          <div className="mt-5 flex flex-wrap gap-3">
         <ActionButton variant="primary" onClick={handleSellerApplication}>
           <Store size={14} className="mr-1" />
-          Envoyer la demande
+          {sellerSubmitting ? "Enregistrement..." : "Envoyer la demande"}
         </ActionButton>
         <ActionButton variant="outline" onClick={() => openPanel("dashboard")}>
           Retour au tableau de bord
         </ActionButton>
-      </div>
+          </div>
+        </>
+      )}
     </section>
   );
 
@@ -1214,7 +1302,7 @@ export default function ProfilePage() {
     { id: "adresses", label: "Mes Adresses", suffix: "›", icon: MapPin },
     { id: "paiements", label: "Mes Paiements", suffix: "›", icon: CreditCard },
     { id: "livreur", label: "Devenir livreur", suffix: user?.courier_status === "approved" ? "Actif" : "›", tone: user?.courier_status === "approved" ? "green" : undefined, icon: Bike },
-    { id: "vendeur", label: "Become a seller", suffix: "›", icon: Store },
+    { id: "vendeur", label: isVendor ? "Vendeur" : "Devenir vendeur", suffix: isVendor ? "Actif" : "›", tone: isVendor ? "green" : undefined, icon: Store },
     { id: "fidelite", label: "Fidélité & Badges", suffix: "›", icon: Star },
     { id: "parrain", label: "Parrainage", suffix: "+500 pts", tone: "green", icon: Gift },
     { id: "messages", label: "Litiges ouverts", suffix: String(disputeConversations.length), tone: "orange", icon: MessageSquare },

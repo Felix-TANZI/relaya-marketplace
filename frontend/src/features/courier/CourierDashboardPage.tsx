@@ -1939,6 +1939,15 @@ export default function CourierDashboardPage() {
           </div>
         </div>
 
+        <button
+          type="button"
+          onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
+          className="ml-auto flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15 md:hidden"
+          aria-label="Changer de langue"
+        >
+          {i18n.language.startsWith("fr") ? "FR" : "EN"}
+        </button>
+
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
             {courierProfile?.is_online ? "Disponible" : "Hors ligne"}
@@ -1962,7 +1971,7 @@ export default function CourierDashboardPage() {
             className="flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15"
             aria-label="Changer de langue"
           >
-            {i18n.language.toUpperCase()}
+            {i18n.language.startsWith("fr") ? "FR" : "EN"}
           </button>
           <button
             type="button"

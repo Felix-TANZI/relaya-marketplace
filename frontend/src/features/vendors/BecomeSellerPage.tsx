@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Store, CheckCircle, ShieldCheck, CreditCard, HeadphonesIcon } from 'lucide-react';
 import { vendorsApi, type VendorApplication } from '@/services/api/vendors';
@@ -10,6 +10,8 @@ export default function BecomeSellerPage() {
   const navigate = useNavigate();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [alreadySeller, setAlreadySeller] = useState(false);
+  const [checkingSeller, setCheckingSeller] = useState(true);
   const [formData, setFormData] = useState<VendorApplication>({
     business_name: '',
     business_description: '',
@@ -19,12 +21,21 @@ export default function BecomeSellerPage() {
     id_document: '',
   });
 
+  useEffect(() => {
+    vendorsApi
+      .getProfile()
+      .then(() => setAlreadySeller(true))
+      .catch(() => setAlreadySeller(false))
+      .finally(() => setCheckingSeller(false));
+  }, []);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       setLoading(true);
       await vendorsApi.apply(formData);
       showToast(t('seller.submit_success'), 'success');
+      setAlreadySeller(true);
       navigate('/seller/dashboard');
     } catch (error) {
       console.error('Erreur inscription vendeur:', error);
@@ -41,6 +52,39 @@ export default function BecomeSellerPage() {
   ];
 
   const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder:text-gray-400";
+
+  if (checkingSeller) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+      </div>
+    );
+  }
+
+  if (alreadySeller) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
+        <section className="w-full max-w-[560px] rounded-[24px] border border-orange-100 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <img src="/belivay-logo.png" alt="BelivaY" className="mx-auto h-14 w-auto object-contain" />
+          <div className="mx-auto mt-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+            <Store size={26} />
+          </div>
+          <h1 className="mt-5 text-2xl font-extrabold text-gray-950 dark:text-white">Vous êtes déjà vendeur</h1>
+          <p className="mx-auto mt-3 max-w-[420px] text-sm leading-7 text-gray-600 dark:text-gray-300">
+            Le formulaire vendeur n'est plus affiché parce que votre boutique BelivaY est active.
+          </p>
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
+            <Link to="/seller/dashboard" className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark">
+              Ouvrir l'espace vendeur
+            </Link>
+            <Link to="/profile" className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+              Retour au profil
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] py-8 dark:bg-gray-950 sm:py-12">

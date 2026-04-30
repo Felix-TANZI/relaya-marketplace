@@ -14,7 +14,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
-import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -450,8 +449,6 @@ export default function SellerLayout() {
         </div>
       </div>
 
-      {/* ═══ CHATBOT VENDEUR (même assistant que côté client) ═══ */}
-      <GlobalAssistant />
     </div>
   );
 }

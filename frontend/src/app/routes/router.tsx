@@ -19,6 +19,7 @@ import AdminLayout  from '@/features/admin/AdminLayout';
 // ─────────────────────────────────────────────────────────────────────────────
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import PublicRoute    from '@/components/auth/PublicRoute';
+import RoleRoute      from '@/components/auth/RoleRoute';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENT PAGES
@@ -175,7 +176,7 @@ export const router = createBrowserRouter([
   // ═══════════════════════════════════════════════════════════════════════════
   {
     path: '/seller',
-    element: <SellerLayout />,
+    element: <ProtectedRoute><RoleRoute role="seller"><SellerLayout /></RoleRoute></ProtectedRoute>,
     children: [
       { index: true, element: <Navigate to="/seller/dashboard" replace /> },
       { path: 'dashboard',            element: <SellerDashboardPage /> },
@@ -201,11 +202,11 @@ export const router = createBrowserRouter([
   // tous deux sur la nouvelle expérience pour préserver les liens existants.
   {
     path: "/courier",
-    element: <ProtectedRoute><DriverApp /></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="courier"><DriverApp /></RoleRoute></ProtectedRoute>,
   },
   {
     path: "/driver/*",
-    element: <ProtectedRoute><DriverApp /></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="courier"><DriverApp /></RoleRoute></ProtectedRoute>,
   },
 
 

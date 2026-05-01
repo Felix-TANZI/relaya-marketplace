@@ -9,6 +9,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+import os
 import logging
 import random
 import string
@@ -29,6 +30,7 @@ from .serializers import (
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
+from django.utils.crypto import constant_time_compare
 
 from .serializers import UserSerializer, RegisterSerializer
 from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
@@ -62,6 +64,160 @@ class RegisterView(generics.CreateAPIView):
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
         )
+
+
+@extend_schema(tags=["Auth"], summary="Bootstrap admin user")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def bootstrap_admin(request):
+    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    provided_token = request.headers.get("X-Bootstrap-Token", "")
+
+    if not expected_token or not constant_time_compare(provided_token, expected_token):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+
+    if not username or not password:
+        return Response(
+            {"detail": "username and password are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+        },
+    )
+
+    user.email = email or user.email
+    user.first_name = first_name or user.first_name
+    user.last_name = last_name or user.last_name
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    user.set_password(password)
+    user.save()
+
+    return Response(
+        {
+            "created": created,
+            "user": UserSerializer(user, context={"request": request}).data,
+        },
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+@extend_schema(tags=["Auth"], summary="Bootstrap demo accounts")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def bootstrap_demo_accounts(request):
+    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    provided_token = request.headers.get("X-Bootstrap-Token", "")
+
+    if not expected_token or not constant_time_compare(provided_token, expected_token):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    from apps.vendors.models import VendorProfile
+
+    default_password = request.data.get("password", "Demo12345!")
+
+    def ensure_user(username, email, first_name, last_name, *, staff=False, superuser=False):
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+            },
+        )
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.is_staff = staff
+        user.is_superuser = superuser
+        user.is_active = True
+        user.set_password(default_password)
+        user.save()
+        return user, created
+
+    admin_user, admin_created = ensure_user(
+        "admin_demo",
+        "admin.demo@belivay.com",
+        "Admin",
+        "Demo",
+        staff=True,
+        superuser=True,
+    )
+    vendor_user, vendor_created = ensure_user(
+        "vendeur_demo",
+        "vendeur.demo@belivay.com",
+        "Vendeur",
+        "Demo",
+    )
+    courier_user, courier_created = ensure_user(
+        "livreur_demo",
+        "livreur.demo@belivay.com",
+        "Livreur",
+        "Demo",
+    )
+
+    vendor_profile, vendor_profile_created = VendorProfile.objects.update_or_create(
+        user=vendor_user,
+        defaults={
+            "business_name": "Boutique Demo",
+            "business_description": "Boutique de demonstration BelivaY",
+            "phone": "+237690000001",
+            "address": "Akwa, Douala",
+            "city": "Douala",
+            "id_document": "CNI-DEMO-VENDEUR",
+            "status": VendorProfile.Status.APPROVED,
+            "approved_at": timezone.now(),
+        },
+    )
+
+    courier_profile, courier_profile_created = CourierProfile.objects.update_or_create(
+        user=courier_user,
+        defaults={
+            "phone": "+237690000002",
+            "city": "Douala",
+            "zones": ["Akwa", "Bonapriso", "Deido"],
+            "vehicle_type": CourierProfile.VehicleType.MOTORBIKE,
+            "id_card": "CNI-DEMO-LIVREUR",
+            "is_active": True,
+            "is_approved": True,
+            "is_online": False,
+        },
+    )
+
+    return Response(
+        {
+            "password": default_password,
+            "accounts": {
+                "admin": {"username": admin_user.username, "created": admin_created},
+                "vendor": {
+                    "username": vendor_user.username,
+                    "created": vendor_created,
+                    "profile_created": vendor_profile_created,
+                    "status": vendor_profile.status,
+                },
+                "courier": {
+                    "username": courier_user.username,
+                    "created": courier_created,
+                    "profile_created": courier_profile_created,
+                    "is_approved": courier_profile.is_approved,
+                },
+            },
+        },
+        status=status.HTTP_201_CREATED,
+    )
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile")

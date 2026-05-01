@@ -4,6 +4,8 @@ from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
     health,
+    bootstrap_admin,
+    bootstrap_demo_accounts,
     RegisterView,
     me,
     profile,
@@ -32,6 +34,8 @@ from .views import (
 urlpatterns = [
     # ── Santé ─────────────────────────────────────────────────────────────────
     path("health/", health, name="auth-health"),
+    path("bootstrap/admin/", bootstrap_admin, name="auth-bootstrap-admin"),
+    path("bootstrap/demo-accounts/", bootstrap_demo_accounts, name="auth-bootstrap-demo-accounts"),
 
     # ── Authentification ──────────────────────────────────────────────────────
     path("register/",       RegisterView.as_view(),                name="auth-register"),

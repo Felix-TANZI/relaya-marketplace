@@ -536,35 +536,25 @@ export const vendorsApi = {
   },
 
   uploadImage: async (productId: number, file: File, isPrimary = false): Promise<ProductImage> => {
-    const token = localStorage.getItem('access_token');
     const formData = new FormData();
     formData.append('image', file);
     formData.append('is_primary', isPrimary.toString());
-    const res = await fetch(
-      `http://localhost:8000/api/vendors/products/${productId}/images/`,
-      { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: formData },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return http<ProductImage>(`/api/vendors/products/${productId}/images/`, {
+      method: 'POST',
+      body: formData,
+    });
   },
 
   deleteImage: async (productId: number, imageId: number): Promise<void> => {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(
-      `http://localhost:8000/api/vendors/products/${productId}/images/${imageId}/`,
-      { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await http<void>(`/api/vendors/products/${productId}/images/${imageId}/`, {
+      method: 'DELETE',
+    });
   },
 
   setPrimaryImage: async (productId: number, imageId: number): Promise<ProductImage> => {
-    const token = localStorage.getItem('access_token');
-    const res = await fetch(
-      `http://localhost:8000/api/vendors/products/${productId}/images/${imageId}/set-primary/`,
-      { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } },
-    );
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    return res.json();
+    return http<ProductImage>(`/api/vendors/products/${productId}/images/${imageId}/set-primary/`, {
+      method: 'PATCH',
+    });
   },
 
   // ── Commandes ─────────────────────────────────────────────────────────────

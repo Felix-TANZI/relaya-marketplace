@@ -9,6 +9,10 @@ import { Button } from "@/components/ui/Button";
 import { cn } from "@/lib/cn";
 import type { Product as ProductCardProduct } from "@/services/api/products";
 
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
 type Product = {
   id: number;
   name: string;
@@ -48,7 +52,7 @@ export default function ProductListPage() {
 
   useEffect(() => {
     let active = true;
-    fetch("http://localhost:8000/api/products/")
+    fetch(`${API_BASE_URL}/api/products/`)
       .then((res) => {
         if (!res.ok) {
           throw new Error("request failed");

@@ -1,15 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  ChevronDown,
-  ChevronUp,
   Minus,
   Package,
   Plus,
   RotateCcw,
   Shield,
-  ShoppingBag,
   ShoppingCart,
   Sparkles,
   Star,
@@ -18,7 +15,7 @@ import {
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
-import { productsApi, type Category, type Product } from "@/services/api/products";
+import { productsApi, type Product } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";
 import { http } from "@/services/api/http";
 import { V29_PRODUCTS } from "@/data/v29Products";
@@ -34,22 +31,6 @@ interface ProductReview {
   is_verified_purchase: boolean;
   created_at: string;
 }
-
-type CategoryWithChildren = Category & {
-  children: Category[];
-};
-
-const CATEGORY_ICONS: Record<string, string> = {
-  "Téléphones & Tablettes": "📱",
-  "Téléphones": "📱",
-  "Électronique": "💻",
-  "Mode Femme": "👗",
-  "Mode Homme": "👔",
-  "Beauté & Santé": "✨",
-  "Maison & Cuisine": "🏠",
-  "Maison & Bureau": "🏠",
-  "Supermarché": "🛒",
-};
 
 function formatDate(value: string) {
   return new Date(value).toLocaleDateString("fr-FR", {
@@ -71,8 +52,6 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState<Product | null>(null);
   const [reviews, setReviews] = useState<ProductReview[]>([]);
   const [similarProducts, setSimilarProducts] = useState<Product[]>([]);
-  const [youMayLike, setYouMayLike] = useState<Product[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [isMockProduct, setIsMockProduct] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
@@ -80,36 +59,11 @@ export default function ProductDetailPage() {
   const [activeTab, setActiveTab] = useState<"description" | "avis" | "livraison">(
     "description",
   );
-  const [expandedCategories, setExpandedCategories] = useState<number[]>([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
-
-  const hierarchicalCategories = useMemo<CategoryWithChildren[]>(
-    () =>
-      categories
-        .filter((category) => !category.parent)
-        .map((parent) => ({
-          ...parent,
-          children: categories.filter((category) => category.parent === parent.id),
-        })),
-    [categories],
-  );
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        const response = await productsApi.listCategories();
-        setCategories(response.results || []);
-      } catch (error) {
-        // silenced;
-      }
-    };
-
-    void fetchCategories();
-  }, []);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -130,7 +84,6 @@ export default function ProductDetailPage() {
               (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
             ).slice(0, 4),
           );
-          setYouMayLike(V29_PRODUCTS.filter((item) => item.id !== fallback.id).slice(0, 3));
           setLoading(false);
           return;
         }
@@ -149,9 +102,6 @@ export default function ProductDetailPage() {
           });
           setSimilarProducts(similar.results?.filter((item) => item.id !== data.id) || []);
         }
-
-        const recommended = await productsApi.list({ page_size: 3 });
-        setYouMayLike(recommended.results?.filter((item) => item.id !== data.id) || []);
       } catch (error) {
         const fallback = V29_PRODUCTS.find((item) => item.id === productId) ?? null;
 
@@ -163,10 +113,7 @@ export default function ProductDetailPage() {
           const mockSimilar = V29_PRODUCTS.filter(
             (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
           ).slice(0, 4);
-          const mockRecommended = V29_PRODUCTS.filter((item) => item.id !== fallback.id).slice(0, 3);
-
           setSimilarProducts(mockSimilar);
-          setYouMayLike(mockRecommended);
         } else {
           showToast(t("product_detail.loading_error"), "error");
         }
@@ -289,116 +236,13 @@ export default function ProductDetailPage() {
     : product.media?.filter((media) => media.media_type === "image").map((media) => media.url) || [];
   const currentImage = displayImages[selectedImageIndex];
   const hasDiscount = (product.discount ?? 0) > 0;
-  const sidebarSuggestions = (youMayLike.length ? youMayLike : similarProducts).slice(0, 3);
   const averageRating = product.rating_average ?? 4.6;
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
       <div className="mx-auto max-w-7xl">
-        <div className="flex gap-6">
-          <aside className="hidden w-72 shrink-0 xl:block">
-            <div className="sticky top-24 space-y-4">
-              <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <Link
-                  to="/catalog"
-                  className="mb-4 inline-flex items-center gap-2 text-sm font-semibold text-primary"
-                >
-                  <ShoppingBag size={16} />
-                  {t("product_detail.all_products")}
-                </Link>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {t("product_detail.categories")}
-                </h3>
-                <div className="mt-4 space-y-2">
-                  {hierarchicalCategories.map((category) => {
-                    const hasChildren = category.children.length > 0;
-                    const isExpanded = expandedCategories.includes(category.id);
-                    const icon = CATEGORY_ICONS[category.name] || "🛍️";
-
-                    return (
-                      <div key={category.id}>
-                        <button
-                          onClick={() =>
-                            hasChildren &&
-                            setExpandedCategories((current) =>
-                              isExpanded
-                                ? current.filter((item) => item !== category.id)
-                                : [...current, category.id],
-                            )
-                          }
-                          className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm text-gray-700 transition hover:bg-orange-50 dark:text-gray-300 dark:hover:bg-gray-800"
-                        >
-                          <span>{icon}</span>
-                          <span className="flex-1 font-medium">{category.name}</span>
-                          {hasChildren ? (
-                            isExpanded ? (
-                              <ChevronUp size={16} />
-                            ) : (
-                              <ChevronDown size={16} />
-                            )
-                          ) : null}
-                        </button>
-                        {hasChildren && isExpanded ? (
-                          <div className="ml-5 mt-1 space-y-1">
-                            {category.children.map((child) => (
-                              <Link
-                                key={child.id}
-                                to={`/catalog?category=${child.id}`}
-                                className="block rounded-xl px-3 py-2 text-sm text-gray-500 transition hover:bg-orange-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
-                              >
-                                {child.name}
-                              </Link>
-                            ))}
-                          </div>
-                        ) : null}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                  Vous aimerez aussi
-                </h3>
-                <div className="mt-4 space-y-4">
-                  {sidebarSuggestions.map((item) => (
-                    <Link
-                      key={item.id}
-                      to={`/product/${item.id}`}
-                      className="flex gap-3 rounded-2xl p-2 transition hover:bg-orange-50 dark:hover:bg-gray-800"
-                    >
-                      <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#fff7ef] dark:bg-gray-800">
-                        {item.images?.[0]?.image_url ? (
-                          <img
-                            src={item.images[0].image_url}
-                            alt={item.title}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <Package size={28} className="text-primary" />
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="line-clamp-2 text-sm font-semibold text-gray-900 dark:text-white">
-                          {item.title}
-                        </div>
-                        <div className="mt-2 text-lg font-bold text-primary">
-                          {item.price_final.toLocaleString("fr-FR")} FCFA
-                        </div>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
-                          <Star size={12} className="fill-yellow-400 text-yellow-400" />
-                          {item.rating_average?.toFixed(1) || "4.7"} ({item.reviews_count || 0})
-                        </div>
-                      </div>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </aside>
-
-          <div className="flex-1">
+        <div>
+          <div>
             <nav className="mb-4 flex flex-wrap items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <Link to="/" className="hover:text-primary">
                 {t("product_detail.home")}

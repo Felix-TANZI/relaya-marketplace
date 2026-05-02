@@ -386,6 +386,7 @@ class UpdatePaymentStatusSerializer(serializers.Serializer):
 
 class AdminUserListSerializer(serializers.ModelSerializer):
     is_vendor            = serializers.SerializerMethodField()
+    is_courier           = serializers.SerializerMethodField()
     vendor_status        = serializers.SerializerMethodField()
     vendor_business_name = serializers.SerializerMethodField()
     vendor_plan          = serializers.SerializerMethodField()
@@ -404,7 +405,7 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             'is_staff', 'is_active', 'is_superuser',
             'date_joined', 'last_login',
             # Rôles
-            'is_vendor', 'vendor_status', 'vendor_business_name', 'vendor_plan',
+            'is_vendor', 'is_courier', 'vendor_status', 'vendor_business_name', 'vendor_plan',
             # Commandes & dépenses
             'orders_count', 'total_spent',
             # Profil & fidélité
@@ -414,6 +415,10 @@ class AdminUserListSerializer(serializers.ModelSerializer):
     # ── Rôle vendeur ────────────────────────────────────────────────────────
     def get_is_vendor(self, obj):
         return hasattr(obj, 'vendor_profile')
+
+    def get_is_courier(self, obj):
+        courier = getattr(obj, 'courier_profile', None)
+        return bool(courier and courier.is_active)
  
     def get_vendor_status(self, obj):
         if hasattr(obj, 'vendor_profile'):
@@ -461,6 +466,9 @@ class AdminUserListSerializer(serializers.ModelSerializer):
  
     def get_city(self, obj):
         """Ville depuis VendorProfile (si vendeur) ou UserProfile"""
+        courier = getattr(obj, 'courier_profile', None)
+        if courier:
+            return courier.city or None
         if hasattr(obj, 'vendor_profile'):
             return obj.vendor_profile.city or None
         profile = getattr(obj, 'profile', None)

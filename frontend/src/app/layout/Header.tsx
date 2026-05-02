@@ -222,8 +222,9 @@ export default function Header() {
   const userInitials = getUserInitials(user);
   const clientNavItems = [
     { label: t("header_nav.home"), to: "/" },
-    { label: "Promotions", to: "/promotions" },
     { label: t("header_nav.orders"), to: "/orders" },
+    { label: "Mon compte", to: "/profile" },
+    { label: "Promotions", to: "/promotions" },
     { label: t("header_nav.favorites"), to: "/wishlist" },
   ];
 
@@ -787,6 +788,15 @@ export default function Header() {
                 >
                   <span className="font-medium text-text-light dark:text-text-dark">
                     Litiges ouverts
+                  </span>
+                </Link>
+                <Link
+                  to="/profile"
+                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <span className="font-medium text-text-light dark:text-text-dark">
+                    Mon compte
                   </span>
                 </Link>
                 <Link

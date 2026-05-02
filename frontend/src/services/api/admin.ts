@@ -157,6 +157,36 @@ export interface CustomerStats {
   plan_distribution:   Array<{ plan: string; count: number }>;
 }
 
+export interface AdminCourier {
+  id: number;
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: 'MOTORBIKE' | 'CAR' | 'BIKE' | 'TRICYCLE' | 'VAN';
+  id_card: string;
+  preferred_language?: string;
+  gps_permission_granted?: boolean;
+  camera_permission_granted?: boolean;
+  is_active: boolean;
+  is_approved: boolean;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCourierPayload {
+  username: string;
+  email: string;
+  password: string;
+  first_name: string;
+  last_name: string;
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: AdminCourier['vehicle_type'];
+  id_card: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -324,6 +354,7 @@ export interface AdminUser {
   is_active:            boolean;
   is_superuser:         boolean;
   is_vendor:            boolean;
+  is_courier?:          boolean;
   is_banned:            boolean;
   total_orders:         number;
   total_spent:          number;
@@ -535,6 +566,18 @@ export interface PlatformSettingsUpdate {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const adminApi = {
+
+  // ── COURIERS ──────────────────────────────────────────────────────────────
+
+  listCouriers: async (): Promise<AdminCourier[]> =>
+    http<AdminCourier[]>('/api/auth/admin/couriers/', { headers: authHeader() }),
+
+  createCourier: async (data: CreateCourierPayload): Promise<AdminCourier> =>
+    http<AdminCourier>('/api/auth/admin/couriers/create/', {
+      method: 'POST',
+      headers: authHeader(),
+      body: JSON.stringify(data),
+    }),
 
   // ── DASHBOARD ─────────────────────────────────────────────────────────────
 

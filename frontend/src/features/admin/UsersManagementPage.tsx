@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 import {
   Users, Search, RefreshCw, Download, Eye,
   ShieldOff, Shield, Trash2, ChevronLeft, ChevronRight,
-  ArrowUpDown, ArrowUp, ArrowDown, Store, Filter, ChevronDown, X,
+  ArrowUpDown, ArrowUp, ArrowDown, Store, Filter, ChevronDown, X, Bike,
 } from 'lucide-react';
 import { adminApi, type AdminUser, type UserFilters } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
@@ -18,15 +18,13 @@ import { useConfirm } from '@/context/ConfirmContext';
 // ─────────────────────────────────────────────────────────────────────────────
 
 const ROLE_CFG = {
-  superadmin: { label: 'Super Admin', color: '#EF4444', bg: 'rgba(239,68,68,0.12)' },
-  staff:      { label: 'Staff',       color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
   vendor:     { label: 'Vendeur',     color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
-  buyer:      { label: 'Acheteur',    color: '#6B7280', bg: 'rgba(107,114,128,0.12)' },
+  courier:    { label: 'Livreur',     color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
 };
 
 type SortKey = 'date_joined' | 'last_login' | 'username';
 type SortDir = 'asc' | 'desc';
-type RoleFilter = 'all' | 'staff' | 'vendor' | 'buyer' | 'banned';
+type RoleFilter = 'all' | 'vendor' | 'courier' | 'banned';
 
 const PAGE_SIZES = [10, 20, 50] as const;
 
@@ -39,11 +37,9 @@ const fmtDate = (d: string | null | undefined) =>
 
 const getRoles = (u: AdminUser): string[] => {
   const roles: string[] = [];
-  if (u.is_superuser) roles.push('superadmin');
-  else if (u.is_staff) roles.push('staff');
   if (u.is_vendor) roles.push('vendor');
-  if (!u.is_superuser && !u.is_staff) roles.push('buyer');
-  return roles.length ? roles : ['buyer'];
+  if (u.is_courier) roles.push('courier');
+  return roles.length ? roles : ['courier'];
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -54,7 +50,7 @@ function RoleBadges({ user }: { user: AdminUser }) {
   return (
     <div className="flex items-center gap-1 flex-wrap">
       {getRoles(user).map(role => {
-        const cfg = ROLE_CFG[role as keyof typeof ROLE_CFG] ?? ROLE_CFG.buyer;
+        const cfg = ROLE_CFG[role as keyof typeof ROLE_CFG] ?? ROLE_CFG.courier;
         return (
           <span key={role} style={{ fontSize: 10, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: cfg.bg, color: cfg.color }}>
             {cfg.label}
@@ -110,8 +106,8 @@ export default function UsersManagementPage() {
   const load = useCallback(async () => {
     setLoading(true);
     const filters: UserFilters = {};
-    if (roleF === 'staff')  filters.role = 'staff';
     if (roleF === 'vendor') filters.role = 'vendor';
+    if (roleF === 'courier') filters.role = 'courier';
     if (roleF === 'banned') filters.is_banned = true;
     try {
       const data = await adminApi.listUsers(filters);
@@ -164,7 +160,7 @@ export default function UsersManagementPage() {
   // ── KPIs ─────────────────────────────────────────────────────────────────
   const kpis = {
     total:   users.length,
-    staff:   users.filter(u => u.is_staff).length,
+    couriers: users.filter(u => u.is_courier).length,
     vendors: users.filter(u => u.is_vendor).length,
     banned:  users.filter(u => u.is_banned).length,
   };
@@ -265,9 +261,9 @@ export default function UsersManagementPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total',    value: kpis.total,   accent: T.text,    onClick: () => setRoleF('all') },
-          { label: 'Staff',    value: kpis.staff,   accent: '#8B5CF6', onClick: () => setRoleF('staff') },
+          { label: 'Acteurs',  value: kpis.total,   accent: T.text,    onClick: () => setRoleF('all') },
           { label: 'Vendeurs', value: kpis.vendors, accent: '#F47920', onClick: () => setRoleF('vendor') },
+          { label: 'Livreurs', value: kpis.couriers, accent: '#10B981', onClick: () => setRoleF('courier') },
           { label: 'Bannis',   value: kpis.banned,  accent: T.red,     onClick: () => setRoleF('banned') },
         ].map((k, i) => (
           <button key={i} onClick={() => { k.onClick(); setPage(1); }}
@@ -291,10 +287,10 @@ export default function UsersManagementPage() {
           <button onClick={() => setOpenDrop(openDrop === 'role' ? null : 'role')}
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
             style={{ background: roleF !== 'all' ? T.red + '18' : T.cardAlt, color: roleF !== 'all' ? T.red : T.muted, border: `1px solid ${roleF !== 'all' ? T.red + '40' : T.border}` }}>
-            {({ all: 'Tous', staff: 'Staff', vendor: 'Vendeurs', buyer: 'Acheteurs', banned: 'Bannis' } as Record<RoleFilter, string>)[roleF]} <ChevronDown size={11} />
+            {({ all: 'Tous les acteurs', vendor: 'Vendeurs', courier: 'Livreurs', banned: 'Bannis' } as Record<RoleFilter, string>)[roleF]} <ChevronDown size={11} />
           </button>
           <DropMenu show={openDrop === 'role'}>
-            {([['all','Tous'],['staff','Staff'],['vendor','Vendeurs'],['buyer','Acheteurs'],['banned','Bannis']] as [RoleFilter,string][]).map(([k,l]) => (
+            {([['all','Tous les acteurs'],['vendor','Vendeurs'],['courier','Livreurs'],['banned','Bannis']] as [RoleFilter,string][]).map(([k,l]) => (
               <DropItem key={k} label={l} active={roleF === k} onClick={() => { setRoleF(k); setPage(1); }} />
             ))}
           </DropMenu>
@@ -381,6 +377,10 @@ export default function UsersManagementPage() {
                           <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: '#F47920', fontWeight: 600 }}>
                             <Store size={12} /> Vendeur
                           </span>
+                        ) : u.is_courier ? (
+                          <span className="flex items-center gap-1.5" style={{ fontSize: 12, color: '#10B981', fontWeight: 600 }}>
+                            <Bike size={12} /> Livreur
+                          </span>
                         ) : <span style={{ color: T.muted, fontSize: 12 }}>—</span>}
                       </td>
                       {/* Dates */}
@@ -434,7 +434,7 @@ export default function UsersManagementPage() {
               {paginated.map(u => (
                 <div key={u.id} className="p-4 flex items-start gap-3">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm text-white flex-shrink-0"
-                    style={{ background: u.is_superuser ? 'linear-gradient(135deg,#EF4444,#B91C1C)' : u.is_staff ? 'linear-gradient(135deg,#8B5CF6,#6D28D9)' : 'linear-gradient(135deg,#374151,#1F2937)' }}>
+                    style={{ background: u.is_vendor ? 'linear-gradient(135deg,#F47920,#C85E14)' : 'linear-gradient(135deg,#10B981,#065F46)' }}>
                     {u.username[0]?.toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -448,6 +448,11 @@ export default function UsersManagementPage() {
                     {u.is_vendor && (
                       <p style={{ fontSize: 11.5, color: '#F47920', fontWeight: 600 }}>
                         <Store size={10} style={{ display: 'inline', marginRight: 3 }} />Vendeur
+                      </p>
+                    )}
+                    {u.is_courier && (
+                      <p style={{ fontSize: 11.5, color: '#10B981', fontWeight: 600 }}>
+                        <Bike size={10} style={{ display: 'inline', marginRight: 3 }} />Livreur
                       </p>
                     )}
                   </div>

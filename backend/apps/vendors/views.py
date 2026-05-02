@@ -4061,16 +4061,17 @@ def admin_list_users(request):
     from apps.vendors.serializers import AdminUserListSerializer
     from apps.accounts.models import UserProfile
     
-    users = User.objects.select_related('vendor_profile').prefetch_related('orders')
+    users = User.objects.select_related('vendor_profile', 'courier_profile').prefetch_related('orders')
+    users = users.filter(Q(vendor_profile__isnull=False) | Q(courier_profile__isnull=False)).filter(is_staff=False)
     
     # Filtre par rôle
     role = request.query_params.get('role')
     if role == 'vendor':
         users = users.filter(vendor_profile__isnull=False)
-    elif role == 'admin':
-        users = users.filter(is_staff=True)
+    elif role == 'courier':
+        users = users.filter(courier_profile__isnull=False)
     elif role == 'customer':
-        users = users.filter(vendor_profile__isnull=True, is_staff=False)
+        users = users.none()
     
     # Filtre actif/inactif
     is_active = request.query_params.get('is_active')

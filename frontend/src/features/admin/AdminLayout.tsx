@@ -82,11 +82,10 @@ const SECTIONS: NavSection[] = [
   },
   {
     key: 'section_deliveries',
-    soon: true,
     items: [
-      { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid,  soon: true },
-      { key: 'deliveries_list',     path: '/admin/deliveries',             icon: Truck,       soon: true },
-      { key: 'deliveries_zones',    path: '/admin/deliveries/zones',       icon: Map,         soon: true },
+      { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid },
+      { key: 'deliveries_list',     path: '/admin/deliveries',             icon: Truck, end: true },
+      { key: 'deliveries_zones',    path: '/admin/deliveries/zones',       icon: Map },
       { key: 'deliveries_perf',     path: '/admin/deliveries/performance', icon: BarChart3,   soon: true },
     ],
   },
@@ -403,29 +402,8 @@ export default function AdminLayout() {
             borderBottom: '1px solid rgba(255,255,255,0.05)',
           }}
         >
-          <Link to="/admin/dashboard" className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-white text-[13px] flex-shrink-0"
-              style={{
-                background: 'linear-gradient(135deg,#DC2626,#991B1B)',
-                boxShadow: '0 3px 10px rgba(220,38,38,0.45)',
-              }}
-            >
-              B
-            </div>
-            <div>
-              <p style={{
-                fontFamily: "'Syne',sans-serif",
-                fontSize: 15, fontWeight: 800,
-                color: '#F9FAFB', letterSpacing: '.01em',
-                lineHeight: 1.1,
-              }}>
-                BelivaY
-              </p>
-              <p style={{ fontSize: 9.5, color: 'rgba(249,250,251,0.38)', fontWeight: 700, letterSpacing: '.07em' }}>
-                ADMIN
-              </p>
-            </div>
+          <Link to="/admin/dashboard" className="flex items-center">
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-11 w-auto object-contain" />
           </Link>
         </div>
 
@@ -447,16 +425,8 @@ export default function AdminLayout() {
           </button>
 
           {/* Logo mobile (visible uniquement sur mobile, zone A n'existe pas) */}
-          <Link to="/admin/dashboard" className="lg:hidden flex items-center gap-2 flex-shrink-0">
-            <div
-              className="w-7 h-7 rounded-lg flex items-center justify-center font-black text-white text-[12px]"
-              style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}
-            >
-              B
-            </div>
-            <span style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#F9FAFB' }}>
-              BelivaY
-            </span>
+          <Link to="/admin/dashboard" className="lg:hidden flex items-center flex-shrink-0">
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-9 w-auto object-contain" />
           </Link>
 
           {/* Indicateur production (desktop) */}
@@ -594,21 +564,8 @@ export default function AdminLayout() {
           className="flex items-center justify-between px-5 flex-shrink-0"
           style={{ height: TOPBAR_H, borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
-          <Link to="/admin/dashboard" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3">
-            <div
-              className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-white text-[13px]"
-              style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)', boxShadow: '0 3px 10px rgba(220,38,38,0.45)' }}
-            >
-              B
-            </div>
-            <div>
-              <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#F9FAFB', lineHeight: 1.1 }}>
-                BelivaY
-              </p>
-              <p style={{ fontSize: 9.5, color: 'rgba(249,250,251,0.38)', fontWeight: 700, letterSpacing: '.07em' }}>
-                ADMIN
-              </p>
-            </div>
+          <Link to="/admin/dashboard" onClick={() => setSidebarOpen(false)} className="flex items-center">
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-11 w-auto object-contain" />
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}

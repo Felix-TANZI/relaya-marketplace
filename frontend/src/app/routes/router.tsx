@@ -100,6 +100,8 @@ import CustomersLoyaltyPage    from '@/features/admin/customers/CustomersLoyalty
 import VendorsOverviewPage     from '@/features/admin/vendors/VendorsOverviewPage';
 import SubscriptionsPage      from '@/features/admin/vendors/SubscriptionsPage';
 import AdminDisputeDetailPage from '@/features/admin/operations/DisputeDetailPage';
+import DeliveriesListPage from '@/features/admin/deliveries/DeliveriesListPage';
+import DeliveriesZonesPage from '@/features/admin/deliveries/DeliveriesZonesPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — CLIENT MANAGEMENT (pages complètes)
@@ -245,18 +247,18 @@ export const router = createBrowserRouter([
       { path: 'vendors/modifications', element: <ModificationsPage /> },
       { path: 'vendors/:id', element: <VendorDetailPage /> },
 
-      // ── DELIVERY MANAGEMENT (SOON) ────────────────────────────────────────
+      // ── DELIVERY MANAGEMENT ───────────────────────────────────────────────
       {
         path: 'deliveries/overview',
         element: <AdminStub title="Vue d'ensemble — Livreurs" description="Dashboard livreurs en cours de développement. Bientôt disponible." icon={Truck} />,
       },
       {
         path: 'deliveries',
-        element: <AdminStub title="Tous les Livreurs" description="Liste complète des livreurs en cours de développement. Bientôt disponible." icon={Truck} />,
+        element: <DeliveriesListPage />,
       },
       {
         path: 'deliveries/zones',
-        element: <AdminStub title="Zones & Routing" description="Gestion des zones de livraison en cours de développement. Bientôt disponible." icon={MapPin} />,
+        element: <DeliveriesZonesPage />,
       },
       {
         path: 'deliveries/performance',

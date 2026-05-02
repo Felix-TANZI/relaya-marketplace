@@ -18,7 +18,6 @@ import {
   LoaderCircle,
   Map,
   MapPin,
-  MessageCircle,
   Navigation,
   Package,
   Phone,
@@ -47,7 +46,6 @@ import {
   type CourierNotification,
   type CourierShipment,
   type CourierShipmentAction,
-  type CourierShipmentMessage,
   type CourierSettings,
 } from "@/services/api/courier";
 
@@ -62,7 +60,6 @@ type CourierTab =
   | "profil"
   | "formation"
   | "notifications"
-  | "messages"
   | "incidents"
   | "litiges"
   | "securite"
@@ -87,19 +84,11 @@ const TAB_LABELS: Record<CourierTab, string> = {
   profil: "Mon Profil",
   formation: "Formation",
   notifications: "Notifications",
-  messages: "Messages",
   incidents: "Incidents",
   litiges: "Litiges",
   securite: "Securite SOS",
   parametres: "Parametres",
 };
-
-const QUICK_MESSAGES = [
-  "J'arrive dans 10 minutes.",
-  "Le colis est bien pris en charge.",
-  "Je suis devant votre portail.",
-  "Pouvez-vous confirmer votre position ?",
-];
 
 function formatXaf(value: number) {
   return `${value.toLocaleString("fr-FR")} FCFA`;
@@ -254,11 +243,9 @@ export default function CourierDashboardPage() {
   const [selectedDispute, setSelectedDispute] = useState<CourierDispute | null>(null);
   const [notifications, setNotifications] = useState<CourierNotification[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<CourierNotification | null>(null);
-  const [messages, setMessages] = useState<CourierShipmentMessage[]>([]);
   const [shipments, setShipments] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
-  const [messageDraft, setMessageDraft] = useState("");
   const [scanCode, setScanCode] = useState("");
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
@@ -269,7 +256,6 @@ export default function CourierDashboardPage() {
   const [settingsFeedback, setSettingsFeedback] = useState("");
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
-  const [messagesTab, setMessagesTab] = useState<"client" | "vendeur" | "support">("client");
 
   useEffect(() => {
     const interval = window.setInterval(() => {
@@ -310,21 +296,6 @@ export default function CourierDashboardPage() {
 
     return () => window.clearInterval(interval);
   }, []);
-
-  useEffect(() => {
-    if (!selectedShipmentId) {
-      setMessages([]);
-      return;
-    }
-
-    const channel =
-      messagesTab === "client" ? "CLIENT" : messagesTab === "vendeur" ? "VENDOR" : "SUPPORT";
-
-    courierApi
-      .getShipmentMessages(selectedShipmentId, channel)
-      .then(setMessages)
-      .catch(() => setMessages([]));
-  }, [messagesTab, selectedShipmentId]);
 
   const courierProfile = application?.application ?? user?.courier_profile ?? null;
   const isApprovedCourier = application?.status === "approved" || Boolean(user?.is_courier);
@@ -432,23 +403,6 @@ export default function CourierDashboardPage() {
     }, 450);
   };
 
-  const handleSendMessage = async () => {
-    if (!selectedShipmentId || !messageDraft.trim()) return;
-    const channel =
-      messagesTab === "client" ? "CLIENT" : messagesTab === "vendeur" ? "VENDOR" : "SUPPORT";
-
-    try {
-      const created = await courierApi.sendShipmentMessage(selectedShipmentId, {
-        channel,
-        message: messageDraft.trim(),
-      });
-      setMessages((current) => [...current, created]);
-      setMessageDraft("");
-    } catch {
-      // Keep the UI stable even if the request fails.
-    }
-  };
-
   const handleScanShipment = async () => {
     if (!scanCode.trim()) return;
 
@@ -476,7 +430,6 @@ export default function CourierDashboardPage() {
     { id: "profil", label: "Mon Profil", icon: User },
     { id: "formation", label: "Formation", icon: BookOpen },
     { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "messages", label: "Messages", icon: MessageCircle },
     { id: "incidents", label: "Incidents", icon: AlertTriangle },
     { id: "litiges", label: "Litiges", icon: ShieldCheck },
     { id: "securite", label: "Securite SOS", icon: Siren },
@@ -1557,107 +1510,6 @@ export default function CourierDashboardPage() {
     </SectionShell>
   );
 
-  const renderMessages = () => {
-    const threadTitle =
-      messagesTab === "client" ? "Client final" : messagesTab === "vendeur" ? "Vendeur expeditor" : "Support BelivaY";
-    const selectedShipmentLabel = selectedShipment ? `Commande #${selectedShipment.order}` : "Aucune mission selectionnee";
-
-    return (
-      <section className="grid gap-5 xl:grid-cols-[0.72fr_1.28fr]">
-        <SectionShell kicker="Canaux" title="Messages">
-          <div className="flex gap-2">
-            {[
-              ["client", "Client"],
-              ["vendeur", "Vendeur"],
-              ["support", "Support"],
-            ].map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setMessagesTab(id as "client" | "vendeur" | "support")}
-                className={`rounded-full border px-4 py-2 text-[12px] font-bold ${
-                  messagesTab === id
-                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                    : "border-white/10 bg-white/5 text-white"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-          <div className="mt-4 space-y-3">
-            <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white">
-              {selectedShipmentLabel}
-            </div>
-            <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[13px] text-white/70">
-              Canal actif : {threadTitle}
-            </div>
-          </div>
-        </SectionShell>
-
-        <SectionShell kicker="Conversation" title={threadTitle} accent="text-orange-300">
-          <div className="space-y-3">
-            {selectedShipment ? (
-              messages.length ? (
-                messages.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`max-w-[80%] rounded-[18px] px-4 py-3 text-[13px] ${
-                      item.sender_role === "COURIER"
-                        ? "ml-auto bg-[linear-gradient(135deg,#10B981,#065F46)] text-white"
-                        : "border border-white/5 bg-white/[0.03] text-white/80"
-                    }`}
-                  >
-                    <div className="mb-1 text-[11px] font-bold uppercase tracking-[0.14em] text-white/55">
-                      {item.sender_name}
-                    </div>
-                    <div>{item.message}</div>
-                  </div>
-                ))
-              ) : (
-                <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-                  Aucun message sur ce canal pour la mission selectionnee.
-                </div>
-              )
-            ) : (
-              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-                Selectionne d'abord une mission pour voir ou envoyer des messages.
-              </div>
-            )}
-          </div>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {QUICK_MESSAGES.map((item) => (
-              <button
-                key={item}
-                type="button"
-                onClick={() => setMessageDraft(item)}
-                className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-[12px] text-white"
-              >
-                {item}
-              </button>
-            ))}
-          </div>
-          <div className="mt-5 flex gap-3">
-            <input
-              value={messageDraft}
-              onChange={(event) => setMessageDraft(event.target.value)}
-              placeholder="Ecrire un message..."
-              className="flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
-            />
-            <button
-              type="button"
-              onClick={handleSendMessage}
-              disabled={!selectedShipment}
-              className="rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              Envoyer
-            </button>
-          </div>
-        </SectionShell>
-      </section>
-    );
-  };
-
   const renderIncidents = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker="Assistant terrain" title="Incidents">
@@ -1899,8 +1751,6 @@ export default function CourierDashboardPage() {
         return renderFormation();
       case "notifications":
         return renderNotifications();
-      case "messages":
-        return renderMessages();
       case "incidents":
         return renderIncidents();
       case "litiges":
@@ -1991,7 +1841,7 @@ export default function CourierDashboardPage() {
           </button>
           <button
             type="button"
-            onClick={() => navigate("/profile?panel=livreur")}
+            onClick={() => navigate("/profile")}
             className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[12px] font-bold text-white transition hover:bg-white/15"
           >
             Mon compte client

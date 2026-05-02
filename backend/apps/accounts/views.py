@@ -5,7 +5,7 @@
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
 from rest_framework.views import APIView
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
@@ -218,6 +218,70 @@ def bootstrap_demo_accounts(request):
         },
         status=status.HTTP_201_CREATED,
     )
+
+
+@extend_schema(tags=["Admin"], summary="List courier accounts")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_list_couriers(request):
+    couriers = CourierProfile.objects.select_related("user").order_by("-created_at")
+    return Response(CourierProfileSerializer(couriers, many=True).data)
+
+
+@extend_schema(tags=["Admin"], summary="Create courier account")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_create_courier(request):
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+    payload = {
+        "phone": request.data.get("phone", "").strip(),
+        "city": request.data.get("city", "").strip(),
+        "zones": request.data.get("zones", []),
+        "vehicle_type": request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
+        "id_card": request.data.get("id_card", "").strip(),
+    }
+
+    if isinstance(payload["zones"], str):
+        payload["zones"] = [zone.strip() for zone in payload["zones"].split(",") if zone.strip()]
+
+    missing = [field for field in ["username", "password", "phone", "city", "id_card"] if not (request.data.get(field) or "").strip()]
+    if missing:
+        return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = CourierApplicationSerializer(data=payload, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+        },
+    )
+    if not created and hasattr(user, "courier_profile"):
+        return Response({"detail": "Ce nom d'utilisateur possede deja un profil livreur."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.email = email
+    user.first_name = first_name
+    user.last_name = last_name
+    user.is_active = True
+    user.set_password(password)
+    user.save()
+
+    courier = CourierProfile.objects.create(
+        user=user,
+        **serializer.validated_data,
+        is_active=True,
+        is_approved=True,
+        is_online=False,
+    )
+
+    return Response(CourierProfileSerializer(courier).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile")

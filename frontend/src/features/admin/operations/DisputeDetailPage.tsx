@@ -7,7 +7,7 @@ import {
   ArrowLeft, ChevronRight, RefreshCw, MessageSquare,
   Send, ExternalLink, ShoppingCart, User, CheckCircle,
   Clock, AlertCircle, Lock, Eye, EyeOff, ChevronDown,
-  FileText, DollarSign,
+  FileText, DollarSign, Store, Truck, ShieldCheck, ShieldOff,
 } from 'lucide-react';
 import { adminApi, type AdminDisputeDetail } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
@@ -86,14 +86,15 @@ export default function DisputeDetailPage() {
   const { confirm }   = useConfirm();
   const messagesEndRef= useRef<HTMLDivElement>(null);
 
-  const [dispute,      setDispute]     = useState<AdminDisputeDetail | null>(null);
-  const [loading,      setLoading]     = useState(true);
-  const [message,      setMessage]     = useState('');
-  const [isInternal,   setIsInternal]  = useState(false);
-  const [sending,      setSending]     = useState(false);
-  const [acting,       setActing]      = useState(false);
-  const [showResolve,  setShowResolve] = useState(false);
-  const [resolveForm,  setResolveForm] = useState({
+  const [dispute,       setDispute]      = useState<AdminDisputeDetail | null>(null);
+  const [loading,       setLoading]      = useState(true);
+  const [message,       setMessage]      = useState('');
+  const [isInternal,    setIsInternal]   = useState(false);
+  const [sending,       setSending]      = useState(false);
+  const [acting,        setActing]       = useState(false);
+  const [togglingReply, setTogglingReply]= useState(false);
+  const [showResolve,   setShowResolve]  = useState(false);
+  const [resolveForm,   setResolveForm]  = useState({
     resolution:        'REFUND',
     resolution_note:   '',
     refund_amount_xaf: 0,
@@ -131,6 +132,22 @@ export default function DisputeDetailPage() {
       await load();
     } catch { showToast('Erreur envoi message', 'error'); }
     finally  { setSending(false); }
+  };
+
+  // ── Toggle permission de réponse vendeur/livreur ─────────────────────────
+  const handleToggleReply = async (role: 'vendor' | 'courier', allow: boolean) => {
+    if (!dispute) return;
+    setTogglingReply(true);
+    try {
+      const updated = await adminApi.toggleDisputeReply(dispute.id, role, allow);
+      setDispute(updated);
+      const who = role === 'vendor' ? 'vendeur' : 'livreur';
+      showToast(allow ? `Le ${who} peut désormais répondre` : `Réponse du ${who} révoquée`, 'success');
+    } catch {
+      showToast('Erreur lors du changement de permission', 'error');
+    } finally {
+      setTogglingReply(false);
+    }
   };
 
   // ── Changement de statut ─────────────────────────────────────────────────
@@ -577,6 +594,81 @@ export default function DisputeDetailPage() {
               </div>
             </div>
           </Section>
+
+          {/* ── Permissions de réponse ──────────────────────────────── */}
+          <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+            <div className="flex items-center gap-2 px-4 py-3" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
+              <ShieldCheck size={13} style={{ color: T.red }} />
+              <span style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>Autoriser la réponse</span>
+            </div>
+            <div className="p-4 space-y-3">
+              <p style={{ fontSize: 12, color: T.muted, lineHeight: 1.6 }}>
+                Accordez ou révoquez la permission d'envoyer des messages dans ce litige.
+              </p>
+
+              {/* Vendeur */}
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl"
+                style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <div className="flex items-center gap-2">
+                  <Store size={14} style={{ color: '#F47920' }} />
+                  <div>
+                    <p style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>Vendeur</p>
+                    <p style={{ fontSize: 11, color: dispute?.vendor_can_reply ? '#10B981' : T.muted }}>
+                      {dispute?.vendor_can_reply ? 'Autorisé à répondre' : 'Réponse désactivée'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggleReply('vendor', !dispute?.vendor_can_reply)}
+                  disabled={togglingReply || isResolved}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all"
+                  style={{
+                    background: dispute?.vendor_can_reply ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+                    color:      dispute?.vendor_can_reply ? '#EF4444'              : '#10B981',
+                    border:     `1px solid ${dispute?.vendor_can_reply ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                    opacity: isResolved ? 0.4 : 1,
+                  }}>
+                  {togglingReply ? <RefreshCw size={11} className="animate-spin" /> :
+                   dispute?.vendor_can_reply ? <ShieldOff size={11} /> : <ShieldCheck size={11} />}
+                  {dispute?.vendor_can_reply ? 'Révoquer' : 'Autoriser'}
+                </button>
+              </div>
+
+              {/* Livreur */}
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl"
+                style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <div className="flex items-center gap-2">
+                  <Truck size={14} style={{ color: '#06B6D4' }} />
+                  <div>
+                    <p style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>Livreur</p>
+                    <p style={{ fontSize: 11, color: dispute?.courier_can_reply ? '#10B981' : T.muted }}>
+                      {dispute?.courier_can_reply ? 'Autorisé à répondre' : 'Réponse désactivée'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleToggleReply('courier', !dispute?.courier_can_reply)}
+                  disabled={togglingReply || isResolved}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11.5px] font-semibold transition-all"
+                  style={{
+                    background: dispute?.courier_can_reply ? 'rgba(239,68,68,0.1)' : 'rgba(16,185,129,0.1)',
+                    color:      dispute?.courier_can_reply ? '#EF4444'              : '#10B981',
+                    border:     `1px solid ${dispute?.courier_can_reply ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                    opacity: isResolved ? 0.4 : 1,
+                  }}>
+                  {togglingReply ? <RefreshCw size={11} className="animate-spin" /> :
+                   dispute?.courier_can_reply ? <ShieldOff size={11} /> : <ShieldCheck size={11} />}
+                  {dispute?.courier_can_reply ? 'Révoquer' : 'Autoriser'}
+                </button>
+              </div>
+
+              {isResolved && (
+                <p style={{ fontSize: 11, color: T.muted, fontStyle: 'italic' }}>
+                  Le litige est clôturé — permissions verrouillées.
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* Actions rapides statut */}
           {!isResolved && (

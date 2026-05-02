@@ -85,6 +85,7 @@ import CertificationsPage      from '@/features/admin/vendors/CertificationsPage
 import VendorDetailPage    from '@/features/admin/vendors/VendorDetailPage';
 import OrdersListPage      from '@/features/admin/operations/OrdersListPage';
 import AdminOrderDetailPage  from '@/features/admin/operations/OrderDetailPage';
+import OrdersMapPage          from '@/features/admin/operations/OrdersMapPage';
 import DisputesListPage      from '@/features/admin/operations/DisputesListPage';
 import CataloguePage         from '@/features/admin/operations/CataloguePage';
 import ReviewsPage          from '@/features/admin/operations/ReviewsPage';
@@ -271,16 +272,7 @@ export const router = createBrowserRouter([
       // ── OPERATIONS ────────────────────────────────────────────────────────
       { path: 'orders',       element: <OrdersListPage /> },
       { path: 'orders/:id',   element: <AdminOrderDetailPage /> },
-      {
-        path: 'orders/map',
-        element: <AdminStub
-          title="Carte Commandes & Livraisons"
-          description="Carte Leaflet affichant toutes les commandes actives par ville de livraison, colorées par statut. Filtres par statut, date et opérateur de paiement."
-          icon={MapPin}
-          backHref="/admin/orders"
-          backLabel="Retour commandes"
-        />,
-      },
+      { path: 'orders/map', element: <OrdersMapPage /> },
       { path: 'disputes',     element: <DisputesListPage /> },
       { path: 'disputes/:id', element: <AdminDisputeDetailPage /> },
       { path: 'catalogue',    element: <CataloguePage /> },

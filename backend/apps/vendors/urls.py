@@ -146,6 +146,11 @@ urlpatterns = [
     path('admin/disputes/<int:dispute_id>/update/',        views.admin_update_dispute,       name='admin-update-dispute'),
     path('admin/disputes/<int:dispute_id>/message/',       views.admin_add_dispute_message,  name='admin-add-dispute-message'),
     path('admin/disputes/<int:dispute_id>/resolve/',       views.admin_resolve_dispute,      name='admin-resolve-dispute'),
+    path('admin/disputes/<int:dispute_id>/toggle-reply/', views.admin_toggle_dispute_reply,  name='admin-toggle-dispute-reply'),
+
+    #  ADMINISTRATION — LIVREURS & BROADCAST ÉTENDU
+    path('admin/couriers/',                       views.admin_list_couriers,       name='admin-list-couriers'),
+    path('admin/notifications/broadcast-extended/', views.admin_broadcast_extended, name='admin-broadcast-extended'),
 
     # BOUTIQUE
     path('shop/',                views.vendor_get_shop,               name='vendor-get-shop'),

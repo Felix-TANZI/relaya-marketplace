@@ -312,6 +312,7 @@ export interface AdminOrder {
   commission_amount?:        number;
   items_count:              number;
   vendor_names:             string[];
+  courier_info?:            CourierInfo | null;
   created_at:               string;
   updated_at:               string;
 }
@@ -336,6 +337,7 @@ export interface AdminOrderDetail {
   items:                    OrderItem[];
   history:                  OrderHistory[];
   payment_transactions:     PaymentTransaction[];
+  courier_info?:            CourierInfo | null;
   created_at:               string;
   updated_at:               string;
 }
@@ -525,10 +527,27 @@ export interface AdminDisputeDetail {
   resolved_by_name:  string | null;
   resolved_at:       string | null;
   refund_amount_xaf: number | null;
+  vendor_can_reply:  boolean;
+  courier_can_reply: boolean;
   messages:          DisputeMessage[];
   evidences:         DisputeEvidence[];
   created_at:        string;
   updated_at:        string;
+}
+
+export interface AdminCourierSimple {
+  id:       number;
+  user_id:  number;
+  name:     string;
+  phone:    string;
+  city:     string;
+  username: string;
+}
+
+export interface CourierInfo {
+  shipment_status: string;
+  courier_name:    string | null;
+  courier_phone:   string | null;
 }
 
 export interface AdminDisputeUpdate {
@@ -839,6 +858,32 @@ export const adminApi = {
     http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/resolve/`, {
       method: 'POST', headers: authHeader(),
       body: JSON.stringify({ resolution, resolution_note: resolutionNote, refund_amount_xaf: refundAmount }),
+    }),
+
+  toggleDisputeReply: async (
+    disputeId: number, role: 'vendor' | 'courier', allow: boolean,
+  ): Promise<AdminDisputeDetail> =>
+    http<AdminDisputeDetail>(`/api/vendors/admin/disputes/${disputeId}/toggle-reply/`, {
+      method: 'POST', headers: authHeader(),
+      body: JSON.stringify({ role, allow }),
+    }),
+
+  // ── BROADCAST ÉTENDU ─────────────────────────────────────────────────────
+
+  listCouriersSimple: async (): Promise<AdminCourierSimple[]> =>
+    http<AdminCourierSimple[]>('/api/vendors/admin/couriers/', { headers: authHeader() }),
+
+  broadcastExtended: async (payload: {
+    audience: string;
+    title: string;
+    message: string;
+    type?: string;
+    vendor_user_id?: number;
+    courier_user_id?: number;
+  }): Promise<{ success: boolean; recipients: number; audience: string; title: string }> =>
+    http('/api/vendors/admin/notifications/broadcast-extended/', {
+      method: 'POST', headers: authHeader(),
+      body: JSON.stringify(payload),
     }),
 
   // ── KYC ───────────────────────────────────────────────────────────────────

@@ -347,6 +347,18 @@ class Dispute(models.Model):
         help_text="Passe à True dès que l'admin envoie le premier message au vendeur.",
     )
 
+    # ── Permissions de réponse (activées par l'admin) ──────────────────────
+    vendor_can_reply = models.BooleanField(
+        default=False,
+        verbose_name="Vendeur autorisé à répondre",
+        help_text="Si True, le vendeur peut envoyer des messages dans ce litige.",
+    )
+    courier_can_reply = models.BooleanField(
+        default=False,
+        verbose_name="Livreur autorisé à répondre",
+        help_text="Si True, le livreur peut envoyer des messages dans ce litige.",
+    )
+
     # ── Réponse formelle du vendeur (formulaire séparé du chat) ───────────
     class VendorReplyType(models.TextChoices):
         ACCEPT     = 'ACCEPT',     'Accepter le remboursement'

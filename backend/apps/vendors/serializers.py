@@ -652,6 +652,7 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
             'reason', 'status', 'description',
             'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
             'refund_amount_xaf',
+            'vendor_can_reply', 'courier_can_reply',
             'messages', 'evidences',
             'created_at', 'updated_at',
         ]
@@ -660,6 +661,8 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
         return {
             'id':                 obj.order.id,
             'total_xaf':          obj.order.total_xaf,
+            'customer_email':     obj.order.customer_email,
+            'customer_phone':     obj.order.customer_phone,
             'payment_status':     obj.order.payment_status,
             'fulfillment_status': obj.order.fulfillment_status,
             'escrow_status':      obj.order.escrow_status,
@@ -709,6 +712,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
     items_count       = serializers.SerializerMethodField()
     vendor_names      = serializers.SerializerMethodField()
     commission_amount = serializers.SerializerMethodField()
+    courier_info      = serializers.SerializerMethodField()
 
     class Meta:
         from apps.orders.models import Order as OModel
@@ -718,7 +722,7 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
             'city', 'payment_status', 'fulfillment_status', 'escrow_status',
             'subtotal_xaf', 'delivery_fee_xaf', 'total_xaf',
             'commission_rate_snapshot', 'commission_amount',
-            'items_count', 'vendor_names',
+            'items_count', 'vendor_names', 'courier_info',
             'created_at', 'updated_at',
         ]
 
@@ -736,6 +740,16 @@ class AdminOrderListSerializer(serializers.ModelSerializer):
     def get_commission_amount(self, obj):
         return round(obj.subtotal_xaf * float(obj.commission_rate_snapshot) / 100)
 
+    def get_courier_info(self, obj):
+        shipment = getattr(obj, 'shipment', None)
+        if not shipment:
+            return None
+        return {
+            'courier_name':  shipment.courier_name or None,
+            'courier_phone': shipment.courier_phone or None,
+            'status':        shipment.status,
+        }
+
 
 class AdminOrderDetailSerializer(serializers.ModelSerializer):
     customer_name        = serializers.SerializerMethodField()
@@ -743,6 +757,7 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
     history              = OrderHistorySerializer(many=True, read_only=True)
     payment_transactions = serializers.SerializerMethodField()
     commission_amount    = serializers.SerializerMethodField()
+    courier_info         = serializers.SerializerMethodField()
 
     class Meta:
         from apps.orders.models import Order as OModel
@@ -755,6 +770,7 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             'commission_rate_snapshot', 'commission_amount',
             'vendor_reply_deadline',
             'items', 'history', 'payment_transactions',
+            'courier_info',
             'created_at', 'updated_at',
         ]
 
@@ -804,6 +820,20 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
             }
             for tx in txs
         ]
+
+    def get_courier_info(self, obj):
+        shipment = getattr(obj, 'shipment', None)
+        if not shipment:
+            return None
+        courier_full_name = None
+        if shipment.courier and shipment.courier.user:
+            u = shipment.courier.user
+            courier_full_name = f"{u.first_name} {u.last_name}".strip() or u.username
+        return {
+            'shipment_status': shipment.status,
+            'courier_name':    courier_full_name or shipment.courier_name or None,
+            'courier_phone':   (shipment.courier.phone if shipment.courier else None) or shipment.courier_phone or None,
+        }
 
 
 class AdminOrderUpdateSerializer(serializers.Serializer):

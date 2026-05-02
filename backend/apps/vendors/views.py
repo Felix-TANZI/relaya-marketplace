@@ -3803,13 +3803,16 @@ def admin_list_orders(request):
     """
     from apps.vendors.serializers import AdminOrderListSerializer
     
-    orders = Order.objects.select_related('user').prefetch_related('items', 'items__product__vendor')
-    
+    orders = Order.objects.select_related(
+        'user', 'shipment', 'shipment__courier', 'shipment__courier__user'
+    ).prefetch_related('items', 'items__product__vendor')
+
     # Filtres statuts
     payment_status = request.query_params.get('payment_status')
     if payment_status:
         orders = orders.filter(payment_status=payment_status)
-    
+
+
     fulfillment_status = request.query_params.get('fulfillment_status')
     if fulfillment_status:
         orders = orders.filter(fulfillment_status=fulfillment_status)
@@ -3872,7 +3875,9 @@ def admin_list_orders(request):
 def admin_order_detail(request, order_id):
     """Détail complet d'une commande"""
     try:
-        order = Order.objects.select_related('user').prefetch_related(
+        order = Order.objects.select_related(
+            'user', 'shipment', 'shipment__courier', 'shipment__courier__user'
+        ).prefetch_related(
             'items',
             'items__product',
             'items__product__vendor',
@@ -5920,3 +5925,170 @@ def vendor_update_settings(request):
         return Response(VendorProfileSerializer(profile, context={'request': request}).data)
     except VendorProfile.DoesNotExist:
         return Response({'detail': 'Profil vendeur introuvable.'}, status=404)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMINISTRATION — TOGGLE RÉPONSE LITIGE (vendor_can_reply / courier_can_reply)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Admin"], summary="Toggle reply permission for vendor/courier in dispute")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_toggle_dispute_reply(request, dispute_id):
+    """
+    Accorde ou révoque la permission de répondre à un vendeur ou livreur dans un litige.
+    Body : { "role": "vendor" | "courier", "allow": true | false }
+    """
+    from apps.orders.models import Dispute
+    from apps.vendors.serializers import AdminDisputeDetailSerializer
+
+    try:
+        dispute = Dispute.objects.get(id=dispute_id)
+    except Dispute.DoesNotExist:
+        return Response({'detail': 'Litige introuvable.'}, status=404)
+
+    role  = request.data.get('role')
+    allow = request.data.get('allow', True)
+
+    if role == 'vendor':
+        dispute.vendor_can_reply = bool(allow)
+        dispute.save(update_fields=['vendor_can_reply'])
+    elif role == 'courier':
+        dispute.courier_can_reply = bool(allow)
+        dispute.save(update_fields=['courier_can_reply'])
+    else:
+        return Response({'detail': 'role doit être "vendor" ou "courier".'}, status=400)
+
+    serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
+    return Response(serializer.data)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMINISTRATION — LISTE DES LIVREURS (pour notifications ciblées)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Admin"], summary="List all couriers")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_couriers(request):
+    """
+    Retourne la liste des livreurs pour le ciblage de notifications.
+    """
+    from apps.accounts.models import CourierProfile
+
+    couriers = CourierProfile.objects.select_related('user').filter(user__is_active=True)
+
+    result = []
+    for cp in couriers:
+        u = cp.user
+        full_name = f"{u.first_name} {u.last_name}".strip() or u.username
+        result.append({
+            'id':       cp.id,
+            'user_id':  u.id,
+            'name':     full_name,
+            'phone':    cp.phone,
+            'city':     cp.city,
+            'username': u.username,
+        })
+
+    return Response(result)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADMINISTRATION — BROADCAST ÉTENDU (livreurs + ciblage individuel)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@extend_schema(tags=["Admin"], summary="Extended broadcast notification to all actor types")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_broadcast_extended(request):
+    """
+    Envoie une notification à une audience étendue.
+    audience:
+      'all_actors'       — clients + vendeurs + livreurs
+      'couriers'         — tous les livreurs
+      'specific_vendor'  — un vendeur précis (vendor_user_id requis)
+      'specific_courier' — un livreur précis (courier_user_id requis)
+      'all'              — tous les utilisateurs actifs (clients + vendeurs, sans livreurs)
+      'customers'        — clients uniquement
+      'vendors'          — tous les vendeurs
+      'active_vendors'   — vendeurs approuvés
+    """
+    from django.contrib.auth.models import User
+    from apps.accounts.models import UserNotification, CourierProfile
+
+    audience         = request.data.get('audience', 'all')
+    title            = request.data.get('title', '').strip()
+    message          = request.data.get('message', '').strip()
+    notif_type       = request.data.get('type', 'SYSTEM')
+    action_url       = request.data.get('action_url', '')
+    vendor_user_id   = request.data.get('vendor_user_id')
+    courier_user_id  = request.data.get('courier_user_id')
+
+    if not title or not message:
+        return Response({'detail': 'Titre et message sont requis.'}, status=400)
+
+    users = User.objects.none()
+
+    if audience == 'all_actors':
+        users = User.objects.filter(is_active=True, is_staff=False)
+
+    elif audience == 'couriers':
+        courier_user_ids = CourierProfile.objects.filter(
+            user__is_active=True
+        ).values_list('user_id', flat=True)
+        users = User.objects.filter(id__in=courier_user_ids)
+
+    elif audience == 'specific_courier':
+        if not courier_user_id:
+            return Response({'detail': 'courier_user_id requis pour ce ciblage.'}, status=400)
+        users = User.objects.filter(id=courier_user_id, is_active=True)
+
+    elif audience == 'specific_vendor':
+        if not vendor_user_id:
+            return Response({'detail': 'vendor_user_id requis pour ce ciblage.'}, status=400)
+        users = User.objects.filter(id=vendor_user_id, is_active=True)
+
+    elif audience == 'all':
+        users = User.objects.filter(is_active=True, is_staff=False)
+
+    elif audience == 'customers':
+        users = User.objects.filter(
+            is_active=True, is_staff=False,
+            vendor_profile__isnull=True,
+            courier_profile__isnull=True,
+        )
+
+    elif audience == 'vendors':
+        users = User.objects.filter(is_active=True, vendor_profile__isnull=False)
+
+    elif audience == 'active_vendors':
+        users = User.objects.filter(is_active=True, vendor_profile__status='APPROVED')
+
+    else:
+        return Response({'detail': f'Audience inconnue : {audience}'}, status=400)
+
+    user_list = list(users)
+    count = len(user_list)
+
+    if count == 0:
+        return Response({'detail': 'Aucun utilisateur ciblé.'}, status=400)
+
+    notifications = [
+        UserNotification(
+            user=u,
+            title=title,
+            message=message,
+            notification_type=notif_type,
+            action_url=action_url,
+        )
+        for u in user_list
+    ]
+    UserNotification.objects.bulk_create(notifications, batch_size=500)
+
+    return Response({
+        'success':    True,
+        'recipients': count,
+        'audience':   audience,
+        'title':      title,
+    })

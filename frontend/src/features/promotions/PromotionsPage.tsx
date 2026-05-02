@@ -170,6 +170,7 @@ export default function PromotionsPage() {
       price: product.price_final,
       quantity: 1,
       image: getProductImage(product),
+      isDemo: usingFallbackPromos,
     });
   };
 

@@ -8,6 +8,10 @@ import type { Order } from '@/types/order';
 export interface OrderItem {
   product_id: number;
   qty: number;
+  title?: string;
+  price_xaf?: number;
+  image_url?: string;
+  is_demo?: boolean;
 }
 
 export interface OrderCreateData {

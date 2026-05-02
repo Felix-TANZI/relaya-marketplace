@@ -4,8 +4,9 @@
 from rest_framework import serializers
 from django.conf import settings as django_settings
 from django.db.models import Count, Q
+from django.utils.text import slugify
 from .models import Order, OrderItem, Dispute, DisputeMessage
-from apps.catalog.models import Product
+from apps.catalog.models import Category, Product, ProductMedia
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -125,6 +126,61 @@ class OrderCreateSerializer(serializers.Serializer):
         
         return value
 
+    def _get_or_create_demo_product(self, item):
+        if not item.get('is_demo'):
+            raise serializers.ValidationError(
+                f"Produit {item['product_id']} introuvable"
+            )
+
+        title = str(item.get('title') or f"Produit demo {item['product_id']}").strip()
+        if not title:
+            title = f"Produit demo {item['product_id']}"
+
+        try:
+            price_xaf = int(item.get('price_xaf') or 0)
+        except (TypeError, ValueError):
+            price_xaf = 0
+        if price_xaf < 1:
+            price_xaf = 1000
+
+        category, _ = Category.objects.get_or_create(
+            slug="produits-demo",
+            defaults={"name": "Produits demo", "is_active": True},
+        )
+
+        base_slug = slugify(f"demo-{item['product_id']}-{title}") or f"demo-{item['product_id']}"
+        slug = base_slug
+        suffix = 1
+        while Product.objects.filter(slug=slug).exists():
+            slug = f"{base_slug}-{suffix}"
+            suffix += 1
+
+        product = Product.objects.create(
+            id=item['product_id'],
+            title=title,
+            slug=slug,
+            description=(
+                "Produit de demonstration cree automatiquement pour tester "
+                "le workflow commande/livraison."
+            ),
+            short_description="Produit de demonstration pour test workflow.",
+            price_xaf=price_xaf,
+            discount=0,
+            is_active=True,
+            category=category,
+        )
+
+        image_url = str(item.get('image_url') or "").strip()
+        if image_url:
+            ProductMedia.objects.create(
+                product=product,
+                url=image_url,
+                media_type="image",
+                sort_order=0,
+            )
+
+        return product
+
     def create(self, validated_data):
         """Créer une nouvelle commande"""
         from .models import PlatformSettings
@@ -143,9 +199,7 @@ class OrderCreateSerializer(serializers.Serializer):
             try:
                 product = Product.objects.get(id=item['product_id'])
             except Product.DoesNotExist:
-                raise serializers.ValidationError(
-                    f"Produit {item['product_id']} introuvable"
-                )
+                product = self._get_or_create_demo_product(item)
             
             qty = item['qty']
             line_total = product.price_xaf * qty

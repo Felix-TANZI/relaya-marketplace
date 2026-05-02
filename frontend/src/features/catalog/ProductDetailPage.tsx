@@ -145,10 +145,6 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
-    if (isMockProduct) {
-      showToast("Ce produit est une fiche démo et ne peut pas être commandé.", "error");
-      return;
-    }
 
     addItem({
       id: product.id,
@@ -158,6 +154,7 @@ export default function ProductDetailPage() {
       image:
         product.images?.find((image) => image.is_primary)?.image_url ||
         product.images?.[0]?.image_url,
+      isDemo: isMockProduct,
     });
 
     showToast(t("product_detail.added_to_cart"), "success");

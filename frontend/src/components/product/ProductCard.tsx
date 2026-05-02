@@ -116,7 +116,7 @@ export default function ProductCard({
     product.image;
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
-  const canOrder = inStock && !isMock;
+  const canOrder = inStock;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
   const CompactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
   const productUrl = `/product/${product.id}${isMock ? "?mock=1" : ""}`;
@@ -130,6 +130,7 @@ export default function ProductCard({
       price: finalPrice,
       quantity: 1,
       image: displayImage,
+      isDemo: isMock,
     });
   };
 
@@ -244,7 +245,7 @@ export default function ProductCard({
                   : "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
               }`}
             >
-              {canOrder ? "+ Panier" : isMock ? "Démo" : "Épuisé"}
+              {canOrder ? "+ Panier" : "Épuisé"}
             </button>
           </div>
         </article>
@@ -337,7 +338,7 @@ export default function ProductCard({
             }`}
           >
             <ShoppingCart size={16} />
-            {canOrder ? t('product_card.add_to_cart') : isMock ? "Produit démo" : t('product_card.unavailable')}
+            {canOrder ? t('product_card.add_to_cart') : t('product_card.unavailable')}
           </button>
         </div>
       </article>

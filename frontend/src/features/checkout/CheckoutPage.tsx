@@ -74,7 +74,14 @@ export default function CheckoutPage() {
         customer_phone: formData.phone,
         customer_email: '',
         note: isPickup ? 'CLICK_AND_COLLECT - Retrait au centre BelivaY' : '',
-        cart_items: items.map((item) => ({ product_id: item.id, qty: item.quantity })),
+        cart_items: items.map((item) => ({
+          product_id: item.id,
+          qty: item.quantity,
+          title: item.name,
+          price_xaf: item.price,
+          image_url: item.image,
+          is_demo: item.isDemo,
+        })),
       });
       orderId = order.id;
     } catch (error) {

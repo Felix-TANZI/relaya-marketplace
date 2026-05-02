@@ -232,11 +232,20 @@ export default function CartPage() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
+                            addItem({
+                              id: product.id,
+                              name: product.title,
+                              price: product.price_final || product.price_xaf,
+                              quantity: 1,
+                              image:
+                                product.images?.find((image) => image.is_primary)?.image_url ||
+                                product.images?.[0]?.image_url,
+                              isDemo: true,
+                            });
                           }}
-                          disabled
-                          className="mt-1.5 w-full cursor-not-allowed rounded-lg bg-gray-200 px-2 py-1.5 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                          className="mt-1.5 w-full rounded-lg bg-primary px-2 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-primary-dark"
                         >
-                          Démo
+                          + Ajouter
                         </button>
                       </div>
                     );

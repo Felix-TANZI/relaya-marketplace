@@ -9,6 +9,7 @@ interface CartItem {
   price: number;
   quantity: number;
   image?: string;
+  isDemo?: boolean;
   color?: string;
   storage?: string;
 }

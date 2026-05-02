@@ -10,9 +10,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='order',
-            name='delivery_method',
-            field=models.CharField(choices=[('DELIVERY', 'Livraison'), ('PICKUP', 'Retrait en boutique')], default='DELIVERY', max_length=20, verbose_name='Mode de livraison'),
+        migrations.SeparateDatabaseAndState(
+            database_operations=[],
+            state_operations=[
+                migrations.AddField(
+                    model_name='order',
+                    name='delivery_method',
+                    field=models.CharField(choices=[('DELIVERY', 'Livraison'), ('PICKUP', 'Retrait en boutique')], default='DELIVERY', max_length=20, verbose_name='Mode de livraison'),
+                ),
+            ],
         ),
     ]

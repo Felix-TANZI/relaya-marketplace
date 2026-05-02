@@ -145,6 +145,10 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
+    if (isMockProduct) {
+      showToast("Ce produit est une fiche démo et ne peut pas être commandé.", "error");
+      return;
+    }
 
     addItem({
       id: product.id,

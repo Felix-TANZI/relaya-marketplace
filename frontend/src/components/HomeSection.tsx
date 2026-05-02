@@ -12,6 +12,7 @@ interface HomeSectionProps {
   products: Product[];
   rows?: 1 | 2 | 3;
   onSeeMore?: () => void;
+  isMockProducts?: boolean;
 }
 
 export default function HomeSection({
@@ -22,6 +23,7 @@ export default function HomeSection({
   products,
   rows = 1,
   onSeeMore,
+  isMockProducts = false,
 }: HomeSectionProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
@@ -117,7 +119,7 @@ export default function HomeSection({
               className={`${rows === 1 ? "w-[calc((100%-24px)/4.5)] flex-shrink-0" : ""} min-w-0`}
               style={{ scrollSnapAlign: "start" }}
             >
-              <ProductCard product={p} showPromo compact />
+              <ProductCard product={p} showPromo compact isMock={isMockProducts} />
             </div>
           ))}
         </div>

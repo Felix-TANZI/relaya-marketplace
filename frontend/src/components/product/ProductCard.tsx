@@ -63,6 +63,7 @@ interface ProductCardProps {
   showPromo?: boolean;
   /** Compact mode for V29 horizontal scroll sections */
   compact?: boolean;
+  isMock?: boolean;
 }
 
 function getCompactCategoryIcon(categorySlug?: string | null) {
@@ -95,6 +96,7 @@ export default function ProductCard({
   product,
   showPromo = false,
   compact = false,
+  isMock = false,
 }: ProductCardProps) {
   const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
@@ -114,11 +116,14 @@ export default function ProductCard({
     product.image;
 
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
+  const canOrder = inStock && !isMock;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
   const CompactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
+  const productUrl = `/product/${product.id}${isMock ? "?mock=1" : ""}`;
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
+    if (!canOrder) return;
     addItem({
       id: product.id,
       name: product.title,
@@ -158,7 +163,7 @@ export default function ProductCard({
   /* ── COMPACT MODE (V29 horizontal scroll) ── */
   if (compact) {
     return (
-      <Link to={`/product/${product.id}?mock=1`} className="group block h-full">
+      <Link to={productUrl} className="group block h-full">
         <article className="flex h-full flex-col overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_1px_3px_rgba(0,0,0,.04)] transition-all duration-200 hover:-translate-y-1 hover:border-orange-200 hover:shadow-md dark:border-gray-700 dark:bg-gray-800">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700/50">
@@ -232,14 +237,14 @@ export default function ProductCard({
             {/* CTA */}
             <button
               onClick={handleAddToCart}
-              disabled={!inStock}
+              disabled={!canOrder}
               className={`mt-auto rounded-md px-1 py-1 text-[9.5px] font-extrabold transition-all ${
-                inStock
+                canOrder
                   ? "bg-primary text-white hover:bg-primary-dark active:scale-95"
                   : "bg-gray-200 text-gray-400 dark:bg-gray-700 dark:text-gray-500"
               }`}
             >
-              {inStock ? "+ Panier" : "Épuisé"}
+              {canOrder ? "+ Panier" : isMock ? "Démo" : "Épuisé"}
             </button>
           </div>
         </article>
@@ -255,7 +260,7 @@ export default function ProductCard({
   ).trim();
 
   return (
-    <Link to={`/product/${product.id}`} className="group block h-full">
+    <Link to={productUrl} className="group block h-full">
       <article className="product-card flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#f0e3d6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
         <div className="relative aspect-[1.02] overflow-hidden bg-gradient-to-br from-[#fff6ee] via-white to-[#fff1e2] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
@@ -267,6 +272,11 @@ export default function ProductCard({
             {!inStock ? (
               <span className="rounded-full bg-red-500 px-2.5 py-1 text-[11px] font-bold text-white">
                 {t('product_card.sold_out')}
+              </span>
+            ) : null}
+            {isMock ? (
+              <span className="rounded-full bg-gray-900/80 px-2.5 py-1 text-[11px] font-bold text-white">
+                Démo
               </span>
             ) : null}
           </div>
@@ -321,13 +331,13 @@ export default function ProductCard({
           </div>
           <button
             onClick={handleAddToCart}
-            disabled={!inStock}
+            disabled={!canOrder}
             className={`add-to-cart mt-auto flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-extrabold transition-all ${
-              inStock ? "bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5" : "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+              canOrder ? "bg-primary text-white hover:bg-primary-dark hover:-translate-y-0.5" : "cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
             }`}
           >
             <ShoppingCart size={16} />
-            {inStock ? t('product_card.add_to_cart') : t('product_card.unavailable')}
+            {canOrder ? t('product_card.add_to_cart') : isMock ? "Produit démo" : t('product_card.unavailable')}
           </button>
         </div>
       </article>

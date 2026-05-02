@@ -218,7 +218,7 @@ export default function CartPage() {
                     const price = product.price_final || product.price_xaf;
                     return (
                       <div key={product.id} className="w-[130px] flex-shrink-0 cursor-pointer transition-transform hover:-translate-y-0.5">
-                        <Link to={`/product/${product.slug}`}>
+                        <Link to={`/product/${product.id}?mock=1`}>
                           <div className="mb-2 flex h-[80px] items-center justify-center rounded-xl border border-gray-100 bg-gray-50 text-2xl dark:border-gray-700 dark:bg-gray-800">
                             <Package size={24} className="text-gray-300" />
                           </div>
@@ -232,16 +232,11 @@ export default function CartPage() {
                         <button
                           onClick={(e) => {
                             e.preventDefault();
-                            addItem({
-                              id: product.id,
-                              name: product.title,
-                              price: product.price_final || product.price_xaf,
-                              quantity: 1,
-                            });
                           }}
-                          className="mt-1.5 w-full rounded-lg bg-primary px-2 py-1.5 text-[10px] font-bold text-white transition-colors hover:bg-primary-dark"
+                          disabled
+                          className="mt-1.5 w-full cursor-not-allowed rounded-lg bg-gray-200 px-2 py-1.5 text-[10px] font-bold text-gray-500 dark:bg-gray-700 dark:text-gray-400"
                         >
-                          + Ajouter
+                          Démo
                         </button>
                       </div>
                     );

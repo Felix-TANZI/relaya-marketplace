@@ -17,6 +17,7 @@ import {
   getNewProducts,
 } from "@/data/v29Products";
 import type { LucideIcon } from "lucide-react";
+import { productsApi, type Product } from "@/services/api/products";
 
 const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
   { slug: "all",    icon: LayoutGrid, name: "Tout" },
@@ -36,10 +37,64 @@ export default function HomePage() {
   const [mainTop, setMainTop] = useState(0);
   const [mainHeight, setMainHeight] = useState(0);
   const [topOffset, setTopOffset] = useState(132);
+  const [apiProducts, setApiProducts] = useState<Product[]>([]);
+  const [usingMockProducts, setUsingMockProducts] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    productsApi
+      .list({ page_size: 100, is_active: true })
+      .then((response) => {
+        if (cancelled) return;
+        const results = response.results ?? [];
+        if (results.length > 0) {
+          setApiProducts(results);
+          setUsingMockProducts(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setApiProducts([]);
+          setUsingMockProducts(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
 
   const allFiltered = useMemo(
-    () => activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat),
-    [activeCat]
+    () => {
+      if (usingMockProducts) {
+        return activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat);
+      }
+
+      if (activeCat === "all") return sourceProducts;
+
+      return sourceProducts.filter((product) => {
+        const slug = product.category?.slug?.toLowerCase() ?? "";
+        const name = product.category?.name?.toLowerCase() ?? "";
+
+        if (activeCat === "tech") {
+          return slug.includes("tech") || slug.includes("electron") || name.includes("électron") || name.includes("electron");
+        }
+
+        if (activeCat === "beaute") {
+          return slug.includes("beaute") || slug.includes("beauté") || name.includes("beauté") || name.includes("beaute");
+        }
+
+        if (activeCat === "shoes") {
+          return slug.includes("chauss") || name.includes("chauss");
+        }
+
+        return slug.includes(activeCat) || name.includes(activeCat);
+      });
+    },
+    [activeCat, sourceProducts, usingMockProducts]
   );
 
   const visibleProducts = useMemo(
@@ -99,8 +154,23 @@ export default function HomePage() {
   ];
 
   /* ── Featured sections (horizontal scroll, top of page) ── */
-  const popular = useMemo(() => activeCat === "all" ? getTopProducts() : getByCat(activeCat), [activeCat]);
-  const newProds = useMemo(() => getNewProducts(), []);
+  const popular = useMemo(() => {
+    if (usingMockProducts) {
+      return activeCat === "all" ? getTopProducts() : getByCat(activeCat);
+    }
+
+    return [...allFiltered]
+      .sort((a, b) => ((b.discount ?? 0) * 1000 + (b.reviews_count ?? 0)) - ((a.discount ?? 0) * 1000 + (a.reviews_count ?? 0)))
+      .slice(0, 24);
+  }, [activeCat, allFiltered, usingMockProducts]);
+
+  const newProds = useMemo(() => {
+    if (usingMockProducts) return getNewProducts();
+
+    return [...sourceProducts]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 12);
+  }, [sourceProducts, usingMockProducts]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
@@ -210,10 +280,11 @@ export default function HomePage() {
               <HomeSection
                 title="Produits populaires"
                 icon={Flame}
-                badge={`${V29_PRODUCTS.length} produits`}
+                badge={`${sourceProducts.length} produits`}
                 badgeColor="bg-red-50 text-red-600"
                 products={popular}
                 rows={2}
+                isMockProducts={usingMockProducts}
               />
             </section>
 
@@ -225,6 +296,7 @@ export default function HomePage() {
                 badgeColor="bg-green-50 text-green-700"
                 products={newProds}
                 rows={1}
+                isMockProducts={usingMockProducts}
               />
             </section>
 
@@ -249,7 +321,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                 {visibleProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} showPromo compact />
+                  <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
                 ))}
               </div>
 

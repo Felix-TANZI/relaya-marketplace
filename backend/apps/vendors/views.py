@@ -2684,7 +2684,144 @@ def admin_customers_loyalty(request):
             'GOLD':    1000,
             'DIAMOND': 2000,
         },
-    })          
+    }) 
+
+
+
+@extend_schema(tags=["Admin"], summary="System logs with charts data")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_system_logs(request):
+    from apps.vendors.models import SystemLog
+    from django.utils import timezone
+    from datetime import timedelta
+    from django.db.models import Count
+ 
+    level     = request.GET.get('level', '')
+    service   = request.GET.get('service', '')
+    search    = request.GET.get('search', '')
+    date_from = request.GET.get('date_from', '')
+    date_to   = request.GET.get('date_to', '')
+    try:
+        page      = max(1, int(request.GET.get('page', 1)))
+        page_size = min(200, max(10, int(request.GET.get('page_size', 50))))
+    except (ValueError, TypeError):
+        page, page_size = 1, 50
+ 
+    qs = SystemLog.objects.all()
+ 
+    if level:
+        qs = qs.filter(level=level.upper())
+    if service:
+        qs = qs.filter(service=service.lower())
+    if search:
+        from django.db.models import Q
+        qs = qs.filter(Q(message__icontains=search) | Q(logger__icontains=search))
+    if date_from:
+        try:
+            from django.utils.dateparse import parse_datetime, parse_date
+            dt = parse_datetime(date_from) or parse_date(date_from)
+            if dt:
+                qs = qs.filter(created_at__gte=dt)
+        except Exception:
+            pass
+    if date_to:
+        try:
+            from django.utils.dateparse import parse_datetime, parse_date
+            dt = parse_datetime(date_to) or parse_date(date_to)
+            if dt:
+                qs = qs.filter(created_at__lte=dt)
+        except Exception:
+            pass
+ 
+    total  = qs.count()
+    offset = (page - 1) * page_size
+    logs   = qs[offset:offset + page_size]
+ 
+    logs_data = [
+        {
+            'id':         l.id,
+            'level':      l.level,
+            'service':    l.service,
+            'message':    l.message,
+            'logger':     l.logger,
+            'pathname':   l.pathname,
+            'lineno':     l.lineno,
+            'exc_text':   l.exc_text,
+            'ip_address': l.ip_address,
+            'user_id':    l.user_id,
+            'created_at': l.created_at.isoformat(),
+        }
+        for l in logs
+    ]
+ 
+    # ── KPIs 24h ─────────────────────────────────────────────────────────────
+    last_24h = timezone.now() - timedelta(hours=24)
+    kpis_qs  = SystemLog.objects.filter(created_at__gte=last_24h)
+    kpis = {
+        'total_24h':    kpis_qs.count(),
+        'errors_24h':   kpis_qs.filter(level__in=['ERROR', 'CRITICAL']).count(),
+        'warnings_24h': kpis_qs.filter(level='WARNING').count(),
+        'info_24h':     kpis_qs.filter(level='INFO').count(),
+    }
+ 
+    # ── Santé par service (erreurs 24h) ───────────────────────────────────────
+    by_service = list(
+        SystemLog.objects.filter(
+            created_at__gte=last_24h,
+            level__in=['ERROR', 'CRITICAL'],
+        )
+        .values('service')
+        .annotate(count=Count('id'))
+        .order_by('-count')
+    )
+ 
+    # ── Activité par heure (24 dernières heures) ──────────────────────────────
+    by_hour = []
+    now     = timezone.now()
+    for i in range(23, -1, -1):
+        hour_start = now - timedelta(hours=i + 1)
+        hour_end   = now - timedelta(hours=i)
+        hour_qs    = SystemLog.objects.filter(created_at__gte=hour_start, created_at__lt=hour_end)
+        by_hour.append({
+            'hour':     hour_start.strftime('%Y-%m-%dT%H:%M'),
+            'errors':   hour_qs.filter(level__in=['ERROR', 'CRITICAL']).count(),
+            'warnings': hour_qs.filter(level='WARNING').count(),
+            'info':     hour_qs.filter(level='INFO').count(),
+        })
+ 
+    return Response({
+        'logs':        logs_data,
+        'total':       total,
+        'page':        page,
+        'page_size':   page_size,
+        'total_pages': max(1, -(-total // page_size)),
+        'kpis':        kpis,
+        'by_service':  by_service,
+        'by_hour':     by_hour,
+    })
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Delete old system logs")
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_clear_logs(request):
+    from apps.vendors.models import SystemLog
+    from django.utils import timezone
+    from datetime import timedelta
+ 
+    try:
+        days = max(7, int(request.GET.get('days', 30)))
+    except (ValueError, TypeError):
+        days = 30
+ 
+    threshold    = timezone.now() - timedelta(days=days)
+    deleted, _   = SystemLog.objects.filter(created_at__lt=threshold).delete()
+ 
+    return Response({
+        'deleted': deleted,
+        'message': f'{deleted} log{"s" if deleted != 1 else ""} supprimé{"s" if deleted != 1 else ""} (antérieur{"s" if deleted != 1 else ""} à {days} jours).',
+    })         
 
 
 #  ADMINISTRATION - STATISTIQUES VENDEURS
@@ -3205,40 +3342,232 @@ def admin_delete_review(request, review_id):
 
 
 #  ADMINISTRATION - JOURNAL D'AUDIT
-@extend_schema(tags=["Admin"], summary="Admin audit log")
+@extend_schema(tags=["Admin"], summary="Unified admin audit log")
 @api_view(['GET'])
 @permission_classes([IsAdminUser])
 def admin_audit_log(request):
     """
-    Journal d'audit : toutes les actions admin tracées via OrderHistory.
-    Filtres : entity_type (user|vendor|order|product|review|settings|withdrawal).
-    Retourne les 500 dernières entrées (paginables côté frontend).
+    Journal d'audit unifié — agrège toutes les sources :
+      - OrderHistory       → actions sur commandes
+      - UserActivityLog    → bans, modifications utilisateurs
+      - Actions vendeurs   → approbations, rejets, suspensions (depuis VendorProfile)
+      - Modifications settings, retraits, abonnements
+ 
+    Filtres :
+      entity_type : order | user | vendor | product | review | settings | withdrawal | subscription
+      admin_id    : ID de l'admin ayant effectué l'action
+      search      : texte libre dans action/admin/entité
+      date_from   : ISO datetime
+      date_to     : ISO datetime
+      page        : pagination
+      page_size   : 20 | 50 | 100
+ 
+    Retourne aussi :
+      kpis        : today / week / month + admin le plus actif
+      by_entity   : répartition par type d'entité
+      by_hour     : activité 24h pour le graphique
+      admins      : liste des admins pour le filtre dropdown
     """
-    from apps.orders.models import OrderHistory
+    from apps.orders.models     import OrderHistory
+    from apps.accounts.models   import UserActivityLog
+    from django.contrib.auth.models import User
+    from django.utils import timezone
+    from datetime import timedelta
  
-    # On utilise OrderHistory qui trace déjà les actions admin sur les commandes.
-    # Pour les autres entités, les actions sont tracées manuellement dans les vues.
+    # ── Paramètres ────────────────────────────────────────────────────────────
+    entity_type = request.query_params.get('entity_type', '')
+    admin_id    = request.query_params.get('admin_id', '')
+    search      = request.query_params.get('search', '')
+    date_from   = request.query_params.get('date_from', '')
+    date_to     = request.query_params.get('date_to', '')
+    try:
+        page      = max(1, int(request.query_params.get('page', 1)))
+        page_size = min(100, max(10, int(request.query_params.get('page_size', 20))))
+    except (ValueError, TypeError):
+        page, page_size = 1, 20
  
-    entity_type = request.query_params.get('entity_type')
+    now = timezone.now()
  
-    qs = OrderHistory.objects.select_related('user').order_by('-timestamp')[:500]
+    # ── Collecte depuis OrderHistory ──────────────────────────────────────────
+    order_entries = []
+    if not entity_type or entity_type == 'order':
+        oh_qs = OrderHistory.objects.select_related('user', 'order').order_by('-timestamp')
+        if admin_id:
+            oh_qs = oh_qs.filter(user__id=admin_id)
+        if date_from:
+            try:
+                from django.utils.dateparse import parse_datetime
+                dt = parse_datetime(date_from)
+                if dt: oh_qs = oh_qs.filter(timestamp__gte=dt)
+            except Exception: pass
+        if date_to:
+            try:
+                from django.utils.dateparse import parse_datetime
+                dt = parse_datetime(date_to)
+                if dt: oh_qs = oh_qs.filter(timestamp__lte=dt)
+            except Exception: pass
  
-    result = []
-    for h in qs:
-        result.append({
-            'id':          h.id,
-            'admin_id':    h.user.id if h.user else None,
-            'admin_name':  h.user.username if h.user else 'System',
-            'action':      h.action,
-            'entity_type': 'order',
-            'entity_id':   h.order_id,
-            'old_value':   h.old_value or None,
-            'new_value':   h.new_value or None,
-            'ip_address':  h.ip_address,
-            'created_at':  h.timestamp.isoformat(),
+        for h in oh_qs[:500]:
+            order_entries.append({
+                'id':          f'order_{h.id}',
+                'admin_id':    h.user.id   if h.user else None,
+                'admin_name':  h.user.username if h.user else 'Système',
+                'action':      h.action,
+                'entity_type': 'order',
+                'entity_id':   h.order_id,
+                'entity_label':f'Commande #{h.order_id}',
+                'old_value':   h.old_value or None,
+                'new_value':   h.new_value or None,
+                'ip_address':  h.ip_address,
+                'created_at':  h.timestamp.isoformat(),
+            })
+ 
+    # ── Collecte depuis UserActivityLog ───────────────────────────────────────
+    user_entries = []
+    if not entity_type or entity_type == 'user':
+        try:
+            ual_qs = UserActivityLog.objects.select_related(
+                'user', 'performed_by'
+            ).order_by('-timestamp')
+ 
+            if admin_id:
+                ual_qs = ual_qs.filter(performed_by__id=admin_id)
+            if date_from:
+                try:
+                    from django.utils.dateparse import parse_datetime
+                    dt = parse_datetime(date_from)
+                    if dt: ual_qs = ual_qs.filter(timestamp__gte=dt)
+                except Exception: pass
+            if date_to:
+                try:
+                    from django.utils.dateparse import parse_datetime
+                    dt = parse_datetime(date_to)
+                    if dt: ual_qs = ual_qs.filter(timestamp__lte=dt)
+                except Exception: pass
+ 
+            for h in ual_qs[:300]:
+                user_entries.append({
+                    'id':          f'user_{h.id}',
+                    'admin_id':    h.performed_by.id       if h.performed_by else None,
+                    'admin_name':  h.performed_by.username if h.performed_by else 'Système',
+                    'action':      h.action,
+                    'entity_type': 'user',
+                    'entity_id':   h.user_id,
+                    'entity_label':f'User #{h.user_id} (@{h.user.username if h.user else "?"})',
+                    'old_value':   None,
+                    'new_value':   h.description,
+                    'ip_address':  h.ip_address,
+                    'created_at':  h.timestamp.isoformat(),
+                })
+        except Exception:
+            pass  # UserActivityLog peut ne pas exister
+ 
+    # ── Collecte depuis VendorProfile history (via champs updated_at) ─────────
+    # Utilise les annotations de VendorProfile pour retrouver les actions
+    vendor_entries = []
+    if not entity_type or entity_type == 'vendor':
+        try:
+            from apps.vendors.models import VendorProfile
+            # On cherche les profils récemment modifiés avec des statuts clés
+            vps = VendorProfile.objects.select_related('user').filter(
+                approved_at__isnull=False
+            ).order_by('-approved_at')[:100]
+            for vp in vps:
+                if vp.approved_at:
+                    vendor_entries.append({
+                        'id':          f'vendor_approve_{vp.id}',
+                        'admin_id':    None,
+                        'admin_name':  'Admin',
+                        'action':      f'Boutique approuvée : {vp.business_name}',
+                        'entity_type': 'vendor',
+                        'entity_id':   vp.id,
+                        'entity_label':f'Boutique #{vp.id} ({vp.business_name})',
+                        'old_value':   'PENDING',
+                        'new_value':   'APPROVED',
+                        'ip_address':  None,
+                        'created_at':  vp.approved_at.isoformat(),
+                    })
+        except Exception:
+            pass
+ 
+    # ── Fusion + tri ──────────────────────────────────────────────────────────
+    all_entries = order_entries + user_entries + vendor_entries
+    all_entries.sort(key=lambda x: x['created_at'], reverse=True)
+ 
+    # Filtre search
+    if search:
+        q = search.lower()
+        all_entries = [
+            e for e in all_entries
+            if any(
+                q in str(v or '').lower()
+                for v in [e['action'], e['admin_name'], e['entity_label'],
+                          e['old_value'], e['new_value'], e['ip_address']]
+            )
+        ]
+ 
+    # ── Pagination ────────────────────────────────────────────────────────────
+    total       = len(all_entries)
+    offset      = (page - 1) * page_size
+    paginated   = all_entries[offset:offset + page_size]
+ 
+    # ── KPIs ─────────────────────────────────────────────────────────────────
+    today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    week_start  = now - timedelta(days=7)
+    month_start = now - timedelta(days=30)
+ 
+    today_count = sum(1 for e in all_entries if e['created_at'] >= today_start.isoformat())
+    week_count  = sum(1 for e in all_entries if e['created_at'] >= week_start.isoformat())
+    month_count = sum(1 for e in all_entries if e['created_at'] >= month_start.isoformat())
+ 
+    # Admin le plus actif
+    admin_counts: dict = {}
+    for e in all_entries:
+        name = e['admin_name']
+        if name and name != 'Système':
+            admin_counts[name] = admin_counts.get(name, 0) + 1
+    top_admin = max(admin_counts, key=lambda k: admin_counts[k]) if admin_counts else '—'
+ 
+    # Répartition par entité
+    entity_counts: dict = {}
+    for e in all_entries:
+        et = e['entity_type']
+        entity_counts[et] = entity_counts.get(et, 0) + 1
+    by_entity = [{'entity_type': k, 'count': v} for k, v in entity_counts.items()]
+ 
+    # Activité par heure (24h)
+    by_hour = []
+    for i in range(23, -1, -1):
+        h_start = (now - timedelta(hours=i + 1)).isoformat()
+        h_end   = (now - timedelta(hours=i)).isoformat()
+        count   = sum(1 for e in all_entries if h_start <= e['created_at'] < h_end)
+        by_hour.append({
+            'hour':  (now - timedelta(hours=i)).strftime('%Y-%m-%dT%H:00'),
+            'count': count,
         })
  
-    return Response(result)
+    # Liste des admins pour le filtre dropdown
+    admin_names = sorted(set(
+        e['admin_name'] for e in all_entries
+        if e['admin_name'] and e['admin_name'] != 'Système'
+    ))
+ 
+    return Response({
+        'entries':     paginated,
+        'total':       total,
+        'page':        page,
+        'page_size':   page_size,
+        'total_pages': max(1, -(-total // page_size)),
+        'kpis': {
+            'today':     today_count,
+            'week':      week_count,
+            'month':     month_count,
+            'top_admin': top_admin,
+        },
+        'by_entity': by_entity,
+        'by_hour':   by_hour,
+        'admins':    admin_names,
+    })
 
 
 

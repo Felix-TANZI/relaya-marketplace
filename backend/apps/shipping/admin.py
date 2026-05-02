@@ -1,6 +1,5 @@
 # backend/apps/shipping/admin.py
 # Enregistrement des modèles shipping dans Django Admin.
-# Remplace le fichier vide existant (ou le crée s'il n'existe pas).
 
 from django.contrib import admin
 from django.utils.html import format_html

@@ -430,3 +430,54 @@ class WithdrawalRequest(models.Model):
             year = self.created_at.year if self.created_at else datetime.date.today().year
             self.reference = f"BLV-WD-{year}-{self.pk}"
             WithdrawalRequest.objects.filter(pk=self.pk).update(reference=self.reference)
+
+
+
+class SystemLog(models.Model):
+    """
+    Log système applicatif — écrit par le handler Django (settings/base.py).
+    Permet de consulter les logs directement depuis l'interface admin
+    sans accès SSH au serveur.
+    """
+ 
+    class Level(models.TextChoices):
+        DEBUG   = 'DEBUG',   'Debug'
+        INFO    = 'INFO',    'Info'
+        WARNING = 'WARNING', 'Avertissement'
+        ERROR   = 'ERROR',   'Erreur'
+        CRITICAL= 'CRITICAL','Critique'
+ 
+    class Service(models.TextChoices):
+        API      = 'api',      'API Backend'
+        AUTH     = 'auth',     'Authentification'
+        PAYMENTS = 'payments', 'Paiements'
+        EMAIL    = 'email',    'Email'
+        ORDERS   = 'orders',   'Commandes'
+        CATALOG  = 'catalog',  'Catalogue'
+        VENDORS  = 'vendors',  'Vendeurs'
+        SYSTEM   = 'system',   'Système'
+ 
+    level      = models.CharField(max_length=10,  choices=Level.choices,   default=Level.INFO,   db_index=True)
+    service    = models.CharField(max_length=20,  choices=Service.choices, default=Service.SYSTEM, db_index=True)
+    message    = models.TextField()
+    logger     = models.CharField(max_length=200, blank=True)  # Nom du logger Python
+    pathname   = models.CharField(max_length=500, blank=True)  # Fichier source
+    lineno     = models.IntegerField(null=True, blank=True)     # Numéro de ligne
+    exc_text   = models.TextField(blank=True)                   # Traceback si exception
+    request_id = models.CharField(max_length=64, blank=True)   # Identifiant de requête
+    user_id    = models.IntegerField(null=True, blank=True)     # Utilisateur si authentifié
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    extra      = models.JSONField(default=dict, blank=True)     # Données supplémentaires
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+ 
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Log Système'
+        verbose_name_plural = 'Logs Système'
+        indexes = [
+            models.Index(fields=['-created_at', 'level']),
+            models.Index(fields=['-created_at', 'service']),
+        ]
+ 
+    def __str__(self):
+        return f'[{self.level}] [{self.service}] {self.message[:80]}'            

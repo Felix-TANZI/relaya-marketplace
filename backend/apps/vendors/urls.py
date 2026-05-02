@@ -110,6 +110,8 @@ urlpatterns = [
     path('admin/customers/broadcast/preview/', views.admin_customers_broadcast_preview, name='admin-customers-broadcast-preview'),
     path('admin/customers/broadcast/history/', views.admin_customers_broadcast_history, name='admin-customers-broadcast-history'),
     path('admin/customers/loyalty/', views.admin_customers_loyalty, name='admin-customers-loyalty'),
+    path('admin/logs/',       views.admin_system_logs, name='admin-logs'),
+    path('admin/logs/clear/', views.admin_clear_logs,  name='admin-logs-clear'),
 
     #  ADMINISTRATION - DASHBOARD 
     path('admin/dashboard/stats/',     views.admin_dashboard_stats, name='admin-dashboard-stats'),

@@ -160,6 +160,30 @@ SIMPLE_JWT = {
     "UPDATE_LAST_LOGIN": True,
 }
 
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'database': {
+            'level': 'WARNING',
+            'class': 'apps.vendors.log_handler.DatabaseLogHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'database'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': { 'handlers': ['console', 'database'], 'level': 'WARNING', 'propagate': False },
+        'apps':   { 'handlers': ['console', 'database'], 'level': 'INFO',    'propagate': False },
+    },
+}
+
 # Media files (uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR.parent / 'media'

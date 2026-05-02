@@ -101,7 +101,6 @@ import VendorsOverviewPage     from '@/features/admin/vendors/VendorsOverviewPag
 import SubscriptionsPage      from '@/features/admin/vendors/SubscriptionsPage';
 import AdminDisputeDetailPage from '@/features/admin/operations/DisputeDetailPage';
 import DeliveriesListPage from '@/features/admin/deliveries/DeliveriesListPage';
-import DeliveriesZonesPage from '@/features/admin/deliveries/DeliveriesZonesPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — CLIENT MANAGEMENT (pages complètes)
@@ -255,10 +254,6 @@ export const router = createBrowserRouter([
       {
         path: 'deliveries',
         element: <DeliveriesListPage />,
-      },
-      {
-        path: 'deliveries/zones',
-        element: <DeliveriesZonesPage />,
       },
       {
         path: 'deliveries/performance',

@@ -85,7 +85,6 @@ const SECTIONS: NavSection[] = [
     items: [
       { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid },
       { key: 'deliveries_list',     path: '/admin/deliveries',             icon: Truck, end: true },
-      { key: 'deliveries_zones',    path: '/admin/deliveries/zones',       icon: Map },
       { key: 'deliveries_perf',     path: '/admin/deliveries/performance', icon: BarChart3,   soon: true },
     ],
   },

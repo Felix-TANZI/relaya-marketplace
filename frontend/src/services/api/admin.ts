@@ -579,6 +579,12 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
+  deleteCourier: async (id: number): Promise<{ detail: string }> =>
+    http<{ detail: string }>(`/api/auth/admin/couriers/${id}/`, {
+      method: 'DELETE',
+      headers: authHeader(),
+    }),
+
   // ── DASHBOARD ─────────────────────────────────────────────────────────────
 
   /** Statistiques globales du dashboard */

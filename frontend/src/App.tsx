@@ -171,7 +171,6 @@ function App() {
           {/* ── Delivery Management (stub — attente camarade) ── */}
           <Route path="deliveries/overview"    element={<AdminStub titleKey="section_deliveries" />} />
           <Route path="deliveries"             element={<AdminStub titleKey="deliveries_list" />} />
-          <Route path="deliveries/zones"       element={<AdminStub titleKey="deliveries_zones" />} />
           <Route path="deliveries/performance" element={<AdminStub titleKey="deliveries_perf" />} />
 
           {/* ── Operations ── */}

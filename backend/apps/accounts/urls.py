@@ -7,6 +7,7 @@ from .views import (
     bootstrap_admin,
     bootstrap_demo_accounts,
     admin_create_courier,
+    admin_delete_courier,
     admin_list_couriers,
     RegisterView,
     me,
@@ -40,6 +41,7 @@ urlpatterns = [
     path("bootstrap/demo-accounts/", bootstrap_demo_accounts, name="auth-bootstrap-demo-accounts"),
     path("admin/couriers/", admin_list_couriers, name="auth-admin-list-couriers"),
     path("admin/couriers/create/", admin_create_courier, name="auth-admin-create-courier"),
+    path("admin/couriers/<int:pk>/", admin_delete_courier, name="auth-admin-delete-courier"),
 
     # ── Authentification ──────────────────────────────────────────────────────
     path("register/",       RegisterView.as_view(),                name="auth-register"),

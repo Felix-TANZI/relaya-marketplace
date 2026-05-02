@@ -1189,7 +1189,6 @@
     section_deliveries:   'Delivery Management',
     deliveries_overview:  'Vue d\'ensemble',
     deliveries_list:      'Tous les Livreurs',
-    deliveries_zones:     'Zones & Routing',
     deliveries_perf:      'Performance',
  
     // Operations

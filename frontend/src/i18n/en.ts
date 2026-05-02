@@ -1200,7 +1200,6 @@
     section_deliveries:   'Delivery Management',
     deliveries_overview:  'Overview',
     deliveries_list:      'All Drivers',
-    deliveries_zones:     'Zones & Routing',
     deliveries_perf:      'Performance',
     section_operations:   'Operations',
     orders:               'Orders & Escrow',

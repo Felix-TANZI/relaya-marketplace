@@ -284,6 +284,20 @@ def admin_create_courier(request):
     return Response(CourierProfileSerializer(courier).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["Admin"], summary="Delete courier account")
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_delete_courier(request, pk):
+    profile = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
+    user = profile.user
+    username = user.username
+    user.delete()
+    return Response(
+        {"detail": f"Livreur {username} supprime."},
+        status=status.HTTP_200_OK,
+    )
+
+
 @extend_schema(tags=["Auth"], summary="Get current user profile")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])

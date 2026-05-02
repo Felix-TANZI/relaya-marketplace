@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bike, CheckCircle2, LoaderCircle, MapPin, Plus, RefreshCw, Search, Truck } from 'lucide-react';
+import { Bike, CheckCircle2, LoaderCircle, MapPin, Plus, RefreshCw, Search, Trash2, Truck } from 'lucide-react';
 import { adminApi, type AdminCourier, type CreateCourierPayload } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -31,6 +31,7 @@ export default function DeliveriesListPage() {
   const [couriers, setCouriers] = useState<AdminCourier[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [query, setQuery] = useState('');
   const [form, setForm] = useState<CreateCourierPayload>(initialForm);
 
@@ -74,6 +75,22 @@ export default function DeliveriesListPage() {
       showToast('Creation du livreur impossible', 'error');
     } finally {
       setCreating(false);
+    }
+  };
+
+  const deleteCourier = async (courier: AdminCourier) => {
+    const confirmed = window.confirm(`Supprimer le livreur ${courier.phone} ? Cette action supprimera aussi son compte.`);
+    if (!confirmed) return;
+
+    setDeletingId(courier.id);
+    try {
+      await adminApi.deleteCourier(courier.id);
+      setCouriers((current) => current.filter((item) => item.id !== courier.id));
+      showToast('Livreur supprime', 'success');
+    } catch {
+      showToast('Suppression du livreur impossible', 'error');
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -190,9 +207,22 @@ export default function DeliveriesListPage() {
                     </div>
                   </div>
                 </div>
-                <span className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ color: courier.is_approved ? '#16A34A' : '#F59E0B', background: courier.is_approved ? 'rgba(22,163,74,.12)' : 'rgba(245,158,11,.12)' }}>
-                  {courier.is_approved ? 'Approuve' : 'En attente'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ color: courier.is_approved ? '#16A34A' : '#F59E0B', background: courier.is_approved ? 'rgba(22,163,74,.12)' : 'rgba(245,158,11,.12)' }}>
+                    {courier.is_approved ? 'Approuve' : 'En attente'}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteCourier(courier)}
+                    disabled={deletingId === courier.id}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
+                    style={{ color: T.red, background: `${T.red}14`, border: `1px solid ${T.red}30` }}
+                    title="Supprimer le livreur"
+                    aria-label="Supprimer le livreur"
+                  >
+                    {deletingId === courier.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                  </button>
+                </div>
               </div>
               <div className="mt-4 flex items-center gap-2 text-[12px]" style={{ color: T.muted }}>
                 <Truck size={13} /> {vehicleLabels[courier.vehicle_type]}

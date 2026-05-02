@@ -267,4 +267,14 @@ export const courierApi = {
       body: JSON.stringify(payload),
     });
   },
+
+  listAvailableShipments: async (): Promise<CourierShipment[]> => {
+    return http<CourierShipment[]>("/api/shipping/available/");
+  },
+
+  claimShipment: async (id: number): Promise<CourierShipment> => {
+    return http<CourierShipment>(`/api/shipping/available/${id}/claim/`, {
+      method: "POST",
+    });
+  },
 };

@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
+import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,11 +42,14 @@ export default function OrdersHistoryPage() {
     ordersApi
       .getMyOrders()
       .then((data) => {
-        setOrders(data);
+        setOrders(getResilientOrders(data));
       })
       .catch(() => {
-        setOrders([]);
-        setError("Impossible de charger les commandes depuis le backend.");
+        const fallback = getResilientOrders();
+        setOrders(fallback);
+        if (fallback.length === 0) {
+          setError("Impossible de charger les commandes depuis le backend.");
+        }
       })
       .finally(() => setLoading(false));
   }, []);

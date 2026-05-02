@@ -600,3 +600,77 @@ class CourierSOSAlertView(generics.GenericAPIView):
             action_url="/courier",
         )
         return Response(CourierSOSAlertSerializer(alert).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Shipping"], summary="Livraisons disponibles (non assignées, dans la zone du livreur)")
+class CourierAvailableShipmentsView(generics.ListAPIView):
+    serializer_class = ShipmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        courier = _get_active_courier(self.request.user)
+        city = (courier.city or "").strip()
+        zones = courier.zones if isinstance(courier.zones, list) else []
+
+        qs = Shipment.objects.filter(
+            status=Shipment.Status.CREATED,
+            courier=None,
+        ).select_related("order", "order__user")
+
+        if city:
+            from django.db.models import Q
+            city_filter = Q(order__city__iexact=city)
+            for z in zones:
+                city_filter |= Q(order__city__iexact=str(z))
+            qs = qs.filter(city_filter)
+
+        return qs.order_by("created_at")
+
+
+@extend_schema(tags=["Shipping"], summary="Réclamer une livraison disponible (auto-assignement)")
+class CourierClaimShipmentView(generics.GenericAPIView):
+    serializer_class = ShipmentSerializer
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        courier = _get_active_courier(request.user)
+
+        full_name = request.user.get_full_name().strip() or request.user.username
+        updated_count = Shipment.objects.filter(
+            id=id,
+            status=Shipment.Status.CREATED,
+            courier=None,
+        ).update(
+            courier=courier,
+            courier_name=full_name,
+            courier_phone=courier.phone or "",
+            status=Shipment.Status.ASSIGNED,
+        )
+
+        if updated_count == 0:
+            return Response(
+                {"detail": "Livraison déjà prise en charge ou introuvable."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        shipment = Shipment.objects.select_related("order", "courier", "courier__user").get(id=id)
+
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.ASSIGNED,
+            message="Mission acceptée par le livreur",
+            location=courier.city or "",
+        )
+
+        order = shipment.order
+        order.assign_driver()
+
+        UserNotification.objects.create(
+            user=courier.user,
+            title=f"Livraison #{order.id} prise en charge",
+            message=f"Vous avez accepté la livraison vers {order.city} - {order.address}.",
+            notification_type=UserNotification.NotificationType.ORDER,
+            action_url="/courier",
+        )
+
+        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)

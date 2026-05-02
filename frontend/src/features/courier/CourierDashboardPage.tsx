@@ -244,6 +244,7 @@ export default function CourierDashboardPage() {
   const [notifications, setNotifications] = useState<CourierNotification[]>([]);
   const [selectedNotification, setSelectedNotification] = useState<CourierNotification | null>(null);
   const [shipments, setShipments] = useState<CourierShipment[]>([]);
+  const [availableShipmentsFromAPI, setAvailableShipmentsFromAPI] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
   const [scanCode, setScanCode] = useState("");
@@ -271,11 +272,16 @@ export default function CourierDashboardPage() {
       courierApi.getSettings(),
       courierApi.getDisputes(),
       courierApi.getNotifications(),
+      courierApi.listAvailableShipments(),
     ])
-      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, networkResult, settingsResult, disputesResult, notificationsResult]) => {
+      .then(([profileResult, applicationResult, shipmentsResult, dashboardResult, networkResult, settingsResult, disputesResult, notificationsResult, availableResult]) => {
         const resolvedShipments =
           shipmentsResult.status === "fulfilled"
             ? shipmentsResult.value
+            : [];
+        const resolvedAvailable =
+          availableResult.status === "fulfilled"
+            ? availableResult.value
             : [];
 
         if (profileResult.status === "fulfilled") setUser(profileResult.value);
@@ -286,7 +292,8 @@ export default function CourierDashboardPage() {
         if (disputesResult.status === "fulfilled") setDisputes(disputesResult.value);
         if (notificationsResult.status === "fulfilled") setNotifications(notificationsResult.value);
         setShipments(resolvedShipments);
-        setSelectedShipmentId((current) => current ?? resolvedShipments[0]?.id ?? null);
+        setAvailableShipmentsFromAPI(resolvedAvailable);
+        setSelectedShipmentId((current) => current ?? resolvedShipments[0]?.id ?? resolvedAvailable[0]?.id ?? null);
       })
       .finally(() => {
         window.clearInterval(interval);
@@ -317,10 +324,7 @@ export default function CourierDashboardPage() {
     () => shipments.filter((shipment) => ["DELIVERED", "FAILED"].includes(shipment.status)),
     [shipments],
   );
-  const availableShipments = useMemo(
-    () => shipments.filter((shipment) => shipment.status === "CREATED"),
-    [shipments],
-  );
+  const availableShipments = availableShipmentsFromAPI;
   const tourShipments = useMemo(
     () =>
       [...activeShipments, ...completedShipments].sort(
@@ -330,9 +334,11 @@ export default function CourierDashboardPage() {
   );
   const selectedShipment =
     shipments.find((shipment) => shipment.id === selectedShipmentId) ??
+    availableShipmentsFromAPI.find((shipment) => shipment.id === selectedShipmentId) ??
     activeShipments[0] ??
     shipments[0] ??
     null;
+  const selectedIsAvailable = availableShipmentsFromAPI.some((s) => s.id === selectedShipmentId);
   const selectedShipmentAccepted = Boolean(
     selectedShipment?.events.some((event) =>
       event.status === "ASSIGNED" && ["ACCEPT", "ACCEPTED", "Acceptee", "Accept"].includes(event.message),
@@ -388,6 +394,22 @@ export default function CourierDashboardPage() {
       );
       if (action === "NOTE") setNoteDraft("");
       setActionFeedback("Action appliquee localement. La synchronisation backend sera a reverifier.");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleClaimShipment = async (id: number) => {
+    setActionLoading("CLAIM");
+    setActionFeedback("");
+    try {
+      const claimed = await courierApi.claimShipment(id);
+      setAvailableShipmentsFromAPI((prev) => prev.filter((s) => s.id !== id));
+      setShipments((prev) => [claimed, ...prev]);
+      setSelectedShipmentId(claimed.id);
+      setActionFeedback("Mission prise en charge avec succès.");
+    } catch {
+      setActionFeedback("Impossible de prendre cette mission. Elle a peut-être déjà été assignée.");
     } finally {
       setActionLoading(null);
     }
@@ -944,6 +966,17 @@ export default function CourierDashboardPage() {
             </div>
 
             <div className="mt-5 flex flex-wrap gap-3">
+              {selectedIsAvailable && selectedShipment.status === "CREATED" ? (
+                <button
+                  type="button"
+                  onClick={() => handleClaimShipment(selectedShipment.id)}
+                  disabled={Boolean(actionLoading)}
+                  className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#3B82F6,#1D4ED8)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(59,130,246,.28)] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {actionLoading === "CLAIM" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
+                  {actionLoading === "CLAIM" ? "Prise en charge..." : "Prendre la mission"}
+                </button>
+              ) : null}
               {selectedShipment.status === "ASSIGNED" && !selectedShipmentAccepted ? (
                 <>
                   <button

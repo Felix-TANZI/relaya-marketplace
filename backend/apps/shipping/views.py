@@ -609,22 +609,11 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
 
     def get_queryset(self):
         courier = _get_active_courier(self.request.user)
-        city = (courier.city or "").strip()
-        zones = courier.zones if isinstance(courier.zones, list) else []
-
-        qs = Shipment.objects.filter(
+        return Shipment.objects.filter(
             status=Shipment.Status.CREATED,
             courier=None,
-        ).select_related("order", "order__user")
-
-        if city:
-            from django.db.models import Q
-            city_filter = Q(order__city__iexact=city)
-            for z in zones:
-                city_filter |= Q(order__city__iexact=str(z))
-            qs = qs.filter(city_filter)
-
-        return qs.order_by("created_at")
+            order__delivery_method=Order.DeliveryMethod.DELIVERY,
+        ).select_related("order", "order__user").order_by("created_at")
 
 
 @extend_schema(tags=["Shipping"], summary="Réclamer une livraison disponible (auto-assignement)")

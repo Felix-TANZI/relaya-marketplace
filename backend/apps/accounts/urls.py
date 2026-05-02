@@ -7,8 +7,10 @@ from .views import (
     bootstrap_admin,
     bootstrap_demo_accounts,
     admin_create_courier,
+    admin_create_user,
     admin_delete_courier,
     admin_list_couriers,
+    admin_update_courier,
     RegisterView,
     me,
     profile,
@@ -41,6 +43,8 @@ urlpatterns = [
     path("bootstrap/demo-accounts/", bootstrap_demo_accounts, name="auth-bootstrap-demo-accounts"),
     path("admin/couriers/", admin_list_couriers, name="auth-admin-list-couriers"),
     path("admin/couriers/create/", admin_create_courier, name="auth-admin-create-courier"),
+    path("admin/users/create/", admin_create_user, name="auth-admin-create-user"),
+    path("admin/couriers/<int:pk>/update/", admin_update_courier, name="auth-admin-update-courier"),
     path("admin/couriers/<int:pk>/", admin_delete_courier, name="auth-admin-delete-courier"),
 
     # ── Authentification ──────────────────────────────────────────────────────

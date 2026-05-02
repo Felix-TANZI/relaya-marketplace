@@ -66,6 +66,10 @@ import AdminDashboardPage from './features/admin/AdminDashboardPage';
 // Ces pages remplacent UsersManagementPage / UserDetailPage
 import UsersManagementPage from './features/admin/UsersManagementPage';
 import UserDetailPage      from './features/admin/UserDetailPage';
+import UserCreatePage      from './features/admin/customers/UserCreatePage';
+import DeliveriesListPage  from './features/admin/deliveries/DeliveriesListPage';
+import DeliveriesZonesPage from './features/admin/deliveries/DeliveriesZonesPage';
+import DeliveriesPerformancePage from './features/admin/deliveries/DeliveriesPerformancePage';
 
 // ── Espace admin — Vendor Management ─────────────────────────────────────────
 import VendorsManagementPage from './features/admin/VendorsManagementPage';
@@ -153,6 +157,7 @@ function App() {
           {/* ── Client Management ── */}
           <Route path="customers/overview"  element={<UsersManagementPage />} />
           <Route path="customers"           element={<UsersManagementPage />} />
+          <Route path="customers/create"    element={<UserCreatePage />} />
           <Route path="customers/:id"       element={<UserDetailPage />} />
           <Route path="customers/loyalty"   element={<AdminStub titleKey="customers_loyalty" />} />
           <Route path="customers/broadcast" element={<AdminStub titleKey="customers_broadcast" />} />
@@ -168,10 +173,11 @@ function App() {
           <Route path="vendors/certifications" element={<AdminStub titleKey="vendors_certifications" />} />
           <Route path="vendors/modifications"  element={<AdminStub titleKey="vendors_modifications" />} />
 
-          {/* ── Delivery Management (stub — attente camarade) ── */}
+          {/* ── Delivery Management ── */}
           <Route path="deliveries/overview"    element={<AdminStub titleKey="section_deliveries" />} />
-          <Route path="deliveries"             element={<AdminStub titleKey="deliveries_list" />} />
-          <Route path="deliveries/performance" element={<AdminStub titleKey="deliveries_perf" />} />
+          <Route path="deliveries"             element={<DeliveriesListPage />} />
+          <Route path="deliveries/zones"       element={<DeliveriesZonesPage />} />
+          <Route path="deliveries/performance" element={<DeliveriesPerformancePage />} />
 
           {/* ── Operations ── */}
           <Route path="orders"               element={<OrdersManagementPage />} />

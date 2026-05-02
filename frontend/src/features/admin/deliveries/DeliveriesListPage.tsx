@@ -1,21 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bike, CheckCircle2, LoaderCircle, MapPin, Plus, RefreshCw, Search, Trash2, Truck } from 'lucide-react';
-import { adminApi, type AdminCourier, type CreateCourierPayload } from '@/services/api/admin';
+import { Bike, CheckCircle2, Edit3, LoaderCircle, MapPin, RefreshCw, Search, Trash2, Truck, X } from 'lucide-react';
+import { adminApi, type AdminCourier, type UpdateCourierPayload } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
-
-const initialForm: CreateCourierPayload = {
-  username: '',
-  email: '',
-  password: 'Livreur123!',
-  first_name: '',
-  last_name: '',
-  phone: '',
-  city: 'Douala',
-  zones: ['Akwa', 'Bonapriso'],
-  vehicle_type: 'MOTORBIKE',
-  id_card: '',
-};
 
 const vehicleLabels: Record<AdminCourier['vehicle_type'], string> = {
   MOTORBIKE: 'Moto',
@@ -25,15 +12,29 @@ const vehicleLabels: Record<AdminCourier['vehicle_type'], string> = {
   VAN: 'Camionnette',
 };
 
+function toEditForm(courier: AdminCourier): Required<Pick<UpdateCourierPayload, 'phone' | 'city' | 'zones' | 'vehicle_type' | 'id_card' | 'is_active' | 'is_approved' | 'is_online'>> {
+  return {
+    phone: courier.phone,
+    city: courier.city,
+    zones: courier.zones,
+    vehicle_type: courier.vehicle_type,
+    id_card: courier.id_card,
+    is_active: courier.is_active,
+    is_approved: courier.is_approved,
+    is_online: courier.is_online,
+  };
+}
+
 export default function DeliveriesListPage() {
   const T = useAdminTheme();
   const { showToast } = useToast();
   const [couriers, setCouriers] = useState<AdminCourier[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
-  const [deletingId, setDeletingId] = useState<number | null>(null);
   const [query, setQuery] = useState('');
-  const [form, setForm] = useState<CreateCourierPayload>(initialForm);
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [savingId, setSavingId] = useState<number | null>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [editForm, setEditForm] = useState<ReturnType<typeof toEditForm> | null>(null);
 
   const loadCouriers = async () => {
     setLoading(true);
@@ -60,21 +61,28 @@ export default function DeliveriesListPage() {
     );
   }, [couriers, query]);
 
-  const updateForm = <K extends keyof CreateCourierPayload>(key: K, value: CreateCourierPayload[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
+  const startEdit = (courier: AdminCourier) => {
+    setEditingId(courier.id);
+    setEditForm(toEditForm(courier));
   };
 
-  const createCourier = async () => {
-    setCreating(true);
+  const updateField = <K extends keyof NonNullable<typeof editForm>>(key: K, value: NonNullable<typeof editForm>[K]) => {
+    setEditForm((current) => current ? { ...current, [key]: value } : current);
+  };
+
+  const saveCourier = async (courier: AdminCourier) => {
+    if (!editForm) return;
+    setSavingId(courier.id);
     try {
-      await adminApi.createCourier(form);
-      showToast('Livreur cree et approuve', 'success');
-      setForm(initialForm);
-      await loadCouriers();
+      const updated = await adminApi.updateCourier(courier.id, editForm);
+      setCouriers((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setEditingId(null);
+      setEditForm(null);
+      showToast('Livreur mis a jour', 'success');
     } catch {
-      showToast('Creation du livreur impossible', 'error');
+      showToast('Modification du livreur impossible', 'error');
     } finally {
-      setCreating(false);
+      setSavingId(null);
     }
   };
 
@@ -99,10 +107,10 @@ export default function DeliveriesListPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: T.text }}>
-            Livreurs
+            Tous les livreurs
           </h1>
           <p style={{ color: T.muted, fontSize: 13 }}>
-            Creation, activation et suivi des comptes livreurs.
+            Liste, modification et suppression des comptes livreurs.
           </p>
         </div>
         <button
@@ -115,66 +123,6 @@ export default function DeliveriesListPage() {
           Actualiser
         </button>
       </div>
-
-      <section className="rounded-2xl p-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-        <div className="mb-4 flex items-center gap-2" style={{ color: T.text, fontWeight: 800 }}>
-          <Plus size={16} style={{ color: T.red }} />
-          Creer un livreur
-        </div>
-        <div className="grid gap-3 md:grid-cols-3">
-          {[
-            ['username', 'Nom utilisateur'],
-            ['email', 'Email'],
-            ['password', 'Mot de passe'],
-            ['first_name', 'Prenom'],
-            ['last_name', 'Nom'],
-            ['phone', 'Telephone'],
-            ['city', 'Ville'],
-            ['id_card', 'Piece identite'],
-          ].map(([key, label]) => (
-            <label key={key} className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-              {label}
-              <input
-                type={key === 'password' ? 'password' : 'text'}
-                value={String(form[key as keyof CreateCourierPayload] ?? '')}
-                onChange={(event) => updateForm(key as keyof CreateCourierPayload, event.target.value as never)}
-                className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-                style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
-              />
-            </label>
-          ))}
-          <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-            Vehicule
-            <select
-              value={form.vehicle_type}
-              onChange={(event) => updateForm('vehicle_type', event.target.value as CreateCourierPayload['vehicle_type'])}
-              className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-              style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
-            >
-              {Object.entries(vehicleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-            </select>
-          </label>
-          <label className="md:col-span-2 text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-            Zones
-            <input
-              value={form.zones.join(', ')}
-              onChange={(event) => updateForm('zones', event.target.value.split(',').map((zone) => zone.trim()).filter(Boolean))}
-              className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none"
-              style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
-            />
-          </label>
-        </div>
-        <button
-          type="button"
-          onClick={createCourier}
-          disabled={creating}
-          className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[12px] font-bold text-white"
-          style={{ background: T.red, opacity: creating ? 0.7 : 1 }}
-        >
-          {creating ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-          Creer et approuver
-        </button>
-      </section>
 
       <section className="rounded-2xl" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <div className="flex flex-wrap items-center justify-between gap-3 p-4" style={{ borderBottom: `1px solid ${T.border}` }}>
@@ -193,47 +141,90 @@ export default function DeliveriesListPage() {
         <div className="grid gap-3 p-4 md:grid-cols-2 xl:grid-cols-3">
           {loading ? (
             <div style={{ color: T.muted }}>Chargement...</div>
-          ) : filtered.map((courier) => (
-            <article key={courier.id} className="rounded-2xl p-4" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: courier.is_online ? '#10B981' : T.red }}>
-                    <Bike size={18} />
-                  </div>
-                  <div>
-                    <div style={{ color: T.text, fontWeight: 800 }}>{courier.phone}</div>
-                    <div className="mt-1 flex items-center gap-1 text-[12px]" style={{ color: T.muted }}>
-                      <MapPin size={12} /> {courier.city}
+          ) : filtered.map((courier) => {
+            const editing = editingId === courier.id && editForm;
+            return (
+              <article key={courier.id} className="rounded-2xl p-4" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl text-white" style={{ background: courier.is_online ? '#10B981' : T.red }}>
+                      <Bike size={18} />
+                    </div>
+                    <div>
+                      <div style={{ color: T.text, fontWeight: 800 }}>{courier.phone}</div>
+                      <div className="mt-1 flex items-center gap-1 text-[12px]" style={{ color: T.muted }}>
+                        <MapPin size={12} /> {courier.city}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => startEdit(courier)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg" style={{ color: T.text, background: T.card, border: `1px solid ${T.border}` }} aria-label="Modifier">
+                      <Edit3 size={14} />
+                    </button>
+                    <button type="button" onClick={() => deleteCourier(courier)} disabled={deletingId === courier.id} className="inline-flex h-8 w-8 items-center justify-center rounded-lg disabled:opacity-50" style={{ color: T.red, background: `${T.red}14`, border: `1px solid ${T.red}30` }} aria-label="Supprimer">
+                      {deletingId === courier.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ color: courier.is_approved ? '#16A34A' : '#F59E0B', background: courier.is_approved ? 'rgba(22,163,74,.12)' : 'rgba(245,158,11,.12)' }}>
-                    {courier.is_approved ? 'Approuve' : 'En attente'}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteCourier(courier)}
-                    disabled={deletingId === courier.id}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg transition hover:opacity-80 disabled:cursor-not-allowed disabled:opacity-50"
-                    style={{ color: T.red, background: `${T.red}14`, border: `1px solid ${T.red}30` }}
-                    title="Supprimer le livreur"
-                    aria-label="Supprimer le livreur"
-                  >
-                    {deletingId === courier.id ? <LoaderCircle size={14} className="animate-spin" /> : <Trash2 size={14} />}
-                  </button>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2 text-[12px]" style={{ color: T.muted }}>
-                <Truck size={13} /> {vehicleLabels[courier.vehicle_type]}
-              </div>
-              <div className="mt-3 flex flex-wrap gap-1.5">
-                {courier.zones.map((zone) => (
-                  <span key={zone} className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ color: T.red, background: `${T.red}14` }}>{zone}</span>
-                ))}
-              </div>
-            </article>
-          ))}
+
+                {editing ? (
+                  <div className="mt-4 grid gap-3">
+                    {[
+                      ['phone', 'Telephone'],
+                      ['city', 'Ville'],
+                      ['id_card', 'Piece identite'],
+                    ].map(([key, label]) => (
+                      <label key={key} className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
+                        {label}
+                        <input value={String(editForm[key as 'phone' | 'city' | 'id_card'])} onChange={(event) => updateField(key as 'phone' | 'city' | 'id_card', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
+                      </label>
+                    ))}
+                    <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
+                      Vehicule
+                      <select value={editForm.vehicle_type} onChange={(event) => updateField('vehicle_type', event.target.value as AdminCourier['vehicle_type'])} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}>
+                        {Object.entries(vehicleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                      </select>
+                    </label>
+                    <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
+                      Zones
+                      <input value={editForm.zones.join(', ')} onChange={(event) => updateField('zones', event.target.value.split(',').map((zone) => zone.trim()).filter(Boolean))} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        ['is_active', 'Actif'],
+                        ['is_approved', 'Approuve'],
+                        ['is_online', 'En ligne'],
+                      ].map(([key, label]) => (
+                        <label key={key} className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold" style={{ color: T.text, background: T.card, border: `1px solid ${T.border}` }}>
+                          <input type="checkbox" checked={Boolean(editForm[key as 'is_active' | 'is_approved' | 'is_online'])} onChange={(event) => updateField(key as 'is_active' | 'is_approved' | 'is_online', event.target.checked)} />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" onClick={() => saveCourier(courier)} disabled={savingId === courier.id} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold text-white disabled:opacity-60" style={{ background: T.red }}>
+                        {savingId === courier.id ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Enregistrer
+                      </button>
+                      <button type="button" onClick={() => { setEditingId(null); setEditForm(null); }} className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold" style={{ color: T.text, background: T.card, border: `1px solid ${T.border}` }}>
+                        <X size={14} /> Annuler
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="mt-4 flex items-center gap-2 text-[12px]" style={{ color: T.muted }}>
+                      <Truck size={13} /> {vehicleLabels[courier.vehicle_type]}
+                    </div>
+                    <div className="mt-3 flex flex-wrap gap-1.5">
+                      {courier.zones.map((zone) => (
+                        <span key={zone} className="rounded-full px-2 py-1 text-[10px] font-bold" style={{ color: T.red, background: `${T.red}14` }}>{zone}</span>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </article>
+            );
+          })}
         </div>
       </section>
     </div>

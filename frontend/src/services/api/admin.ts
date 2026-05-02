@@ -187,6 +187,35 @@ export interface CreateCourierPayload {
   id_card: string;
 }
 
+export type AdminCreateUserRole = 'client' | 'vendor' | 'courier' | 'admin';
+
+export interface AdminCreateUserPayload {
+  role: AdminCreateUserRole;
+  username: string;
+  email?: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  city?: string;
+  business_name?: string;
+  business_description?: string;
+  address?: string;
+  id_document?: string;
+  vendor_status?: 'PENDING' | 'APPROVED';
+  zones?: string[];
+  vehicle_type?: AdminCourier['vehicle_type'];
+  id_card?: string;
+  is_approved?: boolean;
+  is_superuser?: boolean;
+}
+
+export type UpdateCourierPayload = Partial<Omit<CreateCourierPayload, 'username'>> & {
+  is_active?: boolean;
+  is_approved?: boolean;
+  is_online?: boolean;
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PRODUCTS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -579,10 +608,24 @@ export const adminApi = {
       body: JSON.stringify(data),
     }),
 
+  updateCourier: async (id: number, data: UpdateCourierPayload): Promise<AdminCourier> =>
+    http<AdminCourier>(`/api/auth/admin/couriers/${id}/update/`, {
+      method: 'PATCH',
+      headers: authHeader(),
+      body: JSON.stringify(data),
+    }),
+
   deleteCourier: async (id: number): Promise<{ detail: string }> =>
     http<{ detail: string }>(`/api/auth/admin/couriers/${id}/`, {
       method: 'DELETE',
       headers: authHeader(),
+    }),
+
+  createUser: async (data: AdminCreateUserPayload): Promise<unknown> =>
+    http<unknown>('/api/auth/admin/users/create/', {
+      method: 'POST',
+      headers: authHeader(),
+      body: JSON.stringify(data),
     }),
 
   // ── DASHBOARD ─────────────────────────────────────────────────────────────

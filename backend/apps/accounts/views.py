@@ -284,6 +284,41 @@ def admin_create_courier(request):
     return Response(CourierProfileSerializer(courier).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["Admin"], summary="Update courier account")
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_update_courier(request, pk):
+    courier = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
+    user = courier.user
+
+    for field in ("email", "first_name", "last_name", "is_active"):
+        if field in request.data:
+            setattr(user, field, request.data[field])
+    if request.data.get("password"):
+        user.set_password(request.data["password"])
+    user.save()
+
+    payload = {
+        "phone": request.data.get("phone", courier.phone),
+        "city": request.data.get("city", courier.city),
+        "zones": request.data.get("zones", courier.zones),
+        "vehicle_type": request.data.get("vehicle_type", courier.vehicle_type),
+        "id_card": request.data.get("id_card", courier.id_card),
+    }
+    if isinstance(payload["zones"], str):
+        payload["zones"] = [zone.strip() for zone in payload["zones"].split(",") if zone.strip()]
+
+    serializer = CourierApplicationSerializer(courier, data=payload, partial=True, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    for field in ("is_active", "is_approved", "is_online"):
+        if field in request.data:
+            setattr(courier, field, bool(request.data[field]))
+    courier.save()
+    return Response(CourierProfileSerializer(courier).data)
+
+
 @extend_schema(tags=["Admin"], summary="Delete courier account")
 @api_view(["DELETE"])
 @permission_classes([IsAdminUser])
@@ -296,6 +331,75 @@ def admin_delete_courier(request, pk):
         {"detail": f"Livreur {username} supprime."},
         status=status.HTTP_200_OK,
     )
+
+
+@extend_schema(tags=["Admin"], summary="Create user by role")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_create_user(request):
+    from apps.vendors.models import VendorProfile
+
+    role = request.data.get("role", "client")
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+    phone = request.data.get("phone", "").strip()
+
+    missing = [field for field in ["role", "username", "password"] if not (request.data.get(field) or "").strip()]
+    if role in {"vendor", "courier"} and not phone:
+        missing.append("phone")
+    if missing:
+        return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+    if User.objects.filter(username=username).exists():
+        return Response({"detail": "Ce nom d'utilisateur existe deja."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        is_active=True,
+    )
+
+    if role == "admin":
+        user.is_staff = True
+        user.is_superuser = bool(request.data.get("is_superuser", True))
+        user.save(update_fields=["is_staff", "is_superuser"])
+    elif role == "vendor":
+        VendorProfile.objects.create(
+            user=user,
+            business_name=request.data.get("business_name", "").strip() or username,
+            business_description=request.data.get("business_description", "").strip() or "Boutique creee par administrateur",
+            phone=phone,
+            address=request.data.get("address", "").strip() or request.data.get("city", "").strip() or "Adresse a completer",
+            city=request.data.get("city", "").strip() or "Douala",
+            id_document=request.data.get("id_document", "").strip(),
+            status=request.data.get("vendor_status", "APPROVED"),
+            approved_at=timezone.now(),
+        )
+    elif role == "courier":
+        zones = request.data.get("zones", [])
+        if isinstance(zones, str):
+            zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
+        CourierProfile.objects.create(
+            user=user,
+            phone=phone,
+            city=request.data.get("city", "").strip() or "Douala",
+            zones=zones,
+            vehicle_type=request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
+            id_card=request.data.get("id_card", "").strip() or "A completer",
+            is_active=True,
+            is_approved=bool(request.data.get("is_approved", True)),
+            is_online=False,
+        )
+    elif role != "client":
+        user.delete()
+        return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile")

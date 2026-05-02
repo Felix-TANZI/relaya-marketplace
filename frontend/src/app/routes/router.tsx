@@ -101,12 +101,15 @@ import VendorsOverviewPage     from '@/features/admin/vendors/VendorsOverviewPag
 import SubscriptionsPage      from '@/features/admin/vendors/SubscriptionsPage';
 import AdminDisputeDetailPage from '@/features/admin/operations/DisputeDetailPage';
 import DeliveriesListPage from '@/features/admin/deliveries/DeliveriesListPage';
+import DeliveriesZonesPage from '@/features/admin/deliveries/DeliveriesZonesPage';
+import DeliveriesPerformancePage from '@/features/admin/deliveries/DeliveriesPerformancePage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — CLIENT MANAGEMENT (pages complètes)
 // ─────────────────────────────────────────────────────────────────────────────
 import CustomersListPage   from '@/features/admin/customers/CustomersListPage';
 import CustomerDetailPage  from '@/features/admin/customers/CustomerDetailPage';
+import UserCreatePage from '@/features/admin/customers/UserCreatePage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — OPERATIONS (pages existantes, conservées)
@@ -231,6 +234,7 @@ export const router = createBrowserRouter([
       // ── CLIENT MANAGEMENT ─────────────────────────────────────────────────
       { path: 'customers/overview', element: <CustomersOverviewPage /> },
       { path: 'customers',           element: <CustomersListPage /> },
+      { path: 'customers/create', element: <UserCreatePage /> },
       { path: 'customers/:id', element: <CustomerDetailPage /> },
       { path: 'customers/loyalty', element: <CustomersLoyaltyPage /> },
       { path: 'customers/broadcast', element: <CustomersBroadcastPage /> },
@@ -256,8 +260,12 @@ export const router = createBrowserRouter([
         element: <DeliveriesListPage />,
       },
       {
+        path: 'deliveries/zones',
+        element: <DeliveriesZonesPage />,
+      },
+      {
         path: 'deliveries/performance',
-        element: <AdminStub title="Performance Livreurs" description="Métriques de performance des livreurs en cours de développement. Bientôt disponible." icon={BarChart3} />,
+        element: <DeliveriesPerformancePage />,
       },
 
       // ── OPERATIONS ────────────────────────────────────────────────────────

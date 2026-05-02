@@ -24,7 +24,7 @@ import {
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
-  LayoutGrid,
+  LayoutGrid, UserPlus,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -63,6 +63,7 @@ const SECTIONS: NavSection[] = [
     items: [
       { key: 'customers_overview',  path: '/admin/customers/overview', icon: LayoutGrid },
       { key: 'customers_list',      path: '/admin/customers',          icon: Users, end: true },
+      { key: 'customers_create',    path: '/admin/customers/create',   icon: UserPlus },
       { key: 'customers_loyalty',   path: '/admin/customers/loyalty',  icon: Award },
       { key: 'customers_broadcast', path: '/admin/customers/broadcast',icon: Megaphone },
     ],
@@ -85,7 +86,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid },
       { key: 'deliveries_list',     path: '/admin/deliveries',             icon: Truck, end: true },
-      { key: 'deliveries_perf',     path: '/admin/deliveries/performance', icon: BarChart3,   soon: true },
+      { key: 'deliveries_zones',    path: '/admin/deliveries/zones',       icon: Map },
+      { key: 'deliveries_perf',     path: '/admin/deliveries/performance', icon: BarChart3 },
     ],
   },
   {

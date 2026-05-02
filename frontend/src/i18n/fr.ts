@@ -1171,6 +1171,7 @@
     section_clients:      'Client Management',
     customers_overview:   'Vue d\'ensemble',
     customers_list:       'Tous les Clients',
+    customers_create:     'Créer un utilisateur',
     customers_loyalty:    'Fidélité & Segments',
     customers_broadcast:  'Broadcast',
  
@@ -1189,6 +1190,7 @@
     section_deliveries:   'Delivery Management',
     deliveries_overview:  'Vue d\'ensemble',
     deliveries_list:      'Tous les Livreurs',
+    deliveries_zones:     'Zones & Routing',
     deliveries_perf:      'Performance',
  
     // Operations

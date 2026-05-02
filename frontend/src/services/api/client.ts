@@ -26,6 +26,33 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (!response.ok) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      return null;
+    }
+
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access);
+    return data.access;
+  } catch {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    return null;
+  }
+}
+
 async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
   
@@ -43,7 +70,6 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 
   // Récupérer le token d'authentification depuis le stockage local
-const token = localStorage.getItem('access_token');
 const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
 const headers: Record<string, string> = {};
 
@@ -56,15 +82,24 @@ if (!isFormData && !headers['Content-Type']) {
   headers['Content-Type'] = 'application/json';
 }
 
-// Ajouter le token si présent
-if (token) {
-  headers['Authorization'] = `Bearer ${token}`;
-}
+const token = localStorage.getItem('access_token');
+if (token) headers['Authorization'] = `Bearer ${token}`;
 
-const response = await fetch(url, {
+let response = await fetch(url, {
   ...fetchOptions,
   headers,
 });
+
+  if (response.status === 401 && localStorage.getItem('refresh_token')) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+      });
+    }
+  }
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => "");

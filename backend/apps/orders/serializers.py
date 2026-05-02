@@ -253,6 +253,43 @@ class OrderCreateSerializer(serializers.Serializer):
         for item_data in order_items_data:
             OrderItem.objects.create(order=order, **item_data)
 
+        vendor_users = {
+            item_data['product'].vendor
+            for item_data in order_items_data
+            if item_data['product'].vendor_id
+        }
+        if not vendor_users:
+            from apps.vendors.models import VendorProfile
+
+            fallback_vendor = (
+                VendorProfile.objects.filter(status=VendorProfile.Status.APPROVED)
+                .filter(Q(city__iexact=order.city) | Q(city__isnull=True) | Q(city=""))
+                .select_related("user")
+                .order_by("created_at")
+                .first()
+            )
+            if not fallback_vendor:
+                fallback_vendor = (
+                    VendorProfile.objects.filter(status=VendorProfile.Status.APPROVED)
+                    .select_related("user")
+                    .order_by("created_at")
+                    .first()
+                )
+            if fallback_vendor:
+                vendor_users.add(fallback_vendor.user)
+
+        for vendor_user in vendor_users:
+            UserNotification.objects.create(
+                user=vendor_user,
+                title=f"Commande initiée à {order.city}",
+                message=(
+                    f"Une commande a été initiée à {order.city}. "
+                    f"Total estimé: {order.total_xaf} FCFA. Consulte ton espace vendeur pour la préparer."
+                ),
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url="/seller/orders",
+            )
+
         shipment = Shipment.objects.create(order=order, status=Shipment.Status.CREATED)
         ShipmentEvent.objects.create(
             shipment=shipment,

@@ -204,7 +204,7 @@ export const courierApi = {
   },
 
   getNotifications: async (): Promise<CourierNotification[]> => {
-    return http<CourierNotification[]>("/api/auth/notifications/");
+    return http<CourierNotification[]>("/api/auth/notifications/?audience=courier");
   },
 
   getDisputes: async (): Promise<CourierDispute[]> => {

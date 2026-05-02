@@ -112,6 +112,8 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       await runPayment();
+    } catch {
+      // L'erreur est deja affichee dans runPayment.
     } finally {
       setLoading(false);
     }

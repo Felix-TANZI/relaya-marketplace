@@ -73,7 +73,7 @@ export const customerApi = {
     api.delete<void>(`/auth/favorites/${favoriteId}/`),
 
   getNotifications: async (): Promise<CustomerNotification[]> =>
-    api.get<CustomerNotification[]>('/auth/notifications/'),
+    api.get<CustomerNotification[]>('/auth/notifications/?audience=customer'),
 
   markNotificationRead: async (id: number): Promise<CustomerNotification> =>
     api.post<CustomerNotification>(`/auth/notifications/${id}/read/`),

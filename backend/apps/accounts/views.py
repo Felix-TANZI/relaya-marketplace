@@ -31,6 +31,7 @@ from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
 from django.utils.crypto import constant_time_compare
+from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer
 from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
@@ -700,7 +701,21 @@ class NotificationsListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        return UserNotification.objects.filter(user=self.request.user)
+        qs = UserNotification.objects.filter(user=self.request.user)
+        audience = (self.request.query_params.get("audience") or "customer").strip().lower()
+
+        if audience in {"courier", "driver", "livreur"}:
+            return qs.filter(action_url__startswith="/courier")
+        if audience in {"vendor", "seller", "vendeur"}:
+            return qs.filter(action_url__startswith="/seller")
+        if audience == "admin":
+            return qs.filter(action_url__startswith="/admin")
+
+        return qs.exclude(
+            Q(action_url__startswith="/courier")
+            | Q(action_url__startswith="/seller")
+            | Q(action_url__startswith="/admin")
+        )
 
 
 @extend_schema(tags=["Client"], summary="Mark one notification as read")

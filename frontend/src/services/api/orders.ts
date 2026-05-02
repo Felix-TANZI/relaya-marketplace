@@ -12,6 +12,7 @@ export interface OrderItem {
 
 export interface OrderCreateData {
   delivery_method?: 'DELIVERY' | 'PICKUP';
+  delivery_mode?: 'DELIVERY' | 'PICKUP';
   city: 'YAOUNDE' | 'DOUALA';
   address: string;
   customer_phone: string;
@@ -28,7 +29,13 @@ export const ordersApi = {
    * Créer une commande
    */
   create: async (data: OrderCreateData): Promise<Order> => {
-    return api.post<Order>('/orders/', data);
+    const payload = {
+      ...data,
+      delivery_mode: data.delivery_mode ?? data.delivery_method ?? 'DELIVERY',
+    };
+    delete payload.delivery_method;
+
+    return api.post<Order>('/orders/', payload);
   },
 
   /**

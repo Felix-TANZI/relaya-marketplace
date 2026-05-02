@@ -5,7 +5,6 @@ import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, 
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
-import { saveMockOrder } from '@/data/mockOrders';
 import { useToast } from '@/context/ToastContext';
 
 /* ── Confetti ── */
@@ -69,6 +68,7 @@ export default function CheckoutPage() {
     try {
       const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
       const order = await ordersApi.create({
+        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
         city: cityMap[formData.city] || 'YAOUNDE',
         address: isPickup ? 'Retrait au centre BelivaY' : formData.address,
         customer_phone: formData.phone,
@@ -77,35 +77,15 @@ export default function CheckoutPage() {
         cart_items: items.map((item) => ({ product_id: item.id, qty: item.quantity })),
       });
       orderId = order.id;
-    } catch {
-      // API unavailable — save mock order to localStorage so it shows in orders page
-      saveMockOrder({
-        id: orderId,
-        user: 1,
-        customer_email: null,
-        customer_phone: formData.phone,
-        city: formData.city,
-        address: isPickup ? 'Retrait au centre BelivaY' : formData.address,
-        note: isPickup ? 'CLICK_AND_COLLECT' : null,
-        payment_status: 'PAID',
-        fulfillment_status: 'PROCESSING',
-        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
-        subtotal_xaf: total,
-        delivery_fee_xaf: shippingCost,
-        total_xaf: finalTotal,
-        is_paid: true,
-        can_be_fulfilled: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        items: items.map((item, idx) => ({
-          id: idx + 1,
-          product: item.id,
-          title_snapshot: item.name,
-          price_xaf_snapshot: item.price,
-          qty: item.quantity,
-          line_total_xaf: item.price * item.quantity,
-        })),
-      });
+    } catch (error) {
+      setPayOverlay(false);
+      showToast(
+        error instanceof Error
+          ? `Commande refusee par le backend: ${error.message}`
+          : "Commande refusee par le backend.",
+        "error",
+      );
+      throw error;
     }
     clearCart();
     setPayOverlay(false);
@@ -113,7 +93,7 @@ export default function CheckoutPage() {
     setStep('success');
     window.dispatchEvent(new Event("belivay-new-notification"));
     requestAnimationFrame(() => { if (confettiRef.current) launchConfetti(confettiRef.current); });
-  }, [formData, isPickup, items, clearCart]);
+  }, [formData, isPickup, items, clearCart, showToast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -123,8 +103,11 @@ export default function CheckoutPage() {
       return;
     }
     setLoading(true);
-    await runPayment();
-    setLoading(false);
+    try {
+      await runPayment();
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Redirect to cart if empty

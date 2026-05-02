@@ -67,9 +67,13 @@ const response = await fetch(url, {
 });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
+    const errorText = await response.text().catch(() => "");
     // Silent in production — no console.error spam
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+    throw new Error(
+      errorText
+        ? `API Error: ${response.status} ${response.statusText} - ${errorText}`
+        : `API Error: ${response.status} ${response.statusText}`,
+    );
   }
 
   return response.json();

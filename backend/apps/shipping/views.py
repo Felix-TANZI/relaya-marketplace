@@ -609,11 +609,17 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
 
     def get_queryset(self):
         courier = _get_active_courier(self.request.user)
-        return Shipment.objects.filter(
+        city = (courier.city or "").strip()
+        qs = Shipment.objects.filter(
             status=Shipment.Status.CREATED,
             courier=None,
             order__delivery_method=Order.DeliveryMethod.DELIVERY,
-        ).select_related("order", "order__user").order_by("created_at")
+        ).select_related("order", "order__user")
+
+        if city:
+            qs = qs.filter(order__city__iexact=city)
+
+        return qs.order_by("created_at")
 
 
 @extend_schema(tags=["Shipping"], summary="Réclamer une livraison disponible (auto-assignement)")

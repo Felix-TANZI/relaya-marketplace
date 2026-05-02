@@ -20,9 +20,11 @@ import {
   Send,
   Shield,
   ShieldCheck,
+  Moon,
   Smartphone,
   Star,
   Store,
+  Sun,
   Trash2,
   Trophy,
   User,
@@ -31,6 +33,7 @@ import {
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";
 import { vendorsApi, type VendorProfile } from "@/services/api/vendors";
+import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/context/ToastContext";
 import { getStoredProfileAvatar, getUserDisplayName, getUserInitials } from "@/lib/profileAvatar";
 import {
@@ -175,6 +178,7 @@ function ActionButton({
 export default function ProfilePage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserType | null>(null);
@@ -1155,12 +1159,12 @@ export default function ProfilePage() {
 
   return (
     <div
-      className={`min-h-screen bg-[linear-gradient(135deg,#f3f4f6_0%,#f9fafb_100%)] px-4 py-6 text-[#1f2937] dark:bg-gray-950 dark:text-gray-100 ${fontSizeClassMap[fontSize]}`}
+      className={`min-h-screen bg-[linear-gradient(135deg,#f3f4f6_0%,#f9fafb_100%)] px-4 py-6 text-[#1f2937] dark:bg-gray-950 dark:bg-none dark:text-gray-100 ${fontSizeClassMap[fontSize]}`}
       style={daltonianMode ? { filter: "contrast(1.08) saturate(.72)" } : undefined}
     >
       <div className="mx-auto max-w-[1600px]">
         <div className="grid items-start gap-5 lg:grid-cols-[260px_minmax(0,1fr)]">
-          <aside className="overflow-hidden rounded-[16px] border border-[#e5e7eb] bg-[linear-gradient(135deg,#fff,#f9fafb)] shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
+          <aside className="overflow-hidden rounded-[16px] border border-[#e5e7eb] bg-[linear-gradient(135deg,#fff,#f9fafb)] shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900 dark:bg-none">
             <div className="relative overflow-hidden bg-[linear-gradient(135deg,#f47920,#FF9D4D)] p-6 text-white">
               <div className="pointer-events-none absolute right-[-20px] top-[-20px] h-[100px] w-[100px] rounded-full bg-white/10" />
               <div className="relative z-[1]">
@@ -1251,6 +1255,30 @@ export default function ProfilePage() {
 
             <div className="border-t border-[#e5e7eb] px-[14px] py-3 dark:border-gray-800">
               <div className="mb-2 text-[10px] font-extrabold uppercase tracking-[.06em] text-[#9ca3af]">Accessibilité</div>
+              <div className="mb-[7px] flex items-center justify-between">
+                <span className="text-[12px] font-semibold text-[#4b5563] dark:text-gray-300">Apparence</span>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="inline-flex h-8 items-center gap-1 rounded-full border border-[#e5e7eb] bg-[#f9fafb] p-1 text-[12px] font-bold text-[#4b5563] transition dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                  aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+                >
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
+                      theme === "light" ? "bg-[#f47920] text-white shadow-sm" : "text-[#9ca3af]"
+                    }`}
+                  >
+                    <Sun size={13} />
+                  </span>
+                  <span
+                    className={`flex h-6 w-6 items-center justify-center rounded-full transition ${
+                      theme === "dark" ? "bg-[#f47920] text-white shadow-sm" : "text-[#9ca3af]"
+                    }`}
+                  >
+                    <Moon size={13} />
+                  </span>
+                </button>
+              </div>
               <div className="mb-[7px] flex items-center justify-between">
                 <span className="text-[12px] font-semibold text-[#4b5563] dark:text-gray-300">Taille du texte</span>
                 <div className="overflow-hidden rounded-full border border-[#e5e7eb] bg-[#f9fafb] dark:border-gray-700 dark:bg-gray-800">

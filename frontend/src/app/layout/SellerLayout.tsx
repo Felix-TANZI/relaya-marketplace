@@ -134,27 +134,14 @@ function SidebarContent({
 
       {/* Header sidebar */}
       <div className="px-5 py-5 flex-shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-        <div className="flex items-center justify-between mb-4">
-          {/* Logo BelivaY */}
-          <div className="flex items-center gap-2">
-            <img
-              src="/belivay-logo.png"
-              alt="BelivaY"
-              className="h-8 w-auto object-contain"
-            />
-            <div>
-              <p className="text-[10px] font-semibold" style={{ color: T.orange }}>
-                {t('seller_layout.space_label')}
-              </p>
-            </div>
-          </div>
-          {onClose && (
+        {onClose && (
+          <div className="flex justify-end mb-4">
             <button onClick={onClose}
               className="w-7 h-7 rounded-lg flex items-center justify-center text-white/40 hover:text-white hover:bg-white/8 transition-all">
               <X size={14} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Shop card */}
         <div className="rounded-xl px-3 py-2.5 flex items-center gap-2.5"

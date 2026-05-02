@@ -1,4 +1,4 @@
-import { type ComponentType, type ReactNode, useEffect, useMemo, useState } from "react";
+import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -258,6 +258,20 @@ export default function CourierDashboardPage() {
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
 
+  const refreshCourierWork = useCallback(async () => {
+    const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
+      courierApi.listMyShipments(),
+      courierApi.getDashboard(),
+      courierApi.listAvailableShipments(),
+      courierApi.getNotifications(),
+    ]);
+
+    if (shipmentsResult.status === "fulfilled") setShipments(shipmentsResult.value);
+    if (dashboardResult.status === "fulfilled") setDashboard(dashboardResult.value);
+    if (availableResult.status === "fulfilled") setAvailableShipmentsFromAPI(availableResult.value);
+    if (notificationsResult.status === "fulfilled") setNotifications(notificationsResult.value);
+  }, []);
+
   useEffect(() => {
     const interval = window.setInterval(() => {
       setProgress((value) => Math.min(value + 12, 94));
@@ -304,6 +318,14 @@ export default function CourierDashboardPage() {
     return () => window.clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      refreshCourierWork();
+    }, 15000);
+
+    return () => window.clearInterval(interval);
+  }, [refreshCourierWork]);
+
   const courierProfile = application?.application ?? user?.courier_profile ?? null;
   const isApprovedCourier = application?.status === "approved" || Boolean(user?.is_courier);
   const firstName = user?.first_name || user?.username || "Livreur";
@@ -325,6 +347,14 @@ export default function CourierDashboardPage() {
     [shipments],
   );
   const availableShipments = availableShipmentsFromAPI;
+  const visibleCourseShipments = useMemo(() => {
+    const byId = new globalThis.Map<number, CourierShipment>();
+    for (const shipment of availableShipmentsFromAPI) byId.set(shipment.id, shipment);
+    for (const shipment of shipments) byId.set(shipment.id, shipment);
+    return Array.from(byId.values()).sort(
+      (left, right) => new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime(),
+    );
+  }, [availableShipmentsFromAPI, shipments]);
   const tourShipments = useMemo(
     () =>
       [...activeShipments, ...completedShipments].sort(
@@ -408,6 +438,7 @@ export default function CourierDashboardPage() {
       setShipments((prev) => [claimed, ...prev]);
       setSelectedShipmentId(claimed.id);
       setActionFeedback("Mission prise en charge avec succès.");
+      refreshCourierWork();
     } catch {
       setActionFeedback("Impossible de prendre cette mission. Elle a peut-être déjà été assignée.");
     } finally {
@@ -814,6 +845,12 @@ export default function CourierDashboardPage() {
                 </div>
               </button>
             ))}
+            {!availableShipments.length && !activeShipments.length ? (
+              <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+                Aucune mission visible dans ta zone pour le moment. Verifie que le livreur est disponible et que la
+                commande est dans la meme ville que ton profil livreur.
+              </div>
+            ) : null}
           </div>
         </SectionShell>
       </section>
@@ -873,9 +910,45 @@ export default function CourierDashboardPage() {
                 </div>
               </button>
             ))
+          ) : availableShipments.length ? (
+            <div className="space-y-3">
+              <div className="rounded-[18px] border border-sky-500/20 bg-sky-500/5 p-4 text-[13px] leading-6 text-sky-100">
+                Aucune mission n'est encore dans ta tournee, mais {availableShipments.length} livraison
+                {availableShipments.length > 1 ? "s" : ""} disponible{availableShipments.length > 1 ? "s" : ""} attend
+                {availableShipments.length > 1 ? "ent" : ""} une prise en charge.
+              </div>
+              {availableShipments.slice(0, 5).map((shipment, index) => (
+                <div
+                  key={shipment.id}
+                  className="flex gap-4 rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4"
+                >
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-sky-500/10 font-extrabold text-sky-300">
+                    {index + 1}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="font-bold text-white">Commande #{shipment.order}</div>
+                        <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.customer_name}</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleClaimShipment(shipment.id)}
+                        disabled={Boolean(actionLoading)}
+                        className="rounded-full bg-[linear-gradient(135deg,#3B82F6,#1D4ED8)] px-4 py-2 text-[11px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {actionLoading === "CLAIM" ? "Prise..." : "Prendre"}
+                      </button>
+                    </div>
+                    <div className="mt-2 text-[12px] leading-6 text-[#8B949E]">{shipment.delivery_address}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           ) : (
             <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-              Aucune etape de tournee disponible. Des qu'une livraison sera assignee au livreur, elle remontera ici.
+              Aucune etape de tournee disponible. Les commandes visibles ici doivent etre dans ta ville livreur
+              ({currentCourierCity}) ou dans tes zones.
             </div>
           )}
         </div>
@@ -920,7 +993,9 @@ export default function CourierDashboardPage() {
           ))}
         </div>
         <div className="space-y-3">
-          {shipments.map((shipment) => (
+          {visibleCourseShipments.map((shipment) => {
+            const isAvailable = availableShipmentsFromAPI.some((available) => available.id === shipment.id);
+            return (
             <button
               key={shipment.id}
               type="button"
@@ -941,11 +1016,18 @@ export default function CourierDashboardPage() {
                   </div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
-                  {statusLabel(shipment.status)}
+                  {isAvailable ? "Disponible" : statusLabel(shipment.status)}
                 </span>
               </div>
             </button>
-          ))}
+            );
+          })}
+          {!visibleCourseShipments.length ? (
+            <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+              Aucune course trouvee. Sur Render, une nouvelle commande apparait ici seulement si son mode est
+              livraison et si sa ville correspond a ton profil livreur ({currentCourierCity}) ou a tes zones.
+            </div>
+          ) : null}
         </div>
       </SectionShell>
 
@@ -1833,7 +1915,7 @@ export default function CourierDashboardPage() {
 
         <div className="ml-auto hidden items-center gap-2 md:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
-            {courierProfile?.is_online ? "Disponible" : "Hors ligne"}
+            {currentIsOnline ? "Disponible" : "Hors ligne"}
           </div>
           <button
             type="button"
@@ -1957,7 +2039,7 @@ export default function CourierDashboardPage() {
             {user?.first_name || "Livreur"} {user?.last_name || ""}
           </div>
           <div className="mt-1 text-[12px] text-emerald-300">
-            {courierProfile ? `${courierProfile.city} · ${VEHICLE_LABELS[courierProfile.vehicle_type] || courierProfile.vehicle_type}` : "Demande a finaliser"}
+            {courierProfile ? `${currentCourierCity} · ${VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}` : "Demande a finaliser"}
           </div>
         </div>
 
@@ -2015,18 +2097,18 @@ export default function CourierDashboardPage() {
                 <div className="grid gap-3 sm:grid-cols-3">
                   <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Ville</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">{courierProfile?.city || "Yaounde"}</div>
+                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">{currentCourierCity}</div>
                   </div>
                   <div className="rounded-[20px] border border-green-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Vehicule</div>
                     <div className="mt-2 text-[22px] font-extrabold text-green-300">
-                      {courierProfile ? VEHICLE_LABELS[courierProfile.vehicle_type] || courierProfile.vehicle_type : "Moto"}
+                      {VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}
                     </div>
                   </div>
                   <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
                     <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Statut</div>
                     <div className="mt-2 text-[22px] font-extrabold text-emerald-300">
-                      {isApprovedCourier ? "Actif" : "Pending"}
+                      {currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending"}
                     </div>
                   </div>
                 </div>

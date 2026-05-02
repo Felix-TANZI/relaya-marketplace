@@ -10,6 +10,8 @@ from .views import (
     admin_create_user,
     admin_delete_courier,
     admin_list_couriers,
+    admin_sos_alerts,
+    admin_resolve_sos,
     admin_update_courier,
     RegisterView,
     me,
@@ -22,7 +24,6 @@ from .views import (
     NotificationsListView,
     NotificationMarkReadView,
     NotificationMarkAllReadView,
-    # Nouveaux
     TwoFactorTokenObtainPairView,
     logout_view,
     change_password,
@@ -46,6 +47,8 @@ urlpatterns = [
     path("admin/users/create/", admin_create_user, name="auth-admin-create-user"),
     path("admin/couriers/<int:pk>/update/", admin_update_courier, name="auth-admin-update-courier"),
     path("admin/couriers/<int:pk>/", admin_delete_courier, name="auth-admin-delete-courier"),
+    path("admin/couriers/sos/",             admin_sos_alerts,   name="auth-admin-sos-alerts"),
+    path("admin/couriers/sos/<int:pk>/",    admin_resolve_sos,  name="auth-admin-resolve-sos"),
 
     # ── Authentification ──────────────────────────────────────────────────────
     path("register/",       RegisterView.as_view(),                name="auth-register"),

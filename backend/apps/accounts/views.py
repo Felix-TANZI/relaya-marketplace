@@ -220,12 +220,165 @@ def bootstrap_demo_accounts(request):
     )
 
 
-@extend_schema(tags=["Admin"], summary="List courier accounts")
+@extend_schema(tags=["Admin"], summary="List couriers with full performance stats")
 @api_view(["GET"])
 @permission_classes([IsAdminUser])
 def admin_list_couriers(request):
-    couriers = CourierProfile.objects.select_related("user").order_by("-created_at")
-    return Response(CourierProfileSerializer(couriers, many=True).data)
+    """
+    Liste tous les livreurs avec leurs statistiques de performance :
+      - total_deliveries, failed_deliveries, active_shipments, success_rate
+      - total_earnings_xaf (gains calculés depuis _courier_payout_xaf)
+      - sos_open : nombre d'alertes SOS non résolues
+ 
+    Filtres : is_approved, is_active, is_online, city, vehicle_type, search
+    """
+    from apps.shipping.models import Shipment, CourierSOSAlert
+ 
+    qs = CourierProfile.objects.select_related("user").order_by("-created_at")
+ 
+    # ── Filtres ───────────────────────────────────────────────────────────────
+    for field in ("is_approved", "is_active", "is_online"):
+        val = request.query_params.get(field)
+        if val is not None:
+            qs = qs.filter(**{field: val.lower() == "true"})
+ 
+    city    = request.query_params.get("city")
+    vehicle = request.query_params.get("vehicle_type")
+    search  = request.query_params.get("search")
+ 
+    if city:
+        qs = qs.filter(city__icontains=city)
+    if vehicle:
+        qs = qs.filter(vehicle_type=vehicle.upper())
+    if search:
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+            | Q(phone__icontains=search)
+            | Q(city__icontains=search)
+        )
+ 
+    # ── Construction résultat ─────────────────────────────────────────────────
+    PAYOUT_BASE = 500  # FCFA par livraison — même logique que _courier_payout_xaf
+ 
+    result = []
+    for cp in qs:
+        shipments     = Shipment.objects.filter(courier=cp)
+        delivered     = shipments.filter(status=Shipment.Status.DELIVERED).count()
+        failed        = shipments.filter(status=Shipment.Status.FAILED).count()
+        active_count  = shipments.filter(
+            status__in=[
+                Shipment.Status.ASSIGNED,
+                Shipment.Status.PICKED_UP,
+                Shipment.Status.IN_TRANSIT,
+                Shipment.Status.OUT_FOR_DELIVERY,
+            ]
+        ).count()
+        total_done    = delivered + failed
+        success_rate  = round(delivered / total_done * 100) if total_done > 0 else 0
+ 
+        # Gains estimés (montant réel nécessite d'itérer sur les commandes — trop coûteux ici)
+        total_earnings = delivered * PAYOUT_BASE
+ 
+        # Alertes SOS ouvertes
+        sos_open = CourierSOSAlert.objects.filter(
+            courier=cp, status=CourierSOSAlert.Status.OPEN
+        ).count()
+ 
+        result.append({
+            "id":            cp.id,
+            "user_id":       cp.user.id,
+            "username":      cp.user.username,
+            "full_name":     cp.user.get_full_name().strip() or cp.user.username,
+            "email":         cp.user.email,
+            "phone":         cp.phone,
+            "city":          cp.city,
+            "zones":         cp.zones or [],
+            "vehicle_type":  cp.vehicle_type,
+            "id_card":       cp.id_card,
+            "preferred_language":        cp.preferred_language,
+            "gps_permission_granted":    cp.gps_permission_granted,
+            "camera_permission_granted": cp.camera_permission_granted,
+            "is_active":     cp.is_active,
+            "is_approved":   cp.is_approved,
+            "is_online":     cp.is_online,
+            "created_at":    cp.created_at.isoformat(),
+            "updated_at":    cp.updated_at.isoformat(),
+            # ── Stats performance ──────────────────────────────────────────
+            "total_deliveries":  delivered,
+            "failed_deliveries": failed,
+            "active_shipments":  active_count,
+            "success_rate":      success_rate,
+            "total_earnings_xaf":total_earnings,
+            "sos_open":          sos_open,
+        })
+ 
+    return Response(result)
+ 
+ 
+# ─────────────────────────────────────────────────────────────────────────────
+# SOS ADMIN
+# ─────────────────────────────────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Admin"], summary="List open SOS alerts")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_sos_alerts(request):
+    """Retourne les alertes SOS avec filtre optionnel status=OPEN|ACKNOWLEDGED|RESOLVED."""
+    from apps.shipping.models import CourierSOSAlert
+ 
+    status_filter = request.query_params.get("status", "")
+    qs = CourierSOSAlert.objects.select_related("courier__user").order_by("-created_at")
+ 
+    if status_filter:
+        qs = qs.filter(status=status_filter.upper())
+ 
+    data = [
+        {
+            "id":           a.id,
+            "courier_id":   a.courier.id,
+            "courier_name": a.courier.user.get_full_name().strip() or a.courier.user.username,
+            "courier_phone":a.courier.phone,
+            "status":       a.status,
+            "message":      a.message,
+            "location":     a.location,
+            "latitude":     float(a.latitude) if a.latitude else None,
+            "longitude":    float(a.longitude) if a.longitude else None,
+            "created_at":   a.created_at.isoformat(),
+            "updated_at":   a.updated_at.isoformat(),
+        }
+        for a in qs[:100]
+    ]
+    return Response({"alerts": data, "total": len(data)})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Acknowledge or resolve a SOS alert")
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_resolve_sos(request, pk):
+    """Changer le statut d'une alerte SOS : ACKNOWLEDGED ou RESOLVED."""
+    from apps.shipping.models import CourierSOSAlert
+ 
+    try:
+        alert = CourierSOSAlert.objects.get(pk=pk)
+    except CourierSOSAlert.DoesNotExist:
+        return Response({"detail": "Alerte introuvable."}, status=404)
+ 
+    new_status = request.data.get("status", "").upper()
+    if new_status not in ["ACKNOWLEDGED", "RESOLVED"]:
+        return Response({"detail": "Statut invalide. Utilisez ACKNOWLEDGED ou RESOLVED."}, status=400)
+ 
+    alert.status = new_status
+    alert.save(update_fields=["status", "updated_at"])
+ 
+    return Response({
+        "id":     alert.id,
+        "status": alert.status,
+        "detail": f"Alerte #{alert.id} marquée {new_status}.",
+    })
 
 
 @extend_schema(tags=["Admin"], summary="Create courier account")

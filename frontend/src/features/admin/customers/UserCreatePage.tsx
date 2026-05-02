@@ -1,183 +1,375 @@
-import { useMemo, useState } from 'react';
-import { Bike, CheckCircle2, LoaderCircle, Shield, Store, User, Users } from 'lucide-react';
-import { adminApi, type AdminCreateUserPayload, type AdminCreateUserRole, type AdminCourier } from '@/services/api/admin';
+// frontend/src/features/admin/customers/UserCreatePage.tsx
+// Créer un compte utilisateur par rôle — admin BelivaY
+
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  UserPlus, ChevronLeft, RefreshCw,
+  User, Store, Truck, Shield, AlertCircle,
+} from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
+import { http } from '@/services/api/http';
 
-const roleConfig: Record<AdminCreateUserRole, { label: string; icon: typeof User; desc: string }> = {
-  client: { label: 'Client', icon: User, desc: 'Compte acheteur classique.' },
-  vendor: { label: 'Vendeur', icon: Store, desc: 'Compte avec boutique vendeur.' },
-  courier: { label: 'Livreur', icon: Bike, desc: 'Compte livreur approuve.' },
-  admin: { label: 'Admin', icon: Shield, desc: 'Compte administrateur plateforme.' },
-};
+// ─────────────────────────────────────────────────────────────────────────────
+// TYPES
+// ─────────────────────────────────────────────────────────────────────────────
 
-const initialForm: AdminCreateUserPayload = {
-  role: 'client',
-  username: '',
-  email: '',
-  password: 'Belivay123!',
-  first_name: '',
-  last_name: '',
-  phone: '',
-  city: 'Douala',
-  business_name: '',
-  business_description: '',
-  address: '',
-  id_document: '',
-  vendor_status: 'APPROVED',
-  zones: ['Akwa', 'Bonapriso'],
-  vehicle_type: 'MOTORBIKE',
-  id_card: '',
-  is_approved: true,
-  is_superuser: true,
-};
+type Role = 'client' | 'vendor' | 'courier' | 'admin';
 
-const vehicleLabels: Record<AdminCourier['vehicle_type'], string> = {
-  MOTORBIKE: 'Moto',
-  CAR: 'Voiture',
-  BIKE: 'Velo',
-  TRICYCLE: 'Tricycle',
-  VAN: 'Camionnette',
-};
+interface FormData {
+  role:                 Role;
+  username:             string;
+  email:                string;
+  password:             string;
+  first_name:           string;
+  last_name:            string;
+  phone:                string;
+  city:                 string;
+  // Vendeur
+  business_name:        string;
+  business_description: string;
+  address:              string;
+  id_document:          string;
+  vendor_status:        string;
+  // Livreur
+  zones:                string;
+  vehicle_type:         string;
+  id_card:              string;
+  is_approved:          boolean;
+  // Admin
+  is_superuser:         boolean;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ROLES: Array<{ key: Role; label: string; desc: string; icon: React.ElementType; color: string; gradient: string }> = [
+  { key: 'client',  label: 'Acheteur',  desc: 'Compte client standard',               icon: User,    color: '#3B82F6', gradient: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' },
+  { key: 'vendor',  label: 'Vendeur',   desc: 'Espace boutique sur BelivaY',           icon: Store,   color: '#F47920', gradient: 'linear-gradient(135deg,#F47920,#C2590A)' },
+  { key: 'courier', label: 'Livreur',   desc: 'Compte livreur avec accès terrain',     icon: Truck,   color: '#10B981', gradient: 'linear-gradient(135deg,#10B981,#047857)' },
+  { key: 'admin',   label: 'Admin',     desc: 'Accès interface d\'administration',      icon: Shield,  color: '#EF4444', gradient: 'linear-gradient(135deg,#EF4444,#B91C1C)' },
+];
+
+const CITIES = [
+  'Yaoundé', 'Douala', 'Bafoussam', 'Bamenda', 'Garoua',
+  'Maroua', 'Ngaoundéré', 'Bertoua', 'Ebolowa', 'Kribi', 'Limbé',
+];
+
+const VEHICLES = [
+  { key: 'MOTORBIKE', label: '🏍️ Moto'     },
+  { key: 'CAR',       label: '🚗 Voiture'   },
+  { key: 'BIKE',      label: '🚲 Vélo'      },
+  { key: 'TRICYCLE',  label: '🛺 Tricycle'  },
+  { key: 'VAN',       label: '🚐 Fourgon'   },
+];
+
+const authH = () => ({
+  'Content-Type': 'application/json',
+  Authorization:  `Bearer ${localStorage.getItem('access_token') ?? ''}`,
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function UserCreatePage() {
-  const T = useAdminTheme();
+  const T             = useAdminTheme();
   const { showToast } = useToast();
-  const [form, setForm] = useState<AdminCreateUserPayload>(initialForm);
-  const [creating, setCreating] = useState(false);
+  const navigate      = useNavigate();
+  const toastRef      = useRef(showToast);
+  useEffect(() => { toastRef.current = showToast; });
 
-  const activeRole = roleConfig[form.role];
-  const roleFields = useMemo(() => ({
-    vendor: form.role === 'vendor',
-    courier: form.role === 'courier',
-    admin: form.role === 'admin',
-    needsPhone: form.role === 'vendor' || form.role === 'courier',
-  }), [form.role]);
+  const [submitting, setSubmitting] = useState(false);
+  const [error,      setError]      = useState('');
 
-  const update = <K extends keyof AdminCreateUserPayload>(key: K, value: AdminCreateUserPayload[K]) => {
-    setForm((current) => ({ ...current, [key]: value }));
-  };
+  const [form, setForm] = useState<FormData>({
+    role: 'client', username: '', email: '', password: '',
+    first_name: '', last_name: '', phone: '', city: '',
+    business_name: '', business_description: '', address: '', id_document: '',
+    vendor_status: 'APPROVED',
+    zones: '', vehicle_type: 'MOTORBIKE', id_card: '', is_approved: true,
+    is_superuser: false,
+  });
 
-  const create = async () => {
-    setCreating(true);
+  const fld = (k: keyof FormData, v: string | boolean) =>
+    setForm(f => ({ ...f, [k]: v }));
+
+  const selectedRole = ROLES.find(r => r.key === form.role)!;
+
+  const handleSubmit = async () => {
+    setError('');
+    if (!form.username.trim() || !form.password.trim()) {
+      setError('Username et mot de passe sont obligatoires.');
+      return;
+    }
+    if ((form.role === 'vendor' || form.role === 'courier') && !form.phone.trim()) {
+      setError('Le téléphone est obligatoire pour ce rôle.');
+      return;
+    }
+
+    setSubmitting(true);
     try {
-      await adminApi.createUser(form);
-      showToast('Utilisateur cree', 'success');
-      setForm({ ...initialForm, role: form.role });
-    } catch {
-      showToast('Creation utilisateur impossible', 'error');
+      const zones = form.zones.split(',').map(z => z.trim()).filter(Boolean);
+      await http('/api/auth/admin/users/create/', {
+        method: 'POST', headers: authH(),
+        body: JSON.stringify({
+          role:                 form.role,
+          username:             form.username.trim(),
+          email:                form.email.trim(),
+          password:             form.password,
+          first_name:           form.first_name.trim(),
+          last_name:            form.last_name.trim(),
+          phone:                form.phone.trim(),
+          city:                 form.city,
+          business_name:        form.business_name.trim(),
+          business_description: form.business_description.trim(),
+          address:              form.address.trim(),
+          id_document:          form.id_document.trim(),
+          vendor_status:        form.vendor_status,
+          zones,
+          vehicle_type:         form.vehicle_type,
+          id_card:              form.id_card.trim(),
+          is_approved:          form.is_approved,
+          is_superuser:         form.is_superuser,
+        }),
+      });
+      toastRef.current(`Compte @${form.username} créé avec succès.`, 'success');
+      // Redirection selon le rôle
+      if (form.role === 'courier') navigate('/admin/deliveries');
+      else if (form.role === 'vendor') navigate('/admin/vendors');
+      else navigate('/admin/customers');
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message.slice(0, 200) : 'Erreur serveur.';
+      setError(msg);
     } finally {
-      setCreating(false);
+      setSubmitting(false);
     }
   };
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-5">
-      <div>
-        <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 24, fontWeight: 800, color: T.text }}>Creer un utilisateur</h1>
-        <p style={{ color: T.muted, fontSize: 13 }}>Choisis un role, puis remplis les champs adaptes.</p>
+    <div className="space-y-5 max-w-2xl">
+
+      {/* En-tête */}
+      <div className="flex items-center gap-3">
+        <button onClick={() => navigate(-1)}
+          style={{ width: 34, height: 34, borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
+          <ChevronLeft size={14} />
+        </button>
+        <div>
+          <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text }}>
+            Créer un compte
+          </h1>
+          <p style={{ fontSize: 13, color: T.muted }}>Ajouter un utilisateur manuellement à BelivaY</p>
+        </div>
       </div>
 
-      <section className="rounded-2xl p-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-        <div className="mb-4 grid gap-3 md:grid-cols-4">
-          {(Object.keys(roleConfig) as AdminCreateUserRole[]).map((role) => {
-            const cfg = roleConfig[role];
-            const Icon = cfg.icon;
-            const active = form.role === role;
+      {/* Sélection rôle */}
+      <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+        <p style={{ fontSize: 12, fontWeight: 700, color: T.muted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.06em' }}>Rôle du compte</p>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {ROLES.map(role => {
+            const Icon   = role.icon;
+            const active = form.role === role.key;
             return (
-              <button key={role} type="button" onClick={() => update('role', role)} className="rounded-2xl p-4 text-left transition" style={{ background: active ? `${T.red}16` : T.cardAlt, border: `1px solid ${active ? T.red : T.border}` }}>
-                <Icon size={20} style={{ color: active ? T.red : T.muted }} />
-                <div className="mt-3 font-extrabold" style={{ color: T.text }}>{cfg.label}</div>
-                <div className="mt-1 text-[12px]" style={{ color: T.muted }}>{cfg.desc}</div>
+              <button key={role.key} onClick={() => fld('role', role.key)}
+                style={{ padding: '14px 12px', borderRadius: 14, textAlign: 'left', cursor: 'pointer', background: active ? role.color + '15' : T.cardAlt, border: `2px solid ${active ? role.color + '50' : T.border}`, transition: 'all 0.15s' }}>
+                <div style={{ width: 32, height: 32, borderRadius: 10, background: active ? role.gradient : T.border, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
+                  <Icon size={15} style={{ color: active ? '#fff' : T.muted }} />
+                </div>
+                <p style={{ fontSize: 13, fontWeight: 700, color: active ? role.color : T.text, marginBottom: 2 }}>{role.label}</p>
+                <p style={{ fontSize: 11, color: T.muted, lineHeight: 1.4 }}>{role.desc}</p>
               </button>
             );
           })}
         </div>
+      </div>
 
-        <div className="mb-4 flex items-center gap-2 text-[13px] font-bold" style={{ color: T.text }}>
-          <Users size={16} style={{ color: T.red }} /> Role selectionne : {activeRole.label}
+      {/* Formulaire */}
+      <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+
+        {/* Header section compte */}
+        <div style={{ padding: '14px 20px', borderBottom: `1px solid ${T.border}`, background: T.cardAlt, display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 30, height: 30, borderRadius: 8, background: selectedRole.gradient, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <selectedRole.icon size={14} style={{ color: '#fff' }} />
+          </div>
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Informations du compte</p>
+            <p style={{ fontSize: 11.5, color: T.muted }}>Rôle : {selectedRole.label}</p>
+          </div>
         </div>
 
-        <div className="grid gap-3 md:grid-cols-3">
-          {[
-            ['username', 'Nom utilisateur', true],
-            ['email', 'Email', false],
-            ['password', 'Mot de passe', true],
-            ['first_name', 'Prenom', false],
-            ['last_name', 'Nom', false],
-          ].map(([key, label]) => (
-            <label key={String(key)} className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-              {label}{key === 'username' || key === 'password' ? ' *' : ''}
-              <input type={key === 'password' ? 'password' : 'text'} value={String(form[key as keyof AdminCreateUserPayload] ?? '')} onChange={(event) => update(key as keyof AdminCreateUserPayload, event.target.value as never)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-            </label>
-          ))}
+        <div className="p-6 space-y-4">
 
-          {roleFields.needsPhone && (
-            <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-              Telephone *
-              <input value={form.phone ?? ''} onChange={(event) => update('phone', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-            </label>
+          {/* Erreur */}
+          {error && (
+            <div className="flex items-start gap-2 p-3 rounded-xl"
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+              <AlertCircle size={14} color="#EF4444" style={{ flexShrink: 0, marginTop: 1 }} />
+              <p style={{ fontSize: 12.5, color: '#EF4444' }}>{error}</p>
+            </div>
           )}
 
-          {(roleFields.vendor || roleFields.courier) && (
-            <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-              Ville
-              <input value={form.city ?? ''} onChange={(event) => update('city', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
+          {/* Identifiants */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                Username <span style={{ color: T.red }}>*</span>
+              </label>
+              <input value={form.username} onChange={e => fld('username', e.target.value)}
+                placeholder="ex: jean_dupont"
+                style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Email</label>
+              <input type="email" value={form.email} onChange={e => fld('email', e.target.value)}
+                placeholder="email@example.com"
+                style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Prénom</label>
+              <input value={form.first_name} onChange={e => fld('first_name', e.target.value)}
+                style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            </div>
+            <div>
+              <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Nom</label>
+              <input value={form.last_name} onChange={e => fld('last_name', e.target.value)}
+                style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            </div>
+          </div>
+
+          <div>
+            <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+              Mot de passe <span style={{ color: T.red }}>*</span>
             </label>
-          )}
+            <input type="password" value={form.password} onChange={e => fld('password', e.target.value)}
+              placeholder="Mot de passe initial"
+              style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+          </div>
 
-          {roleFields.vendor && (
-            <>
-              <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Nom boutique
-                <input value={form.business_name ?? ''} onChange={(event) => update('business_name', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
-              <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Adresse boutique
-                <input value={form.address ?? ''} onChange={(event) => update('address', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
-              <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Document ID
-                <input value={form.id_document ?? ''} onChange={(event) => update('id_document', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
-              <label className="md:col-span-3 text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Description boutique
-                <textarea value={form.business_description ?? ''} onChange={(event) => update('business_description', event.target.value)} className="mt-1 min-h-[86px] w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
-            </>
-          )}
-
-          {roleFields.courier && (
-            <>
-              <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Vehicule
-                <select value={form.vehicle_type} onChange={(event) => update('vehicle_type', event.target.value as AdminCourier['vehicle_type'])} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}>
-                  {Object.entries(vehicleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+          {/* Champs communs vendeur + livreur */}
+          {(form.role === 'vendor' || form.role === 'courier') && (
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Téléphone <span style={{ color: T.red }}>*</span>
+                </label>
+                <input value={form.phone} onChange={e => fld('phone', e.target.value)}
+                  placeholder="+237 6XX XXX XXX"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Ville</label>
+                <select value={form.city} onChange={e => fld('city', e.target.value)}
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                  <option value="">-- Choisir --</option>
+                  {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                 </select>
-              </label>
-              <label className="text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Piece identite
-                <input value={form.id_card ?? ''} onChange={(event) => update('id_card', event.target.value)} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
-              <label className="md:col-span-3 text-[11px] font-bold uppercase tracking-[.05em]" style={{ color: T.muted }}>
-                Zones
-                <input value={(form.zones ?? []).join(', ')} onChange={(event) => update('zones', event.target.value.split(',').map((zone) => zone.trim()).filter(Boolean))} className="mt-1 w-full rounded-xl px-3 py-2 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
-              </label>
+              </div>
+            </div>
+          )}
+
+          {/* Champs spécifiques VENDEUR */}
+          {form.role === 'vendor' && (
+            <>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Nom de la boutique</label>
+                <input value={form.business_name} onChange={e => fld('business_name', e.target.value)}
+                  placeholder="Ex: Boutique Mode Cameroun"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Description</label>
+                <textarea value={form.business_description} onChange={e => fld('business_description', e.target.value)}
+                  rows={2} placeholder="Description de l'activité"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none', resize: 'vertical' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Adresse</label>
+                  <input value={form.address} onChange={e => fld('address', e.target.value)}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Statut boutique</label>
+                  <select value={form.vendor_status} onChange={e => fld('vendor_status', e.target.value)}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                    <option value="APPROVED">Approuvée</option>
+                    <option value="PENDING">En attente</option>
+                  </select>
+                </div>
+              </div>
             </>
           )}
 
-          {roleFields.admin && (
-            <label className="flex items-center gap-2 rounded-xl px-3 py-2 text-[12px] font-bold md:col-span-3" style={{ color: T.text, background: T.cardAlt, border: `1px solid ${T.border}` }}>
-              <input type="checkbox" checked={Boolean(form.is_superuser)} onChange={(event) => update('is_superuser', event.target.checked)} />
-              Super administrateur
-            </label>
+          {/* Champs spécifiques LIVREUR */}
+          {form.role === 'courier' && (
+            <>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Zones <span style={{ fontSize: 10.5, color: T.muted }}>(virgule-séparées)</span>
+                </label>
+                <input value={form.zones} onChange={e => fld('zones', e.target.value)}
+                  placeholder="Bastos, Melen, Centre-ville"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Véhicule</label>
+                  <select value={form.vehicle_type} onChange={e => fld('vehicle_type', e.target.value)}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                    {VEHICLES.map(v => <option key={v.key} value={v.key}>{v.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>N° CNI</label>
+                  <input value={form.id_card} onChange={e => fld('id_card', e.target.value)}
+                    placeholder="CNI-XXXXXXXXXX"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <input type="checkbox" id="is_approved" checked={form.is_approved}
+                  onChange={e => fld('is_approved', e.target.checked)}
+                  style={{ width: 15, height: 15, accentColor: T.red, cursor: 'pointer' }} />
+                <label htmlFor="is_approved" style={{ fontSize: 13, color: T.text, cursor: 'pointer' }}>
+                  Approuver immédiatement (peut recevoir des livraisons)
+                </label>
+              </div>
+            </>
+          )}
+
+          {/* Champs spécifiques ADMIN */}
+          {form.role === 'admin' && (
+            <div className="flex items-center gap-3 p-3 rounded-xl" style={{ background: 'rgba(239,68,68,0.06)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <input type="checkbox" id="is_superuser" checked={form.is_superuser}
+                onChange={e => fld('is_superuser', e.target.checked)}
+                style={{ width: 15, height: 15, accentColor: T.red, cursor: 'pointer' }} />
+              <label htmlFor="is_superuser" style={{ fontSize: 13, color: T.text, cursor: 'pointer' }}>
+                Super administrateur — accès complet sans restrictions
+              </label>
+            </div>
           )}
         </div>
 
-        <button type="button" onClick={create} disabled={creating} className="mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-[12px] font-bold text-white disabled:opacity-60" style={{ background: T.red }}>
-          {creating ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />} Creer l'utilisateur
-        </button>
-      </section>
+        {/* Footer */}
+        <div className="flex items-center justify-end gap-3 px-6 py-4" style={{ borderTop: `1px solid ${T.border}` }}>
+          <button onClick={() => navigate(-1)}
+            style={{ padding: '9px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
+            Annuler
+          </button>
+          <button onClick={handleSubmit} disabled={submitting}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 22px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: selectedRole.gradient, color: '#fff', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
+            {submitting ? <RefreshCw size={13} className="animate-spin" /> : <UserPlus size={13} />}
+            {submitting ? 'Création…' : `Créer le ${selectedRole.label.toLowerCase()}`}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

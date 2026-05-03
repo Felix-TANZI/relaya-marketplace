@@ -1,47 +1,131 @@
-// frontend/src/features/orders/OrderDetailPage.tsx
-// Page de détail d'une commande avec statuts séparés paiement/livraison
-
+import { useState, useEffect, useMemo, useRef } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   ArrowLeft,
-  Package,
-  MapPin,
-  Phone,
-  Mail,
-  CreditCard,
-  Truck,
-  CheckCircle,
-  Clock,
-  XCircle,
   AlertCircle,
-} from 'lucide-react';
-import { Button, Card, Badge } from '@/components/ui';
-import { ordersApi } from '@/services/api/orders';
-import type { Order, PaymentStatus, FulfillmentStatus } from '@/types/order';
+  AlertTriangle,
+  Bike,
+  CheckCircle,
+  Clock3,
+  CreditCard,
+  Home,
+  MapPin,
+  MessageCircleMore,
+  Package,
+  Phone,
+  ShieldCheck,
+  Store,
+  Send,
+  Truck,
+  Warehouse,
+  UserCircle2,
+  XCircle,
+} from "lucide-react";
+import { ordersApi } from "@/services/api/orders";
+import { customerApi, type Shipment } from "@/services/api/customer";
+import TrackingMap from "@/components/TrackingMap";
+import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
+import {
+  addDisputeMessage,
+  formatRemainingDisputeTime,
+  getDisputeEligibility,
+  getOrderDisputes,
+  openOrderDispute,
+  type StoredOrderDispute,
+} from "@/lib/orderDisputes";
 
 export default function OrderDetailPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
   const [order, setOrder] = useState<Order | null>(null);
+  const [tracking, setTracking] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [disputes, setDisputes] = useState<StoredOrderDispute[]>([]);
+  const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
+  const [showDisputeComposer, setShowDisputeComposer] = useState(false);
+  const [disputeReason, setDisputeReason] = useState("Produit non conforme");
+  const [disputeDraft, setDisputeDraft] = useState("");
+  const [disputeReply, setDisputeReply] = useState("");
+  const disputeSectionRef = useRef<HTMLElement | null>(null);
+
+  function getPaymentInfo(status: PaymentStatus) {
+    switch (status) {
+      case "PAID":
+        return {
+          label: t('order.detail.payment_confirmed'),
+          color: "text-green-600",
+          bg: "bg-green-50 dark:bg-green-900/20",
+          icon: CheckCircle,
+        };
+      case "PENDING":
+        return {
+          label: t('order.detail.payment_pending'),
+          color: "text-yellow-600",
+          bg: "bg-yellow-50 dark:bg-yellow-900/20",
+          icon: Clock3,
+        };
+      case "FAILED":
+        return {
+          label: t('order.detail.payment_failed'),
+          color: "text-red-600",
+          bg: "bg-red-50 dark:bg-red-900/20",
+          icon: XCircle,
+        };
+      case "REFUNDED":
+        return {
+          label: t('order.detail.payment_refunded'),
+          color: "text-gray-600",
+          bg: "bg-gray-100 dark:bg-gray-800",
+          icon: CreditCard,
+        };
+      default:
+        return {
+          label: t('order.detail.payment_pending'),
+          color: "text-gray-600",
+          bg: "bg-gray-100 dark:bg-gray-800",
+          icon: CreditCard,
+        };
+    }
+  }
+
+  function getFulfillmentInfo(status: FulfillmentStatus) {
+    switch (status) {
+      case "PENDING":
+        return { label: t('order.detail.fulfillment_received'), step: 0 };
+      case "PROCESSING":
+        return { label: t('order.detail.fulfillment_processing'), step: 1 };
+      case "SHIPPED":
+        return { label: t('order.detail.fulfillment_shipped'), step: 2 };
+      case "DELIVERED":
+        return { label: t('order.detail.fulfillment_delivered'), step: 3 };
+      case "CANCELLED":
+        return { label: t('order.detail.fulfillment_cancelled'), step: -1 };
+      default:
+        return { label: t('order.detail.fulfillment_processing'), step: 0 };
+    }
+  }
 
   useEffect(() => {
     const fetchOrder = async () => {
       if (!id) return;
-      
+      const orderId = parseInt(id, 10);
+
       try {
         setLoading(true);
         setError(null);
-        const data = await ordersApi.get(parseInt(id));
+        const data = await ordersApi.get(orderId);
         setOrder(data);
-      } catch (err) {
-        console.error('Error loading order:', err);
-        setError(t('orders.error_message'));
+        try {
+          const shipment = await customerApi.getOrderTracking(orderId);
+          setTracking(shipment);
+        } catch {
+          setTracking(null);
+        }
+      } catch {
+        setError(t('order.detail.error_load'));
       } finally {
         setLoading(false);
       }
@@ -50,351 +134,546 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id, t]);
 
-  const getPaymentStatusInfo = (status: PaymentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return {
-          variant: 'warning' as const,
-          text: 'En attente de paiement',
-          icon: Clock,
-          color: 'text-yellow-400',
-        };
-      case 'PAID':
-        return {
-          variant: 'success' as const,
-          text: 'Payé',
-          icon: CheckCircle,
-          color: 'text-green-400',
-        };
-      case 'FAILED':
-        return {
-          variant: 'error' as const,
-          text: 'Échec du paiement',
-          icon: XCircle,
-          color: 'text-red-400',
-        };
-      case 'REFUNDED':
-        return {
-          variant: 'default' as const,
-          text: 'Remboursé',
-          icon: CreditCard,
-          color: 'text-gray-400',
-        };
-    }
-  };
+  useEffect(() => {
+    if (!order) return;
+    const syncDisputes = () => {
+      const next = getOrderDisputes(order.id);
+      setDisputes(next);
+      setActiveDisputeId((current) => current ?? next[0]?.id ?? null);
+    };
 
-  const getFulfillmentStatusInfo = (status: FulfillmentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return {
-          variant: 'warning' as const,
-          text: 'En attente',
-          icon: Clock,
-          color: 'text-yellow-400',
-          step: 0,
-        };
-      case 'PROCESSING':
-        return {
-          variant: 'default' as const,
-          text: 'En préparation',
-          icon: Package,
-          color: 'text-blue-400',
-          step: 1,
-        };
-      case 'SHIPPED':
-        return {
-          variant: 'success' as const,
-          text: 'Expédié',
-          icon: Truck,
-          color: 'text-purple-400',
-          step: 2,
-        };
-      case 'DELIVERED':
-        return {
-          variant: 'success' as const,
-          text: 'Livré',
-          icon: CheckCircle,
-          color: 'text-green-400',
-          step: 3,
-        };
-      case 'CANCELLED':
-        return {
-          variant: 'error' as const,
-          text: 'Annulé',
-          icon: XCircle,
-          color: 'text-red-400',
-          step: -1,
-        };
-    }
-  };
+    syncDisputes();
+    window.addEventListener("belivay-disputes-updated", syncDisputes);
+    return () => window.removeEventListener("belivay-disputes-updated", syncDisputes);
+  }, [order]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat(i18n.language === 'fr' ? 'fr-FR' : 'en-US', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    }).format(date);
-  };
+  const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
+  const activeDispute =
+    disputes.find((dispute) => dispute.id === activeDisputeId) ?? disputes[0] ?? null;
 
-  const formatPrice = (price: number) => {
-    return `${price.toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US')} XAF`;
-  };
-
-  // Loading State
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">{t('orders.loading')}</p>
+          <div className="inline-block h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+            {t('order.detail.loading')}
+          </p>
         </div>
       </div>
     );
   }
 
-  // Error State
   if (error || !order) {
     return (
       <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertCircle className="text-red-400" size={40} />
-          </div>
-          <h1 className="font-display font-bold text-2xl text-dark-text mb-4">
-            {t('orders.error')}
-          </h1>
-          <p className="text-dark-text-secondary mb-8">{error}</p>
-          <Button variant="gradient" onClick={() => navigate('/orders')}>
-            {t('orders.back_to_orders')}
-          </Button>
+        <div className="text-center max-w-md px-4">
+          <AlertCircle className="mx-auto mb-4 text-red-500" size={40} />
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('order.detail.error_title')}</h1>
+          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{error}</p>
+          <button
+            onClick={() => navigate("/orders")}
+            className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
+          >
+            {t('order.detail.error_button')}
+          </button>
         </div>
       </div>
     );
   }
 
-  const paymentInfo = getPaymentStatusInfo(order.payment_status);
-  const fulfillmentInfo = getFulfillmentStatusInfo(order.fulfillment_status);
+  const payment = getPaymentInfo(order.payment_status);
+  const fulfillment = getFulfillmentInfo(order.fulfillment_status);
+  const PaymentIcon = payment.icon;
+  const trackingEvents = Array.isArray(tracking?.events)
+    ? tracking.events
+        .filter((event): event is NonNullable<Shipment["events"]>[number] => Boolean(event))
+        .map((event) => ({
+          time: event.created_at
+            ? new Date(event.created_at).toLocaleTimeString("fr-FR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              })
+            : "ETA",
+          label: event.message || event.status || t('order.detail.timeline.processing'),
+        }))
+        .filter((event) => Boolean(event.label))
+    : [];
 
-  // Timeline steps
-  const timelineSteps = [
-    { label: 'En attente', step: 0 },
-    { label: 'En préparation', step: 1 },
-    { label: 'Expédié', step: 2 },
-    { label: 'Livré', step: 3 },
-  ];
+  const timelineSteps = trackingEvents.length
+    ? trackingEvents
+    : [
+        { time: "10:15", label: t('order.detail.timeline.received') },
+        { time: "14:30", label: t('order.detail.timeline.processing') },
+        { time: "14:45", label: t('order.detail.timeline.shipped') },
+        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta') },
+      ];
 
-  const currentStep = fulfillmentInfo.step;
+  const handleConfirmReceipt = async () => {
+    if (!order) return;
+    try {
+      const updatedOrder = await customerApi.confirmReceipt(order.id);
+      setOrder(updatedOrder);
+      const shipment = await customerApi.getOrderTracking(order.id);
+      setTracking(shipment);
+    } catch (actionError) {
+      // silenced
+    }
+  };
+
+  const handleOpenDispute = async () => {
+    if (activeDispute) {
+      disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    setShowDisputeComposer(true);
+    window.setTimeout(() => {
+      disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 30);
+  };
+
+  const handleCreateDispute = async () => {
+    if (!disputeDraft.trim()) return;
+
+    try {
+      const backendDispute = await customerApi.createOrderDispute(order.id, {
+        reason: "OTHER",
+        description: disputeDraft.trim(),
+      });
+      openOrderDispute(order, disputeReason, disputeDraft.trim(), backendDispute.id);
+    } catch {
+      openOrderDispute(order, disputeReason, disputeDraft.trim());
+    }
+
+    setShowDisputeComposer(false);
+    setDisputeDraft("");
+    setDisputes(getOrderDisputes(order.id));
+    setActiveDisputeId(getOrderDisputes(order.id)[0]?.id ?? null);
+  };
+
+  const handleSendDisputeReply = async () => {
+    if (!activeDispute || !disputeReply.trim()) return;
+
+    addDisputeMessage(activeDispute.id, disputeReply.trim());
+    try {
+      const numericDisputeId = Number(activeDispute.id);
+      if (Number.isFinite(numericDisputeId)) {
+        await customerApi.addDisputeMessage(numericDisputeId, disputeReply.trim());
+      }
+    } catch {
+      // Frontend fallback kept in localStorage.
+    }
+    setDisputes(getOrderDisputes(order.id));
+    setDisputeReply("");
+  };
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-5xl">
-        {/* Back Button */}
+    <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
+      <div className="container mx-auto max-w-6xl px-4">
         <Link
           to="/orders"
-          className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-8"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
         >
-          <ArrowLeft size={20} />
-          {t('orders.back_to_orders')}
+          <ArrowLeft size={18} />
+          {t('order.detail.back_link')}
         </Link>
 
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-start justify-between flex-wrap gap-4 mb-6">
+        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+          <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h1 className="font-display font-bold text-3xl lg:text-4xl text-dark-text mb-2">
-                {t('orders.order_number')} #{order.id}
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                {t('order.detail.breadcrumb')}
+              </p>
+              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                {t('order.detail.order_title', { id: order.id })}
               </h1>
-              <p className="text-dark-text-secondary">
-                {t('orders.placed_on')} {formatDate(order.created_at)}
+              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {t('order.detail.placed_on', { date: new Date(order.created_at).toLocaleDateString("fr-FR") })}
               </p>
             </div>
-            
-            {/* Status Badges */}
-            <div className="flex gap-2 flex-wrap">
-              <Badge variant={paymentInfo.variant} className="flex items-center gap-1">
-                <paymentInfo.icon size={14} />
-                {paymentInfo.text}
-              </Badge>
-              <Badge variant={fulfillmentInfo.variant} className="flex items-center gap-1">
-                <fulfillmentInfo.icon size={14} />
-                {fulfillmentInfo.text}
-              </Badge>
+
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${payment.bg} ${payment.color}`}
+              >
+                <PaymentIcon size={16} />
+                {payment.label}
+              </span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-primary dark:bg-primary/10">
+                {order.delivery_mode === "PICKUP" ? <Package size={16} /> : <Truck size={16} />}
+                {order.delivery_mode === "PICKUP" ? "Retrait en boutique" : fulfillment.label}
+              </span>
             </div>
           </div>
-
-          {/* Timeline (si pas annulé) */}
-          {order.fulfillment_status !== 'CANCELLED' && (
-            <Card>
-              <div className="relative">
-                {/* Progress Bar */}
-                <div className="absolute top-6 left-0 right-0 h-1 bg-white/10 rounded-full" />
-                <div
-                  className="absolute top-6 left-0 h-1 bg-gradient-holographic rounded-full transition-all duration-500"
-                  style={{ width: `${(currentStep / 3) * 100}%` }}
-                />
-
-                {/* Steps */}
-                <div className="relative flex items-start justify-between">
-                  {timelineSteps.map((step) => {
-                    const isActive = currentStep >= step.step;
-                    const isCurrent = currentStep === step.step;
-
-                    return (
-                      <div key={step.step} className="flex flex-col items-center flex-1">
-                        <div
-                          className={`w-12 h-12 rounded-full flex items-center justify-center mb-2 transition-all ${
-                            isActive
-                              ? 'bg-gradient-holographic shadow-lg shadow-holo-cyan/30'
-                              : 'bg-white/10 border-2 border-white/20'
-                          }`}
-                        >
-                          {isActive ? (
-                            <CheckCircle className="text-white" size={24} />
-                          ) : (
-                            <div className="w-3 h-3 rounded-full bg-white/30" />
-                          )}
-                        </div>
-                        <p
-                          className={`text-sm text-center ${
-                            isCurrent ? 'text-holo-cyan font-medium' : 'text-dark-text-secondary'
-                          }`}
-                        >
-                          {step.label}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </Card>
-          )}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne principale */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Articles */}
-            <Card>
-              <h2 className="font-display font-bold text-2xl text-dark-text mb-6 flex items-center gap-2">
-                <Package size={24} className="text-holo-cyan" />
-                Articles commandés
-              </h2>
-              <div className="space-y-4">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-4 glass rounded-xl border border-white/10"
-                  >
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-dark-text mb-1">
-                        {item.title_snapshot}
-                      </h3>
-                      <p className="text-sm text-dark-text-secondary">
-                        {formatPrice(item.price_xaf_snapshot)} × {item.qty}
-                      </p>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="space-y-6">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-5 flex items-center gap-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+                  <MapPin size={22} />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                    {t('order.detail.tracking_title')}
+                  </h2>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {order.delivery_mode === "PICKUP"
+                      ? `Votre commande #${order.id} est en préparation pour retrait`
+                      : t('order.detail.in_delivery', { id: order.id })}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mb-6 overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+                {order.delivery_mode === "PICKUP" ? (
+                  <div className="flex h-56 flex-col justify-between bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900">
+                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
+                      <span>{t('order.detail.city_label')}: {order.city}</span>
+                      <span>Point de retrait</span>
                     </div>
-                    <div className="text-right">
-                      <p className="font-display font-bold text-lg text-dark-text">
-                        {formatPrice(item.line_total_xaf)}
-                      </p>
+                    <div className="flex items-center justify-center gap-6 text-5xl">
+                      <Package className="text-primary" size={44} strokeWidth={1.75} />
+                      <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
+                      <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
+                    </div>
+                    <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
+                      Retrait en boutique : {order.city}
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
-
-            {/* Note client */}
-            {order.note && (
-              <Card>
-                <h3 className="font-semibold text-dark-text mb-3">Note</h3>
-                <p className="text-dark-text-secondary">{order.note}</p>
-              </Card>
-            )}
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Récapitulatif */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <CreditCard size={20} className="text-holo-pink" />
-                Récapitulatif
-              </h3>
-              <div className="space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Sous-total</span>
-                  <span className="text-dark-text font-medium">
-                    {formatPrice(order.subtotal_xaf)}
-                  </span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-dark-text-secondary">Livraison</span>
-                  <span className="text-dark-text font-medium">
-                    {formatPrice(order.delivery_fee_xaf)}
-                  </span>
-                </div>
-                <div className="pt-3 border-t border-white/10 flex justify-between">
-                  <span className="font-semibold text-dark-text">Total</span>
-                  <span className="font-display font-bold text-2xl text-gradient animate-gradient-bg">
-                    {formatPrice(order.total_xaf)}
-                  </span>
-                </div>
-              </div>
-            </Card>
-
-            {/* Livraison */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <MapPin size={20} className="text-holo-purple" />
-                Livraison
-              </h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1">Ville</p>
-                  <p className="text-dark-text font-medium">{order.city}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1">Adresse</p>
-                  <p className="text-dark-text text-sm">{order.address}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
-                    <Phone size={12} />
-                    Téléphone
-                  </p>
-                  <p className="text-dark-text">{order.customer_phone}</p>
-                </div>
-                {order.customer_email && (
-                  <div>
-                    <p className="text-xs text-dark-text-tertiary mb-1 flex items-center gap-1">
-                      <Mail size={12} />
-                      Email
-                    </p>
-                    <p className="text-dark-text text-sm">{order.customer_email}</p>
+                ) : (
+                  <div className="relative">
+                    <TrackingMap
+                      destinationAddress={order.address}
+                      destinationCity={order.city}
+                      destinationLabel={`Adresse de livraison : ${order.address}`}
+                      originLabel={tracking?.courier_name ? `Livreur : ${tracking.courier_name}` : "Position livreur"}
+                      height={280}
+                      className="rounded-none border-0"
+                    />
+                    <div className="absolute left-3 right-3 top-3 z-[500] flex flex-wrap gap-2">
+                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
+                        Ville: {order.city}
+                      </span>
+                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
+                        Zone suivie
+                      </span>
+                    </div>
+                    <div className="border-t border-orange-100 bg-white px-4 py-3 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
+                      Adresse de livraison : {order.address}
+                    </div>
                   </div>
                 )}
               </div>
-            </Card>
 
-            {/* Paiement */}
-            <Card>
-              <h3 className="font-semibold text-dark-text mb-4 flex items-center gap-2">
-                <CreditCard size={20} className="text-holo-cyan" />
-                Paiement
-              </h3>
-              <div className="flex items-center gap-3">
-                <div className={`p-3 rounded-full ${paymentInfo.color.replace('text-', 'bg-')}/10`}>
-                  <paymentInfo.icon className={paymentInfo.color} size={20} />
-                </div>
+              <div className="space-y-4">
+                {timelineSteps.map((step, index) => {
+                  const isActive = fulfillment.step >= index;
+
+                  return (
+                    <div key={step.label} className="flex items-start gap-4">
+                      <div
+                        className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${
+                          isActive
+                            ? "bg-primary text-white"
+                            : "bg-gray-100 text-gray-400 dark:bg-gray-800"
+                        }`}
+                      >
+                        {isActive ? <CheckCircle size={18} /> : <Clock3 size={18} />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
+                          {step.time}
+                        </p>
+                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
+                          {step.label}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="mt-6 flex flex-wrap gap-3">
+                <button
+                  disabled={!tracking?.courier_phone}
+                  className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <Truck size={18} />
+                  {t('order.detail.contact_courier')}
+                </button>
+                <button
+                  onClick={handleOpenDispute}
+                  disabled={!activeDispute && !disputeEligibility.eligible}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                >
+                  <MessageCircleMore size={18} />
+                  {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
+                </button>
+                {order.fulfillment_status === "DELIVERED" && (
+                  <button
+                    onClick={handleConfirmReceipt}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"
+                  >
+                    <CheckCircle size={18} />
+                    {t('order.detail.confirm_receipt')}
+                  </button>
+                )}
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
+                {t('order.detail.items_title')}
+              </h2>
+              <div className="space-y-3">
+                {order.items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between rounded-2xl bg-[#fcfbf8] px-4 py-4 dark:bg-gray-800"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {item.title_snapshot}
+                      </p>
+                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                        {item.qty} × {item.price_xaf_snapshot.toLocaleString()} FCFA
+                      </p>
+                    </div>
+                    <p className="text-lg font-bold text-primary">
+                      {item.line_total_xaf.toLocaleString()} FCFA
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section
+              ref={disputeSectionRef}
+              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="font-medium text-dark-text">{paymentInfo.text}</p>
-                  <p className="text-xs text-dark-text-tertiary">Mobile Money</p>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">
+                    Litige commande
+                  </p>
+                  <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
+                    Chat de litige pour cette commande
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                    Le litige se declenche ici, depuis la commande recue. Vous avez 24h apres reception pour ouvrir la discussion de mediation.
+                  </p>
+                </div>
+                <div className={`rounded-full px-4 py-2 text-xs font-bold ${
+                  disputeEligibility.eligible
+                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
+                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
+                }`}>
+                  {disputeEligibility.eligible
+                    ? `Fenetre ouverte · ${formatRemainingDisputeTime(disputeEligibility.remainingMs)} restantes`
+                    : disputeEligibility.message}
                 </div>
               </div>
-            </Card>
+
+              {showDisputeComposer && !activeDispute ? (
+                <div className="mt-5 rounded-[1.5rem] border border-orange-200 bg-[#fff8f2] p-5 dark:border-gray-700 dark:bg-gray-800/60">
+                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
+                    <input
+                      value={disputeReason}
+                      onChange={(event) => setDisputeReason(event.target.value)}
+                      className="rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                      placeholder="Motif du litige"
+                    />
+                    <textarea
+                      value={disputeDraft}
+                      onChange={(event) => setDisputeDraft(event.target.value)}
+                      className="min-h-[108px] rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                      placeholder="Explique le probleme constate apres reception du colis."
+                    />
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => void handleCreateDispute()}
+                      className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
+                    >
+                      <AlertTriangle size={17} />
+                      Ouvrir le litige
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowDisputeComposer(false)}
+                      className="inline-flex items-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {disputes.length > 0 ? (
+                <div className="mt-5 grid gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
+                  <div className="space-y-3">
+                    {disputes.map((dispute) => (
+                      <button
+                        type="button"
+                        key={dispute.id}
+                        onClick={() => setActiveDisputeId(dispute.id)}
+                        className={`w-full rounded-[1.4rem] border p-4 text-left transition ${
+                          activeDispute?.id === dispute.id
+                            ? "border-primary bg-[#fff4eb] dark:bg-primary/10"
+                            : "border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 dark:border-gray-700 dark:bg-gray-950"
+                        }`}
+                      >
+                        <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
+                          {dispute.orderLabel}
+                        </p>
+                        <p className="mt-2 text-sm font-bold text-gray-900 dark:text-white">
+                          {dispute.reason}
+                        </p>
+                        <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
+                          {dispute.messages[dispute.messages.length - 1]?.text}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="rounded-[1.6rem] border border-gray-200 bg-[#fcfbf8] p-4 dark:border-gray-700 dark:bg-gray-950">
+                    {activeDispute ? (
+                      <>
+                        <div className="mb-4 border-b border-gray-200 pb-4 dark:border-gray-800">
+                          <p className="text-lg font-bold text-gray-900 dark:text-white">
+                            {activeDispute.orderLabel} · {activeDispute.reason}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Conversation de mediation ouverte pour cette commande.
+                          </p>
+                        </div>
+
+                        <div className="space-y-3">
+                          {activeDispute.messages.map((message) => (
+                            <div
+                              key={message.id}
+                              className={`max-w-[88%] rounded-[1.1rem] px-4 py-3 text-sm leading-6 ${
+                                message.author === "Vous"
+                                  ? "ml-auto bg-[#fff1e5] text-gray-900 dark:bg-primary/10 dark:text-white"
+                                  : "bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300"
+                              }`}
+                            >
+                              <div className="mb-1 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
+                                {message.author} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                              </div>
+                              {message.text}
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="mt-4 flex gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                          <input
+                            value={disputeReply}
+                            onChange={(event) => setDisputeReply(event.target.value)}
+                            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
+                            placeholder="Repondre au litige..."
+                          />
+                          <button
+                            type="button"
+                            onClick={() => void handleSendDisputeReply()}
+                            className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark"
+                            aria-label="Envoyer la reponse"
+                          >
+                            <Send size={16} />
+                          </button>
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </div>
+              ) : !showDisputeComposer ? (
+                <div className="mt-5 rounded-[1.5rem] border border-dashed border-orange-200 bg-[#fffaf6] p-5 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300">
+                  Aucun litige ouvert sur cette commande. {disputeEligibility.eligible ? "Utilisez le bouton ci-dessus pour demarrer le chat de mediation." : "La fenetre d'ouverture n'est plus disponible."}
+                </div>
+              ) : null}
+            </section>
+          </div>
+
+          <div className="space-y-6">
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+                {t('order.detail.summary_title')}
+              </h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                  <span>{t('order.detail.subtotal')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {order.subtotal_xaf.toLocaleString()} FCFA
+                  </span>
+                </div>
+                <div className="flex justify-between text-gray-500 dark:text-gray-400">
+                  <span>{order.delivery_mode === "PICKUP" ? "Retrait boutique" : t('order.detail.delivery_fee')}</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">
+                    {order.delivery_fee_xaf === 0 ? "Gratuit" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
+                  </span>
+                </div>
+                <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
+                  <span className="text-gray-900 dark:text-white">{t('order.detail.total')}</span>
+                  <span className="text-xl text-primary">{order.total_xaf.toLocaleString()} FCFA</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
+                {t('order.detail.shipping_title')}
+              </h2>
+              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex items-start gap-3">
+                  {order.delivery_mode === "PICKUP" ? (
+                    <Store size={18} className="mt-0.5 text-primary" />
+                  ) : (
+                    <MapPin size={18} className="mt-0.5 text-primary" />
+                  )}
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{order.city}</p>
+                    <p>
+                      {order.delivery_mode === "PICKUP"
+                        ? "Retrait en boutique partenaire"
+                        : order.address}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Phone size={18} className="mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_phone_label')}</p>
+                    <p>{order.customer_phone}</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <UserCircle2 size={18} className="mt-0.5 text-primary" />
+                  <div>
+                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_courier_label')}</p>
+                    <p>
+                      {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
+                      {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-900/20">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.secure_payment_title')}</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('order.detail.secure_payment_subtitle')}</p>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
       </div>

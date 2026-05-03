@@ -44,6 +44,8 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    'apps.accounts.middleware.SessionTrackingMiddleware',
+    'apps.core.middleware.UserActivityMiddleware',
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -76,6 +78,9 @@ DATABASES = {
         "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
         "HOST": os.getenv("POSTGRES_HOST"),
         "PORT": os.getenv("POSTGRES_PORT"),
+        "OPTIONS": {
+            "sslmode": os.getenv("POSTGRES_SSLMODE", "prefer"),
+        },
     }
 }
 
@@ -90,9 +95,18 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS (dev)
+# CORS
+frontend_url = os.getenv("FRONTEND_URL")
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
+    origin
+    for origin in [
+        frontend_url,
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:5174",
+    ]
+    if origin
 ]
 CORS_ALLOW_CREDENTIALS = True
 
@@ -143,6 +157,31 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "UPDATE_LAST_LOGIN": True,
+}
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'database': {
+            'level': 'WARNING',
+            'class': 'apps.vendors.log_handler.DatabaseLogHandler',
+        },
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'root': {
+        'handlers': ['console', 'database'],
+        'level': 'WARNING',
+    },
+    'loggers': {
+        'django': { 'handlers': ['console', 'database'], 'level': 'WARNING', 'propagate': False },
+        'apps':   { 'handlers': ['console', 'database'], 'level': 'INFO',    'propagate': False },
+    },
 }
 
 # Media files (uploads)
@@ -150,7 +189,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR.parent / 'media'
 
 
-# EMAIL CONFIGURATION (AJOUTEZ À LA FIN)
+# EMAIL CONFIGURATION 
 
 EMAIL_BACKEND = os.getenv(
     "EMAIL_BACKEND", 
@@ -161,7 +200,13 @@ EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "Relaya <noreply@relaya.cm>")
+DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "BelivaY <noreply@belivay.com>")
 
 # Email pour le support (depuis PlatformSettings par défaut)
-SUPPORT_EMAIL = "support@relaya.cm"
+SUPPORT_EMAIL = "support@belivay.c0m"
+
+# AI / OpenRouter
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:5174")
+OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Belivay Catalog Assistant")

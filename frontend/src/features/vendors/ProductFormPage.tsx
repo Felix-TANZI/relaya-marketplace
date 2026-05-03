@@ -1,454 +1,604 @@
 // frontend/src/features/vendors/ProductFormPage.tsx
-// Formulaire de création/édition de produit pour vendeurs
+// Formulaire création/édition produit — design system BelivaY.
+//
+// Champs retirés : Slug URL (auto-géré backend), SKU (auto-généré backend)
+// Obligatoires   : Titre, Catégorie, Description courte, Description complète,
+//                  Prix, Stock, Seuil alerte stock
+// Sous-catégorie : apparaît après sélection d'une catégorie parente
 
-import { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Package, Upload, X } from "lucide-react";
-import { Button, Card } from "@/components/ui";
-import { vendorsApi } from "@/services/api/vendors";
-import { categoriesApi, type Category } from "@/services/api/categories";
-import { useToast } from "@/context/ToastContext";
-import ImageUploader from "@/components/vendor/ImageUploader";
-import { type ProductImage } from "@/services/api/vendors";
+import { useEffect, useState, useRef } from 'react';
+import { useNavigate, useParams, Link } from 'react-router-dom';
+import {
+  ArrowLeft, Package, Upload, X, RefreshCw, Save,
+  ImageIcon, Tag, BarChart2, DollarSign,
+  CheckCircle, Clock, Info, ChevronRight, Layers,
+} from 'lucide-react';
+import {
+  vendorsApi,
+  type ProductImage,
+  type ProductAttribute,
+  type VendorProduct,
+  type VendorProductEnriched,
+} from '@/services/api/vendors';
+import { productsApi, type Category } from '@/services/api/products';
+import { useToast } from '@/context/ToastContext';
+
+const T = {
+  orange: '#F47920', orangeL: '#FFF3E8', orangeB: 'rgba(244,121,32,0.12)',
+  cream: '#F5F0E8', creamAlt: '#EDE7DC',
+  white: '#FFFFFF', border: '#E8E2D9',
+  text: '#1A1209', muted: '#7C6E5A', mutedL: '#B8A898',
+  green: '#16A34A', greenL: 'rgba(22,163,74,0.10)', greenB: 'rgba(22,163,74,0.25)',
+  red: '#DC2626', redL: 'rgba(220,38,38,0.10)',
+  amber: '#D97706', amberL: 'rgba(217,119,6,0.10)',
+  blue: '#2563EB', blueL: 'rgba(37,99,235,0.10)',
+};
+
+function fmtXAF(n: number) { return Math.round(n).toLocaleString('fr-FR') + ' FCFA'; }
+
+// Timer countdown promo
+function PromoCountdown({ end }: { end: string }) {
+  const [r, setR] = useState<{ d:number; h:number; m:number }|null>(null);
+  useEffect(() => {
+    const upd = () => {
+      const diff = new Date(end).getTime() + 86400000 - Date.now();
+      if (diff <= 0) { setR(null); return; }
+      setR({ d: Math.floor(diff/86400000), h: Math.floor((diff%86400000)/3600000), m: Math.floor((diff%3600000)/60000) });
+    };
+    upd(); const id = setInterval(upd, 30000); return () => clearInterval(id);
+  }, [end]);
+  if (!r) return <span className="text-[11px]" style={{ color: T.red }}>Promotion expirée</span>;
+  return (
+    <span className="inline-flex items-center gap-1 text-[11.5px] font-bold" style={{ color: T.amber }}>
+      <Clock size={11}/> Fin dans {r.d>0?`${r.d}j `:''}{r.h}h {r.m}m
+    </span>
+  );
+}
+
+// Carte section
+function Section({ title, icon, children, accent }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode; accent?: boolean;
+}) {
+  return (
+    <div className="rounded-2xl overflow-hidden"
+      style={{ background: T.white, border: `1px solid ${accent ? T.orange : T.border}`, boxShadow: '0 1px 6px rgba(28,18,9,0.06)' }}>
+      <div className="flex items-center gap-3 px-5 py-4" style={{ background: accent ? T.orangeL : T.cream, borderBottom: `1px solid ${accent ? T.orangeB : T.border}` }}>
+        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: accent ? T.orangeB : 'rgba(28,18,9,0.06)' }}>
+          <span style={{ color: accent ? T.orange : T.muted }}>{icon}</span>
+        </div>
+        <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{title}</p>
+      </div>
+      <div className="px-5 py-5 space-y-4">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, required, hint, error, children }: {
+  label: string; required?: boolean; hint?: string; error?: string; children: React.ReactNode;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <label className="flex items-center gap-1 text-[12.5px] font-semibold" style={{ color: error ? T.red : T.text }}>
+        {label}{required && <span style={{ color: T.red }}>*</span>}
+      </label>
+      {children}
+      {error && <p className="text-[11px] font-semibold" style={{ color: T.red }}>{error}</p>}
+      {!error && hint && <p className="text-[11px]" style={{ color: T.mutedL }}>{hint}</p>}
+    </div>
+  );
+}
+
+const iBase: React.CSSProperties = {
+  background: T.cream, border: `1px solid ${T.border}`, color: T.text,
+  borderRadius: 12, padding: '10px 14px', fontSize: 13.5, outline: 'none', width: '100%',
+};
+const iErr: React.CSSProperties = { ...iBase, border: `1.5px solid ${T.red}` };
+
+type ProductFormItem = Omit<VendorProduct, 'category'> &
+  Partial<Omit<VendorProductEnriched, 'category'>> & {
+    category: VendorProduct['category'] | VendorProductEnriched['category'];
+  };
+
+type ProductAttributeSelection = {
+  attribute: Pick<ProductAttribute, 'id'>;
+  selected_values: string[];
+};
+
+type ProductPayload = Partial<VendorProduct> & {
+  short_description: string;
+  compare_at_price: number | null;
+  promo_end_date: string | null;
+  stock_threshold: number;
+};
+
+function categoryId(category: ProductFormItem['category']) {
+  return typeof category === 'number' ? category : category.id;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Erreur lors de la sauvegarde';
+}
+
+// ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function ProductFormPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+  const { id }    = useParams<{ id: string }>();
+  const navigate  = useNavigate();
   const { showToast } = useToast();
-  const isEdit = !!id;
-  const [productImages, setProductImages] = useState<ProductImage[]>([]);
-  const [tempImages, setTempImages] = useState<File[]>([]);
+  const isEdit    = !!id;
 
-  const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    price_xaf: "",
-    stock_quantity: "",
-    category: "",
-    is_active: true,
-  });
+  // ── Formulaire ──
+  const [title,         setTitle]       = useState('');
+  const [description,   setDesc]        = useState('');
+  const [shortDesc,     setShortDesc]   = useState('');
+  const [parentCatId,   setParentCatId] = useState('');   // catégorie parent
+  const [subCatId,      setSubCatId]    = useState('');   // sous-catégorie (optionnel)
+  const [priceXaf,      setPriceXaf]    = useState('');
+  const [compareAt,     setCompareAt]   = useState('');
+  const [promoEnd,      setPromoEnd]    = useState('');
+  const [stockQty,      setStockQty]    = useState('');
+  const [stockThreshold,setThreshold]   = useState('');   // OBLIGATOIRE
+  const [isActive,      setIsActive]    = useState(true);
+  const [attrVals,      setAttrVals]    = useState<Record<number, string[]>>({});
 
+  // ── UI ──
+  const [allCats,    setAllCats]    = useState<Category[]>([]);
+  const [attributes, setAttributes] = useState<ProductAttribute[]>([]);
+  const [images,     setImages]     = useState<ProductImage[]>([]);
+  const [tempImgs,   setTempImgs]   = useState<{ file: File; preview: string }[]>([]);
+  const [loading,    setLoading]    = useState(false);
+  const [saving,     setSaving]     = useState(false);
+  const [errors,     setErrors]     = useState<Record<string, string>>({});
+  const commission = 12;
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  // Catégories parent et sous-catégories
+  const parentCats = allCats.filter(c => !c.parent);
+  const subCats    = parentCatId
+    ? allCats.filter(c => c.parent === parseInt(parentCatId, 10))
+    : [];
+
+  // ID catégorie effectif pour l'API (sous-cat si choisie, sinon parent)
+  const effectiveCatId = subCatId || parentCatId;
+
+  // ── Chargement initial ─────────────────────────────────────────────────────
   useEffect(() => {
-    loadCategories();
-    if (isEdit && id) {
-      loadProduct(parseInt(id));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+    const init = async () => {
+      try {
+        setLoading(true);
+        const catsResp = await productsApi.listCategories({ page_size: 200 });
+        setAllCats(catsResp.results || []);
 
-  const loadCategories = async () => {
-    try {
-      const data = await categoriesApi.list();
-      setCategories(data);
-    } catch (error) {
-      console.error("Erreur chargement catégories:", error);
-      showToast("Erreur de chargement des catégories", "error");
-    }
+        if (isEdit && id) {
+          const prods = await vendorsApi.getProducts();
+          const p = prods.find(x => x.id === parseInt(id));
+          if (!p) { showToast('Produit introuvable','error'); navigate('/seller/products'); return; }
+
+          const product = p as ProductFormItem;
+          const pCatId = categoryId(product.category);
+          const pCat   = (catsResp.results || []).find(c => c.id === pCatId);
+
+          if (pCat?.parent) {
+            setParentCatId(String(pCat.parent));
+            setSubCatId(String(pCat.id));
+          } else {
+            setParentCatId(String(pCatId || ''));
+          }
+
+          setTitle(p.title);
+          setDesc(p.description || '');
+          setShortDesc(product.short_description || '');
+          setPriceXaf(String(p.price_xaf));
+          setCompareAt(String(product.compare_at_price || ''));
+          setPromoEnd(product.promo_end_date || '');
+          setStockQty(String(p.stock_quantity));
+          setThreshold(String(product.stock_threshold || ''));
+          setIsActive(p.is_active);
+          setImages(p.images || []);
+          const ea: Record<number,string[]> = {};
+          for (const av of product.attribute_values || [] as ProductAttributeSelection[]) ea[av.attribute.id] = av.selected_values;
+          setAttrVals(ea);
+        }
+      } catch { showToast('Erreur de chargement','error'); }
+      finally { setLoading(false); }
+    };
+    init();
+  }, [id, isEdit, navigate, showToast]);
+
+  // Charger attributs quand catégorie effective change
+  useEffect(() => {
+    if (!effectiveCatId) { setAttributes([]); return; }
+    vendorsApi.getProductAttributes(parseInt(effectiveCatId))
+      .then(setAttributes).catch(() => setAttributes([]));
+  }, [effectiveCatId]);
+
+  // Reset sous-cat si parent change
+  useEffect(() => { setSubCatId(''); }, [parentCatId]);
+
+  const price   = parseInt(priceXaf, 10) || 0;
+  const compare = parseInt(compareAt, 10) || 0;
+  const discPct = compare > price ? Math.round((1 - price / compare) * 100) : 0;
+  const net     = price * (1 - commission / 100);
+
+  // ── Photos ────────────────────────────────────────────────────────────────
+  const addPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const rem = 6 - images.length - tempImgs.length;
+    const toAdd = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, rem);
+    setTempImgs(prev => [...prev, ...toAdd.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]);
+  };
+  const rmTemp = (i: number) => setTempImgs(prev => { const n=[...prev]; URL.revokeObjectURL(n[i].preview); n.splice(i,1); return n; });
+  const rmExisting = async (imgId: number) => {
+    try { await vendorsApi.deleteImage(parseInt(id!), imgId); setImages(prev => prev.filter(i => i.id !== imgId)); }
+    catch { showToast('Erreur suppression image','error'); }
+  };
+  const setPrimary = async (imgId: number) => {
+    try { await vendorsApi.setPrimaryImage(parseInt(id!), imgId); setImages(prev => prev.map(i => ({ ...i, is_primary: i.id === imgId }))); }
+    catch { showToast('Erreur image principale','error'); }
   };
 
-  const loadProduct = async (productId: number) => {
-    try {
-      setLoading(true);
-      const products = await vendorsApi.getProducts();
-      const product = products.find((p) => p.id === productId);
-
-      if (product) {
-        setFormData({
-          title: product.title,
-          description: product.description,
-          price_xaf: product.price_xaf.toString(),
-          stock_quantity: product.stock_quantity.toString(),
-          category: product.category.toString(),
-          is_active: product.is_active,
-        });
-        // Charger les images si elles existent
-        setProductImages(product.images || []);
-      } else {
-        showToast("Produit introuvable", "error");
-        navigate("/seller/dashboard");
-      }
-    } catch (error) {
-      console.error("Erreur chargement produit:", error);
-      showToast("Erreur de chargement du produit", "error");
-      navigate("/seller/dashboard");
-    } finally {
-      setLoading(false);
-    }
+  const toggleAttr = (attrId: number, val: string) => {
+    setAttrVals(prev => {
+      const cur = prev[attrId] || [];
+      return { ...prev, [attrId]: cur.includes(val) ? cur.filter(v => v !== val) : [...cur, val] };
+    });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  // ── Validation ──────────────────────────────────────────────────────────────
+  const validate = (): boolean => {
+    const e: Record<string,string> = {};
+    if (!title.trim())                              e.title       = 'Le titre est requis.';
+    if (!parentCatId)                               e.parentCatId = 'Veuillez sélectionner une catégorie.';
+    if (shortDesc.trim().length < 10)               e.shortDesc   = 'Description courte requise (min 10 caractères).';
+    if (description.trim().length < 20)             e.description = 'Description complète requise (min 20 caractères).';
+    if (!priceXaf || price < 100)                   e.priceXaf    = 'Prix minimum : 100 FCFA.';
+    if (compare && compare <= price)                e.compareAt   = 'Le prix barré doit être supérieur au prix de vente.';
+    const sq = parseInt(stockQty, 10);
+    if (isNaN(sq) || sq < 0)                        e.stockQty    = 'Stock invalide.';
+    if (!stockThreshold.trim())                     e.threshold   = 'Seuil alerte stock requis.';
+    else if (parseInt(stockThreshold,10) < 0)       e.threshold   = 'Seuil invalide.';
+    for (const attr of attributes) {
+      if (attr.is_required && !(attrVals[attr.id]?.length))
+        e[`attr_${attr.id}`] = `"${attr.name}" est obligatoire.`;
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
-    // Validation
-    if (!formData.title.trim()) {
-      showToast("Le titre est requis", "error");
-      return;
-    }
-    if (!formData.price_xaf || parseFloat(formData.price_xaf) <= 0) {
-      showToast("Le prix doit être supérieur à 0", "error");
-      return;
-    }
-    if (!formData.stock_quantity || parseInt(formData.stock_quantity) < 0) {
-      showToast("Le stock ne peut pas être négatif", "error");
-      return;
-    }
-    if (!formData.category) {
-      showToast("Veuillez sélectionner une catégorie", "error");
-      return;
-    }
-
+  // ── Soumission ─────────────────────────────────────────────────────────────
+  const handleSubmit = async () => {
+    if (!validate()) { showToast('Corrigez les erreurs avant de continuer.','error'); return; }
     try {
-      setLoading(true);
-
-      const productData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        price_xaf: parseFloat(formData.price_xaf),
-        stock_quantity: parseInt(formData.stock_quantity),
-        category: parseInt(formData.category),
-        is_active: formData.is_active,
+      setSaving(true);
+      const payload: ProductPayload = {
+        title:             title.trim(),
+        description:       description.trim(),
+        short_description: shortDesc.trim(),
+        price_xaf:         price,
+        compare_at_price:  compare > price ? compare : null,
+        promo_end_date:    promoEnd || null,
+        category:          parseInt(effectiveCatId, 10),
+        is_active:         isActive,
+        stock_quantity:    parseInt(stockQty, 10) || 0,
+        stock_threshold:   parseInt(stockThreshold, 10),
       };
 
+      let productId: number;
       if (isEdit && id) {
-        await vendorsApi.updateProduct(parseInt(id), productData);
-        showToast("Produit mis à jour avec succès", "success");
-        navigate("/seller/dashboard");
+        await vendorsApi.updateProduct(parseInt(id), payload);
+        productId = parseInt(id);
+        showToast('Produit mis à jour','success');
       } else {
-        // Créer le produit
-        const newProduct = await vendorsApi.createProduct(productData);
-
-        // Uploader les images si présentes
-        if (tempImages.length > 0) {
-          for (let i = 0; i < tempImages.length; i++) {
-            const isPrimary = i === 0; // La première image est principale
-            await vendorsApi.uploadImage(
-              newProduct.id,
-              tempImages[i],
-              isPrimary,
-            );
-          }
-        }
-
-        showToast("Produit créé avec succès !", "success");
-        navigate("/seller/dashboard");
+        const created = await vendorsApi.createProduct(payload);
+        productId = created.id;
+        showToast('Produit créé — en attente de modération','success');
       }
-    } catch (error) {
-      console.error("Erreur sauvegarde produit:", error);
-      showToast("Erreur lors de la sauvegarde", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-  const handleImagesChange = async () => {
-    if (!id) return;
-    try {
-      const products = await vendorsApi.getProducts();
-      const product = products.find((p) => p.id === parseInt(id));
-      if (product) {
-        setProductImages(product.images || []);
+      for (let i = 0; i < tempImgs.length; i++) {
+        try { await vendorsApi.uploadImage(productId, tempImgs[i].file, i===0 && images.length===0); }
+        catch { showToast("Une image n'a pas pu être envoyée",'error'); }
       }
-    } catch (error) {
-      console.error("Erreur rechargement images:", error);
-    }
+      navigate('/seller/products');
+    } catch (e: unknown) {
+      showToast(getErrorMessage(e),'error');
+    } finally { setSaving(false); }
   };
 
-  if (loading && isEdit) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement du produit...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="flex items-center justify-center h-64">
+      <RefreshCw size={24} className="animate-spin" style={{ color: T.orange }}/>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
-        {/* Header */}
-        <div className="mb-8">
-          <button
-            onClick={() => navigate("/seller/dashboard")}
-            className="flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-colors mb-4"
-          >
-            <ArrowLeft size={20} />
-            Retour au dashboard
-          </button>
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-holographic/10 flex items-center justify-center">
-              <Package className="text-holo-cyan" size={24} />
-            </div>
-            <div>
-              <h1 className="font-display font-bold text-4xl">
-                <span className="text-gradient animate-gradient-bg">
-                  {isEdit ? "Modifier le produit" : "Nouveau produit"}
-                </span>
-              </h1>
-              <p className="text-dark-text-secondary">
-                {isEdit
-                  ? "Mettez à jour les informations de votre produit"
-                  : "Ajoutez un nouveau produit à votre catalogue"}
-              </p>
-            </div>
-          </div>
+    <div className="max-w-5xl mx-auto space-y-5 pb-10">
+
+      {/* EN-TÊTE */}
+      <div className="flex items-center gap-3">
+        <Link to="/seller/products"
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105"
+          style={{ background: T.cream, border: `1px solid ${T.border}` }}>
+          <ArrowLeft size={16} style={{ color: T.muted }}/>
+        </Link>
+        <div>
+          <h1 className="font-black text-[20px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            {isEdit ? 'Modifier le produit' : 'Nouveau produit'}
+          </h1>
+          <p className="text-[12px]" style={{ color: T.muted }}>
+            {isEdit ? 'Modifiez et enregistrez.' : 'Soumis à modération BelivaY · SLA 48h'}
+          </p>
         </div>
+      </div>
 
-        {/* Formulaire */}
-        <form onSubmit={handleSubmit}>
-          <Card className="mb-6">
-            <h2 className="font-display font-bold text-2xl text-dark-text mb-6">
-              Informations du produit
-            </h2>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
-            <div className="space-y-6">
-              {/* Titre */}
-              <div>
-                <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Titre du produit *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) =>
-                    setFormData({ ...formData, title: e.target.value })
-                  }
-                  placeholder="Ex: iPhone 15 Pro Max 256GB"
-                  className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                />
+        {/* ── COLONNE GAUCHE (2/3) ── */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* INFOS GÉNÉRALES */}
+          <Section title="Informations générales" icon={<Package size={15}/>}>
+            <Field label="Titre du produit" required error={errors.title} hint={`${title.length}/200`}>
+              <input value={title} onChange={e => setTitle(e.target.value)} maxLength={200}
+                placeholder="Ex : Robe Wax Ankara Premium"
+                style={errors.title ? iErr : iBase}/>
+            </Field>
+            <Field label="Description courte" required error={errors.shortDesc}
+              hint={`${shortDesc.length}/300 · Affichée dans les aperçus`}>
+              <textarea value={shortDesc} onChange={e => setShortDesc(e.target.value)}
+                maxLength={300} rows={2}
+                placeholder="Ex : Robe en wax authentique, coupe évasée, toutes tailles disponibles."
+                style={errors.shortDesc ? { ...iErr, resize:'none' } : { ...iBase, resize:'none' }}/>
+            </Field>
+            <Field label="Description complète" required error={errors.description}>
+              <textarea value={description} onChange={e => setDesc(e.target.value)} rows={6}
+                placeholder="Matière, taille, entretien, garantie, particularités…"
+                style={errors.description ? { ...iErr, resize:'vertical', minHeight:120 } : { ...iBase, resize:'vertical', minHeight:120 }}/>
+            </Field>
+          </Section>
+
+          {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}
+          <Section title="Catégorie & Attributs" icon={<Tag size={15}/>}>
+
+            <Field label="Catégorie" required error={errors.parentCatId}>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {parentCats.map(c => (
+                  <button key={c.id} type="button"
+                    onClick={() => setParentCatId(String(c.id))}
+                    className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-left border-2 transition-all text-[12.5px] font-semibold"
+                    style={{
+                      background:  parentCatId === String(c.id) ? T.orangeL : T.cream,
+                      borderColor: parentCatId === String(c.id) ? T.orange : T.border,
+                      color:       parentCatId === String(c.id) ? T.orange : T.muted,
+                    }}>
+                    <Layers size={12} style={{ flexShrink: 0 }}/>
+                    <span className="truncate">{c.name}</span>
+                    {parentCatId === String(c.id) && <CheckCircle size={11} style={{ flexShrink: 0, marginLeft: 'auto' }}/>}
+                  </button>
+                ))}
               </div>
+            </Field>
 
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Description *
-                </label>
-                <textarea
-                  required
-                  rows={6}
-                  value={formData.description}
-                  onChange={(e) =>
-                    setFormData({ ...formData, description: e.target.value })
-                  }
-                  placeholder="Décrivez votre produit en détail..."
-                  className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary resize-none"
-                />
-              </div>
-
-              {/* Prix et Stock */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Prix (XAF) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="1"
-                    value={formData.price_xaf}
-                    onChange={(e) =>
-                      setFormData({ ...formData, price_xaf: e.target.value })
-                    }
-                    placeholder="50000"
-                    className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                  />
+            {/* Sous-catégorie — visible seulement si le parent a des enfants */}
+            {parentCatId && subCats.length > 0 && (
+              <Field label="Sous-catégorie"
+                hint="Optionnel. Choisissez une sous-catégorie pour plus de précision.">
+                <div className="flex items-center gap-2 mb-1.5" style={{ color: T.muted }}>
+                  <ChevronRight size={12}/>
+                  <span className="text-[11.5px] font-semibold">
+                    Sous-catégories de « {parentCats.find(c => c.id === parseInt(parentCatId))?.name} »
+                  </span>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                    Stock disponible *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="1"
-                    value={formData.stock_quantity}
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        stock_quantity: e.target.value,
-                      })
-                    }
-                    placeholder="10"
-                    className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text placeholder:text-dark-text-tertiary"
-                  />
-                </div>
-              </div>
-
-              {/* Catégorie */}
-              <div>
-                <label className="block text-sm font-medium text-dark-text-secondary mb-2">
-                  Catégorie *
-                </label>
-                <select
-                  required
-                  value={formData.category}
-                  onChange={(e) =>
-                    setFormData({ ...formData, category: e.target.value })
-                  }
-                  className="w-full px-4 py-3 rounded-xl glass border border-white/10 focus:border-holo-cyan focus:ring-2 focus:ring-holo-cyan/20 transition-all outline-none text-dark-text"
-                >
-                  <option value="">Sélectionnez une catégorie</option>
-                  {categories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
+                <div className="flex flex-wrap gap-2">
+                  {/* Bouton "Aucune" */}
+                  <button type="button" onClick={() => setSubCatId('')}
+                    className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border-2 transition-all"
+                    style={{ background: !subCatId ? T.creamAlt : T.cream, borderColor: !subCatId ? T.border : T.border, color: !subCatId ? T.text : T.muted }}>
+                    Catégorie principale
+                  </button>
+                  {subCats.map(c => (
+                    <button key={c.id} type="button" onClick={() => setSubCatId(String(c.id))}
+                      className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border-2 transition-all"
+                      style={{
+                        background:  subCatId === String(c.id) ? T.orangeL : T.cream,
+                        borderColor: subCatId === String(c.id) ? T.orange : T.border,
+                        color:       subCatId === String(c.id) ? T.orange : T.muted,
+                      }}>
+                      {c.name}
+                      {subCatId === String(c.id) && <CheckCircle size={10} className="inline ml-1"/>}
+                    </button>
                   ))}
-                </select>
-              </div>
-
-              {/* Statut actif */}
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="is_active"
-                  checked={formData.is_active}
-                  onChange={(e) =>
-                    setFormData({ ...formData, is_active: e.target.checked })
-                  }
-                  className="w-5 h-5 rounded border-white/10 text-holo-cyan focus:ring-holo-cyan"
-                />
-                <label
-                  htmlFor="is_active"
-                  className="text-sm text-dark-text-secondary cursor-pointer"
-                >
-                  Produit actif (visible sur la marketplace)
-                </label>
-              </div>
-            </div>
-          </Card>
-
-          {/* Images */}
-          <Card className="mb-6">
-            <h2 className="font-display font-bold text-2xl text-dark-text mb-4">
-              Images du produit
-            </h2>
-
-            {isEdit && id ? (
-              <ImageUploader
-                productId={parseInt(id)}
-                images={productImages}
-                onImagesChange={handleImagesChange}
-              />
-            ) : (
-              <div className="space-y-4">
-                {/* Upload en mode création */}
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    multiple
-                    onChange={(e) => {
-                      if (e.target.files) {
-                        setTempImages([
-                          ...tempImages,
-                          ...Array.from(e.target.files),
-                        ]);
-                      }
-                    }}
-                    className="hidden"
-                    id="temp-images"
-                  />
-                  <label
-                    htmlFor="temp-images"
-                    className="block w-full glass border-2 border-dashed border-white/10 rounded-xl p-8 hover:border-holo-cyan transition-all cursor-pointer"
-                  >
-                    <div className="flex flex-col items-center gap-3">
-                      <Upload className="text-dark-text-tertiary" size={48} />
-                      <p className="text-dark-text-secondary">
-                        Cliquez pour ajouter des images
-                      </p>
-                      <p className="text-dark-text-tertiary text-sm">
-                        PNG, JPG, WEBP (max 5 MB par image)
-                      </p>
-                    </div>
-                  </label>
                 </div>
+              </Field>
+            )}
 
-                {/* Preview des images temporaires */}
-                {tempImages.length > 0 && (
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {tempImages.map((file, index) => (
-                      <div
-                        key={index}
-                        className="relative group glass rounded-xl overflow-hidden border border-white/10"
-                      >
-                        <div className="aspect-square bg-dark-bg-secondary">
-                          <img
-                            src={URL.createObjectURL(file)}
-                            alt={`Preview ${index + 1}`}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        {index === 0 && (
-                          <div className="absolute top-2 left-2 px-2 py-1 rounded-lg bg-holo-cyan text-white text-xs font-semibold">
-                            Principale
-                          </div>
-                        )}
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setTempImages(
-                              tempImages.filter((_, i) => i !== index),
-                            )
-                          }
-                          className="absolute top-2 right-2 p-2 rounded-lg bg-red-500 hover:bg-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <X size={16} className="text-white" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
+            {/* Attributs dynamiques */}
+            {attributes.length > 0 && (
+              <div className="space-y-4 pt-1">
+                <p className="flex items-center gap-1.5 text-[11.5px] font-semibold" style={{ color: T.muted }}>
+                  <Info size={11}/> Attributs définis par BelivaY pour cette catégorie
+                </p>
+                {attributes.map(attr => (
+                  <Field key={attr.id} label={attr.name} required={attr.is_required}
+                    error={errors[`attr_${attr.id}`]}>
+                    <div className="flex flex-wrap gap-2">
+                      {attr.values.map(val => {
+                        const sel = (attrVals[attr.id] || []).includes(val);
+                        return (
+                          <button key={val} type="button" onClick={() => toggleAttr(attr.id, val)}
+                            className="px-3 py-1.5 rounded-xl text-[12.5px] font-semibold border-2 transition-all"
+                            style={{ background: sel?T.orangeL:T.cream, borderColor: sel?T.orange:T.border, color: sel?T.orange:T.muted }}>
+                            {val}{sel && <CheckCircle size={10} className="inline ml-1"/>}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Field>
+                ))}
               </div>
             )}
-          </Card>
 
-          {!isEdit && (
-            <Card className="mb-6">
-              <h2 className="font-display font-bold text-2xl text-dark-text mb-4">
-                Images du produit
-              </h2>
-              <div className="glass border-2 border-dashed border-white/10 rounded-xl p-12 text-center">
-                <Upload
-                  className="text-dark-text-tertiary mx-auto mb-4"
-                  size={48}
-                />
-                <p className="text-dark-text-secondary mb-2">
-                  Créez d'abord le produit
-                </p>
-                <p className="text-dark-text-tertiary text-sm">
-                  Vous pourrez ajouter des images après la création
+            {parentCatId && attributes.length === 0 && (
+              <div className="flex items-center gap-2 py-3 px-4 rounded-xl" style={{ background: T.creamAlt }}>
+                <Info size={12} style={{ color: T.mutedL }}/>
+                <p className="text-[12px]" style={{ color: T.muted }}>
+                  Aucun attribut défini pour cette catégorie pour l'instant.
                 </p>
               </div>
-            </Card>
-          )}
+            )}
+          </Section>
 
-          {/* Actions */}
-          <div className="flex gap-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => navigate("/seller/dashboard")}
-              className="flex-1"
-            >
+          {/* PHOTOS */}
+          <Section title="Photos du produit" icon={<ImageIcon size={15}/>}>
+            <p className="text-[12px]" style={{ color: T.muted }}>
+              Min. 1 photo · Max. 6 · JPG / PNG / WEBP · Max 5 Mo · 800×800px recommandé
+            </p>
+            <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+              {images.map(img => (
+                <div key={img.id} className="relative aspect-square rounded-xl overflow-hidden group"
+                  style={{ border: img.is_primary ? `2px solid ${T.orange}` : `1px solid ${T.border}` }}>
+                  <img src={img.image_url} alt="" className="w-full h-full object-cover"/>
+                  {img.is_primary && (
+                    <div className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                      style={{ background: T.orange, color: T.white }}>Principale</div>
+                  )}
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-1">
+                    {!img.is_primary && isEdit && (
+                      <button type="button" onClick={() => setPrimary(img.id)}
+                        className="text-[9px] px-1.5 py-0.5 rounded-lg font-bold" style={{ background: T.orange, color: T.white }}>
+                        Principale
+                      </button>
+                    )}
+                    <button type="button" onClick={() => rmExisting(img.id)}
+                      className="w-6 h-6 rounded-full flex items-center justify-center"
+                      style={{ background: T.red, color: T.white }}>
+                      <X size={11}/>
+                    </button>
+                  </div>
+                </div>
+              ))}
+              {tempImgs.map((t, i) => (
+                <div key={i} className="relative aspect-square rounded-xl overflow-hidden"
+                  style={{ border: `1px solid ${T.border}` }}>
+                  <img src={t.preview} alt="" className="w-full h-full object-cover"/>
+                  <button type="button" onClick={() => rmTemp(i)}
+                    className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                    style={{ background: T.red, color: T.white }}>
+                    <X size={10}/>
+                  </button>
+                </div>
+              ))}
+              {images.length + tempImgs.length < 6 && (
+                <>
+                  <input type="file" ref={photoRef} className="hidden" accept="image/*" multiple
+                    onChange={e => addPhotos(e.target.files)}/>
+                  <button type="button" onClick={() => photoRef.current?.click()}
+                    className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all hover:border-orange-300"
+                    style={{ borderColor: T.border, background: T.cream }}>
+                    <Upload size={18} style={{ color: T.mutedL }}/>
+                    <span className="text-[10px]" style={{ color: T.mutedL }}>Ajouter</span>
+                  </button>
+                </>
+              )}
+            </div>
+          </Section>
+        </div>
+
+        {/* ── COLONNE DROITE (1/3) ── */}
+        <div className="space-y-5">
+
+          {/* PRIX & STOCK */}
+          <Section title="Prix & Stock" icon={<DollarSign size={15}/>} accent>
+            <Field label="Prix de vente" required error={errors.priceXaf} hint="Prix final payé par l'acheteur">
+              <div className="relative">
+                <input type="number" value={priceXaf} onChange={e => setPriceXaf(e.target.value)} min={100} placeholder="14 500"
+                  style={{ ...(errors.priceXaf ? iErr : iBase), paddingRight: 60 }}/>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-semibold" style={{ color: T.mutedL }}>FCFA</span>
+              </div>
+            </Field>
+
+            <Field label="Prix barré (avant promo)" error={errors.compareAt}
+              hint={discPct > 0 ? `Réduction : -${discPct}%` : 'Laissez vide si pas de promotion'}>
+              <div className="relative">
+                <input type="number" value={compareAt} onChange={e => setCompareAt(e.target.value)} min={0} placeholder="22 000"
+                  style={{ ...(errors.compareAt ? iErr : iBase), paddingRight: 60 }}/>
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] font-semibold" style={{ color: T.mutedL }}>FCFA</span>
+              </div>
+              {discPct > 0 && (
+                <div className="flex items-center gap-2 mt-1.5 px-3 py-2 rounded-xl"
+                  style={{ background: T.orangeL, border: `1px solid ${T.orangeB}` }}>
+                  <span className="font-black text-[16px]" style={{ color: T.orange }}>-{discPct}%</span>
+                  <span className="text-[11.5px]" style={{ color: T.muted }}>
+                    Économie : {fmtXAF(compare - price)}
+                  </span>
+                </div>
+              )}
+            </Field>
+
+            <Field label="Fin de promotion" hint="Timer affiché sur la fiche produit">
+              <input type="date" value={promoEnd} onChange={e => setPromoEnd(e.target.value)} style={iBase}/>
+              {promoEnd && <div className="mt-1"><PromoCountdown end={promoEnd}/></div>}
+            </Field>
+
+            <div className="h-px" style={{ background: T.border }}/>
+
+            <Field label="Stock disponible" required error={errors.stockQty}>
+              <input type="number" value={stockQty} onChange={e => setStockQty(e.target.value)} min={0} placeholder="Ex : 12" style={errors.stockQty?iErr:iBase}/>
+            </Field>
+
+            <Field label="Seuil alerte stock" required error={errors.threshold}
+              hint="En dessous de ce nombre, une alerte s'affiche dans votre espace">
+              <input type="number" value={stockThreshold} onChange={e => setThreshold(e.target.value)}
+                min={0} placeholder="Ex : 3"
+                style={errors.threshold?iErr:iBase}/>
+            </Field>
+
+            {/* Statut */}
+            <div className="flex items-center justify-between py-2">
+              <div>
+                <p className="text-[12.5px] font-semibold" style={{ color: T.text }}>Produit actif</p>
+                <p className="text-[11px]" style={{ color: T.mutedL }}>Visible dans le catalogue</p>
+              </div>
+              <button type="button" onClick={() => setIsActive(!isActive)}
+                className="w-12 h-6 rounded-full transition-all relative" style={{ background: isActive ? T.green : T.border }}>
+                <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
+                  style={{ left: isActive ? '26px' : '2px' }}/>
+              </button>
+            </div>
+          </Section>
+
+          {/* RÉCAPITULATIF */}
+          <Section title="Récapitulatif" icon={<BarChart2 size={15}/>}>
+            <div className="space-y-2.5">
+              {[
+                { label: 'Prix de vente',             value: price > 0 ? fmtXAF(price) : '—',                       color: T.text  },
+                { label: `Commission BelivaY (${commission}%)`, value: price > 0 ? `-${fmtXAF(price*commission/100)}` : '—', color: T.red   },
+                { label: 'Vous recevrez',              value: price > 0 ? fmtXAF(net) : '—',                         color: T.green },
+              ].map((row,i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <p className="text-[12.5px]" style={{ color: T.muted }}>{row.label}</p>
+                  <p className="font-bold text-[13px]" style={{ color: row.color }}>{row.value}</p>
+                </div>
+              ))}
+              <div className="h-px" style={{ background: T.border }}/>
+              <p className="text-[11px] leading-relaxed" style={{ color: T.mutedL }}>
+                Versé 24h après confirmation acheteur ou 48h auto (Escrow BelivaY).
+              </p>
+            </div>
+
+            <button type="button" onClick={handleSubmit} disabled={saving}
+              className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-white transition-all disabled:opacity-50 mt-4"
+              style={{ background: T.orange, boxShadow: '0 4px 14px rgba(244,121,32,0.40)' }}>
+              {saving
+                ? <><RefreshCw size={14} className="animate-spin"/>Enregistrement…</>
+                : <><Save size={14}/>{isEdit ? 'Enregistrer' : 'Créer le produit'}</>}
+            </button>
+            <Link to="/seller/products"
+              className="block text-center text-[12.5px] font-semibold mt-2"
+              style={{ color: T.muted }}>
               Annuler
-            </Button>
-            <Button
-              type="submit"
-              variant="gradient"
-              isLoading={loading}
-              className="flex-1"
-            >
-              {isEdit ? "Mettre à jour" : "Créer le produit"}
-            </Button>
-          </div>
-        </form>
+            </Link>
+          </Section>
+
+        </div>
       </div>
     </div>
   );

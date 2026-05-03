@@ -1,641 +1,415 @@
 // frontend/src/features/admin/UserDetailPage.tsx
-// Détail complet d'un utilisateur - Vue Admin Enterprise
+// Fiche détail utilisateur — admin BelivaY
 
-import { useEffect, useState, useCallback } from 'react';
-import { Link, useParams, useNavigate } from 'react-router-dom';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
-  ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  Shield,
-  ShieldOff,
-  Edit2,
-  Trash2,
-  Activity,
-  ShoppingCart,
-  DollarSign,
-  Package,
-  Store,
-  Clock,
-  AlertCircle,
-  CheckCircle,
-  XCircle,
-  TrendingUp,
+  ArrowLeft, ChevronRight, RefreshCw, User,
+  Shield, ShieldOff, Trash2, Save, Edit2,
+  Store, ShoppingCart, Package, CheckCircle, XCircle,
+  Clock, AlertTriangle, ExternalLink,
 } from 'lucide-react';
-import { Card, Badge } from '@/components/ui';
 import { adminApi, type AdminUserDetail } from '@/services/api/admin';
+import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
 
-export default function UserDetailPage() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { showToast } = useToast();
-  const { confirm } = useConfirm();
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
 
-  const [user, setUser] = useState<AdminUserDetail | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [editMode, setEditMode] = useState(false);
-  const [editData, setEditData] = useState({
-    is_staff: false,
-    is_active: false,
-    is_superuser: false,
-    first_name: '',
-    last_name: '',
-    email: '',
+const fmtXaf  = (n?: number) => n ? `${new Intl.NumberFormat('fr-FR').format(n)} FCFA` : '—';
+const fmtDate = (d?: string | null) =>
+  d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' }) : '—';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SOUS-COMPOSANTS
+// ─────────────────────────────────────────────────────────────────────────────
+
+function InfoRow({ label, value, T }: { label: string; value: React.ReactNode; T: ReturnType<typeof useAdminTheme> }) {
+  return (
+    <div className="flex items-start justify-between py-2.5 gap-4" style={{ borderBottom: `1px solid ${T.border}` }}>
+      <span style={{ fontSize: 12.5, color: T.muted, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 13, fontWeight: 500, color: T.text, textAlign: 'right' }}>{value}</span>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+export default function UserDetailPage() {
+  const { id }        = useParams<{ id: string }>();
+  const T             = useAdminTheme();
+  const navigate      = useNavigate();
+  const { showToast } = useToast();
+  const { confirm }   = useConfirm();
+  const toastRef      = useRef(showToast);
+  useEffect(() => { toastRef.current = showToast; });
+
+  const [user,     setUser]     = useState<AdminUserDetail | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [editing,  setEditing]  = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [acting,   setActing]   = useState(false);
+  const [form,     setForm]     = useState({
+    first_name: '', last_name: '', email: '',
+    is_staff: false, is_active: true, is_superuser: false,
   });
 
-  const loadUser = useCallback(async () => {
+  const load = useCallback(async () => {
     if (!id) return;
-
+    setLoading(true);
     try {
-      setLoading(true);
-      const data = await adminApi.getUserDetail(parseInt(id));
+      const data = await adminApi.getUserDetail(Number(id));
       setUser(data);
-      setEditData({
-        is_staff: data.is_staff,
-        is_active: data.is_active,
+      setForm({
+        first_name:   data.first_name,
+        last_name:    data.last_name,
+        email:        data.email,
+        is_staff:     data.is_staff,
+        is_active:    data.is_active,
         is_superuser: data.is_superuser,
-        first_name: data.first_name,
-        last_name: data.last_name,
-        email: data.email,
       });
-    } catch (error) {
-      console.error('Erreur chargement utilisateur:', error);
-      showToast('Erreur de chargement de l\'utilisateur', 'error');
+    } catch {
+      toastRef.current('Utilisateur introuvable', 'error');
+      navigate('/admin/users');
     } finally {
       setLoading(false);
     }
-  }, [id, showToast]);
+  }, [id, navigate]);
 
-  useEffect(() => {
-    loadUser();
-  }, [loadUser]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleSaveChanges = async () => {
+  const handleSave = async () => {
     if (!user) return;
-
+    setSaving(true);
     try {
-      await adminApi.updateUser(user.id, editData);
-      showToast('Utilisateur mis à jour avec succès', 'success');
-      setEditMode(false);
-      loadUser();
-    } catch (error) {
-      console.error('Erreur mise à jour:', error);
-      showToast('Erreur lors de la mise à jour', 'error');
-    }
+      await adminApi.updateUser(user.id, form);
+      showToast('Profil mis à jour', 'success');
+      setEditing(false);
+      await load();
+    } catch { showToast('Erreur', 'error'); }
+    finally  { setSaving(false); }
   };
 
   const handleBan = async () => {
     if (!user) return;
-
-    const reason = prompt('Raison du bannissement :');
-    if (!reason) return;
-
+    const reason = window.prompt('Raison du bannissement :');
+    if (!reason?.trim()) return;
+    setActing(true);
     try {
-      await adminApi.banUser(user.id, reason);
-      showToast('Utilisateur banni avec succès', 'success');
-      loadUser();
-    } catch (error) {
-      console.error('Erreur bannissement:', error);
-      showToast('Erreur lors du bannissement', 'error');
-    }
+      await adminApi.banUser(user.id, reason.trim());
+      showToast('Utilisateur banni', 'success');
+      await load();
+    } catch { showToast('Erreur', 'error'); }
+    finally  { setActing(false); }
   };
 
   const handleUnban = async () => {
     if (!user) return;
-
-    const confirmed = await confirm({
-      title: 'Débannir cet utilisateur ?',
-      message: `Voulez-vous vraiment débannir ${user.username} ?`,
-      type: 'info',
-    });
-
-    if (!confirmed) return;
-
+    const ok = await confirm({ title: `Débannir @${user.username} ?`, message: 'L\'accès sera restauré.', type: 'warning', confirmText: 'Débannir', cancelText: 'Annuler' });
+    if (!ok) return;
+    setActing(true);
     try {
       await adminApi.unbanUser(user.id);
-      showToast('Utilisateur débanni avec succès', 'success');
-      loadUser();
-    } catch (error) {
-      console.error('Erreur débannissement:', error);
-      showToast('Erreur lors du débannissement', 'error');
-    }
+      showToast('Utilisateur débanni', 'success');
+      await load();
+    } catch { showToast('Erreur', 'error'); }
+    finally  { setActing(false); }
   };
 
   const handleDelete = async () => {
     if (!user) return;
-
-    const confirmed = await confirm({
-      title: 'Supprimer cet utilisateur ?',
-      message: `Voulez-vous vraiment supprimer définitivement ${user.username} ? Cette action est irréversible.`,
-      type: 'danger',
-    });
-
-    if (!confirmed) return;
-
+    const ok = await confirm({ title: `Supprimer @${user.username} ?`, message: 'Cette action est irréversible.', type: 'danger', confirmText: 'Supprimer', cancelText: 'Annuler' });
+    if (!ok) return;
+    setActing(true);
     try {
       await adminApi.deleteUser(user.id);
-      showToast('Utilisateur supprimé avec succès', 'success');
+      showToast('Utilisateur supprimé', 'success');
       navigate('/admin/users');
-    } catch (error) {
-      console.error('Erreur suppression:', error);
-      showToast('Erreur lors de la suppression', 'error');
-    }
+    } catch { showToast('Erreur', 'error'); }
+    finally  { setActing(false); }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('fr-FR').format(amount) + ' FCFA';
-  };
-
-  const formatDateTime = (dateStr: string | null) => {
-    if (!dateStr) return 'Jamais';
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  const inp: React.CSSProperties = {
+    background: T.input, color: T.text,
+    border: `1px solid ${T.inputBorder}`,
+    borderRadius: 10, padding: '8px 12px',
+    fontSize: 13, outline: 'none', width: '100%',
+    fontFamily: "'Plus Jakarta Sans',sans-serif",
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin" />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div style={{ width: 40, height: 40, borderRadius: '50%', border: `3px solid ${T.border}`, borderTopColor: T.red, animation: 'spin 0.8s linear infinite' }} />
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
   }
 
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="max-w-md w-full text-center p-8">
-          <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-          <h2 className="text-xl font-display font-bold mb-2">Utilisateur introuvable</h2>
-          <p className="text-dark-text-secondary mb-6">Cet utilisateur n'existe pas.</p>
-          <button
-            onClick={() => navigate('/admin/users')}
-            className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
-          >
-            Retour aux utilisateurs
-          </button>
-        </Card>
-      </div>
-    );
-  }
+  if (!user) return null;
 
-  const isBanned = user.profile?.is_banned || false;
+  const isBanned    = user.profile?.is_banned ?? false;
+  const roleName    = user.is_superuser ? 'Super Admin' : user.is_staff ? 'Staff' : user.vendor_profile ? 'Vendeur' : 'Acheteur';
+  const roleColor   = user.is_superuser ? '#EF4444' : user.is_staff ? '#8B5CF6' : user.vendor_profile ? '#F47920' : '#6B7280';
+  const avatarBg    = user.is_superuser ? 'linear-gradient(135deg,#EF4444,#B91C1C)' : user.is_staff ? 'linear-gradient(135deg,#8B5CF6,#6D28D9)' : user.vendor_profile ? 'linear-gradient(135deg,#F47920,#C2590A)' : 'linear-gradient(135deg,#374151,#1F2937)';
 
+  // ─────────────────────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen py-8 px-4">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <Link
-            to="/admin/users"
-            className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-all mb-4"
-          >
-            <ArrowLeft size={20} />
-            Retour aux utilisateurs
+    <div className="space-y-5">
+
+      {/* Breadcrumb */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Link to="/admin/users" className="flex items-center gap-1.5 text-[12.5px] font-medium"
+            style={{ color: T.muted }}
+            onMouseEnter={e => (e.currentTarget.style.color = T.text)}
+            onMouseLeave={e => (e.currentTarget.style.color = T.muted)}>
+            <ArrowLeft size={14} /> Utilisateurs
           </Link>
-
-          <div className="flex items-start justify-between flex-wrap gap-4">
-            <div>
-              <h1 className="font-display font-bold text-4xl mb-2">
-                <span className="text-gradient animate-gradient-bg">{user.username}</span>
-              </h1>
-              <p className="text-dark-text-secondary">
-                Membre depuis {formatDateTime(user.date_joined)}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              {!editMode ? (
-                <>
-                  <button
-                    onClick={() => setEditMode(true)}
-                    className="px-4 py-2 bg-holo-purple text-white rounded-xl hover:bg-holo-purple/90 transition-all flex items-center gap-2"
-                  >
-                    <Edit2 size={16} />
-                    Modifier
-                  </button>
-                  {isBanned ? (
-                    <button
-                      onClick={handleUnban}
-                      className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all flex items-center gap-2"
-                    >
-                      <ShieldOff size={16} />
-                      Débannir
-                    </button>
-                  ) : (
-                    <button
-                      onClick={handleBan}
-                      className="px-4 py-2 bg-yellow-500 text-white rounded-xl hover:bg-yellow-600 transition-all flex items-center gap-2"
-                    >
-                      <Shield size={16} />
-                      Bannir
-                    </button>
-                  )}
-                  <button
-                    onClick={handleDelete}
-                    className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all flex items-center gap-2"
-                  >
-                    <Trash2 size={16} />
-                    Supprimer
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={handleSaveChanges}
-                    className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all"
-                  >
-                    Enregistrer
-                  </button>
-                  <button
-                    onClick={() => {
-                      setEditMode(false);
-                      setEditData({
-                        is_staff: user.is_staff,
-                        is_active: user.is_active,
-                        is_superuser: user.is_superuser,
-                        first_name: user.first_name,
-                        last_name: user.last_name,
-                        email: user.email,
-                      });
-                    }}
-                    className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
-                  >
-                    Annuler
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          <ChevronRight size={12} style={{ color: T.muted }} />
+          <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>@{user.username}</span>
         </div>
-
-        {/* Statistiques Utilisateur */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Commandes</p>
-                <p className="font-display font-bold text-3xl">{user.stats.total_orders}</p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-holo-cyan/10 flex items-center justify-center">
-                <ShoppingCart className="text-holo-cyan" size={24} />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Total Dépensé</p>
-                <p className="font-display font-bold text-2xl text-green-400">
-                  {formatCurrency(user.stats.total_spent)}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <DollarSign className="text-green-400" size={24} />
-              </div>
-            </div>
-          </Card>
-
-          <Card>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-dark-text-tertiary text-sm mb-1">Panier Moyen</p>
-                <p className="font-display font-bold text-2xl">
-                  {formatCurrency(user.stats.average_order_value)}
-                </p>
-              </div>
-              <div className="w-12 h-12 rounded-xl bg-holo-purple/10 flex items-center justify-center">
-                <TrendingUp className="text-holo-purple" size={24} />
-              </div>
-            </div>
-          </Card>
-
-          {user.is_vendor && (
-            <Card>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-dark-text-tertiary text-sm mb-1">Produits Actifs</p>
-                  <p className="font-display font-bold text-3xl text-holo-pink">
-                    {user.stats.active_products || 0}
-                  </p>
-                </div>
-                <div className="w-12 h-12 rounded-xl bg-holo-pink/10 flex items-center justify-center">
-                  <Package className="text-holo-pink" size={24} />
-                </div>
-              </div>
-            </Card>
+        <div className="flex items-center gap-2 flex-wrap flex-shrink-0">
+          {!editing ? (
+            <>
+              <button onClick={() => setEditing(true)}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
+                style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
+                <Edit2 size={13} /> Modifier
+              </button>
+              {isBanned ? (
+                <button onClick={handleUnban} disabled={acting}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
+                  style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
+                  <ShieldOff size={13} /> Débannir
+                </button>
+              ) : !user.is_superuser && (
+                <button onClick={handleBan} disabled={acting}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
+                  style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>
+                  <Shield size={13} /> Bannir
+                </button>
+              )}
+              {!user.is_superuser && (
+                <button onClick={handleDelete} disabled={acting}
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
+                  style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
+                  <Trash2 size={13} /> Supprimer
+                </button>
+              )}
+            </>
+          ) : (
+            <>
+              <button onClick={handleSave} disabled={saving}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold text-white"
+                style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
+                {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
+                Sauvegarder
+              </button>
+              <button onClick={() => { setEditing(false); }}
+                className="px-3 py-2 rounded-xl text-[12px] font-semibold"
+                style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
+                Annuler
+              </button>
+            </>
           )}
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Colonne Principale */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Informations Personnelles */}
-            <Card>
-              <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-                <User className="text-holo-cyan" size={24} />
-                Informations Personnelles
-              </h3>
+      {/* Bannissement alerte */}
+      {isBanned && (
+        <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <AlertTriangle size={18} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>Compte banni</p>
+            {user.profile?.ban_reason && <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{user.profile?.ban_reason}</p>}
+          </div>
+        </div>
+      )}
 
-              {editMode ? (
+      {/* Layout 2 colonnes */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+
+        {/* Colonne gauche */}
+        <div className="lg:col-span-2 space-y-5">
+
+          {/* Header utilisateur */}
+          <div className="rounded-2xl p-6" style={{ background: 'linear-gradient(135deg,#111827 0%,#1a1f35 60%,#16213e 100%)', border: '1px solid rgba(255,255,255,0.06)' }}>
+            <div className="flex items-start gap-4">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl text-white flex-shrink-0" style={{ background: avatarBg }}>
+                {user.username[0]?.toUpperCase()}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2 flex-wrap mb-2">
+                  <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: '#F9FAFB' }}>
+                    {user.first_name || user.last_name ? `${user.first_name} ${user.last_name}` : user.username}
+                  </h1>
+                  <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 8, background: roleColor + '20', color: roleColor, flexShrink: 0 }}>
+                    {roleName}
+                  </span>
+                </div>
+                <p style={{ fontSize: 13, color: 'rgba(249,250,251,0.5)' }}>@{user.username}</p>
+                <p style={{ fontSize: 12.5, color: 'rgba(249,250,251,0.35)', marginTop: 2 }}>{user.email}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Formulaire d'édition ou infos */}
+          <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+            <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
+              <User size={14} style={{ color: T.red }} />
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Informations personnelles</span>
+            </div>
+            <div className="p-5">
+              {editing ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm text-dark-text-tertiary mb-2">
-                        Prénom
-                      </label>
-                      <input
-                        type="text"
-                        value={editData.first_name}
-                        onChange={(e) =>
-                          setEditData((prev) => ({ ...prev, first_name: e.target.value }))
-                        }
-                        className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
-                      />
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Prénom</label>
+                      <input type="text" value={form.first_name} onChange={e => setForm(f => ({...f, first_name: e.target.value}))} style={inp}
+                        onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                     </div>
                     <div>
-                      <label className="block text-sm text-dark-text-tertiary mb-2">Nom</label>
-                      <input
-                        type="text"
-                        value={editData.last_name}
-                        onChange={(e) =>
-                          setEditData((prev) => ({ ...prev, last_name: e.target.value }))
-                        }
-                        className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
-                      />
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Nom</label>
+                      <input type="text" value={form.last_name} onChange={e => setForm(f => ({...f, last_name: e.target.value}))} style={inp}
+                        onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                     </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm text-dark-text-tertiary mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={editData.email}
-                      onChange={(e) =>
-                        setEditData((prev) => ({ ...prev, email: e.target.value }))
-                      }
-                      className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-4">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editData.is_active}
-                        onChange={(e) =>
-                          setEditData((prev) => ({ ...prev, is_active: e.target.checked }))
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">Compte actif</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editData.is_staff}
-                        onChange={(e) =>
-                          setEditData((prev) => ({ ...prev, is_staff: e.target.checked }))
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">Admin</span>
-                    </label>
-
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={editData.is_superuser}
-                        onChange={(e) =>
-                          setEditData((prev) => ({ ...prev, is_superuser: e.target.checked }))
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="text-sm">Super Admin</span>
-                    </label>
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <User className="text-dark-text-tertiary mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-dark-text-tertiary">Nom complet</p>
-                      <p className="font-medium">
-                        {user.first_name || user.last_name
-                          ? `${user.first_name} ${user.last_name}`.trim()
-                          : 'Non renseigné'}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Mail className="text-dark-text-tertiary mt-1" size={20} />
-                    <div>
-                      <p className="text-sm text-dark-text-tertiary">Email</p>
-                      <p className="font-medium">{user.email}</p>
-                    </div>
-                  </div>
-
-                  {user.profile?.phone && (
-                    <div className="flex items-start gap-3">
-                      <Phone className="text-dark-text-tertiary mt-1" size={20} />
-                      <div>
-                        <p className="text-sm text-dark-text-tertiary">Téléphone</p>
-                        <p className="font-medium">{user.profile.phone}</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {user.profile?.bio && (
-                    <div className="p-3 bg-dark-bg-tertiary rounded-xl border border-white/10">
-                      <p className="text-sm text-dark-text-tertiary mb-1">Bio</p>
-                      <p className="text-sm">{user.profile.bio}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </Card>
-
-            {/* Profil Vendeur */}
-            {user.is_vendor && user.vendor_profile && (
-              <Card>
-                <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-                  <Store className="text-holo-purple" size={24} />
-                  Profil Vendeur
-                </h3>
-                <div className="space-y-3">
-                  <div>
-                    <p className="text-sm text-dark-text-tertiary">Nom commercial</p>
-                    <p className="font-medium">{user.vendor_profile.business_name}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Statut</p>
-                    <Badge
-                      variant={
-                        user.vendor_profile.status === 'APPROVED'
-                          ? 'success'
-                          : user.vendor_profile.status === 'PENDING'
-                          ? 'warning'
-                          : 'error'
-                      }
-                    >
-                      {user.vendor_profile.status}
-                    </Badge>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Email</label>
+                    <input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} style={inp}
+                      onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                   </div>
-                  <Link
-                    to={`/admin/vendors/${user.id}`}
-                    className="inline-block mt-4 text-holo-purple hover:underline"
-                  >
-                    Voir le profil vendeur complet →
-                  </Link>
-                </div>
-              </Card>
-            )}
-
-            {/* Timeline Activité */}
-            <Card>
-              <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
-                <Activity className="text-holo-cyan" size={24} />
-                Timeline d'Activité
-              </h3>
-              {user.activity_logs.length === 0 ? (
-                <p className="text-dark-text-secondary text-center py-6">
-                  Aucune activité enregistrée
-                </p>
-              ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {user.activity_logs.map((log) => (
-                    <div
-                      key={log.id}
-                      className="p-3 rounded-xl bg-dark-bg-tertiary border border-white/10"
-                    >
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <p className="font-medium text-holo-cyan">{log.action}</p>
-                          {log.performed_by_name && (
-                            <p className="text-sm text-dark-text-tertiary">
-                              Par <strong>{log.performed_by_name}</strong>
-                            </p>
-                          )}
+                  <div className="flex items-center gap-6 flex-wrap pt-2">
+                    {([
+                      { key: 'is_active'    as keyof typeof form, label: 'Compte actif' },
+                      { key: 'is_staff'     as keyof typeof form, label: 'Staff admin' },
+                      { key: 'is_superuser' as keyof typeof form, label: 'Super admin' },
+                    ]).map(({ key, label }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer">
+                        <div
+                          onClick={() => setForm(f => ({ ...f, [key]: !f[key] }))}
+                          style={{ width: 36, height: 20, borderRadius: 10, background: (form[key] as boolean) ? T.red : T.border, position: 'relative', cursor: 'pointer', transition: 'background 0.2s' }}>
+                          <div style={{ width: 14, height: 14, borderRadius: '50%', background: '#fff', position: 'absolute', top: 3, left: (form[key] as boolean) ? 19 : 3, transition: 'left 0.2s' }} />
                         </div>
-                        <span className="text-xs text-dark-text-tertiary">
-                          {formatDateTime(log.timestamp)}
-                        </span>
-                      </div>
-                      {log.description && (
-                        <p className="text-sm text-dark-text-secondary">{log.description}</p>
-                      )}
-                      {log.ip_address && (
-                        <p className="text-xs text-dark-text-tertiary mt-2">
-                          IP: {log.ip_address}
-                        </p>
-                      )}
+                        <span style={{ fontSize: 13, color: T.text }}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <InfoRow label="Prénom" value={user.first_name || '—'} T={T} />
+                  <InfoRow label="Nom" value={user.last_name || '—'} T={T} />
+                  <InfoRow label="Email" value={user.email} T={T} />
+                  <InfoRow label="Username" value={`@${user.username}`} T={T} />
+                  <InfoRow label="Inscrit le" value={fmtDate(user.date_joined)} T={T} />
+                  <InfoRow label="Dernière connexion" value={fmtDate(user.last_login)} T={T} />
+                  <InfoRow label="Compte actif" value={user.is_active ? <CheckCircle size={15} style={{color:'#10B981'}} /> : <XCircle size={15} style={{color:'#EF4444'}} />} T={T} />
+                  <div className="flex items-start justify-between pt-2.5">
+                    <span style={{ fontSize: 12.5, color: T.muted }}>Permissions</span>
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {user.is_superuser && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>Super Admin</span>}
+                      {user.is_staff && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(139,92,246,0.12)', color: '#8B5CF6' }}>Staff</span>}
+                      {!user.is_superuser && !user.is_staff && <span style={{ fontSize: 10.5, color: T.muted }}>Utilisateur standard</span>}
                     </div>
-                  ))}
+                  </div>
                 </div>
               )}
-            </Card>
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="space-y-6">
-            {/* Statut Compte */}
-            <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Statut du Compte</h3>
-              <div className="space-y-3">
-                <div>
-                  <p className="text-sm text-dark-text-tertiary mb-2">État</p>
-                  {isBanned ? (
-                    <Badge variant="error" className="w-full justify-center py-2">
-                      <XCircle size={16} className="mr-2" />
-                      Banni
-                    </Badge>
-                  ) : user.is_active ? (
-                    <Badge variant="success" className="w-full justify-center py-2">
-                      <CheckCircle size={16} className="mr-2" />
-                      Actif
-                    </Badge>
-                  ) : (
-                    <Badge variant="default" className="w-full justify-center py-2">
-                      <XCircle size={16} className="mr-2" />
-                      Inactif
-                    </Badge>
-                  )}
-                </div>
-
-                {isBanned && user.profile && (
-                  <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
-                    <p className="text-sm font-medium text-red-400 mb-1">Raison du ban</p>
-                    <p className="text-sm">{user.profile.ban_reason}</p>
-                    <p className="text-xs text-dark-text-tertiary mt-2">
-                      Banni le {formatDateTime(user.profile.banned_at)}
-                    </p>
-                    {user.profile.banned_by && (
-                      <p className="text-xs text-dark-text-tertiary">
-                        Par {user.profile.banned_by}
-                      </p>
-                    )}
+          {/* Activité récente */}
+          {user.activity_logs && user.activity_logs.length > 0 && (
+            <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+              <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
+                <Clock size={14} style={{ color: T.red }} />
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Activité récente</span>
+              </div>
+              <div className="divide-y" style={{ borderColor: T.border }}>
+                {user.activity_logs.slice(0, 8).map((log: typeof user.activity_logs[0], i: number) => (
+                  <div key={i} className="px-5 py-3 flex items-start gap-3">
+                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: T.red, flexShrink: 0, marginTop: 6 }} />
+                    <div className="flex-1 min-w-0">
+                      <p style={{ fontSize: 13, color: T.text }}>{log.action}</p>
+                      {log.description && <p style={{ fontSize: 11.5, color: T.muted, marginTop: 1 }}>{log.description}</p>}
+                    </div>
+                    <p style={{ fontSize: 11, color: T.muted, flexShrink: 0 }}>{fmtDate(log.timestamp)}</p>
                   </div>
-                )}
-
-                <div className="flex gap-2 flex-wrap">
-                  {user.is_superuser && <Badge variant="error">Super Admin</Badge>}
-                  {user.is_staff && !user.is_superuser && (
-                    <Badge variant="warning">Admin</Badge>
-                  )}
-                  {user.is_vendor && <Badge variant="default">Vendeur</Badge>}
-                </div>
+                ))}
               </div>
-            </Card>
+            </div>
+          )}
+        </div>
 
-            {/* Dates */}
-            <Card>
-              <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
-                <Clock className="text-holo-pink" size={20} />
-                Dates
-              </h3>
-              <div className="space-y-3 text-sm">
-                <div>
-                  <p className="text-dark-text-tertiary">Inscription</p>
-                  <p className="font-medium">{formatDateTime(user.date_joined)}</p>
-                </div>
-                <div>
-                  <p className="text-dark-text-tertiary">Dernière connexion</p>
-                  <p className="font-medium">{formatDateTime(user.last_login)}</p>
-                </div>
-              </div>
-            </Card>
+        {/* Colonne droite */}
+        <div className="space-y-5">
 
-            {/* Actions Rapides */}
-            <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Actions Rapides</h3>
-              <div className="space-y-2">
-                <Link
-                  to={`/admin/orders?search=${user.email}`}
-                  className="block w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-cyan transition-all text-center"
-                >
-                  Voir les commandes
+          {/* Statistiques */}
+          <div className="rounded-2xl p-5 space-y-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+            <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text }}>Statistiques</p>
+            {[
+              { icon: ShoppingCart, label: 'Commandes',      value: user.stats?.total_orders ?? 0,      color: '#8B5CF6' },
+              { icon: Package,      label: 'Montant dépensé', value: fmtXaf(user.stats?.total_spent), color: '#10B981' },
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={i} className="flex items-center justify-between py-2.5" style={{ borderBottom: `1px solid ${T.border}` }}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: s.color + '15' }}>
+                      <Icon size={14} style={{ color: s.color }} />
+                    </div>
+                    <span style={{ fontSize: 12.5, color: T.muted }}>{s.label}</span>
+                  </div>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{typeof s.value === 'number' ? s.value.toLocaleString('fr-FR') : s.value}</span>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Profil vendeur */}
+          {user.vendor_profile && (
+            <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid #F4792030` }}>
+              <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: 'rgba(244,121,32,0.05)' }}>
+                <div className="flex items-center gap-2">
+                  <Store size={14} style={{ color: '#F47920' }} />
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Profil Vendeur</span>
+                </div>
+                <Link to={`/admin/vendors/${user.vendor_profile.id}`}
+                  className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: '#F47920' }}>
+                  Voir <ExternalLink size={10} />
                 </Link>
-                {user.is_vendor && (
-                  <Link
-                    to={`/admin/products?vendor=${user.id}`}
-                    className="block w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-purple transition-all text-center"
-                  >
-                    Voir les produits
-                  </Link>
-                )}
               </div>
-            </Card>
+              <div className="p-5">
+                <InfoRow label="Boutique" value={<span style={{ color: '#F47920', fontWeight: 600 }}>{user.vendor_profile.business_name}</span>} T={T} />
+                <InfoRow label="Statut" value={user.vendor_profile.status} T={T} />
+              </div>
+            </div>
+          )}
+
+          {/* Accès rapide */}
+          <div className="rounded-2xl p-4 space-y-2" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>Accès rapide</p>
+            <Link to={`/admin/orders?user=${user.id}`}
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl w-full text-[12.5px] font-semibold transition-all"
+              style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; }}>
+              <ShoppingCart size={14} /> Voir ses commandes
+            </Link>
+            {user.vendor_profile && (
+              <Link to={`/admin/catalogue?vendor=${user.vendor_profile.id}`}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl w-full text-[12.5px] font-semibold transition-all"
+                style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; }}>
+                <Package size={14} /> Voir ses produits
+              </Link>
+            )}
           </div>
         </div>
       </div>

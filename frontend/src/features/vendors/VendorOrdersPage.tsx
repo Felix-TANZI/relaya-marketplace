@@ -3,15 +3,22 @@
 
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Package, Eye, Filter, CreditCard, Truck } from 'lucide-react';
 import { Button, Card, Badge } from '@/components/ui';
-import { vendorsApi, type VendorOrder, type VendorOrderFilters } from '@/services/api/vendors';
+import {
+  vendorsApi,
+  type FulfillmentStatus,
+  type PaymentStatus,
+  type VendorOrder,
+  type VendorOrderFilters,
+} from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
-import type { PaymentStatus, FulfillmentStatus } from '@/types/order';
 
 export default function VendorOrdersPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
-  
+
   const [orders, setOrders] = useState<VendorOrder[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<VendorOrderFilters>({});
@@ -29,7 +36,7 @@ export default function VendorOrdersPage() {
       setOrders(data);
     } catch (error) {
       console.error('Erreur chargement commandes:', error);
-      showToast('Erreur de chargement des commandes', 'error');
+      showToast(t('vendor.errorLoadingOrders'), 'error');
     } finally {
       setLoading(false);
     }
@@ -56,13 +63,13 @@ export default function VendorOrdersPage() {
   const getPaymentStatusBadge = (status: PaymentStatus) => {
     switch (status) {
       case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente' };
+        return { variant: 'warning' as const, text: t('vendor.paymentPending') };
       case 'PAID':
-        return { variant: 'success' as const, text: 'Payé' };
+        return { variant: 'success' as const, text: t('vendor.paymentPaid') };
       case 'FAILED':
-        return { variant: 'error' as const, text: 'Échec' };
+        return { variant: 'error' as const, text: t('vendor.paymentFailed') };
       case 'REFUNDED':
-        return { variant: 'default' as const, text: 'Remboursé' };
+        return { variant: 'default' as const, text: t('vendor.paymentRefunded') };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -70,16 +77,36 @@ export default function VendorOrdersPage() {
 
   const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
     switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente' };
-      case 'PROCESSING':
-        return { variant: 'default' as const, text: 'En préparation' };
-      case 'SHIPPED':
-        return { variant: 'success' as const, text: 'Expédié' };
+      case 'CREATED':
+        return { variant: 'warning' as const, text: 'Creee' };
+      case 'PAID_IN_ESCROW':
+        return { variant: 'warning' as const, text: 'Payee' };
+      case 'VENDOR_ACKNOWLEDGED':
+        return { variant: 'default' as const, text: 'Confirmee' };
+      case 'PREPARING':
+        return { variant: 'default' as const, text: t('vendor.fulfillmentProcessing') };
+      case 'READY_FOR_PICKUP':
+        return { variant: 'success' as const, text: 'Prete' };
+      case 'DRIVER_ASSIGNED':
+        return { variant: 'default' as const, text: 'Livreur assigne' };
+      case 'PICKED_UP':
+        return { variant: 'default' as const, text: 'Recuperee' };
+      case 'OUT_FOR_DELIVERY':
+        return { variant: 'default' as const, text: 'En livraison' };
       case 'DELIVERED':
-        return { variant: 'success' as const, text: 'Livré' };
+        return { variant: 'success' as const, text: t('vendor.fulfillmentDelivered') };
+      case 'BUYER_CONFIRMED':
+        return { variant: 'success' as const, text: 'Confirmee par acheteur' };
+      case 'AUTO_CONFIRMED':
+        return { variant: 'success' as const, text: 'Confirmee automatiquement' };
+      case 'RELEASED_TO_VENDOR':
+        return { variant: 'success' as const, text: 'Fonds liberes' };
+      case 'DISPUTED':
+        return { variant: 'error' as const, text: 'Litige' };
       case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulé' };
+        return { variant: 'error' as const, text: t('vendor.fulfillmentCancelled') };
+      case 'REFUNDED':
+        return { variant: 'default' as const, text: t('vendor.paymentRefunded') };
       default:
         return { variant: 'default' as const, text: status };
     }
@@ -104,7 +131,7 @@ export default function VendorOrdersPage() {
       <div className="min-h-screen flex items-center justify-center py-20">
         <div className="text-center">
           <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">Chargement des commandes...</p>
+          <p className="text-dark-text-secondary">{t('vendor.loadingOrders')}</p>
         </div>
       </div>
     );
@@ -119,10 +146,10 @@ export default function VendorOrdersPage() {
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="font-display font-bold text-4xl mb-2">
-              <span className="text-gradient animate-gradient-bg">Mes Commandes</span>
+              <span className="text-gradient animate-gradient-bg">{t('vendor.myOrders')}</span>
             </h1>
             <p className="text-dark-text-secondary">
-              Gérez vos commandes et leur statut de livraison
+              {t('vendor.manageOrdersAndStatus')}
             </p>
           </div>
 
@@ -132,7 +159,7 @@ export default function VendorOrdersPage() {
             className="relative"
           >
             <Filter size={20} className="mr-2" />
-            Filtres
+            {t('vendor.filters')}
             {activeFilterCount > 0 && (
               <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-holo-cyan text-dark-bg text-xs flex items-center justify-center font-bold">
                 {activeFilterCount}
@@ -149,18 +176,18 @@ export default function VendorOrdersPage() {
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium mb-3">
                   <CreditCard size={16} className="text-holo-purple" />
-                  Statut de paiement
+                  {t('vendor.paymentStatusLabel')}
                 </label>
                 <select
                   value={filters.payment_status || ''}
                   onChange={(e) => handlePaymentFilterChange(e.target.value as PaymentStatus | '')}
                   className="w-full px-4 py-2 rounded-lg bg-dark-accent text-dark-text border border-dark-accent focus:border-holo-cyan focus:outline-none"
                 >
-                  <option value="">Tous</option>
-                  <option value="PENDING">En attente</option>
-                  <option value="PAID">Payé</option>
-                  <option value="FAILED">Échec</option>
-                  <option value="REFUNDED">Remboursé</option>
+                  <option value="">{t('vendor.all')}</option>
+                  <option value="PENDING">{t('vendor.paymentPending')}</option>
+                  <option value="PAID">{t('vendor.paymentPaid')}</option>
+                  <option value="FAILED">{t('vendor.paymentFailed')}</option>
+                  <option value="REFUNDED">{t('vendor.paymentRefunded')}</option>
                 </select>
               </div>
 
@@ -168,19 +195,29 @@ export default function VendorOrdersPage() {
               <div>
                 <label className="flex items-center gap-2 text-sm font-medium mb-3">
                   <Truck size={16} className="text-holo-cyan" />
-                  Statut de livraison
+                  {t('vendor.fulfillmentStatusLabel')}
                 </label>
                 <select
                   value={filters.fulfillment_status || ''}
                   onChange={(e) => handleFulfillmentFilterChange(e.target.value as FulfillmentStatus | '')}
                   className="w-full px-4 py-2 rounded-lg bg-dark-accent text-dark-text border border-dark-accent focus:border-holo-cyan focus:outline-none"
                 >
-                  <option value="">Tous</option>
-                  <option value="PENDING">En attente</option>
-                  <option value="PROCESSING">En préparation</option>
-                  <option value="SHIPPED">Expédié</option>
-                  <option value="DELIVERED">Livré</option>
-                  <option value="CANCELLED">Annulé</option>
+                  <option value="">{t('vendor.all')}</option>
+                  <option value="CREATED">Creee</option>
+                  <option value="PAID_IN_ESCROW">Payee</option>
+                  <option value="VENDOR_ACKNOWLEDGED">Confirmee</option>
+                  <option value="PREPARING">{t('vendor.fulfillmentProcessing')}</option>
+                  <option value="READY_FOR_PICKUP">Prete</option>
+                  <option value="DRIVER_ASSIGNED">Livreur assigne</option>
+                  <option value="PICKED_UP">Recuperee</option>
+                  <option value="OUT_FOR_DELIVERY">En livraison</option>
+                  <option value="DELIVERED">{t('vendor.fulfillmentDelivered')}</option>
+                  <option value="BUYER_CONFIRMED">Confirmee par acheteur</option>
+                  <option value="AUTO_CONFIRMED">Confirmee automatiquement</option>
+                  <option value="RELEASED_TO_VENDOR">Fonds liberes</option>
+                  <option value="DISPUTED">Litige</option>
+                  <option value="CANCELLED">{t('vendor.fulfillmentCancelled')}</option>
+                  <option value="REFUNDED">{t('vendor.paymentRefunded')}</option>
                 </select>
               </div>
             </div>
@@ -192,7 +229,7 @@ export default function VendorOrdersPage() {
                   size="sm"
                   onClick={clearFilters}
                 >
-                  Réinitialiser les filtres
+                  {t('vendor.resetFilters')}
                 </Button>
               </div>
             )}
@@ -204,12 +241,12 @@ export default function VendorOrdersPage() {
           <Card className="text-center py-12">
             <Package className="text-dark-text-secondary mx-auto mb-4" size={48} />
             <h2 className="font-bold text-xl text-dark-text mb-2">
-              Aucune commande
+              {t('vendor.noOrders')}
             </h2>
             <p className="text-dark-text-secondary">
               {activeFilterCount > 0
-                ? 'Aucune commande ne correspond aux filtres sélectionnés'
-                : 'Vous n\'avez pas encore reçu de commandes'}
+                ? t('vendor.noOrdersMatchingFilters')
+                : t('vendor.noOrdersYet')}
             </p>
           </Card>
         ) : (
@@ -225,7 +262,7 @@ export default function VendorOrdersPage() {
                     <div className="flex-1">
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="font-display font-bold text-xl">
-                          Commande <span className="text-holo-cyan">#{order.id}</span>
+                          {t('vendor.order')} <span className="text-holo-cyan">#{order.id}</span>
                         </h3>
                         <div className="flex gap-2">
                           <Badge variant={paymentBadge.variant}>
@@ -242,7 +279,7 @@ export default function VendorOrdersPage() {
                       <div className="flex flex-wrap gap-4 text-sm text-dark-text-secondary">
                         <span>{formatDate(order.created_at)}</span>
                         <span>•</span>
-                        <span>{order.items.length} article(s)</span>
+                        <span>{t('vendor.itemCount', { count: order.items.length })}</span>
                         <span>•</span>
                         <span>{order.city}</span>
                       </div>
@@ -255,11 +292,11 @@ export default function VendorOrdersPage() {
                           {formatPrice(order.total_xaf)}
                         </p>
                       </div>
-                      
+
                       <Link to={`/seller/orders/${order.id}`}>
                         <Button variant="primary">
                           <Eye size={20} className="mr-2" />
-                          Voir détails
+                          {t('vendor.viewDetails')}
                         </Button>
                       </Link>
                     </div>

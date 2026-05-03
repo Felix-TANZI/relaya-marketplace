@@ -2,7 +2,26 @@
 // Types TypeScript pour les commandes
 
 export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED' | 'REFUNDED';
-export type FulfillmentStatus = 'PENDING' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED';
+export type FulfillmentStatus =
+  | 'CREATED'
+  | 'PAID_IN_ESCROW'
+  | 'VENDOR_ACKNOWLEDGED'
+  | 'PREPARING'
+  | 'READY_FOR_PICKUP'
+  | 'DRIVER_ASSIGNED'
+  | 'PICKED_UP'
+  | 'OUT_FOR_DELIVERY'
+  | 'DELIVERED'
+  | 'BUYER_CONFIRMED'
+  | 'AUTO_CONFIRMED'
+  | 'RELEASED_TO_VENDOR'
+  | 'DISPUTED'
+  | 'CANCELLED'
+  | 'REFUNDED'
+  | 'PENDING'
+  | 'PROCESSING'
+  | 'SHIPPED';
+export type DeliveryMethod = 'DELIVERY' | 'PICKUP';
 
 export interface OrderItemDetail {
   id: number;
@@ -18,6 +37,7 @@ export interface Order {
   user: number;
   customer_email: string | null;
   customer_phone: string;
+  delivery_mode?: DeliveryMethod;
   city: string;
   address: string;
   note: string | null;

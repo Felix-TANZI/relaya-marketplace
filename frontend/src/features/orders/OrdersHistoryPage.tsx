@@ -1,108 +1,162 @@
-// frontend/src/features/orders/OrdersHistoryPage.tsx
-// Page d'historique des commandes de l'utilisateur avec statuts séparés
-
 import { useTranslation } from "react-i18next";
-import { useState, useEffect } from "react";
+import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
-  Package,
-  ShoppingBag,
   AlertCircle,
   Calendar,
-  MapPin,
   CreditCard,
+  Filter,
+  MapPin,
+  Package,
+  Store,
   Truck,
+  X,
 } from "lucide-react";
-import { Button, Card, Badge } from "@/components/ui";
+import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
+import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const TrackingMap = lazy(() =>
+  import("@/components/TrackingMap").catch(() => ({
+    default: () => (
+      <div className="flex h-full min-h-[200px] items-center justify-center rounded-2xl bg-gray-100 text-sm text-gray-400 dark:bg-gray-800">
+        Carte indisponible
+      </div>
+    ),
+  })) as any
+);
+
+type TabKey = "all" | "in_delivery" | "preparing" | "delivered" | "cancelled";
 
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
 
   useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await ordersApi.getMyOrders();
-        setOrders(data);
-      } catch (err) {
-        console.error("Error loading orders:", err);
-        setError(t("orders.error_message"));
-      } finally {
-        setLoading(false);
-      }
+    ordersApi
+      .getMyOrders()
+      .then((data) => {
+        setOrders(getResilientOrders(data));
+      })
+      .catch(() => {
+        const fallback = getResilientOrders();
+        setOrders(fallback);
+        if (fallback.length === 0) {
+          setError("Impossible de charger les commandes depuis le backend.");
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  /* ── Tabs config ── */
+  const tabs: {
+    key: TabKey;
+    label: string;
+    icon?: typeof Truck;
+    statuses: FulfillmentStatus[];
+  }[] = [
+    { key: "all", label: "Toutes", statuses: [] },
+    { key: "in_delivery", label: "En livraison", icon: Truck, statuses: ["OUT_FOR_DELIVERY", "SHIPPED"] },
+    { key: "preparing", label: "En cours", icon: Package, statuses: ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"] },
+    { key: "delivered", label: "Livrées", icon: Calendar, statuses: ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"] },
+    { key: "cancelled", label: "Annulées", icon: X, statuses: ["CANCELLED", "REFUNDED"] },
+  ];
+
+  const filteredOrders = useMemo(() => {
+    const tab = tabs.find((t) => t.key === activeTab);
+    if (!tab || tab.statuses.length === 0) return orders;
+    return orders.filter((o) => tab.statuses.includes(o.fulfillment_status));
+  }, [orders, activeTab]);
+
+  const tabCounts = useMemo(() => {
+    const counts: Record<TabKey, number> = { all: orders.length, in_delivery: 0, preparing: 0, delivered: 0, cancelled: 0 };
+    for (const o of orders) {
+      if (["OUT_FOR_DELIVERY", "SHIPPED"].includes(o.fulfillment_status)) counts.in_delivery++;
+      else if (["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"].includes(o.fulfillment_status)) counts.preparing++;
+      else if (["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(o.fulfillment_status)) counts.delivered++;
+      else if (["CANCELLED", "REFUNDED"].includes(o.fulfillment_status)) counts.cancelled++;
+    }
+    return counts;
+  }, [orders]);
+
+  const stats = useMemo(() => ({
+    totalSpent: orders.reduce((s, o) => s + o.total_xaf, 0),
+    delivered: orders.filter((o) => o.fulfillment_status === "DELIVERED").length,
+    inProgress: orders.filter((o) => ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "OUT_FOR_DELIVERY", "PENDING", "PROCESSING", "SHIPPED"].includes(o.fulfillment_status)).length,
+  }), [orders]);
+
+  const activeDeliveries = useMemo(
+    () => orders.filter((o) => ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP"].includes(o.fulfillment_status)),
+    [orders],
+  );
+
+  /* ── Badge helpers ── */
+  const getPaymentBadge = (s: PaymentStatus) => {
+    const map: Record<PaymentStatus, { v: "warning" | "success" | "error" | "default"; t: string }> = {
+      PENDING: { v: "warning", t: "En attente" },
+      PAID: { v: "success", t: "Payé" },
+      FAILED: { v: "error", t: "Échec" },
+      REFUNDED: { v: "default", t: "Remboursé" },
     };
-
-    fetchOrders();
-  }, [t]);
-
-  const getPaymentStatusBadge = (status: PaymentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente paiement', icon: CreditCard };
-      case 'PAID':
-        return { variant: 'success' as const, text: 'Payé', icon: CreditCard };
-      case 'FAILED':
-        return { variant: 'error' as const, text: 'Échec', icon: AlertCircle };
-      case 'REFUNDED':
-        return { variant: 'default' as const, text: 'Remboursé', icon: CreditCard };
-    }
+    return map[s];
+  };
+  const getFulfillmentBadge = (s: FulfillmentStatus) => {
+    const map: Record<string, { v: "warning" | "success" | "error" | "default"; t: string; icon: typeof Package }> = {
+      PENDING: { v: "warning", t: "En attente", icon: Package },
+      CREATED: { v: "warning", t: "Créée", icon: Package },
+      PAID_IN_ESCROW: { v: "warning", t: "Payée", icon: CreditCard },
+      VENDOR_ACKNOWLEDGED: { v: "default", t: "Confirmée vendeur", icon: Store },
+      PREPARING: { v: "default", t: "En préparation", icon: Package },
+      READY_FOR_PICKUP: { v: "default", t: "Prête", icon: Store },
+      DRIVER_ASSIGNED: { v: "default", t: "Livreur assigné", icon: Truck },
+      PICKED_UP: { v: "success", t: "Pris en charge", icon: Truck },
+      OUT_FOR_DELIVERY: { v: "success", t: "En livraison", icon: Truck },
+      PROCESSING: { v: "default", t: "En préparation", icon: Package },
+      SHIPPED: { v: "success", t: "En livraison", icon: Truck },
+      DELIVERED: { v: "success", t: "Livré", icon: Package },
+      BUYER_CONFIRMED: { v: "success", t: "Réception confirmée", icon: Package },
+      AUTO_CONFIRMED: { v: "success", t: "Confirmée automatiquement", icon: Package },
+      RELEASED_TO_VENDOR: { v: "success", t: "Terminée", icon: Package },
+      CANCELLED: { v: "error", t: "Annulé", icon: AlertCircle },
+      REFUNDED: { v: "default", t: "Remboursé", icon: AlertCircle },
+      DISPUTED: { v: "warning", t: "Litige", icon: AlertCircle },
+    };
+    return map[s] || { v: "default" as const, t: s, icon: Package };
   };
 
-  const getFulfillmentStatusBadge = (status: FulfillmentStatus) => {
-    switch (status) {
-      case 'PENDING':
-        return { variant: 'warning' as const, text: 'En attente', icon: Package };
-      case 'PROCESSING':
-        return { variant: 'default' as const, text: 'En préparation', icon: Package };
-      case 'SHIPPED':
-        return { variant: 'success' as const, text: 'Expédié', icon: Truck };
-      case 'DELIVERED':
-        return { variant: 'success' as const, text: 'Livré', icon: Package };
-      case 'CANCELLED':
-        return { variant: 'error' as const, text: 'Annulé', icon: AlertCircle };
-    }
-  };
+  const fmtDate = (d: string) =>
+    new Intl.DateTimeFormat(i18n.language === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d));
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat(i18n.language === "fr" ? "fr-FR" : "en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  };
-
-  // Loading State
+  /* ── Loading state ── */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="inline-block w-12 h-12 border-4 border-holo-cyan/30 border-t-holo-cyan rounded-full animate-spin mb-4" />
-          <p className="text-dark-text-secondary">{t("orders.loading")}</p>
+      <div className="min-h-screen bg-gray-50 px-4 py-8 dark:bg-gray-950">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid gap-4 md:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="skeleton h-36 rounded-2xl" />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  // Error State
+  /* ── Error state ── */
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
-            <AlertCircle className="text-red-400" size={40} />
-          </div>
-          <h1 className="font-display font-bold text-2xl text-dark-text mb-4">
-            {t("orders.error")}
-          </h1>
-          <p className="text-dark-text-secondary mb-8">{error}</p>
-          <Button variant="gradient" onClick={() => window.location.reload()}>
+      <div className="min-h-screen bg-gray-50 px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-md rounded-2xl border border-red-100 bg-white p-10 text-center shadow-sm dark:border-red-900/30 dark:bg-gray-900">
+          <AlertCircle size={34} className="mx-auto mb-4 text-red-500" />
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("orders.error")}</h1>
+          <p className="mt-2 text-sm text-gray-500">{error}</p>
+          <Button variant="primary" className="mt-5 rounded-2xl" onClick={() => window.location.reload()}>
             Réessayer
           </Button>
         </div>
@@ -110,25 +164,16 @@ export default function OrdersHistoryPage() {
     );
   }
 
-  // Empty State
+  /* ── Empty state ── */
   if (orders.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md mx-auto px-4">
-          <div className="w-24 h-24 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
-            <ShoppingBag className="text-dark-text-tertiary" size={48} />
-          </div>
-          <h1 className="font-display font-bold text-3xl text-dark-text mb-4">
-            {t("orders.no_orders")}
-          </h1>
-          <p className="text-dark-text-secondary mb-8">
-            {t("orders.no_orders_desc")}
-          </p>
-          <Link to="/catalog">
-            <Button variant="gradient" size="lg">
-              <Package size={20} />
-              Explorer le catalogue
-            </Button>
+      <div className="min-h-screen bg-gray-50 px-4 py-10 dark:bg-gray-950">
+        <div className="mx-auto max-w-md rounded-2xl border border-gray-100 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+          <Package size={40} className="mx-auto mb-4 text-primary" />
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">{t("orders.no_orders")}</h1>
+          <p className="mt-2 text-sm text-gray-500">{t("orders.no_orders_desc")}</p>
+          <Link to="/catalog" className="mt-5 inline-flex">
+            <Button variant="primary" className="rounded-2xl">Explorer le catalogue</Button>
           </Link>
         </div>
       </div>
@@ -136,109 +181,204 @@ export default function OrdersHistoryPage() {
   }
 
   return (
-    <div className="min-h-screen py-12">
-      <div className="container mx-auto px-4 max-w-4xl">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <div className="mx-auto max-w-7xl px-4 py-6">
+
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="font-display font-bold text-4xl lg:text-5xl mb-2">
-            <span className="text-gradient animate-gradient-bg">
-              {t("orders.title")}
-            </span>
-          </h1>
-          <p className="text-dark-text-secondary">{t("orders.subtitle")}</p>
+        <div className="mb-5">
+          <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Mes Commandes</h1>
+          <p className="mt-1 text-sm text-gray-500">Suivez et gérez toutes vos commandes</p>
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-4">
-          {orders.map((order) => {
-            const paymentBadge = getPaymentStatusBadge(order.payment_status);
-            const fulfillmentBadge = getFulfillmentStatusBadge(order.fulfillment_status);
-            
-            return (
-              <Card key={order.id} padding="none">
-                <div className="p-6">
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2 flex-wrap">
-                        <h3 className="font-display font-bold text-xl text-dark-text">
-                          {t("orders.order_number")} #{order.id}
-                        </h3>
-                        <Badge variant={paymentBadge.variant} className="text-xs">
-                          <paymentBadge.icon size={12} className="mr-1" />
-                          {paymentBadge.text}
-                        </Badge>
-                        <Badge variant={fulfillmentBadge.variant} className="text-xs">
-                          <fulfillmentBadge.icon size={12} className="mr-1" />
-                          {fulfillmentBadge.text}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-4 text-sm text-dark-text-secondary flex-wrap">
-                        <div className="flex items-center gap-1">
-                          <Calendar size={14} />
-                          {formatDate(order.created_at)}
-                        </div>
-                        <div className="flex items-center gap-1">
-                          <MapPin size={14} />
-                          {order.city}
-                        </div>
-                      </div>
-                    </div>
+        {/* Tabs (V8 style) */}
+        <div className="mb-5 flex gap-0 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 scrollbar-hide dark:border-gray-800 dark:bg-gray-900">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex min-w-[80px] flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-xs font-bold transition-all ${
+                activeTab === tab.key
+                  ? "bg-white text-primary shadow-sm dark:bg-gray-800"
+                  : "text-gray-500 hover:text-gray-700 dark:text-gray-400"
+              }`}
+            >
+              {tab.icon ? <tab.icon size={14} /> : null}
+              {tab.label}
+              <span className={`rounded-full px-1.5 py-0.5 text-[10px] ${
+                activeTab === tab.key
+                  ? "bg-primary/10 text-primary"
+                  : "bg-gray-200 text-gray-500 dark:bg-gray-700"
+              }`}>
+                {tabCounts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
 
-                    <div className="text-right">
-                      <div className="text-2xl font-display font-bold text-gradient animate-gradient-bg">
-                        {order.total_xaf.toLocaleString(
-                          i18n.language === "fr" ? "fr-FR" : "en-US",
-                        )}{" "}
-                        {t("common.currency")}
+        {/* Split layout: Map + Orders */}
+        <div className="grid gap-5 lg:grid-cols-[1fr_1.2fr]">
+
+          {/* Left: Tracking Map */}
+          <div className="order-2 lg:order-1">
+            <div className="sticky top-20 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-3 flex items-center gap-2">
+                <Truck size={16} className="text-primary" />
+                <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">
+                  Livraisons en cours
+                </h3>
+                {activeDeliveries.length > 0 && (
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white">
+                    {activeDeliveries.length}
+                  </span>
+                )}
+              </div>
+              <Suspense fallback={<div className="h-[300px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />}>
+                {(() => {
+                  const mapOrder = selectedOrderId
+                    ? orders.find((o) => o.id === selectedOrderId)
+                    : activeDeliveries[0];
+                  return (
+                    <TrackingMap
+                      className="h-[300px] lg:h-[400px]"
+                      destinationAddress={mapOrder?.address}
+                      destinationCity={mapOrder?.city}
+                      destinationLabel={mapOrder ? `${mapOrder.address}, ${mapOrder.city}` : undefined}
+                    />
+                  );
+                })()}
+              </Suspense>
+              {activeDeliveries.length > 0 && (
+                <div className="mt-3 space-y-2">
+                  {activeDeliveries.slice(0, 3).map((o) => (
+                    <div
+                      key={o.id}
+                      onClick={() => setSelectedOrderId(o.id)}
+                      className={`flex cursor-pointer items-center gap-3 rounded-xl p-3 transition-all ${
+                        selectedOrderId === o.id
+                          ? "border border-primary bg-orange-50 dark:bg-primary/10"
+                          : "border border-gray-100 bg-gray-50 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-800"
+                      }`}
+                    >
+                      <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+                        <Truck size={14} />
                       </div>
-                      <p className="text-sm text-dark-text-tertiary">
-                        {order.items.length} {t("orders.items")}
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-xs font-bold text-gray-900 dark:text-white">
+                          Commande #{o.id}
+                        </p>
+                        <p className="text-[10px] text-gray-400">
+                          {o.items.length} article{o.items.length > 1 ? "s" : ""} · {o.total_xaf.toLocaleString()} XAF
+                        </p>
+                      </div>
+                      <div className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-green-500" />
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Orders list */}
+          <div className="order-1 space-y-3 lg:order-2">
+            {filteredOrders.map((order) => {
+              const pBadge = getPaymentBadge(order.payment_status);
+              const fBadge = getFulfillmentBadge(order.fulfillment_status);
+              const isActive = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP"].includes(order.fulfillment_status);
+
+              return (
+                <article
+                  key={order.id}
+                  className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition-all hover:shadow-md dark:bg-gray-900 ${
+                    isActive
+                      ? "border-l-[3px] border-l-primary border-t-gray-100 border-r-gray-100 border-b-gray-100 dark:border-t-gray-800 dark:border-r-gray-800 dark:border-b-gray-800"
+                      : order.fulfillment_status === "DELIVERED"
+                      ? "border-l-[3px] border-l-green-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 dark:border-t-gray-800 dark:border-r-gray-800 dark:border-b-gray-800"
+                      : order.fulfillment_status === "CANCELLED"
+                      ? "border-l-[3px] border-l-red-500 border-t-gray-100 border-r-gray-100 border-b-gray-100 dark:border-t-gray-800 dark:border-r-gray-800 dark:border-b-gray-800"
+                      : "border-gray-100 dark:border-gray-800"
+                  }`}
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-gray-50 px-4 py-3 dark:border-gray-800">
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900 dark:text-white">
+                        #{order.id}
                       </p>
+                      <p className="text-[11px] text-gray-400">{fmtDate(order.created_at)}</p>
+                    </div>
+                    <div className="flex gap-1.5">
+                      <Badge variant={fBadge.v} className="text-[10px]">
+                        {fBadge.t}
+                      </Badge>
+                      <Badge variant={pBadge.v} className="text-[10px]">
+                        {pBadge.t}
+                      </Badge>
                     </div>
                   </div>
 
-                  {/* Items Preview */}
-                  <div className="space-y-2 mb-4">
-                    {order.items.slice(0, 3).map((item) => (
-                      <div
-                        key={item.id}
-                        className="flex items-center justify-between text-sm"
+                  {/* Live delivery banner */}
+                  {["OUT_FOR_DELIVERY", "SHIPPED"].includes(order.fulfillment_status) && (
+                    <div className="mx-4 my-2 flex items-center gap-3 rounded-xl bg-gray-900 px-4 py-3 dark:bg-gray-800">
+                      <div className="h-2 w-2 flex-shrink-0 animate-pulse rounded-full bg-green-400" />
+                      <p className="flex-1 text-xs text-white">Livraison en cours vers {order.city || "votre adresse"}</p>
+                      <button
+                        onClick={() => setSelectedOrderId(order.id)}
+                        className="flex-shrink-0 rounded-lg bg-primary px-3 py-1.5 text-[11px] font-bold text-white"
                       >
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-holo-cyan" />
-                          <span className="text-dark-text">
-                            {item.title_snapshot}
-                          </span>
-                          <span className="text-dark-text-tertiary">
-                            x{item.qty}
-                          </span>
+                        Voir sur la carte
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Items */}
+                  <div className="flex flex-wrap items-center gap-3 px-4 py-3">
+                    {order.items.slice(0, 3).map((item) => (
+                      <div key={item.id} className="flex items-center gap-2">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-100 bg-gray-50 text-lg dark:border-gray-700 dark:bg-gray-800">
+                          <Package size={16} className="text-gray-400" />
                         </div>
-                        <span className="text-dark-text font-medium">
-                          {item.line_total_xaf.toLocaleString(
-                            i18n.language === "fr" ? "fr-FR" : "en-US",
-                          )}{" "}
-                          XAF
-                        </span>
+                        <div className="min-w-0">
+                          <p className="max-w-[150px] truncate text-xs font-bold text-gray-900 dark:text-white">
+                            {item.title_snapshot}
+                          </p>
+                          <p className="text-[10px] text-gray-400">Qté {item.qty}</p>
+                        </div>
                       </div>
                     ))}
                     {order.items.length > 3 && (
-                      <p className="text-xs text-dark-text-tertiary italic">
-                        + {order.items.length - 3} autre(s) article(s)
-                      </p>
+                      <span className="text-[11px] font-bold text-gray-400">+{order.items.length - 3} autre{order.items.length - 3 > 1 ? "s" : ""}</span>
                     )}
                   </div>
 
-                  {/* Action */}
-                  <Link to={`/orders/${order.id}`}>
-                    <Button variant="secondary" className="w-full">
-                      {t("orders.view_details")}
-                    </Button>
-                  </Link>
-                </div>
-              </Card>
-            );
-          })}
+                  {/* Footer */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 bg-gray-50 px-4 py-3 dark:bg-gray-800/50">
+                    <p className="text-[15px] font-extrabold text-primary">
+                      {order.total_xaf.toLocaleString("fr-FR")} XAF
+                    </p>
+                    <div className="flex gap-2">
+                      <Link to={`/orders/${order.id}`}>
+                        <Button variant="primary" className="rounded-lg px-4 py-2 text-xs">
+                          Détails
+                        </Button>
+                      </Link>
+                      {order.fulfillment_status === "DELIVERED" && (
+                        <Button variant="ghost" className="rounded-lg px-4 py-2 text-xs">
+                          Laisser un avis
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+
+            {filteredOrders.length === 0 && (
+              <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
+                <Package size={32} className="mx-auto mb-3 text-gray-300" />
+                <p className="text-sm font-bold text-gray-500">Aucune commande dans cette catégorie</p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

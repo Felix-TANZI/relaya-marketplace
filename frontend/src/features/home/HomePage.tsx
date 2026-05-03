@@ -1,177 +1,352 @@
-import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { ArrowRight, ShoppingBag, TrendingUp, Shield, Truck, Star } from 'lucide-react';
+import { useState, useMemo, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import PromoCarousel from "@/components/PromoCarousel";
+import HomeSection from "@/components/HomeSection";
+import FlashPanel from "@/components/home/FlashPanel";
+import CategorySidebar from "@/components/home/CategorySidebar";
+import TrustBannersStrip from "@/components/home/TrustBannersStrip";
+import ProductCard from "@/components/product/ProductCard";
+import {
+  AlertTriangle, ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
+  Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
+} from "lucide-react";
+import {
+  V29_PRODUCTS,
+  getByCat,
+  getTopProducts,
+  getNewProducts,
+} from "@/data/v29Products";
+import type { LucideIcon } from "lucide-react";
+import { productsApi, type Product } from "@/services/api/products";
+
+const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
+  { slug: "all",    icon: LayoutGrid, name: "Tout" },
+  { slug: "femme",  icon: Shirt,      name: "Femme" },
+  { slug: "homme",  icon: Shirt,      name: "Homme" },
+  { slug: "tech",   icon: Laptop,     name: "Tech" },
+  { slug: "beaute", icon: Sparkle,    name: "Beauté" },
+  { slug: "shoes",  icon: Footprints, name: "Chaussures" },
+];
 
 export default function HomePage() {
-  const { t } = useTranslation();
+  const navigate = useNavigate();
+  const mainRef = useRef<HTMLElement | null>(null);
+  const [activeCat, setActiveCat] = useState("all");
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [mainTop, setMainTop] = useState(0);
+  const [mainHeight, setMainHeight] = useState(0);
+  const [topOffset, setTopOffset] = useState(132);
+  const [apiProducts, setApiProducts] = useState<Product[]>([]);
+  const [usingMockProducts, setUsingMockProducts] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    productsApi
+      .list({ page_size: 100, is_active: true })
+      .then((response) => {
+        if (cancelled) return;
+        const results = response.results ?? [];
+        if (results.length > 0) {
+          setApiProducts(results);
+          setUsingMockProducts(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setApiProducts([]);
+          setUsingMockProducts(true);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+
+  const allFiltered = useMemo(
+    () => {
+      if (usingMockProducts) {
+        return activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat);
+      }
+
+      if (activeCat === "all") return sourceProducts;
+
+      return sourceProducts.filter((product) => {
+        const slug = product.category?.slug?.toLowerCase() ?? "";
+        const name = product.category?.name?.toLowerCase() ?? "";
+
+        if (activeCat === "tech") {
+          return slug.includes("tech") || slug.includes("electron") || name.includes("électron") || name.includes("electron");
+        }
+
+        if (activeCat === "beaute") {
+          return slug.includes("beaute") || slug.includes("beauté") || name.includes("beauté") || name.includes("beaute");
+        }
+
+        if (activeCat === "shoes") {
+          return slug.includes("chauss") || name.includes("chauss");
+        }
+
+        return slug.includes(activeCat) || name.includes(activeCat);
+      });
+    },
+    [activeCat, sourceProducts, usingMockProducts]
+  );
+
+  const visibleProducts = useMemo(
+    () => allFiltered.slice(0, visibleCount),
+    [allFiltered, visibleCount]
+  );
+  const hasMoreProducts = visibleCount < allFiltered.length;
+
+  /* CSS fixed-top offset */
+  useEffect(() => {
+    document.documentElement.style.setProperty("--belivay-fixed-top", "100px");
+  }, []);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [activeCat]);
+
+  useEffect(() => {
+    const updateMetrics = () => {
+      const main = mainRef.current;
+      const header = document.querySelector("header");
+      if (!main) return;
+
+      const rect = main.getBoundingClientRect();
+      setMainTop(rect.top + window.scrollY);
+      setMainHeight(main.offsetHeight);
+      setTopOffset(Math.round((header?.getBoundingClientRect().bottom ?? 120) + 12));
+    };
+
+    updateMetrics();
+    window.addEventListener("resize", updateMetrics);
+    const timer = window.setInterval(updateMetrics, 350);
+
+    return () => {
+      window.removeEventListener("resize", updateMetrics);
+      window.clearInterval(timer);
+    };
+  }, [activeCat, visibleCount]);
+
+  /* ── Carousel slides ── */
+  const slides = [
+    {
+      label: "CEMAC · CMR · Gabon · RCA · Tchad",
+      title: "Achetez en toute confiance au Cameroun & Afrique centrale",
+      subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
+      bg: "linear-gradient(108deg, #E86010 0%, #F47920 40%, #FF8C35 70%, #FFA040 100%)",
+      labelBg: "rgba(255,255,255,0.2)",
+      action: () => {},
+    },
+    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => setActiveCat("femme") },
+    { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => setActiveCat("tech") },
+    { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => setActiveCat("beaute") },
+    { label: "Made in Cameroon", title: "Produits artisanaux locaux", subtitle: "Soutenez les PME camerounaises · Certifié BelivaY", bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => {} },
+    { label: "Maison & Déco", title: "Aménagez votre intérieur", subtitle: "1 720 produits · Meubles · Déco · Électroménager", bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => setActiveCat("maison") },
+    { label: "Mode Homme", title: "Bazin · Costume · Chemise Brodée", subtitle: "2 100 produits · Tenues de cérémonie et casual", bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => setActiveCat("homme") },
+    { label: "Chaussures", title: "Sneakers · Escarpins · Sandales", subtitle: "1 100 produits · Toutes pointures disponibles", bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => setActiveCat("shoes") },
+  ];
+
+  /* ── Featured sections (horizontal scroll, top of page) ── */
+  const popular = useMemo(() => {
+    if (usingMockProducts) {
+      return activeCat === "all" ? getTopProducts() : getByCat(activeCat);
+    }
+
+    return [...allFiltered]
+      .sort((a, b) => ((b.discount ?? 0) * 1000 + (b.reviews_count ?? 0)) - ((a.discount ?? 0) * 1000 + (a.reviews_count ?? 0)))
+      .slice(0, 24);
+  }, [activeCat, allFiltered, usingMockProducts]);
+
+  const newProds = useMemo(() => {
+    if (usingMockProducts) return getNewProducts();
+
+    return [...sourceProducts]
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .slice(0, 12);
+  }, [sourceProducts, usingMockProducts]);
 
   return (
-    <div className="min-h-screen">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden py-20 lg:py-32">
-        {/* Background effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-holo-cyan/10 via-holo-purple/10 to-holo-pink/10 blur-3xl" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(0,245,255,0.1),transparent_50%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_50%,rgba(182,76,255,0.1),transparent_50%)]" />
+    <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
+      <div className="mx-auto max-w-[1560px] px-3 pb-12 pt-3 lg:px-4">
+        <div className="flex items-stretch gap-4">
+          <CategorySidebar
+            activeCategory={activeCat}
+            onSelectCategory={(slug) => {
+              setActiveCat(slug);
+              window.scrollTo({ top: 180, behavior: "smooth" });
+            }}
+            collapsed={sidebarCollapsed}
+            onToggle={() => setSidebarCollapsed((c) => !c)}
+            trackTop={mainTop}
+            trackHeight={mainHeight}
+            topOffset={topOffset}
+          />
 
-        <div className="container mx-auto px-4 relative z-10">
-          <div className="max-w-4xl mx-auto text-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass border border-white/10 mb-8">
-              <TrendingUp className="text-holo-cyan" size={20} />
-              <span className="text-sm font-medium">{t('hero.title')}</span>
-            </div>
-
-            <h1 className="text-5xl lg:text-7xl font-display font-bold mb-6 leading-tight">
-              <span className="bg-gradient-holographic bg-clip-text text-transparent animate-gradient-bg">
-                Relaya
-              </span>
-              <br />
-              <span className="text-dark-text">{t('hero.subtitle')}</span>
-            </h1>
-
-            <p className="text-xl text-dark-text-secondary mb-12 leading-relaxed max-w-2xl mx-auto">
-              {t('hero.description')}
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <Link to="/catalog">
-                <button className="w-full sm:w-auto px-8 py-4 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-semibold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
-                  <ShoppingBag size={20} />
-                  {t('hero.cta_explore')}
-                  <ArrowRight size={20} />
-                </button>
-              </Link>
-
-              <Link to="/sell">
-                <button className="w-full sm:w-auto px-8 py-4 rounded-xl glass border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all font-semibold">
-                  {t('hero.cta_sell')}
-                </button>
-              </Link>
-            </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-8 mt-16 max-w-2xl mx-auto">
-              <div className="text-center">
-                <div className="text-3xl font-bold text-holo-cyan mb-2">10K+</div>
-                <div className="text-sm text-dark-text-secondary">{t('home.featured_title')}</div>
+          <main ref={mainRef} className="min-w-0 flex-1 space-y-4">
+            <section className="overflow-hidden rounded-[30px] border border-[#f1d2bb] bg-white shadow-[0_16px_42px_rgba(244,121,32,.08)] dark:border-gray-800 dark:bg-gray-900">
+              <div className="p-3 sm:p-4">
+                <PromoCarousel slides={slides} autoPlayMs={5000} />
               </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-holo-purple mb-2">5K+</div>
-                <div className="text-sm text-dark-text-secondary">{t('footer.sellers')}</div>
-              </div>
-              <div className="text-center">
-                <div className="text-3xl font-bold text-holo-pink mb-2">50K+</div>
-                <div className="text-sm text-dark-text-secondary">{t('home.clients')}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Categories Section */}
-      <section className="py-20 relative">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-display font-bold mb-4">
-              {t('home.categories_title')}
-            </h2>
-            <p className="text-dark-text-secondary">
-              {t('home.categories_subtitle')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-            {categories.map((category) => (
-              <Link
-                key={category.name}
-                to={`/catalog?category=${category.name}`}
-                className="group"
-              >
-                <div className="glass rounded-2xl p-6 border border-white/10 hover:border-holo-cyan hover-glow-cyan transition-all text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-holographic opacity-20 group-hover:opacity-30 transition-opacity" />
-                  <div className="text-lg font-semibold mb-1">{category.name}</div>
-                  <div className="text-sm text-dark-text-tertiary">{category.count}</div>
+              <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-3 sm:px-4 dark:border-gray-800 dark:bg-gray-900/80">
+                <div className="flex gap-2 overflow-x-auto scrollbar-hide">
+                  <button
+                    onClick={() => navigate("/profile")}
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#fff1e5] px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-primary hover:text-white dark:bg-primary/10"
+                  >
+                    <UserCircle size={13} />
+                    Mon compte
+                  </button>
+                  <button
+                    onClick={() => navigate("/categories")}
+                    className="flex flex-shrink-0 items-center gap-1 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <LayoutGrid size={13} />
+                    Catégories
+                  </button>
+                  {QUICK_PILLS.map((p) => {
+                    const Icon = p.icon;
+                    return (
+                      <button
+                        key={p.slug}
+                        onClick={() => setActiveCat(p.slug)}
+                        className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] font-bold transition-all ${
+                          activeCat === p.slug
+                            ? "border-primary bg-[#fff1e5] text-[#c85e14] shadow-sm dark:bg-primary/10 dark:text-primary"
+                            : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
+                        }`}
+                      >
+                        <Icon size={13} />
+                        {p.name}
+                      </button>
+                    );
+                  })}
                 </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Why Relaya Section */}
-      <section className="py-20 relative">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl lg:text-4xl font-display font-bold mb-4">
-              {t('home.why_title')}
-            </h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            <div className="glass rounded-2xl p-8 border border-white/10 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-holo-cyan/20 to-holo-cyan/5 flex items-center justify-center">
-                <Shield className="text-holo-cyan" size={32} />
               </div>
-              <h3 className="text-xl font-semibold mb-3">{t('home.why_secure_title')}</h3>
-              <p className="text-dark-text-secondary">
-                {t('home.why_secure_desc')}
-              </p>
-            </div>
 
-            <div className="glass rounded-2xl p-8 border border-white/10 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-holo-purple/20 to-holo-purple/5 flex items-center justify-center">
-                <Truck className="text-holo-purple" size={32} />
+              <div className="grid gap-3 bg-white px-3 py-4 sm:px-4 md:grid-cols-4 dark:bg-gray-900">
+                {[
+                  { icon: ShoppingCart, num: "15 240", label: "Produits" },
+                  { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés" },
+                  { icon: Star, num: "4.8 / 5", label: "Note moyenne" },
+                  { icon: Truck, num: "24–72h", label: "Livraison" },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <div key={item.label} className="rounded-[20px] border border-[#f3e4d7] bg-[#fffaf6] p-4 dark:border-gray-800 dark:bg-gray-800">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1e5] text-primary dark:bg-primary/10">
+                        <Icon size={18} />
+                      </div>
+                      <p className="mt-3 text-[22px] font-black leading-none text-[#c85e14]">{item.num}</p>
+                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a6b55] dark:text-gray-400">{item.label}</p>
+                    </div>
+                  );
+                })}
               </div>
-              <h3 className="text-xl font-semibold mb-3">{t('home.why_fast_title')}</h3>
-              <p className="text-dark-text-secondary">
-                {t('home.why_fast_desc')}
-              </p>
-            </div>
+            </section>
 
-            <div className="glass rounded-2xl p-8 border border-white/10 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-gradient-to-br from-holo-pink/20 to-holo-pink/5 flex items-center justify-center">
-                <Star className="text-holo-pink" size={32} />
-              </div>
-              <h3 className="text-xl font-semibold mb-3">{t('home.why_trust_title')}</h3>
-              <p className="text-dark-text-secondary">
-                {t('home.why_trust_desc')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 relative">
-        <div className="container mx-auto px-4">
-          <div className="glass rounded-3xl p-12 border border-white/10 text-center max-w-3xl mx-auto relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-holographic opacity-5" />
-            <div className="relative z-10">
-              <h2 className="text-3xl lg:text-4xl font-display font-bold mb-4">
-                {t('home.cta_title')}
-              </h2>
-              <p className="text-dark-text-secondary mb-8">
-                {t('home.cta_description')}
-              </p>
-              <Link to="/register">
-                <button className="px-8 py-4 rounded-xl bg-gradient-holographic animate-gradient-bg text-white font-semibold shadow-lg hover:shadow-xl transition-all">
-                  {t('home.cta_button')}
+            <section className="overflow-hidden rounded-[28px] border border-[#f3dcc7] bg-[linear-gradient(135deg,#fff,#fff6ed)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.06)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-primary">
+                    Compte client
+                  </p>
+                  <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
+                    Litiges ouverts et suivi commande
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                    Les litiges se déclenchent depuis une commande livrée, puis se consultent dans votre compte.
+                  </p>
+                </div>
+                <button
+                  onClick={() => navigate("/profile?panel=messages&tab=litige")}
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(244,121,32,.26)] transition-all hover:-translate-y-0.5 hover:bg-primary-dark"
+                >
+                  <AlertTriangle size={16} />
+                  Voir mes litiges
                 </button>
-              </Link>
-            </div>
-          </div>
+              </div>
+              <TrustBannersStrip />
+            </section>
+
+            <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <HomeSection
+                title="Produits populaires"
+                icon={Flame}
+                badge={`${sourceProducts.length} produits`}
+                badgeColor="bg-red-50 text-red-600"
+                products={popular}
+                rows={2}
+                isMockProducts={usingMockProducts}
+              />
+            </section>
+
+            <section className="rounded-[28px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <HomeSection
+                title="Nouveaux Arrivages"
+                icon={Sparkles}
+                badge="Nouveau"
+                badgeColor="bg-green-50 text-green-700"
+                products={newProds}
+                rows={1}
+                isMockProducts={usingMockProducts}
+              />
+            </section>
+
+            <section className="overflow-hidden rounded-[28px] border border-[#dbe7f3] bg-[linear-gradient(180deg,#f7fbff,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="h-[18px] w-[3px] rounded bg-primary" />
+                  <Globe size={16} className="text-primary" />
+                  <div>
+                    <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">
+                      {activeCat === "all" ? "Catalogue de l'accueil" : `${QUICK_PILLS.find((p) => p.slug === activeCat)?.name ?? activeCat}`}
+                    </h3>
+                    <p className="text-[12px] text-gray-500 dark:text-gray-400">
+                      Sélection finie pour garder le footer visible et une lecture claire de la page.
+                    </p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-[#e9f2fb] px-3 py-1 text-[11px] font-bold text-[#2b6aa6] dark:bg-gray-800 dark:text-blue-300">
+                  {allFiltered.length} produits au total
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+                {visibleProducts.map((p) => (
+                  <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
+                ))}
+              </div>
+
+              <div className="mt-5 flex justify-center">
+                {hasMoreProducts ? (
+                  <button
+                    type="button"
+                    onClick={() => setVisibleCount((count) => Math.min(count + 20, allFiltered.length))}
+                    className="inline-flex items-center gap-2 rounded-full border border-[#cfe1f2] bg-white px-5 py-3 text-sm font-bold text-[#245f95] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-blue-300"
+                  >
+                    Voir plus d'articles
+                    <ArrowRight size={16} />
+                  </button>
+                ) : (
+                  <span className="rounded-full border border-[#d6e5f2] bg-white px-5 py-3 text-sm font-bold text-[#5e7891] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+                    Tous les articles de cette sélection sont affichés
+                  </span>
+                )}
+              </div>
+            </section>
+          </main>
+
+          <FlashPanel trackTop={mainTop} trackHeight={mainHeight} topOffset={topOffset} />
         </div>
-      </section>
+      </div>
     </div>
   );
 }
-
-// Mock data for categories
-const categories = [
-  { name: 'Électronique', count: '2.5K+' },
-  { name: 'Mode', count: '1.8K+' },
-  { name: 'Maison', count: '1.2K+' },
-  { name: 'Sports', count: '800+' },
-  { name: 'Livres', count: '500+' },
-  { name: 'Jouets', count: '600+' },
-];

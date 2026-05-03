@@ -8,14 +8,21 @@ import type { Order } from '@/types/order';
 export interface OrderItem {
   product_id: number;
   qty: number;
+  title?: string;
+  price_xaf?: number;
+  image_url?: string;
+  is_demo?: boolean;
 }
 
 export interface OrderCreateData {
+  delivery_method?: 'DELIVERY' | 'PICKUP';
+  delivery_mode?: 'DELIVERY' | 'PICKUP';
   city: 'YAOUNDE' | 'DOUALA';
   address: string;
-  phone: string;
+  customer_phone: string;
+  customer_email?: string;
   note?: string;
-  items: OrderItem[];
+  cart_items: OrderItem[];
 }
 
 // Ré-exporter le type Order depuis types/order.ts
@@ -26,7 +33,13 @@ export const ordersApi = {
    * Créer une commande
    */
   create: async (data: OrderCreateData): Promise<Order> => {
-    return api.post<Order>('/orders/', data);
+    const payload = {
+      ...data,
+      delivery_mode: data.delivery_mode ?? data.delivery_method ?? 'DELIVERY',
+    };
+    delete payload.delivery_method;
+
+    return api.post<Order>('/orders/', payload);
   },
 
   /**

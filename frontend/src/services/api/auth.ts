@@ -4,12 +4,58 @@
 import { http } from './http';
 
 export interface User {
+  id:                     number;
+  username:               string;
+  email:                  string;
+  first_name:             string;
+  last_name:              string;
+  date_joined:            string;
+  // Rôles — retournés par /api/auth/me/
+  is_staff?:              boolean;   // true = accès espace admin
+  is_superuser?:          boolean;   // true = super-administrateur
+  is_vendor?:             boolean;   // true = compte vendeur actif
+  // Profil étendu
+  is_courier?: boolean;
+  courier_status?: "not_applied" | "pending" | "approved";
+  courier_profile?: CourierProfile | null;
+  phone?:                 string | null;
+  bio?:                   string | null;
+  avatar_url?:            string | null;
+  newsletter_subscribed?: boolean;
+  sms_notifications?:     boolean;
+  // Fidélité client
+  loyalty_points?:        number;
+  loyalty_tier?:          string;
+}
+
+export interface CourierProfile {
   id: number;
-  username: string;
-  email: string;
-  first_name: string;
-  last_name: string;
-  date_joined: string;
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+  preferred_language?: "fr" | "en";
+  gps_permission_granted?: boolean;
+  camera_permission_granted?: boolean;
+  is_active: boolean;
+  is_approved: boolean;
+  is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourierApplicationPayload {
+  phone: string;
+  city: string;
+  zones: string[];
+  vehicle_type: "MOTORBIKE" | "CAR" | "BIKE" | "TRICYCLE" | "VAN";
+  id_card: string;
+}
+
+export interface CourierApplicationResponse {
+  application: CourierProfile | null;
+  status: "not_applied" | "pending" | "approved";
 }
 
 export interface LoginCredentials {
@@ -35,6 +81,10 @@ export interface UpdateProfileData {
   email?: string;
   first_name?: string;
   last_name?: string;
+  phone?: string | null;
+  bio?: string | null;
+  newsletter_subscribed?: boolean;
+  sms_notifications?: boolean;
 }
 
 export const authApi = {
@@ -93,6 +143,48 @@ export const authApi = {
       headers: {
         Authorization: `Bearer ${token}`,
       },
+    });
+  },
+
+  uploadAvatar: async (file: File): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    const body = new FormData();
+    body.append('avatar', file);
+
+    return http<User>('/api/auth/profile/avatar/', {
+      method: 'POST',
+      body,
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  removeAvatar: async (): Promise<User> => {
+    const token = localStorage.getItem('access_token');
+    return http<User>('/api/auth/profile/avatar/', {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  getCourierApplication: async (): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/');
+  },
+
+  applyCourier: async (data: CourierApplicationPayload): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  updateCourierApplication: async (data: Partial<CourierApplicationPayload>): Promise<CourierApplicationResponse> => {
+    return http<CourierApplicationResponse>('/api/auth/courier/application/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   },
 };

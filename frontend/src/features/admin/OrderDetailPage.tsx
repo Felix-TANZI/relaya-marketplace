@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Link, useParams, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowLeft,
   User,
@@ -33,6 +34,7 @@ import { useToast } from "@/context/ToastContext";
 import { useConfirm } from "@/context/ConfirmContext";
 
 export default function OrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -57,11 +59,11 @@ export default function OrderDetailPage() {
       });
     } catch (error) {
       console.error("Erreur chargement commande:", error);
-      showToast("Erreur de chargement de la commande", "error");
+      showToast(t("admin.errorLoadingOrder"), "error");
     } finally {
       setLoading(false);
     }
-  }, [id, showToast]);
+  }, [id, showToast, t]);
 
   useEffect(() => {
     loadOrder();
@@ -72,12 +74,12 @@ export default function OrderDetailPage() {
 
     try {
       await adminApi.updateOrder(order.id, editData);
-      showToast("Commande mise à jour avec succès", "success");
+      showToast(t("admin.orderUpdated"), "success");
       setEditMode(false);
       loadOrder();
     } catch (error) {
       console.error("Erreur mise à jour:", error);
-      showToast("Erreur lors de la mise à jour", "error");
+      showToast(t("admin.errorUpdating"), "error");
     }
   };
 
@@ -85,8 +87,8 @@ export default function OrderDetailPage() {
     if (!order) return;
 
     const confirmed = await confirm({
-      title: "Annuler cette commande ?",
-      message: "Cette action annulera définitivement la commande. Continuer ?",
+      title: t("admin.cancelOrderTitle"),
+      message: t("admin.cancelOrderMessage"),
       type: "danger",
     });
 
@@ -94,11 +96,11 @@ export default function OrderDetailPage() {
 
     try {
       await adminApi.cancelOrder(order.id);
-      showToast("Commande annulée avec succès", "success");
+      showToast(t("admin.orderCancelled"), "success");
       loadOrder();
     } catch (error) {
       console.error("Erreur annulation:", error);
-      showToast("Erreur lors de l'annulation", "error");
+      showToast(t("admin.errorCancelling"), "error");
     }
   };
 
@@ -118,12 +120,12 @@ export default function OrderDetailPage() {
 
   const getPaymentStatusBadge = (status: string) => {
     const variants = {
-      PENDING: { variant: "warning" as const, text: "En attente", icon: Clock },
-      PAID: { variant: "success" as const, text: "Payé", icon: CheckCircle },
-      FAILED: { variant: "error" as const, text: "Échoué", icon: XCircle },
+      PENDING: { variant: "warning" as const, text: t("admin.paymentPending"), icon: Clock },
+      PAID: { variant: "success" as const, text: t("admin.paymentPaid"), icon: CheckCircle },
+      FAILED: { variant: "error" as const, text: t("admin.paymentFailed"), icon: XCircle },
       REFUNDED: {
         variant: "default" as const,
-        text: "Remboursé",
+        text: t("admin.paymentRefunded"),
         icon: DollarSign,
       },
     };
@@ -132,19 +134,19 @@ export default function OrderDetailPage() {
 
   const getFulfillmentStatusBadge = (status: string) => {
     const variants = {
-      PENDING: { variant: "warning" as const, text: "En attente", icon: Clock },
+      PENDING: { variant: "warning" as const, text: t("admin.fulfillmentPending"), icon: Clock },
       PROCESSING: {
         variant: "default" as const,
-        text: "En préparation",
+        text: t("admin.fulfillmentProcessing"),
         icon: Package,
       },
-      SHIPPED: { variant: "default" as const, text: "Expédiée", icon: Truck },
+      SHIPPED: { variant: "default" as const, text: t("admin.fulfillmentShipped"), icon: Truck },
       DELIVERED: {
         variant: "success" as const,
-        text: "Livrée",
+        text: t("admin.fulfillmentDelivered"),
         icon: CheckCircle,
       },
-      CANCELLED: { variant: "error" as const, text: "Annulée", icon: XCircle },
+      CANCELLED: { variant: "error" as const, text: t("admin.fulfillmentCancelled"), icon: XCircle },
     };
     return variants[status as keyof typeof variants] || variants.PENDING;
   };
@@ -163,16 +165,16 @@ export default function OrderDetailPage() {
         <Card className="max-w-md w-full text-center p-8">
           <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
           <h2 className="text-xl font-display font-bold mb-2">
-            Commande introuvable
+            {t("admin.orderNotFound")}
           </h2>
           <p className="text-dark-text-secondary mb-6">
-            Cette commande n'existe pas.
+            {t("admin.orderDoesNotExist")}
           </p>
           <button
             onClick={() => navigate("/admin/orders")}
             className="px-6 py-2 bg-holo-cyan text-dark-bg font-medium rounded-xl hover:bg-holo-cyan/90 transition-all"
           >
-            Retour aux commandes
+            {t("admin.backToOrders")}
           </button>
         </Card>
       </div>
@@ -192,18 +194,18 @@ export default function OrderDetailPage() {
             className="inline-flex items-center gap-2 text-dark-text-secondary hover:text-holo-cyan transition-all mb-4"
           >
             <ArrowLeft size={20} />
-            Retour aux commandes
+            {t("admin.backToOrders")}
           </Link>
 
           <div className="flex items-start justify-between flex-wrap gap-4">
             <div>
               <h1 className="font-display font-bold text-4xl mb-2">
                 <span className="text-gradient animate-gradient-bg">
-                  Commande #{order.id}
+                  {t("admin.order")} #{order.id}
                 </span>
               </h1>
               <p className="text-dark-text-secondary">
-                Créée le {formatDateTime(order.created_at)}
+                {t("admin.createdOn")} {formatDateTime(order.created_at)}
               </p>
             </div>
 
@@ -215,7 +217,7 @@ export default function OrderDetailPage() {
                     className="px-4 py-2 bg-holo-purple text-white rounded-xl hover:bg-holo-purple/90 transition-all flex items-center gap-2"
                   >
                     <Edit2 size={16} />
-                    Modifier
+                    {t("admin.edit")}
                   </button>
                   {order.fulfillment_status !== "CANCELLED" && (
                     <button
@@ -223,7 +225,7 @@ export default function OrderDetailPage() {
                       className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all flex items-center gap-2"
                     >
                       <XCircle size={16} />
-                      Annuler
+                      {t("admin.cancelAction")}
                     </button>
                   )}
                 </>
@@ -233,7 +235,7 @@ export default function OrderDetailPage() {
                     onClick={handleSaveChanges}
                     className="px-4 py-2 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all"
                   >
-                    Enregistrer
+                    {t("admin.save")}
                   </button>
                   <button
                     onClick={() => {
@@ -246,7 +248,7 @@ export default function OrderDetailPage() {
                     }}
                     className="px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-white/20 transition-all"
                   >
-                    Annuler
+                    {t("admin.cancelAction")}
                   </button>
                 </>
               )}
@@ -261,20 +263,20 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <User className="text-holo-cyan" size={24} />
-                Informations Client
+                {t("admin.customerInfo")}
               </h3>
               <div className="space-y-3">
                 <div className="flex items-start gap-3">
                   <User className="text-dark-text-tertiary mt-1" size={20} />
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Nom</p>
+                    <p className="text-sm text-dark-text-tertiary">{t("admin.name")}</p>
                     <p className="font-medium">{order.customer_name}</p>
                     {order.user && (
                       <Link
                         to={`/admin/users/${order.user}`}
                         className="text-sm text-holo-cyan hover:underline"
                       >
-                        Voir le profil →
+                        {t("admin.viewProfile")}
                       </Link>
                     )}
                   </div>
@@ -284,7 +286,7 @@ export default function OrderDetailPage() {
                   <div className="flex items-start gap-3">
                     <Mail className="text-dark-text-tertiary mt-1" size={20} />
                     <div>
-                      <p className="text-sm text-dark-text-tertiary">Email</p>
+                      <p className="text-sm text-dark-text-tertiary">{t("admin.email")}</p>
                       <p className="font-medium">{order.customer_email}</p>
                     </div>
                   </div>
@@ -293,7 +295,7 @@ export default function OrderDetailPage() {
                 <div className="flex items-start gap-3">
                   <Phone className="text-dark-text-tertiary mt-1" size={20} />
                   <div>
-                    <p className="text-sm text-dark-text-tertiary">Téléphone</p>
+                    <p className="text-sm text-dark-text-tertiary">{t("admin.phone")}</p>
                     <p className="font-medium">{order.customer_phone}</p>
                   </div>
                 </div>
@@ -302,7 +304,7 @@ export default function OrderDetailPage() {
                   <MapPin className="text-dark-text-tertiary mt-1" size={20} />
                   <div>
                     <p className="text-sm text-dark-text-tertiary">
-                      Adresse de livraison
+                      {t("admin.deliveryAddress")}
                     </p>
                     <p className="font-medium">
                       {order.address}, {order.city}
@@ -313,7 +315,7 @@ export default function OrderDetailPage() {
                 {order.note && (
                   <div className="p-3 bg-dark-bg-tertiary rounded-xl border border-white/10">
                     <p className="text-sm text-dark-text-tertiary mb-1">
-                      Note de livraison
+                      {t("admin.deliveryNote")}
                     </p>
                     <p className="text-sm">{order.note}</p>
                   </div>
@@ -325,7 +327,7 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <Package className="text-holo-purple" size={24} />
-                Produits Commandés ({order.items.length})
+                {t("admin.orderedProducts")} ({order.items.length})
               </h3>
               <div className="space-y-3">
                 {order.items.map((item) => (
@@ -349,17 +351,17 @@ export default function OrderDetailPage() {
                         {item.product_title}
                       </Link>
                       <p className="text-sm text-dark-text-tertiary">
-                        Vendeur:{" "}
+                        {t("admin.vendor")}:{" "}
                         <span className="text-dark-text">
                           {item.vendor_name}
                         </span>
                       </p>
                       <div className="flex items-center gap-4 mt-2 text-sm">
                         <span>
-                          Qté: <strong>{item.qty}</strong>
+                          {t("admin.qty")}: <strong>{item.qty}</strong>
                         </span>
                         <span>
-                          Prix unitaire:{" "}
+                          {t("admin.unitPrice")}:{" "}
                           <strong>
                             {formatCurrency(item.price_xaf_snapshot)}
                           </strong>
@@ -378,15 +380,15 @@ export default function OrderDetailPage() {
               {/* Totaux */}
               <div className="mt-4 pt-4 border-t border-white/10 space-y-2">
                 <div className="flex justify-between text-dark-text-secondary">
-                  <span>Sous-total</span>
+                  <span>{t("admin.subtotal")}</span>
                   <span>{formatCurrency(order.subtotal_xaf)}</span>
                 </div>
                 <div className="flex justify-between text-dark-text-secondary">
-                  <span>Frais de livraison</span>
+                  <span>{t("admin.deliveryFees")}</span>
                   <span>{formatCurrency(order.delivery_fee_xaf)}</span>
                 </div>
                 <div className="flex justify-between text-xl font-bold pt-2 border-t border-white/10">
-                  <span>Total</span>
+                  <span>{t("admin.total")}</span>
                   <span className="text-holo-cyan">
                     {formatCurrency(order.total_xaf)}
                   </span>
@@ -398,11 +400,11 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <CreditCard className="text-holo-pink" size={24} />
-                Transactions de Paiement
+                {t("admin.paymentTransactions")}
               </h3>
               {order.payment_transactions.length === 0 ? (
                 <p className="text-dark-text-secondary text-center py-6">
-                  Aucune transaction enregistrée
+                  {t("admin.noTransactions")}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -414,7 +416,7 @@ export default function OrderDetailPage() {
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <p className="font-medium">
-                            Transaction #{tx.id.slice(0, 8)}...
+                            {t("admin.transaction")} #{tx.id.slice(0, 8)}...
                           </p>
                           <p className="text-sm text-dark-text-tertiary">
                             {tx.provider} • {tx.payer_phone}
@@ -442,7 +444,7 @@ export default function OrderDetailPage() {
                       </div>
                       {tx.external_ref && (
                         <p className="text-xs text-dark-text-tertiary mt-2">
-                          Réf: {tx.external_ref}
+                          {t("admin.ref")}: {tx.external_ref}
                         </p>
                       )}
                     </div>
@@ -455,11 +457,11 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-xl mb-4 flex items-center gap-2">
                 <History className="text-holo-cyan" size={24} />
-                Historique des Modifications
+                {t("admin.changeHistory")}
               </h3>
               {order.history.length === 0 ? (
                 <p className="text-dark-text-secondary text-center py-6">
-                  Aucune modification enregistrée
+                  {t("admin.noChanges")}
                 </p>
               ) : (
                 <div className="space-y-3 max-h-96 overflow-y-auto">
@@ -474,7 +476,7 @@ export default function OrderDetailPage() {
                             {log.action}
                           </p>
                           <p className="text-sm text-dark-text-tertiary">
-                            Par <strong>{log.user_name}</strong>
+                            {t("admin.by")} <strong>{log.user_name}</strong>
                           </p>
                         </div>
                         <span className="text-xs text-dark-text-tertiary">
@@ -484,16 +486,16 @@ export default function OrderDetailPage() {
                       {log.field_name && (
                         <div className="text-sm space-y-1">
                           <p className="text-dark-text-tertiary">
-                            Champ: <strong>{log.field_name}</strong>
+                            {t("admin.field")}: <strong>{log.field_name}</strong>
                           </p>
                           {log.old_value && (
                             <p className="text-red-400">
-                              Ancien: {log.old_value}
+                              {t("admin.oldValue")}: {log.old_value}
                             </p>
                           )}
                           {log.new_value && (
                             <p className="text-green-400">
-                              Nouveau: {log.new_value}
+                              {t("admin.newValue")}: {log.new_value}
                             </p>
                           )}
                         </div>
@@ -514,13 +516,13 @@ export default function OrderDetailPage() {
           <div className="space-y-6">
             {/* Statuts */}
             <Card>
-              <h3 className="font-display font-bold text-lg mb-4">Statuts</h3>
+              <h3 className="font-display font-bold text-lg mb-4">{t("admin.statuses")}</h3>
 
               {editMode ? (
                 <div className="space-y-4">
                   <div>
                     <label className="block text-sm text-dark-text-tertiary mb-2">
-                      Statut Paiement
+                      {t("admin.paymentStatus")}
                     </label>
                     <select
                       value={editData.payment_status}
@@ -536,16 +538,16 @@ export default function OrderDetailPage() {
                       }
                       className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-cyan transition-all"
                     >
-                      <option value="PENDING">En attente</option>
-                      <option value="PAID">Payé</option>
-                      <option value="FAILED">Échoué</option>
-                      <option value="REFUNDED">Remboursé</option>
+                      <option value="PENDING">{t("admin.paymentPending")}</option>
+                      <option value="PAID">{t("admin.paymentPaid")}</option>
+                      <option value="FAILED">{t("admin.paymentFailed")}</option>
+                      <option value="REFUNDED">{t("admin.paymentRefunded")}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm text-dark-text-tertiary mb-2">
-                      Statut Livraison
+                      {t("admin.fulfillmentStatus")}
                     </label>
                     <select
                       value={editData.fulfillment_status}
@@ -562,17 +564,17 @@ export default function OrderDetailPage() {
                       }
                       className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-purple transition-all"
                     >
-                      <option value="PENDING">En attente</option>
-                      <option value="PROCESSING">En préparation</option>
-                      <option value="SHIPPED">Expédiée</option>
-                      <option value="DELIVERED">Livrée</option>
-                      <option value="CANCELLED">Annulée</option>
+                      <option value="PENDING">{t("admin.fulfillmentPending")}</option>
+                      <option value="PROCESSING">{t("admin.fulfillmentProcessing")}</option>
+                      <option value="SHIPPED">{t("admin.fulfillmentShipped")}</option>
+                      <option value="DELIVERED">{t("admin.fulfillmentDelivered")}</option>
+                      <option value="CANCELLED">{t("admin.fulfillmentCancelled")}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm text-dark-text-tertiary mb-2">
-                      Note interne
+                      {t("admin.internalNote")}
                     </label>
                     <textarea
                       value={editData.note}
@@ -584,7 +586,7 @@ export default function OrderDetailPage() {
                       }
                       rows={3}
                       className="w-full px-3 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl text-dark-text focus:outline-none focus:border-holo-pink transition-all resize-none"
-                      placeholder="Note admin..."
+                      placeholder={t("admin.adminNotePlaceholder")}
                     />
                   </div>
                 </div>
@@ -592,7 +594,7 @@ export default function OrderDetailPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-sm text-dark-text-tertiary mb-2">
-                      Paiement
+                      {t("admin.payment")}
                     </p>
                     <Badge
                       variant={paymentBadge.variant}
@@ -605,7 +607,7 @@ export default function OrderDetailPage() {
 
                   <div>
                     <p className="text-sm text-dark-text-tertiary mb-2">
-                      Livraison
+                      {t("admin.delivery")}
                     </p>
                     <Badge
                       variant={fulfillmentBadge.variant}
@@ -623,19 +625,19 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
                 <FileText className="text-holo-purple" size={20} />
-                Documents
+                {t("admin.documents")}
               </h3>
               <div className="space-y-2">
                 <button className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-cyan transition-all flex items-center justify-between">
-                  <span className="text-sm">Facture</span>
+                  <span className="text-sm">{t("admin.invoice")}</span>
                   <Download size={16} />
                 </button>
                 <button className="w-full px-4 py-2 bg-dark-bg-tertiary border border-white/10 rounded-xl hover:border-holo-purple transition-all flex items-center justify-between">
-                  <span className="text-sm">Bon de livraison</span>
+                  <span className="text-sm">{t("admin.deliverySlip")}</span>
                   <Download size={16} />
                 </button>
                 <p className="text-xs text-dark-text-tertiary text-center mt-4">
-                  Génération de documents à venir
+                  {t("admin.documentGenerationComing")}
                 </p>
               </div>
             </Card>
@@ -644,17 +646,17 @@ export default function OrderDetailPage() {
             <Card>
               <h3 className="font-display font-bold text-lg mb-4 flex items-center gap-2">
                 <Clock className="text-holo-pink" size={20} />
-                Dates
+                {t("admin.dates")}
               </h3>
               <div className="space-y-2 text-sm">
                 <div>
-                  <p className="text-dark-text-tertiary">Créée le</p>
+                  <p className="text-dark-text-tertiary">{t("admin.createdOn")}</p>
                   <p className="font-medium">
                     {formatDateTime(order.created_at)}
                   </p>
                 </div>
                 <div>
-                  <p className="text-dark-text-tertiary">Mise à jour</p>
+                  <p className="text-dark-text-tertiary">{t("admin.updatedOn")}</p>
                   <p className="font-medium">
                     {formatDateTime(order.updated_at)}
                   </p>

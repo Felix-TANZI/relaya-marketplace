@@ -5,13 +5,44 @@
 from rest_framework import status, generics
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser
+from rest_framework.views import APIView
+from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from .serializers import UserProfileSerializer, UserProfileUpdateSerializer
+import os
+import logging
+import random
+import string
+from datetime import timedelta
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings as django_settings
+from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
+from .serializers import (
+    CourierApplicationSerializer,
+    CourierProfileSerializer,
+    UserProfileSerializer,
+    UserProfileUpdateSerializer,
+    AvatarUploadSerializer,
+    FavoriteSerializer,
+    NotificationSerializer,
+)
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
+from django.shortcuts import get_object_or_404
+from django.utils.crypto import constant_time_compare
+from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer
+from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
+
+
+logger = logging.getLogger(__name__)
+
+
+def get_or_create_profile(user):
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    return profile
 
 
 @extend_schema(tags=["Auth"], summary="Health check")
@@ -36,11 +67,501 @@ class RegisterView(generics.CreateAPIView):
         )
 
 
+@extend_schema(tags=["Auth"], summary="Bootstrap admin user")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def bootstrap_admin(request):
+    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    provided_token = request.headers.get("X-Bootstrap-Token", "")
+
+    if not expected_token or not constant_time_compare(provided_token, expected_token):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+
+    if not username or not password:
+        return Response(
+            {"detail": "username and password are required."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+        },
+    )
+
+    user.email = email or user.email
+    user.first_name = first_name or user.first_name
+    user.last_name = last_name or user.last_name
+    user.is_staff = True
+    user.is_superuser = True
+    user.is_active = True
+    user.set_password(password)
+    user.save()
+
+    return Response(
+        {
+            "created": created,
+            "user": UserSerializer(user, context={"request": request}).data,
+        },
+        status=status.HTTP_201_CREATED if created else status.HTTP_200_OK,
+    )
+
+
+@extend_schema(tags=["Auth"], summary="Bootstrap demo accounts")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def bootstrap_demo_accounts(request):
+    expected_token = django_settings.__dict__.get("BOOTSTRAP_ADMIN_TOKEN") or os.getenv("BOOTSTRAP_ADMIN_TOKEN")
+    provided_token = request.headers.get("X-Bootstrap-Token", "")
+
+    if not expected_token or not constant_time_compare(provided_token, expected_token):
+        return Response({"detail": "Not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    from apps.vendors.models import VendorProfile
+
+    default_password = request.data.get("password", "Demo12345!")
+
+    def ensure_user(username, email, first_name, last_name, *, staff=False, superuser=False):
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name,
+            },
+        )
+        user.email = email
+        user.first_name = first_name
+        user.last_name = last_name
+        user.is_staff = staff
+        user.is_superuser = superuser
+        user.is_active = True
+        user.set_password(default_password)
+        user.save()
+        return user, created
+
+    admin_user, admin_created = ensure_user(
+        "admin_demo",
+        "admin.demo@belivay.com",
+        "Admin",
+        "Demo",
+        staff=True,
+        superuser=True,
+    )
+    vendor_user, vendor_created = ensure_user(
+        "vendeur_demo",
+        "vendeur.demo@belivay.com",
+        "Vendeur",
+        "Demo",
+    )
+    courier_user, courier_created = ensure_user(
+        "livreur_demo",
+        "livreur.demo@belivay.com",
+        "Livreur",
+        "Demo",
+    )
+
+    vendor_profile, vendor_profile_created = VendorProfile.objects.update_or_create(
+        user=vendor_user,
+        defaults={
+            "business_name": "Boutique Demo",
+            "business_description": "Boutique de demonstration BelivaY",
+            "phone": "+237690000001",
+            "address": "Akwa, Douala",
+            "city": "Douala",
+            "id_document": "CNI-DEMO-VENDEUR",
+            "status": VendorProfile.Status.APPROVED,
+            "approved_at": timezone.now(),
+        },
+    )
+
+    courier_profile, courier_profile_created = CourierProfile.objects.update_or_create(
+        user=courier_user,
+        defaults={
+            "phone": "+237690000002",
+            "city": "Douala",
+            "zones": ["Akwa", "Bonapriso", "Deido"],
+            "vehicle_type": CourierProfile.VehicleType.MOTORBIKE,
+            "id_card": "CNI-DEMO-LIVREUR",
+            "is_active": True,
+            "is_approved": True,
+            "is_online": False,
+        },
+    )
+
+    return Response(
+        {
+            "password": default_password,
+            "accounts": {
+                "admin": {"username": admin_user.username, "created": admin_created},
+                "vendor": {
+                    "username": vendor_user.username,
+                    "created": vendor_created,
+                    "profile_created": vendor_profile_created,
+                    "status": vendor_profile.status,
+                },
+                "courier": {
+                    "username": courier_user.username,
+                    "created": courier_created,
+                    "profile_created": courier_profile_created,
+                    "is_approved": courier_profile.is_approved,
+                },
+            },
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(tags=["Admin"], summary="List couriers with full performance stats")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_list_couriers(request):
+    """
+    Liste tous les livreurs avec leurs statistiques de performance :
+      - total_deliveries, failed_deliveries, active_shipments, success_rate
+      - total_earnings_xaf (gains calculés depuis _courier_payout_xaf)
+      - sos_open : nombre d'alertes SOS non résolues
+ 
+    Filtres : is_approved, is_active, is_online, city, vehicle_type, search
+    """
+    from apps.shipping.models import Shipment, CourierSOSAlert
+ 
+    qs = CourierProfile.objects.select_related("user").order_by("-created_at")
+ 
+    # ── Filtres ───────────────────────────────────────────────────────────────
+    for field in ("is_approved", "is_active", "is_online"):
+        val = request.query_params.get(field)
+        if val is not None:
+            qs = qs.filter(**{field: val.lower() == "true"})
+ 
+    city    = request.query_params.get("city")
+    vehicle = request.query_params.get("vehicle_type")
+    search  = request.query_params.get("search")
+ 
+    if city:
+        qs = qs.filter(city__icontains=city)
+    if vehicle:
+        qs = qs.filter(vehicle_type=vehicle.upper())
+    if search:
+        from django.db.models import Q
+        qs = qs.filter(
+            Q(user__username__icontains=search)
+            | Q(user__first_name__icontains=search)
+            | Q(user__last_name__icontains=search)
+            | Q(user__email__icontains=search)
+            | Q(phone__icontains=search)
+            | Q(city__icontains=search)
+        )
+ 
+    # ── Construction résultat ─────────────────────────────────────────────────
+    PAYOUT_BASE = 500  # FCFA par livraison — même logique que _courier_payout_xaf
+ 
+    result = []
+    for cp in qs:
+        shipments     = Shipment.objects.filter(courier=cp)
+        delivered     = shipments.filter(status=Shipment.Status.DELIVERED).count()
+        failed        = shipments.filter(status=Shipment.Status.FAILED).count()
+        active_count  = shipments.filter(
+            status__in=[
+                Shipment.Status.ASSIGNED,
+                Shipment.Status.PICKED_UP,
+                Shipment.Status.IN_TRANSIT,
+                Shipment.Status.OUT_FOR_DELIVERY,
+            ]
+        ).count()
+        total_done    = delivered + failed
+        success_rate  = round(delivered / total_done * 100) if total_done > 0 else 0
+ 
+        # Gains estimés (montant réel nécessite d'itérer sur les commandes — trop coûteux ici)
+        total_earnings = delivered * PAYOUT_BASE
+ 
+        # Alertes SOS ouvertes
+        sos_open = CourierSOSAlert.objects.filter(
+            courier=cp, status=CourierSOSAlert.Status.OPEN
+        ).count()
+ 
+        result.append({
+            "id":            cp.id,
+            "user_id":       cp.user.id,
+            "username":      cp.user.username,
+            "full_name":     cp.user.get_full_name().strip() or cp.user.username,
+            "email":         cp.user.email,
+            "phone":         cp.phone,
+            "city":          cp.city,
+            "zones":         cp.zones or [],
+            "vehicle_type":  cp.vehicle_type,
+            "id_card":       cp.id_card,
+            "preferred_language":        cp.preferred_language,
+            "gps_permission_granted":    cp.gps_permission_granted,
+            "camera_permission_granted": cp.camera_permission_granted,
+            "is_active":     cp.is_active,
+            "is_approved":   cp.is_approved,
+            "is_online":     cp.is_online,
+            "created_at":    cp.created_at.isoformat(),
+            "updated_at":    cp.updated_at.isoformat(),
+            # ── Stats performance ──────────────────────────────────────────
+            "total_deliveries":  delivered,
+            "failed_deliveries": failed,
+            "active_shipments":  active_count,
+            "success_rate":      success_rate,
+            "total_earnings_xaf":total_earnings,
+            "sos_open":          sos_open,
+        })
+ 
+    return Response(result)
+ 
+ 
+# ─────────────────────────────────────────────────────────────────────────────
+# SOS ADMIN
+# ─────────────────────────────────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Admin"], summary="List open SOS alerts")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_sos_alerts(request):
+    """Retourne les alertes SOS avec filtre optionnel status=OPEN|ACKNOWLEDGED|RESOLVED."""
+    from apps.shipping.models import CourierSOSAlert
+ 
+    status_filter = request.query_params.get("status", "")
+    qs = CourierSOSAlert.objects.select_related("courier__user").order_by("-created_at")
+ 
+    if status_filter:
+        qs = qs.filter(status=status_filter.upper())
+ 
+    data = [
+        {
+            "id":           a.id,
+            "courier_id":   a.courier.id,
+            "courier_name": a.courier.user.get_full_name().strip() or a.courier.user.username,
+            "courier_phone":a.courier.phone,
+            "status":       a.status,
+            "message":      a.message,
+            "location":     a.location,
+            "latitude":     float(a.latitude) if a.latitude else None,
+            "longitude":    float(a.longitude) if a.longitude else None,
+            "created_at":   a.created_at.isoformat(),
+            "updated_at":   a.updated_at.isoformat(),
+        }
+        for a in qs[:100]
+    ]
+    return Response({"alerts": data, "total": len(data)})
+ 
+ 
+@extend_schema(tags=["Admin"], summary="Acknowledge or resolve a SOS alert")
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_resolve_sos(request, pk):
+    """Changer le statut d'une alerte SOS : ACKNOWLEDGED ou RESOLVED."""
+    from apps.shipping.models import CourierSOSAlert
+ 
+    try:
+        alert = CourierSOSAlert.objects.get(pk=pk)
+    except CourierSOSAlert.DoesNotExist:
+        return Response({"detail": "Alerte introuvable."}, status=404)
+ 
+    new_status = request.data.get("status", "").upper()
+    if new_status not in ["ACKNOWLEDGED", "RESOLVED"]:
+        return Response({"detail": "Statut invalide. Utilisez ACKNOWLEDGED ou RESOLVED."}, status=400)
+ 
+    alert.status = new_status
+    alert.save(update_fields=["status", "updated_at"])
+ 
+    return Response({
+        "id":     alert.id,
+        "status": alert.status,
+        "detail": f"Alerte #{alert.id} marquée {new_status}.",
+    })
+
+
+@extend_schema(tags=["Admin"], summary="Create courier account")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_create_courier(request):
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+    payload = {
+        "phone": request.data.get("phone", "").strip(),
+        "city": request.data.get("city", "").strip(),
+        "zones": request.data.get("zones", []),
+        "vehicle_type": request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
+        "id_card": request.data.get("id_card", "").strip(),
+    }
+
+    if isinstance(payload["zones"], str):
+        payload["zones"] = [zone.strip() for zone in payload["zones"].split(",") if zone.strip()]
+
+    missing = [field for field in ["username", "password", "phone", "city", "id_card"] if not (request.data.get(field) or "").strip()]
+    if missing:
+        return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer = CourierApplicationSerializer(data=payload, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+
+    user, created = User.objects.get_or_create(
+        username=username,
+        defaults={
+            "email": email,
+            "first_name": first_name,
+            "last_name": last_name,
+        },
+    )
+    if not created and hasattr(user, "courier_profile"):
+        return Response({"detail": "Ce nom d'utilisateur possede deja un profil livreur."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.email = email
+    user.first_name = first_name
+    user.last_name = last_name
+    user.is_active = True
+    user.set_password(password)
+    user.save()
+
+    courier = CourierProfile.objects.create(
+        user=user,
+        **serializer.validated_data,
+        is_active=True,
+        is_approved=True,
+        is_online=False,
+    )
+
+    return Response(CourierProfileSerializer(courier).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Admin"], summary="Update courier account")
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_update_courier(request, pk):
+    courier = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
+    user = courier.user
+
+    for field in ("email", "first_name", "last_name", "is_active"):
+        if field in request.data:
+            setattr(user, field, request.data[field])
+    if request.data.get("password"):
+        user.set_password(request.data["password"])
+    user.save()
+
+    payload = {
+        "phone": request.data.get("phone", courier.phone),
+        "city": request.data.get("city", courier.city),
+        "zones": request.data.get("zones", courier.zones),
+        "vehicle_type": request.data.get("vehicle_type", courier.vehicle_type),
+        "id_card": request.data.get("id_card", courier.id_card),
+    }
+    if isinstance(payload["zones"], str):
+        payload["zones"] = [zone.strip() for zone in payload["zones"].split(",") if zone.strip()]
+
+    serializer = CourierApplicationSerializer(courier, data=payload, partial=True, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    for field in ("is_active", "is_approved", "is_online"):
+        if field in request.data:
+            setattr(courier, field, bool(request.data[field]))
+    courier.save()
+    return Response(CourierProfileSerializer(courier).data)
+
+
+@extend_schema(tags=["Admin"], summary="Delete courier account")
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_delete_courier(request, pk):
+    profile = get_object_or_404(CourierProfile.objects.select_related("user"), pk=pk)
+    user = profile.user
+    username = user.username
+    user.delete()
+    return Response(
+        {"detail": f"Livreur {username} supprime."},
+        status=status.HTTP_200_OK,
+    )
+
+
+@extend_schema(tags=["Admin"], summary="Create user by role")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_create_user(request):
+    from apps.vendors.models import VendorProfile
+
+    role = request.data.get("role", "client")
+    username = request.data.get("username", "").strip()
+    email = request.data.get("email", "").strip()
+    password = request.data.get("password", "")
+    first_name = request.data.get("first_name", "").strip()
+    last_name = request.data.get("last_name", "").strip()
+    phone = request.data.get("phone", "").strip()
+
+    missing = [field for field in ["role", "username", "password"] if not (request.data.get(field) or "").strip()]
+    if role in {"vendor", "courier"} and not phone:
+        missing.append("phone")
+    if missing:
+        return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+    if User.objects.filter(username=username).exists():
+        return Response({"detail": "Ce nom d'utilisateur existe deja."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user = User.objects.create_user(
+        username=username,
+        email=email,
+        password=password,
+        first_name=first_name,
+        last_name=last_name,
+        is_active=True,
+    )
+
+    if role == "admin":
+        user.is_staff = True
+        user.is_superuser = bool(request.data.get("is_superuser", True))
+        user.save(update_fields=["is_staff", "is_superuser"])
+    elif role == "vendor":
+        VendorProfile.objects.create(
+            user=user,
+            business_name=request.data.get("business_name", "").strip() or username,
+            business_description=request.data.get("business_description", "").strip() or "Boutique creee par administrateur",
+            phone=phone,
+            address=request.data.get("address", "").strip() or request.data.get("city", "").strip() or "Adresse a completer",
+            city=request.data.get("city", "").strip() or "Douala",
+            id_document=request.data.get("id_document", "").strip(),
+            status=request.data.get("vendor_status", "APPROVED"),
+            approved_at=timezone.now(),
+        )
+    elif role == "courier":
+        zones = request.data.get("zones", [])
+        if isinstance(zones, str):
+            zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
+        CourierProfile.objects.create(
+            user=user,
+            phone=phone,
+            city=request.data.get("city", "").strip() or "Douala",
+            zones=zones,
+            vehicle_type=request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
+            id_card=request.data.get("id_card", "").strip() or "A completer",
+            is_active=True,
+            is_approved=bool(request.data.get("is_approved", True)),
+            is_online=False,
+        )
+    elif role != "client":
+        user.delete()
+        return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+
 @extend_schema(tags=["Auth"], summary="Get current user profile")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
-    serializer = UserSerializer(request.user)
+    get_or_create_profile(request.user)
+    serializer = UserSerializer(request.user, context={'request': request})
     return Response(serializer.data)
 
 @extend_schema(
@@ -52,7 +573,8 @@ def me(request):
 @permission_classes([IsAuthenticated])
 def profile(request):
     """Récupérer le profil de l'utilisateur connecté"""
-    serializer = UserProfileSerializer(request.user)
+    get_or_create_profile(request.user)
+    serializer = UserProfileSerializer(request.user, context={'request': request})
     return Response(serializer.data)
 
 
@@ -66,6 +588,7 @@ def profile(request):
 @permission_classes([IsAuthenticated])
 def update_profile(request):
     """Mettre à jour le profil de l'utilisateur connecté"""
+    get_or_create_profile(request.user)
     serializer = UserProfileUpdateSerializer(
         request.user, 
         data=request.data, 
@@ -76,5 +599,546 @@ def update_profile(request):
     serializer.save()
     
     # Retourner le profil complet mis à jour
-    profile_serializer = UserProfileSerializer(request.user)
+    profile_serializer = UserProfileSerializer(request.user, context={'request': request})
     return Response(profile_serializer.data)
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Upload profile avatar",
+    request=AvatarUploadSerializer,
+    responses={200: UserProfileSerializer},
+)
+class AvatarUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        profile = get_or_create_profile(request.user)
+        serializer = AvatarUploadSerializer(profile, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(UserProfileSerializer(request.user, context={'request': request}).data)
+
+    def delete(self, request):
+        profile = get_or_create_profile(request.user)
+        if profile.avatar:
+            profile.avatar.delete(save=False)
+        profile.avatar = None
+        profile.save(update_fields=['avatar', 'updated_at'])
+        return Response(UserProfileSerializer(request.user, context={'request': request}).data)
+
+
+@extend_schema(tags=["Auth"], summary="Get or submit courier application")
+class CourierApplicationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _response(self, courier):
+        if not courier:
+            return Response({"application": None, "status": "not_applied"})
+
+        status_label = "approved" if courier.is_approved and courier.is_active else "pending"
+        return Response(
+            {
+                "application": CourierProfileSerializer(courier).data,
+                "status": status_label,
+            }
+        )
+
+    def get(self, request):
+        courier = getattr(request.user, "courier_profile", None)
+        return self._response(courier)
+
+    def post(self, request):
+        serializer = CourierApplicationSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return self._response(courier)
+
+    def patch(self, request):
+        courier = get_object_or_404(CourierProfile, user=request.user)
+        serializer = CourierApplicationSerializer(
+            courier,
+            data=request.data,
+            partial=True,
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        courier = serializer.save()
+        return self._response(courier)
+
+
+@extend_schema(tags=["Client"], summary="List favorite products")
+class FavoritesListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = FavoriteSerializer
+
+    def get_queryset(self):
+        return UserFavorite.objects.filter(user=self.request.user).select_related(
+            'product',
+            'product__category',
+            'product__inventory',
+        ).prefetch_related('product__media', 'product__images')
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context['request'] = self.request
+        return context
+
+
+@extend_schema(tags=["Client"], summary="Remove favorite product")
+class FavoriteDestroyView(generics.DestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = FavoriteSerializer
+
+    def get_queryset(self):
+        return UserFavorite.objects.filter(user=self.request.user)
+
+
+@extend_schema(tags=["Client"], summary="List notifications")
+class NotificationsListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        qs = UserNotification.objects.filter(user=self.request.user)
+        audience = (self.request.query_params.get("audience") or "customer").strip().lower()
+
+        if audience in {"courier", "driver", "livreur"}:
+            return qs.filter(action_url__startswith="/courier")
+        if audience in {"vendor", "seller", "vendeur"}:
+            return qs.filter(action_url__startswith="/seller")
+        if audience == "admin":
+            return qs.filter(action_url__startswith="/admin")
+
+        return qs.exclude(
+            Q(action_url__startswith="/courier")
+            | Q(action_url__startswith="/seller")
+            | Q(action_url__startswith="/admin")
+        )
+
+
+@extend_schema(tags=["Client"], summary="Mark one notification as read")
+class NotificationMarkReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        notification = get_object_or_404(
+            UserNotification,
+            id=id,
+            user=request.user,
+        )
+        notification.is_read = True
+        notification.save(update_fields=['is_read', 'updated_at'])
+        return Response(NotificationSerializer(notification).data)
+
+
+@extend_schema(tags=["Client"], summary="Mark all notifications as read")
+class NotificationMarkAllReadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        UserNotification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({"detail": "Notifications marked as read"})
+
+
+@extend_schema(
+    tags=["Auth"],
+    summary="Change user password",
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError as DjangoValidationError
+
+    user          = request.user
+    old_password  = request.data.get("old_password", "")
+    new_password  = request.data.get("new_password", "")
+    new_password2 = request.data.get("new_password2", "")
+
+    if not user.check_password(old_password):
+        return Response({"old_password": ["Mot de passe actuel incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    if new_password != new_password2:
+        return Response({"new_password2": ["Les nouveaux mots de passe ne correspondent pas."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        validate_password(new_password, user)
+    except DjangoValidationError as e:
+        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(new_password)
+    user.save()
+    return Response({"detail": "Mot de passe modifié avec succès."}, status=status.HTTP_200_OK)
+
+
+# ── Helpers OTP ───────────────────────────────────────────────────────────────
+ 
+def _generate_otp() -> str:
+    return ''.join(random.choices(string.digits, k=6))
+ 
+ 
+def _create_and_send_otp(user, purpose: str) -> None:
+    """Invalide les anciens codes, génère un nouveau et envoie l'email."""
+    from .models import OTPCode
+ 
+    OTPCode.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
+    code = _generate_otp()
+    OTPCode.objects.create(
+        user=user, code=code, purpose=purpose,
+        expires_at=timezone.now() + timedelta(minutes=10),
+    )
+ 
+    labels = {
+        '2FA_LOGIN':   'Connexion sécurisée',
+        '2FA_ENABLE':  'Activation de la double authentification',
+        '2FA_DISABLE': 'Désactivation de la double authentification',
+    }
+    label = labels.get(purpose, 'Vérification')
+    from_email = getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'BelivaY <noreply@belivay.com>')
+ 
+    send_mail(
+        subject=f'[BelivaY] Code de vérification — {label}',
+        message=(
+            f'Bonjour {user.first_name or user.username},\n\n'
+            f'Votre code de vérification BelivaY :\n\n'
+            f'        {code}\n\n'
+            f'Ce code est valable 10 minutes.\n'
+            f'Ne le partagez jamais avec personne.\n\n'
+            f"Si vous n'êtes pas à l'origine de cette demande, "
+            f'changez votre mot de passe immédiatement.\n\n'
+            f'— L\'équipe BelivaY'
+        ),
+        from_email=from_email,
+        recipient_list=[user.email],
+        fail_silently=False,
+    )
+ 
+ 
+# ── Login enrichi (2FA) ───────────────────────────────────────────────────────
+ 
+class TwoFactorTokenObtainPairView(_BaseLoginView):
+    """
+    Remplace TokenObtainPairView dans urls.py.
+    Si la 2FA est activée → envoie OTP + retourne 2fa_required=True.
+    Sinon → comportement normal simplejwt + crée la UserSession.
+    """
+ 
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+        except Exception:
+            raise
+ 
+        user    = serializer.user
+        profile = get_or_create_profile(user)
+ 
+        # ── 2FA activée ────────────────────────────────────────────────────
+        if profile.two_factor_enabled:
+            try:
+                _create_and_send_otp(user, '2FA_LOGIN')
+            except Exception as exc:
+                return Response(
+                    {'detail': f'Erreur envoi code 2FA : {exc}'},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                )
+            return Response(
+                {'2fa_required': True, 'user_id': user.id, 'email': user.email},
+                status=status.HTTP_200_OK,
+            )
+ 
+        # ── 2FA désactivée — flux normal ───────────────────────────────────
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            _register_session_from_response(response, user, request)
+        return response
+ 
+ 
+def _register_session_from_response(response, user, request):
+    """Crée la UserSession depuis la réponse de login."""
+    try:
+        from rest_framework_simplejwt.tokens import AccessToken as _AccessToken
+        from .models import UserSession
+        from .middleware import parse_user_agent, get_client_ip
+        access = _AccessToken(response.data['access'])
+        jti    = str(access['jti'])
+        ua     = request.META.get('HTTP_USER_AGENT', '')
+        device_name, browser, os_name = parse_user_agent(ua)
+        UserSession.objects.update_or_create(
+            jti=jti,
+            defaults={
+                'user': user, 'device_name': device_name,
+                'browser': browser, 'os_name': os_name,
+                'ip_address': get_client_ip(request) or None,
+                'is_active': True,
+            },
+        )
+    except Exception as exc:
+        logger.debug('Session login registration skipped: %s', exc)
+ 
+ 
+# ── Logout propre ─────────────────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Auth"], summary="Logout — blacklist refresh token")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def logout_view(request):
+    """Blackliste le refresh token et désactive la session courante."""
+    from rest_framework_simplejwt.tokens import RefreshToken as _RT
+    from rest_framework_simplejwt.exceptions import TokenError
+    from .models import UserSession
+ 
+    current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
+    if current_jti:
+        UserSession.objects.filter(jti=current_jti).update(is_active=False)
+ 
+    refresh = request.data.get('refresh')
+    if refresh:
+        try:
+            _RT(refresh).blacklist()
+        except TokenError:
+            pass
+ 
+    return Response({'detail': 'Déconnexion réussie.'})
+ 
+ 
+# ── Changement de mot de passe ────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Auth"], summary="Change password")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def change_password(request):
+    """Modifie le mot de passe. Requiert l'ancien mot de passe."""
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError as DjangoValidationError
+ 
+    user          = request.user
+    old_password  = request.data.get("old_password", "")
+    new_password  = request.data.get("new_password", "")
+    new_password2 = request.data.get("new_password2", "")
+ 
+    if not user.check_password(old_password):
+        return Response({"old_password": ["Mot de passe actuel incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    if new_password != new_password2:
+        return Response({"new_password2": ["Les nouveaux mots de passe ne correspondent pas."]}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    try:
+        validate_password(new_password, user)
+    except DjangoValidationError as e:
+        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+ 
+    user.set_password(new_password)
+    user.save()
+    return Response({"detail": "Mot de passe modifié avec succès."})
+ 
+ 
+# ── Sessions ──────────────────────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Auth"], summary="List active sessions")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def list_sessions(request):
+    """Liste les sessions actives de l'utilisateur connecté."""
+    from .models import UserSession
+    sessions    = UserSession.objects.filter(user=request.user, is_active=True)
+    current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
+    data = [
+        {
+            'jti':           s.jti,
+            'device_name':   s.device_name,
+            'browser':       s.browser,
+            'os_name':       s.os_name,
+            'ip_address':    s.ip_address,
+            'created_at':    s.created_at,
+            'last_activity': s.last_activity,
+            'is_current':    s.jti == current_jti,
+        }
+        for s in sessions
+    ]
+    return Response(data)
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Revoke one session")
+@api_view(["DELETE"])
+@permission_classes([IsAuthenticated])
+def revoke_session(request, jti):
+    """Révoque une session (blacklist token + désactive)."""
+    from .models import UserSession
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+ 
+    current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
+    if jti == current_jti:
+        return Response({'detail': 'Utilisez la déconnexion pour terminer la session courante.'}, status=400)
+ 
+    try:
+        session = UserSession.objects.get(jti=jti, user=request.user, is_active=True)
+    except UserSession.DoesNotExist:
+        return Response({'detail': 'Session introuvable.'}, status=404)
+ 
+    try:
+        outstanding = OutstandingToken.objects.filter(jti=jti).first()
+        if outstanding:
+            BlacklistedToken.objects.get_or_create(token=outstanding)
+    except Exception as exc:
+        logger.debug('Blacklist error: %s', exc)
+ 
+    session.is_active = False
+    session.save(update_fields=['is_active'])
+    return Response({'detail': 'Session révoquée.'})
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Revoke all other sessions")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def revoke_all_sessions(request):
+    """Révoque toutes les sessions sauf la courante."""
+    from .models import UserSession
+    from rest_framework_simplejwt.token_blacklist.models import OutstandingToken, BlacklistedToken
+ 
+    current_jti = str(getattr(request.auth, 'payload', {}).get('jti', ''))
+    sessions    = UserSession.objects.filter(user=request.user, is_active=True).exclude(jti=current_jti)
+    count       = sessions.count()
+ 
+    for s in sessions:
+        try:
+            outstanding = OutstandingToken.objects.filter(jti=s.jti).first()
+            if outstanding:
+                BlacklistedToken.objects.get_or_create(token=outstanding)
+        except Exception as exc:
+            logger.debug('Blacklist error %s: %s', s.jti, exc)
+        s.is_active = False
+        s.save(update_fields=['is_active'])
+ 
+    return Response({'detail': f'{count} session(s) révoquée(s).'})
+ 
+ 
+# ── Double authentification ───────────────────────────────────────────────────
+ 
+@extend_schema(tags=["Auth"], summary="Get 2FA status")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_2fa_status(request):
+    profile = get_or_create_profile(request.user)
+    return Response({
+        'two_factor_enabled': profile.two_factor_enabled,
+        'two_factor_method':  profile.two_factor_method,
+        'two_factor_phone':   profile.two_factor_phone,
+        'email':              request.user.email,
+    })
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Send 2FA OTP code")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def send_2fa_code(request):
+    """Envoie un code OTP pour activer ou désactiver la 2FA."""
+    purpose = request.data.get('purpose', '2FA_ENABLE')
+    if purpose not in ('2FA_ENABLE', '2FA_DISABLE'):
+        return Response({'detail': 'Purpose invalide.'}, status=400)
+    try:
+        _create_and_send_otp(request.user, purpose)
+        return Response({'detail': f'Code envoyé à {request.user.email}.', 'email': request.user.email})
+    except Exception as e:
+        return Response({'detail': f'Erreur envoi email : {e}'}, status=500)
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Enable 2FA")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def enable_2fa(request):
+    """Vérifie le code OTP et active la 2FA."""
+    from .models import OTPCode
+    code   = request.data.get('code', '').strip()
+    method = request.data.get('method', 'EMAIL')
+    phone  = request.data.get('phone', '').strip()
+ 
+    if not code:
+        return Response({'detail': 'Code requis.'}, status=400)
+ 
+    otp = OTPCode.objects.filter(user=request.user, purpose='2FA_ENABLE', is_used=False).order_by('-created_at').first()
+    if not otp or not otp.is_valid:
+        return Response({'detail': 'Code expiré ou invalide. Demandez un nouveau code.'}, status=400)
+    if otp.code != code:
+        return Response({'detail': 'Code incorrect.'}, status=400)
+ 
+    otp.is_used = True
+    otp.save(update_fields=['is_used'])
+ 
+    profile = get_or_create_profile(request.user)
+    profile.two_factor_enabled = True
+    profile.two_factor_method  = method
+    profile.two_factor_phone   = phone
+    profile.save(update_fields=['two_factor_enabled', 'two_factor_method', 'two_factor_phone'])
+    return Response({'detail': 'Double authentification activée avec succès.'})
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Disable 2FA")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def disable_2fa(request):
+    """Vérifie le mot de passe actuel et désactive la 2FA."""
+    password = request.data.get('password', '')
+    if not password:
+        return Response({'detail': 'Mot de passe requis.'}, status=400)
+    if not request.user.check_password(password):
+        return Response({'detail': 'Mot de passe incorrect.'}, status=400)
+ 
+    profile = get_or_create_profile(request.user)
+    profile.two_factor_enabled = False
+    profile.two_factor_method  = 'EMAIL'
+    profile.two_factor_phone   = ''
+    profile.save(update_fields=['two_factor_enabled', 'two_factor_method', 'two_factor_phone'])
+    return Response({'detail': 'Double authentification désactivée.'})
+ 
+ 
+@extend_schema(tags=["Auth"], summary="Verify 2FA login OTP")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def verify_2fa_login(request):
+    """Vérifie le code OTP de connexion et retourne les tokens JWT."""
+    from .models import OTPCode, UserSession
+    from .middleware import parse_user_agent, get_client_ip
+    from rest_framework_simplejwt.tokens import RefreshToken as _RT
+ 
+    user_id = request.data.get('user_id')
+    code    = request.data.get('code', '').strip()
+    if not user_id or not code:
+        return Response({'detail': 'user_id et code requis.'}, status=400)
+ 
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'detail': 'Utilisateur introuvable.'}, status=404)
+ 
+    otp = OTPCode.objects.filter(user=user, purpose='2FA_LOGIN', is_used=False).order_by('-created_at').first()
+    if not otp or not otp.is_valid:
+        return Response({'detail': 'Code expiré. Reconnectez-vous.'}, status=400)
+    if otp.code != code:
+        return Response({'detail': 'Code incorrect.'}, status=400)
+ 
+    otp.is_used = True
+    otp.save(update_fields=['is_used'])
+ 
+    refresh = _RT.for_user(user)
+    access  = refresh.access_token
+    jti     = str(access['jti'])
+ 
+    ua = request.META.get('HTTP_USER_AGENT', '')
+    device_name, browser, os_name = parse_user_agent(ua)
+    UserSession.objects.update_or_create(
+        jti=jti,
+        defaults={
+            'user': user, 'device_name': device_name,
+            'browser': browser, 'os_name': os_name,
+            'ip_address': get_client_ip(request) or None, 'is_active': True,
+        },
+    )
+    
+    # Mettre à jour last_login (simplejwt ne le fait pas en mode manuel)
+    from django.contrib.auth.models import update_last_login
+    update_last_login(None, user)
+ 
+    return Response({'access': str(access), 'refresh': str(refresh)})

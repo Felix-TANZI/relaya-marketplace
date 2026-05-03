@@ -3,7 +3,7 @@
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
-const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000';
+const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
@@ -61,10 +61,14 @@ export async function http<T>(
     ? endpoint 
     : `${API_BASE_URL}${endpoint}`;
 
+  const isFormData = typeof FormData !== 'undefined' && config.body instanceof FormData;
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
     ...config.headers,
   };
+
+  if (!isFormData && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
 
   // Ajouter le token si présent
   const token = localStorage.getItem('access_token');

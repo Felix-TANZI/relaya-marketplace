@@ -1,57 +1,105 @@
-# Environment files
+# BelivaY — .gitignore
+
+#  Variables d'environnement (CRITIQUE) 
+# .env contient : clé secrète Django, password BDD, clé SMTP, API keys
 .env
 .env.*
-!.env.example
 .env.prod
+frontend/.env
+frontend/.env.*
 
-# Python
+
+#  Python
 __pycache__/
+*.py[cod]
 *.pyc
 *.pyo
 *.pyd
 *.egg-info/
-dist/
+.eggs/
+
+
+#  Django
+# Fichiers générés ou contenant des données utilisateur
+*.sqlite3
+db.sqlite3
+media/          # photos avatars, produits, bannières, documents vendeur
+mediafiles/     # alias utilisé en prod
+staticfiles/    # fichiers static collectés par collectstatic
+
+
+#  Environnements virtuels Python
 .venv/
 venv/
-*.log
-*.pot
+env/
+ENV/
 
-# Django
-*.sqlite3
-media/
-staticfiles/
-mediafiles/
-db.sqlite3
-*.log
 
-# Node
+#  Node.js / Frontend
 node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
 dist/
-build/
+dist-ssr/
+*.local
+
+
+#  Logs──
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 
-# Production
+
+#  SSL / Certificats Let's Encrypt ──
+# Générés par certbot — JAMAIS commités
 certbot/
 *.pem
 *.key
 *.crt
+*.csr
 
-# OS/IDE
+
+#  Docker
+# Overrides locaux non partagés
+docker-compose.override.yml
+
+
+#  Sauvegardes base de données
+*.sql
+*.dump
+*.bak
+
+
+#  Fichiers temporaires──
+*.tmp
+*.temp
+*~
+
+
+#  Tests & Coverage Python─
+.coverage
+htmlcov/
+.pytest_cache/
+
+
+#  OS─
 .DS_Store
 Thumbs.db
-.vscode/
+
+
+#  Éditeurs ─
+.vscode/*
+!.vscode/extensions.json
 .idea/
 *.swp
 *.swo
-*~
-
-# Docker
-*.env.local
-docker-compose.override.yml
-
-# Backup files
-*.bak
-*.tmp
-*.temp
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

@@ -2,17 +2,62 @@
 // Client API pour interagir avec le backend Relaya Marketplace
 
 // Configuration du client API
-const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
+  .replace(/\/api\/?$/, "")
+  .replace(/\/$/, "");
+
+function normalizeEndpoint(endpoint: string): string {
+  if (endpoint.startsWith("http")) {
+    return endpoint;
+  }
+
+  if (endpoint.startsWith("/api/")) {
+    return endpoint;
+  }
+
+  if (endpoint.startsWith("/")) {
+    return `/api${endpoint}`;
+  }
+
+  return `/api/${endpoint}`;
+}
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
+}
+
+async function refreshAccessToken(): Promise<string | null> {
+  const refreshToken = localStorage.getItem('refresh_token');
+  if (!refreshToken) return null;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refreshToken }),
+    });
+
+    if (!response.ok) {
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+      return null;
+    }
+
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access);
+    return data.access;
+  } catch {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    return null;
+  }
 }
 
 async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promise<T> {
   const { params, ...fetchOptions } = options;
   
   // Construire l'URL avec les query params
-  let url = `${API_BASE_URL}${endpoint}`;
+  let url = `${API_BASE_URL}${normalizeEndpoint(endpoint)}`;
   if (params) {
     const cleanParams = Object.entries(params)
       .filter(([, value]) => value !== undefined && value !== null && value !== '')
@@ -25,30 +70,45 @@ async function apiFetch<T>(endpoint: string, options: FetchOptions = {}): Promis
   }
 
   // Récupérer le token d'authentification depuis le stockage local
-const token = localStorage.getItem('access_token');
-const headers: Record<string, string> = {
-  "Content-Type": "application/json",
-};
+const isFormData = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
+const headers: Record<string, string> = {};
 
 // Ajouter les headers personnalisés
 if (fetchOptions.headers) {
   Object.assign(headers, fetchOptions.headers);
 }
 
-// Ajouter le token si présent
-if (token) {
-  headers['Authorization'] = `Bearer ${token}`;
+if (!isFormData && !headers['Content-Type']) {
+  headers['Content-Type'] = 'application/json';
 }
 
-const response = await fetch(url, {
+const token = localStorage.getItem('access_token');
+if (token) headers['Authorization'] = `Bearer ${token}`;
+
+let response = await fetch(url, {
   ...fetchOptions,
   headers,
 });
 
+  if (response.status === 401 && localStorage.getItem('refresh_token')) {
+    const newToken = await refreshAccessToken();
+    if (newToken) {
+      headers['Authorization'] = `Bearer ${newToken}`;
+      response = await fetch(url, {
+        ...fetchOptions,
+        headers,
+      });
+    }
+  }
+
   if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    console.error('API Error Details:', errorData);
-    throw new Error(`API Error: ${response.status} ${response.statusText}${errorData ? ` - ${JSON.stringify(errorData)}` : ''}`);
+    const errorText = await response.text().catch(() => "");
+    // Silent in production — no console.error spam
+    throw new Error(
+      errorText
+        ? `API Error: ${response.status} ${response.statusText} - ${errorText}`
+        : `API Error: ${response.status} ${response.statusText}`,
+    );
   }
 
   return response.json();

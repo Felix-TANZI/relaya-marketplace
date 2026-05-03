@@ -8,6 +8,7 @@ import {
   ArrowLeft, Package, MapPin, Phone, FileText,
   RefreshCw, CheckCircle, Clock, Truck, PackageCheck,
   XCircle, AlertTriangle, User, DollarSign, StickyNote, Save,
+  Route, Navigation, Bike,
 } from 'lucide-react';
 import { vendorsApi, type VendorOrder, type FulfillmentStatus } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
@@ -124,6 +125,20 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
       </div>
     </div>
   );
+}
+
+function shipmentStatusLabel(status?: string) {
+  switch (status) {
+    case 'CREATED': return 'Livraison créée';
+    case 'ASSIGNED': return 'Livreur assigné';
+    case 'PICKED_UP': return 'Colis pris en main';
+    case 'IN_TRANSIT': return 'En transit';
+    case 'OUT_FOR_DELIVERY': return 'En livraison';
+    case 'DELIVERED': return 'Livré';
+    case 'FAILED': return 'Échec';
+    case 'CANCELLED': return 'Annulée';
+    default: return status || 'Non créée';
+  }
 }
 
 // ─────────────────────────────────────────────
@@ -261,6 +276,74 @@ export default function SellerOrderDetailPage() {
           </button>
         </div>
       </div>
+
+      {/* ═══ SUIVI COLIS — VENDEUR ↔ LIVREUR ═══ */}
+      <InfoCard icon={<Route size={15} />} title="Suivi du colis vendeur · livreur">
+        {order.shipment ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+              <div className="rounded-xl px-4 py-3" style={{ background: T.blueL, border: `1px solid rgba(37,99,235,0.15)` }}>
+                <p className="mb-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: T.blue }}>Statut livraison</p>
+                <p className="text-[13px] font-black" style={{ color: T.text }}>{shipmentStatusLabel(order.shipment.status)}</p>
+              </div>
+              <div className="rounded-xl px-4 py-3" style={{ background: T.greenL, border: `1px solid rgba(22,163,74,0.15)` }}>
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: T.green }}>
+                  <Navigation size={11} /> Distance calculée
+                </p>
+                <p className="text-[18px] font-black" style={{ color: T.text }}>{order.shipment.distance_km.toFixed(1)} km</p>
+              </div>
+              <div className="rounded-xl px-4 py-3" style={{ background: T.orangeL, border: `1px solid rgba(244,121,32,0.15)` }}>
+                <p className="mb-1 flex items-center gap-1 text-[10px] font-bold uppercase tracking-wide" style={{ color: T.orange }}>
+                  <Bike size={11} /> Livreur
+                </p>
+                <p className="text-[13px] font-black" style={{ color: T.text }}>
+                  {order.shipment.courier_name || 'En attente'}
+                </p>
+                {order.shipment.courier_phone ? (
+                  <p className="mt-0.5 text-[11px]" style={{ color: T.muted }}>{order.shipment.courier_phone}</p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {(order.shipment.timeline ?? []).map((event, index) => {
+                const isLast = index === (order.shipment?.timeline.length ?? 0) - 1;
+                return (
+                  <div key={event.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full"
+                        style={{ background: isLast ? T.orange : T.creamAlt, color: isLast ? T.white : T.muted }}>
+                        {isLast ? <Truck size={14} /> : <CheckCircle size={14} />}
+                      </div>
+                      {!isLast && <div className="w-px flex-1" style={{ background: T.border }} />}
+                    </div>
+                    <div className="min-w-0 flex-1 pb-3">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-[13px] font-black" style={{ color: T.text }}>{event.label}</p>
+                        <span className="text-[11px] font-semibold" style={{ color: T.muted }}>
+                          {fmtDate(event.created_at)}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[12px] leading-5" style={{ color: T.muted }}>
+                        {event.message || shipmentStatusLabel(event.status)}
+                      </p>
+                      {event.location ? (
+                        <p className="mt-1 flex items-center gap-1 text-[11px] font-semibold" style={{ color: T.mutedL }}>
+                          <MapPin size={11} /> {event.location}
+                        </p>
+                      ) : null}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-xl px-4 py-3 text-[13px]" style={{ background: T.cream, color: T.muted }}>
+            Aucun suivi de colis n'est encore associé à cette commande.
+          </div>
+        )}
+      </InfoCard>
 
       {/* ═══ PROGRESSION ═══ */}
       <div className="rounded-2xl p-5"

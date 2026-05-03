@@ -120,6 +120,27 @@ export interface VendorOrderItem {
   created_at:     string;
 }
 
+export interface VendorShipmentTimelineEvent {
+  id: number | string;
+  status: string;
+  label: string;
+  message: string;
+  location: string;
+  created_at: string;
+}
+
+export interface VendorShipmentTracking {
+  id: number;
+  status: string;
+  courier_name: string;
+  courier_phone: string;
+  relay_point: string;
+  distance_km: number;
+  timeline: VendorShipmentTimelineEvent[];
+  created_at: string;
+  updated_at: string;
+}
+
 export interface VendorOrder {
   // Identifiants
   id:      number;
@@ -158,6 +179,7 @@ export interface VendorOrder {
 
   // Articles filtrés sur ce vendeur uniquement
   items: VendorOrderItem[];
+  shipment: VendorShipmentTracking | null;
 
   // Flags
   is_paid:          boolean;

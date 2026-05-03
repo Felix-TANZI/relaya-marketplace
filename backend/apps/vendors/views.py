@@ -407,6 +407,8 @@ def vendor_orders(request):
  
         orders = (
             Order.objects.filter(items__product__vendor=request.user)
+            .select_related('shipment')
+            .prefetch_related('shipment__events')
             .distinct()
             .order_by('-created_at')
         )
@@ -461,7 +463,7 @@ def vendor_order_detail(request, order_id):
         order = Order.objects.filter(
             id=order_id,
             items__product__vendor=request.user
-        ).distinct().first()
+        ).select_related('shipment').prefetch_related('shipment__events').distinct().first()
         
         if not order:
             return Response(

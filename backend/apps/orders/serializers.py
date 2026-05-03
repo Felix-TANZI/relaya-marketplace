@@ -5,8 +5,27 @@ from rest_framework import serializers
 from django.conf import settings as django_settings
 from django.db.models import Count, Q
 from django.utils.text import slugify
+import unicodedata
 from .models import Order, OrderItem, Dispute, DisputeMessage
 from apps.catalog.models import Category, Product, ProductMedia
+
+
+def _city_variants(value):
+    raw = (value or "").strip()
+    if not raw:
+        return []
+
+    normalized = unicodedata.normalize("NFKD", raw)
+    ascii_city = "".join(ch for ch in normalized if not unicodedata.combining(ch))
+    compact = ascii_city.replace(" ", "").replace("-", "").replace("_", "").upper()
+
+    variants = {raw, ascii_city, raw.upper(), ascii_city.upper(), compact}
+    aliases = {
+        "YAOUNDE": {"YAOUNDE", "Yaounde", "Yaoundé", "yaounde", "yaoundé"},
+        "DOUALA": {"DOUALA", "Douala", "douala"},
+    }
+    variants.update(aliases.get(compact, set()))
+    return [variant for variant in variants if variant]
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -327,13 +346,16 @@ class OrderCreateSerializer(serializers.Serializer):
                 Shipment.Status.OUT_FOR_DELIVERY,
             ]
             city = (order.city or "").strip()
+            city_filter = Q()
+            for variant in _city_variants(city):
+                city_filter |= Q(city__iexact=variant) | Q(zones__icontains=variant)
             courier = (
                 CourierProfile.objects.filter(
                     is_active=True,
                     is_approved=True,
                     is_online=True,
                 )
-                .filter(Q(city__iexact=city) | Q(zones__icontains=city))
+                .filter(city_filter)
                 .annotate(active_shipments_count=Count("shipments", filter=Q(shipments__status__in=active_statuses)))
                 .order_by("active_shipments_count", "updated_at")
                 .select_related("user")

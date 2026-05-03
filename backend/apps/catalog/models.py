@@ -5,6 +5,7 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
+from django.db import transaction
 
 
 class TimeStampedModel(models.Model):
@@ -292,11 +293,43 @@ class ProductImage(models.Model):
         return f"Image {self.id} — {self.product.title}"
 
     def save(self, *args, **kwargs):
-        if self.is_primary:
-            ProductImage.objects.filter(product=self.product).update(is_primary=False)
-        elif not ProductImage.objects.filter(product=self.product).exists():
-            self.is_primary = True
-        super().save(*args, **kwargs)
+        """
+        Sauvegarde de l'image avec gestion robuste du flag is_primary.
+ 
+        Contrats garantis :
+          - Une seule image par produit peut être is_primary=True.
+          - Si c'est la première image du produit, elle devient automatiquement
+            principale (sauf si is_primary=False explicitement passé).
+          - Toutes les opérations BDD se font dans une seule transaction
+            atomique pour éviter les états incohérents en cas d'uploads simultanés.
+ 
+        IMPORTANT : self.product DOIT être assigné avant l'appel à save().
+        Si product n'est pas encore en BDD ou non assigné, on lève une erreur
+        explicite (au lieu de planter sur RelatedObjectDoesNotExist).
+        """
+        # Garde-fou : éviter le crash silencieux si product n'est pas attaché
+        if not getattr(self, 'product_id', None):
+            raise ValueError(
+                "ProductImage.save() appelé sans produit associé. "
+                "Toujours passer product=... lors de la création."
+            )
+ 
+        with transaction.atomic():
+            # Cas 1 — Cette image est marquée principale : on retire le flag
+            # de toutes les autres images du même produit.
+            if self.is_primary:
+                ProductImage.objects.filter(
+                    product_id=self.product_id,
+                ).exclude(pk=self.pk).update(is_primary=False)
+ 
+            # Cas 2 — Cette image n'est pas marquée principale, mais c'est
+            # la première image du produit : on la promeut automatiquement.
+            elif not ProductImage.objects.filter(
+                product_id=self.product_id,
+            ).exclude(pk=self.pk).exists():
+                self.is_primary = True
+ 
+            super().save(*args, **kwargs)
 
 
 class ProductMedia(TimeStampedModel):

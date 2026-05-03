@@ -203,7 +203,6 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "BelivaY <noreply@belivay.com>")
 
 # Email pour le support (depuis PlatformSettings par défaut)
-<<<<<<< Updated upstream
 SUPPORT_EMAIL = "support@belivay.com"
 
 # AI / OpenRouter
@@ -211,7 +210,7 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:5174")
 OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Belivay Catalog Assistant")
-=======
+
 SUPPORT_EMAIL = "support@belivay.com"
 
 

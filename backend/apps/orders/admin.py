@@ -84,7 +84,8 @@ class OrderAdmin(admin.ModelAdmin):
     )
 
     def reference(self, obj):
-        return format_html('<strong>BLV-{:05d}</strong>', obj.id)
+        ref = f'BLV-{obj.id:05d}'               # obj.id est encore un int ici
+        return format_html('<strong>{}</strong>', ref)   # format_html reçoit une str
     reference.short_description = 'Référence'
 
     def total_xaf_fmt(self, obj):

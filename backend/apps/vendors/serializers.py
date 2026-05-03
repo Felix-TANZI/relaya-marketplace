@@ -687,12 +687,20 @@ class DisputeMessageCreateSerializer(serializers.Serializer):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class OrderHistorySerializer(serializers.ModelSerializer):
-    user_name = serializers.CharField(source='user.username', read_only=True, default='Système')
+    user_name  = serializers.CharField(
+        source='user.username', read_only=True, default='Système'
+    )
+    # Forcer CharField pour éviter le bug DRF IPAddressField + DRF 3.15+
+    ip_address = serializers.CharField(allow_null=True, allow_blank=True, read_only=True)
 
     class Meta:
         from apps.orders.models import OrderHistory
         model  = OrderHistory
-        fields = ['id', 'user', 'user_name', 'action', 'field_name', 'old_value', 'new_value', 'timestamp', 'ip_address']
+        fields = [
+            'id', 'user', 'user_name', 'action',
+            'field_name', 'old_value', 'new_value',
+            'timestamp', 'ip_address',
+        ]
 
 
 class AdminOrderItemSerializer(serializers.Serializer):

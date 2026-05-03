@@ -130,7 +130,7 @@ import UserDetailPage          from '@/features/admin/UserDetailPage';
 // STUBS — icônes pour les pages à venir
 // ─────────────────────────────────────────────────────────────────────────────
 import {
-  Megaphone, MapPin, Truck, TrendingUp,
+  Megaphone, Truck, TrendingUp,
   Zap, Bot, Shield, HeadphonesIcon,
 } from 'lucide-react';
 

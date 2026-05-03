@@ -524,7 +524,7 @@ export default function CourierDashboardPage() {
       value: `${Math.floor((dashboard?.online_minutes ?? 0) / 60)}h ${String((dashboard?.online_minutes ?? 0) % 60).padStart(2, "0")}`,
       tone: "text-emerald-300",
     },
-    { label: "Statut", value: dashboard?.status_label ?? (courierProfile?.is_online ? "En ligne" : "Hors ligne"), tone: "text-green-300" },
+    { label: "Statut", value: dashboard?.status_label ?? (currentIsOnline ? "En ligne" : "Hors ligne"), tone: "text-green-300" },
     { label: "Parcourus", value: `${(dashboard?.distance_km ?? 0).toFixed(1)} km`, tone: "text-sky-300" },
     { label: "Temps moyen / livraison", value: `${dashboard?.average_delivery_minutes ?? 0} min`, tone: "text-cyan-300" },
     { label: "Performance", value: `${dashboard?.performance_percent ?? 0}%`, tone: "text-orange-300" },
@@ -725,7 +725,7 @@ export default function CourierDashboardPage() {
               <div className="mb-3 flex items-center justify-between">
                 <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
                 <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                  {courierProfile?.is_online ? "Disponible" : "Hors ligne"}
+                  {currentIsOnline ? "Disponible" : "Hors ligne"}
                 </InfoPill>
               </div>
               <div className="space-y-2 text-[14px] text-white/85">

@@ -164,6 +164,9 @@ def _get_active_courier(user):
     courier = getattr(user, "courier_profile", None)
     if not courier or not courier.is_approved or not courier.is_active:
         raise PermissionDenied("Courier account is not approved")
+    if not courier.is_online:
+        courier.is_online = True
+        courier.save(update_fields=["is_online", "updated_at"])
     return courier
 
 

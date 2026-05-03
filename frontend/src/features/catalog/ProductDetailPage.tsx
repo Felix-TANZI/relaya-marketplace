@@ -8,7 +8,6 @@ import {
   RotateCcw,
   Shield,
   ShoppingCart,
-  Sparkles,
   Star,
   ThumbsUp,
   Truck,
@@ -102,7 +101,7 @@ export default function ProductDetailPage() {
           });
           setSimilarProducts(similar.results?.filter((item) => item.id !== data.id) || []);
         }
-      } catch (error) {
+      } catch  {
         const fallback = V29_PRODUCTS.find((item) => item.id === productId) ?? null;
 
         if (fallback) {
@@ -134,7 +133,7 @@ export default function ProductDetailPage() {
       try {
         const data = await http<ProductReview[]>(`/api/catalog/products/${id}/reviews/`);
         setReviews(data);
-      } catch (error) {
+      } catch  {
         // silenced;
         setReviews([]);
       }
@@ -166,41 +165,45 @@ export default function ProductDetailPage() {
   };
 
   const handleSubmitReview = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!user || !product) {
-      showToast(t("product_detail.login_required_review"), "error");
-      return;
-    }
+  event.preventDefault();
+  if (!user || !product) {
+    showToast(t("product_detail.login_required_review"), "error");
+    return;
+  }
 
-    try {
-      setSubmittingReview(true);
-      await http<ProductReview>(`/api/catalog/products/${product.id}/add_review/`, {
-        method: "POST",
-        body: JSON.stringify({
-          rating: reviewRating,
-          title: reviewTitle,
-          comment: reviewComment,
-        }),
-      });
+  try {
+    setSubmittingReview(true);
+    const token = localStorage.getItem('access_token');
+    await http<ProductReview>(`/api/catalog/products/${product.id}/add_review/`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        rating:  reviewRating,
+        title:   reviewTitle,
+        comment: reviewComment,
+      }),
+    });
 
-      showToast(t("product_detail.review_success"), "success");
-      setShowReviewForm(false);
-      setReviewRating(5);
-      setReviewTitle("");
-      setReviewComment("");
+    showToast(t("product_detail.review_success"), "success");
+    setShowReviewForm(false);
+    setReviewRating(5);
+    setReviewTitle("");
+    setReviewComment("");
 
-      const data = await http<ProductReview[]>(
-        `/api/catalog/products/${product.id}/reviews/`,
-      );
-      setReviews(data);
-    } catch (error) {
-      // silenced;
-      showToast(t("product_detail.review_error"), "error");
-    } finally {
-      setSubmittingReview(false);
-    }
-  };
-
+    const data = await http<ProductReview[]>(
+      `/api/catalog/products/${product.id}/reviews/`,
+    );
+    setReviews(data);
+  } catch (error) {
+    console.error("[add_review]", error);   // ← plus de silencing
+    showToast(t("product_detail.review_error"), "error");
+  } finally {
+    setSubmittingReview(false);
+  }
+};
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">

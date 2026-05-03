@@ -514,7 +514,7 @@ def vendor_order_note(request, order_id):
             )
 
         if request.method == 'GET':
-            note = VendorOrderNote.objects.filter(order=order, vendor=request.user).first()
+            note = VendorOrderNote.objects.filter(order=order, vendor=vendor_profile).first()  # ← request.user → vendor_profile
             return Response({
                 'order_id':   order_id,
                 'content':    note.content    if note else '',
@@ -528,7 +528,7 @@ def vendor_order_note(request, order_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         note, _ = VendorOrderNote.objects.get_or_create(
-            order=order, vendor=request.user, defaults={'content': content},
+            order=order, vendor=vendor_profile, defaults={'content': content},  # ← request.user → vendor_profile
         )
         if note.content != content:
             note.content = content
@@ -652,7 +652,7 @@ def vendor_payment_summary(request):
  
         # ── Retrait en cours ───────────────────────────────────────────────
         pending_withdrawal_obj = WithdrawalRequest.objects.filter(
-            vendor=vendor, status=WithdrawalRequest.Status.PENDING
+            vendor=vendor_profile, status='PENDING'
         ).first()
  
         pending_withdrawal = None
@@ -716,7 +716,7 @@ def vendor_withdrawal_list(request):
  
         from apps.vendors.models import WithdrawalRequest
         withdrawals = WithdrawalRequest.objects.filter(
-            vendor=request.user
+            vendor=vendor_profile
         ).order_by('-created_at')
  
         serializer = WithdrawalRequestSerializer(withdrawals, many=True)

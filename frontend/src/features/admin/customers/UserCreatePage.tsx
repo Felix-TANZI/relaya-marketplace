@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   UserPlus, ChevronLeft, RefreshCw,
   User, Store, Truck, Shield, AlertCircle,
+  Eye, EyeOff,
 } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -78,6 +79,7 @@ export default function UserCreatePage() {
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const navigate      = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
 
@@ -247,9 +249,20 @@ export default function UserCreatePage() {
             <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
               Mot de passe <span style={{ color: T.red }}>*</span>
             </label>
-            <input type="password" value={form.password} onChange={e => fld('password', e.target.value)}
-              placeholder="Mot de passe initial"
-              style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+            <div className="relative">
+              <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => fld('password', e.target.value)}
+                placeholder="Mot de passe initial"
+                style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 40px 9px 12px', fontSize: 13, outline: 'none' }} />
+              <button
+                type="button"
+                onClick={() => setShowPassword((value) => !value)}
+                className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg"
+                style={{ color: T.muted }}
+                aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+              >
+                {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+              </button>
+            </div>
           </div>
 
           {/* Champs communs vendeur + livreur */}

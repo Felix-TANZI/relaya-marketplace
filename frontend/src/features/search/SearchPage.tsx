@@ -62,6 +62,10 @@ export default function SearchPage() {
   const [minRating, setMinRating] = useState(0);
   const [inStock, setInStock]   = useState(false);
 
+  const closeFiltersAfterApply = () => {
+    if (window.innerWidth < 768) setFilterOpen(false);
+  };
+
   /* ── Categories ── */
   useEffect(() => {
     productsApi.listCategories({ page_size: 20 })
@@ -116,6 +120,7 @@ export default function SearchPage() {
   const applyPricePreset = (min: number, max: number) => {
     setMinPrice(String(min));
     setMaxPrice(max === 9999999 ? "" : String(max));
+    closeFiltersAfterApply();
   };
 
   /* ── Filter + sort products ── */
@@ -132,8 +137,8 @@ export default function SearchPage() {
     const mx = parseFloat(maxPrice);
     if (!isNaN(mn)) list = list.filter((p) => (p.price_xaf ?? 0) >= mn);
     if (!isNaN(mx)) list = list.filter((p) => (p.price_xaf ?? 0) <= mx);
-    if (inStock)    list = list.filter((p) => (p as any).in_stock !== false);
-    if (minRating > 0) list = list.filter((p) => ((p as any).rating ?? 0) >= minRating);
+    if (inStock)    list = list.filter((p) => (p.stock_quantity ?? 1) > 0);
+    if (minRating > 0) list = list.filter((p) => (p.rating_average ?? 0) >= minRating);
     return sortProducts(list, sort);
   })();
 
@@ -146,6 +151,7 @@ export default function SearchPage() {
 
   const resetFilters = () => {
     setSelCat(null); setMinPrice(""); setMaxPrice(""); setInStock(false); setMinRating(0);
+    setFilterOpen(false);
   };
 
   return (
@@ -155,8 +161,8 @@ export default function SearchPage() {
 
           {/* ── LEFT FILTER SIDEBAR ── */}
           <aside
-            className={`flex-shrink-0 transition-all duration-200 ${
-              filterOpen ? "w-[240px] opacity-100" : "w-0 overflow-hidden opacity-0"
+            className={`flex-shrink-0 transition-all duration-200 max-md:fixed max-md:inset-x-3 max-md:top-[82px] max-md:z-[60] max-md:rounded-xl max-md:shadow-2xl ${
+              filterOpen ? "w-[240px] opacity-100 max-md:w-auto" : "w-0 overflow-hidden opacity-0 max-md:pointer-events-none"
             }`}
           >
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style={{ minWidth: "240px" }}>
@@ -179,14 +185,20 @@ export default function SearchPage() {
                     type="number"
                     placeholder="Min"
                     value={minPrice}
-                    onChange={(e) => setMinPrice(e.target.value)}
+                    onChange={(e) => {
+                      setMinPrice(e.target.value);
+                      closeFiltersAfterApply();
+                    }}
                     className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   />
                   <input
                     type="number"
                     placeholder="Max"
                     value={maxPrice}
-                    onChange={(e) => setMaxPrice(e.target.value)}
+                    onChange={(e) => {
+                      setMaxPrice(e.target.value);
+                      closeFiltersAfterApply();
+                    }}
                     className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   />
                 </div>
@@ -213,7 +225,10 @@ export default function SearchPage() {
                     {categories.map((cat) => (
                       <button
                         key={cat.id}
-                        onClick={() => setSelCat(selCat === cat.id ? null : cat.id)}
+                        onClick={() => {
+                          setSelCat(selCat === cat.id ? null : cat.id);
+                          closeFiltersAfterApply();
+                        }}
                         className={`rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-semibold transition-all ${
                           selCat === cat.id
                             ? "bg-orange-50 text-primary dark:bg-primary/10"
@@ -236,7 +251,10 @@ export default function SearchPage() {
                   {[1, 2, 3, 4, 5].map((n) => (
                     <button
                       key={n}
-                      onClick={() => setMinRating(minRating === n ? 0 : n)}
+                      onClick={() => {
+                        setMinRating(minRating === n ? 0 : n);
+                        closeFiltersAfterApply();
+                      }}
                       className={`flex items-center justify-center rounded-lg border px-2 py-1 text-[11px] font-bold transition-all ${
                         minRating >= n
                           ? "border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-900/20"
@@ -252,7 +270,10 @@ export default function SearchPage() {
               {/* En stock */}
               <label className="flex cursor-pointer items-center gap-2">
                 <div
-                  onClick={() => setInStock((v) => !v)}
+                  onClick={() => {
+                    setInStock((v) => !v);
+                    closeFiltersAfterApply();
+                  }}
                   className={`relative h-5 w-9 rounded-full transition-colors ${inStock ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`}
                 >
                   <span
@@ -305,7 +326,7 @@ export default function SearchPage() {
             {!loading && searched && (
               <>
                 {/* Sort bar */}
-                <div className="mb-3 flex items-center justify-between">
+                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-400">
                       <span className="font-extrabold text-gray-900 dark:text-white">{displayedProducts.length}</span>
@@ -319,7 +340,7 @@ export default function SearchPage() {
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="order-first flex items-center gap-2 sm:order-none">
                     <button
                       type="button"
                       onClick={() => setFilterOpen((v) => !v)}

@@ -174,8 +174,8 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
-      <div className="mx-auto max-w-[1560px] px-3 pb-12 pt-3 lg:px-4">
-        <div className="flex items-stretch gap-4">
+      <div className="mx-auto max-w-[1760px] px-1 pb-12 pt-3 sm:px-2 lg:px-3">
+        <div className="flex items-stretch gap-2 xl:gap-3">
           <CategorySidebar
             activeCategory={activeCat}
             onSelectCategory={(slug) => {

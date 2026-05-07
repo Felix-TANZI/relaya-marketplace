@@ -9,7 +9,7 @@ import {
   Search, Download, Eye, MoreHorizontal, CheckCircle,
   XCircle, Ban, ChevronDown, X, Filter,
   ArrowUpDown, ArrowUp, ArrowDown, ShoppingCart,
-  Package,
+  Package, Trophy,
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -42,6 +42,7 @@ type SortDir     = 'asc' | 'desc';
 type StatusTab   = 'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED';
 type PlanFilter  = 'all' | 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS';
 type DateFilter  = 'all' | 'today' | 'week' | 'month';
+type TopPeriod = 'day' | 'week' | 'month';
 
 const PAGE_SIZES = [10, 20, 50] as const;
 
@@ -187,6 +188,7 @@ export default function VendorsListPage() {
   const [page,    setPage]    = useState(1);
   const [pageSize,setPageSize]= useState<10 | 20 | 50>(20);
   const [openDrop,setOpenDrop]= useState<'plan' | 'date' | null>(null);
+  const [topPeriod, setTopPeriod] = useState<TopPeriod>('week');
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Chargement ───────────────────────────────────────────────────────────
@@ -263,6 +265,14 @@ export default function VendorsListPage() {
 
   const activeFilters = [planF !== 'all', dateF !== 'all'].filter(Boolean).length;
   const resetFilters  = () => { setPlanF('all'); setDateF('all'); setSearch(''); setPage(1); };
+  const topVendors = [...vendors]
+    .filter((vendor) => vendor.status === 'APPROVED')
+    .sort((a, b) => {
+      const scoreA = (a.total_revenue ?? 0) + (a.total_orders ?? 0) * 1500 + (a.total_products ?? 0) * 250;
+      const scoreB = (b.total_revenue ?? 0) + (b.total_orders ?? 0) * 1500 + (b.total_products ?? 0) * 250;
+      return scoreB - scoreA;
+    })
+    .slice(0, topPeriod === 'day' ? 5 : topPeriod === 'week' ? 7 : 10);
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const doAction = async (v: VendorProfile, action: 'approve' | 'reject' | 'suspend') => {
@@ -397,6 +407,58 @@ export default function VendorsListPage() {
           </button>
         ))}
       </div>
+
+      <section className="rounded-2xl p-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: '#F59E0B18', color: '#F59E0B' }}>
+              <Trophy size={17} />
+            </div>
+            <div>
+              <h2 style={{ color: T.text, fontSize: 14, fontWeight: 800 }}>Top vendeurs</h2>
+              <p style={{ color: T.muted, fontSize: 11.5 }}>Tri par performance commerciale</p>
+            </div>
+          </div>
+          <div className="flex gap-1 rounded-xl p-1" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+            {([
+              { key: 'day', label: 'Jour' },
+              { key: 'week', label: 'Semaine' },
+              { key: 'month', label: 'Mois' },
+            ] as { key: TopPeriod; label: string }[]).map((period) => (
+              <button
+                key={period.key}
+                type="button"
+                onClick={() => setTopPeriod(period.key)}
+                className="rounded-lg px-3 py-1.5 text-[12px] font-bold"
+                style={{ background: topPeriod === period.key ? T.red : 'transparent', color: topPeriod === period.key ? '#fff' : T.muted }}
+              >
+                {period.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {(topVendors.length ? topVendors : vendors.slice(0, 3)).map((vendor, index) => (
+            <Link
+              key={vendor.id}
+              to={`/admin/vendors/${vendor.id}`}
+              className="flex items-center gap-3 rounded-xl p-3 transition-all hover:-translate-y-0.5"
+              style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}
+            >
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl text-[13px] font-black"
+                style={{ background: index < 3 ? '#F59E0B22' : T.card, color: index < 3 ? '#F59E0B' : T.muted }}>
+                #{index + 1}
+              </div>
+              <VendorAvatar vendor={vendor} size={36} />
+              <div className="min-w-0 flex-1">
+                <p className="truncate" style={{ color: T.text, fontSize: 13, fontWeight: 800 }}>{vendor.business_name}</p>
+                <p className="truncate" style={{ color: T.muted, fontSize: 11 }}>{vendor.city || 'Ville non renseignée'} · {vendor.total_orders ?? 0} commandes</p>
+              </div>
+              <span style={{ color: T.red, fontSize: 12, fontWeight: 800 }}>{fmtXaf(vendor.total_revenue ?? 0)}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* ── Charts ───────────────────────────────────────────────────────── */}
       {stats && (

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Package, Heart, TriangleAlert, Tag } from "lucide-react";
+import { Home, Package, Heart, UserCircle, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 const NAV_ITEMS = [
@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { icon: Tag, labelKey: "mobile_nav.promotions", to: "/promotions" },
   { icon: Package, labelKey: "mobile_nav.orders", to: "/orders" },
   { icon: Heart, labelKey: "mobile_nav.favorites", to: "/wishlist" },
-  { icon: TriangleAlert, labelKey: "mobile_nav.disputes", to: "/profile?tab=disputes" },
+  { icon: UserCircle, labelKey: "mobile_nav.account", to: "/profile" },
 ];
 
 export default function MobileBottomNav() {

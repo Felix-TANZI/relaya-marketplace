@@ -29,6 +29,7 @@ import {
   Siren,
   Sun,
   Moon,
+  MoreHorizontal,
   Store,
   Truck,
   User,
@@ -257,6 +258,7 @@ export default function CourierDashboardPage() {
   const [settingsFeedback, setSettingsFeedback] = useState("");
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
+  const [moreOpen, setMoreOpen] = useState(false);
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -488,6 +490,8 @@ export default function CourierDashboardPage() {
     { id: "securite", label: "Securite SOS", icon: Siren },
     { id: "parametres", label: "Parametres", icon: Settings2 },
   ] as const;
+  const mobileTabs = menu.slice(0, 4);
+  const mobileMoreTabs = menu.slice(4);
 
   const quickStats = [
     {
@@ -2066,7 +2070,7 @@ export default function CourierDashboardPage() {
         </nav>
       </aside>
 
-      <main className="px-4 pb-12 pt-[84px] lg:ml-[232px] lg:px-6">
+      <main className="px-4 pb-24 pt-[84px] lg:ml-[232px] lg:pb-12 lg:px-6">
         {booting ? (
           <div className="mx-auto max-w-[1180px] animate-pulse space-y-4">
             <div className="h-32 rounded-[24px] bg-white/5" />
@@ -2119,6 +2123,56 @@ export default function CourierDashboardPage() {
           </div>
         )}
       </main>
+
+      <nav className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f]/95 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur lg:hidden">
+        <div className="flex h-[58px] items-center px-2">
+          {mobileTabs.map((item) => {
+            const Icon = item.icon;
+            const active = tab === item.id;
+            return (
+              <button key={item.id} type="button" onClick={() => { setTab(item.id); setMoreOpen(false); }} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
+                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-emerald-500 text-[#022c22]" : "text-[#8B949E]"}`}>
+                  <Icon size={17} />
+                </span>
+                <span className={`max-w-full truncate text-[8px] font-bold ${active ? "text-emerald-300" : "text-[#8B949E]"}`}>{item.label}</span>
+              </button>
+            );
+          })}
+          <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8B949E]">
+              <MoreHorizontal size={17} />
+            </span>
+            <span className="text-[8px] font-bold text-[#8B949E]">Plus</span>
+          </button>
+        </div>
+        <div className="h-[env(safe-area-inset-bottom)]" />
+      </nav>
+
+      <div
+        onClick={() => setMoreOpen(false)}
+        className={`fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm transition lg:hidden ${moreOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      />
+      <div className={`fixed inset-x-0 bottom-0 z-[1301] max-h-[72vh] overflow-y-auto rounded-t-[24px] border-t border-emerald-500/15 bg-[#0A1020] pb-[calc(18px+env(safe-area-inset-bottom))] shadow-[0_-18px_60px_rgba(0,0,0,.45)] transition-transform lg:hidden ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
+        <div className="mx-auto my-3 h-1 w-9 rounded-full bg-white/15" />
+        {mobileMoreTabs.map((item) => {
+          const Icon = item.icon;
+          const active = tab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => { setTab(item.id); setMoreOpen(false); }}
+              className={`flex w-full items-center gap-3 px-5 py-3 text-left ${active ? "text-emerald-300" : "text-white/75"}`}
+            >
+              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? "bg-emerald-500/20" : "bg-white/5"}`}>
+                <Icon size={18} />
+              </span>
+              <span className="flex-1 text-[13px] font-bold">{item.label}</span>
+              <ChevronRight size={14} className="text-white/35" />
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }

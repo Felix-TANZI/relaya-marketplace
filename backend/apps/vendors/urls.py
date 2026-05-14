@@ -32,6 +32,8 @@ urlpatterns = [
          views.delete_product_image, name='delete-image'),
     path('products/<int:product_id>/images/<int:image_id>/set-primary/',
          views.set_primary_image, name='set-primary-image'),
+      
+     path('', include(router.urls)),
 
      # Attributs d'une catégorie (pour formulaire produit)
      path('products/attributes/', views.vendor_product_attributes, name='vendor-product-attributes'),

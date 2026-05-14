@@ -9,7 +9,7 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.vendors import views as vendors_views
 
 urlpatterns = [
-    path("admin/", admin.site.urls),
+    path("django-admin/", admin.site.urls),
 
     # API
     path("api/auth/", include("apps.accounts.urls")),

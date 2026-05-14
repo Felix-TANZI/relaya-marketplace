@@ -17,6 +17,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 from rest_framework.decorators import action
 from django.http import HttpResponse
+from django.db import transaction
 
 from .models import VendorProfile, VendorOrderNote
 from .models import (
@@ -54,6 +55,12 @@ from .serializers import (
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
 from apps.orders.models import Order, OrderItem
+
+
+# Constantes de validation upload — centralisées et réutilisables
+ALLOWED_IMAGE_MIME = ('image/jpeg', 'image/png', 'image/webp')
+MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024     # 5 MB
+MAX_IMAGES_PER_PRODUCT = 6                  # Cohérent avec frontend (ProductFormPage)
 
 
 #  PROFIL VENDEUR 
@@ -278,81 +285,167 @@ class VendorProductViewSet(viewsets.ModelViewSet):
 @extend_schema(
     tags=["Vendors"],
     summary="Upload product image",
-    responses={201: ProductImageSerializer}
+    description=(
+        "Upload une image pour un produit du vendeur connecté. "
+        "Formats : JPG, PNG, WEBP. Taille max : 5 Mo. "
+        "Maximum 6 images par produit."
+    ),
+    responses={201: ProductImageSerializer},
 )
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def upload_product_image(request, product_id):
-    """Télécharger une image pour un produit"""
+    """
+    Télécharger une image pour un produit.
+ 
+    Sécurité :
+      - Le produit doit appartenir au vendeur connecté.
+      - Validation type MIME (anti-upload arbitraire).
+      - Validation taille (anti-DoS disque).
+      - Limite du nombre d'images par produit.
+      - Création atomique (transaction.atomic).
+    """
+    # 1. Vérifier que le produit existe ET appartient au vendeur connecté
     try:
         product = Product.objects.get(id=product_id, vendor=request.user)
     except Product.DoesNotExist:
         return Response(
             {'detail': 'Produit introuvable.'},
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_404_NOT_FOUND,
         )
-    
-    serializer = ProductImageSerializer(data=request.data, context={'product': product})
+ 
+    # 2. Vérifier la présence du fichier
+    image_file = request.FILES.get('image')
+    if not image_file:
+        return Response(
+            {'detail': 'Champ "image" requis.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # 3. Validation MIME (Django lit le content_type envoyé par le client.
+    #    On se fie ici au header — pour une validation profonde, ajouter python-magic)
+    if image_file.content_type not in ALLOWED_IMAGE_MIME:
+        return Response(
+            {'detail': 'Format non supporté. Formats acceptés : JPG, PNG, WEBP.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # 4. Validation taille
+    if image_file.size > MAX_IMAGE_SIZE_BYTES:
+        return Response(
+            {'detail': 'Fichier trop volumineux. Maximum 5 Mo.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # 5. Limite du nombre d'images par produit
+    current_count = ProductImage.objects.filter(product=product).count()
+    if current_count >= MAX_IMAGES_PER_PRODUCT:
+        return Response(
+            {'detail': f'Maximum {MAX_IMAGES_PER_PRODUCT} images par produit.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # 6. Sérialiser, valider, sauvegarder ATOMIQUEMENT avec le produit attaché
+    serializer = ProductImageSerializer(
+        data=request.data,
+        context={'request': request},
+    )
     serializer.is_valid(raise_exception=True)
-    image = serializer.save()
-    
+ 
+    with transaction.atomic():
+        # ON PASSE LE PRODUIT EXPLICITEMENT — c'est le fix du bug 500.
+        # validated_data sera étendu avec product=product avant la création.
+        image = serializer.save(product=product)
+ 
     return Response(
-        ProductImageSerializer(image).data,
-        status=status.HTTP_201_CREATED
+        ProductImageSerializer(image, context={'request': request}).data,
+        status=status.HTTP_201_CREATED,
     )
 
 
 @extend_schema(
     tags=["Vendors"],
     summary="Delete product image",
-    responses={204: None}
+    responses={204: None},
 )
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated])
 def delete_product_image(request, product_id, image_id):
-    """Supprimer une image d'un produit"""
+    """
+    Supprimer une image d'un produit.
+ 
+    Si l'image supprimée était `is_primary`, on promeut la plus ancienne
+    image restante en image principale (sinon le produit n'a plus de
+    photo principale, ce qui casse l'affichage côté boutique).
+    """
     try:
-        image = ProductImage.objects.get(
+        image = ProductImage.objects.select_related('product').get(
             id=image_id,
             product_id=product_id,
-            product__vendor=request.user
+            product__vendor=request.user,
         )
     except ProductImage.DoesNotExist:
         return Response(
             {'detail': 'Image introuvable.'},
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_404_NOT_FOUND,
         )
-    
-    image.delete()
+ 
+    was_primary = image.is_primary
+    product = image.product
+ 
+    with transaction.atomic():
+        # .delete() supprime aussi le fichier physique grâce au signal
+        # post_delete (à vérifier — sinon, ajouter image.image.delete(save=False))
+        image.image.delete(save=False)  # nettoyage explicite du fichier
+        image.delete()
+ 
+        # Promouvoir une autre image en principale si nécessaire
+        if was_primary:
+            next_primary = (
+                ProductImage.objects
+                .filter(product=product)
+                .order_by('order', 'created_at')
+                .first()
+            )
+            if next_primary:
+                next_primary.is_primary = True
+                next_primary.save(update_fields=['is_primary'])
+ 
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(
     tags=["Vendors"],
     summary="Set primary product image",
-    responses={200: ProductImageSerializer}
+    responses={200: ProductImageSerializer},
 )
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def set_primary_image(request, product_id, image_id):
-    """Définir une image comme principale"""
+    """
+    Définir une image comme principale.
+    Atomique pour éviter d'avoir 0 ou 2 images is_primary simultanément.
+    """
     try:
         product = Product.objects.get(id=product_id, vendor=request.user)
         image = ProductImage.objects.get(id=image_id, product=product)
     except (Product.DoesNotExist, ProductImage.DoesNotExist):
         return Response(
             {'detail': 'Image ou produit introuvable.'},
-            status=status.HTTP_404_NOT_FOUND
+            status=status.HTTP_404_NOT_FOUND,
         )
-    
-    # Retirer is_primary des autres images
-    ProductImage.objects.filter(product=product).update(is_primary=False)
-    
-    # Définir comme principale
-    image.is_primary = True
-    image.save()
-    
-    return Response(ProductImageSerializer(image).data)
+ 
+    with transaction.atomic():
+        # Lock optimiste : on retire is_primary de TOUTES les images du produit
+        # puis on l'attribue à la cible. Si deux requêtes arrivent en parallèle,
+        # la transaction Postgres garantit la cohérence finale.
+        ProductImage.objects.filter(product=product).update(is_primary=False)
+        image.is_primary = True
+        image.save(update_fields=['is_primary'])
+ 
+    return Response(
+        ProductImageSerializer(image, context={'request': request}).data
+    )
 
 
 #  GESTION DES COMMANDES 

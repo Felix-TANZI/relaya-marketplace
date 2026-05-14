@@ -4,6 +4,7 @@
 
 from pathlib import Path
 import os
+from urllib.parse import parse_qs, unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -70,8 +71,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "relaya.wsgi.application"
 
-DATABASES = {
-    "default": {
+def build_database_config():
+    database_url = os.getenv("DATABASE_URL")
+
+    if database_url:
+        parsed = urlparse(database_url)
+        query = parse_qs(parsed.query)
+        sslmode = query.get("sslmode", [os.getenv("POSTGRES_SSLMODE", "require")])[0]
+
+        return {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": unquote(parsed.path.lstrip("/")),
+            "USER": unquote(parsed.username or ""),
+            "PASSWORD": unquote(parsed.password or ""),
+            "HOST": parsed.hostname or "",
+            "PORT": str(parsed.port or 5432),
+            "OPTIONS": {
+                "sslmode": sslmode,
+                "connect_timeout": int(os.getenv("POSTGRES_CONNECT_TIMEOUT", "10")),
+            },
+        }
+
+    return {
         "ENGINE": "django.db.backends.postgresql",
         "NAME": os.getenv("POSTGRES_DB"),
         "USER": os.getenv("POSTGRES_USER"),
@@ -80,8 +101,13 @@ DATABASES = {
         "PORT": os.getenv("POSTGRES_PORT"),
         "OPTIONS": {
             "sslmode": os.getenv("POSTGRES_SSLMODE", "prefer"),
+            "connect_timeout": int(os.getenv("POSTGRES_CONNECT_TIMEOUT", "10")),
         },
     }
+
+
+DATABASES = {
+    "default": build_database_config(),
 }
 
 LANGUAGE_CODE = "fr"

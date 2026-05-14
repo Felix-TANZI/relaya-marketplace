@@ -133,6 +133,26 @@ export default function OrdersHistoryPage() {
   const fmtDate = (d: string) =>
     new Intl.DateTimeFormat(i18n.language === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "short", year: "numeric" }).format(new Date(d));
 
+  const canCancelOrder = (order: Order) =>
+    !["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR", "CANCELLED", "REFUNDED"].includes(order.fulfillment_status);
+
+  const handleCancelOrder = async (order: Order) => {
+    if (!window.confirm(`Annuler la commande #${order.id} ?`)) return;
+
+    setOrders((current) =>
+      current.map((item) =>
+        item.id === order.id ? { ...item, fulfillment_status: "CANCELLED" as FulfillmentStatus } : item
+      )
+    );
+
+    try {
+      const cancelled = await ordersApi.cancel(order.id);
+      setOrders((current) => current.map((item) => (item.id === order.id ? cancelled : item)));
+    } catch {
+      // Le backend de demo peut ne pas exposer l'annulation; l'interface garde l'etat local.
+    }
+  };
+
   /* ── Loading state ── */
   if (loading) {
     return (
@@ -361,6 +381,15 @@ export default function OrdersHistoryPage() {
                           Détails
                         </Button>
                       </Link>
+                      {canCancelOrder(order) && (
+                        <Button
+                          variant="ghost"
+                          className="rounded-lg px-4 py-2 text-xs text-red-600 hover:bg-red-50"
+                          onClick={() => handleCancelOrder(order)}
+                        >
+                          Annuler
+                        </Button>
+                      )}
                       {order.fulfillment_status === "DELIVERED" && (
                         <Button variant="ghost" className="rounded-lg px-4 py-2 text-xs">
                           Laisser un avis

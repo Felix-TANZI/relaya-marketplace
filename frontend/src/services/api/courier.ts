@@ -111,6 +111,7 @@ export type CourierDispute = {
   reason: string;
   reason_display: string;
   detail: string;
+  can_reply?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -209,6 +210,19 @@ export const courierApi = {
 
   getDisputes: async (): Promise<CourierDispute[]> => {
     return http<CourierDispute[]>("/api/shipping/disputes/");
+  },
+
+  requestDisputeReplyPermission: async (id: number): Promise<{ detail: string }> => {
+    return http<{ detail: string }>(`/api/shipping/disputes/${id}/request-reply/`, {
+      method: "POST",
+    });
+  },
+
+  sendDisputeReply: async (id: number, payload: { message: string }): Promise<{ detail: string }> => {
+    return http<{ detail: string }>(`/api/shipping/disputes/${id}/messages/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
   },
 
   getShipmentMessages: async (

@@ -16,6 +16,7 @@ import {
   FileBadge2,
   Gauge,
   LoaderCircle,
+  LockKeyhole,
   Map,
   MapPin,
   Navigation,
@@ -26,6 +27,7 @@ import {
   ScanLine,
   Settings2,
   ShieldCheck,
+  Send,
   Siren,
   Sun,
   Moon,
@@ -49,6 +51,12 @@ import {
   type CourierShipmentAction,
   type CourierSettings,
 } from "@/services/api/courier";
+import {
+  addCourierConversationMessage,
+  COURIER_CHAT_EVENT,
+  getCourierConversation,
+  type CourierChatMessage,
+} from "@/lib/courierChat";
 
 type CourierTab =
   | "dashboard"
@@ -259,6 +267,11 @@ export default function CourierDashboardPage() {
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
+  const [clientMessages, setClientMessages] = useState<CourierChatMessage[]>([]);
+  const [clientReplyDraft, setClientReplyDraft] = useState("");
+  const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
+  const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
+  const [disputeFeedback, setDisputeFeedback] = useState("");
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -377,6 +390,22 @@ export default function CourierDashboardPage() {
     ),
   );
 
+  useEffect(() => {
+    if (!selectedShipment) {
+      setClientMessages([]);
+      return;
+    }
+
+    const syncConversation = () => setClientMessages(getCourierConversation(selectedShipment.order));
+    syncConversation();
+    window.addEventListener(COURIER_CHAT_EVENT, syncConversation);
+    return () => window.removeEventListener(COURIER_CHAT_EVENT, syncConversation);
+  }, [selectedShipment]);
+
+  const selectedDisputePermission = selectedDispute
+    ? disputePermissionStatus[selectedDispute.id] ?? (selectedDispute.can_reply ? "granted" : "locked")
+    : "locked";
+
   const earnings = useMemo(() => {
     const delivered = shipments.filter((shipment) => shipment.status === "DELIVERED");
     const total = delivered.reduce((sum, shipment) => sum + Math.round(shipment.order_total_xaf * 0.08), 0);
@@ -456,6 +485,43 @@ export default function CourierDashboardPage() {
       window.location.href = `tel:${selectedShipment.customer_phone}`;
       setContactLoading(false);
     }, 450);
+  };
+
+  const handleReplyClient = async () => {
+    if (!selectedShipment || !clientReplyDraft.trim()) return;
+    const message = clientReplyDraft.trim();
+    const nextMessages = addCourierConversationMessage(selectedShipment.order, "courier", message, firstName);
+    setClientMessages(nextMessages);
+    setClientReplyDraft("");
+
+    try {
+      await courierApi.sendShipmentMessage(selectedShipment.id, { channel: "CLIENT", message });
+    } catch {
+      // Le chat local reste actif pour la demo meme si l'endpoint n'est pas disponible.
+    }
+  };
+
+  const handleRequestDisputeReply = async (dispute: CourierDispute) => {
+    setDisputeFeedback("");
+    setDisputePermissionStatus((current) => ({ ...current, [dispute.id]: "requested" }));
+    try {
+      await courierApi.requestDisputeReplyPermission(dispute.id);
+      setDisputeFeedback("Demande envoyee a l'administrateur. En attente d'autorisation.");
+    } catch {
+      setDisputeFeedback("Demande enregistree localement. L'administrateur devra l'autoriser.");
+    }
+  };
+
+  const handleSendDisputeReply = async () => {
+    if (!selectedDispute || !disputeReplyDraft.trim() || selectedDisputePermission !== "granted") return;
+    const message = disputeReplyDraft.trim();
+    setDisputeReplyDraft("");
+    setDisputeFeedback("Reponse envoyee au dossier de litige.");
+    try {
+      await courierApi.sendDisputeReply(selectedDispute.id, { message });
+    } catch {
+      setDisputeFeedback("Reponse conservee localement. Synchronisation backend a verifier.");
+    }
   };
 
   const handleScanShipment = async () => {
@@ -1018,6 +1084,14 @@ export default function CourierDashboardPage() {
                     <MapPin size={12} />
                     {shipment.delivery_address}
                   </div>
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
+                      {formatXaf(shipment.order_total_xaf)}
+                    </span>
+                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70">
+                      {shipment.vendor_names?.join(", ") || "Vendeur non precise"}
+                    </span>
+                  </div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
                   {isAvailable ? "Disponible" : statusLabel(shipment.status)}
@@ -1151,6 +1225,71 @@ export default function CourierDashboardPage() {
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
+                Details de commande
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <InfoPill icon={MapPin}>Adresse: {selectedShipment.delivery_address}</InfoPill>
+                <InfoPill icon={Store}>Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
+                <InfoPill icon={CreditCard}>Total: {formatXaf(selectedShipment.order_total_xaf)}</InfoPill>
+                <InfoPill icon={Wallet}>Gain estime: {formatXaf(Math.round(selectedShipment.order_total_xaf * 0.08))}</InfoPill>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <div>
+                  <div className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-sky-300">Chat client</div>
+                  <div className="mt-1 text-[12px] text-white/60">Reponds librement aux messages envoyes par le client.</div>
+                </div>
+                <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-bold text-sky-300">
+                  {clientMessages.length} message{clientMessages.length > 1 ? "s" : ""}
+                </span>
+              </div>
+              <div className="max-h-64 space-y-3 overflow-y-auto rounded-[16px] bg-[#0D1117] p-3">
+                {clientMessages.length ? clientMessages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`max-w-[86%] rounded-[16px] px-4 py-3 text-[13px] leading-6 ${
+                      message.role === "courier"
+                        ? "ml-auto bg-emerald-500 text-white"
+                        : "bg-white/8 text-white"
+                    }`}
+                  >
+                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.role === "courier" ? "text-white/70" : "text-white/45"}`}>
+                      {message.senderName} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                    </div>
+                    {message.text}
+                  </div>
+                )) : (
+                  <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">
+                    Aucun message client pour cette course.
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 flex gap-3">
+                <input
+                  value={clientReplyDraft}
+                  onChange={(event) => setClientReplyDraft(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") void handleReplyClient();
+                  }}
+                  placeholder="Repondre au client..."
+                  className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleReplyClient()}
+                  disabled={!clientReplyDraft.trim()}
+                  className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-emerald-500 text-white disabled:cursor-not-allowed disabled:opacity-45"
+                  aria-label="Repondre au client"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+              <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
                 Ajouter une note ou une position
               </div>
               <div className="flex flex-col gap-3 md:flex-row">
@@ -1226,7 +1365,7 @@ export default function CourierDashboardPage() {
               onClick={handleScanShipment}
               className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
             >
-              Traiter le scan test
+              Traiter le scan
             </button>
             <InfoPill icon={ScanLine}>Mode camera HD</InfoPill>
             <InfoPill icon={ShieldCheck}>Scan securise</InfoPill>
@@ -1676,7 +1815,11 @@ export default function CourierDashboardPage() {
                 key={item.id}
                 type="button"
                 onClick={() => setSelectedDispute(item)}
-                className="flex w-full gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4 text-left transition hover:bg-white/[0.05]"
+                className={`flex w-full gap-4 rounded-[18px] border p-4 text-left transition ${
+                  selectedDispute?.id === item.id
+                    ? "border-orange-500/35 bg-orange-500/10"
+                    : "border-white/5 bg-white/[0.03] hover:bg-white/[0.05]"
+                }`}
               >
                 <ShieldCheck size={18} className="mt-0.5 shrink-0 text-orange-300" />
                 <div className="flex-1">
@@ -1701,10 +1844,72 @@ export default function CourierDashboardPage() {
 
       <SectionShell kicker="Cadre metier" title="Droits & obligations" accent="text-orange-300">
         <div className="space-y-3">
+          {selectedDispute ? (
+            <div className="rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <div className="text-[12px] font-black uppercase tracking-[0.16em] text-orange-300">
+                    {selectedDispute.ref} · {selectedDispute.reason_display}
+                  </div>
+                  <div className="mt-2 text-[14px] font-bold text-white">{selectedDispute.label}</div>
+                  <div className="mt-2 text-[13px] leading-6 text-white/75">{selectedDispute.detail}</div>
+                </div>
+                <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
+                  selectedDisputePermission === "granted"
+                    ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
+                    : selectedDisputePermission === "requested"
+                      ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
+                      : "border-white/10 bg-white/5 text-white/65"
+                }`}>
+                  {selectedDisputePermission === "granted"
+                    ? "Autorise"
+                    : selectedDisputePermission === "requested"
+                      ? "Demande envoyee"
+                      : "Verrouille"}
+                </span>
+              </div>
+
+              {selectedDisputePermission === "granted" ? (
+                <div className="mt-4 flex gap-3">
+                  <input
+                    value={disputeReplyDraft}
+                    onChange={(event) => setDisputeReplyDraft(event.target.value)}
+                    placeholder="Reponse au litige..."
+                    className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleSendDisputeReply()}
+                    disabled={!disputeReplyDraft.trim()}
+                    className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-orange-500 text-white disabled:cursor-not-allowed disabled:opacity-45"
+                    aria-label="Repondre au litige"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void handleRequestDisputeReply(selectedDispute)}
+                  className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5"
+                >
+                  <LockKeyhole size={14} />
+                  Demander l'autorisation de répondre
+                </button>
+              )}
+
+              {disputeFeedback ? (
+                <div className="mt-3 rounded-[14px] border border-white/10 bg-white/5 px-4 py-3 text-[12px] font-semibold text-white/70">
+                  {disputeFeedback}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           {[
             "Toujours fournir les preuves de passage ou de remise.",
             "Ne jamais cloturer un litige hors protocole support.",
-            "Le livreur peut repondre, pas arbitrer seul.",
+            "Le livreur peut repondre uniquement quand l'administrateur l'autorise.",
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
               <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-300" />

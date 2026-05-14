@@ -135,7 +135,7 @@ export default function FlashPanel({
         ref={panelRef}
         style={{
           position: mode === "fixed" ? "fixed" : "absolute",
-          right: mode === "fixed" ? "max(12px, calc((100vw - 1560px) / 2 + 12px))" : 0,
+          right: mode === "fixed" ? "max(12px, calc((100vw - 1760px) / 2 + 12px))" : 0,
           top: mode === "fixed" ? topOffset : endTop,
           width: "296px",
           zIndex: 35,

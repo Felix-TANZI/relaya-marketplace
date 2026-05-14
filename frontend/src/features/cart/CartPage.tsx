@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import {
@@ -15,13 +16,39 @@ import { Button } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
 import { V29_PRODUCTS as mockProducts } from "@/data/v29Products";
 
+const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
+
 export default function CartPage() {
   const { t, i18n } = useTranslation();
   const { items, removeItem, updateQuantity, total, itemCount, addItem } = useCart();
+  const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((item) => item.id));
 
-  const shippingCost = items.length > 0 ? 2000 : 0;
-  const totalWithShipping = total + shippingCost;
-  const savings = Math.round(total * 0.04);
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const itemIds = items.map((item) => item.id);
+      const kept = current.filter((id) => itemIds.includes(id));
+      const added = itemIds.filter((id) => !current.includes(id));
+      return [...kept, ...added];
+    });
+  }, [items]);
+
+  const locale = i18n.language === "fr" ? "fr-FR" : "en-US";
+  const selectedIdSet = useMemo(() => new Set(selectedIds), [selectedIds]);
+  const selectedItems = items.filter((item) => selectedIdSet.has(item.id));
+  const selectedItemCount = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
+  const selectedTotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const shippingCost = selectedItems.length > 0 ? 2000 : 0;
+  const totalWithShipping = selectedTotal + shippingCost;
+  const savings = Math.round(selectedTotal * 0.04);
+  const allSelected = selectedItems.length === items.length;
+
+  const toggleSelection = (id: number) => {
+    setSelectedIds((current) => current.includes(id) ? current.filter((itemId) => itemId !== id) : [...current, id]);
+  };
+
+  const persistCheckoutSelection = () => {
+    window.sessionStorage.setItem(CHECKOUT_SELECTED_CART_IDS_KEY, JSON.stringify(selectedIds));
+  };
 
   if (items.length === 0) {
     return (
@@ -60,7 +87,7 @@ export default function CartPage() {
                 Votre panier BelivaY
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {itemCount} {itemCount > 1 ? t("cart.items") : t("cart.item")} {t("cart.in_cart")}
+                {selectedItemCount} sélectionné{selectedItemCount > 1 ? "s" : ""} sur {itemCount} {itemCount > 1 ? t("cart.items") : t("cart.item")}
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -69,7 +96,7 @@ export default function CartPage() {
                   Sous-total
                 </div>
                 <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-                  {total.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                  {selectedTotal.toLocaleString(locale)} {t("common.currency")}
                 </div>
               </div>
               <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
@@ -77,7 +104,7 @@ export default function CartPage() {
                   Livraison
                 </div>
                 <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
-                  {shippingCost.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                  {shippingCost.toLocaleString(locale)} {t("common.currency")}
                 </div>
               </div>
               <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
@@ -94,12 +121,37 @@ export default function CartPage() {
 
         <div className="grid gap-6 xl:grid-cols-[1.5fr_0.75fr]">
           <section className="space-y-4">
+            <div className="flex flex-col gap-3 rounded-[1.25rem] border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">Produits à payer</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Sélectionnez uniquement les articles que vous voulez régler maintenant.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedIds(allSelected ? [] : items.map((item) => item.id))}
+                className="rounded-full border border-orange-200 px-4 py-2 text-sm font-bold text-primary transition hover:bg-orange-50 dark:border-primary/30 dark:hover:bg-primary/10"
+              >
+                {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
+              </button>
+            </div>
             {items.map((item) => (
               <article
                 key={item.id}
                 className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
               >
                 <div className="flex flex-col gap-4 sm:flex-row">
+                  <label className="flex items-center gap-3 sm:block">
+                    <input
+                      type="checkbox"
+                      checked={selectedIdSet.has(item.id)}
+                      onChange={() => toggleSelection(item.id)}
+                      className="h-5 w-5 rounded border-orange-200 text-primary focus:ring-primary"
+                      aria-label={`Sélectionner ${item.name}`}
+                    />
+                    <span className="sr-only">Sélectionner {item.name}</span>
+                  </label>
                   <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.25rem] bg-[#fff7ef] dark:bg-gray-800">
                     {item.image ? (
                       <img
@@ -129,10 +181,10 @@ export default function CartPage() {
 
                       <div className="text-left lg:text-right">
                         <div className="text-2xl font-bold text-primary">
-                          {(item.price * item.quantity).toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                          {(item.price * item.quantity).toLocaleString(locale)} {t("common.currency")}
                         </div>
                         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                          {item.price.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")} / unité
+                          {item.price.toLocaleString(locale)} {t("common.currency")} / unité
                         </div>
                       </div>
                     </div>
@@ -270,7 +322,7 @@ export default function CartPage() {
               </div>
               <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 text-right dark:bg-gray-800">
                 <div className="text-xs text-gray-500 dark:text-gray-400">Panier</div>
-                <div className="text-lg font-bold text-primary">{itemCount}</div>
+                <div className="text-lg font-bold text-primary">{selectedItemCount}</div>
               </div>
             </div>
 
@@ -278,13 +330,13 @@ export default function CartPage() {
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                 <span>{t("cart.subtotal")}</span>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {total.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                  {selectedTotal.toLocaleString(locale)} {t("common.currency")}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
                 <span>{t("cart.shipping")}</span>
                 <span className="font-semibold text-gray-900 dark:text-white">
-                  {shippingCost.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                  {shippingCost.toLocaleString(locale)} {t("common.currency")}
                 </span>
               </div>
               <div className="flex items-center justify-between text-sm text-green-700 dark:text-green-300">
@@ -297,21 +349,33 @@ export default function CartPage() {
                     {t("cart.total")}
                   </span>
                   <span className="text-2xl font-bold text-primary">
-                    {totalWithShipping.toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")} {t("common.currency")}
+                    {totalWithShipping.toLocaleString(locale)} {t("common.currency")}
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="mt-5 space-y-3">
-              <Link to="/checkout" className="block">
+              <Link to="/checkout" className="block" onClick={(event) => {
+                if (selectedItems.length === 0) {
+                  event.preventDefault();
+                  return;
+                }
+                persistCheckoutSelection();
+              }}>
                 <Button id="checkout" variant="primary" size="lg" className="w-full rounded-2xl">
                   <Truck size={18} />
                   Passer commande (avec livraison)
                   <ArrowRight size={18} />
                 </Button>
               </Link>
-              <Link to="/checkout?mode=pickup" className="block">
+              <Link to="/checkout?mode=pickup" className="block" onClick={(event) => {
+                if (selectedItems.length === 0) {
+                  event.preventDefault();
+                  return;
+                }
+                persistCheckoutSelection();
+              }}>
                 <Button variant="secondary" size="lg" className="w-full rounded-2xl">
                   <Store size={18} />
                   Payer maintenant (retrait au centre BelivaY)

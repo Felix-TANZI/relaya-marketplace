@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom"
 import { useTranslation } from "react-i18next";
 import {
   CheckCircle2,
+  Heart,
   Images,
   Minus,
   Package,
@@ -22,6 +23,7 @@ import { productsApi, type Product } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";
 import { http } from "@/services/api/http";
 import { V29_PRODUCTS } from "@/data/v29Products";
+import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
 
 interface ProductReview {
   id: number;
@@ -63,6 +65,7 @@ export default function ProductDetailPage() {
     "description",
   );
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewComment, setReviewComment] = useState("");
@@ -129,6 +132,11 @@ export default function ProductDetailPage() {
   }, [id, searchParams, showToast, t]);
 
   useEffect(() => {
+    if (!product) return;
+    setIsFavorite(isFavoriteProduct(product.id));
+  }, [product]);
+
+  useEffect(() => {
     const fetchReviews = async () => {
       if (!id || isMockProduct) {
         setReviews([]);
@@ -170,6 +178,14 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     handleAddToCart();
     navigate("/cart");
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!product) return;
+    const nextIds = toggleFavoriteProduct(product.id);
+    const nextIsFavorite = nextIds.includes(product.id);
+    setIsFavorite(nextIsFavorite);
+    showToast(nextIsFavorite ? "Produit ajouté aux favoris." : "Produit retiré des favoris.", "success");
   };
 
   const handleSubmitReview = async (event: React.FormEvent) => {
@@ -361,9 +377,23 @@ export default function ProductDetailPage() {
                         {product.category.name}
                       </div>
                     ) : null}
-                    <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white sm:text-4xl">
-                      {product.title}
-                    </h1>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white sm:text-4xl">
+                        {product.title}
+                      </h1>
+                      <button
+                        type="button"
+                        onClick={handleToggleFavorite}
+                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                          isFavorite
+                            ? "border-red-100 bg-red-50 text-red-600 dark:border-red-900/40 dark:bg-red-900/15"
+                            : "border-orange-100 bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                        }`}
+                      >
+                        <Heart size={18} className={isFavorite ? "fill-red-500" : ""} />
+                        {isFavorite ? "Dans les favoris" : "Ajouter aux favoris"}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3 rounded-[1.5rem] border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-700 dark:bg-gray-800">

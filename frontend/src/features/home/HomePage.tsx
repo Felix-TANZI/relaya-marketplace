@@ -198,7 +198,7 @@ export default function HomePage() {
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => navigate("/profile")}
-                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-white px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-white hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary bg-white px-4 py-2 text-[11.5px] font-bold text-gray-800 shadow-sm hover:bg-white hover:text-gray-900 dark:border-primary dark:bg-gray-800 dark:text-gray-200"
                   >
                     <UserCircle size={13} />
                     Mon compte
@@ -218,7 +218,7 @@ export default function HomePage() {
                         onClick={() => setActiveCat(p.slug)}
                         className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] font-bold transition-all ${
                           activeCat === p.slug
-                            ? "border-primary bg-white text-[#c85e14] shadow-sm dark:border-primary dark:bg-gray-800 dark:text-primary"
+                            ? "border-primary bg-white text-gray-800 shadow-sm dark:border-primary dark:bg-gray-800 dark:text-gray-200"
                             : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >

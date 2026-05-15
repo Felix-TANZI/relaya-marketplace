@@ -59,7 +59,7 @@ function buildScoredList(list: Product[]) {
   const scored: PromoProduct[] = [...list]
     .map((product) => ({
       ...product,
-      score: product.discount * 2 + (product.rating_average ?? 0) * 10 + (product.reviews_count ?? 0),
+      score: (product.discount_percent ?? product.discount ?? 0) * 2 + (product.rating_average ?? 0) * 10 + (product.reviews_count ?? 0),
       isPremium: false,
     }))
     .sort((a, b) => b.score - a.score);
@@ -96,7 +96,7 @@ export default function PromotionsPage() {
 
         if (!mounted) return;
 
-        const promos = prodRes.results.filter((product) => product.discount > 0);
+        const promos = prodRes.results.filter((product) => product.is_on_promotion || (product.discount_percent ?? product.discount ?? 0) > 0);
         const fallbackPromos = getPromoProducts();
 
         if (promos.length) {
@@ -398,7 +398,7 @@ function PromoProductCard({
           {product.category?.name ?? "Produit"}
         </div>
         <div className="absolute right-3 top-3 rounded-full bg-[#ef4444] px-3 py-1 text-[10px] font-extrabold text-white">
-          -{product.discount}%
+          -{product.discount_percent ?? product.discount ?? 0}%
         </div>
       </div>
 
@@ -412,12 +412,12 @@ function PromoProductCard({
         </h3>
         <div className="mt-3 flex items-end gap-2">
           <span className="text-[20px] font-black text-[#f47920]">{fmt(product.price_final)}</span>
-          <span className="pb-1 text-[11px] font-semibold text-[#9ca3af] line-through">{fmt(product.price_xaf)}</span>
+          <span className="pb-1 text-[11px] font-semibold text-[#9ca3af] line-through">{fmt(product.compare_at_price ?? product.price_xaf)}</span>
         </div>
         <div className="mt-2 flex items-center justify-between text-[11px]">
           <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2.5 py-1 font-bold text-[#166534] dark:bg-emerald-900/30 dark:text-emerald-300">
             <Percent size={12} />
-            {product.discount}% off
+            {product.discount_percent ?? product.discount ?? 0}% off
           </span>
           <span className="inline-flex items-center gap-1 text-[#6b7280] dark:text-gray-400">
             <Truck size={12} className="text-[#16a34a]" />

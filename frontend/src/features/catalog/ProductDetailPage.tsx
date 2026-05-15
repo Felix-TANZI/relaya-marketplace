@@ -263,7 +263,8 @@ export default function ProductDetailPage() {
     ? product.images.map((image) => image.image_url)
     : product.media?.filter((media) => media.media_type === "image").map((media) => media.url) || [];
   const currentImage = displayImages[selectedImageIndex];
-  const hasDiscount = (product.discount ?? 0) > 0;
+  const discountPercent = product.discount_percent ?? product.discount ?? 0;
+  const hasDiscount = Boolean(product.is_on_promotion ?? discountPercent > 0);
   const averageRating = product.rating_average ?? 4.6;
   const stockQuantity = product.stock_quantity ?? 0;
   const inStock = stockQuantity > 0;
@@ -405,7 +406,7 @@ export default function ProductDetailPage() {
                       ) : null}
                       {hasDiscount ? (
                         <span className="text-lg text-gray-400 line-through">
-                          {product.price_xaf.toLocaleString("fr-FR")} FCFA
+                          {(product.compare_at_price ?? product.price_xaf).toLocaleString("fr-FR")} FCFA
                         </span>
                       ) : null}
                       <span className="text-3xl font-bold text-primary">

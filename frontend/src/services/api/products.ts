@@ -33,7 +33,11 @@ export interface Product {
   description: string;
   short_description?: string;
   price_xaf: number;
+  compare_at_price?: number | null;
+  promo_end_date?: string | null;
   discount: number;
+  discount_percent?: number;
+  is_on_promotion?: boolean;
   price_final: number;
   stock_quantity: number;
   is_active: boolean;

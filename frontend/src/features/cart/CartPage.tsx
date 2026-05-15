@@ -20,7 +20,7 @@ const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 
 export default function CartPage() {
   const { t, i18n } = useTranslation();
-  const { items, removeItem, updateQuantity, total, itemCount, addItem } = useCart();
+  const { items, removeItem, updateQuantity, itemCount, addItem } = useCart();
   const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((item) => item.id));
 
   useEffect(() => {
@@ -75,31 +75,31 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
+    <div className="min-h-screen overflow-x-hidden bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8">
       <div className="mx-auto max-w-7xl">
-        <div className="mb-6 rounded-[2rem] border border-orange-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+        <div className="mb-4 rounded-[1.5rem] border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:mb-6 sm:rounded-[2rem] sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
             Panier
           </p>
           <div className="mt-3 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
                 Votre panier BelivaY
               </h1>
               <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 {selectedItemCount} sélectionné{selectedItemCount > 1 ? "s" : ""} sur {itemCount} {itemCount > 1 ? t("cart.items") : t("cart.item")}
               </p>
             </div>
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+            <div className="grid w-full grid-cols-2 gap-2 sm:w-auto sm:grid-cols-3 sm:gap-3">
+              <div className="min-w-0 rounded-2xl bg-[#fff7ef] px-3 py-3 dark:bg-gray-800 sm:px-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                   Sous-total
                 </div>
-                <div className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+                <div className="mt-1 break-words text-lg font-bold text-gray-900 dark:text-white">
                   {selectedTotal.toLocaleString(locale)} {t("common.currency")}
                 </div>
               </div>
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+              <div className="min-w-0 rounded-2xl bg-[#fff7ef] px-3 py-3 dark:bg-gray-800 sm:px-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                   Livraison
                 </div>
@@ -107,7 +107,7 @@ export default function CartPage() {
                   {shippingCost.toLocaleString(locale)} {t("common.currency")}
                 </div>
               </div>
-              <div className="rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800">
+              <div className="min-w-0 rounded-2xl bg-[#fff7ef] px-3 py-3 dark:bg-gray-800 sm:px-4">
                 <div className="text-xs font-semibold uppercase tracking-[0.16em] text-primary">
                   Estimation
                 </div>
@@ -122,16 +122,16 @@ export default function CartPage() {
         <div className="grid gap-6 xl:grid-cols-[1.5fr_0.75fr]">
           <section className="space-y-4">
             <div className="flex flex-col gap-3 rounded-[1.25rem] border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:flex-row sm:items-center sm:justify-between">
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-bold text-gray-900 dark:text-white">Produits à payer</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs leading-5 text-gray-500 dark:text-gray-400">
                   Sélectionnez uniquement les articles que vous voulez régler maintenant.
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedIds(allSelected ? [] : items.map((item) => item.id))}
-                className="rounded-full border border-orange-200 px-4 py-2 text-sm font-bold text-primary transition hover:bg-orange-50 dark:border-primary/30 dark:hover:bg-primary/10"
+                className="w-full rounded-full border border-orange-200 px-4 py-2 text-sm font-bold text-primary transition hover:bg-orange-50 dark:border-primary/30 dark:hover:bg-primary/10 sm:w-auto"
               >
                 {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
               </button>
@@ -139,10 +139,10 @@ export default function CartPage() {
             {items.map((item) => (
               <article
                 key={item.id}
-                className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                className="rounded-[1.35rem] border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[1.75rem] sm:p-5"
               >
-                <div className="flex flex-col gap-4 sm:flex-row">
-                  <label className="flex items-center gap-3 sm:block">
+                <div className="flex items-start gap-3 sm:gap-4">
+                  <label className="mt-1 flex shrink-0 items-center gap-3">
                     <input
                       type="checkbox"
                       checked={selectedIdSet.has(item.id)}
@@ -152,7 +152,7 @@ export default function CartPage() {
                     />
                     <span className="sr-only">Sélectionner {item.name}</span>
                   </label>
-                  <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.25rem] bg-[#fff7ef] dark:bg-gray-800">
+                  <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-[1.25rem] bg-[#fff7ef] dark:bg-gray-800 sm:h-28 sm:w-28">
                     {item.image ? (
                       <img
                         src={item.image}
@@ -164,10 +164,10 @@ export default function CartPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-4">
+                  <div className="min-w-0 flex-1">
                     <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div>
-                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="min-w-0">
+                        <h2 className="line-clamp-2 text-base font-semibold leading-snug text-gray-900 dark:text-white sm:text-lg">
                           {item.name}
                         </h2>
                         <div className="mt-2 flex flex-wrap gap-2 text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -180,7 +180,7 @@ export default function CartPage() {
                       </div>
 
                       <div className="text-left lg:text-right">
-                        <div className="text-2xl font-bold text-primary">
+                        <div className="text-xl font-bold text-primary sm:text-2xl">
                           {(item.price * item.quantity).toLocaleString(locale)} {t("common.currency")}
                         </div>
                         <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -189,7 +189,7 @@ export default function CartPage() {
                       </div>
                     </div>
 
-                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
                       <div className="inline-flex w-fit items-center rounded-2xl border border-orange-100 bg-[#fffaf5] p-1 dark:border-gray-800 dark:bg-gray-800">
                         <button
                           onClick={() => updateQuantity(item.id, item.quantity - 1)}
@@ -259,7 +259,7 @@ export default function CartPage() {
               .slice(0, 6);
             if (suggestions.length === 0) return null;
             return (
-              <section className="col-span-full rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <section className="col-span-full overflow-hidden rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[1.75rem] sm:p-5">
                 <div className="mb-4 flex items-center gap-2">
                   <div className="h-5 w-[3px] rounded bg-primary" />
                   <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">Complétez votre commande</h3>
@@ -308,7 +308,7 @@ export default function CartPage() {
           })()}
 
           <aside
-            className="h-fit rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900 xl:sticky xl:top-24"
+            className="h-fit overflow-hidden rounded-[1.5rem] border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[1.75rem] sm:p-5 xl:sticky xl:top-24"
             data-tutorial="cart-summary"
           >
             <div className="flex items-center justify-between gap-3">
@@ -316,7 +316,7 @@ export default function CartPage() {
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                   Récapitulatif
                 </p>
-                <h2 className="mt-2 text-2xl font-bold text-gray-900 dark:text-white">
+                <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white sm:text-2xl">
                   Total estimé
                 </h2>
               </div>
@@ -363,10 +363,11 @@ export default function CartPage() {
                 }
                 persistCheckoutSelection();
               }}>
-                <Button id="checkout" variant="primary" size="lg" className="w-full rounded-2xl">
+                <Button id="checkout" variant="primary" size="lg" className="w-full min-w-0 rounded-2xl text-sm">
                   <Truck size={18} />
-                  Passer commande (avec livraison)
-                  <ArrowRight size={18} />
+                  <span className="sm:hidden">Passer commande</span>
+                  <span className="hidden sm:inline">Passer commande (avec livraison)</span>
+                  <ArrowRight className="hidden sm:block" size={18} />
                 </Button>
               </Link>
               <Link to="/checkout?mode=pickup" className="block" onClick={(event) => {
@@ -376,9 +377,10 @@ export default function CartPage() {
                 }
                 persistCheckoutSelection();
               }}>
-                <Button variant="secondary" size="lg" className="w-full rounded-2xl">
+                <Button variant="secondary" size="lg" className="w-full min-w-0 rounded-2xl text-sm">
                   <Store size={18} />
-                  Payer maintenant (retrait au centre BelivaY)
+                  <span className="sm:hidden">Payer maintenant</span>
+                  <span className="hidden sm:inline">Payer maintenant (retrait au centre BelivaY)</span>
                 </Button>
               </Link>
               <Link to="/catalog" className="block">

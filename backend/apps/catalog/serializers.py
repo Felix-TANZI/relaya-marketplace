@@ -90,7 +90,11 @@ class ProductSerializer(serializers.ModelSerializer):
             'description',
             'short_description',
             'price_xaf',
+            'compare_at_price',
+            'promo_end_date',
             'discount',
+            'discount_percent',
+            'is_on_promotion',
             'price_final', 
             'stock_quantity',
             'is_active',
@@ -122,6 +126,8 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def get_price_final(self, obj):
         """Calculer le prix après réduction"""
+        if obj.compare_at_price and obj.compare_at_price > obj.price_xaf:
+            return obj.price_xaf
         if obj.discount > 0:
             return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
         return obj.price_xaf

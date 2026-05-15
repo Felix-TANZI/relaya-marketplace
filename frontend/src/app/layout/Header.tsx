@@ -168,11 +168,9 @@ export default function Header() {
     };
 
     window.addEventListener("belivay-new-notification", handleNewNotif);
-    window.addEventListener("belivay-cart-updated", handleNewNotif);
 
     return () => {
       window.removeEventListener("belivay-new-notification", handleNewNotif);
-      window.removeEventListener("belivay-cart-updated", handleNewNotif);
     };
   }, []);
 

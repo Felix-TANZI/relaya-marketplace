@@ -56,6 +56,10 @@ interface Product {
   reviews_count?: number;
   stock_quantity?: number;
   discount?: number;
+  discount_percent?: number;
+  compare_at_price?: number | null;
+  is_on_promotion?: boolean;
+  promo_end_date?: string | null;
 }
 
 interface ProductCardProps {
@@ -103,11 +107,15 @@ export default function ProductCard({
   const [imageError, setImageError] = useState(false);
   const { addItem } = useCart();
 
-  const finalPrice =
-    product.price_final ??
-    (product.discount
-      ? product.price_xaf - (product.price_xaf * product.discount) / 100
-      : product.price_xaf);
+  const discountPercent = product.discount_percent ?? product.discount ?? 0;
+  const hasPromotion = Boolean(product.is_on_promotion ?? discountPercent > 0);
+  const finalPrice = product.price_final ?? product.price_xaf;
+  const compareAtPrice =
+    product.compare_at_price && product.compare_at_price > finalPrice
+      ? product.compare_at_price
+      : product.discount
+        ? product.price_xaf
+        : null;
 
   const displayImage =
     product.images?.find((img) => img.is_primary)?.image_url ||
@@ -169,10 +177,10 @@ export default function ProductCard({
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-gray-50 dark:bg-gray-700/50">
             {/* Badges */}
-            {showPromo && product.discount ? (
+            {showPromo && hasPromotion && discountPercent > 0 ? (
               <div className="absolute left-2 top-2 z-10 flex flex-col gap-1">
                 <span className="rounded-full bg-primary px-1.5 py-0.5 text-[8.5px] font-bold text-white">
-                  -{product.discount}%
+                  -{discountPercent}%
                 </span>
               </div>
             ) : null}
@@ -265,9 +273,9 @@ export default function ProductCard({
       <article className="product-card flex h-full flex-col overflow-hidden rounded-[1.75rem] border border-[#f0e3d6] bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-xl dark:border-gray-700 dark:bg-gray-800">
         <div className="relative aspect-[1.02] overflow-hidden bg-gradient-to-br from-[#fff6ee] via-white to-[#fff1e2] dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
           <div className="absolute left-3 top-3 z-10 flex flex-wrap gap-2">
-            {showPromo && product.discount ? (
+            {showPromo && hasPromotion && discountPercent > 0 ? (
               <span className="rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white shadow-lg shadow-primary/25">
-                -{product.discount}%
+                -{discountPercent}%
               </span>
             ) : null}
             {!inStock ? (
@@ -324,9 +332,9 @@ export default function ProductCard({
             <span className="text-lg font-extrabold text-primary">
               {finalPrice.toLocaleString("fr-FR")} FCFA
             </span>
-            {product.discount ? (
+            {compareAtPrice ? (
               <span className="text-xs text-gray-400 line-through dark:text-gray-500">
-                {product.price_xaf.toLocaleString("fr-FR")}
+                {compareAtPrice.toLocaleString("fr-FR")}
               </span>
             ) : null}
           </div>

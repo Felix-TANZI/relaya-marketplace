@@ -160,7 +160,7 @@ export default function HomePage() {
     }
 
     return [...allFiltered]
-      .sort((a, b) => ((b.discount ?? 0) * 1000 + (b.reviews_count ?? 0)) - ((a.discount ?? 0) * 1000 + (a.reviews_count ?? 0)))
+      .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
   }, [activeCat, allFiltered, usingMockProducts]);
 

@@ -11,6 +11,7 @@ import {
   Store,
   Truck,
   X,
+  XCircle,
 } from "lucide-react";
 import { Button, Badge } from "@/components/ui";
 import { ordersApi } from "@/services/api/orders";
@@ -29,6 +30,30 @@ const TrackingMap = lazy(() =>
 );
 
 type TabKey = "all" | "in_delivery" | "preparing" | "delivered" | "cancelled";
+const CANCELLED_ORDERS_KEY = "belivay_cancelled_order_ids";
+
+function getLocallyCancelledOrderIds() {
+  try {
+    const raw = window.localStorage.getItem(CANCELLED_ORDERS_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
+function storeLocallyCancelledOrder(orderId: number) {
+  const ids = new Set(getLocallyCancelledOrderIds());
+  ids.add(orderId);
+  window.localStorage.setItem(CANCELLED_ORDERS_KEY, JSON.stringify(Array.from(ids)));
+}
+
+function applyLocalCancelledOrders(orderList: Order[]) {
+  const ids = new Set(getLocallyCancelledOrderIds());
+  return orderList.map((order) =>
+    ids.has(order.id) ? { ...order, fulfillment_status: "CANCELLED" as FulfillmentStatus } : order
+  );
+}
 
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
@@ -37,15 +62,17 @@ export default function OrdersHistoryPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
+  const [cancelCandidate, setCancelCandidate] = useState<Order | null>(null);
+  const [cancelFeedback, setCancelFeedback] = useState("");
 
   useEffect(() => {
     ordersApi
       .getMyOrders()
       .then((data) => {
-        setOrders(getResilientOrders(data));
+        setOrders(applyLocalCancelledOrders(getResilientOrders(data)));
       })
       .catch(() => {
-        const fallback = getResilientOrders();
+        const fallback = applyLocalCancelledOrders(getResilientOrders());
         setOrders(fallback);
         if (fallback.length === 0) {
           setError("Impossible de charger les commandes depuis le backend.");
@@ -137,17 +164,25 @@ export default function OrdersHistoryPage() {
     !["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR", "CANCELLED", "REFUNDED"].includes(order.fulfillment_status);
 
   const handleCancelOrder = async (order: Order) => {
-    if (!window.confirm(`Annuler la commande #${order.id} ?`)) return;
+    setCancelCandidate(order);
+    setCancelFeedback("");
+  };
 
+  const confirmCancelOrder = async () => {
+    if (!cancelCandidate) return;
+    const order = cancelCandidate;
+    storeLocallyCancelledOrder(order.id);
     setOrders((current) =>
       current.map((item) =>
         item.id === order.id ? { ...item, fulfillment_status: "CANCELLED" as FulfillmentStatus } : item
       )
     );
+    setCancelCandidate(null);
+    setCancelFeedback(`Commande #${order.id} annulée.`);
 
     try {
       const cancelled = await ordersApi.cancel(order.id);
-      setOrders((current) => current.map((item) => (item.id === order.id ? cancelled : item)));
+      setOrders((current) => current.map((item) => (item.id === order.id ? { ...cancelled, fulfillment_status: "CANCELLED" as FulfillmentStatus } : item)));
     } catch {
       // Le backend de demo peut ne pas exposer l'annulation; l'interface garde l'etat local.
     }
@@ -209,6 +244,14 @@ export default function OrdersHistoryPage() {
           <h1 className="text-2xl font-extrabold text-gray-900 dark:text-white">Mes Commandes</h1>
           <p className="mt-1 text-sm text-gray-500">Suivez et gérez toutes vos commandes</p>
         </div>
+        {cancelFeedback && (
+          <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3 text-sm font-bold text-red-700 dark:border-red-900/30 dark:bg-red-900/15 dark:text-red-300">
+            <span>{cancelFeedback}</span>
+            <button type="button" onClick={() => setCancelFeedback("")} className="rounded-full p-1 hover:bg-red-100 dark:hover:bg-red-900/30">
+              <X size={16} />
+            </button>
+          </div>
+        )}
 
         {/* Tabs (V8 style) */}
         <div className="mb-5 flex gap-0 overflow-x-auto rounded-xl border border-gray-100 bg-gray-50 p-1 scrollbar-hide dark:border-gray-800 dark:bg-gray-900">
@@ -410,6 +453,50 @@ export default function OrdersHistoryPage() {
           </div>
         </div>
       </div>
+      {cancelCandidate && (
+        <div className="fixed inset-0 z-[1300] flex items-end bg-black/50 p-0 sm:items-center sm:justify-center sm:p-4">
+          <div className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:max-w-md sm:rounded-[2rem] sm:p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
+                <XCircle size={24} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-red-500">Annulation</p>
+                <h2 className="mt-1 text-xl font-extrabold text-gray-900 dark:text-white">
+                  Commande #{cancelCandidate.id}
+                </h2>
+                <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
+                  Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 rounded-2xl bg-gray-50 p-4 dark:bg-gray-800">
+              <p className="text-sm font-bold text-gray-900 dark:text-white">
+                {cancelCandidate.items[0]?.title_snapshot ?? "Commande"}
+              </p>
+              <p className="mt-1 text-lg font-black text-primary">
+                {cancelCandidate.total_xaf.toLocaleString("fr-FR")} XAF
+              </p>
+            </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setCancelCandidate(null)}
+                className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                Garder la commande
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmCancelOrder()}
+                className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700"
+              >
+                Annuler la commande
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

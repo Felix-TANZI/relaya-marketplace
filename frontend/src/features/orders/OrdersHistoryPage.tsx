@@ -50,8 +50,8 @@ function storeLocallyCancelledOrder(orderId: number) {
 
 function applyLocalCancelledOrders(orderList: Order[]) {
   const ids = new Set(getLocallyCancelledOrderIds());
-  return orderList.map((order) =>
-    ids.has(order.id) ? { ...order, fulfillment_status: "CANCELLED" as FulfillmentStatus } : order
+  return orderList.filter(
+    (order) => !ids.has(order.id) && !["CANCELLED", "REFUNDED"].includes(order.fulfillment_status)
   );
 }
 
@@ -172,17 +172,13 @@ export default function OrdersHistoryPage() {
     if (!cancelCandidate) return;
     const order = cancelCandidate;
     storeLocallyCancelledOrder(order.id);
-    setOrders((current) =>
-      current.map((item) =>
-        item.id === order.id ? { ...item, fulfillment_status: "CANCELLED" as FulfillmentStatus } : item
-      )
-    );
+    setOrders((current) => current.filter((item) => item.id !== order.id));
     setCancelCandidate(null);
-    setCancelFeedback(`Commande #${order.id} annulée.`);
+    setCancelFeedback(`Commande #${order.id} annulée et retirée de vos commandes.`);
 
     try {
-      const cancelled = await ordersApi.cancel(order.id);
-      setOrders((current) => current.map((item) => (item.id === order.id ? { ...cancelled, fulfillment_status: "CANCELLED" as FulfillmentStatus } : item)));
+      await ordersApi.cancel(order.id);
+      window.dispatchEvent(new Event("belivay-new-notification"));
     } catch {
       // Le backend de demo peut ne pas exposer l'annulation; l'interface garde l'etat local.
     }

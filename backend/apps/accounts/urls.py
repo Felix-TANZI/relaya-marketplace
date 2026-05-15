@@ -23,6 +23,7 @@ from .views import (
     FavoriteDestroyView,
     NotificationsListView,
     NotificationMarkReadView,
+    NotificationDeleteView,
     NotificationMarkAllReadView,
     TwoFactorTokenObtainPairView,
     logout_view,
@@ -81,5 +82,6 @@ urlpatterns = [
     path("favorites/<int:pk>/",       FavoriteDestroyView.as_view(),     name="client-favorite-delete"),
     path("notifications/",            NotificationsListView.as_view(),   name="client-notifications"),
     path("notifications/<int:id>/read/",   NotificationMarkReadView.as_view(),    name="client-notification-read"),
+    path("notifications/<int:id>/",        NotificationDeleteView.as_view(),      name="client-notification-delete"),
     path("notifications/read-all/",        NotificationMarkAllReadView.as_view(), name="client-notifications-read-all"),
 ]

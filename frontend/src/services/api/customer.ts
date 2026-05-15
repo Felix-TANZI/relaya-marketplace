@@ -78,6 +78,9 @@ export const customerApi = {
   markNotificationRead: async (id: number): Promise<CustomerNotification> =>
     api.post<CustomerNotification>(`/auth/notifications/${id}/read/`),
 
+  deleteNotification: async (id: number): Promise<void> =>
+    api.delete<void>(`/auth/notifications/${id}/`),
+
   markAllNotificationsRead: async (): Promise<{ detail: string }> =>
     api.post<{ detail: string }>('/auth/notifications/read-all/'),
 

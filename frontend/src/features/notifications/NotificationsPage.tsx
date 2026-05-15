@@ -12,6 +12,7 @@ import {
   MessageCircleMore,
   Package,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 import { customerApi, type CustomerNotification } from "@/services/api/customer";
@@ -104,6 +105,11 @@ export default function NotificationsPage() {
     };
 
     fetchNotifications();
+    const handleNewNotification = () => {
+      void fetchNotifications();
+    };
+    window.addEventListener("belivay-new-notification", handleNewNotification);
+    return () => window.removeEventListener("belivay-new-notification", handleNewNotification);
   }, []);
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
@@ -162,6 +168,20 @@ export default function NotificationsPage() {
         } catch {
           // La lecture reste visible cote interface meme si le backend demo ne repond pas.
         }
+      }
+    }
+  };
+
+  const deleteNotification = async (notification: NotificationCard) => {
+    setNotifications((current) => current.filter((item) => item.id !== notification.id));
+    if (selectedNotification?.id === notification.id) {
+      setSelectedNotification(null);
+    }
+    if (localStorage.getItem('access_token') && notification.id > 0) {
+      try {
+        await customerApi.deleteNotification(notification.id);
+      } catch {
+        // La suppression reste appliquee cote interface pour ne pas bloquer le client.
       }
     }
   };
@@ -230,7 +250,20 @@ export default function NotificationsPage() {
                       {notificationTime(notification)}
                     </div>
                   </div>
-                  <ChevronRight className="mt-3 shrink-0 text-gray-300 dark:text-gray-600" size={18} />
+                  <div className="mt-1 flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteNotification(notification);
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      aria-label="Supprimer la notification"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <ChevronRight className="text-gray-300 dark:text-gray-600" size={18} />
+                  </div>
                 </div>
               </article>
             );
@@ -265,6 +298,14 @@ export default function NotificationsPage() {
                 <Clock3 size={14} />
                 {notificationTime(selectedNotification)}
               </div>
+              <button
+                type="button"
+                onClick={() => void deleteNotification(selectedNotification)}
+                className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20"
+              >
+                <Trash2 size={16} />
+                Supprimer ce message
+              </button>
               {selectedNotification.notification_type === "ORDER" && (
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <button

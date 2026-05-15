@@ -85,7 +85,67 @@ class MyOrdersView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).prefetch_related("items").order_by("-created_at")
+        return (
+            Order.objects.filter(user=self.request.user)
+            .exclude(fulfillment_status__in=[Order.FulfillmentStatus.CANCELLED, Order.FulfillmentStatus.REFUNDED])
+            .prefetch_related("items")
+            .order_by("-created_at")
+        )
+
+
+@extend_schema(tags=["Orders"], summary="Annuler une commande client")
+class CancelOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = OrderDetailSerializer
+
+    def post(self, request, id):
+        order = get_object_or_404(Order, id=id, user=request.user)
+        closed_statuses = [
+            Order.FulfillmentStatus.DELIVERED,
+            Order.FulfillmentStatus.BUYER_CONFIRMED,
+            Order.FulfillmentStatus.AUTO_CONFIRMED,
+            Order.FulfillmentStatus.RELEASED_TO_VENDOR,
+            Order.FulfillmentStatus.CANCELLED,
+            Order.FulfillmentStatus.REFUNDED,
+        ]
+        if order.fulfillment_status in closed_statuses:
+            return Response(
+                {"detail": "Cette commande ne peut plus etre annulee."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        old_status = order.fulfillment_status
+        order.cancel()
+
+        shipment = getattr(order, "shipment", None)
+        if shipment:
+            shipment.status = Shipment.Status.CANCELLED
+            shipment.save(update_fields=["status", "updated_at"])
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                status=Shipment.Status.CANCELLED,
+                message="Commande annulee par le client",
+                location=order.city,
+            )
+
+        OrderHistory.objects.create(
+            order=order,
+            user=request.user,
+            action="Commande annulee par le client",
+            field_name="fulfillment_status",
+            old_value=old_status,
+            new_value=Order.FulfillmentStatus.CANCELLED,
+        )
+
+        UserNotification.objects.create(
+            user=request.user,
+            title=f"Commande #{order.id} annulee",
+            message="Votre commande a bien ete annulee et retiree de vos commandes en cours.",
+            notification_type=UserNotification.NotificationType.ORDER,
+            action_url="/orders",
+        )
+
+        return Response(OrderDetailSerializer(order).data)
 
 
 @extend_schema(tags=["Orders"], summary="Confirmer la reception d'une commande")

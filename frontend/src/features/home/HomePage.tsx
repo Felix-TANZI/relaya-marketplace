@@ -4,10 +4,9 @@ import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
 import FlashPanel from "@/components/home/FlashPanel";
 import CategorySidebar from "@/components/home/CategorySidebar";
-import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import ProductCard from "@/components/product/ProductCard";
 import {
-  AlertTriangle, ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
+  ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
   Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
 } from "lucide-react";
 import {
@@ -199,7 +198,7 @@ export default function HomePage() {
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => navigate("/profile")}
-                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#fff1e5] px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-primary hover:text-white dark:bg-primary/10"
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-white px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-white hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
                     <UserCircle size={13} />
                     Mon compte
@@ -219,7 +218,7 @@ export default function HomePage() {
                         onClick={() => setActiveCat(p.slug)}
                         className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] font-bold transition-all ${
                           activeCat === p.slug
-                            ? "border-primary bg-[#fff1e5] text-[#c85e14] shadow-sm dark:bg-primary/10 dark:text-primary"
+                            ? "border-primary bg-white text-[#c85e14] shadow-sm dark:border-primary dark:bg-gray-800 dark:text-primary"
                             : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >
@@ -250,30 +249,6 @@ export default function HomePage() {
                   );
                 })}
               </div>
-            </section>
-
-            <section className="overflow-hidden rounded-[28px] border border-[#f3dcc7] bg-[linear-gradient(135deg,#fff,#fff6ed)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.06)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
-              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-primary">
-                    Compte client
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-                    Litiges ouverts et suivi commande
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Les litiges se déclenchent depuis une commande livrée, puis se consultent dans votre compte.
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate("/profile?panel=messages&tab=litige")}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(244,121,32,.26)] transition-all hover:-translate-y-0.5 hover:bg-primary-dark"
-                >
-                  <AlertTriangle size={16} />
-                  Voir mes litiges
-                </button>
-              </div>
-              <TrustBannersStrip />
             </section>
 
             <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">

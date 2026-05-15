@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -160,10 +160,16 @@ export default function TrackingMap({
   const destination = customerLocation || resolveAddress(destinationAddress, destinationCity);
 
   // Delivery truck: midway between origin and destination
-  const deliveryPos = currentLocation || [
-    (origin[0] + destination[0]) / 2 + (Math.random() * 0.01 - 0.005),
-    (origin[1] + destination[1]) / 2 + (Math.random() * 0.01 - 0.005),
-  ] as [number, number];
+  const deliveryPos = useMemo(() => {
+    if (currentLocation) return currentLocation;
+    const seed = Math.sin((origin[0] + destination[0]) * 97 + (origin[1] + destination[1]) * 53);
+    const latOffset = seed * 0.004;
+    const lngOffset = Math.cos(seed * 11) * 0.004;
+    return [
+      (origin[0] + destination[0]) / 2 + latOffset,
+      (origin[1] + destination[1]) / 2 + lngOffset,
+    ] as [number, number];
+  }, [currentLocation, destination, origin]);
 
   const routePoints: [number, number][] = [origin, deliveryPos, destination];
 

@@ -198,7 +198,7 @@ export default function HomePage() {
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => navigate("/profile")}
-                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary bg-white px-4 py-2 text-[11.5px] font-extrabold text-[#c85e14] shadow-[0_3px_10px_rgba(244,121,32,.12)] ring-1 ring-primary/10 hover:bg-white hover:text-[#c85e14] dark:border-primary dark:bg-gray-800 dark:text-primary"
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#fff1e5] px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-primary hover:text-white dark:bg-primary/10"
                   >
                     <UserCircle size={13} />
                     Mon compte
@@ -218,7 +218,7 @@ export default function HomePage() {
                         onClick={() => setActiveCat(p.slug)}
                         className={`flex flex-shrink-0 items-center gap-1.5 rounded-full border px-4 py-2 text-[12px] font-bold transition-all ${
                           activeCat === p.slug
-                            ? "border-primary bg-white text-[#c85e14] shadow-[0_3px_10px_rgba(244,121,32,.12)] ring-1 ring-primary/10 dark:border-primary dark:bg-gray-800 dark:text-primary"
+                            ? "border-primary bg-[#fff1e5] text-[#c85e14] shadow-sm dark:bg-primary/10 dark:text-primary"
                             : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >

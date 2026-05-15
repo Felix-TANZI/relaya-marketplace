@@ -228,15 +228,15 @@ export default function Header() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-3 sm:px-4">
         {/* Top Bar */}
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between gap-2.5 py-3 sm:gap-4 sm:py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0" aria-label="Accueil BelivaY">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              style={{ height: "40px", width: "auto", display: "block", objectFit: "contain" }}
+              className="h-9 w-auto object-contain sm:h-10"
             />
           </Link>
 
@@ -389,7 +389,7 @@ export default function Header() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-2 sm:gap-3 lg:gap-4">
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
@@ -407,7 +407,7 @@ export default function Header() {
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
             >
               {theme === "dark" ? (
                 <Sun size={20} className="text-primary" />
@@ -420,7 +420,7 @@ export default function Header() {
             <Link
               to="/cart"
               id="cart"
-              className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="relative rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
             >
               <ShoppingCart
                 size={24}
@@ -438,7 +438,7 @@ export default function Header() {
               <Link
                 to="/notifications"
                 onClick={() => { setNotifCount(0); localStorage.setItem("belivay_notif_count", "0"); }}
-                className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                className="relative rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
               >
                 <Bell size={22} className="text-text-light dark:text-text-dark" />
                 {notifCount > 0 && (
@@ -452,7 +452,7 @@ export default function Header() {
             {/* Wishlist */}
             <Link
               to="/wishlist"
-              className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="relative rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
             >
               <Heart size={22} className="text-text-light dark:text-text-dark" />
               {favoritesCount > 0 && (
@@ -478,7 +478,7 @@ export default function Header() {
                   id="account"
                   data-tutorial="header-profile"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt transition-all"
+                  className="flex items-center gap-1.5 rounded-lg px-1.5 py-1.5 transition-all hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt sm:gap-2 sm:px-4 sm:py-2"
                 >
                   <div className="w-9 h-9 overflow-hidden bg-primary rounded-full flex items-center justify-center ring-2 ring-primary/15">
                     {profileAvatar ? (
@@ -496,7 +496,7 @@ export default function Header() {
                   </span>
                   <ChevronDown
                     size={16}
-                    className="text-text-light-secondary dark:text-text-dark-secondary"
+                    className="hidden text-text-light-secondary dark:text-text-dark-secondary sm:block"
                   />
                 </button>
 
@@ -638,7 +638,7 @@ export default function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt lg:hidden sm:p-2"
             >
               {mobileMenuOpen ? (
                 <X size={24} className="text-text-light dark:text-text-dark" />

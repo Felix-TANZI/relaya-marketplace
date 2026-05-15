@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
@@ -30,9 +30,22 @@ const PAY_STEPS = [
   { text: "Paiement confirmé !", pct: 100 },
 ];
 
+const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
+
+function readCheckoutSelection() {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.sessionStorage.getItem(CHECKOUT_SELECTED_CART_IDS_KEY);
+    const ids = raw ? JSON.parse(raw) : [];
+    return Array.isArray(ids) ? ids.filter((id) => typeof id === "number") : [];
+  } catch {
+    return [];
+  }
+}
+
 export default function CheckoutPage() {
   const { t, i18n } = useTranslation();
-  const { items, total, clearCart } = useCart();
+  const { items, clearCart, removeItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -54,8 +67,13 @@ export default function CheckoutPage() {
   });
   const [step, setStep] = useState<"form" | "success">("form");
 
+  const selectedCheckoutIds = useMemo(() => readCheckoutSelection(), [items.length]);
+  const checkoutItems = selectedCheckoutIds.length > 0
+    ? items.filter((item) => selectedCheckoutIds.includes(item.id))
+    : items;
+  const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = isPickup ? 0 : 2000;
-  const finalTotal = total + shippingCost;
+  const finalTotal = checkoutSubtotal + shippingCost;
 
   const runPayment = useCallback(async () => {
     setPayOverlay(true);
@@ -74,7 +92,7 @@ export default function CheckoutPage() {
         customer_phone: formData.phone,
         customer_email: '',
         note: isPickup ? 'CLICK_AND_COLLECT - Retrait au centre BelivaY' : '',
-        cart_items: items.map((item) => ({
+        cart_items: checkoutItems.map((item) => ({
           product_id: item.id,
           qty: item.quantity,
           title: item.name,
@@ -94,13 +112,20 @@ export default function CheckoutPage() {
       );
       throw error;
     }
-    clearCart();
+    if (checkoutItems.length === items.length) {
+      clearCart();
+    } else {
+      checkoutItems.forEach((item) => removeItem(item.id));
+    }
+    window.sessionStorage.removeItem(CHECKOUT_SELECTED_CART_IDS_KEY);
     setPayOverlay(false);
     setFormData(prev => ({ ...prev, orderId }));
     setStep('success');
     window.dispatchEvent(new Event("belivay-new-notification"));
+    showToast("Paiement confirmé. Redirection vers le suivi de commande...", "success");
     requestAnimationFrame(() => { if (confettiRef.current) launchConfetti(confettiRef.current); });
-  }, [formData, isPickup, items, clearCart, showToast]);
+    window.setTimeout(() => navigate(`/orders/${orderId}`), 900);
+  }, [checkoutItems, formData, isPickup, items.length, clearCart, removeItem, showToast, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,10 +146,10 @@ export default function CheckoutPage() {
 
   // Redirect to cart if empty
   useEffect(() => {
-    if (items.length === 0 && step !== "success") navigate("/cart");
-  }, [items.length, step, navigate]);
+    if (checkoutItems.length === 0 && step !== "success") navigate("/cart");
+  }, [checkoutItems.length, step, navigate]);
 
-  if (items.length === 0 && step !== "success") {
+  if (checkoutItems.length === 0 && step !== "success") {
     return <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" /></div>;
   }
 
@@ -194,14 +219,14 @@ export default function CheckoutPage() {
 
   // ── Checkout form ──
   return (
-    <div className="min-h-screen bg-[#f8f5f1] py-8 dark:bg-gray-950 px-4" data-tour="checkout">
+    <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8" data-tour="checkout">
       <div className="container mx-auto max-w-6xl">
         <Link to="/cart" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary dark:text-gray-400">
           <ArrowLeft size={18} />{t('checkout.back_to_cart')}
         </Link>
 
         {/* Header with mode indicator */}
-        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+        <div className="mb-6 rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 sm:mb-8 sm:rounded-[2rem] sm:p-6">
           <div className="flex items-center gap-3">
             <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isPickup ? "bg-green-50 text-green-600 dark:bg-green-900/20" : "bg-primary/10 text-primary"}`}>
               {isPickup ? <Store size={20} /> : <Truck size={20} />}
@@ -220,7 +245,7 @@ export default function CheckoutPage() {
 
             {/* Infos personnelles - only for delivery mode, or minimal for pickup */}
             {!isPickup && (
-              <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">1</div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_info')}</h2>
@@ -235,7 +260,7 @@ export default function CheckoutPage() {
 
             {/* Address - only for delivery */}
             {!isPickup && (
-              <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
                 <div className="mb-5 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">2</div>
                   <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_address')}</h2>
@@ -243,7 +268,7 @@ export default function CheckoutPage() {
                 <div className="space-y-4">
                   <div>
                     <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.city')}</label>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                       {["Yaoundé", "Douala"].map((city) => (
                         <button key={city} type="button" onClick={() => setFormData({ ...formData, city })}
                           className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${formData.city === city ? "bg-primary text-white shadow-lg shadow-primary/20" : "border border-gray-200 bg-white text-gray-700 hover:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"}`}>
@@ -263,7 +288,7 @@ export default function CheckoutPage() {
 
             {/* Pickup info box */}
             {isPickup && (
-              <section className="rounded-[2rem] border border-green-200 bg-green-50 p-6 shadow-sm dark:border-green-800 dark:bg-green-900/20">
+              <section className="rounded-[1.5rem] border border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-800 dark:bg-green-900/20 sm:rounded-[2rem] sm:p-6">
                 <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 text-green-600 dark:bg-green-800">
                     <Store size={24} />
@@ -282,7 +307,7 @@ export default function CheckoutPage() {
             )}
 
             {/* Payment - always shown */}
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">
                   {isPickup ? "1" : "3"}
@@ -316,10 +341,10 @@ export default function CheckoutPage() {
 
           {/* Order Summary sidebar */}
           <div className="lg:sticky lg:top-24 lg:self-start">
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
               <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">{t('checkout.summary')}</h2>
               <div className="space-y-3">
-                {items.map((item) => (
+                {checkoutItems.map((item) => (
                   <div key={item.id} className="flex items-center gap-3">
                     <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#fcfbf8] dark:bg-gray-800">
                       {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Package className="text-gray-300" size={20} /></div>}
@@ -335,12 +360,12 @@ export default function CheckoutPage() {
               <div className="mt-5 space-y-3 border-t border-gray-100 pt-5 text-sm dark:border-gray-800">
                 <div className="flex justify-between text-gray-500">
                   <span>{t('cart.subtotal')}</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{total.toLocaleString(locale)} FCFA</span>
+                  <span className="font-semibold text-gray-900 dark:text-white">{checkoutSubtotal.toLocaleString(locale)} FCFA</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
                   <span>{isPickup ? "Retrait boutique" : t('cart.shipping')}</span>
                   <span className={`font-semibold ${isPickup ? "text-green-600" : "text-gray-900 dark:text-white"}`}>
-                    {isPickup ? "Gratuit" : `${shippingCost.toLocaleString(locale)} FCFA`}
+                    {isPickup ? "0 FCFA" : `${shippingCost.toLocaleString(locale)} FCFA`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 dark:border-gray-800">

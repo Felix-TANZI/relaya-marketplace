@@ -101,7 +101,7 @@ export default function CategorySidebar({
         style={{
           position: mode === "fixed" ? "fixed" : "absolute",
           top: mode === "fixed" ? topOffset : endTop,
-          left: mode === "fixed" ? "max(12px, calc((100vw - 1560px) / 2 + 12px))" : 0,
+          left: mode === "fixed" ? "max(12px, calc((100vw - 1760px) / 2 + 12px))" : 0,
           width: collapsed ? "72px" : "232px",
           zIndex: 35,
         }}

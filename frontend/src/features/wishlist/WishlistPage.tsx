@@ -1,15 +1,20 @@
 import { useEffect, useState } from "react";
-import { Heart, ShoppingBag, Sparkles } from "lucide-react";
-import { Link } from "react-router-dom";
+import { CreditCard, Heart, ShoppingBag, ShoppingCart, Sparkles } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product } from "@/services/api/products";
 import { getFavoriteProductIds } from "@/lib/favorites";
 import { customerApi } from "@/services/api/customer";
 import { V29_PRODUCTS } from "@/data/v29Products";
+import { useCart } from "@/context/CartContext";
+
+const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 
 export default function WishlistPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const { addItem } = useCart();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +69,26 @@ export default function WishlistPage() {
   useEffect(() => {
     void fetchProducts();
   }, []);
+
+  const addProductToCart = (product: Product) => {
+    addItem({
+      id: product.id,
+      name: product.title,
+      price: product.price_final,
+      quantity: 1,
+      image:
+        product.images?.find((image) => image.is_primary)?.image_url ||
+        product.images?.[0]?.image_url ||
+        product.media?.find((media) => media.media_type === "image")?.url,
+      isDemo: V29_PRODUCTS.some((item) => item.id === product.id),
+    });
+  };
+
+  const handleBuyNow = (product: Product) => {
+    addProductToCart(product);
+    window.sessionStorage.setItem(CHECKOUT_SELECTED_CART_IDS_KEY, JSON.stringify([product.id]));
+    navigate("/checkout");
+  };
 
   useEffect(() => {
     const onFavoritesUpdated = () => {
@@ -161,7 +186,31 @@ export default function WishlistPage() {
 
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {products.map((product) => (
-                <ProductCard key={product.id} product={product} showPromo />
+                <div key={product.id} className="rounded-[1.75rem] bg-white p-2 shadow-sm dark:bg-gray-900">
+                  <ProductCard
+                    product={product}
+                    showPromo
+                    isMock={V29_PRODUCTS.some((item) => item.id === product.id)}
+                  />
+                  <div className="grid gap-2 p-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => addProductToCart(product)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl border border-orange-200 px-3 py-2.5 text-xs font-bold text-primary transition hover:bg-orange-50 dark:border-primary/30 dark:hover:bg-primary/10"
+                    >
+                      <ShoppingCart size={15} />
+                      Ajouter au panier
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleBuyNow(product)}
+                      className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-3 py-2.5 text-xs font-bold text-white transition hover:bg-primary-dark"
+                    >
+                      <CreditCard size={15} />
+                      Acheter maintenant
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </>

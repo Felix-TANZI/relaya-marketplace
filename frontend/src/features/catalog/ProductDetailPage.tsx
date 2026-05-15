@@ -2,8 +2,12 @@ import { useEffect, useState } from "react";
 import { Link, useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  CheckCircle2,
+  Heart,
+  Images,
   Minus,
   Package,
+  Palette,
   Plus,
   RotateCcw,
   Shield,
@@ -11,6 +15,7 @@ import {
   Star,
   ThumbsUp,
   Truck,
+  XCircle,
 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useToast } from "@/context/ToastContext";
@@ -18,6 +23,7 @@ import { productsApi, type Product } from "@/services/api/products";
 import { useAuth } from "@/context/AuthContext";
 import { http } from "@/services/api/http";
 import { V29_PRODUCTS } from "@/data/v29Products";
+import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
 
 interface ProductReview {
   id: number;
@@ -59,6 +65,7 @@ export default function ProductDetailPage() {
     "description",
   );
   const [showReviewForm, setShowReviewForm] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewTitle, setReviewTitle] = useState("");
   const [reviewComment, setReviewComment] = useState("");
@@ -81,7 +88,7 @@ export default function ProductDetailPage() {
           setSimilarProducts(
             V29_PRODUCTS.filter(
               (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
-            ).slice(0, 4),
+            ).slice(0, 12),
           );
           setLoading(false);
           return;
@@ -97,7 +104,7 @@ export default function ProductDetailPage() {
         if (data.category) {
           const similar = await productsApi.list({
             category: data.category.id,
-            page_size: 4,
+            page_size: 13,
           });
           setSimilarProducts(similar.results?.filter((item) => item.id !== data.id) || []);
         }
@@ -111,7 +118,7 @@ export default function ProductDetailPage() {
 
           const mockSimilar = V29_PRODUCTS.filter(
             (item) => item.id !== fallback.id && item.category?.slug === fallback.category?.slug,
-          ).slice(0, 4);
+          ).slice(0, 12);
           setSimilarProducts(mockSimilar);
         } else {
           showToast(t("product_detail.loading_error"), "error");
@@ -123,6 +130,11 @@ export default function ProductDetailPage() {
 
     void fetchProduct();
   }, [id, searchParams, showToast, t]);
+
+  useEffect(() => {
+    if (!product) return;
+    setIsFavorite(isFavoriteProduct(product.id));
+  }, [product]);
 
   useEffect(() => {
     const fetchReviews = async () => {
@@ -144,6 +156,10 @@ export default function ProductDetailPage() {
 
   const handleAddToCart = () => {
     if (!product) return;
+    if ((product.stock_quantity ?? 0) <= 0) {
+      showToast("Ce produit est en rupture de stock.", "error");
+      return;
+    }
 
     addItem({
       id: product.id,
@@ -162,6 +178,14 @@ export default function ProductDetailPage() {
   const handleBuyNow = () => {
     handleAddToCart();
     navigate("/cart");
+  };
+
+  const handleToggleFavorite = async () => {
+    if (!product) return;
+    const nextIds = toggleFavoriteProduct(product.id);
+    const nextIsFavorite = nextIds.includes(product.id);
+    setIsFavorite(nextIsFavorite);
+    showToast(nextIsFavorite ? "Produit ajouté aux favoris." : "Produit retiré des favoris.", "success");
   };
 
   const handleSubmitReview = async (event: React.FormEvent) => {
@@ -241,6 +265,26 @@ export default function ProductDetailPage() {
   const currentImage = displayImages[selectedImageIndex];
   const hasDiscount = (product.discount ?? 0) > 0;
   const averageRating = product.rating_average ?? 4.6;
+  const stockQuantity = product.stock_quantity ?? 0;
+  const inStock = stockQuantity > 0;
+  const lowStock = inStock && stockQuantity <= 3;
+  const stockTone = !inStock
+    ? "border-red-100 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/15 dark:text-red-300"
+    : lowStock
+      ? "border-amber-100 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-300"
+      : "border-green-100 bg-green-50 text-green-700 dark:border-green-900/30 dark:bg-green-900/10 dark:text-green-300";
+  const stockLabel = !inStock
+    ? "Rupture de stock"
+    : lowStock
+      ? `Stock faible · ${stockQuantity} restant${stockQuantity > 1 ? "s" : ""}`
+      : "Disponible en stock";
+  const variantLabels = ["Face", "Profil", "Dos", "Détail", "Porté"];
+  const colorOptions = [
+    { label: "Orange", className: "bg-[#f47920]" },
+    { label: "Noir", className: "bg-gray-900" },
+    { label: "Blanc", className: "bg-white" },
+    { label: "Vert", className: "bg-emerald-500" },
+  ];
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-4 py-8 dark:bg-gray-950">
@@ -282,23 +326,48 @@ export default function ProductDetailPage() {
                     </div>
                   </div>
 
-                  {displayImages.length > 1 ? (
-                    <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
-                      {displayImages.map((image, index) => (
+                  <div className="rounded-[1.5rem] border border-orange-100 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                    <div className="mb-3 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+                      <Images size={16} className="text-primary" />
+                      Formats du produit
+                    </div>
+                    {displayImages.length > 0 ? (
+                      <div className="grid grid-cols-4 gap-3 sm:grid-cols-5">
+                        {displayImages.map((image, index) => (
+                          <button
+                            key={`${image}-${index}`}
+                            onClick={() => setSelectedImageIndex(index)}
+                            className={`overflow-hidden rounded-2xl border p-2 transition ${
+                              selectedImageIndex === index
+                                ? "border-primary bg-orange-50 dark:bg-gray-800"
+                                : "border-gray-200 bg-white hover:border-primary/40 dark:border-gray-700 dark:bg-gray-900"
+                            }`}
+                          >
+                            <img src={image} alt="" className="aspect-square w-full object-contain" />
+                            <span className="mt-1 block truncate text-[10px] font-bold text-gray-500 dark:text-gray-400">
+                              {variantLabels[index] ?? `Vue ${index + 1}`}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                        Aucune image détaillée disponible.
+                      </div>
+                    )}
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {variantLabels.slice(0, 4).map((label, index) => (
                         <button
-                          key={`${image}-${index}`}
-                          onClick={() => setSelectedImageIndex(index)}
-                          className={`overflow-hidden rounded-2xl border p-2 transition ${
-                            selectedImageIndex === index
-                              ? "border-primary bg-orange-50 dark:bg-gray-800"
-                              : "border-gray-200 bg-white hover:border-primary/40 dark:border-gray-700 dark:bg-gray-900"
-                          }`}
+                          key={label}
+                          type="button"
+                          onClick={() => setSelectedImageIndex(Math.min(index, Math.max(displayImages.length - 1, 0)))}
+                          className="rounded-full border border-orange-100 bg-[#fffaf5] px-3 py-1.5 text-xs font-bold text-gray-700 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         >
-                          <img src={image} alt="" className="aspect-square w-full object-contain" />
+                          {label}
                         </button>
                       ))}
                     </div>
-                  ) : null}
+                  </div>
                 </section>
 
                 <section className="space-y-5">
@@ -308,9 +377,23 @@ export default function ProductDetailPage() {
                         {product.category.name}
                       </div>
                     ) : null}
-                    <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white sm:text-4xl">
-                      {product.title}
-                    </h1>
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <h1 className="text-3xl font-bold leading-tight text-gray-900 dark:text-white sm:text-4xl">
+                        {product.title}
+                      </h1>
+                      <button
+                        type="button"
+                        onClick={handleToggleFavorite}
+                        className={`inline-flex items-center justify-center gap-2 rounded-2xl border px-4 py-3 text-sm font-bold transition ${
+                          isFavorite
+                            ? "border-red-100 bg-red-50 text-red-600 dark:border-red-900/40 dark:bg-red-900/15"
+                            : "border-orange-100 bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                        }`}
+                      >
+                        <Heart size={18} className={isFavorite ? "fill-red-500" : ""} />
+                        {isFavorite ? "Dans les favoris" : "Ajouter aux favoris"}
+                      </button>
+                    </div>
                   </div>
 
                   <div className="space-y-3 rounded-[1.5rem] border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-700 dark:bg-gray-800">
@@ -356,11 +439,33 @@ export default function ProductDetailPage() {
                       {product.short_description || product.description.slice(0, 170)}
                     </div>
 
-                    <div className="flex items-center gap-3 rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-green-700 dark:border-green-900/30 dark:bg-green-900/10 dark:text-green-300">
-                      <Truck size={20} />
-                      <span className="text-base font-medium">
-                        Livraison rapide partout au Cameroun.
-                      </span>
+                    <div className={`flex items-center gap-3 rounded-2xl border px-4 py-3 ${stockTone}`}>
+                      {inStock ? <CheckCircle2 size={20} /> : <XCircle size={20} />}
+                      <span className="text-base font-bold">{stockLabel}</span>
+                    </div>
+
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl border border-orange-100 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-900">
+                        <div className="mb-2 flex items-center gap-2 text-sm font-bold text-gray-900 dark:text-white">
+                          <Palette size={16} className="text-primary" />
+                          Couleurs disponibles
+                        </div>
+                        <div className="flex gap-2">
+                          {colorOptions.map((color) => (
+                            <span
+                              key={color.label}
+                              title={color.label}
+                              className={`h-7 w-7 rounded-full border border-gray-200 shadow-sm ${color.className}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 rounded-2xl border border-green-100 bg-green-50 px-4 py-3 text-green-700 dark:border-green-900/30 dark:bg-green-900/10 dark:text-green-300">
+                        <Truck size={20} />
+                        <span className="text-sm font-bold">
+                          Livraison rapide partout au Cameroun.
+                        </span>
+                      </div>
                     </div>
                   </div>
 
@@ -377,7 +482,7 @@ export default function ProductDetailPage() {
                           {quantity}
                         </span>
                         <button
-                          onClick={() => setQuantity((current) => current + 1)}
+                          onClick={() => setQuantity((current) => inStock ? Math.min(stockQuantity, current + 1) : current)}
                           className="flex h-12 w-12 items-center justify-center text-gray-600 transition hover:bg-gray-50 hover:text-primary dark:text-gray-300 dark:hover:bg-gray-800"
                         >
                           <Plus size={18} />
@@ -387,14 +492,16 @@ export default function ProductDetailPage() {
                       <div className="grid flex-1 gap-3 sm:grid-cols-2">
                         <button
                           onClick={handleAddToCart}
-                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-base font-semibold text-white transition hover:bg-primary-dark"
+                          disabled={!inStock}
+                          className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-base font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-700"
                         >
                           <ShoppingCart size={18} />
-                          {t("product_detail.add_to_cart")}
+                          {inStock ? t("product_detail.add_to_cart") : "Indisponible"}
                         </button>
                         <button
                           onClick={handleBuyNow}
-                          className="inline-flex items-center justify-center rounded-2xl border border-gray-200 px-5 py-3 text-base font-semibold text-gray-800 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:text-gray-200"
+                          disabled={!inStock}
+                          className="inline-flex items-center justify-center rounded-2xl border border-gray-200 px-5 py-3 text-base font-semibold text-gray-800 transition hover:border-primary hover:text-primary disabled:cursor-not-allowed disabled:text-gray-400 dark:border-gray-700 dark:text-gray-200"
                         >
                           {t("product_detail.buy_now")}
                         </button>
@@ -619,6 +726,12 @@ export default function ProductDetailPage() {
                   </h3>
                   <div className="mt-4 space-y-3 text-sm text-gray-600 dark:text-gray-300">
                     <div className="flex items-center justify-between">
+                      <span>Disponibilité</span>
+                      <span className={inStock ? "font-semibold text-green-700 dark:text-green-300" : "font-semibold text-red-600 dark:text-red-300"}>
+                        {stockLabel}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between">
                       <span>Prix unitaire</span>
                       <span className="font-semibold text-gray-900 dark:text-white">
                         {product.price_final.toLocaleString("fr-FR")} FCFA
@@ -645,14 +758,19 @@ export default function ProductDetailPage() {
 
                 {similarProducts.length > 0 ? (
                   <div className="rounded-[1.75rem] border border-orange-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Produits similaires
-                    </h3>
-                    <div className="mt-4 space-y-4">
-                      {similarProducts.slice(0, 3).map((item) => (
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                        Produits similaires et populaires
+                      </h3>
+                      <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-primary dark:bg-primary/10">
+                        {similarProducts.length}
+                      </span>
+                    </div>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1">
+                      {similarProducts.slice(0, 8).map((item) => (
                         <Link
                           key={item.id}
-                          to={`/product/${item.id}`}
+                          to={`/product/${item.id}${isMockProduct ? "?mock=1" : ""}`}
                           className="flex gap-3 rounded-2xl p-2 transition hover:bg-orange-50 dark:hover:bg-gray-800"
                         >
                           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#fff7ef] dark:bg-gray-800">

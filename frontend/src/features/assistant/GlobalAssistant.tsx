@@ -141,6 +141,7 @@ export default function GlobalAssistant() {
     () => `Assistant BelivaY · ${viewportLabel}`,
     [viewportLabel],
   );
+  const assistantLayer = location.pathname.startsWith("/search") ? "z-[45]" : "z-[80]";
 
   const pushAssistantMessage = (nextMessage: ChatMessage) => {
     setMessages((current) => [...current, nextMessage]);
@@ -437,7 +438,7 @@ export default function GlobalAssistant() {
 
     try {
       await handleLocalHelp(trimmedPrompt);
-    } catch (error) {
+    } catch {
       // silenced;
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
@@ -456,7 +457,7 @@ export default function GlobalAssistant() {
 
   return (
     <>
-      <div className="fixed bottom-20 right-4 z-[80] lg:bottom-6 lg:right-6">
+      <div className={`fixed bottom-20 right-4 ${assistantLayer} lg:bottom-6 lg:right-6 lg:z-[80]`}>
         {/* Pulse ring - attention grabber */}
         {!isOpen && (
           <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
@@ -483,7 +484,7 @@ export default function GlobalAssistant() {
       </div>
 
       {isOpen && (
-        <section className="fixed bottom-36 right-4 z-[80] w-[min(400px,calc(100vw-2rem))] max-h-[min(480px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 flex flex-col">
+        <section className={`fixed bottom-36 right-4 ${assistantLayer} w-[min(400px,calc(100vw-2rem))] max-h-[min(480px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 lg:z-[80] flex flex-col`}>
           <header className="border-b border-slate-200 bg-[linear-gradient(180deg,#fff,rgba(248,250,252,0.92))] px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">

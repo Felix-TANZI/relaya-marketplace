@@ -882,6 +882,7 @@
     promotions: 'Promos',
     orders: 'Commande',
     favorites: 'Favoris',
+    account: 'Mon compte',
     disputes: 'Litiges',
   },
 
@@ -1144,6 +1145,7 @@
     nav_analytics_short: 'Analytiques',
     nav_boost_short: 'Boost',
     nav_plans_short: 'Plans',
+    commissions: 'Commissions',
     nav_settings_short: 'Paramètres',
     sub_disputes: 'Résolution de conflits',
     sub_shop: 'Vitrine publique',
@@ -1207,6 +1209,7 @@
     finances:             'Finances & Commissions',
     account:              'Compte BelivaY',
     plans:                'Plans & Abonnements',
+    commissions:          'Commissions',
  
     // Growth
     section_growth:       'Croissance',

@@ -7,7 +7,7 @@ import {
   CheckCircle, XCircle, Wifi, WifiOff,
   MapPin, Phone, Shield, Star, Package,
   X, Save, AlertTriangle,
-  Users,
+  Users, Eye, EyeOff,
 } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -110,6 +110,7 @@ export default function DeliveriesListPage() {
 
   const [couriers,  setCouriers]  = useState<AdminCourierFull[]>([]);
   const [sosAlerts, setSosAlerts] = useState<SOSAlert[]>([]);
+  const [showPassword, setShowPassword] = useState(false);
   const [loading,   setLoading]   = useState(true);
 
   // Filtres
@@ -603,9 +604,20 @@ export default function DeliveriesListPage() {
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
                   {editTarget ? 'Nouveau mot de passe (vide = inchangé)' : <>Mot de passe <span style={{ color: T.red }}>*</span></>}
                 </label>
-                <input type="password" value={form.password} onChange={e => fld('password', e.target.value)}
-                  placeholder={editTarget ? 'Laisser vide pour conserver' : 'Mot de passe'}
-                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                <div className="relative">
+                  <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => fld('password', e.target.value)}
+                    placeholder={editTarget ? 'Laisser vide pour conserver' : 'Mot de passe'}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 40px 9px 12px', fontSize: 13, outline: 'none' }} />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((value) => !value)}
+                    className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg"
+                    style={{ color: T.muted }}
+                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
+                  </button>
+                </div>
               </div>
 
               {/* Section livraison */}

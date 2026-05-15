@@ -107,6 +107,7 @@ const SECTIONS: NavSection[] = [
       { key: 'finances', path: '/admin/finances', icon: DollarSign },
       { key: 'account',  path: '/admin/account',  icon: Landmark },
       { key: 'plans',    path: '/admin/plans',     icon: CreditCard },
+      { key: 'commissions', path: '/admin/commissions', icon: Package },
     ],
   },
   {
@@ -410,7 +411,7 @@ export default function AdminLayout() {
 
         {/* ── Zone B : gradient + toutes les actions ── */}
         <div
-          className="flex-1 flex items-center gap-3 px-4"
+          className="flex-1 flex items-center gap-3 px-3 sm:px-4"
           style={{
             background: TOPBAR_GRADIENT,
             borderBottom: '1px solid rgba(220,38,38,0.1)',
@@ -426,8 +427,8 @@ export default function AdminLayout() {
           </button>
 
           {/* Logo mobile (visible uniquement sur mobile, zone A n'existe pas) */}
-          <Link to="/admin/dashboard" className="lg:hidden flex items-center flex-shrink-0">
-            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-9 w-auto object-contain" />
+          <Link to="/admin/dashboard" className="lg:hidden mr-auto flex min-w-0 items-center pr-2">
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-8 w-auto max-w-[132px] object-contain sm:h-9 sm:max-w-[180px]" />
           </Link>
 
           {/* Indicateur production (desktop) */}
@@ -442,10 +443,10 @@ export default function AdminLayout() {
             </span>
           </div>
 
-          <div className="flex-1" />
+          <div className="hidden flex-1 lg:block" />
 
           {/* Actions */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex flex-shrink-0 items-center gap-2 sm:gap-1.5">
 
             {/* Langue */}
             <button

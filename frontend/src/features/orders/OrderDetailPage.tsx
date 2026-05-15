@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Store,
   Send,
+  Scale,
   Truck,
   Warehouse,
   UserCircle2,
@@ -34,6 +35,21 @@ import {
   openOrderDispute,
   type StoredOrderDispute,
 } from "@/lib/orderDisputes";
+import {
+  addCourierConversationMessage,
+  COURIER_CHAT_EVENT,
+  getCourierConversation,
+  type CourierChatMessage,
+} from "@/lib/courierChat";
+
+const DISPUTE_REASONS = [
+  "Produit non conforme à la description",
+  "Produit défectueux ou endommagé",
+  "Colis non reçu",
+  "Commande incomplète",
+  "Suspicion de contrefaçon",
+  "Autre motif",
+];
 
 export default function OrderDetailPage() {
   const { t } = useTranslation();
@@ -46,9 +62,12 @@ export default function OrderDetailPage() {
   const [disputes, setDisputes] = useState<StoredOrderDispute[]>([]);
   const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
   const [showDisputeComposer, setShowDisputeComposer] = useState(false);
-  const [disputeReason, setDisputeReason] = useState("Produit non conforme");
+  const [disputeReason, setDisputeReason] = useState(DISPUTE_REASONS[0]);
   const [disputeDraft, setDisputeDraft] = useState("");
   const [disputeReply, setDisputeReply] = useState("");
+  const [showCourierChat, setShowCourierChat] = useState(false);
+  const [courierMessages, setCourierMessages] = useState<CourierChatMessage[]>([]);
+  const [courierChatDraft, setCourierChatDraft] = useState("");
   const disputeSectionRef = useRef<HTMLElement | null>(null);
 
   function getPaymentInfo(status: PaymentStatus) {
@@ -145,6 +164,15 @@ export default function OrderDetailPage() {
     syncDisputes();
     window.addEventListener("belivay-disputes-updated", syncDisputes);
     return () => window.removeEventListener("belivay-disputes-updated", syncDisputes);
+  }, [order]);
+
+  useEffect(() => {
+    if (!order) return;
+
+    const syncConversation = () => setCourierMessages(getCourierConversation(order.id));
+    syncConversation();
+    window.addEventListener(COURIER_CHAT_EVENT, syncConversation);
+    return () => window.removeEventListener(COURIER_CHAT_EVENT, syncConversation);
   }, [order]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
@@ -266,6 +294,18 @@ export default function OrderDetailPage() {
     }
     setDisputes(getOrderDisputes(order.id));
     setDisputeReply("");
+  };
+
+  const handleSendCourierMessage = () => {
+    if (!order || !courierChatDraft.trim()) return;
+    const nextMessages = addCourierConversationMessage(
+      order.id,
+      "client",
+      courierChatDraft.trim(),
+      "Vous"
+    );
+    setCourierMessages(nextMessages);
+    setCourierChatDraft("");
   };
 
   return (
@@ -398,7 +438,8 @@ export default function OrderDetailPage() {
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
-                  disabled={!tracking?.courier_phone}
+                  type="button"
+                  onClick={() => setShowCourierChat((current) => !current)}
                   className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   <Truck size={18} />
@@ -422,6 +463,64 @@ export default function OrderDetailPage() {
                   </button>
                 )}
               </div>
+
+              {showCourierChat && (
+                <div className="mt-5 rounded-[1.6rem] border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-800 dark:bg-gray-950">
+                  <div className="mb-4 flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-extrabold text-gray-900 dark:text-white">Chat avec le livreur</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Le livreur peut répondre directement à ces messages.
+                      </p>
+                    </div>
+                    {tracking?.courier_name && (
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-600 shadow-sm dark:bg-gray-900 dark:text-gray-300">
+                        {tracking.courier_name}
+                      </span>
+                    )}
+                  </div>
+                  <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl bg-white p-3 dark:bg-gray-900">
+                    {courierMessages.length > 0 ? courierMessages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`max-w-[86%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                          message.role === "client"
+                            ? "ml-auto bg-primary text-white"
+                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                        }`}
+                      >
+                        <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.role === "client" ? "text-white/70" : "text-gray-400"}`}>
+                          {message.senderName} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                        </div>
+                        {message.text}
+                      </div>
+                    )) : (
+                      <div className="rounded-2xl border border-dashed border-orange-200 p-5 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
+                        Aucun message. Lancez la conversation avec le livreur.
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-3 flex gap-3">
+                    <input
+                      value={courierChatDraft}
+                      onChange={(event) => setCourierChatDraft(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") handleSendCourierMessage();
+                      }}
+                      className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                      placeholder="Votre message au livreur..."
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSendCourierMessage}
+                      className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white hover:bg-primary-dark"
+                      aria-label="Envoyer au livreur"
+                    >
+                      <Send size={16} />
+                    </button>
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
@@ -478,37 +577,64 @@ export default function OrderDetailPage() {
               </div>
 
               {showDisputeComposer && !activeDispute ? (
-                <div className="mt-5 rounded-[1.5rem] border border-orange-200 bg-[#fff8f2] p-5 dark:border-gray-700 dark:bg-gray-800/60">
-                  <div className="grid gap-3 md:grid-cols-[220px_minmax(0,1fr)]">
-                    <input
+                <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+                  <div className="w-full max-w-xl rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
+                    <div className="mb-5 flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-primary dark:bg-primary/10">
+                        <Scale size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">Ouvrir un litige</h3>
+                        <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                          Commande #{order.id} · {order.total_xaf.toLocaleString("fr-FR")} FCFA
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Motif du litige
+                    </label>
+                    <select
                       value={disputeReason}
                       onChange={(event) => setDisputeReason(event.target.value)}
-                      className="rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
-                      placeholder="Motif du litige"
-                    />
+                      className="w-full rounded-2xl border-2 border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                    >
+                      {DISPUTE_REASONS.map((reason) => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+
+                    <label className="mb-2 mt-4 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Description
+                    </label>
                     <textarea
                       value={disputeDraft}
                       onChange={(event) => setDisputeDraft(event.target.value)}
-                      className="min-h-[108px] rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
-                      placeholder="Explique le probleme constate apres reception du colis."
+                      className="min-h-[132px] w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950"
+                      placeholder="Décrivez précisément le problème constaté."
                     />
-                  </div>
-                  <div className="mt-4 flex flex-wrap gap-3">
-                    <button
-                      type="button"
-                      onClick={() => void handleCreateDispute()}
-                      className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark"
-                    >
-                      <AlertTriangle size={17} />
-                      Ouvrir le litige
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setShowDisputeComposer(false)}
-                      className="inline-flex items-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                    >
-                      Annuler
-                    </button>
+
+                    <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-800 dark:bg-primary/10 dark:text-orange-200">
+                      L'équipe BelivaY examinera votre demande et pourra contacter le vendeur ou le livreur.
+                    </div>
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleCreateDispute()}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark"
+                      >
+                        <AlertTriangle size={17} />
+                        Ouvrir le litige
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDisputeComposer(false)}
+                        className="inline-flex items-center justify-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      >
+                        Annuler
+                      </button>
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -613,7 +739,7 @@ export default function OrderDetailPage() {
                 <div className="flex justify-between text-gray-500 dark:text-gray-400">
                   <span>{order.delivery_mode === "PICKUP" ? "Retrait boutique" : t('order.detail.delivery_fee')}</span>
                   <span className="font-semibold text-gray-900 dark:text-white">
-                    {order.delivery_fee_xaf === 0 ? "Gratuit" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
+                    {order.delivery_fee_xaf === 0 ? "0 FCFA" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
                   </span>
                 </div>
                 <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">

@@ -55,4 +55,11 @@ export const ordersApi = {
   getMyOrders: async (): Promise<Order[]> => {
     return api.get<Order[]>('/orders/my-orders/');
   },
+
+  /**
+   * Annuler une commande
+   */
+  cancel: async (id: number): Promise<Order> => {
+    return api.post<Order>(`/orders/${id}/cancel/`, {});
+  },
 };

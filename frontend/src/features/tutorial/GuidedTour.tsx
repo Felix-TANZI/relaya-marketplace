@@ -12,7 +12,6 @@ import {
 import {
   CLIENT_TOUR_STORAGE_KEY,
   CLIENT_TUTORIAL_STEPS,
-  type TutorialStep,
 } from "./tutorialSteps";
 
 function clamp(value: number, min: number, max: number) {
@@ -36,6 +35,7 @@ export default function GuidedTour() {
   const [stepIndex, setStepIndex] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
   const [ready, setReady] = useState(false);
+  const [celebrating, setCelebrating] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   const step = CLIENT_TUTORIAL_STEPS[stepIndex];
@@ -51,7 +51,21 @@ export default function GuidedTour() {
     setStepIndex(0);
     setTargetRect(null);
     setReady(false);
+    setCelebrating(false);
     navigate("/");
+  };
+
+  const finishTour = () => {
+    localStorage.setItem(CLIENT_TOUR_STORAGE_KEY, "true");
+    setCelebrating(true);
+    navigate("/");
+    window.setTimeout(() => {
+      setIsOpen(false);
+      setStepIndex(0);
+      setTargetRect(null);
+      setReady(false);
+      setCelebrating(false);
+    }, 1800);
   };
 
   // Auto-start on first visit
@@ -110,7 +124,11 @@ export default function GuidedTour() {
     if (!isOpen) return;
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") { closeTour(); return; }
-      if (e.key === "ArrowRight") { e.preventDefault(); stepIndex < total - 1 ? setStepIndex(s => s + 1) : closeTour(); }
+      if (e.key === "ArrowRight") {
+        e.preventDefault();
+        if (stepIndex < total - 1) setStepIndex(s => s + 1);
+        else finishTour();
+      }
       if (e.key === "ArrowLeft") { e.preventDefault(); setStepIndex(s => Math.max(0, s - 1)); }
     };
     window.addEventListener("keydown", handler);
@@ -158,6 +176,7 @@ export default function GuidedTour() {
   }, [targetRect, ready]);
 
   if (!isOpen || !step) return null;
+  const isLastStep = stepIndex === total - 1;
 
   return (
     <div className="fixed inset-0 z-[9999]" role="dialog" aria-modal="true" aria-label={t("tour.aria_label")}>
@@ -179,6 +198,28 @@ export default function GuidedTour() {
       )}
 
       {/* Tooltip */}
+      {celebrating && (
+        <div className="pointer-events-none fixed inset-0 z-[4] flex items-center justify-center bg-black/35">
+          <div className="relative rounded-[28px] bg-white px-8 py-7 text-center shadow-2xl dark:bg-gray-900">
+            <div className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Let's start</div>
+            <div className="mt-2 text-2xl font-black text-gray-900 dark:text-white">Bienvenue sur BelivaY</div>
+          </div>
+          {Array.from({ length: 34 }).map((_, index) => (
+            <span
+              key={index}
+              className="absolute h-2.5 w-2.5 rounded-sm"
+              style={{
+                left: `${8 + ((index * 23) % 84)}%`,
+                top: `${-8 - (index % 6) * 7}%`,
+                background: ["#f47920", "#10b981", "#3b82f6", "#facc15", "#ef4444"][index % 5],
+                animation: `tour-confetti ${1.2 + (index % 5) * 0.16}s ease-out ${index * 0.015}s forwards`,
+                transform: `rotate(${index * 19}deg)`,
+              }}
+            />
+          ))}
+        </div>
+      )}
+
       <div
         className="z-10 rounded-3xl bg-white shadow-2xl dark:bg-gray-900 border border-orange-100 dark:border-gray-700 transition-all duration-300"
         style={tooltipStyle}
@@ -200,9 +241,15 @@ export default function GuidedTour() {
               <h2 className="mt-3 text-xl font-bold text-gray-900 dark:text-white">{step.title}</h2>
               {step.routeLabel && <p className="mt-1 text-xs font-medium text-gray-400">{step.routeLabel}</p>}
             </div>
-            <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label={t("common.close")}>
-              <X size={18} />
-            </button>
+            {isLastStep ? (
+              <button onClick={finishTour} className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-dark">
+                Continuer
+              </button>
+            ) : (
+              <button onClick={closeTour} className="rounded-full p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-gray-800" aria-label={t("common.close")}>
+                <X size={18} />
+              </button>
+            )}
           </div>
 
           {/* Content */}
@@ -234,15 +281,22 @@ export default function GuidedTour() {
                 </button>
               )}
               <button
-                onClick={() => stepIndex === total - 1 ? closeTour() : setStepIndex(s => s + 1)}
+                onClick={() => isLastStep ? finishTour() : setStepIndex(s => s + 1)}
                 className="inline-flex items-center gap-1 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-primary/25 hover:bg-primary-dark"
               >
-                {stepIndex === total - 1 ? (<><Check size={16} /> {t("tour.finish")}</>) : (<>{t("tour.next")} <ArrowRight size={16} /></>)}
+                {isLastStep ? (<><Check size={16} /> Continuer</>) : (<>{t("tour.next")} <ArrowRight size={16} /></>)}
               </button>
             </div>
           </div>
         </div>
       </div>
+      <style>{`
+        @keyframes tour-confetti {
+          0% { opacity: 0; transform: translate3d(0,-20px,0) rotate(0deg); }
+          15% { opacity: 1; }
+          100% { opacity: 0; transform: translate3d(${Math.random() > 0.5 ? 28 : -28}px,110vh,0) rotate(680deg); }
+        }
+      `}</style>
     </div>
   );
 }

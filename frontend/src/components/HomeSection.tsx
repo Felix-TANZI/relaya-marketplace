@@ -60,9 +60,9 @@ export default function HomeSection({
 
   const gridClass =
     rows === 3
-      ? "grid grid-rows-3 grid-flow-col auto-cols-[calc((100%-24px)/4.5)]"
+      ? "grid grid-rows-3 grid-flow-col auto-cols-[minmax(188px,22%)]"
       : rows === 2
-      ? "grid grid-rows-2 grid-flow-col auto-cols-[calc((100%-24px)/4.5)]"
+      ? "grid grid-rows-2 grid-flow-col auto-cols-[minmax(188px,22%)]"
       : "flex";
 
   return (
@@ -116,7 +116,7 @@ export default function HomeSection({
           {products.map((p) => (
             <div
               key={p.id}
-              className={`${rows === 1 ? "w-[calc((100%-24px)/4.5)] flex-shrink-0" : ""} min-w-0`}
+              className={`${rows === 1 ? "w-[min(240px,46vw)] flex-shrink-0 sm:w-[210px] xl:w-[235px]" : ""} min-w-0`}
               style={{ scrollSnapAlign: "start" }}
             >
               <ProductCard product={p} showPromo compact isMock={isMockProducts} />

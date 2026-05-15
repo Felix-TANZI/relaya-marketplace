@@ -11,6 +11,7 @@ import {
   ChevronDown, X, Image as ImageIcon,
 } from 'lucide-react';
 import { adminApi, type AdminProduct } from '@/services/api/admin';
+import { productsApi, type Category } from '@/services/api/products';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { useConfirm } from '@/context/ConfirmContext';
@@ -61,12 +62,15 @@ export default function CataloguePage() {
   const [searchParams] = useSearchParams();
 
   const [products,  setProducts]  = useState<AdminProduct[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [acting,    setActing]    = useState<number | null>(null);
 
   const [statusTab, setStatusTab] = useState<StatusTab>('all');
   const [dateF,     setDateF]     = useState<DateFilter>('all');
   const [search,    setSearch]    = useState('');
+  const [categoryF, setCategoryF] = useState<number | 'all'>('all');
+  const [subcategoryF, setSubcategoryF] = useState<number | 'all'>('all');
   const [sort,      setSort]      = useState<SortKey>('created_at');
   const [dir,       setDir]       = useState<SortDir>('desc');
   const [page,      setPage]      = useState(1);
@@ -94,13 +98,30 @@ export default function CataloguePage() {
 
   useEffect(() => { load(); }, [load]);
 
+  useEffect(() => {
+    productsApi.listCategories({ page_size: 100, is_active: true })
+      .then((res) => setCategories(res.results ?? []))
+      .catch(() => setCategories([]));
+  }, []);
+
   // ── Filtrage local ────────────────────────────────────────────────────────
   const now = Date.now();
+  const rootCategories = categories.filter((cat) => !cat.parent);
+  const selectedRootCategory = categoryF === 'all' ? null : categories.find((cat) => cat.id === categoryF) ?? null;
+  const subcategories = selectedRootCategory
+    ? categories.filter((cat) => cat.parent === selectedRootCategory.id)
+    : [];
+  const categoryIdsForFilter = (() => {
+    if (subcategoryF !== 'all') return new Set([subcategoryF]);
+    if (categoryF === 'all') return null;
+    return new Set([categoryF, ...categories.filter((cat) => cat.parent === categoryF).map((cat) => cat.id)]);
+  })();
   const filtered = products.filter(p => {
     const created = new Date(p.created_at).getTime();
     if (dateF === 'today' && now - created > 86400_000)      return false;
     if (dateF === 'week'  && now - created > 7 * 86400_000)  return false;
     if (dateF === 'month' && now - created > 30 * 86400_000) return false;
+    if (categoryIdsForFilter && !categoryIdsForFilter.has(p.category)) return false;
     if (search) {
       const q = search.toLowerCase();
       return [p.title, p.vendor_name, p.vendor_business, p.category_name]
@@ -132,7 +153,7 @@ export default function CataloguePage() {
     searchRef.current = setTimeout(() => { setSearch(v); setPage(1); }, 220);
   };
 
-  const activeFilters = [dateF !== 'all'].filter(Boolean).length;
+  const activeFilters = [dateF !== 'all', categoryF !== 'all', subcategoryF !== 'all'].filter(Boolean).length;
 
   // ── KPIs ─────────────────────────────────────────────────────────────────
   const kpis = {
@@ -335,8 +356,41 @@ export default function CataloguePage() {
             </DropMenu>
           </div>
 
+          <select
+            value={categoryF}
+            onChange={(event) => {
+              const value = event.target.value === 'all' ? 'all' : Number(event.target.value);
+              setCategoryF(value);
+              setSubcategoryF('all');
+              setPage(1);
+            }}
+            className="rounded-lg px-3 py-1.5 text-[12px] font-semibold outline-none"
+            style={{ background: categoryF !== 'all' ? T.red + '18' : T.cardAlt, color: categoryF !== 'all' ? T.red : T.muted, border: `1px solid ${categoryF !== 'all' ? T.red + '40' : T.border}` }}
+          >
+            <option value="all">Toutes catégories</option>
+            {(rootCategories.length ? rootCategories : categories).map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
+          <select
+            value={subcategoryF}
+            onChange={(event) => {
+              setSubcategoryF(event.target.value === 'all' ? 'all' : Number(event.target.value));
+              setPage(1);
+            }}
+            disabled={subcategories.length === 0}
+            className="rounded-lg px-3 py-1.5 text-[12px] font-semibold outline-none disabled:opacity-50"
+            style={{ background: subcategoryF !== 'all' ? T.red + '18' : T.cardAlt, color: subcategoryF !== 'all' ? T.red : T.muted, border: `1px solid ${subcategoryF !== 'all' ? T.red + '40' : T.border}` }}
+          >
+            <option value="all">Sous-catégories</option>
+            {subcategories.map((cat) => (
+              <option key={cat.id} value={cat.id}>{cat.name}</option>
+            ))}
+          </select>
+
           {activeFilters > 0 && (
-            <button onClick={() => { setDateF('all'); setPage(1); }}
+            <button onClick={() => { setDateF('all'); setCategoryF('all'); setSubcategoryF('all'); setPage(1); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
               style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
               <X size={11} /> Effacer

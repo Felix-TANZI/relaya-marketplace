@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   CheckCircle2,
@@ -21,6 +22,7 @@ type NotificationCard = CustomerNotification & {
 
 export default function NotificationsPage() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
 
   const fallbackNotifications = [
     {
@@ -72,6 +74,7 @@ export default function NotificationsPage() {
 
   const [notifications, setNotifications] = useState<NotificationCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationCard | null>(null);
 
   useEffect(() => {
     const fetchNotifications = async () => {
@@ -101,6 +104,31 @@ export default function NotificationsPage() {
   }, []);
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
+  const notificationText = (notification: NotificationCard) =>
+    'description' in notification && notification.description ? notification.description : notification.message;
+  const notificationTime = (notification: NotificationCard) =>
+    'time' in notification && notification.time ? notification.time : new Date(notification.created_at).toLocaleString('fr-FR');
+  const getOrderTarget = (notification: NotificationCard) => {
+    const source = `${notification.action_url ?? ""} ${notification.title ?? ""} ${notification.message ?? ""}`;
+    const match = source.match(/(?:orders\/|commande\s*#?|#)(\d+)/i);
+    return match ? `/orders/${match[1]}` : "/orders";
+  };
+
+  const openNotification = async (notification: NotificationCard) => {
+    setSelectedNotification(notification);
+    if (!notification.is_read) {
+      setNotifications((current) =>
+        current.map((item) => item.id === notification.id ? { ...item, is_read: true } : item)
+      );
+      if (localStorage.getItem('access_token') && notification.id > 0) {
+        try {
+          await customerApi.markNotificationRead(notification.id);
+        } catch {
+          // La lecture reste visible cote interface meme si le backend demo ne repond pas.
+        }
+      }
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
@@ -138,7 +166,8 @@ export default function NotificationsPage() {
             return (
               <article
                 key={notification.id}
-                className="rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+                onClick={() => openNotification(notification)}
+                className="cursor-pointer rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-900"
               >
                 <div className="flex items-start gap-4">
                   <div
@@ -159,11 +188,11 @@ export default function NotificationsPage() {
                       )}
                     </div>
                     <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                      {'description' in notification ? notification.description : notification.message}
+                      {notificationText(notification)}
                     </p>
                     <div className="mt-4 flex items-center gap-2 text-xs text-gray-400 dark:text-gray-500">
                       <Clock3 size={14} />
-                      {'time' in notification ? notification.time : new Date(notification.created_at).toLocaleString('fr-FR')}
+                      {notificationTime(notification)}
                     </div>
                   </div>
                 </div>
@@ -171,6 +200,53 @@ export default function NotificationsPage() {
             );
           })}
         </div>
+
+        {selectedNotification && (
+          <div className="fixed inset-0 z-[1200] flex items-end bg-black/45 p-0 sm:items-center sm:justify-center sm:p-4">
+            <div className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:max-w-lg sm:rounded-[2rem] sm:p-6">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Détail notification</p>
+                  <h2 className="mt-2 text-xl font-extrabold text-gray-900 dark:text-white">
+                    {selectedNotification.title}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedNotification(null)}
+                  className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-bold text-gray-500 hover:bg-gray-200 dark:bg-gray-800"
+                >
+                  Fermer
+                </button>
+              </div>
+              <p className="mt-4 text-sm leading-7 text-gray-600 dark:text-gray-300">
+                {notificationText(selectedNotification)}
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs font-semibold text-gray-400">
+                <Clock3 size={14} />
+                {notificationTime(selectedNotification)}
+              </div>
+              {selectedNotification.notification_type === "ORDER" && (
+                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate(getOrderTarget(selectedNotification))}
+                    className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-dark"
+                  >
+                    Voir le détail
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/orders")}
+                    className="rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-primary hover:bg-orange-50 dark:border-primary/30 dark:bg-gray-900"
+                  >
+                    Mes commandes
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

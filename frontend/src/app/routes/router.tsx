@@ -79,6 +79,7 @@ import AdminStub               from '@/features/admin/_AdminStub';
 import FinancesPage            from '@/features/admin/finances/FinancesPage';
 import AccountPage             from '@/features/admin/finances/AccountPage';
 import PlansPage               from '@/features/admin/finances/PlansPage';
+import CommissionsPage         from '@/features/admin/finances/CommissionsPage';
 
 // ── Vendeurs ─────────────────────────────────────────────────────────────────
 import VendorsListPage         from '@/features/admin/vendors/VendorsListPage';
@@ -281,6 +282,7 @@ export const router = createBrowserRouter([
       { path: 'finances', element: <FinancesPage /> },
       { path: 'account',  element: <AccountPage /> },
       { path: 'plans',    element: <PlansPage /> },
+      { path: 'commissions', element: <CommissionsPage /> },
 
       // ── GROWTH (SOON) ───────────────────────────────────────────────────
       { path: 'analytics', element: <AdminStub title="Analytics & Tendances"    description="Bientôt disponible." icon={TrendingUp} /> },

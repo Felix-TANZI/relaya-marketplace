@@ -56,6 +56,17 @@ export default function CheckoutPage() {
   const [payOverlay, setPayOverlay] = useState(false);
   const [payStep, setPayStep] = useState(0);
 
+  useEffect(() => {
+    if (!payOverlay) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [payOverlay]);
+
   const [formData, setFormData] = useState({
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
@@ -159,7 +170,7 @@ export default function CheckoutPage() {
   if (payOverlay) {
     const ps = PAY_STEPS[payStep];
     return (
-      <div className="fixed inset-0 z-[1300] flex items-center justify-center bg-black/65">
+      <div className="fixed inset-0 z-[9999] flex h-dvh min-h-dvh items-center justify-center bg-black px-4">
         <div className="w-[90%] max-w-[300px] rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-gray-900">
           <div className="mx-auto mb-4 h-[52px] w-[52px] rounded-full border-4 border-gray-200 border-t-primary dark:border-gray-700" style={{ animation: 'spin 650ms linear infinite' }} />
           <p className="text-[15px] font-bold text-gray-900 dark:text-white">{ps.text}</p>

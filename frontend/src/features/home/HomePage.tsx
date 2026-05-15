@@ -49,7 +49,7 @@ export default function HomePage() {
         const results = response.results ?? [];
         if (results.length > 0) {
           setApiProducts(results);
-          setUsingMockProducts(false);
+          setUsingMockProducts(results.length < 20);
         }
       })
       .catch(() => {

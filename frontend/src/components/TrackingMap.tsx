@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -97,6 +97,29 @@ const NEIGHBORHOODS: Record<string, [number, number]> = {
 // Default: Mokolo (centre commercial, point de départ par défaut)
 const MOKOLO: [number, number] = NEIGHBORHOODS["mokolo"];
 const DEFAULT_DEST: [number, number] = NEIGHBORHOODS["biyemassi"];
+const GEOCODE_CACHE_KEY = "belivay_geocode_cache_v1";
+
+type GeocodeCache = Record<string, [number, number]>;
+
+function readGeocodeCache(): GeocodeCache {
+  try {
+    const raw = window.localStorage.getItem(GEOCODE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeGeocodeCache(query: string, coords: [number, number]) {
+  try {
+    const cache = readGeocodeCache();
+    cache[query] = coords;
+    window.localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Cache best-effort: la carte doit continuer a fonctionner sans localStorage.
+  }
+}
 
 /** Resolve an address string to GPS coordinates */
 function resolveAddress(address?: string | null, city?: string | null): [number, number] {
@@ -110,6 +133,40 @@ function resolveAddress(address?: string | null, city?: string | null): [number,
   if (search.includes("douala")) return NEIGHBORHOODS["douala"];
   // Default to Yaoundé center
   return NEIGHBORHOODS["yaounde"];
+}
+
+function buildGeocodeQuery(address?: string | null, city?: string | null) {
+  const parts = [address, city, "Cameroon"]
+    .map((part) => (part || "").trim())
+    .filter(Boolean);
+  return parts.length > 1 ? parts.join(", ") : "";
+}
+
+async function geocodeAddress(query: string, signal: AbortSignal): Promise<[number, number] | null> {
+  const cache = readGeocodeCache();
+  if (cache[query]) return cache[query];
+
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    limit: "1",
+    addressdetails: "1",
+    countrycodes: "cm",
+    q: query,
+  });
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    signal,
+    headers: { Accept: "application/json", "Accept-Language": "fr" },
+  });
+  if (!response.ok) return null;
+
+  const results = await response.json() as Array<{ lat?: string; lon?: string }>;
+  const first = results[0];
+  if (!first?.lat || !first.lon) return null;
+
+  const coords: [number, number] = [Number(first.lat), Number(first.lon)];
+  if (!Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) return null;
+  writeGeocodeCache(query, coords);
+  return coords;
 }
 
 interface TrackingMapProps {
@@ -157,7 +214,32 @@ export default function TrackingMap({
   const origin = vendorLocation || MOKOLO;
 
   // Destination: resolve from address string, or use explicit prop, or default
-  const destination = customerLocation || resolveAddress(destinationAddress, destinationCity);
+  const fallbackDestination = customerLocation || resolveAddress(destinationAddress, destinationCity);
+  const geocodeQuery = useMemo(
+    () => customerLocation ? "" : buildGeocodeQuery(destinationAddress, destinationCity),
+    [customerLocation, destinationAddress, destinationCity],
+  );
+  const [geocodedDestination, setGeocodedDestination] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (!geocodeQuery) {
+      setGeocodedDestination(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    geocodeAddress(geocodeQuery, controller.signal)
+      .then((coords) => {
+        if (!controller.signal.aborted) setGeocodedDestination(coords);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setGeocodedDestination(null);
+      });
+
+    return () => controller.abort();
+  }, [geocodeQuery]);
+
+  const destination = geocodedDestination || fallbackDestination;
 
   // Delivery truck: midway between origin and destination
   const deliveryPos = useMemo(() => {

@@ -83,16 +83,4 @@ export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
     helper: "Cliquez sur la bulle en bas à droite pour démarrer une conversation. Il peut aussi vous guider vers les pages de l'application.",
     routeLabel: "Accueil",
   },
-  {
-    id: "checkout",
-    route: "/checkout",
-    selector: "#checkout",
-    title: "Finaliser votre achat",
-    description:
-      "La page de paiement te permet de confirmer ton adresse, choisir ton mode de règlement et valider la commande.",
-    helper:
-      "Une fois la visite terminée, tu peux la relancer à tout moment depuis le bouton Guide de l'en-tête.",
-    routeLabel: "Paiement",
-    scrollBlock: "center",
-  },
 ];

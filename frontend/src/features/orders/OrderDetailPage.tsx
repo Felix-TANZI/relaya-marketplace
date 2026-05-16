@@ -24,23 +24,11 @@ import {
   XCircle,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
-import { customerApi, type Shipment } from "@/services/api/customer";
+import { customerApi, type Dispute, type Shipment, type OrderChatMessage } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
-import {
-  addDisputeMessage,
-  formatRemainingDisputeTime,
-  getDisputeEligibility,
-  getOrderDisputes,
-  openOrderDispute,
-  type StoredOrderDispute,
-} from "@/lib/orderDisputes";
-import {
-  addCourierConversationMessage,
-  COURIER_CHAT_EVENT,
-  getCourierConversation,
-  type CourierChatMessage,
-} from "@/lib/courierChat";
+import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
+import { useAuth } from "@/context/AuthContext";
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -53,21 +41,23 @@ const DISPUTE_REASONS = [
 
 export default function OrderDetailPage() {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [tracking, setTracking] = useState<Shipment | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [disputes, setDisputes] = useState<StoredOrderDispute[]>([]);
-  const [activeDisputeId, setActiveDisputeId] = useState<string | null>(null);
+  const [disputes, setDisputes] = useState<Dispute[]>([]);
+  const [activeDisputeId, setActiveDisputeId] = useState<number | null>(null);
   const [showDisputeComposer, setShowDisputeComposer] = useState(false);
   const [disputeReason, setDisputeReason] = useState(DISPUTE_REASONS[0]);
   const [disputeDraft, setDisputeDraft] = useState("");
   const [disputeReply, setDisputeReply] = useState("");
   const [showCourierChat, setShowCourierChat] = useState(false);
-  const [courierMessages, setCourierMessages] = useState<CourierChatMessage[]>([]);
+  const [courierMessages, setCourierMessages] = useState<OrderChatMessage[]>([]);
   const [courierChatDraft, setCourierChatDraft] = useState("");
+  const [chatSending, setChatSending] = useState(false);
   const disputeSectionRef = useRef<HTMLElement | null>(null);
 
   function getPaymentInfo(status: PaymentStatus) {
@@ -155,24 +145,35 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
-    const syncDisputes = () => {
-      const next = getOrderDisputes(order.id);
-      setDisputes(next);
-      setActiveDisputeId((current) => current ?? next[0]?.id ?? null);
+    let cancelled = false;
+    const fetchDisputes = () => {
+      customerApi.getOrderDisputes(order.id)
+        .then((data) => {
+          if (!cancelled) {
+            setDisputes(data);
+            setActiveDisputeId((current) => current ?? data[0]?.id ?? null);
+          }
+        })
+        .catch(() => {});
     };
-
-    syncDisputes();
-    window.addEventListener("belivay-disputes-updated", syncDisputes);
-    return () => window.removeEventListener("belivay-disputes-updated", syncDisputes);
+    fetchDisputes();
+    const interval = window.setInterval(fetchDisputes, 12000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [order]);
 
   useEffect(() => {
     if (!order) return;
 
-    const syncConversation = () => setCourierMessages(getCourierConversation(order.id));
-    syncConversation();
-    window.addEventListener(COURIER_CHAT_EVENT, syncConversation);
-    return () => window.removeEventListener(COURIER_CHAT_EVENT, syncConversation);
+    let cancelled = false;
+    const fetchMessages = () => {
+      customerApi.getOrderChatMessages(order.id)
+        .then((msgs) => { if (!cancelled) setCourierMessages(msgs); })
+        .catch(() => {/* shipment peut ne pas encore exister */});
+    };
+
+    fetchMessages();
+    const interval = window.setInterval(fetchMessages, 12000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [order]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
@@ -263,49 +264,48 @@ export default function OrderDetailPage() {
 
   const handleCreateDispute = async () => {
     if (!disputeDraft.trim()) return;
-
     try {
-      const backendDispute = await customerApi.createOrderDispute(order.id, {
+      await customerApi.createOrderDispute(order.id, {
         reason: "OTHER",
         description: disputeDraft.trim(),
       });
-      openOrderDispute(order, disputeReason, disputeDraft.trim(), backendDispute.id);
+      const data = await customerApi.getOrderDisputes(order.id);
+      setDisputes(data);
+      setActiveDisputeId(data[0]?.id ?? null);
     } catch {
-      openOrderDispute(order, disputeReason, disputeDraft.trim());
+      // silenced
     }
-
     setShowDisputeComposer(false);
     setDisputeDraft("");
-    setDisputes(getOrderDisputes(order.id));
-    setActiveDisputeId(getOrderDisputes(order.id)[0]?.id ?? null);
   };
 
   const handleSendDisputeReply = async () => {
     if (!activeDispute || !disputeReply.trim()) return;
-
-    addDisputeMessage(activeDispute.id, disputeReply.trim());
-    try {
-      const numericDisputeId = Number(activeDispute.id);
-      if (Number.isFinite(numericDisputeId)) {
-        await customerApi.addDisputeMessage(numericDisputeId, disputeReply.trim());
-      }
-    } catch {
-      // Frontend fallback kept in localStorage.
-    }
-    setDisputes(getOrderDisputes(order.id));
+    const text = disputeReply.trim();
     setDisputeReply("");
+    try {
+      await customerApi.addDisputeMessage(activeDispute.id, text);
+      const data = await customerApi.getOrderDisputes(order.id);
+      setDisputes(data);
+    } catch {
+      setDisputeReply(text);
+    }
   };
 
-  const handleSendCourierMessage = () => {
-    if (!order || !courierChatDraft.trim()) return;
-    const nextMessages = addCourierConversationMessage(
-      order.id,
-      "client",
-      courierChatDraft.trim(),
-      "Vous"
-    );
-    setCourierMessages(nextMessages);
+  const handleSendCourierMessage = async () => {
+    if (!order || !courierChatDraft.trim() || chatSending) return;
+    const text = courierChatDraft.trim();
     setCourierChatDraft("");
+    setChatSending(true);
+    try {
+      const msg = await customerApi.sendOrderChatMessage(order.id, text);
+      setCourierMessages((prev) => [...prev, msg]);
+    } catch {
+      // Réaffiche le brouillon si l'envoi échoue
+      setCourierChatDraft(text);
+    } finally {
+      setChatSending(false);
+    }
   };
 
   return (
@@ -484,15 +484,15 @@ export default function OrderDetailPage() {
                       <div
                         key={message.id}
                         className={`max-w-[86%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                          message.role === "client"
+                          message.sender_role === "CLIENT"
                             ? "ml-auto bg-primary text-white"
                             : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
                         }`}
                       >
-                        <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.role === "client" ? "text-white/70" : "text-gray-400"}`}>
-                          {message.senderName} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                        <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "CLIENT" ? "text-white/70" : "text-gray-400"}`}>
+                          {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                         </div>
-                        {message.text}
+                        {message.message}
                       </div>
                     )) : (
                       <div className="rounded-2xl border border-dashed border-orange-200 p-5 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
@@ -507,13 +507,15 @@ export default function OrderDetailPage() {
                       onKeyDown={(event) => {
                         if (event.key === "Enter") handleSendCourierMessage();
                       }}
-                      className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900"
+                      disabled={chatSending}
+                      className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
                       placeholder="Votre message au livreur..."
                     />
                     <button
                       type="button"
                       onClick={handleSendCourierMessage}
-                      className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white hover:bg-primary-dark"
+                      disabled={chatSending || !courierChatDraft.trim()}
+                      className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
                       aria-label="Envoyer au livreur"
                     >
                       <Send size={16} />
@@ -654,13 +656,13 @@ export default function OrderDetailPage() {
                         }`}
                       >
                         <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
-                          {dispute.orderLabel}
+                          {`Commande #${dispute.order}`}
                         </p>
                         <p className="mt-2 text-sm font-bold text-gray-900 dark:text-white">
                           {dispute.reason}
                         </p>
                         <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-                          {dispute.messages[dispute.messages.length - 1]?.text}
+                          {dispute.messages[dispute.messages.length - 1]?.message}
                         </p>
                       </button>
                     ))}
@@ -671,7 +673,7 @@ export default function OrderDetailPage() {
                       <>
                         <div className="mb-4 border-b border-gray-200 pb-4 dark:border-gray-800">
                           <p className="text-lg font-bold text-gray-900 dark:text-white">
-                            {activeDispute.orderLabel} · {activeDispute.reason}
+                            {`Commande #${activeDispute.order}`} · {activeDispute.reason}
                           </p>
                           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                             Conversation de mediation ouverte pour cette commande.
@@ -683,15 +685,15 @@ export default function OrderDetailPage() {
                             <div
                               key={message.id}
                               className={`max-w-[88%] rounded-[1.1rem] px-4 py-3 text-sm leading-6 ${
-                                message.author === "Vous"
+                                message.sender === user?.id
                                   ? "ml-auto bg-[#fff1e5] text-gray-900 dark:bg-primary/10 dark:text-white"
                                   : "bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300"
                               }`}
                             >
                               <div className="mb-1 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
-                                {message.author} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                                {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                               </div>
-                              {message.text}
+                              {message.message}
                             </div>
                           ))}
                         </div>

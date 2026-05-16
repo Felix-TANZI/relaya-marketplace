@@ -63,6 +63,16 @@ export interface Dispute {
   messages: DisputeMessage[];
 }
 
+export interface OrderChatMessage {
+  id: number;
+  shipment: number;
+  channel: string;
+  sender_role: 'CLIENT' | 'COURIER' | 'SYSTEM';
+  sender_name: string;
+  message: string;
+  created_at: string;
+}
+
 export const customerApi = {
   getFavorites: async (): Promise<Favorite[]> => api.get<Favorite[]>('/auth/favorites/'),
 
@@ -103,4 +113,10 @@ export const customerApi = {
     message: string,
   ): Promise<DisputeMessage> =>
     api.post<DisputeMessage>(`/orders/disputes/${disputeId}/messages/`, { message }),
+
+  getOrderChatMessages: async (orderId: number): Promise<OrderChatMessage[]> =>
+    api.get<OrderChatMessage[]>(`/shipping/orders/${orderId}/messages/`),
+
+  sendOrderChatMessage: async (orderId: number, message: string): Promise<OrderChatMessage> =>
+    api.post<OrderChatMessage>(`/shipping/orders/${orderId}/messages/`, { message }),
 };

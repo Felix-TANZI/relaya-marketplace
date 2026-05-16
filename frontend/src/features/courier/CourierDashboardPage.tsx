@@ -51,12 +51,7 @@ import {
   type CourierShipmentAction,
   type CourierSettings,
 } from "@/services/api/courier";
-import {
-  addCourierConversationMessage,
-  COURIER_CHAT_EVENT,
-  getCourierConversation,
-  type CourierChatMessage,
-} from "@/lib/courierChat";
+import { customerApi, type OrderChatMessage } from "@/services/api/customer";
 
 type CourierTab =
   | "dashboard"
@@ -267,7 +262,7 @@ export default function CourierDashboardPage() {
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [clientMessages, setClientMessages] = useState<CourierChatMessage[]>([]);
+  const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
   const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
@@ -396,10 +391,16 @@ export default function CourierDashboardPage() {
       return;
     }
 
-    const syncConversation = () => setClientMessages(getCourierConversation(selectedShipment.order));
-    syncConversation();
-    window.addEventListener(COURIER_CHAT_EVENT, syncConversation);
-    return () => window.removeEventListener(COURIER_CHAT_EVENT, syncConversation);
+    let cancelled = false;
+    const fetchMessages = () => {
+      customerApi.getOrderChatMessages(selectedShipment.order)
+        .then((msgs) => { if (!cancelled) setClientMessages(msgs); })
+        .catch(() => {});
+    };
+
+    fetchMessages();
+    const interval = window.setInterval(fetchMessages, 12000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [selectedShipment]);
 
   const selectedDisputePermission = selectedDispute
@@ -490,14 +491,12 @@ export default function CourierDashboardPage() {
   const handleReplyClient = async () => {
     if (!selectedShipment || !clientReplyDraft.trim()) return;
     const message = clientReplyDraft.trim();
-    const nextMessages = addCourierConversationMessage(selectedShipment.order, "courier", message, firstName);
-    setClientMessages(nextMessages);
     setClientReplyDraft("");
-
     try {
-      await courierApi.sendShipmentMessage(selectedShipment.id, { channel: "CLIENT", message });
+      const msg = await customerApi.sendOrderChatMessage(selectedShipment.order, message);
+      setClientMessages((prev) => [...prev, msg]);
     } catch {
-      // Le chat local reste actif pour la demo meme si l'endpoint n'est pas disponible.
+      setClientReplyDraft(message);
     }
   };
 
@@ -1250,15 +1249,15 @@ export default function CourierDashboardPage() {
                   <div
                     key={message.id}
                     className={`max-w-[86%] rounded-[16px] px-4 py-3 text-[13px] leading-6 ${
-                      message.role === "courier"
+                      message.sender_role === "COURIER"
                         ? "ml-auto bg-emerald-500 text-white"
                         : "bg-white/8 text-white"
                     }`}
                   >
-                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.role === "courier" ? "text-white/70" : "text-white/45"}`}>
-                      {message.senderName} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "COURIER" ? "text-white/70" : "text-white/45"}`}>
+                      {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                     </div>
-                    {message.text}
+                    {message.message}
                   </div>
                 )) : (
                   <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">

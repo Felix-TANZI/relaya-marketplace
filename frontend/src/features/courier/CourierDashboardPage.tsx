@@ -2097,26 +2097,26 @@ export default function CourierDashboardPage() {
         />
       </div>
 
-      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-4 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-4 shadow-[0_2px_22px_rgba(0,0,0,.4)]">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 items-center justify-center rounded-2xl bg-emerald-500/10 px-2">
+      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-7 w-auto"
+              className="h-6 w-auto sm:h-7"
               style={{ filter: "brightness(0) saturate(100%) invert(63%) sepia(54%) saturate(673%) hue-rotate(104deg) brightness(93%) contrast(92%)" }}
             />
           </div>
-          <div>
-            <div className="text-[15px] font-extrabold tracking-tight text-emerald-300">Espace livreur</div>
-            <div className="text-[11px] text-white/70">{isApprovedCourier ? "" : "Validation du profil en attente"}</div>
+          <div className="min-w-0">
+            <div className="truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]">Espace livreur</div>
+            <div className="truncate text-[10px] text-white/70 sm:text-[11px]">{isApprovedCourier ? "" : "Profil en attente"}</div>
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
-          className="ml-auto flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15 md:hidden"
+          className="ml-auto flex h-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 px-2.5 text-[10px] font-black tracking-[0.12em] text-white transition hover:bg-white/15 md:hidden"
           aria-label="Changer de langue"
         >
           {i18n.language.startsWith("fr") ? "FR" : "EN"}

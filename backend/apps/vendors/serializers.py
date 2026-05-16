@@ -482,10 +482,13 @@ class UpdatePaymentStatusSerializer(serializers.Serializer):
 class AdminUserListSerializer(serializers.ModelSerializer):
     is_vendor            = serializers.SerializerMethodField()
     is_courier           = serializers.SerializerMethodField()
+    courier_status       = serializers.SerializerMethodField()
+    actor_roles          = serializers.SerializerMethodField()
     vendor_status        = serializers.SerializerMethodField()
     vendor_business_name = serializers.SerializerMethodField()
     vendor_plan          = serializers.SerializerMethodField()
     orders_count         = serializers.SerializerMethodField()
+    total_orders         = serializers.SerializerMethodField()
     total_spent          = serializers.SerializerMethodField()
     is_banned            = serializers.SerializerMethodField()
     loyalty_tier         = serializers.SerializerMethodField()
@@ -500,9 +503,10 @@ class AdminUserListSerializer(serializers.ModelSerializer):
             'is_staff', 'is_active', 'is_superuser',
             'date_joined', 'last_login',
             # Rôles
-            'is_vendor', 'is_courier', 'vendor_status', 'vendor_business_name', 'vendor_plan',
+            'is_vendor', 'is_courier', 'courier_status', 'actor_roles',
+            'vendor_status', 'vendor_business_name', 'vendor_plan',
             # Commandes & dépenses
-            'orders_count', 'total_spent',
+            'orders_count', 'total_orders', 'total_spent',
             # Profil & fidélité
             'is_banned', 'loyalty_tier', 'loyalty_points', 'city',
         ]
@@ -514,6 +518,29 @@ class AdminUserListSerializer(serializers.ModelSerializer):
     def get_is_courier(self, obj):
         courier = getattr(obj, 'courier_profile', None)
         return bool(courier and courier.is_active)
+
+    def get_courier_status(self, obj):
+        courier = getattr(obj, 'courier_profile', None)
+        if not courier:
+            return None
+        if courier.is_approved and courier.is_active:
+            return 'APPROVED'
+        if courier.is_active:
+            return 'PENDING'
+        return 'INACTIVE'
+
+    def get_actor_roles(self, obj):
+        roles = ['CLIENT']
+        if hasattr(obj, 'vendor_profile'):
+            roles.append('VENDOR')
+        courier = getattr(obj, 'courier_profile', None)
+        if courier:
+            roles.append('COURIER')
+        if obj.is_staff:
+            roles.append('STAFF')
+        if obj.is_superuser:
+            roles.append('ADMIN')
+        return roles
  
     def get_vendor_status(self, obj):
         if hasattr(obj, 'vendor_profile'):
@@ -534,6 +561,9 @@ class AdminUserListSerializer(serializers.ModelSerializer):
     # ── Commandes ───────────────────────────────────────────────────────────
     def get_orders_count(self, obj):
         return obj.orders.count()
+
+    def get_total_orders(self, obj):
+        return self.get_orders_count(obj)
  
     def get_total_spent(self, obj):
         from django.db.models import Sum

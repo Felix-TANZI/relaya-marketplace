@@ -356,6 +356,7 @@ class OrderCreateSerializer(serializers.Serializer):
                     is_online=True,
                 )
                 .filter(city_filter)
+                .exclude(user=order.user)
                 .annotate(active_shipments_count=Count("shipments", filter=Q(shipments__status__in=active_statuses)))
                 .order_by("active_shipments_count", "updated_at")
                 .select_related("user")

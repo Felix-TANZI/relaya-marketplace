@@ -656,7 +656,7 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
             status=Shipment.Status.CREATED,
             courier=None,
             order__delivery_method=Order.DeliveryMethod.DELIVERY,
-        ).select_related("order", "order__user")
+        ).exclude(order__user=self.request.user).select_related("order", "order__user")
 
         if city:
             from django.db.models import Q
@@ -682,7 +682,7 @@ class CourierClaimShipmentView(generics.GenericAPIView):
             id=id,
             status=Shipment.Status.CREATED,
             courier=None,
-        ).update(
+        ).exclude(order__user=request.user).update(
             courier=courier,
             courier_name=full_name,
             courier_phone=courier.phone or "",
@@ -691,7 +691,7 @@ class CourierClaimShipmentView(generics.GenericAPIView):
 
         if updated_count == 0:
             return Response(
-                {"detail": "Livraison déjà prise en charge ou introuvable."},
+                {"detail": "Livraison déjà prise en charge, introuvable ou liée à votre propre commande."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

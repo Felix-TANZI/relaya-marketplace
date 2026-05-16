@@ -50,9 +50,7 @@ function storeLocallyCancelledOrder(orderId: number) {
 
 function applyLocalCancelledOrders(orderList: Order[]) {
   const ids = new Set(getLocallyCancelledOrderIds());
-  return orderList.filter(
-    (order) => !ids.has(order.id) && !["CANCELLED", "REFUNDED"].includes(order.fulfillment_status)
-  );
+  return orderList.filter((order) => !ids.has(order.id));
 }
 
 export default function OrdersHistoryPage() {

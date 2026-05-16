@@ -87,7 +87,6 @@ class MyOrdersView(generics.ListAPIView):
     def get_queryset(self):
         return (
             Order.objects.filter(user=self.request.user)
-            .exclude(fulfillment_status__in=[Order.FulfillmentStatus.CANCELLED, Order.FulfillmentStatus.REFUNDED])
             .prefetch_related("items")
             .order_by("-created_at")
         )

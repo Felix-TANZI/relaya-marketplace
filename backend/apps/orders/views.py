@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.db.models import Q
 
 from .models import Order, Dispute, DisputeMessage, OrderHistory
 from .serializers import (
@@ -21,6 +22,52 @@ from .serializers import (
 from apps.shipping.models import Shipment, ShipmentEvent
 from apps.shipping.serializers import ShipmentSerializer
 from apps.accounts.models import UserNotification
+
+
+def _phone_variants(phone):
+    raw = (phone or "").strip()
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    variants = {raw, digits}
+    if digits:
+        variants.add(f"+{digits}")
+        if digits.startswith("237"):
+            variants.add(digits[3:])
+            variants.add(f"+237{digits[3:]}")
+        elif len(digits) == 9:
+            variants.add(f"237{digits}")
+            variants.add(f"+237{digits}")
+    return {variant for variant in variants if variant}
+
+
+def _user_phone_values(user):
+    phones = []
+    profile = getattr(user, "profile", None)
+    if profile and profile.phone:
+        phones.append(profile.phone)
+    courier_profile = getattr(user, "courier_profile", None)
+    if courier_profile and courier_profile.phone:
+        phones.append(courier_profile.phone)
+    return phones
+
+
+def user_order_visibility_q(user):
+    query = Q(user=user)
+    phone_variants = set()
+    for phone in _user_phone_values(user):
+        phone_variants.update(_phone_variants(phone))
+    if phone_variants:
+        query |= Q(customer_phone__in=phone_variants)
+    email = (getattr(user, "email", "") or "").strip()
+    if email:
+        query |= Q(customer_email__iexact=email)
+    return query
+
+
+def get_user_order_or_404(request, id):
+    return get_object_or_404(
+        Order.objects.filter(user_order_visibility_q(request.user)).prefetch_related("items"),
+        id=id,
+    )
 
 
 @extend_schema(
@@ -59,7 +106,7 @@ class OrderDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user).prefetch_related("items")
+        return Order.objects.filter(user_order_visibility_q(self.request.user)).prefetch_related("items").distinct()
 
 
 @extend_schema(tags=["Orders"], summary="Suivi de livraison d'une commande")
@@ -68,7 +115,7 @@ class OrderTrackingView(APIView):
     serializer_class = OrderDetailSerializer
 
     def get(self, request, id):
-        order = get_object_or_404(Order, id=id, user=request.user)
+        order = get_user_order_or_404(request, id)
         shipment = getattr(order, 'shipment', None)
         if not shipment:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
@@ -86,8 +133,9 @@ class MyOrdersView(generics.ListAPIView):
 
     def get_queryset(self):
         return (
-            Order.objects.filter(user=self.request.user)
+            Order.objects.filter(user_order_visibility_q(self.request.user))
             .prefetch_related("items")
+            .distinct()
             .order_by("-created_at")
         )
 
@@ -98,7 +146,7 @@ class CancelOrderView(APIView):
     serializer_class = OrderDetailSerializer
 
     def post(self, request, id):
-        order = get_object_or_404(Order, id=id, user=request.user)
+        order = get_user_order_or_404(request, id)
         closed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -152,7 +200,7 @@ class ConfirmReceiptView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
-        order = get_object_or_404(Order, id=id, user=request.user)
+        order = get_user_order_or_404(request, id)
         if order.fulfillment_status not in [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
@@ -203,7 +251,7 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_order(self):
-        return get_object_or_404(Order, id=self.kwargs['id'], user=self.request.user)
+        return get_user_order_or_404(self.request, self.kwargs['id'])
 
     def get_queryset(self):
         return Dispute.objects.filter(order=self.get_order()).prefetch_related('messages')

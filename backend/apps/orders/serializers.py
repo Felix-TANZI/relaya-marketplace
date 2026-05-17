@@ -246,7 +246,7 @@ class OrderCreateSerializer(serializers.Serializer):
             })
 
         if delivery_mode == 'PICKUP':
-            address = f"Retrait en boutique - {validated_data['city']}"
+            address = address or f"Retrait en boutique - {validated_data['city']}"
 
         note = validated_data.get('note', '').strip()
         if delivery_mode == 'PICKUP':

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
+import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import FlashPanel from "@/components/home/FlashPanel";
 import CategorySidebar from "@/components/home/CategorySidebar";
 import ProductCard from "@/components/product/ProductCard";
@@ -250,6 +251,8 @@ export default function HomePage() {
                 })}
               </div>
             </section>
+
+            <TrustBannersStrip />
 
             <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection

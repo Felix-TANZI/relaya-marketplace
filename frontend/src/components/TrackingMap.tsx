@@ -13,27 +13,33 @@ L.Icon.Default.mergeOptions({
 
 const vendorIcon = new L.DivIcon({
   html: `
-    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#1F2937,#111827);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
-      <div style="width:12px;height:12px;border-radius:4px;background:#F8FAFC;position:relative">
-        <span style="position:absolute;left:-2px;right:-2px;top:-4px;height:4px;border-radius:4px 4px 0 0;background:#F47920"></span>
-      </div>
+    <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#0F172A,#1F2937);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 10h16l-1.2-4.2A2.5 2.5 0 0 0 16.4 4H7.6a2.5 2.5 0 0 0-2.4 1.8L4 10Z" fill="#F47920"/>
+        <path d="M5 10v9h14v-9" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 19v-5h6v5" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M3 10h18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      </svg>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
   className: "",
 });
 
 const deliveryIcon = new L.DivIcon({
   html: `
-    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#F47920,#C85E14);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
-      <div style="width:16px;height:10px;border-radius:3px;background:#FFF;position:relative">
-        <span style="position:absolute;right:-5px;top:2px;width:5px;height:6px;border-radius:0 2px 2px 0;background:#FFE2CC"></span>
-      </div>
+    <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#F47920,#C85E14);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 17h6.2l2.7-6H19" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 10h3.8l1.2 1" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        <path d="M5.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM18.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" fill="#FFFFFF"/>
+        <path d="M8 14.5 10.5 9H8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
   className: "",
 });
 

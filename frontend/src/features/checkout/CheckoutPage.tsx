@@ -32,6 +32,37 @@ const PAY_STEPS = [
 
 const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 
+const PICKUP_CENTERS = {
+  "Yaoundé": [
+    {
+      id: "yaounde-mokolo",
+      name: "Centre BelivaY Mokolo",
+      address: "Mokolo, face marché central, Yaoundé",
+      hours: "Lun-Sam · 8h30-18h30",
+    },
+    {
+      id: "yaounde-bastos",
+      name: "Centre BelivaY Bastos",
+      address: "Bastos, rond-point Nlongkak, Yaoundé",
+      hours: "Lun-Sam · 9h00-18h00",
+    },
+  ],
+  "Douala": [
+    {
+      id: "douala-akwa",
+      name: "Centre BelivaY Akwa",
+      address: "Akwa, boulevard de la Liberté, Douala",
+      hours: "Lun-Sam · 8h30-18h30",
+    },
+    {
+      id: "douala-bonapriso",
+      name: "Centre BelivaY Bonapriso",
+      address: "Bonapriso, avenue Charles de Gaulle, Douala",
+      hours: "Lun-Sam · 9h00-18h00",
+    },
+  ],
+} as const;
+
 function readCheckoutSelection() {
   if (typeof window === "undefined") return [];
   try {
@@ -73,6 +104,7 @@ export default function CheckoutPage() {
     phone: user?.phone || "",
     address: "",
     city: "Yaoundé",
+    pickupCenterId: "yaounde-mokolo",
     paymentMethod: "momo",
     orderId: 0,
   });
@@ -85,6 +117,8 @@ export default function CheckoutPage() {
   const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const shippingCost = isPickup ? 0 : 2000;
   const finalTotal = checkoutSubtotal + shippingCost;
+  const pickupCenters = PICKUP_CENTERS[formData.city as keyof typeof PICKUP_CENTERS] ?? PICKUP_CENTERS["Yaoundé"];
+  const selectedPickupCenter = pickupCenters.find((center) => center.id === formData.pickupCenterId) ?? pickupCenters[0];
 
   const runPayment = useCallback(async () => {
     setPayOverlay(true);
@@ -99,10 +133,12 @@ export default function CheckoutPage() {
       const order = await ordersApi.create({
         delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
         city: cityMap[formData.city] || 'YAOUNDE',
-        address: isPickup ? 'Retrait au centre BelivaY' : formData.address,
+        address: isPickup ? `${selectedPickupCenter.name} - ${selectedPickupCenter.address}` : formData.address,
         customer_phone: formData.phone,
         customer_email: '',
-        note: isPickup ? 'CLICK_AND_COLLECT - Retrait au centre BelivaY' : '',
+        note: isPickup
+          ? `CLICK_AND_COLLECT - ${selectedPickupCenter.name} - ${selectedPickupCenter.address} - ${selectedPickupCenter.hours}`
+          : '',
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id,
           qty: item.quantity,
@@ -136,7 +172,7 @@ export default function CheckoutPage() {
     showToast("Paiement confirmé. Redirection vers le suivi de commande...", "success");
     requestAnimationFrame(() => { if (confettiRef.current) launchConfetti(confettiRef.current); });
     window.setTimeout(() => navigate(`/orders/${orderId}`), 900);
-  }, [checkoutItems, formData, isPickup, items.length, clearCart, removeItem, showToast, navigate]);
+  }, [checkoutItems, formData, isPickup, items.length, clearCart, removeItem, selectedPickupCenter, showToast, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +249,10 @@ export default function CheckoutPage() {
               <div className="flex items-center gap-2"><User size={14} className="text-gray-400" /><span>{formData.firstName} {formData.lastName}</span></div>
               <div className="flex items-center gap-2"><Phone size={14} className="text-gray-400" /><span>{formData.phone}</span></div>
               {isPickup ? (
-                <div className="flex items-center gap-2"><Store size={14} className="text-green-500" /><span className="font-medium text-green-700 dark:text-green-400">Click & Collect · {formData.city}</span></div>
+                <>
+                  <div className="flex items-center gap-2"><Store size={14} className="text-green-500" /><span className="font-medium text-green-700 dark:text-green-400">{selectedPickupCenter.name}</span></div>
+                  <div className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 text-gray-400" /><span>{selectedPickupCenter.address}</span></div>
+                </>
               ) : (
                 <div className="flex items-center gap-2"><MapPin size={14} className="text-gray-400" /><span>{formData.address}, {formData.city}</span></div>
               )}
@@ -254,7 +293,7 @@ export default function CheckoutPage() {
         <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
           <form onSubmit={handleSubmit} className="space-y-6">
 
-            {/* Infos personnelles - only for delivery mode, or minimal for pickup */}
+            {/* Infos personnelles - only for delivery mode */}
             {!isPickup && (
               <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
                 <div className="mb-5 flex items-center gap-3">
@@ -265,6 +304,31 @@ export default function CheckoutPage() {
                   <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label><input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} /></div>
                   <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label><input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} /></div>
                   <div className="sm:col-span-2"><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.phone')}</label><input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder={t('checkout.phone_placeholder')} className={inputClass} /><p className="mt-1.5 text-xs text-gray-400">{t('checkout.phone_helper')}</p></div>
+                </div>
+              </section>
+            )}
+
+            {isPickup && (
+              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">1</div>
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Informations de retrait</h2>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label>
+                    <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label>
+                    <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">Numéro pour le retrait</label>
+                    <input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+237 6XX XXX XXX" className={inputClass} />
+                    <p className="mt-1.5 text-xs text-gray-400">Ce numéro servira à envoyer le code et les informations de retrait.</p>
+                  </div>
                 </div>
               </section>
             )}
@@ -300,18 +364,61 @@ export default function CheckoutPage() {
             {/* Pickup info box */}
             {isPickup && (
               <section className="rounded-[1.5rem] border border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-800 dark:bg-green-900/20 sm:rounded-[2rem] sm:p-6">
-                <div className="flex items-start gap-4">
+                <div className="mb-5 flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 text-green-600 dark:bg-green-800">
                     <Store size={24} />
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Retrait au centre BelivaY</h3>
                     <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                      Payez maintenant et récupérez votre commande dans un centre BelivaY proche de chez vous.
-                      Le vendeur et l'acheteur ne se rencontrent jamais directement — BelivaY assure la confidentialité.
-                      Vous recevrez un SMS avec l'adresse du centre et les horaires de retrait sur votre numéro <strong>{formData.phone || user?.phone || "enregistré"}</strong>.
+                      Choisissez le centre où votre colis sera gardé. Vous recevrez les informations de retrait sur le numéro indiqué.
                     </p>
-                    <p className="mt-2 text-sm font-semibold text-green-800 dark:text-green-200"></p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-green-700 dark:text-green-300">Ville de retrait</label>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      {["Yaoundé", "Douala"].map((city) => {
+                        const nextCenters = PICKUP_CENTERS[city as keyof typeof PICKUP_CENTERS];
+                        return (
+                          <button
+                            key={city}
+                            type="button"
+                            onClick={() => setFormData({ ...formData, city, pickupCenterId: nextCenters[0].id })}
+                            className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${formData.city === city ? "bg-green-600 text-white shadow-lg shadow-green-600/20" : "border border-green-200 bg-white text-green-800 hover:border-green-500 dark:border-green-800 dark:bg-gray-900 dark:text-green-200"}`}
+                          >
+                            {city}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-green-700 dark:text-green-300">Centre BelivaY</label>
+                    <div className="grid gap-3">
+                      {pickupCenters.map((center) => (
+                        <button
+                          key={center.id}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, pickupCenterId: center.id })}
+                          className={`rounded-2xl border p-4 text-left transition-all ${selectedPickupCenter.id === center.id ? "border-green-600 bg-white shadow-lg shadow-green-600/10 dark:bg-gray-900" : "border-green-200 bg-white/70 hover:border-green-500 dark:border-green-800 dark:bg-gray-900/70"}`}
+                        >
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100">
+                              <Store size={20} />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-bold text-green-900 dark:text-green-100">{center.name}</p>
+                              <p className="mt-1 text-sm text-green-700 dark:text-green-300">{center.address}</p>
+                              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">{center.hours}</p>
+                            </div>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </section>
@@ -321,7 +428,7 @@ export default function CheckoutPage() {
             <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">
-                  {isPickup ? "1" : "3"}
+                  {isPickup ? "2" : "3"}
                 </div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_payment')}</h2>
               </div>

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -13,27 +13,33 @@ L.Icon.Default.mergeOptions({
 
 const vendorIcon = new L.DivIcon({
   html: `
-    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#1F2937,#111827);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
-      <div style="width:12px;height:12px;border-radius:4px;background:#F8FAFC;position:relative">
-        <span style="position:absolute;left:-2px;right:-2px;top:-4px;height:4px;border-radius:4px 4px 0 0;background:#F47920"></span>
-      </div>
+    <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#0F172A,#1F2937);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M4 10h16l-1.2-4.2A2.5 2.5 0 0 0 16.4 4H7.6a2.5 2.5 0 0 0-2.4 1.8L4 10Z" fill="#F47920"/>
+        <path d="M5 10v9h14v-9" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M9 19v-5h6v5" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M3 10h18" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+      </svg>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
   className: "",
 });
 
 const deliveryIcon = new L.DivIcon({
   html: `
-    <div style="width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#F47920,#C85E14);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
-      <div style="width:16px;height:10px;border-radius:3px;background:#FFF;position:relative">
-        <span style="position:absolute;right:-5px;top:2px;width:5px;height:6px;border-radius:0 2px 2px 0;background:#FFE2CC"></span>
-      </div>
+    <div style="width:38px;height:38px;border-radius:50%;border:3px solid rgba(255,255,255,.95);background:linear-gradient(135deg,#F47920,#C85E14);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 18px rgba(0,0,0,.28)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M7 17h6.2l2.7-6H19" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M10 10h3.8l1.2 1" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+        <path d="M5.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM18.5 19a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" fill="#FFFFFF"/>
+        <path d="M8 14.5 10.5 9H8" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
   `,
-  iconSize: [32, 32],
-  iconAnchor: [16, 16],
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
   className: "",
 });
 
@@ -97,6 +103,29 @@ const NEIGHBORHOODS: Record<string, [number, number]> = {
 // Default: Mokolo (centre commercial, point de départ par défaut)
 const MOKOLO: [number, number] = NEIGHBORHOODS["mokolo"];
 const DEFAULT_DEST: [number, number] = NEIGHBORHOODS["biyemassi"];
+const GEOCODE_CACHE_KEY = "belivay_geocode_cache_v1";
+
+type GeocodeCache = Record<string, [number, number]>;
+
+function readGeocodeCache(): GeocodeCache {
+  try {
+    const raw = window.localStorage.getItem(GEOCODE_CACHE_KEY);
+    const parsed = raw ? JSON.parse(raw) : {};
+    return parsed && typeof parsed === "object" ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeGeocodeCache(query: string, coords: [number, number]) {
+  try {
+    const cache = readGeocodeCache();
+    cache[query] = coords;
+    window.localStorage.setItem(GEOCODE_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    // Cache best-effort: la carte doit continuer a fonctionner sans localStorage.
+  }
+}
 
 /** Resolve an address string to GPS coordinates */
 function resolveAddress(address?: string | null, city?: string | null): [number, number] {
@@ -110,6 +139,40 @@ function resolveAddress(address?: string | null, city?: string | null): [number,
   if (search.includes("douala")) return NEIGHBORHOODS["douala"];
   // Default to Yaoundé center
   return NEIGHBORHOODS["yaounde"];
+}
+
+function buildGeocodeQuery(address?: string | null, city?: string | null) {
+  const parts = [address, city, "Cameroon"]
+    .map((part) => (part || "").trim())
+    .filter(Boolean);
+  return parts.length > 1 ? parts.join(", ") : "";
+}
+
+async function geocodeAddress(query: string, signal: AbortSignal): Promise<[number, number] | null> {
+  const cache = readGeocodeCache();
+  if (cache[query]) return cache[query];
+
+  const params = new URLSearchParams({
+    format: "jsonv2",
+    limit: "1",
+    addressdetails: "1",
+    countrycodes: "cm",
+    q: query,
+  });
+  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+    signal,
+    headers: { Accept: "application/json", "Accept-Language": "fr" },
+  });
+  if (!response.ok) return null;
+
+  const results = await response.json() as Array<{ lat?: string; lon?: string }>;
+  const first = results[0];
+  if (!first?.lat || !first.lon) return null;
+
+  const coords: [number, number] = [Number(first.lat), Number(first.lon)];
+  if (!Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) return null;
+  writeGeocodeCache(query, coords);
+  return coords;
 }
 
 interface TrackingMapProps {
@@ -157,13 +220,44 @@ export default function TrackingMap({
   const origin = vendorLocation || MOKOLO;
 
   // Destination: resolve from address string, or use explicit prop, or default
-  const destination = customerLocation || resolveAddress(destinationAddress, destinationCity);
+  const fallbackDestination = customerLocation || resolveAddress(destinationAddress, destinationCity);
+  const geocodeQuery = useMemo(
+    () => customerLocation ? "" : buildGeocodeQuery(destinationAddress, destinationCity),
+    [customerLocation, destinationAddress, destinationCity],
+  );
+  const [geocodedDestination, setGeocodedDestination] = useState<[number, number] | null>(null);
+
+  useEffect(() => {
+    if (!geocodeQuery) {
+      setGeocodedDestination(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    geocodeAddress(geocodeQuery, controller.signal)
+      .then((coords) => {
+        if (!controller.signal.aborted) setGeocodedDestination(coords);
+      })
+      .catch(() => {
+        if (!controller.signal.aborted) setGeocodedDestination(null);
+      });
+
+    return () => controller.abort();
+  }, [geocodeQuery]);
+
+  const destination = geocodedDestination || fallbackDestination;
 
   // Delivery truck: midway between origin and destination
-  const deliveryPos = currentLocation || [
-    (origin[0] + destination[0]) / 2 + (Math.random() * 0.01 - 0.005),
-    (origin[1] + destination[1]) / 2 + (Math.random() * 0.01 - 0.005),
-  ] as [number, number];
+  const deliveryPos = useMemo(() => {
+    if (currentLocation) return currentLocation;
+    const seed = Math.sin((origin[0] + destination[0]) * 97 + (origin[1] + destination[1]) * 53);
+    const latOffset = seed * 0.004;
+    const lngOffset = Math.cos(seed * 11) * 0.004;
+    return [
+      (origin[0] + destination[0]) / 2 + latOffset,
+      (origin[1] + destination[1]) / 2 + lngOffset,
+    ] as [number, number];
+  }, [currentLocation, destination, origin]);
 
   const routePoints: [number, number][] = [origin, deliveryPos, destination];
 

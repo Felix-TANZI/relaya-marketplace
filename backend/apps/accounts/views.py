@@ -733,6 +733,20 @@ class NotificationMarkReadView(APIView):
         return Response(NotificationSerializer(notification).data)
 
 
+@extend_schema(tags=["Client"], summary="Delete one notification")
+class NotificationDeleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, id):
+        notification = get_object_or_404(
+            UserNotification,
+            id=id,
+            user=request.user,
+        )
+        notification.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 @extend_schema(tags=["Client"], summary="Mark all notifications as read")
 class NotificationMarkAllReadView(APIView):
     permission_classes = [IsAuthenticated]

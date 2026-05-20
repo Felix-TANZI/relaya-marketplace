@@ -4490,8 +4490,7 @@ def admin_list_users(request):
     from apps.vendors.serializers import AdminUserListSerializer
     from apps.accounts.models import UserProfile
     
-    users = User.objects.select_related('vendor_profile', 'courier_profile').prefetch_related('orders')
-    users = users.filter(Q(vendor_profile__isnull=False) | Q(courier_profile__isnull=False)).filter(is_staff=False)
+    users = User.objects.select_related('vendor_profile', 'courier_profile', 'profile').prefetch_related('orders')
     
     # Filtre par rôle
     role = request.query_params.get('role')
@@ -4500,7 +4499,9 @@ def admin_list_users(request):
     elif role == 'courier':
         users = users.filter(courier_profile__isnull=False)
     elif role == 'customer':
-        users = users.none()
+        users = users.filter(is_staff=False, is_superuser=False)
+    elif role in {'staff', 'admin'}:
+        users = users.filter(Q(is_staff=True) | Q(is_superuser=True))
     
     # Filtre actif/inactif
     is_active = request.query_params.get('is_active')

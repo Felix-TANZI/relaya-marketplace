@@ -73,6 +73,7 @@ class ShipmentMessage(models.Model):
         SUPPORT = "SUPPORT", "Support"
 
     class SenderRole(models.TextChoices):
+        CLIENT = "CLIENT", "Client"
         COURIER = "COURIER", "Livreur"
         SYSTEM = "SYSTEM", "Systeme"
 

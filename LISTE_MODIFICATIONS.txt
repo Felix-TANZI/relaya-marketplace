@@ -1,0 +1,187 @@
+LISTE DES MODIFICATIONS ET CORRECTIONS
+======================================
+
+Date : 14 mai 2026
+Projet : Relaya / BelivaY Marketplace
+
+
+1. PAGE D'ACCUEIL CLIENT
+------------------------
+- Correction de la position de la carte "Catégories".
+- Correction de la position de la carte "Flash Deals".
+- Les deux cartes sont maintenant plus proches des bords de l'écran.
+- Le contenu principal du milieu dispose de plus d'espace.
+- Le carrousel, les produits et les sections centrales sont moins compressés.
+- La correction conserve le design existant des cartes, sans les refaire.
+
+
+2. PANIER CLIENT
+----------------
+- Ajout de la sélection et désélection des produits dans le panier.
+- Le client peut choisir uniquement les produits qu'il veut payer.
+- Le total du panier se met à jour selon les produits sélectionnés.
+- Le checkout ne prend en compte que les produits cochés.
+
+
+3. CHECKOUT / PAIEMENT
+----------------------
+- Amélioration du responsive mobile sur la page de paiement.
+- Correction de l'affichage sur les petits écrans pour "Passer une commande" et "Payer maintenant".
+- Après paiement, le client est redirigé vers la page de suivi de la commande.
+- Remplacement de "Gratuit" par "0 FCFA" pour éviter l'affichage gratuit dans les frais concernés.
+
+
+4. COMMANDES CLIENT
+-------------------
+- Ajout d'un bouton "Annuler" dans "Mes commandes".
+- Le client peut annuler une commande depuis la liste des commandes.
+- Ajout d'un état local de secours si le backend ne répond pas encore à l'annulation.
+- Les détails de commande affichent les frais à 0 FCFA au lieu de "Gratuit".
+
+
+5. NOTIFICATIONS CLIENT
+-----------------------
+- Les notifications sont maintenant cliquables.
+- Le client peut voir le détail d'une notification.
+- Si la notification concerne une commande, le client peut ouvrir le détail de la commande.
+- Ajout d'un bouton pour rediriger vers "Mes commandes".
+- Les notifications non lues passent en lues après ouverture.
+
+
+6. CHAT CLIENT - LIVREUR
+------------------------
+- Ajout d'un chat lorsque le client clique sur "Contacter le livreur".
+- Le client peut envoyer un message au livreur depuis le détail de commande.
+- Le livreur peut lire ce message dans son tableau de bord.
+- Le livreur peut répondre directement au client sans autorisation administrateur.
+- Ajout d'un stockage local pour gérer le chat côté démo.
+
+
+7. LITIGES CLIENT
+-----------------
+- Amélioration de l'interface d'ouverture de litige.
+- Le formulaire de litige ressemble davantage à la capture fournie.
+- Ajout d'une fenêtre modale propre avec :
+  - motif du litige,
+  - description,
+  - montant de la commande,
+  - bouton d'ouverture du litige,
+  - bouton d'annulation.
+- Les motifs de litige sont proposés dans une liste structurée.
+
+
+8. LITIGES LIVREUR
+------------------
+- Le livreur peut voir les litiges qui le concernent.
+- Le livreur ne peut répondre à un litige que si l'administrateur lui donne la permission.
+- Ajout d'un bouton pour demander l'autorisation de répondre à l'administrateur.
+- Si l'autorisation est accordée côté backend, le champ de réponse devient disponible.
+- Ajout d'un message d'état pour savoir si la demande est envoyée, verrouillée ou autorisée.
+
+
+9. TABLEAU DE BORD LIVREUR
+--------------------------
+- Les courses affichent maintenant les prix.
+- Les détails des commandes sont plus complets côté livreur.
+- Ajout de l'adresse, du vendeur, du total de commande et du gain estimé.
+- Ajout du chat client dans la mission sélectionnée.
+- Suppression du libellé "Traiter le scan test".
+- Remplacement par "Traiter le scan".
+- vue responsive livreur
+
+10. FICHE PRODUIT
+-----------------
+- Ajout d'un bouton pour mettre un produit en favoris depuis la fiche produit.
+- Le client peut ajouter ou retirer un produit des favoris depuis cette page.
+- L'état du bouton change si le produit est déjà en favoris.
+
+
+11. FAVORIS CLIENT
+------------------
+- Ajout d'un bouton "Ajouter au panier" dans les favoris.
+- Ajout d'un bouton "Acheter maintenant" dans les favoris.
+- "Acheter maintenant" ajoute le produit au panier et redirige vers le checkout.
+
+
+12. NAVIGATION MOBILE CLIENT
+----------------------------
+- Correction du problème où certaines redirections envoyaient d'abord en bas de page.
+- Ajout d'un scroll automatique en haut de page à chaque changement de route.
+- Amélioration du confort de navigation sur mobile.
+
+
+13. CONFIGURATION VITE / FRONTEND
+---------------------------------
+- Ajout d'une option `VITE_CACHE_DIR` dans la configuration Vite.
+- Cela permet d'utiliser un cache alternatif si `node_modules/.vite` n'est pas accessible en écriture.
+- Utile pour contourner certains problèmes de permission en local.
+
+
+14. BASE DE DONNEES / DEPLOIEMENT BACKEND
+-----------------------------------------
+- Analyse de l'erreur Django :
+  "failed to resolve host pg-38426783-junsts719-37a3.c.aivencloud.com".
+- Conclusion : le backend utilisait un ancien host Aiven.
+- La base de données était allumée, mais le host configuré côté Render était incorrect.
+- Ajout du support `DATABASE_URL` dans la configuration Django.
+- La configuration Django lit maintenant `DATABASE_URL` en priorité.
+- Ajout du support SSL via `sslmode=require`.
+- Ajout d'un timeout de connexion PostgreSQL.
+- Mise à jour de `.env.example` avec :
+  - DATABASE_URL,
+  - POSTGRES_SSLMODE,
+  - POSTGRES_CONNECT_TIMEOUT.
+
+
+15. VARIABLES A METTRE DANS RENDER
+----------------------------------
+- Nouvelle base Aiven :
+  Host : pg-1866e92d-jacquyngonga-6292.g.aivencloud.com
+  Port : 28415
+  Database : defaultdb
+  User : avnadmin
+  SSL mode : require
+
+- Variable recommandée :
+  DATABASE_URL=postgres://avnadmin:MOT_DE_PASSE_AIVEN@pg-1866e92d-jacquyngonga-6292.g.aivencloud.com:28415/defaultdb?sslmode=require
+
+- Important :
+  Remplacer MOT_DE_PASSE_AIVEN par le vrai mot de passe dans Render.
+  Ne pas partager le vrai mot de passe dans le code ou dans une conversation.
+  Supprimer ou corriger les anciennes variables POSTGRES_* si elles pointent vers l'ancien host.
+
+
+16. VERIFICATIONS EFFECTUEES
+----------------------------
+- Vérification TypeScript frontend :
+  npx tsc -b --pretty false
+  Résultat : OK.
+
+- Vérification syntaxe Python :
+  python -m py_compile backend/relaya/settings/base.py
+  Résultat : OK.
+
+- La build Vite complète a été bloquée par un problème de permission sur node_modules/.vite-temp.
+- Le problème de build n'était pas lié aux modifications TypeScript.
+
+
+17. FICHIERS PRINCIPAUX MODIFIES
+--------------------------------
+- backend/relaya/settings/base.py
+- .env.example
+- frontend/vite.config.ts
+- frontend/src/app/layout/AppLayout.tsx
+- frontend/src/components/home/CategorySidebar.tsx
+- frontend/src/components/home/FlashPanel.tsx
+- frontend/src/features/cart/CartPage.tsx
+- frontend/src/features/checkout/CheckoutPage.tsx
+- frontend/src/features/orders/OrdersHistoryPage.tsx
+- frontend/src/features/orders/OrderDetailPage.tsx
+- frontend/src/features/notifications/NotificationsPage.tsx
+- frontend/src/features/catalog/ProductDetailPage.tsx
+- frontend/src/features/wishlist/WishlistPage.tsx
+- frontend/src/features/courier/CourierDashboardPage.tsx
+- frontend/src/services/api/orders.ts
+- frontend/src/services/api/courier.ts
+- frontend/src/lib/courierChat.ts
+

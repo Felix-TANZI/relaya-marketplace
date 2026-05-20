@@ -9,6 +9,31 @@ interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
 }
 
+function isTransientNetworkError(error: unknown) {
+  return error instanceof TypeError && /failed to fetch|network/i.test(error.message);
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
+  const delays = [450, 1200];
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientNetworkError(error) || attempt === delays.length) break;
+      await wait(delays[attempt]);
+    }
+  }
+
+  throw lastError;
+}
+
 /**
  * Rafraîchir le token JWT automatiquement
  */
@@ -20,7 +45,7 @@ async function refreshAccessToken(): Promise<string | null> {
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
+    const response = await fetchWithNetworkRetry(`${API_BASE_URL}/api/auth/refresh/`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +102,7 @@ export async function http<T>(
   }
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithNetworkRetry(url, {
       ...config,
       headers,
     });
@@ -89,7 +114,7 @@ export async function http<T>(
       if (newToken) {
         // Retry la requête avec le nouveau token
         headers['Authorization'] = `Bearer ${newToken}`;
-        const retryResponse = await fetch(url, {
+        const retryResponse = await fetchWithNetworkRetry(url, {
           ...config,
           headers,
         });
@@ -120,6 +145,9 @@ export async function http<T>(
     return response.json();
   } catch (error) {
     console.error('HTTP Error:', error);
+    if (isTransientNetworkError(error)) {
+      throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+    }
     throw error;
   }
 }

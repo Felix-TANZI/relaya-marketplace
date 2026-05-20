@@ -168,11 +168,9 @@ export default function Header() {
     };
 
     window.addEventListener("belivay-new-notification", handleNewNotif);
-    window.addEventListener("belivay-cart-updated", handleNewNotif);
 
     return () => {
       window.removeEventListener("belivay-new-notification", handleNewNotif);
-      window.removeEventListener("belivay-cart-updated", handleNewNotif);
     };
   }, []);
 
@@ -230,15 +228,15 @@ export default function Header() {
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
-      <div className="container mx-auto px-4">
+      <div className="container mx-auto px-2.5 sm:px-4">
         {/* Top Bar */}
-        <div className="flex items-center justify-between py-4">
+        <div className="flex items-center justify-between gap-1.5 py-2.5 sm:gap-4 sm:py-4">
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0" aria-label="Accueil BelivaY">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              style={{ height: "40px", width: "auto", display: "block", objectFit: "contain" }}
+              className="h-8 w-auto object-contain max-[380px]:h-7 sm:h-10"
             />
           </Link>
 
@@ -391,7 +389,7 @@ export default function Header() {
           </div>
 
           {/* Right Actions */}
-          <div className="flex items-center gap-2 lg:gap-4">
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-3 lg:gap-4">
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
@@ -406,15 +404,15 @@ export default function Header() {
               </span>
             </button>
 
-            {/* Theme Toggle */}
+            {/* Theme Toggle - desktop only */}
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="hidden sm:flex rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
             >
               {theme === "dark" ? (
-                <Sun size={20} className="text-primary" />
+                <Sun size={18} className="text-primary sm:h-5 sm:w-5" />
               ) : (
-                <Moon size={20} className="text-text-light-secondary" />
+                <Moon size={18} className="text-text-light-secondary sm:h-5 sm:w-5" />
               )}
             </button>
 
@@ -422,11 +420,11 @@ export default function Header() {
             <Link
               to="/cart"
               id="cart"
-              className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="relative rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
             >
               <ShoppingCart
-                size={24}
-                className="text-text-light dark:text-text-dark"
+                size={21}
+                className="text-text-light dark:text-text-dark sm:h-6 sm:w-6"
               />
               {totalItems > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -440,9 +438,9 @@ export default function Header() {
               <Link
                 to="/notifications"
                 onClick={() => { setNotifCount(0); localStorage.setItem("belivay_notif_count", "0"); }}
-                className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                className="relative rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
               >
-                <Bell size={22} className="text-text-light dark:text-text-dark" />
+                <Bell size={20} className="text-text-light dark:text-text-dark sm:h-[22px] sm:w-[22px]" />
                 {notifCount > 0 && (
                   <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {notifCount > 9 ? "9+" : notifCount}
@@ -451,12 +449,12 @@ export default function Header() {
               </Link>
             )}
 
-            {/* Wishlist */}
+            {/* Wishlist - desktop only */}
             <Link
               to="/wishlist"
-              className="relative p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="relative rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt hidden sm:flex sm:p-2"
             >
-              <Heart size={22} className="text-text-light dark:text-text-dark" />
+              <Heart size={20} className="text-text-light dark:text-text-dark sm:h-[22px] sm:w-[22px]" />
               {favoritesCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                   {favoritesCount}
@@ -480,9 +478,9 @@ export default function Header() {
                   id="account"
                   data-tutorial="header-profile"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt transition-all"
+                  className="flex items-center gap-1 rounded-lg px-1 py-1 transition-all hover:bg-bg-light-alt dark:hover:bg-bg-dark-alt sm:gap-2 sm:px-4 sm:py-2"
                 >
-                  <div className="w-9 h-9 overflow-hidden bg-primary rounded-full flex items-center justify-center ring-2 ring-primary/15">
+                  <div className="flex h-8 w-8 items-center justify-center overflow-hidden rounded-full bg-primary ring-2 ring-primary/15 sm:h-9 sm:w-9">
                     {profileAvatar ? (
                       <img
                         src={profileAvatar}
@@ -498,7 +496,7 @@ export default function Header() {
                   </span>
                   <ChevronDown
                     size={16}
-                    className="text-text-light-secondary dark:text-text-dark-secondary"
+                    className="hidden text-text-light-secondary dark:text-text-dark-secondary sm:block"
                   />
                 </button>
 
@@ -640,7 +638,7 @@ export default function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              className="rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt lg:hidden sm:p-2"
             >
               {mobileMenuOpen ? (
                 <X size={24} className="text-text-light dark:text-text-dark" />
@@ -856,6 +854,23 @@ export default function Header() {
                 </Link>
               </>
             )}
+
+            <button
+              onClick={() => {
+                toggleTheme();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full text-left px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all flex items-center gap-3"
+            >
+              {theme === "dark" ? (
+                <Sun size={16} className="text-primary" />
+              ) : (
+                <Moon size={16} className="text-text-light-secondary" />
+              )}
+              <span className="font-medium text-text-light dark:text-text-dark">
+                {theme === "dark" ? "Mode clair" : "Mode sombre"}
+              </span>
+            </button>
 
             <button
               onClick={() => {

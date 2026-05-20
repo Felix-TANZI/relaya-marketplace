@@ -507,6 +507,93 @@ class CourierDisputeListView(generics.ListAPIView):
         )
 
 
+@extend_schema(tags=["Shipping"], summary="Chat client ↔ livreur (accessible par les deux parties)")
+class ClientOrderMessagesView(generics.GenericAPIView):
+    """
+    GET  /api/shipping/orders/{order_id}/messages/  → liste les messages du canal CLIENT
+    POST /api/shipping/orders/{order_id}/messages/  → envoie un message (client ou livreur)
+
+    Accès :
+      - Le client propriétaire de la commande (sender_role=CLIENT)
+      - Le livreur assigné au shipment de cette commande (sender_role=COURIER)
+    Un UserNotification est créé pour l'autre partie à chaque message.
+    """
+    serializer_class = ShipmentMessageCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    def _resolve(self):
+        """Retourne (shipment, sender_role) selon le rôle de l'appelant."""
+        order_id = self.kwargs["order_id"]
+        user = self.request.user
+
+        # 1. Accès client : l'utilisateur est propriétaire de la commande
+        order_qs = Order.objects.filter(id=order_id, user=user).select_related("shipment__courier__user", "shipment__order")
+        order = order_qs.first()
+        if order:
+            shipment = getattr(order, "shipment", None)
+            if not shipment:
+                from rest_framework.exceptions import NotFound
+                raise NotFound("Aucune livraison pour cette commande.")
+            return shipment, ShipmentMessage.SenderRole.CLIENT
+
+        # 2. Accès livreur : l'utilisateur est le courier assigné au shipment de cette commande
+        courier = getattr(user, "courier_profile", None)
+        if courier and courier.is_approved:
+            shipment = (
+                Shipment.objects
+                .filter(order_id=order_id, courier=courier)
+                .select_related("order__user", "courier__user")
+                .first()
+            )
+            if shipment:
+                return shipment, ShipmentMessage.SenderRole.COURIER
+
+        raise PermissionDenied("Vous n'avez pas accès à ces messages.")
+
+    def get(self, request, order_id):
+        shipment, _ = self._resolve()
+        messages = shipment.messages.filter(channel=ShipmentMessage.Channel.CLIENT)
+        return Response(ShipmentMessageSerializer(messages, many=True).data)
+
+    def post(self, request, order_id):
+        shipment, sender_role = self._resolve()
+        message_text = (request.data.get("message") or "").strip()
+        if not message_text:
+            return Response({"detail": "Le message ne peut pas être vide."}, status=status.HTTP_400_BAD_REQUEST)
+
+        msg = ShipmentMessage.objects.create(
+            shipment=shipment,
+            sender=request.user,
+            channel=ShipmentMessage.Channel.CLIENT,
+            sender_role=sender_role,
+            message=message_text,
+        )
+
+        # Notification pour l'autre partie
+        if sender_role == ShipmentMessage.SenderRole.CLIENT:
+            # Client → notifier le livreur
+            if shipment.courier:
+                sender_display = request.user.get_full_name().strip() or request.user.username
+                UserNotification.objects.create(
+                    user=shipment.courier.user,
+                    title=f"Message client — Commande #{order_id}",
+                    message=f"{sender_display} : {message_text[:100]}",
+                    notification_type=UserNotification.NotificationType.ORDER,
+                    action_url="/courier",
+                )
+        else:
+            # Livreur → notifier le client
+            UserNotification.objects.create(
+                user=shipment.order.user,
+                title="Réponse de votre livreur",
+                message=f"{request.user.get_full_name().strip() or 'Livreur'} : {message_text[:100]}",
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url=f"/orders/{order_id}",
+            )
+
+        return Response(ShipmentMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+
+
 @extend_schema(tags=["Shipping"], summary="Messages d'une livraison pour le livreur")
 class CourierShipmentMessageListCreateView(generics.GenericAPIView):
     serializer_class = ShipmentMessageCreateSerializer
@@ -656,7 +743,7 @@ class CourierAvailableShipmentsView(generics.ListAPIView):
             status=Shipment.Status.CREATED,
             courier=None,
             order__delivery_method=Order.DeliveryMethod.DELIVERY,
-        ).select_related("order", "order__user")
+        ).exclude(order__user=self.request.user).select_related("order", "order__user")
 
         if city:
             from django.db.models import Q
@@ -682,7 +769,7 @@ class CourierClaimShipmentView(generics.GenericAPIView):
             id=id,
             status=Shipment.Status.CREATED,
             courier=None,
-        ).update(
+        ).exclude(order__user=request.user).update(
             courier=courier,
             courier_name=full_name,
             courier_phone=courier.phone or "",
@@ -691,7 +778,7 @@ class CourierClaimShipmentView(generics.GenericAPIView):
 
         if updated_count == 0:
             return Response(
-                {"detail": "Livraison déjà prise en charge ou introuvable."},
+                {"detail": "Livraison déjà prise en charge, introuvable ou liée à votre propre commande."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

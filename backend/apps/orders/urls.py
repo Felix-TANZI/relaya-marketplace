@@ -8,6 +8,7 @@ from .views import (
     MyOrdersView,
     OrderTrackingView,
     ConfirmReceiptView,
+    CancelOrderView,
     OrderDisputeListCreateView,
     DisputeMessageCreateView,
 )
@@ -17,6 +18,7 @@ urlpatterns = [
     path("my-orders/", MyOrdersView.as_view(), name="my-orders"), # List orders for the authenticated user
     path("<int:id>/", OrderDetailView.as_view(), name="order-detail"), # Retrieve order details by ID
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),
+    path("<int:id>/cancel/", CancelOrderView.as_view(), name="order-cancel"),
     path("<int:id>/confirm-receipt/", ConfirmReceiptView.as_view(), name="order-confirm-receipt"),
     path("<int:id>/disputes/", OrderDisputeListCreateView.as_view(), name="order-disputes"),
     path("disputes/<int:dispute_id>/messages/", DisputeMessageCreateView.as_view(), name="order-dispute-messages"),

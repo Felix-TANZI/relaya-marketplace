@@ -386,6 +386,8 @@ export interface AdminUser {
   is_superuser:         boolean;
   is_vendor:            boolean;
   is_courier?:          boolean;
+  courier_status?:      'APPROVED' | 'PENDING' | 'INACTIVE' | null;
+  actor_roles?:         Array<'CLIENT' | 'VENDOR' | 'COURIER' | 'STAFF' | 'ADMIN'>;
   is_banned:            boolean;
   total_orders:         number;
   total_spent:          number;

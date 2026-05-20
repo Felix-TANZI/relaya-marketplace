@@ -26,12 +26,37 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
+function isTransientNetworkError(error: unknown) {
+  return error instanceof TypeError && /failed to fetch|network/i.test(error.message);
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
+  const delays = [450, 1200];
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= delays.length; attempt += 1) {
+    try {
+      return await fetch(input, init);
+    } catch (error) {
+      lastError = error;
+      if (!isTransientNetworkError(error) || attempt === delays.length) break;
+      await wait(delays[attempt]);
+    }
+  }
+
+  throw lastError;
+}
+
 async function refreshAccessToken(): Promise<string | null> {
   const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken) return null;
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh/`, {
+    const response = await fetchWithNetworkRetry(`${API_BASE_URL}/api/auth/refresh/`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh: refreshToken }),
@@ -85,19 +110,34 @@ if (!isFormData && !headers['Content-Type']) {
 const token = localStorage.getItem('access_token');
 if (token) headers['Authorization'] = `Bearer ${token}`;
 
-let response = await fetch(url, {
-  ...fetchOptions,
-  headers,
-});
+let response: Response;
+try {
+  response = await fetchWithNetworkRetry(url, {
+    ...fetchOptions,
+    headers,
+  });
+} catch (error) {
+  if (isTransientNetworkError(error)) {
+    throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+  }
+  throw error;
+}
 
   if (response.status === 401 && localStorage.getItem('refresh_token')) {
     const newToken = await refreshAccessToken();
     if (newToken) {
       headers['Authorization'] = `Bearer ${newToken}`;
-      response = await fetch(url, {
-        ...fetchOptions,
-        headers,
-      });
+      try {
+        response = await fetchWithNetworkRetry(url, {
+          ...fetchOptions,
+          headers,
+        });
+      } catch (error) {
+        if (isTransientNetworkError(error)) {
+          throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+        }
+        throw error;
+      }
     }
   }
 

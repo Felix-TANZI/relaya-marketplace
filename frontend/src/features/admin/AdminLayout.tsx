@@ -411,7 +411,7 @@ export default function AdminLayout() {
 
         {/* ── Zone B : gradient + toutes les actions ── */}
         <div
-          className="flex-1 flex items-center gap-3 px-3 sm:px-4"
+          className="flex-1 flex items-center gap-2 px-2.5 sm:gap-3 sm:px-4"
           style={{
             background: TOPBAR_GRADIENT,
             borderBottom: '1px solid rgba(220,38,38,0.1)',
@@ -420,15 +420,15 @@ export default function AdminLayout() {
           {/* Burger mobile (masqué desktop car zone A le remplace) */}
           <button
             onClick={() => setSidebarOpen(true)}
-            className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all flex-shrink-0"
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl lg:hidden"
             style={{ color: 'rgba(249,250,251,0.65)', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)' }}
           >
-            <Menu size={17} />
+            <Menu size={16} />
           </button>
 
           {/* Logo mobile (visible uniquement sur mobile, zone A n'existe pas) */}
-          <Link to="/admin/dashboard" className="lg:hidden mr-auto flex min-w-0 items-center pr-2">
-            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-8 w-auto max-w-[132px] object-contain sm:h-9 sm:max-w-[180px]" />
+          <Link to="/admin/dashboard" className="mr-auto flex min-w-0 items-center pr-1 lg:hidden">
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-7 w-auto max-w-[108px] object-contain sm:h-9 sm:max-w-[180px]" />
           </Link>
 
           {/* Indicateur production (desktop) */}
@@ -446,12 +446,12 @@ export default function AdminLayout() {
           <div className="hidden flex-1 lg:block" />
 
           {/* Actions */}
-          <div className="flex flex-shrink-0 items-center gap-2 sm:gap-1.5">
+          <div className="flex flex-shrink-0 items-center gap-1 sm:gap-1.5">
 
             {/* Langue */}
             <button
               onClick={() => i18n.changeLanguage(i18n.language === 'fr' ? 'en' : 'fr')}
-              className="w-9 h-9 rounded-xl flex items-center justify-center text-[11px] font-black transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-[10px] font-black transition-all sm:h-9 sm:w-9 sm:rounded-xl sm:text-[11px]"
               style={{ color: 'rgba(249,250,251,0.55)', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
@@ -462,32 +462,32 @@ export default function AdminLayout() {
             {/* Thème */}
             <button
               onClick={toggleTheme}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-all sm:h-9 sm:w-9 sm:rounded-xl"
               style={{ color: 'rgba(249,250,251,0.55)', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
             >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+              {theme === 'dark' ? <Sun size={14} /> : <Moon size={14} />}
             </button>
 
             {/* Notifications */}
             <button
               onClick={() => navigate('/admin/notifications')}
-              className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+              className="flex h-8 w-8 items-center justify-center rounded-lg transition-all max-[360px]:hidden sm:h-9 sm:w-9 sm:rounded-xl"
               style={{ color: 'rgba(249,250,251,0.55)', background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.1)' }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.07)')}
             >
-              <Bell size={15} />
+              <Bell size={14} />
             </button>
 
             {/* Séparateur */}
-            <div className="w-px h-6 mx-1" style={{ background: 'rgba(255,255,255,0.1)' }} />
+            <div className="mx-1 hidden h-6 w-px sm:block" style={{ background: 'rgba(255,255,255,0.1)' }} />
 
             {/* Avatar + nom + logout */}
             <div className="flex items-center gap-2">
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center font-black text-[12px] text-white flex-shrink-0"
+                className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg text-[11px] font-black text-white sm:rounded-xl sm:text-[12px]"
                 style={{
                   background: 'linear-gradient(135deg,#DC2626,#FCA5A5)',
                   border: '2px solid rgba(220,38,38,0.45)',

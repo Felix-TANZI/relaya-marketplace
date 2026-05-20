@@ -2,12 +2,12 @@ import { useState, useMemo, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
+import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import FlashPanel from "@/components/home/FlashPanel";
 import CategorySidebar from "@/components/home/CategorySidebar";
-import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import ProductCard from "@/components/product/ProductCard";
 import {
-  AlertTriangle, ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
+  ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
   Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
 } from "lucide-react";
 import {
@@ -50,7 +50,7 @@ export default function HomePage() {
         const results = response.results ?? [];
         if (results.length > 0) {
           setApiProducts(results);
-          setUsingMockProducts(false);
+          setUsingMockProducts(results.length < 20);
         }
       })
       .catch(() => {
@@ -160,7 +160,7 @@ export default function HomePage() {
     }
 
     return [...allFiltered]
-      .sort((a, b) => ((b.discount ?? 0) * 1000 + (b.reviews_count ?? 0)) - ((a.discount ?? 0) * 1000 + (a.reviews_count ?? 0)))
+      .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
   }, [activeCat, allFiltered, usingMockProducts]);
 
@@ -252,29 +252,7 @@ export default function HomePage() {
               </div>
             </section>
 
-            <section className="overflow-hidden rounded-[28px] border border-[#f3dcc7] bg-[linear-gradient(135deg,#fff,#fff6ed)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.06)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
-              <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <p className="text-[11px] font-extrabold uppercase tracking-[0.24em] text-primary">
-                    Compte client
-                  </p>
-                  <h2 className="mt-1 text-xl font-bold text-gray-900 dark:text-white">
-                    Litiges ouverts et suivi commande
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-600 dark:text-gray-300">
-                    Les litiges se déclenchent depuis une commande livrée, puis se consultent dans votre compte.
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate("/profile?panel=messages&tab=litige")}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-[0_8px_24px_rgba(244,121,32,.26)] transition-all hover:-translate-y-0.5 hover:bg-primary-dark"
-                >
-                  <AlertTriangle size={16} />
-                  Voir mes litiges
-                </button>
-              </div>
-              <TrustBannersStrip />
-            </section>
+            <TrustBannersStrip />
 
             <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection

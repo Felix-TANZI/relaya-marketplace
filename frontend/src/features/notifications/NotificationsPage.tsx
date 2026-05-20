@@ -3,13 +3,17 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
+  ChevronRight,
   CheckCircle2,
   Clock3,
   Gift,
+  Info,
   type LucideIcon,
   MessageCircleMore,
   Package,
   ShieldCheck,
+  Trash2,
+  X,
 } from "lucide-react";
 import { customerApi, type CustomerNotification } from "@/services/api/customer";
 
@@ -101,6 +105,11 @@ export default function NotificationsPage() {
     };
 
     fetchNotifications();
+    const handleNewNotification = () => {
+      void fetchNotifications();
+    };
+    window.addEventListener("belivay-new-notification", handleNewNotification);
+    return () => window.removeEventListener("belivay-new-notification", handleNewNotification);
   }, []);
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
@@ -108,6 +117,39 @@ export default function NotificationsPage() {
     'description' in notification && notification.description ? notification.description : notification.message;
   const notificationTime = (notification: NotificationCard) =>
     'time' in notification && notification.time ? notification.time : new Date(notification.created_at).toLocaleString('fr-FR');
+  const getNotificationDate = (notification: NotificationCard) => {
+    const date = new Date(notification.created_at);
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  };
+  const getNotificationVisual = (notification: NotificationCard) => {
+    const ageMs = Date.now() - getNotificationDate(notification).getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+
+    if (notification.notification_type === "SYSTEM") {
+      return {
+        icon: Info,
+        accent: "border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/15 dark:text-red-300",
+        rail: "bg-red-500",
+        label: "Système",
+      };
+    }
+
+    if (ageMs >= oneDayMs) {
+      return {
+        icon: notification.notification_type === "ORDER" ? Package : Bell,
+        accent: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-300",
+        rail: "bg-amber-500",
+        label: "À relire",
+      };
+    }
+
+    return {
+      icon: notification.notification_type === "ORDER" ? Package : CheckCircle2,
+      accent: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/15 dark:text-emerald-300",
+      rail: "bg-emerald-500",
+      label: notification.is_read ? "Récent" : "Nouveau",
+    };
+  };
   const getOrderTarget = (notification: NotificationCard) => {
     const source = `${notification.action_url ?? ""} ${notification.title ?? ""} ${notification.message ?? ""}`;
     const match = source.match(/(?:orders\/|commande\s*#?|#)(\d+)/i);
@@ -130,9 +172,23 @@ export default function NotificationsPage() {
     }
   };
 
+  const deleteNotification = async (notification: NotificationCard) => {
+    setNotifications((current) => current.filter((item) => item.id !== notification.id));
+    if (selectedNotification?.id === notification.id) {
+      setSelectedNotification(null);
+    }
+    if (localStorage.getItem('access_token') && notification.id > 0) {
+      try {
+        await customerApi.deleteNotification(notification.id);
+      } catch {
+        // La suppression reste appliquee cote interface pour ne pas bloquer le client.
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
-      <div className="container mx-auto max-w-5xl px-4">
+    <div className="min-h-screen bg-[#f8f5f1] py-6 dark:bg-gray-950 sm:py-10">
+      <div className="container mx-auto max-w-5xl px-3 sm:px-4">
         <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
@@ -160,32 +216,31 @@ export default function NotificationsPage() {
             </article>
           )}
           {notifications.map((notification) => {
-            const Icon = 'icon' in notification && notification.icon ? notification.icon : Bell;
-            const tone = 'tone' in notification && notification.tone ? notification.tone : "bg-orange-50 text-primary";
+            const visual = getNotificationVisual(notification);
+            const Icon = 'icon' in notification && notification.icon ? notification.icon : visual.icon;
 
             return (
               <article
                 key={notification.id}
                 onClick={() => openNotification(notification)}
-                className="cursor-pointer rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-900"
+                className="relative cursor-pointer overflow-hidden rounded-[1.25rem] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-900 sm:rounded-[1.75rem] sm:p-5"
               >
+                <div className={`absolute inset-y-0 left-0 w-1.5 ${visual.rail}`} />
                 <div className="flex items-start gap-4">
                   <div
-                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl ${tone}`}
+                    className={`flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border ${visual.accent}`}
                   >
                     <Icon size={20} />
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2 pr-6">
                       <h2 className="text-base font-semibold text-gray-900 dark:text-white">
                         {notification.title}
                       </h2>
-                      {!notification.is_read && (
-                        <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-bold text-white">
-                          {t('notifications.new_badge')}
-                        </span>
-                      )}
+                      <span className={`rounded-full border px-2 py-0.5 text-[11px] font-bold ${visual.accent}`}>
+                        {visual.label}
+                      </span>
                     </div>
                     <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
                       {notificationText(notification)}
@@ -194,6 +249,20 @@ export default function NotificationsPage() {
                       <Clock3 size={14} />
                       {notificationTime(notification)}
                     </div>
+                  </div>
+                  <div className="mt-1 flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        void deleteNotification(notification);
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
+                      aria-label="Supprimer la notification"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                    <ChevronRight className="text-gray-300 dark:text-gray-600" size={18} />
                   </div>
                 </div>
               </article>
@@ -206,7 +275,9 @@ export default function NotificationsPage() {
             <div className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:max-w-lg sm:rounded-[2rem] sm:p-6">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Détail notification</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                    {getNotificationVisual(selectedNotification).label}
+                  </p>
                   <h2 className="mt-2 text-xl font-extrabold text-gray-900 dark:text-white">
                     {selectedNotification.title}
                   </h2>
@@ -214,9 +285,10 @@ export default function NotificationsPage() {
                 <button
                   type="button"
                   onClick={() => setSelectedNotification(null)}
-                  className="rounded-full bg-gray-100 px-3 py-1.5 text-sm font-bold text-gray-500 hover:bg-gray-200 dark:bg-gray-800"
+                  className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800"
+                  aria-label="Fermer"
                 >
-                  Fermer
+                  <X size={18} />
                 </button>
               </div>
               <p className="mt-4 text-sm leading-7 text-gray-600 dark:text-gray-300">
@@ -226,6 +298,14 @@ export default function NotificationsPage() {
                 <Clock3 size={14} />
                 {notificationTime(selectedNotification)}
               </div>
+              <button
+                type="button"
+                onClick={() => void deleteNotification(selectedNotification)}
+                className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20"
+              >
+                <Trash2 size={16} />
+                Supprimer ce message
+              </button>
               {selectedNotification.notification_type === "ORDER" && (
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
                   <button
@@ -233,7 +313,7 @@ export default function NotificationsPage() {
                     onClick={() => navigate(getOrderTarget(selectedNotification))}
                     className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-dark"
                   >
-                    Voir le détail
+                    Ouvrir la commande
                   </button>
                   <button
                     type="button"

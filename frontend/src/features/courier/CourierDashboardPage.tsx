@@ -51,12 +51,7 @@ import {
   type CourierShipmentAction,
   type CourierSettings,
 } from "@/services/api/courier";
-import {
-  addCourierConversationMessage,
-  COURIER_CHAT_EVENT,
-  getCourierConversation,
-  type CourierChatMessage,
-} from "@/lib/courierChat";
+import { customerApi, type OrderChatMessage } from "@/services/api/customer";
 
 type CourierTab =
   | "dashboard"
@@ -267,7 +262,7 @@ export default function CourierDashboardPage() {
   const [sosLoading, setSosLoading] = useState(false);
   const [sosFeedback, setSosFeedback] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
-  const [clientMessages, setClientMessages] = useState<CourierChatMessage[]>([]);
+  const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
   const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
@@ -396,10 +391,16 @@ export default function CourierDashboardPage() {
       return;
     }
 
-    const syncConversation = () => setClientMessages(getCourierConversation(selectedShipment.order));
-    syncConversation();
-    window.addEventListener(COURIER_CHAT_EVENT, syncConversation);
-    return () => window.removeEventListener(COURIER_CHAT_EVENT, syncConversation);
+    let cancelled = false;
+    const fetchMessages = () => {
+      customerApi.getOrderChatMessages(selectedShipment.order)
+        .then((msgs) => { if (!cancelled) setClientMessages(msgs); })
+        .catch(() => {});
+    };
+
+    fetchMessages();
+    const interval = window.setInterval(fetchMessages, 12000);
+    return () => { cancelled = true; window.clearInterval(interval); };
   }, [selectedShipment]);
 
   const selectedDisputePermission = selectedDispute
@@ -490,14 +491,12 @@ export default function CourierDashboardPage() {
   const handleReplyClient = async () => {
     if (!selectedShipment || !clientReplyDraft.trim()) return;
     const message = clientReplyDraft.trim();
-    const nextMessages = addCourierConversationMessage(selectedShipment.order, "courier", message, firstName);
-    setClientMessages(nextMessages);
     setClientReplyDraft("");
-
     try {
-      await courierApi.sendShipmentMessage(selectedShipment.id, { channel: "CLIENT", message });
+      const msg = await customerApi.sendOrderChatMessage(selectedShipment.order, message);
+      setClientMessages((prev) => [...prev, msg]);
     } catch {
-      // Le chat local reste actif pour la demo meme si l'endpoint n'est pas disponible.
+      setClientReplyDraft(message);
     }
   };
 
@@ -1250,15 +1249,15 @@ export default function CourierDashboardPage() {
                   <div
                     key={message.id}
                     className={`max-w-[86%] rounded-[16px] px-4 py-3 text-[13px] leading-6 ${
-                      message.role === "courier"
+                      message.sender_role === "COURIER"
                         ? "ml-auto bg-emerald-500 text-white"
                         : "bg-white/8 text-white"
                     }`}
                   >
-                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.role === "courier" ? "text-white/70" : "text-white/45"}`}>
-                      {message.senderName} · {new Date(message.createdAt).toLocaleString("fr-FR")}
+                    <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "COURIER" ? "text-white/70" : "text-white/45"}`}>
+                      {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                     </div>
-                    {message.text}
+                    {message.message}
                   </div>
                 )) : (
                   <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">
@@ -2097,26 +2096,26 @@ export default function CourierDashboardPage() {
         />
       </div>
 
-      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-4 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-4 shadow-[0_2px_22px_rgba(0,0,0,.4)]">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 items-center justify-center rounded-2xl bg-emerald-500/10 px-2">
+      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-7 w-auto"
+              className="h-6 w-auto sm:h-7"
               style={{ filter: "brightness(0) saturate(100%) invert(63%) sepia(54%) saturate(673%) hue-rotate(104deg) brightness(93%) contrast(92%)" }}
             />
           </div>
-          <div>
-            <div className="text-[15px] font-extrabold tracking-tight text-emerald-300">Espace livreur</div>
-            <div className="text-[11px] text-white/70">{isApprovedCourier ? "" : "Validation du profil en attente"}</div>
+          <div className="min-w-0">
+            <div className="truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]">Espace livreur</div>
+            <div className="truncate text-[10px] text-white/70 sm:text-[11px]">{isApprovedCourier ? "" : "Profil en attente"}</div>
           </div>
         </div>
 
         <button
           type="button"
           onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
-          className="ml-auto flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15 md:hidden"
+          className="ml-auto flex h-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 px-2.5 text-[10px] font-black tracking-[0.12em] text-white transition hover:bg-white/15 md:hidden"
           aria-label="Changer de langue"
         >
           {i18n.language.startsWith("fr") ? "FR" : "EN"}

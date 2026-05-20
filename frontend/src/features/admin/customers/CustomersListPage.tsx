@@ -26,6 +26,8 @@ type AdminUser = AdminUserBase & {
   vendor_status?:        'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | null;
   vendor_business_name?: string | null;
   vendor_plan?:          'FREE' | 'STARTER' | 'PRO' | 'BUSINESS' | null;
+  courier_status?:       'APPROVED' | 'PENDING' | 'INACTIVE' | null;
+  actor_roles?:          Array<'CLIENT' | 'VENDOR' | 'COURIER' | 'STAFF' | 'ADMIN'>;
   loyalty_tier?:         'BRONZE' | 'SILVER' | 'GOLD' | 'DIAMOND';
   loyalty_points?:       number;
   city?:                 string | null;
@@ -60,7 +62,7 @@ const isNew = (d: string) => Date.now() - new Date(d).getTime() < 7 * 86400_000;
 
 type SortKey   = 'username' | 'date_joined' | 'last_login' | 'total_orders' | 'total_spent' | 'loyalty_points';
 type SortDir   = 'asc' | 'desc';
-type RoleTab   = 'all' | 'buyer' | 'vendor' | 'staff';
+type RoleTab   = 'all' | 'buyer' | 'vendor' | 'courier' | 'staff';
 type StatusFilter = 'all' | 'active' | 'banned' | 'inactive';
 type PlanFilter   = 'all' | 'FREE' | 'STARTER' | 'PRO' | 'BUSINESS';
 type DateFilter   = 'all' | 'today' | 'week' | 'month';
@@ -89,6 +91,7 @@ const TIER_CONFIG: Record<string, { label: string; color: string }> = {
 const ROLE_COLORS: Record<string, string> = {
   role_buyer:  '#3B82F6',
   role_vendor: '#F47920',
+  role_courier:'#10B981',
   role_staff:  '#8B5CF6',
   role_admin:  '#DC2626',
 };
@@ -112,10 +115,18 @@ function StatusBadge({ user }: { user: AdminUser }) {
 /** Chips de rôles (Acheteur, Vendeur, Staff…) */
 function RoleChips({ user }: { user: AdminUser }) {
   const chips: { label: string; color: string }[] = [];
-  if (user.is_superuser)       chips.push({ label: 'Admin',     color: ROLE_COLORS.role_admin  });
-  else if (user.is_staff)      chips.push({ label: 'Staff',     color: ROLE_COLORS.role_staff  });
-  if (user.is_vendor)          chips.push({ label: 'Vendeur',   color: ROLE_COLORS.role_vendor });
-  if (!user.is_staff && !user.is_superuser) chips.push({ label: 'Acheteur', color: ROLE_COLORS.role_buyer  });
+  const roles = user.actor_roles?.length ? user.actor_roles : [
+    'CLIENT',
+    ...(user.is_vendor ? ['VENDOR' as const] : []),
+    ...(user.is_courier ? ['COURIER' as const] : []),
+    ...(user.is_staff ? ['STAFF' as const] : []),
+    ...(user.is_superuser ? ['ADMIN' as const] : []),
+  ];
+  if (roles.includes('CLIENT'))  chips.push({ label: 'Client',  color: ROLE_COLORS.role_buyer });
+  if (roles.includes('VENDOR'))  chips.push({ label: 'Vendeur', color: ROLE_COLORS.role_vendor });
+  if (roles.includes('COURIER')) chips.push({ label: 'Livreur', color: ROLE_COLORS.role_courier });
+  if (roles.includes('STAFF'))   chips.push({ label: 'Staff',   color: ROLE_COLORS.role_staff });
+  if (roles.includes('ADMIN'))   chips.push({ label: 'Admin',   color: ROLE_COLORS.role_admin });
 
   return (
     <div className="flex flex-wrap gap-1">
@@ -271,9 +282,9 @@ export default function CustomersListPage() {
     if (q && ![u.username, u.email, u.first_name, u.last_name, u.vendor_business_name]
       .some(v => v?.toLowerCase().includes(q))) return false;
 
-    if (roleTab === 'buyer'  && (u.is_staff || u.is_superuser)) return false;
-    if (roleTab === 'buyer'  && u.is_vendor) return false;
+    if (roleTab === 'buyer'  && !u.actor_roles?.includes('CLIENT') && (u.is_staff || u.is_superuser)) return false;
     if (roleTab === 'vendor' && !u.is_vendor) return false;
+    if (roleTab === 'courier' && !u.is_courier) return false;
     if (roleTab === 'staff'  && !u.is_staff && !u.is_superuser) return false;
 
     if (statusF === 'active'   && (!u.is_active || u.is_banned)) return false;
@@ -394,7 +405,7 @@ export default function CustomersListPage() {
     const rows = data.map(u => [
       u.id, u.username, u.email,
       `${u.first_name} ${u.last_name}`.trim(),
-      u.is_superuser ? 'Super Admin' : u.is_staff ? 'Staff' : u.is_vendor ? 'Vendeur+Acheteur' : 'Acheteur',
+      (u.actor_roles ?? []).join('+') || (u.is_superuser ? 'Admin' : u.is_staff ? 'Staff' : u.is_vendor ? 'Client+Vendeur' : 'Client'),
       u.is_banned ? 'Banni' : u.is_active ? 'Actif' : 'Inactif',
       u.vendor_plan ?? '—', u.loyalty_tier, u.loyalty_points,
       u.total_orders, u.total_spent, u.city ?? '—',
@@ -685,8 +696,9 @@ export default function CustomersListPage() {
               <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {([
                   { key: 'all' as RoleTab,    label: 'Tous',      count: users.length },
-                  { key: 'buyer' as RoleTab,  label: 'Acheteurs', count: users.filter(u => !u.is_staff && !u.is_superuser && !u.is_vendor).length },
+                  { key: 'buyer' as RoleTab,  label: 'Clients',   count: users.filter(u => u.actor_roles?.includes('CLIENT') ?? true).length },
                   { key: 'vendor' as RoleTab, label: 'Vendeurs',  count: users.filter(u => u.is_vendor).length },
+                  { key: 'courier' as RoleTab,label: 'Livreurs',  count: users.filter(u => u.is_courier).length },
                   { key: 'staff' as RoleTab,  label: 'Staff',     count: users.filter(u => u.is_staff || u.is_superuser).length },
                 ] as { key: RoleTab; label: string; count: number }[]).map(t => (
                   <button

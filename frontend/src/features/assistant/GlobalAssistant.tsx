@@ -29,10 +29,10 @@ interface ChatMessage {
 }
 
 const QUICK_ACTIONS = [
-  "Quels sont les produits les moins chers ?",
-  "Je n'arrive pas à revenir à l'accueil",
-  "Comment retrouver mon panier ?",
-  "Relancer la visite guidée",
+  "Trouve-moi un produit pas cher",
+  "Ramène-moi à l'accueil",
+  "Ouvre mon panier",
+  "Guide-moi dans l'app",
 ];
 
 function formatPrice(value: number) {
@@ -60,28 +60,28 @@ function getRouteLabel(pathname: string) {
 function getContextualPrompts(pathname: string) {
   if (pathname.startsWith("/cart")) {
     return [
-      "Comment finaliser mon achat ?",
-      "Comment retrouver mon panier ?",
-      "Je n'arrive pas à revenir à l'accueil",
-      "Relancer la visite guidée",
+      "Aide-moi à payer",
+      "Vérifie mon panier",
+      "Ramène-moi à l'accueil",
+      "Guide-moi dans l'app",
     ];
   }
 
   if (pathname.startsWith("/orders")) {
     return [
-      "Comment suivre mes commandes ?",
-      "Je n'arrive pas à revenir à l'accueil",
-      "Comment retrouver mon panier ?",
-      "Relancer la visite guidée",
+      "Explique-moi ce statut",
+      "Ouvre le suivi",
+      "Ramène-moi à l'accueil",
+      "Guide-moi dans l'app",
     ];
   }
 
   if (pathname.startsWith("/profile")) {
     return [
-      "Comment modifier mon profil ?",
-      "Comment retrouver mes favoris ?",
-      "Je n'arrive pas à revenir à l'accueil",
-      "Relancer la visite guidée",
+      "Aide-moi avec mon compte",
+      "Ouvre mes favoris",
+      "Ramène-moi à l'accueil",
+      "Guide-moi dans l'app",
     ];
   }
 
@@ -108,7 +108,7 @@ export default function GlobalAssistant() {
         id: "assistant-intro",
         role: "assistant",
         content:
-          "Bonjour. Je peux t'aider à trouver un produit, revenir sur une page, relancer la visite guidée ou te guider dans l'application entière.",
+          "Salut, je suis là. Dis-moi ce que tu veux faire et je t’y amène : chercher un produit, retrouver une commande, comprendre un paiement, ou juste te débloquer dans l’app.",
         actions: [
           { label: "Accueil", onClick: () => navigate("/") },
           { label: "Panier", onClick: () => navigate("/cart") },
@@ -138,7 +138,7 @@ export default function GlobalAssistant() {
   }, [isOpen]);
 
   const statusLabel = useMemo(
-    () => `Assistant BelivaY · ${viewportLabel}`,
+    () => `Je suis avec toi sur ${viewportLabel}`,
     [viewportLabel],
   );
   const assistantLayer = location.pathname.startsWith("/search") ? "z-[45]" : "z-[80]";
@@ -155,11 +155,11 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Salut ! 👋 Je suis l'assistant BelivaY. Dis-moi ce que tu cherches : un produit, une page, ou une question sur l'appli. Je suis là pour t'aider !",
+        content: "Salut. Je suis avec toi. Tu peux me dire les choses simplement : “ouvre mon panier”, “trouve un téléphone”, “je veux suivre ma commande”. Je m’occupe du chemin.",
         actions: [
-          { label: "🛍️ Voir les produits", onClick: () => navigate("/catalog") },
-          { label: "🏠 Accueil", onClick: () => navigate("/") },
-          { label: "🎓 Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+          { label: "Voir les produits", onClick: () => navigate("/catalog") },
+          { label: "Accueil", onClick: () => navigate("/") },
+          { label: "Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
         ],
       });
       return;
@@ -170,11 +170,11 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "BelivaY est une marketplace camerounaise. Voici comment ça marche :\n\n🔍 **Cherche** un produit via la barre de recherche\n📦 **Ajoute** au panier et passe commande\n💳 **Paye** par Mobile Money (MTN MoMo / Orange Money)\n🚚 **Reçois** ta livraison en 24-72h\n\nTu veux que je te montre avec la visite guidée ?",
+        content: "BelivaY fonctionne comme un achat accompagné : tu choisis un produit, tu le mets au panier, tu paies, puis tu suis la commande jusqu’à la livraison. Je peux te faire gagner du temps en t’ouvrant directement la bonne étape.",
         actions: [
-          { label: "🎓 Lancer la visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
-          { label: "🔍 Chercher un produit", onClick: () => navigate("/search") },
-          { label: "📂 Voir les catégories", onClick: () => navigate("/categories") },
+          { label: "Lancer la visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+          { label: "Chercher un produit", onClick: () => navigate("/search") },
+          { label: "Voir les catégories", onClick: () => navigate("/categories") },
         ],
       });
       return;
@@ -186,7 +186,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "C'est fait ! Je t'ai renvoyé à l'accueil. 🏠 Tu peux aussi cliquer sur le logo Belivay en haut à gauche à tout moment.",
+        content: "C’est fait, je t’ai ramené à l’accueil. De là, tu peux repartir vers les produits, les promos ou tes commandes.",
       });
       return;
     }
@@ -197,7 +197,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici ton panier ! 🛒 Tu peux modifier les quantités, retirer des articles ou passer commande. L'icône panier en haut à droite t'y amène aussi.",
+        content: "Voilà ton panier. Tu peux choisir les articles à payer, changer les quantités ou passer directement à la commande.",
       });
       return;
     }
@@ -208,7 +208,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Tu es sur tes commandes ! 📦 Tu y vois l'historique, les statuts de paiement et de livraison. Clique sur une commande pour les détails.",
+        content: "Je t’ai ouvert tes commandes. Regarde le statut en haut de chaque carte, puis ouvre une commande si tu veux le suivi ou les détails.",
       });
       return;
     }
@@ -219,7 +219,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici ton espace personnel ! 👤 Tu peux modifier tes infos, ton avatar, accéder à tes commandes et favoris.",
+        content: "Voici ton compte. C’est ici que tu retrouves tes infos, tes commandes et tes préférences.",
       });
       return;
     }
@@ -230,7 +230,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici tes favoris ! ❤️ Clique sur le cœur d'un produit pour l'ajouter ici. Le compteur en haut se met à jour automatiquement.",
+        content: "J’ai ouvert tes favoris. Tu peux reprendre un produit mis de côté, l’ajouter au panier ou l’acheter maintenant.",
       });
       return;
     }
@@ -240,10 +240,10 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Tu peux me poser tes questions ici ! Pour un contact direct : WhatsApp +237 000 556 87 78, ou le centre d'aide complet.",
+        content: "Dis-moi ce qui bloque et je t’oriente. Si tu veux parler à l’équipe, je peux aussi t’ouvrir l’aide ou la page contact.",
         actions: [
-          { label: "📞 Centre d'aide", onClick: () => navigate("/help") },
-          { label: "✉️ Nous contacter", onClick: () => navigate("/contact") },
+          { label: "Centre d'aide", onClick: () => navigate("/help") },
+          { label: "Nous contacter", onClick: () => navigate("/contact") },
         ],
       });
       return;
@@ -254,10 +254,10 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "BelivaY accepte **MTN Mobile Money** et **Orange Money**. Le paiement est sécurisé. Pour payer, ajoute des articles au panier puis clique sur « Passer commande ».",
+        content: "Pour payer, pars du panier. BelivaY te guidera ensuite vers les informations de livraison et le paiement Mobile Money.",
         actions: [
-          { label: "🛒 Mon panier", onClick: () => navigate("/cart") },
-          { label: "💳 Passer commande", onClick: () => navigate("/checkout") },
+          { label: "Mon panier", onClick: () => navigate("/cart") },
+          { label: "Passer commande", onClick: () => navigate("/checkout") },
         ],
       });
       return;
@@ -269,7 +269,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici les catégories ! 📂 Mode Femme, Mode Homme, Téléphones, Maison, Beauté, Supermarché... Choisis ta catégorie pour filtrer les produits.",
+        content: "Je t’ai ouvert les catégories. Choisis une famille de produits et l’app filtrera ce qui t’intéresse.",
       });
       return;
     }
@@ -280,7 +280,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "La recherche est ouverte ! 🔍 Tape un mot-clé et les résultats apparaissent en temps réel. Pas besoin d'appuyer Entrée.",
+        content: "La recherche est prête. Tape le nom du produit, une catégorie ou un budget, et on réduit le choix.",
       });
       return;
     }
@@ -290,7 +290,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "C'est parti ! 🎓 La visite guidée va te montrer les fonctionnalités essentielles étape par étape.",
+        content: "C’est parti, je lance la visite guidée. Elle va te montrer les points importants sans te perdre dans les menus.",
       });
       window.dispatchEvent(new Event("belivay-open-tutorial"));
       setIsOpen(false);
@@ -303,7 +303,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici les vendeurs certifiés BelivaY ! 🏪 Chaque vendeur est vérifié. Tu peux voir leur note, nombre de ventes et spécialité.",
+        content: "Je t’ai ouvert les vendeurs. Tu peux comparer les boutiques par spécialité, fiabilité et produits disponibles.",
       });
       return;
     }
@@ -314,7 +314,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Tu es sur tes notifications ! 🔔 Commandes expédiées, promos flash, messages du support... tout est ici.",
+        content: "Voici tes notifications. Les plus récentes et les messages importants ressortent visuellement pour que tu voies vite quoi traiter.",
       });
       return;
     }
@@ -325,7 +325,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Tu peux créer ton compte gratuitement ! 📝 Juste un email et un mot de passe.",
+        content: "Je t’ai ouvert la création de compte. Remplis les infos essentielles et tu pourras commander plus facilement.",
       });
       return;
     }
@@ -334,7 +334,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Page de connexion ouverte ! 🔐 Connecte-toi avec ton email et mot de passe.",
+        content: "Je t’ai ouvert la connexion. Entre ton identifiant et ton mot de passe, puis tu reprends ton parcours.",
       });
       return;
     }
@@ -344,7 +344,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Pour changer la langue, clique sur l'icône 🌐 en haut de la page. Tu peux basculer entre Français et English.",
+        content: "La langue se change depuis l’icône globe en haut. Tu peux passer de Français à English quand tu veux.",
       });
       return;
     }
@@ -352,7 +352,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Pour activer le mode sombre, clique sur l'icône ☀️/🌙 dans la barre de navigation en haut.",
+        content: "Le thème clair/sombre se règle avec l’icône lune ou soleil dans l’en-tête.",
       });
       return;
     }
@@ -363,7 +363,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Tu veux vendre sur BelivaY ? 🚀 Remplis le formulaire et ton dossier sera examiné. Commission faible, paiements sécurisés, support dédié !",
+        content: "Je t’ai ouvert l’espace pour devenir vendeur. Tu remplis ton dossier, puis BelivaY l’examine avant activation.",
       });
       return;
     }
@@ -383,12 +383,12 @@ export default function GlobalAssistant() {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content: cheapestProducts.length > 0
-          ? "Voici les produits les plus abordables que j'ai trouvés pour toi ! 💰 Clique pour voir les détails."
-          : "Je n'ai pas trouvé de produit correspondant. Essaie un terme plus précis ou explore le catalogue.",
+          ? "J’ai trouvé quelques options abordables. Regarde celles-ci, et ouvre celle qui te parle le plus."
+          : "Je n’ai rien de solide avec ces mots. Essaie un nom plus précis, ou pars du catalogue pour explorer.",
         products: cheapestProducts,
         actions: [
-          { label: "🔍 Rechercher", onClick: () => navigate("/search") },
-          { label: "📂 Catalogue", onClick: () => navigate("/catalog") },
+          { label: "Rechercher", onClick: () => navigate("/search") },
+          { label: "Catalogue", onClick: () => navigate("/catalog") },
         ],
       });
       return;
@@ -399,7 +399,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "De rien ! 😊 N'hésite pas à revenir si tu as d'autres questions. Bon shopping sur BelivaY !",
+        content: "Avec plaisir. Je reste là si tu veux continuer ou vérifier quelque chose avant d’acheter.",
       });
       return;
     }
@@ -408,15 +408,15 @@ export default function GlobalAssistant() {
     pushAssistantMessage({
       id: `assistant-${Date.now()}`,
       role: "assistant",
-      content: "Je ne suis pas sûr de comprendre ta demande. Voici ce que je peux faire pour toi :",
+      content: "Je ne veux pas te répondre à côté. Je peux déjà t’aider sur ces actions, ou reformule en une phrase simple et je m’adapte.",
       actions: [
-        { label: "🔍 Chercher un produit", onClick: () => navigate("/search") },
-        { label: "🏠 Aller à l'accueil", onClick: () => navigate("/") },
-        { label: "📦 Mes commandes", onClick: () => navigate("/orders") },
-        { label: "🛒 Mon panier", onClick: () => navigate("/cart") },
-        { label: "📂 Catégories", onClick: () => navigate("/categories") },
-        { label: "🎓 Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
-        { label: "📞 Aide & Contact", onClick: () => navigate("/help") },
+        { label: "Chercher un produit", onClick: () => navigate("/search") },
+        { label: "Aller à l'accueil", onClick: () => navigate("/") },
+        { label: "Mes commandes", onClick: () => navigate("/orders") },
+        { label: "Mon panier", onClick: () => navigate("/cart") },
+        { label: "Catégories", onClick: () => navigate("/categories") },
+        { label: "Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+        { label: "Aide & Contact", onClick: () => navigate("/help") },
       ],
     });
   };
@@ -444,7 +444,7 @@ export default function GlobalAssistant() {
         id: `assistant-${Date.now()}`,
         role: "assistant",
         content:
-          "Je n'ai pas réussi à compléter cette aide tout de suite, mais je peux toujours te rediriger vers la bonne page ou relancer la visite guidée.",
+          "Je n’ai pas réussi à aller au bout, mais je peux encore t’aider à reprendre la main. Choisis une option et on repart proprement.",
         actions: [
           { label: "Centre d'aide", onClick: () => navigate("/help") },
           { label: "Accueil", onClick: () => navigate("/") },
@@ -490,10 +490,10 @@ export default function GlobalAssistant() {
               <div className="min-w-0">
                 <p className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                   <Sparkles size={13} />
-                  Aide globale
+                  Agent client
                 </p>
                 <h2 className="mt-3 text-lg font-semibold text-slate-950 dark:text-white">
-                  Assistant BelivaY
+                  Agent BelivaY
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {statusLabel}
@@ -523,7 +523,7 @@ export default function GlobalAssistant() {
                       : "border border-slate-200 bg-white text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200"
                   }`}
                 >
-                  <p>{chatMessage.content}</p>
+                  <p className="whitespace-pre-line">{chatMessage.content}</p>
 
                   {chatMessage.products && chatMessage.products.length > 0 && (
                     <div className="mt-3 space-y-2">
@@ -576,7 +576,7 @@ export default function GlobalAssistant() {
               <div className="flex justify-start">
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                   <Loader2 size={16} className="animate-spin" />
-                  Analyse en cours…
+                  Je regarde ça…
                 </div>
               </div>
             )}
@@ -624,7 +624,7 @@ export default function GlobalAssistant() {
                         }
                       }
                     }}
-                    placeholder="Pose une question…"
+                    placeholder="Dis-moi ce que tu veux faire…"
                     className="min-h-[36px] max-h-[80px] w-full resize-none bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
                   />
                 </div>

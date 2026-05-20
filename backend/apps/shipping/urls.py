@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    ClientOrderMessagesView,
     CourierDisputeListView,
     CourierDashboardView,
     CourierNetworkView,
@@ -18,6 +19,7 @@ from .views import (
 )
 
 urlpatterns = [
+    path("orders/<int:order_id>/messages/", ClientOrderMessagesView.as_view(), name="shipping-client-messages"),
     path("create/", ShipmentCreateView.as_view(), name="shipping-create"),
     path("events/", ShipmentEventCreateView.as_view(), name="shipping-events"),
     path("track/", ShipmentTrackView.as_view(), name="shipping-track"),

@@ -17,6 +17,14 @@ function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function friendlyHttpError(status: number) {
+  if (status === 401) return "Votre session a expiré. Reconnectez-vous pour continuer.";
+  if (status === 403) return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+  if (status === 404) return "Cette ressource est momentanément indisponible.";
+  if (status >= 500) return "Le service rencontre un problème. Réessayez dans un instant.";
+  return "Impossible de terminer cette action pour le moment.";
+}
+
 async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
   const delays = [450, 1200];
   let lastError: unknown;
@@ -120,8 +128,8 @@ export async function http<T>(
         });
 
         if (!retryResponse.ok) {
-          const errorData = await retryResponse.text();
-          throw new Error(`HTTP ${retryResponse.status} - ${errorData}`);
+          await retryResponse.text().catch(() => "");
+          throw new Error(friendlyHttpError(retryResponse.status));
         }
 
         if (retryResponse.status === 204) {
@@ -133,8 +141,8 @@ export async function http<T>(
     }
 
     if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`HTTP ${response.status} - ${errorData}`);
+      await response.text().catch(() => "");
+      throw new Error(friendlyHttpError(response.status));
     }
 
     // Handle 204 No Content
@@ -144,7 +152,6 @@ export async function http<T>(
 
     return response.json();
   } catch (error) {
-    console.error('HTTP Error:', error);
     if (isTransientNetworkError(error)) {
       throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
     }

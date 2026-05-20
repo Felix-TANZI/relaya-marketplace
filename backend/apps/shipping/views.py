@@ -50,6 +50,58 @@ def _city_variants(value):
     return [variant for variant in variants if variant]
 
 
+def _release_overdue_accepted_shipments():
+    deadline = timezone.now() - timedelta(hours=1)
+    overdue = (
+        Shipment.objects.filter(
+            status=Shipment.Status.ASSIGNED,
+            courier__isnull=False,
+            accepted_at__isnull=False,
+            accepted_at__lte=deadline,
+            penalty_notified_at__isnull=True,
+        )
+        .select_related("order", "courier", "courier__user")
+    )
+
+    for shipment in overdue:
+        courier_user = shipment.courier.user
+        order = shipment.order
+        UserNotification.objects.create(
+            user=courier_user,
+            title=f"Penalite mission #{order.id}",
+            message=(
+                "Vous avez accepte cette mission mais le colis n'a pas ete marque pris en charge "
+                "dans le delai d'une heure. Vos points ont ete reduits et la mission a ete liberee."
+            ),
+            notification_type=UserNotification.NotificationType.SYSTEM,
+            action_url="/courier",
+        )
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.CREATED,
+            message="Mission liberee automatiquement apres depassement du delai de prise en charge.",
+            location=order.city,
+        )
+        shipment.status = Shipment.Status.CREATED
+        shipment.courier = None
+        shipment.courier_name = ""
+        shipment.courier_phone = ""
+        shipment.accepted_at = None
+        shipment.penalty_notified_at = timezone.now()
+        shipment.save(
+            update_fields=[
+                "status",
+                "courier",
+                "courier_name",
+                "courier_phone",
+                "accepted_at",
+                "penalty_notified_at",
+                "updated_at",
+            ]
+        )
+        order.mark_ready_for_pickup()
+
+
 @extend_schema(
     tags=["Shipping"],
     summary="Créer/assigner un shipment à une commande (V1)",
@@ -64,7 +116,7 @@ class ShipmentCreateView(generics.CreateAPIView):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)
         shipment = s.save()
-        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_201_CREATED)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
@@ -103,7 +155,7 @@ class ShipmentTrackView(generics.GenericAPIView):
         except Shipment.DoesNotExist:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Shipping"], summary="Mes livraisons assignees (livreur)")
@@ -112,6 +164,7 @@ class CourierMyShipmentsView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        _release_overdue_accepted_shipments()
         courier = getattr(self.request.user, "courier_profile", None)
         if not courier or not courier.is_approved or not courier.is_active:
             raise PermissionDenied("Courier account is not approved")
@@ -157,7 +210,7 @@ class CourierShipmentActionView(generics.GenericAPIView):
         )
         serializer.is_valid(raise_exception=True)
         shipment = serializer.save()
-        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 def _get_active_courier(user):
@@ -498,6 +551,7 @@ class CourierDisputeListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        _release_overdue_accepted_shipments()
         courier = _get_active_courier(self.request.user)
         return (
             Dispute.objects.filter(order__shipment__courier=courier)
@@ -676,7 +730,7 @@ class CourierShipmentScanView(generics.GenericAPIView):
             sender_role=ShipmentMessage.SenderRole.SYSTEM,
             message=f"Scan test effectue: {event_message}.",
         )
-        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Shipping"], summary="Parametres livreur")
@@ -762,6 +816,7 @@ class CourierClaimShipmentView(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, id):
+        _release_overdue_accepted_shipments()
         courier = _get_active_courier(request.user)
 
         full_name = request.user.get_full_name().strip() or request.user.username
@@ -802,4 +857,4 @@ class CourierClaimShipmentView(generics.GenericAPIView):
             action_url="/courier",
         )
 
-        return Response(ShipmentSerializer(shipment).data, status=status.HTTP_200_OK)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)

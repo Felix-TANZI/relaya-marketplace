@@ -20,22 +20,7 @@ export function getMockOrders(): Order[] {
 }
 
 export function getResilientOrders(apiOrders: Order[] = []): Order[] {
-  const localOrders = getMockOrders();
-  const merged = [...apiOrders];
-  const knownIds = new Set(apiOrders.map((order) => order.id));
-
-  for (const order of localOrders) {
-    if (!knownIds.has(order.id)) {
-      merged.push(order);
-      knownIds.add(order.id);
-    }
-  }
-
-  if (merged.length > 0) {
-    return merged;
-  }
-
-  return [...demoOrders];
+  return apiOrders;
 }
 
 export function getResilientOrderById(id: number, apiOrder?: Order | null): Order | null {
@@ -43,7 +28,7 @@ export function getResilientOrderById(id: number, apiOrder?: Order | null): Orde
     return apiOrder;
   }
 
-  return getResilientOrders().find((order) => order.id === id) ?? null;
+  return null;
 }
 
 /** Default demo orders (shown when API is unavailable and no mock orders exist) */

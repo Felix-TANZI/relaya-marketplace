@@ -34,6 +34,14 @@ function wait(ms: number) {
   return new Promise((resolve) => window.setTimeout(resolve, ms));
 }
 
+function friendlyHttpError(status: number) {
+  if (status === 401) return "Votre session a expiré. Reconnectez-vous pour continuer.";
+  if (status === 403) return "Vous n'avez pas l'autorisation d'effectuer cette action.";
+  if (status === 404) return "Cette ressource est momentanément indisponible.";
+  if (status >= 500) return "Le service rencontre un problème. Réessayez dans un instant.";
+  return "Impossible de terminer cette action pour le moment.";
+}
+
 async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
   const delays = [450, 1200];
   let lastError: unknown;
@@ -142,13 +150,8 @@ try {
   }
 
   if (!response.ok) {
-    const errorText = await response.text().catch(() => "");
-    // Silent in production — no console.error spam
-    throw new Error(
-      errorText
-        ? `API Error: ${response.status} ${response.statusText} - ${errorText}`
-        : `API Error: ${response.status} ${response.statusText}`,
-    );
+    await response.text().catch(() => "");
+    throw new Error(friendlyHttpError(response.status));
   }
 
   return response.json();

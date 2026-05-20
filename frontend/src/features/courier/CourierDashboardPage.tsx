@@ -98,6 +98,10 @@ function formatXaf(value: number) {
   return `${value.toLocaleString("fr-FR")} FCFA`;
 }
 
+function courierPayout(shipment: CourierShipment) {
+  return shipment.courier_payout_xaf ?? Math.round(shipment.order_total_xaf * 0.08);
+}
+
 function statusLabel(status: string) {
   switch (status) {
     case "ASSIGNED":
@@ -409,14 +413,14 @@ export default function CourierDashboardPage() {
 
   const earnings = useMemo(() => {
     const delivered = shipments.filter((shipment) => shipment.status === "DELIVERED");
-    const total = delivered.reduce((sum, shipment) => sum + Math.round(shipment.order_total_xaf * 0.08), 0);
-    const today = delivered.slice(0, 2).reduce((sum, shipment) => sum + Math.round(shipment.order_total_xaf * 0.08), 0);
+    const total = delivered.reduce((sum, shipment) => sum + courierPayout(shipment), 0);
+    const today = delivered.slice(0, 2).reduce((sum, shipment) => sum + courierPayout(shipment), 0);
     return {
       total,
       today,
       average: delivered.length ? Math.round(total / delivered.length) : 0,
       deliveredCount: delivered.length,
-      pending: Math.round(activeShipments.reduce((sum, shipment) => sum + shipment.order_total_xaf * 0.08, 0)),
+      pending: Math.round(activeShipments.reduce((sum, shipment) => sum + courierPayout(shipment), 0)),
     };
   }, [activeShipments, shipments]);
 
@@ -478,14 +482,21 @@ export default function CourierDashboardPage() {
     }
   };
 
-  const handleContactClient = () => {
-    if (!selectedShipment?.customer_phone) return;
+  const handleContactClient = async () => {
+    if (!selectedShipment) return;
     setContactLoading(true);
-    setActionFeedback("Ouverture de l'appel client...");
-    window.setTimeout(() => {
-      window.location.href = `tel:${selectedShipment.customer_phone}`;
+    setActionFeedback("");
+    try {
+      await customerApi.sendOrderChatMessage(
+        selectedShipment.order,
+        "Votre livreur souhaite vous joindre au sujet de cette livraison. Merci de consulter le suivi de commande.",
+      );
+      setActionFeedback("Message envoyé au client dans ses notifications.");
+    } catch {
+      setActionFeedback("Impossible d'envoyer le message au client pour le moment.");
+    } finally {
       setContactLoading(false);
-    }, 450);
+    }
   };
 
   const handleReplyClient = async () => {
@@ -907,7 +918,7 @@ export default function CourierDashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[15px] font-extrabold text-emerald-300">
-                      {formatXaf(Math.round(shipment.order_total_xaf * 0.08))}
+                      {formatXaf(courierPayout(shipment))}
                     </div>
                     <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">Estime</div>
                   </div>
@@ -1085,7 +1096,7 @@ export default function CourierDashboardPage() {
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
-                      {formatXaf(shipment.order_total_xaf)}
+                      {formatXaf(courierPayout(shipment))}
                     </span>
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70">
                       {shipment.vendor_names?.join(", ") || "Vendeur non precise"}
@@ -1118,9 +1129,9 @@ export default function CourierDashboardPage() {
                 <div className="mt-1 text-[12px] text-[#8B949E]">{selectedShipment.customer_phone}</div>
               </div>
               <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Valeur commande</div>
-                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{formatXaf(selectedShipment.order_total_xaf)}</div>
-                <div className="mt-1 text-[12px] text-white/55">Commission estimee: {formatXaf(Math.round(selectedShipment.order_total_xaf * 0.08))}</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Rémunération course</div>
+                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{formatXaf(courierPayout(selectedShipment))}</div>
+                <div className="mt-1 text-[12px] text-white/55">Prix marchandise masqué pour le livreur</div>
               </div>
             </div>
 
@@ -1209,11 +1220,11 @@ export default function CourierDashboardPage() {
               <button
                 type="button"
                 onClick={handleContactClient}
-                disabled={contactLoading || !selectedShipment.customer_phone}
+                disabled={contactLoading}
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {contactLoading ? <LoaderCircle size={14} className="animate-spin" /> : <Phone size={14} />}
-                {contactLoading ? "Ouverture..." : "Contacter le client"}
+                {contactLoading ? "Envoi..." : "Notifier le client"}
               </button>
             </div>
             {actionFeedback ? (
@@ -1229,8 +1240,7 @@ export default function CourierDashboardPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <InfoPill icon={MapPin}>Adresse: {selectedShipment.delivery_address}</InfoPill>
                 <InfoPill icon={Store}>Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
-                <InfoPill icon={CreditCard}>Total: {formatXaf(selectedShipment.order_total_xaf)}</InfoPill>
-                <InfoPill icon={Wallet}>Gain estime: {formatXaf(Math.round(selectedShipment.order_total_xaf * 0.08))}</InfoPill>
+                <InfoPill icon={Wallet}>Rémunération: {formatXaf(courierPayout(selectedShipment))}</InfoPill>
               </div>
             </div>
 
@@ -1605,7 +1615,7 @@ export default function CourierDashboardPage() {
                 </div>
               </div>
               <div className={`text-[18px] font-extrabold ${shipment.status === "DELIVERED" ? "text-[#6EE7B7]" : "text-red-300"}`}>
-                {shipment.status === "DELIVERED" ? `+${formatXaf(Math.round(shipment.order_total_xaf * 0.08))}` : "0 FCFA"}
+                {shipment.status === "DELIVERED" ? `+${formatXaf(courierPayout(shipment))}` : "0 FCFA"}
               </div>
             </div>
           ))}

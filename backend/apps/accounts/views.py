@@ -26,6 +26,7 @@ from .serializers import (
     AvatarUploadSerializer,
     FavoriteSerializer,
     NotificationSerializer,
+    UserCartSerializer,
 )
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
@@ -34,7 +35,7 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer
-from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, UserCart, UserProfile, UserFavorite, UserNotification
 
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,31 @@ class RegisterView(generics.CreateAPIView):
             UserSerializer(user).data,
             status=status.HTTP_201_CREATED
         )
+
+
+@extend_schema(tags=["Client"], summary="Panier persistant utilisateur")
+class UserCartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_cart(self, request):
+        cart, _ = UserCart.objects.get_or_create(user=request.user)
+        return cart
+
+    def get(self, request):
+        return Response(UserCartSerializer(self.get_cart(request)).data)
+
+    def put(self, request):
+        cart = self.get_cart(request)
+        serializer = UserCartSerializer(cart, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def delete(self, request):
+        cart = self.get_cart(request)
+        cart.items = []
+        cart.save(update_fields=["items", "updated_at"])
+        return Response(UserCartSerializer(cart).data)
 
 
 @extend_schema(tags=["Auth"], summary="Bootstrap admin user")

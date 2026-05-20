@@ -119,7 +119,7 @@ class OrderTrackingView(APIView):
         shipment = getattr(order, 'shipment', None)
         if not shipment:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
-        return Response(ShipmentSerializer(shipment).data)
+        return Response(ShipmentSerializer(shipment, context={"request": request}).data)
 
 
 @extend_schema(

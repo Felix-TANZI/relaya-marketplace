@@ -1,7 +1,9 @@
 // frontend/src/context/CartContext.tsx
 // Contexte pour la gestion du panier d'achat
 
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from "react";
+import { cartApi } from "@/services/api/cart";
+import { useAuth } from "@/context/AuthContext";
 
 interface CartItem {
   id: number;
@@ -26,8 +28,60 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function normalizeCartItems(items: CartItem[]) {
+  return items.map((item) => ({
+    ...item,
+    image: item.image ?? undefined,
+    color: item.color ?? undefined,
+    storage: item.storage ?? undefined,
+  }));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { isAuthenticated } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
+  const hydratedRef = useRef(false);
+  const syncTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    hydratedRef.current = false;
+    if (!isAuthenticated) {
+      setItems([]);
+      return;
+    }
+
+    let cancelled = false;
+    cartApi
+      .get()
+      .then((cart) => {
+        if (!cancelled) setItems(normalizeCartItems((cart.items ?? []) as CartItem[]));
+      })
+      .catch(() => {
+        if (!cancelled) setItems([]);
+      })
+      .finally(() => {
+        if (!cancelled) hydratedRef.current = true;
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !hydratedRef.current) return;
+    if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
+
+    syncTimerRef.current = window.setTimeout(() => {
+      cartApi.save(items).catch(() => {
+        // Le panier reste en mémoire; la prochaine modification retentera la synchronisation.
+      });
+    }, 250);
+
+    return () => {
+      if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
+    };
+  }, [items, isAuthenticated]);
 
   const addItem = (item: CartItem) => {
     setItems((prev) => {
@@ -57,6 +111,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => {
     setItems([]);
+    if (isAuthenticated) {
+      cartApi.clear().catch(() => {});
+    }
   };
 
   const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);

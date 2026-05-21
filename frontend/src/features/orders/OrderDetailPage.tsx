@@ -179,6 +179,7 @@ export default function OrderDetailPage() {
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
   const activeDispute =
     disputes.find((dispute) => dispute.id === activeDisputeId) ?? disputes[0] ?? null;
+  const canSeeDisputeArea = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order?.fulfillment_status ?? "");
 
   if (loading) {
     return (
@@ -445,14 +446,16 @@ export default function OrderDetailPage() {
                   <Truck size={18} />
                   {t('order.detail.contact_courier')}
                 </button>
-                <button
-                  onClick={handleOpenDispute}
-                  disabled={!activeDispute && !disputeEligibility.eligible}
-                  className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                >
-                  <MessageCircleMore size={18} />
-                  {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
-                </button>
+                {canSeeDisputeArea && (
+                  <button
+                    onClick={handleOpenDispute}
+                    disabled={!activeDispute && !disputeEligibility.eligible}
+                    className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                  >
+                    <MessageCircleMore size={18} />
+                    {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
+                  </button>
+                )}
                 {order.fulfillment_status === "DELIVERED" && (
                   <button
                     onClick={handleConfirmReceipt}
@@ -551,6 +554,7 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
+            {canSeeDisputeArea && (
             <section
               ref={disputeSectionRef}
               className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
@@ -724,6 +728,7 @@ export default function OrderDetailPage() {
                 </div>
               ) : null}
             </section>
+            )}
           </div>
 
           <div className="space-y-6">

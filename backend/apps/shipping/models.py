@@ -38,6 +38,8 @@ class Shipment(models.Model):
 
     # Optional: point relais (plus tard)
     relay_point = models.CharField(max_length=120, blank=True, default="")
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    penalty_notified_at = models.DateTimeField(null=True, blank=True)
 
     # Horodatage
     created_at = models.DateTimeField(auto_now_add=True)

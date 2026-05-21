@@ -98,6 +98,19 @@ class UserProfile(models.Model):
         return f"Profil de {self.user.username}"
 
 
+class UserCart(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="cart")
+    items = models.JSONField(default=list, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Panier utilisateur"
+        verbose_name_plural = "Paniers utilisateurs"
+
+    def __str__(self):
+        return f"Panier de {self.user.username}"
+
+
 class UserActivityLog(models.Model):
     """
     Journal d'activité utilisateur pour audit

@@ -27,6 +27,7 @@ export type CourierShipment = {
   delivery_address: string;
   city: string;
   order_total_xaf: number;
+  courier_payout_xaf?: number;
   fulfillment_status: string;
   vendor_names: string[];
   relay_point: string;

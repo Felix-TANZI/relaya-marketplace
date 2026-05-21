@@ -7,7 +7,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
-from .models import CourierProfile, UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, UserCart, UserProfile, UserFavorite, UserNotification
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
@@ -30,6 +30,31 @@ class CourierProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "is_active", "is_approved", "is_online", "created_at", "updated_at"]
+
+
+class CartItemSerializer(serializers.Serializer):
+    id = serializers.IntegerField()
+    name = serializers.CharField(max_length=255)
+    price = serializers.IntegerField(min_value=0)
+    quantity = serializers.IntegerField(min_value=1)
+    image = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    isDemo = serializers.BooleanField(required=False, default=False)
+    color = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+    storage = serializers.CharField(required=False, allow_blank=True, allow_null=True)
+
+
+class UserCartSerializer(serializers.ModelSerializer):
+    items = CartItemSerializer(many=True)
+
+    class Meta:
+        model = UserCart
+        fields = ["items", "updated_at"]
+        read_only_fields = ["updated_at"]
+
+    def update(self, instance, validated_data):
+        instance.items = validated_data.get("items", [])
+        instance.save(update_fields=["items", "updated_at"])
+        return instance
 
 
 class CourierApplicationSerializer(serializers.Serializer):

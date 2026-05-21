@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
+from django.utils import timezone
 from apps.orders.models import Dispute, Order
 from apps.accounts.models import UserNotification
 from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
@@ -19,6 +20,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
     delivery_address = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     order_total_xaf = serializers.SerializerMethodField()
+    courier_payout_xaf = serializers.SerializerMethodField()
     fulfillment_status = serializers.SerializerMethodField()
     vendor_names = serializers.SerializerMethodField()
 
@@ -36,6 +38,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "delivery_address",
             "city",
             "order_total_xaf",
+            "courier_payout_xaf",
             "fulfillment_status",
             "vendor_names",
             "relay_point",
@@ -75,7 +78,13 @@ class ShipmentSerializer(serializers.ModelSerializer):
         return obj.order.city
 
     def get_order_total_xaf(self, obj):
+        request = self.context.get("request")
+        if request and hasattr(request.user, "courier_profile") and not request.user.is_staff:
+            return self.get_courier_payout_xaf(obj)
         return obj.order.total_xaf
+
+    def get_courier_payout_xaf(self, obj):
+        return max(1000, round((obj.order.delivery_fee_xaf or 0) * 0.75)) if obj.order.delivery_fee_xaf else 1500
 
     def get_fulfillment_status(self, obj):
         return obj.order.fulfillment_status
@@ -227,12 +236,15 @@ class CourierShipmentActionSerializer(serializers.Serializer):
 
         if action == "ACCEPT":
             shipment.status = Shipment.Status.ASSIGNED
+            shipment.accepted_at = timezone.now()
+            shipment.penalty_notified_at = None
             order.assign_driver()
         elif action == "DECLINE":
             shipment.status = Shipment.Status.CREATED
             shipment.courier = None
             shipment.courier_name = ""
             shipment.courier_phone = ""
+            shipment.accepted_at = None
             order.mark_ready_for_pickup()
         elif action == "PICKED_UP":
             shipment.status = Shipment.Status.PICKED_UP
@@ -246,7 +258,7 @@ class CourierShipmentActionSerializer(serializers.Serializer):
         elif action == "FAILED":
             shipment.status = Shipment.Status.FAILED
 
-        shipment.save(update_fields=["status", "courier", "courier_name", "courier_phone", "updated_at"])
+        shipment.save(update_fields=["status", "courier", "courier_name", "courier_phone", "accepted_at", "penalty_notified_at", "updated_at"])
 
         ShipmentEvent.objects.create(
             shipment=shipment,

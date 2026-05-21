@@ -30,28 +30,6 @@ const TrackingMap = lazy(() =>
 );
 
 type TabKey = "all" | "in_delivery" | "preparing" | "delivered" | "cancelled";
-const CANCELLED_ORDERS_KEY = "belivay_cancelled_order_ids";
-
-function getLocallyCancelledOrderIds() {
-  try {
-    const raw = window.localStorage.getItem(CANCELLED_ORDERS_KEY);
-    const ids = raw ? JSON.parse(raw) : [];
-    return Array.isArray(ids) ? ids.filter((id) => typeof id === "number") : [];
-  } catch {
-    return [];
-  }
-}
-
-function storeLocallyCancelledOrder(orderId: number) {
-  const ids = new Set(getLocallyCancelledOrderIds());
-  ids.add(orderId);
-  window.localStorage.setItem(CANCELLED_ORDERS_KEY, JSON.stringify(Array.from(ids)));
-}
-
-function applyLocalCancelledOrders(orderList: Order[]) {
-  const ids = new Set(getLocallyCancelledOrderIds());
-  return orderList.filter((order) => !ids.has(order.id));
-}
 
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
@@ -67,14 +45,11 @@ export default function OrdersHistoryPage() {
     ordersApi
       .getMyOrders()
       .then((data) => {
-        setOrders(applyLocalCancelledOrders(getResilientOrders(data)));
+        setOrders(getResilientOrders(data));
       })
       .catch(() => {
-        const fallback = applyLocalCancelledOrders(getResilientOrders());
-        setOrders(fallback);
-        if (fallback.length === 0) {
-          setError("Impossible de charger les commandes depuis le backend.");
-        }
+        setOrders([]);
+        setError("Nous n'arrivons pas à charger vos commandes pour le moment. Réessayez dans un instant.");
       })
       .finally(() => setLoading(false));
   }, []);
@@ -169,16 +144,15 @@ export default function OrdersHistoryPage() {
   const confirmCancelOrder = async () => {
     if (!cancelCandidate) return;
     const order = cancelCandidate;
-    storeLocallyCancelledOrder(order.id);
-    setOrders((current) => current.filter((item) => item.id !== order.id));
     setCancelCandidate(null);
-    setCancelFeedback(`Commande #${order.id} annulée et retirée de vos commandes.`);
 
     try {
-      await ordersApi.cancel(order.id);
+      const cancelled = await ordersApi.cancel(order.id);
+      setOrders((current) => current.map((item) => (item.id === order.id ? cancelled : item)));
+      setCancelFeedback(`Commande #${order.id} annulée.`);
       window.dispatchEvent(new Event("belivay-new-notification"));
     } catch {
-      // Le backend de demo peut ne pas exposer l'annulation; l'interface garde l'etat local.
+      setCancelFeedback("Impossible d'annuler cette commande pour le moment.");
     }
   };
 

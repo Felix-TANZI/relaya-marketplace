@@ -19,6 +19,7 @@ from .views import (
     update_profile,
     AvatarUploadView,
     CourierApplicationView,
+    UserCartView,
     FavoritesListCreateView,
     FavoriteDestroyView,
     NotificationsListView,
@@ -78,6 +79,7 @@ urlpatterns = [
     path("2fa/verify-login/", verify_2fa_login, name="auth-2fa-verify-login"),
 
     # ── Client (favoris, notifications) ──────────────────────────────────────
+    path("cart/",                     UserCartView.as_view(),         name="client-cart"),
     path("favorites/",                FavoritesListCreateView.as_view(), name="client-favorites"),
     path("favorites/<int:pk>/",       FavoriteDestroyView.as_view(),     name="client-favorite-delete"),
     path("notifications/",            NotificationsListView.as_view(),   name="client-notifications"),

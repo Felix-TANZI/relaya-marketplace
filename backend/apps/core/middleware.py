@@ -121,7 +121,34 @@ class UserActivityMiddleware:
                 self._record(request)
             except Exception:
                 pass
+        if path.startswith('/api/') and response.status_code >= 400:
+            try:
+                self._record_api_error(request, response)
+            except Exception:
+                pass
         return response
+
+    def _record_api_error(self, request, response):
+        from apps.vendors.models import SystemLog
+
+        user = request.user if getattr(request, "user", None) and request.user.is_authenticated else None
+        level = "ERROR" if response.status_code >= 500 else "WARNING"
+        SystemLog.objects.create(
+            level=level,
+            service="api",
+            message=f"{request.method} {request.path} -> HTTP {response.status_code}",
+            logger="apps.core.middleware.api_errors",
+            user_id=user.id if user else None,
+            ip_address=get_client_ip(request) or None,
+            extra={
+                "method": request.method,
+                "path": request.path,
+                "query": request.META.get("QUERY_STRING", ""),
+                "status_code": response.status_code,
+                "user_agent": request.META.get("HTTP_USER_AGENT", ""),
+                "page": api_path_to_page(request.path),
+            },
+        )
 
     def _record(self, request):
         user = request.user

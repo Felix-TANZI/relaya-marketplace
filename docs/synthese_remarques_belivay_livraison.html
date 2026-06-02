@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8">
+    <title>Belivay - Synthese des remarques critiques et metier</title>
+    <style>
+      @page {
+        size: A4;
+        margin: 18mm 16mm;
+      }
+
+      body {
+        color: #1f2933;
+        font-family: "Liberation Sans", Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.45;
+      }
+
+      h1 {
+        color: #102a43;
+        font-size: 21pt;
+        margin: 0 0 6mm;
+      }
+
+      h2 {
+        border-bottom: 1px solid #bcccdc;
+        color: #243b53;
+        font-size: 15pt;
+        margin: 8mm 0 3mm;
+        padding-bottom: 1.5mm;
+      }
+
+      h3 {
+        color: #334e68;
+        font-size: 12.5pt;
+        margin: 5mm 0 1.5mm;
+      }
+
+      p {
+        margin: 0 0 3mm;
+      }
+
+      ul {
+        margin: 1mm 0 4mm 6mm;
+        padding-left: 4mm;
+      }
+
+      li {
+        margin-bottom: 1.3mm;
+      }
+
+      .meta {
+        color: #52606d;
+        font-size: 10pt;
+        margin-bottom: 7mm;
+      }
+
+      .callout {
+        background: #f0f4f8;
+        border-left: 4px solid #486581;
+        margin: 4mm 0 6mm;
+        padding: 3mm 4mm;
+      }
+
+      table {
+        border-collapse: collapse;
+        margin: 3mm 0 5mm;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border: 1px solid #d9e2ec;
+        padding: 2.5mm;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #e6f0fa;
+        color: #102a43;
+        font-weight: 700;
+      }
+
+      .critical {
+        color: #9b1c1c;
+        font-weight: 700;
+      }
+
+      .high {
+        color: #8a4b0f;
+        font-weight: 700;
+      }
+
+      .medium {
+        color: #2f5f8f;
+        font-weight: 700;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Belivay - Remarques critiques et metier</h1>
+    <p class="meta">Synthese orientee produit et operations livraison - 1 juin 2026</p>
+
+    <div class="callout">
+      <p>
+        Le point le plus structurant est le changement de logique de livraison :
+        Belivay ne gere plus seulement des livreurs internes, mais s'appuie sur
+        des entreprises de livraison partenaires. Cela impose de revoir
+        l'affectation des commandes, les zones, les droits, les vues et les
+        informations affichees aux differents acteurs.
+      </p>
+    </div>
+
+    <h2>Priorites critiques</h2>
+
+    <h3>1. Paiement bloque pour les autres acteurs</h3>
+    <p><span class="critical">Criticite : critique.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> le paiement est bloque au niveau de certains acteurs de la plateforme.</li>
+      <li><strong>Impact metier :</strong> blocage direct de la transaction, perte de confiance, impossibilite de finaliser correctement les commandes.</li>
+      <li><strong>Modification attendue :</strong> auditer le flux de paiement par role et corriger les conditions qui empechent les autres acteurs de payer ou de recevoir le statut attendu.</li>
+      <li><strong>Decision a valider :</strong> definir quels acteurs peuvent payer, recevoir un paiement, confirmer une commande ou declencher une mission de livraison.</li>
+    </ul>
+
+    <h3>2. Nouvelle logique de livraison avec entreprise partenaire</h3>
+    <p><span class="critical">Criticite : critique.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> la logique actuelle du livreur doit changer, car les livreurs seront fournis par des entreprises de livraison partenaires.</li>
+      <li><strong>Impact metier :</strong> l'acteur principal de la livraison devient l'entreprise partenaire, pas seulement le livreur individuel.</li>
+      <li><strong>Modification attendue :</strong> creer une vue <strong>Entreprise de livraison</strong> permettant au partenaire de suivre ses livreurs, consulter les colis, voir les prix, suivre les missions et gerer son equipe.</li>
+      <li><strong>Creation des comptes :</strong> l'administrateur Belivay cree l'entreprise de livraison ; l'entreprise de livraison cree ensuite ses propres livreurs.</li>
+      <li><strong>Consequence :</strong> la vue livreur existante doit etre rattachee a une entreprise de livraison et simplifiee selon le nouveau perimetre.</li>
+    </ul>
+
+    <h3>3. Affectation des commandes selon les zones couvertes</h3>
+    <p><span class="critical">Criticite : critique.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> il faut changer les zones du livreur et definir ce qui se passe lorsqu'une zone n'est pas prise en charge.</li>
+      <li><strong>Impact metier :</strong> certaines commandes peuvent ne jamais arriver chez un livreur si la zone ou la capacite bloque l'affectation.</li>
+      <li><strong>Modification attendue :</strong> mettre en place une logique claire d'affectation par zone, entreprise de livraison, disponibilite, capacite et moyen de transport.</li>
+      <li><strong>Regle a definir :</strong> si aucune entreprise ou aucun livreur ne couvre la zone, la commande doit passer dans un etat specifique : "zone non couverte", "en attente d'affectation manuelle" ou "livraison indisponible".</li>
+      <li><strong>Decision a valider :</strong> choisir si Belivay bloque la commande avant paiement, accepte la commande puis l'envoie a l'administration, ou propose au client un retrait en boutique.</li>
+    </ul>
+
+    <h3>4. Limite de capacite et commandes qui n'arrivent pas au livreur</h3>
+    <p><span class="critical">Criticite : critique.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> certaines commandes n'arrivent pas chez le livreur parce que l'espace ou la capacite limite la commande.</li>
+      <li><strong>Impact metier :</strong> rupture operationnelle entre commande client, boutique et livraison.</li>
+      <li><strong>Modification attendue :</strong> rendre visible la raison de non-affectation : zone non couverte, livreur indisponible, volume depasse, poids depasse, moyen de transport incompatible ou entreprise non disponible.</li>
+      <li><strong>Decision a valider :</strong> definir les limites par livreur, par entreprise de livraison et par moyen de transport.</li>
+    </ul>
+
+    <h3>5. Parcours de recuperation en boutique</h3>
+    <p><span class="high">Criticite : elevee.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> le livreur vient prendre la commande dans la boutique.</li>
+      <li><strong>Impact metier :</strong> il faut officialiser le point de depart de la mission et les statuts associes.</li>
+      <li><strong>Modification attendue :</strong> ajouter ou clarifier les statuts : mission assignee, livreur en route vers la boutique, colis recupere, livraison en cours, livre, echec de livraison.</li>
+      <li><strong>Decision a valider :</strong> confirmer si toutes les commandes passent par une recuperation boutique ou si certains cas partent d'un autre point.</li>
+    </ul>
+
+    <h2>Priorites metier importantes</h2>
+
+    <h3>6. Moyen de transport par defaut pour une mission specifique</h3>
+    <p><span class="high">Criticite : elevee.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> le moyen de transport par defaut du livreur doit etre pris en compte pour une mission specifique.</li>
+      <li><strong>Impact metier :</strong> le prix, la capacite, les zones et les delais dependent du moyen de transport.</li>
+      <li><strong>Modification attendue :</strong> associer chaque livreur a un ou plusieurs moyens de transport et verifier la compatibilite avec chaque mission.</li>
+      <li><strong>Decision a valider :</strong> definir si le transport est impose par l'entreprise, choisi par le livreur ou determine automatiquement par Belivay.</li>
+    </ul>
+
+    <h3>7. Donnees visibles dans la vue livreur</h3>
+    <p><span class="high">Criticite : elevee.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> il faut retirer le gain de ce que le livreur gagne, le total des courses et les informations inutiles du client.</li>
+      <li><strong>Impact metier :</strong> reduction des informations sensibles, meilleure confidentialite client, vue livreur plus adaptee a un livreur rattache a une entreprise partenaire.</li>
+      <li><strong>Modification attendue :</strong> afficher uniquement les informations necessaires a la mission : boutique de depart, adresse de livraison, contact minimal autorise, statut de mission, instructions et preuve de livraison.</li>
+      <li><strong>Decision a valider :</strong> definir quelles informations financieres sont visibles par l'entreprise de livraison, par le livreur et par l'administration Belivay.</li>
+    </ul>
+
+    <h3>8. Messagerie instantanee et conversation livreur</h3>
+    <p><span class="medium">Criticite : moyenne a elevee.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> les messages doivent apparaitre instantanement et le chat avec le livreur doit descendre automatiquement lorsqu'un message est envoye.</li>
+      <li><strong>Impact metier :</strong> meilleure coordination entre client, boutique, livreur et support, surtout pendant une livraison active.</li>
+      <li><strong>Modification attendue :</strong> rendre le chat temps reel ou quasi temps reel, ajouter l'auto-scroll, et fiabiliser l'etat d'envoi / reception des messages.</li>
+      <li><strong>Decision a valider :</strong> preciser les acteurs autorises a communiquer : client-livreur, boutique-livreur, entreprise-livreur, admin-livreur.</li>
+    </ul>
+
+    <h3>9. Derniere recherche visible</h3>
+    <p><span class="medium">Criticite : moyenne.</span></p>
+    <ul>
+      <li><strong>Constat :</strong> l'utilisateur doit pouvoir voir sa derniere recherche.</li>
+      <li><strong>Impact metier :</strong> amelioration du suivi et reduction des pertes de contexte, notamment dans les interfaces operationnelles.</li>
+      <li><strong>Modification attendue :</strong> conserver et afficher la derniere recherche pertinente selon la vue : commandes, livreurs, colis, boutiques ou zones.</li>
+    </ul>
+
+    <h2>Nouvelle repartition des vues</h2>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Acteur</th>
+          <th>Creation du compte</th>
+          <th>Fonctions principales</th>
+          <th>Informations sensibles a limiter</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Administrateur Belivay</td>
+          <td>Cree les entreprises de livraison partenaires</td>
+          <td>Controle les partenaires, les zones, les prix, les commandes bloquees et les litiges</td>
+          <td>Aucune limitation interne specifique, selon les droits admin</td>
+        </tr>
+        <tr>
+          <td>Entreprise de livraison</td>
+          <td>Creee par l'administrateur Belivay</td>
+          <td>Gere ses livreurs, suit les missions, consulte les colis, suit les prix et les performances</td>
+          <td>Donnees client limitees au strict necessaire operationnel</td>
+        </tr>
+        <tr>
+          <td>Livreur</td>
+          <td>Cree par son entreprise de livraison</td>
+          <td>Recoit les missions, recupere le colis en boutique, livre la commande, met a jour les statuts</td>
+          <td>Gains, total des courses et informations client non necessaires</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Questions metier a trancher avant implementation</h2>
+    <ul>
+      <li>Que devient une commande lorsque la zone n'est couverte par aucune entreprise de livraison ?</li>
+      <li>Faut-il bloquer le paiement si la livraison est impossible, ou accepter la commande avec traitement manuel ?</li>
+      <li>Qui fixe le prix du colis : Belivay, l'entreprise de livraison, ou une grille automatique ?</li>
+      <li>Quels champs client le livreur peut-il voir exactement ?</li>
+      <li>Le moyen de transport est-il defini par defaut sur le livreur, sur la mission ou par l'entreprise ?</li>
+      <li>Le livreur peut-il aussi effectuer ses propres commandes en tant que client, ou s'agit-il d'une action dans son espace livreur ?</li>
+    </ul>
+
+    <h2>Ordre recommande des modifications</h2>
+    <ol>
+      <li>Corriger le blocage paiement par acteur.</li>
+      <li>Definir le modele metier entreprise de livraison, livreur rattache, zones, tarifs et droits.</li>
+      <li>Revoir l'affectation des commandes selon zone, capacite, disponibilite et moyen de transport.</li>
+      <li>Creer la vue Entreprise de livraison.</li>
+      <li>Simplifier la vue livreur existante et retirer les informations sensibles ou inutiles.</li>
+      <li>Clarifier le parcours de recuperation en boutique et les statuts de mission.</li>
+      <li>Ameliorer la messagerie temps reel et l'auto-scroll du chat.</li>
+      <li>Ajouter l'affichage de la derniere recherche dans les vues operationnelles.</li>
+    </ol>
+  </body>
+</html>

@@ -1,18 +1,16 @@
-import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
+import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   ArrowRight,
   BadgeCheck,
-  BadgeDollarSign,
   Bell,
   Bike,
   BookOpen,
   CheckCircle2,
   ChevronRight,
   Clock3,
-  CreditCard,
   FileBadge2,
   Gauge,
   LoaderCircle,
@@ -35,7 +33,6 @@ import {
   Store,
   Truck,
   User,
-  Wallet,
   XCircle,
 } from "lucide-react";
 import TrackingMap from "@/components/TrackingMap";
@@ -60,7 +57,6 @@ type CourierTab =
   | "scanner"
   | "map"
   | "reseau"
-  | "gains"
   | "profil"
   | "formation"
   | "notifications"
@@ -84,7 +80,6 @@ const TAB_LABELS: Record<CourierTab, string> = {
   scanner: "Scanner QR",
   map: "Carte & Navigation",
   reseau: "Boutiques & Points Relais",
-  gains: "Gains & Rentabilite",
   profil: "Mon Profil",
   formation: "Formation",
   notifications: "Notifications",
@@ -93,14 +88,6 @@ const TAB_LABELS: Record<CourierTab, string> = {
   securite: "Securite SOS",
   parametres: "Parametres",
 };
-
-function formatXaf(value: number) {
-  return `${value.toLocaleString("fr-FR")} FCFA`;
-}
-
-function courierPayout(shipment: CourierShipment) {
-  return shipment.courier_payout_xaf ?? Math.round(shipment.order_total_xaf * 0.08);
-}
 
 function statusLabel(status: string) {
   switch (status) {
@@ -268,6 +255,7 @@ export default function CourierDashboardPage() {
   const [moreOpen, setMoreOpen] = useState(false);
   const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
+  const clientChatEndRef = useRef<HTMLDivElement | null>(null);
   const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
   const [disputeFeedback, setDisputeFeedback] = useState("");
@@ -403,26 +391,17 @@ export default function CourierDashboardPage() {
     };
 
     fetchMessages();
-    const interval = window.setInterval(fetchMessages, 12000);
+    const interval = window.setInterval(fetchMessages, 4000);
     return () => { cancelled = true; window.clearInterval(interval); };
   }, [selectedShipment]);
+
+  useEffect(() => {
+    clientChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [clientMessages]);
 
   const selectedDisputePermission = selectedDispute
     ? disputePermissionStatus[selectedDispute.id] ?? (selectedDispute.can_reply ? "granted" : "locked")
     : "locked";
-
-  const earnings = useMemo(() => {
-    const delivered = shipments.filter((shipment) => shipment.status === "DELIVERED");
-    const total = delivered.reduce((sum, shipment) => sum + courierPayout(shipment), 0);
-    const today = delivered.slice(0, 2).reduce((sum, shipment) => sum + courierPayout(shipment), 0);
-    return {
-      total,
-      today,
-      average: delivered.length ? Math.round(total / delivered.length) : 0,
-      deliveredCount: delivered.length,
-      pending: Math.round(activeShipments.reduce((sum, shipment) => sum + courierPayout(shipment), 0)),
-    };
-  }, [activeShipments, shipments]);
 
   const handleShipmentAction = async (action: CourierShipmentAction) => {
     if (!selectedShipment) return;
@@ -503,11 +482,22 @@ export default function CourierDashboardPage() {
     if (!selectedShipment || !clientReplyDraft.trim()) return;
     const message = clientReplyDraft.trim();
     setClientReplyDraft("");
+    const optimisticMessage: OrderChatMessage = {
+      id: -Date.now(),
+      shipment: selectedShipment.id,
+      channel: "CLIENT",
+      sender_role: "COURIER",
+      sender_name: firstName,
+      message,
+      created_at: new Date().toISOString(),
+    };
+    setClientMessages((prev) => [...prev, optimisticMessage]);
     try {
       const msg = await customerApi.sendOrderChatMessage(selectedShipment.order, message);
-      setClientMessages((prev) => [...prev, msg]);
+      setClientMessages((prev) => prev.map((item) => (item.id === optimisticMessage.id ? msg : item)));
     } catch {
       setClientReplyDraft(message);
+      setClientMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
     }
   };
 
@@ -557,7 +547,6 @@ export default function CourierDashboardPage() {
     { id: "scanner", label: "Scanner QR", icon: ScanLine },
     { id: "map", label: "Carte & Navigation", icon: Map },
     { id: "reseau", label: "Boutiques & Points Relais", icon: Store },
-    { id: "gains", label: "Gains & Rentabilite", icon: BadgeDollarSign },
     { id: "profil", label: "Mon Profil", icon: User },
     { id: "formation", label: "Formation", icon: BookOpen },
     { id: "notifications", label: "Notifications", icon: Bell },
@@ -578,20 +567,20 @@ export default function CourierDashboardPage() {
     },
     {
       label: "Livrees",
-      value: earnings.deliveredCount,
+      value: completedShipments.filter((shipment) => shipment.status === "DELIVERED").length,
       icon: CheckCircle2,
       tone: "text-green-300 bg-green-500/10 border-green-500/20",
     },
     {
-      label: "Gains du jour",
-      value: formatXaf(earnings.today),
-      icon: Wallet,
-      tone: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
+      label: "Statut",
+      value: currentIsOnline ? "En ligne" : "Hors ligne",
+      icon: Bell,
+      tone: "text-sky-300 bg-sky-500/10 border-sky-500/20",
     },
     {
-      label: "Moyenne/course",
-      value: formatXaf(earnings.average),
-      icon: Gauge,
+      label: "Vehicule",
+      value: VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle,
+      icon: Bike,
       tone: "text-lime-300 bg-lime-500/10 border-lime-500/20",
     },
   ];
@@ -650,7 +639,7 @@ export default function CourierDashboardPage() {
         activeShipments.length > 1
           ? `${activeZones.join(", ") || courierProfile?.city || "Votre zone"} concentre ${activeShipments.length} livraison(s) active(s).`
           : nextTourStop
-            ? `${nextTourStop.customer_name} · ${nextTourStop.delivery_address}`
+            ? nextTourStop.delivery_address
             : "Aucune livraison active pour le moment.",
       tone: "border-orange-500/20 bg-orange-500/5",
     },
@@ -765,22 +754,10 @@ export default function CourierDashboardPage() {
     <>
       <section className="grid gap-4 md:grid-cols-4">
         {[
-          {
-            ...quickStats[0],
-            value: dashboard?.active_shipments ?? quickStats[0].value,
-          },
-          {
-            ...quickStats[1],
-            value: dashboard?.delivered_shipments ?? quickStats[1].value,
-          },
-          {
-            ...quickStats[2],
-            value: formatXaf(dashboard?.today_earnings_xaf ?? earnings.today),
-          },
-          {
-            ...quickStats[3],
-            value: formatXaf(dashboard?.average_payout_xaf ?? earnings.average),
-          },
+          { ...quickStats[0], value: dashboard?.active_shipments ?? quickStats[0].value },
+          { ...quickStats[1], value: dashboard?.delivered_shipments ?? quickStats[1].value },
+          quickStats[2],
+          quickStats[3],
         ].map((item) => (
           <MetricCard key={item.label} {...item} />
         ))}
@@ -873,7 +850,7 @@ export default function CourierDashboardPage() {
               <TrackingMap
                 destinationAddress={mapShipment?.delivery_address}
                 destinationCity={mapShipment?.city}
-                destinationLabel={mapShipment?.customer_name || "Client"}
+                destinationLabel="Destination client"
                 className="rounded-[22px] border-none"
                 height={300}
               />
@@ -918,9 +895,9 @@ export default function CourierDashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[15px] font-extrabold text-emerald-300">
-                      {formatXaf(courierPayout(shipment))}
+                      {shipment.city || currentCourierCity}
                     </div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">Estime</div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">Zone</div>
                   </div>
                 </div>
               </button>
@@ -951,7 +928,7 @@ export default function CourierDashboardPage() {
             </div>
             <p className="mt-3 text-[14px] leading-7 text-white/80">
               {nextTourStop
-                ? `Prochain arret conseille: ${nextTourStop.customer_name}, ${nextTourStop.delivery_address}.`
+                ? `Prochain arret conseille: ${nextTourStop.delivery_address}.`
                 : "Aucune mission active pour le moment. Les prochaines livraisons assignees apparaitront ici."}
             </p>
           </div>
@@ -972,7 +949,7 @@ export default function CourierDashboardPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white">{shipment.customer_name}</div>
+                      <div className="font-bold text-white">Client de la commande</div>
                       <div className="mt-1 text-[12px] text-[#8B949E]">Commande #{shipment.order}</div>
                     </div>
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
@@ -1009,7 +986,7 @@ export default function CourierDashboardPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
                         <div className="font-bold text-white">Commande #{shipment.order}</div>
-                        <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.customer_name}</div>
+                        <div className="mt-1 text-[12px] text-[#8B949E]">Client masque</div>
                       </div>
                       <button
                         type="button"
@@ -1089,15 +1066,12 @@ export default function CourierDashboardPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-[13px] font-extrabold text-white">Commande #{shipment.order}</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.customer_name}</div>
+                  <div className="mt-1 text-[12px] text-[#8B949E]">Client masque</div>
                   <div className="mt-2 inline-flex items-center gap-2 text-[12px] text-[#8B949E]">
                     <MapPin size={12} />
                     {shipment.delivery_address}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
-                    <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-bold text-emerald-300">
-                      {formatXaf(courierPayout(shipment))}
-                    </span>
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70">
                       {shipment.vendor_names?.join(", ") || "Vendeur non precise"}
                     </span>
@@ -1125,13 +1099,13 @@ export default function CourierDashboardPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
                 <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Client</div>
-                <div className="mt-2 font-semibold text-white">{selectedShipment.customer_name}</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">{selectedShipment.customer_phone}</div>
+                <div className="mt-2 font-semibold text-white">Coordonnees masquees</div>
+                <div className="mt-1 text-[12px] text-[#8B949E]">Utilise la messagerie pour contacter le client.</div>
               </div>
               <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Rémunération course</div>
-                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{formatXaf(courierPayout(selectedShipment))}</div>
-                <div className="mt-1 text-[12px] text-white/55">Prix marchandise masqué pour le livreur</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Mission</div>
+                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{statusLabel(selectedShipment.status)}</div>
+                <div className="mt-1 text-[12px] text-white/55">{selectedShipment.city || currentCourierCity}</div>
               </div>
             </div>
 
@@ -1240,7 +1214,7 @@ export default function CourierDashboardPage() {
               <div className="grid gap-3 md:grid-cols-2">
                 <InfoPill icon={MapPin}>Adresse: {selectedShipment.delivery_address}</InfoPill>
                 <InfoPill icon={Store}>Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
-                <InfoPill icon={Wallet}>Rémunération: {formatXaf(courierPayout(selectedShipment))}</InfoPill>
+                <InfoPill icon={Truck}>Statut: {statusLabel(selectedShipment.status)}</InfoPill>
               </div>
             </div>
 
@@ -1274,6 +1248,7 @@ export default function CourierDashboardPage() {
                     Aucun message client pour cette course.
                   </div>
                 )}
+                <div ref={clientChatEndRef} />
               </div>
               <div className="mt-3 flex gap-3">
                 <input
@@ -1412,7 +1387,7 @@ export default function CourierDashboardPage() {
             <TrackingMap
               destinationAddress={mapShipment?.delivery_address}
               destinationCity={mapShipment?.city}
-              destinationLabel={mapShipment?.customer_name || "Client"}
+              destinationLabel="Destination client"
               className="rounded-[22px] border-none"
               height={420}
             />
@@ -1554,75 +1529,6 @@ export default function CourierDashboardPage() {
       </section>
     );
   };
-
-  const renderGains = () => (
-    <section className="grid gap-5 lg:grid-cols-[1fr_0.95fr]">
-      <SectionShell kicker="Monetisation" title="Gains & rentabilite">
-        <div className="grid gap-4 md:grid-cols-3">
-          <MetricCard
-            label="Total gains"
-            value={formatXaf(dashboard?.month_earnings_xaf ?? earnings.total)}
-            icon={Wallet}
-            tone="text-emerald-300 bg-emerald-500/10 border-emerald-500/20"
-          />
-          <MetricCard label="Aujourd'hui" value={formatXaf(earnings.today)} icon={BadgeDollarSign} tone="text-orange-300 bg-orange-500/10 border-orange-500/20" />
-          <MetricCard label="En attente" value={formatXaf(earnings.pending)} icon={CreditCard} tone="text-sky-300 bg-sky-500/10 border-sky-500/20" />
-        </div>
-        <div className="mt-5 rounded-[22px] border border-white/5 bg-white/[0.03] p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div className="text-[12px] font-black uppercase tracking-[0.16em] text-[#8B949E]">Objectif du mois</div>
-            <div className="text-right">
-              <div className="text-[13px] font-bold text-white">{dashboard?.monthly_goal_percent ?? 0}%</div>
-              <div className="text-[11px] text-[#8B949E]">
-                {formatXaf(dashboard?.month_earnings_xaf ?? 0)} / {formatXaf(dashboard?.monthly_target_xaf ?? 0)}
-              </div>
-            </div>
-          </div>
-          <div className="h-3 rounded-full bg-white/5">
-            <div
-              className="h-full rounded-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)]"
-              style={{ width: `${dashboard?.monthly_goal_percent ?? 0}%` }}
-            />
-          </div>
-          <div className="mt-4 grid gap-3 md:grid-cols-4">
-            {(dashboard?.weekly_progress ?? []).map((week) => (
-              <div key={week.label} className="rounded-[16px] border border-white/5 bg-black/10 p-3">
-                <div className="flex h-28 items-end">
-                  <div
-                    className="w-full rounded-t-[14px] bg-[linear-gradient(180deg,#6EE7B7,#10B981)]"
-                    style={{ height: `${Math.max(week.percent, 8)}%` }}
-                  />
-                </div>
-                <div className="mt-3 text-center text-[12px] font-bold text-white">{week.label}</div>
-                <div className="mt-1 text-center text-[11px] text-[#8B949E]">{formatXaf(week.earnings_xaf)}</div>
-                <div className="mt-1 text-center text-[10px] uppercase tracking-[0.12em] text-emerald-300">
-                  {week.deliveries} livraison{week.deliveries > 1 ? "s" : ""}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </SectionShell>
-
-      <SectionShell kicker="Versements" title="Mobile Money & historique" accent="text-sky-300">
-        <div className="space-y-3">
-          {completedShipments.slice(0, 5).map((shipment) => (
-            <div key={shipment.id} className="flex items-center justify-between rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
-              <div>
-                <div className="text-[13px] font-bold text-white">Commande #{shipment.order}</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">
-                  {shipment.status === "DELIVERED" ? "Versement programme" : "Pas de versement"}
-                </div>
-              </div>
-              <div className={`text-[18px] font-extrabold ${shipment.status === "DELIVERED" ? "text-[#6EE7B7]" : "text-red-300"}`}>
-                {shipment.status === "DELIVERED" ? `+${formatXaf(courierPayout(shipment))}` : "0 FCFA"}
-              </div>
-            </div>
-          ))}
-        </div>
-      </SectionShell>
-    </section>
-  );
 
   const renderProfil = () => (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
@@ -2076,8 +1982,6 @@ export default function CourierDashboardPage() {
         return renderMap();
       case "reseau":
         return renderReseau();
-      case "gains":
-        return renderGains();
       case "profil":
         return renderProfil();
       case "formation":
@@ -2309,7 +2213,7 @@ export default function CourierDashboardPage() {
                   </h1>
                   <p className="mt-2 max-w-[760px] text-[14px] leading-7 text-[#8B949E]">
                     Cette interface reprend toutes les vues du modele BelivaY Livreur: operations, securite,
-                    gains, communication, navigation et suivi metier du livreur.
+                    communication, navigation et suivi metier du livreur.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">

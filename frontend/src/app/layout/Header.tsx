@@ -41,6 +41,8 @@ const SEARCH_FILTER_CATEGORIES = [
   "Électronique",
 ];
 
+const LAST_SEARCH_STORAGE_KEY = "belivay_last_search";
+
 function parseSearchValue(value: string) {
   const trimmed = value.trim();
   const match = trimmed.match(/^\[([^\]]+)\]\s*(.*)$/);
@@ -190,6 +192,12 @@ export default function Header() {
     const params = new URLSearchParams();
     if (details) params.set("q", details);
     if (category) params.set("category_label", category);
+    if (details || category) {
+      localStorage.setItem(
+        LAST_SEARCH_STORAGE_KEY,
+        JSON.stringify({ query: details, category, createdAt: new Date().toISOString() }),
+      );
+    }
     navigate(params.toString() ? `/search?${params.toString()}` : "/search");
   };
 

@@ -1,0 +1,16 @@
+Le payment  est bloqué au niveau des autres acteurs 
+Changé les zones du livreur 
+Si une zone n'est pas pris en charge ou va la commande ?
+Pouvoir voir la derniere recherche 
+Certaines commandes n arrivent pas chez le livreur parceque l espace limite la commande et quand  
+Retirer le gain de CE que le livreur gagne
+Retirer le total des cours 
+Retirer Les informations Inutiles du client 
+Faire en sorte que lorsque Les messages sont envoyé il y ait une instantanité , faire en sorte que le chat du contacter liveeur se Deroule automatiquement lorsque l'on Lui envoit un message
+Faire en sorte que le livreur puisse effectuer ses propres commandes 
+Le livreur vient prendre dans la boutique 
+
+Donc il faut connaitre LA logique de livraison de la societé de livraison 
+
+
+Le moyen de transport Par defaut du livreur pour une mission specifique 

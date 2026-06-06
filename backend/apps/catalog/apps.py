@@ -8,5 +8,5 @@ class CatalogConfig(AppConfig):
     def ready(self):
         # Active l'audit OHADA sur les modèles du catalogue
         from apps.common.audit import register_audit
-        from .models import Category, Product
-        register_audit(Category, Product)
+        from .models import Category, Product, MasterProduct
+        register_audit(Category, Product, MasterProduct)

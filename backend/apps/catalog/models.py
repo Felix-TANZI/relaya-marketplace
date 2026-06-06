@@ -41,6 +41,59 @@ class Category(SoftDeleteModel):
 
     def __str__(self):
         return self.name
+    
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FICHE PRODUIT MAÎTRE (MasterProduct)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class MasterProduct(SoftDeleteModel):
+    """
+    Fiche produit canonique, indépendante du vendeur.
+
+    Une MasterProduct regroupe plusieurs offres (Product) du MÊME produit
+    vendues par des vendeurs différents. Ex : la fiche "iPhone 15 128 Go"
+    peut avoir 3 offres (Alice, Bruno, Carine) à des prix différents.
+    """
+
+    title       = models.CharField(max_length=200, verbose_name="Titre de la fiche")
+    slug        = models.SlugField(max_length=220, unique=True)
+    description = models.TextField(blank=True)
+    brand       = models.CharField(max_length=120, blank=True, verbose_name="Marque")
+    category    = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="master_products",
+        verbose_name="Catégorie",
+    )
+
+    class Meta:
+        ordering            = ["-created_at"]
+        verbose_name        = "Fiche produit maître"
+        verbose_name_plural = "Fiches produits maîtres"
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def buy_box_offer(self):
+        """
+        Offre par défaut (PROVISOIRE) : la moins chère parmi les offres actives.
+        L'algorithme équitable (stock, fiabilité vendeur…) viendra en Semaine 9.
+        """
+        return self.offers.filter(is_active=True).order_by("price_xaf").first()
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title) or "fiche"
+            self.slug = base
+            counter = 1
+            while MasterProduct.all_objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -171,6 +224,13 @@ class Product(SoftDeleteModel):
         related_name='products',
         null=True, blank=True,
         verbose_name="Vendeur",
+    )
+    master = models.ForeignKey(
+        "MasterProduct",
+        on_delete=models.SET_NULL,
+        related_name="offers",
+        null=True, blank=True,
+        verbose_name="Fiche produit maître",
     )
 
     class Meta:

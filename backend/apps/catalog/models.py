@@ -17,6 +17,14 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+
+class ModerationStatus(models.TextChoices):
+    PENDING  = 'PENDING',  'En attente'
+    APPROVED = 'APPROVED', 'Validé'
+    REJECTED = 'REJECTED', 'Rejeté'
+
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CATÉGORIE
 # ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +75,16 @@ class MasterProduct(SoftDeleteModel):
         related_name="master_products",
         verbose_name="Catégorie",
     )
+    moderation_status = models.CharField(
+        max_length=10, choices=ModerationStatus.choices,
+        default=ModerationStatus.PENDING, db_index=True,
+        verbose_name="Statut de modération",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='moderated_masterproducts',
+    )
 
     class Meta:
         ordering            = ["-created_at"]
@@ -79,10 +97,15 @@ class MasterProduct(SoftDeleteModel):
     @property
     def buy_box_offer(self):
         """
-        Offre par défaut (PROVISOIRE) : la moins chère parmi les offres actives.
-        L'algorithme équitable (stock, fiabilité vendeur…) viendra en Semaine 9.
+        Offre par défaut (PROVISOIRE) : la moins chère parmi les offres
+        actives ET approuvées. L'algorithme équitable viendra en Semaine 9.
         """
-        return self.offers.filter(is_active=True).order_by("price_xaf").first()
+        return (
+            self.offers
+            .filter(is_active=True, moderation_status=ModerationStatus.APPROVED)
+            .order_by("price_xaf")
+            .first()
+        )
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -231,6 +254,16 @@ class Product(SoftDeleteModel):
         related_name="offers",
         null=True, blank=True,
         verbose_name="Fiche produit maître",
+    )
+    moderation_status = models.CharField(
+        max_length=10, choices=ModerationStatus.choices,
+        default=ModerationStatus.PENDING, db_index=True,
+        verbose_name="Statut de modération",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='moderated_products',
     )
 
     class Meta:

@@ -18,20 +18,22 @@ def test_offers_relation_et_buybox():
     cat = _category()
     master = MasterProduct.objects.create(title="iPhone 15", category=cat)
     alice = Product.objects.create(title="iPhone 15 - Alice", category=cat,
-                                   price_xaf=450000, master=master, is_active=True)
+                                   price_xaf=450000, master=master,
+                                   is_active=True, moderation_status="APPROVED")
     Product.objects.create(title="iPhone 15 - Bruno", category=cat,
-                           price_xaf=460000, master=master, is_active=True)
-    assert master.offers.count() == 2            # related_name "offers"
-    assert master.buy_box_offer == alice          # la moins chère active
+                           price_xaf=460000, master=master,
+                           is_active=True, moderation_status="APPROVED")
+    assert master.offers.count() == 2
+    assert master.buy_box_offer == alice
 
 
 def test_offre_soft_deleted_exclue():
     cat = _category()
     master = MasterProduct.objects.create(title="iPhone 15", category=cat)
     alice = Product.objects.create(title="A", category=cat, price_xaf=450000,
-                                   master=master, is_active=True)
+                                   master=master, is_active=True, moderation_status="APPROVED")
     bruno = Product.objects.create(title="B", category=cat, price_xaf=460000,
-                                   master=master, is_active=True)
+                                   master=master, is_active=True, moderation_status="APPROVED")
     alice.delete()  # suppression douce
     assert master.offers.count() == 1
     assert master.buy_box_offer == bruno

@@ -9,7 +9,7 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
-from .models import Product, Category, ProductReview, MasterProduct
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
@@ -44,7 +44,10 @@ class StandardResultsSetPagination(PageNumberPagination):
     ]
 )
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().select_related('category').prefetch_related('media', 'inventory', 'images')
+    queryset = (Product.objects
+                .filter(moderation_status=ModerationStatus.APPROVED)
+                .select_related('category')
+                .prefetch_related('media', 'inventory', 'images'))
     serializer_class = ProductSerializer
     pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -112,7 +115,8 @@ class CategoryViewSet(viewsets.ModelViewSet):
 @extend_schema(tags=["Catalog"], summary="Fiches produits maîtres avec leurs offres")
 class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = (
-        MasterProduct.objects.all()
+        MasterProduct.objects
+        .filter(moderation_status=ModerationStatus.APPROVED)
         .select_related('category')
         .prefetch_related('offers', 'offers__inventory', 'offers__images', 'offers__vendor')
     )

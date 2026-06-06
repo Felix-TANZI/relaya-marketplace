@@ -228,7 +228,7 @@ class MasterProductListSerializer(serializers.ModelSerializer):
                   'offers_count', 'buy_box', 'created_at']
 
     def get_offers_count(self, obj):
-        return obj.offers.filter(is_active=True).count()
+        return obj.offers.filter(is_active=True, moderation_status='APPROVED').count()
 
     def get_buy_box(self, obj):
         offer = obj.buy_box_offer
@@ -243,7 +243,6 @@ class MasterProductDetailSerializer(MasterProductListSerializer):
         fields = MasterProductListSerializer.Meta.fields + ['description', 'offers']
 
     def get_offers(self, obj):
-        qs = (obj.offers.filter(is_active=True)
-              .select_related('vendor', 'inventory')
-              .order_by('price_xaf'))
+        qs = (obj.offers.filter(is_active=True, moderation_status='APPROVED')
+              .select_related('vendor', 'inventory').order_by('price_xaf'))
         return OfferSerializer(qs, many=True, context=self.context).data

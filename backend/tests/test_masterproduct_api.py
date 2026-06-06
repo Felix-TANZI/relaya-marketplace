@@ -7,9 +7,12 @@ pytestmark = pytest.mark.django_db
 
 def _setup():
     cat = Category.objects.create(name="Téléphones", slug="telephones")
-    master = MasterProduct.objects.create(title="iPhone 15", category=cat)
-    Product.objects.create(title="A", category=cat, price_xaf=450000, master=master, is_active=True)
-    Product.objects.create(title="B", category=cat, price_xaf=460000, master=master, is_active=True)
+    master = MasterProduct.objects.create(title="iPhone 15", category=cat,
+                                          moderation_status="APPROVED")
+    Product.objects.create(title="A", category=cat, price_xaf=450000, master=master,
+                           is_active=True, moderation_status="APPROVED")
+    Product.objects.create(title="B", category=cat, price_xaf=460000, master=master,
+                           is_active=True, moderation_status="APPROVED")
     return master
 
 

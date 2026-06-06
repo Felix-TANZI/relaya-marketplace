@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
 from django.db import transaction
+from apps.common.models import SoftDeleteModel
 
 
 class TimeStampedModel(models.Model):
@@ -20,7 +21,8 @@ class TimeStampedModel(models.Model):
 # CATÉGORIE
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Category(TimeStampedModel):
+
+class Category(SoftDeleteModel):
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True)
     is_active = models.BooleanField(default=True)
@@ -32,7 +34,7 @@ class Category(TimeStampedModel):
         related_name="children",
     )
 
-    class Meta:
+    class Meta(SoftDeleteModel.Meta):
         ordering = ["name"]
         verbose_name = "Catégorie"
         verbose_name_plural = "Catégories"
@@ -95,7 +97,7 @@ class ProductAttribute(models.Model):
 # PRODUIT
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Product(TimeStampedModel):
+class Product(SoftDeleteModel):
     """
     Produit mis en vente sur BelivaY.
 
@@ -224,7 +226,9 @@ class Product(TimeStampedModel):
             self.slug = slugify(self.title)
             original = self.slug
             counter  = 1
-            while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+            # all_objects : on tient compte AUSSI des produits soft-deleted
+            # pour ne jamais réutiliser un slug encore présent en base (unique).
+            while Product.all_objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
                 self.slug = f"{original}-{counter}"
                 counter += 1
 
@@ -233,7 +237,7 @@ class Product(TimeStampedModel):
         # SKU auto après première sauvegarde (pour avoir le pk)
         if not self.sku:
             self.sku = self.generate_sku()
-            Product.objects.filter(pk=self.pk).update(sku=self.sku)
+            Product.all_objects.filter(pk=self.pk).update(sku=self.sku)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -295,14 +299,14 @@ class ProductImage(models.Model):
     def save(self, *args, **kwargs):
         """
         Sauvegarde de l'image avec gestion robuste du flag is_primary.
- 
+
         Contrats garantis :
           - Une seule image par produit peut être is_primary=True.
           - Si c'est la première image du produit, elle devient automatiquement
             principale (sauf si is_primary=False explicitement passé).
           - Toutes les opérations BDD se font dans une seule transaction
             atomique pour éviter les états incohérents en cas d'uploads simultanés.
- 
+
         IMPORTANT : self.product DOIT être assigné avant l'appel à save().
         Si product n'est pas encore en BDD ou non assigné, on lève une erreur
         explicite (au lieu de planter sur RelatedObjectDoesNotExist).
@@ -313,7 +317,7 @@ class ProductImage(models.Model):
                 "ProductImage.save() appelé sans produit associé. "
                 "Toujours passer product=... lors de la création."
             )
- 
+
         with transaction.atomic():
             # Cas 1 — Cette image est marquée principale : on retire le flag
             # de toutes les autres images du même produit.
@@ -321,14 +325,14 @@ class ProductImage(models.Model):
                 ProductImage.objects.filter(
                     product_id=self.product_id,
                 ).exclude(pk=self.pk).update(is_primary=False)
- 
+
             # Cas 2 — Cette image n'est pas marquée principale, mais c'est
             # la première image du produit : on la promeut automatiquement.
             elif not ProductImage.objects.filter(
                 product_id=self.product_id,
             ).exclude(pk=self.pk).exists():
                 self.is_primary = True
- 
+
             super().save(*args, **kwargs)
 
 

@@ -181,24 +181,19 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
 # ─────────────────────────────────────────────────────────────────────────────
 
 class OfferSerializer(serializers.ModelSerializer):
-    """Une offre = un Product, vu depuis sa fiche maître (vendeur + prix + stock)."""
-    vendor_name   = serializers.SerializerMethodField()
+    """Offre vue côté ACHETEUR : anonymisée — aucune info identifiant le vendeur."""
     stock_quantity = serializers.SerializerMethodField()
-    primary_image = serializers.SerializerMethodField()
-    price_final   = serializers.SerializerMethodField()
+    primary_image  = serializers.SerializerMethodField()
+    price_final    = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
         fields = [
-            'id', 'slug', 'title',
-            'vendor', 'vendor_name',
+            'id',
             'price_xaf', 'compare_at_price', 'price_final',
             'discount_percent', 'is_on_promotion',
             'stock_quantity', 'primary_image', 'is_active',
         ]
-
-    def get_vendor_name(self, obj):
-        return obj.vendor.username if obj.vendor_id else None
 
     def get_stock_quantity(self, obj):
         try:

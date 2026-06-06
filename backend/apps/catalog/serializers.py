@@ -3,7 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -173,3 +173,82 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     
     def to_representation(self, instance):
         return ProductSerializer(instance, context=self.context).data
+
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# OFFRES & FICHES MAÎTRES
+# ─────────────────────────────────────────────────────────────────────────────
+
+class OfferSerializer(serializers.ModelSerializer):
+    """Une offre = un Product, vu depuis sa fiche maître (vendeur + prix + stock)."""
+    vendor_name   = serializers.SerializerMethodField()
+    stock_quantity = serializers.SerializerMethodField()
+    primary_image = serializers.SerializerMethodField()
+    price_final   = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Product
+        fields = [
+            'id', 'slug', 'title',
+            'vendor', 'vendor_name',
+            'price_xaf', 'compare_at_price', 'price_final',
+            'discount_percent', 'is_on_promotion',
+            'stock_quantity', 'primary_image', 'is_active',
+        ]
+
+    def get_vendor_name(self, obj):
+        return obj.vendor.username if obj.vendor_id else None
+
+    def get_stock_quantity(self, obj):
+        try:
+            return obj.inventory.quantity
+        except Exception:
+            return 0
+
+    def get_price_final(self, obj):
+        if obj.compare_at_price and obj.compare_at_price > obj.price_xaf:
+            return obj.price_xaf
+        if obj.discount > 0:
+            return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
+        return obj.price_xaf
+
+    def get_primary_image(self, obj):
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if img and img.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
+
+
+class MasterProductListSerializer(serializers.ModelSerializer):
+    """Vue liste : fiche + nombre d'offres + offre par défaut (Buy Box)."""
+    category     = CategorySerializer(read_only=True)
+    offers_count = serializers.SerializerMethodField()
+    buy_box      = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MasterProduct
+        fields = ['id', 'title', 'slug', 'brand', 'category',
+                  'offers_count', 'buy_box', 'created_at']
+
+    def get_offers_count(self, obj):
+        return obj.offers.filter(is_active=True).count()
+
+    def get_buy_box(self, obj):
+        offer = obj.buy_box_offer
+        return OfferSerializer(offer, context=self.context).data if offer else None
+
+
+class MasterProductDetailSerializer(MasterProductListSerializer):
+    """Vue détail : ajoute la description et la liste complète des offres."""
+    offers = serializers.SerializerMethodField()
+
+    class Meta(MasterProductListSerializer.Meta):
+        fields = MasterProductListSerializer.Meta.fields + ['description', 'offers']
+
+    def get_offers(self, obj):
+        qs = (obj.offers.filter(is_active=True)
+              .select_related('vendor', 'inventory')
+              .order_by('price_xaf'))
+        return OfferSerializer(qs, many=True, context=self.context).data

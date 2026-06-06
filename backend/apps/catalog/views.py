@@ -9,12 +9,14 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
-from .models import Product, Category, ProductReview
+from .models import Product, Category, ProductReview, MasterProduct
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
     ProductReviewSerializer,
-    ProductReviewCreateSerializer
+    ProductReviewCreateSerializer,
+    MasterProductListSerializer,
+    MasterProductDetailSerializer,
 )
 from .filters import ProductFilter, CategoryFilter
 
@@ -105,3 +107,24 @@ class CategoryViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CategoryFilter
+
+
+@extend_schema(tags=["Catalog"], summary="Fiches produits maîtres avec leurs offres")
+class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = (
+        MasterProduct.objects.all()
+        .select_related('category')
+        .prefetch_related('offers', 'offers__inventory', 'offers__images', 'offers__vendor')
+    )
+    pagination_class   = StandardResultsSetPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields   = ['category']
+    search_fields      = ['title', 'brand']
+    ordering_fields    = ['created_at', 'title']
+    ordering           = ['-created_at']
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return MasterProductDetailSerializer
+        return MasterProductListSerializer    

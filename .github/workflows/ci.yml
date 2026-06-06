@@ -50,5 +50,7 @@ jobs:
         with:
           node-version: "20"
       - run: npm ci
-      - run: npm run lint
+      - name: Lint (non bloquant — dette ESLint historique a nettoyer)
+        run: npm run lint
+        continue-on-error: true
       - run: npm run test

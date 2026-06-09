@@ -265,6 +265,7 @@ class Product(SoftDeleteModel):
         User, null=True, blank=True, on_delete=models.SET_NULL,
         related_name='moderated_products',
     )
+    moderation_reason = models.TextField(blank=True, default='', verbose_name="Motif de modération")
 
     class Meta:
         ordering            = ["-created_at"]

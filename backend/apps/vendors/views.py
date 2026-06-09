@@ -6552,11 +6552,11 @@ def admin_approve_product(request, product_id):
         return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
     product.moderation_status = ModerationStatus.APPROVED
+    product.moderation_reason = ''            # efface un éventuel motif de rejet précédent
     product.moderated_at = timezone.now()
     product.moderated_by = request.user
-    product.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+    product.save(update_fields=['moderation_status', 'moderation_reason', 'moderated_at', 'moderated_by'])
 
-    # Cascade : valider la fiche si elle est encore en attente
     master = product.master
     if master and master.moderation_status != ModerationStatus.APPROVED:
         master.moderation_status = ModerationStatus.APPROVED
@@ -6567,21 +6567,38 @@ def admin_approve_product(request, product_id):
     return Response(ProductSerializer(product, context={'request': request}).data)
 
 
-@extend_schema(tags=["Admin"], summary="Reject product (moderation)")
+@extend_schema(tags=["Admin"], summary="Reject product (moderation, optional reason)")
 @api_view(['POST'])
 @permission_classes([IsAdminUser])
 def admin_reject_product(request, product_id):
     from apps.catalog.models import Product, ModerationStatus
     from apps.catalog.serializers import ProductSerializer
+    from apps.accounts.models import UserNotification
     from django.utils import timezone
     try:
         product = Product.objects.get(id=product_id)
     except Product.DoesNotExist:
         return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
 
+    reason = (request.data.get('reason') or '').strip()
+
     product.moderation_status = ModerationStatus.REJECTED
+    product.moderation_reason = reason
     product.moderated_at = timezone.now()
     product.moderated_by = request.user
-    product.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+    product.save(update_fields=['moderation_status', 'moderation_reason', 'moderated_at', 'moderated_by'])
+
+    # On prévient toujours le vendeur du rejet ; le motif est optionnel.
+    if product.vendor_id:
+        message = f"Votre produit « {product.title} » a été rejeté."
+        if reason:
+            message += f"\nMotif : {reason}"
+        UserNotification.objects.create(
+            user=product.vendor,
+            title="Produit rejeté",
+            message=message,
+            notification_type='SYSTEM',
+            action_url='/seller/products',
+        )
 
     return Response(ProductSerializer(product, context={'request': request}).data)

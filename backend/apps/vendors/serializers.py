@@ -988,14 +988,15 @@ class AdminProductListSerializer(serializers.ModelSerializer):
     stock_quantity  = serializers.SerializerMethodField()
     images_count    = serializers.SerializerMethodField()
     master_title = serializers.CharField(source='master.title', read_only=True, default=None)
+    vendor_profile_id = serializers.SerializerMethodField()
 
     class Meta:
         from apps.catalog.models import Product
         model  = Product
         fields = [
             'id', 'title', 'slug', 'price_xaf', 'is_active',
-            'moderation_status', 'master', 'master_title',
-            'vendor', 'vendor_name', 'vendor_business',
+            'moderation_status', 'moderation_reason', 'master', 'master_title',
+            'vendor', 'vendor_name', 'vendor_business', 'vendor_profile_id',
             'category', 'category_name',
             'stock_quantity', 'images_count',
             'created_at', 'updated_at',
@@ -1009,6 +1010,10 @@ class AdminProductListSerializer(serializers.ModelSerializer):
 
     def get_images_count(self, obj):
         return obj.images.count()
+    
+    def get_vendor_profile_id(self, obj):
+        vp = getattr(obj.vendor, 'vendor_profile', None) if obj.vendor_id else None
+        return vp.id if vp else None
 
 
 class AdminProductUpdateSerializer(serializers.ModelSerializer):

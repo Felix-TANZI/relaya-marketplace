@@ -279,7 +279,23 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             return Response(ProductSerializer(product, context={'request': request}).data)
  
         except Exception as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='master-search')
+    def master_search(self, request):
+        """Recherche de fiches maîtres (validées) pour rattacher une offre."""
+        from apps.catalog.models import MasterProduct, ModerationStatus
+        from django.db.models import Q
+        q = request.query_params.get('search', '').strip()
+        qs = MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED)
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(brand__icontains=q))
+        qs = qs.select_related('category').order_by('title')[:20]
+        data = [{
+            'id': m.id, 'title': m.title, 'brand': m.brand,
+            'category': m.category_id, 'category_name': m.category.name,
+        } for m in qs]
+        return Response(data)        
 
 
 @extend_schema(

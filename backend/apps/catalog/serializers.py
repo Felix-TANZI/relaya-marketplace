@@ -134,43 +134,59 @@ class ProductSerializer(serializers.ModelSerializer):
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
+    """
+    Création/édition d'un produit (= une OFFRE) par un vendeur.
+
+    Rattachement à une fiche maître :
+      - master fourni  -> l'offre est rattachée à cette fiche existante (validée)
+      - master absent  -> une NOUVELLE fiche est créée (en attente de validation)
+    L'offre naît en PENDING (validation admin requise avant visibilité acheteur).
+    """
+    master = serializers.PrimaryKeyRelatedField(
+        queryset=MasterProduct.objects.filter(moderation_status='APPROVED'),
+        required=False, allow_null=True,
+        help_text="Fiche existante à laquelle rattacher l'offre. Vide = nouvelle fiche.",
+    )
+
     class Meta:
         model = Product
         fields = [
-            'id',
-            'title',
-            'description',
-            'short_description',
-            'price_xaf',
-            'category',
-            'is_active',
-            'created_at',
-            'updated_at',
+            'id', 'title', 'description', 'short_description',
+            'price_xaf', 'category', 'is_active', 'master',
+            'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
-    
+
     def create(self, validated_data):
-        from .models import Inventory
-        product = Product.objects.create(**validated_data)
+        from .models import Inventory, MasterProduct as _MP
+        master = validated_data.pop('master', None)
+        if master is None:
+            # Pas de fiche choisie -> on en crée une (PENDING par défaut)
+            master = _MP.objects.create(
+                title=validated_data.get('title', ''),
+                description=validated_data.get('description', '') or '',
+                category=validated_data.get('category'),
+            )
+        product = Product.objects.create(master=master, **validated_data)
         stock_quantity = self.context.get('stock_quantity', 0)
         Inventory.objects.create(product=product, quantity=stock_quantity)
         return product
-    
+
     def update(self, instance, validated_data):
         from .models import Inventory
-        stock_quantity = self.context.get('stock_quantity')
-        
+        master = validated_data.pop('master', None)
+        if master is not None:
+            instance.master = master
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
+        stock_quantity = self.context.get('stock_quantity')
         if stock_quantity is not None:
-            inventory, created = Inventory.objects.get_or_create(product=instance)
+            inventory, _ = Inventory.objects.get_or_create(product=instance)
             inventory.quantity = stock_quantity
             inventory.save()
-        
         return instance
-    
+
     def to_representation(self, instance):
         return ProductSerializer(instance, context=self.context).data
 

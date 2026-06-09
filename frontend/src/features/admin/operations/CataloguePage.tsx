@@ -3,7 +3,7 @@
 // KPIs · Filtres actif/inactif/vendeur · Tableau/Cards · Actions toggle+delete
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import {
   Package,
   Search,
@@ -20,9 +20,14 @@ import {
   Filter,
   ChevronDown,
   X,
+  Eye,
   Image as ImageIcon,
 } from "lucide-react";
-import { adminApi, type AdminProduct } from "@/services/api/admin";
+import {
+  adminApi,
+  type AdminProduct,
+  type AdminProductDetail,
+} from "@/services/api/admin";
 import { productsApi, type Category } from "@/services/api/products";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
 import { useToast } from "@/context/ToastContext";
@@ -92,6 +97,14 @@ export default function CataloguePage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<number | null>(null);
+
+  const navigate = useNavigate();
+
+  const [rejectTarget, setRejectTarget] = useState<AdminProduct | null>(null);
+  const [rejectReason, setRejectReason] = useState("");
+  const [detailItem, setDetailItem] = useState<AdminProduct | null>(null);
+  const [detailData, setDetailData] = useState<AdminProductDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
 
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [dateF, setDateF] = useState<DateFilter>("all");
@@ -280,22 +293,39 @@ export default function CataloguePage() {
     }
   };
 
-  const handleReject = async (p: AdminProduct) => {
-    const ok = await confirm({
-      title: "Rejeter ce produit ?",
-      message: `Refuser "${p.title}" ? Il restera invisible côté acheteur.`,
-      type: "warning",
-    });
-    if (!ok) return;
+  const handleReject = (p: AdminProduct) => {
+    setRejectReason("");
+    setRejectTarget(p);
+  };
+
+  const confirmReject = async () => {
+    if (!rejectTarget) return;
     try {
-      setActing(p.id);
-      await adminApi.rejectProduct(p.id);
-      showToast("Produit rejeté", "success");
+      setActing(rejectTarget.id);
+      await adminApi.rejectProduct(
+        rejectTarget.id,
+        rejectReason.trim() || undefined,
+      );
+      showToast("Produit rejeté — vendeur notifié", "success");
+      setRejectTarget(null);
       load();
     } catch {
       showToast("Erreur lors du rejet", "error");
     } finally {
       setActing(null);
+    }
+  };
+
+  const openDetail = async (p: AdminProduct) => {
+    setDetailItem(p);
+    setDetailData(null);
+    setDetailLoading(true);
+    try {
+      setDetailData(await adminApi.getProductDetail(p.id));
+    } catch {
+      /* on garde au moins les infos de la ligne */
+    } finally {
+      setDetailLoading(false);
     }
   };
 
@@ -476,6 +506,99 @@ export default function CataloguePage() {
             <span className="hidden sm:inline">Actualiser</span>
           </button>
         </div>
+
+        {/* MODAL REJET */}
+      {rejectTarget && (
+        <div onClick={() => setRejectTarget(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 60,
+                   display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: T.card, borderRadius: 16, border: `1px solid ${T.border}`, width: '100%', maxWidth: 460, padding: 20 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 800, color: T.text, marginBottom: 6 }}>Rejeter le produit</h3>
+            <p style={{ fontSize: 13, color: T.muted, marginBottom: 14 }}>
+              « {rejectTarget.title} » — le vendeur sera notifié. Le motif est optionnel.
+            </p>
+            <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={4}
+              placeholder="Motif du rejet (optionnel) — ex : photos floues, prix incohérent…"
+              style={{ width: '100%', background: T.cardAlt, border: `1px solid ${T.border}`, borderRadius: 10,
+                       padding: '10px 12px', fontSize: 13, color: T.text, outline: 'none', resize: 'vertical' }} />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button onClick={() => setRejectTarget(null)}
+                style={{ padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.text, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
+                Annuler
+              </button>
+              <button onClick={confirmReject} disabled={acting === rejectTarget.id}
+                style={{ padding: '8px 14px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', border: 'none', cursor: 'pointer' }}>
+                Confirmer le rejet
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DRAWER DÉTAIL */}
+      {detailItem && (() => {
+        const d = detailItem;
+        return (
+          <div onClick={() => setDetailItem(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 60, display: 'flex', justifyContent: 'flex-end' }}>
+            <div onClick={e => e.stopPropagation()}
+              style={{ background: T.card, width: '100%', maxWidth: 440, height: '100%', overflowY: 'auto', borderLeft: `1px solid ${T.border}`, padding: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <h3 style={{ fontSize: 16, fontWeight: 800, color: T.text }}>Détail produit</h3>
+                <button onClick={() => setDetailItem(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted }}><X size={18} /></button>
+              </div>
+
+              {detailData?.images?.[0]?.image && (
+                <img src={detailData.images[0].image} alt={d.title}
+                  style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 12, marginBottom: 14 }} />
+              )}
+
+              <p style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{d.title}</p>
+              <p style={{ fontSize: 13, color: T.muted, marginBottom: 12 }}>{fmtXaf(d.price_xaf)}</p>
+
+              {([
+                ['Statut',    d.moderation_status],
+                ['Fiche',     d.master_title || '—'],
+                ['Catégorie', d.category_name],
+                ['Stock',     String(d.stock_quantity)],
+                ['Actif',     d.is_active ? 'Oui' : 'Non'],
+                ['Ajouté',    fmtDate(d.created_at)],
+              ] as [string, string][]).map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${T.border}` }}>
+                  <span style={{ fontSize: 12.5, color: T.muted }}>{k}</span>
+                  <span style={{ fontSize: 12.5, color: T.text, fontWeight: 600 }}>{v}</span>
+                </div>
+              ))}
+
+              <div style={{ padding: '10px 0' }}>
+                <span style={{ fontSize: 12.5, color: T.muted }}>Vendeur : </span>
+                <button onClick={() => navigate(`/admin/customers/${d.vendor}`)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.red, fontWeight: 600, fontSize: 12.5, padding: 0 }}>
+                  {d.vendor_name}
+                </button>
+                {d.vendor_profile_id && (
+                  <button onClick={() => navigate(`/admin/vendors/${d.vendor_profile_id}`)}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 12, marginLeft: 8, padding: 0 }}>
+                    (boutique)
+                  </button>
+                )}
+              </div>
+
+              {d.moderation_status === 'REJECTED' && d.moderation_reason && (
+                <div style={{ background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: 10, fontSize: 12.5, marginTop: 8 }}>
+                  Motif du rejet : {d.moderation_reason}
+                </div>
+              )}
+
+              {detailLoading && <p style={{ fontSize: 12, color: T.muted, marginTop: 10 }}>Chargement des détails…</p>}
+              {detailData?.description && (
+                <p style={{ fontSize: 12.5, color: T.text, marginTop: 12, whiteSpace: 'pre-wrap' }}>{detailData.description}</p>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
@@ -912,25 +1035,42 @@ export default function CataloguePage() {
                     </td>
 
                     {/* Vendeur */}
-                    <td style={{ padding: "12px 12px" }}>
-                      <p
+                    <div className="flex flex-col gap-0.5">
+                      <button
+                        onClick={() => navigate(`/admin/customers/${p.vendor}`)}
+                        className="text-left hover:underline"
                         style={{
                           fontSize: 12.5,
                           fontWeight: 600,
-                          color: "#F47920",
-                          maxWidth: 130,
+                          color: T.text,
+                          background: "none",
+                          border: "none",
+                          padding: 0,
+                          cursor: "pointer",
                         }}
-                        className="truncate"
                       >
-                        {p.vendor_business}
-                      </p>
-                      <p
-                        style={{ fontSize: 11, color: T.muted }}
-                        className="truncate max-w-[130px]"
-                      >
-                        @{p.vendor_name}
-                      </p>
-                    </td>
+                        {p.vendor_name || "—"}
+                      </button>
+                      {p.vendor_business && p.vendor_business !== "N/A" && (
+                        <button
+                          onClick={() =>
+                            p.vendor_profile_id &&
+                            navigate(`/admin/vendors/${p.vendor_profile_id}`)
+                          }
+                          className="text-left hover:underline"
+                          style={{
+                            fontSize: 11,
+                            color: T.muted,
+                            background: "none",
+                            border: "none",
+                            padding: 0,
+                            cursor: p.vendor_profile_id ? "pointer" : "default",
+                          }}
+                        >
+                          {p.vendor_business}
+                        </button>
+                      )}
+                    </div>
 
                     {/* Catégorie */}
                     <td style={{ padding: "12px 12px" }}>
@@ -1066,6 +1206,18 @@ export default function CataloguePage() {
                           ) : (
                             <ToggleLeft size={12} />
                           )}
+                        </button>
+                        <button
+                          onClick={() => openDetail(p)}
+                          title="Voir le détail"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{
+                            background: T.cardAlt,
+                            color: T.text,
+                            border: `1px solid ${T.border}`,
+                          }}
+                        >
+                          <Eye size={13} />
                         </button>
                         {/* Supprimer */}
                         <button

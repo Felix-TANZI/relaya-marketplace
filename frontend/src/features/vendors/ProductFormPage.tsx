@@ -19,6 +19,7 @@ import {
   type ProductAttribute,
   type VendorProduct,
   type VendorProductEnriched,
+  type MasterFiche,
 } from '@/services/api/vendors';
 import { productsApi, type Category } from '@/services/api/products';
 import { useToast } from '@/context/ToastContext';
@@ -109,6 +110,7 @@ type ProductPayload = Partial<VendorProduct> & {
   compare_at_price: number | null;
   promo_end_date: string | null;
   stock_threshold: number;
+  master: number | null;
 };
 
 function categoryId(category: ProductFormItem['category']) {
@@ -140,6 +142,13 @@ export default function ProductFormPage() {
   const [stockThreshold,setThreshold]   = useState('');   // OBLIGATOIRE
   const [isActive,      setIsActive]    = useState(true);
   const [attrVals,      setAttrVals]    = useState<Record<number, string[]>>({});
+
+  // ── Fiche produit (rattachement) ──
+  const [masterMode,     setMasterMode]     = useState<'new' | 'existing'>('new');
+  const [masterQuery,    setMasterQuery]    = useState('');
+  const [masterResults,  setMasterResults]  = useState<MasterFiche[]>([]);
+  const [selectedMaster, setSelectedMaster] = useState<MasterFiche | null>(null);
+  const [masterLoading,  setMasterLoading]  = useState(false);
 
   // ── UI ──
   const [allCats,    setAllCats]    = useState<Category[]>([]);
@@ -215,6 +224,20 @@ export default function ProductFormPage() {
   // Reset sous-cat si parent change
   useEffect(() => { setSubCatId(''); }, [parentCatId]);
 
+  // Recherche de fiches (debounce 300 ms) en mode "fiche existante"
+  useEffect(() => {
+    if (masterMode !== 'existing') return;
+    const q = masterQuery.trim();
+    const handle = window.setTimeout(async () => {
+      try {
+        setMasterLoading(true);
+        setMasterResults(await vendorsApi.searchMasters(q));
+      } catch { setMasterResults([]); }
+      finally { setMasterLoading(false); }
+    }, 300);
+    return () => window.clearTimeout(handle);
+  }, [masterQuery, masterMode]);
+
   const price   = parseInt(priceXaf, 10) || 0;
   const compare = parseInt(compareAt, 10) || 0;
   const discPct = compare > price ? Math.round((1 - price / compare) * 100) : 0;
@@ -261,6 +284,8 @@ export default function ProductFormPage() {
       if (attr.is_required && !(attrVals[attr.id]?.length))
         e[`attr_${attr.id}`] = `"${attr.name}" est obligatoire.`;
     }
+    if (!isEdit && masterMode === 'existing' && !selectedMaster)
+      e.master = 'Choisissez une fiche dans la liste, ou créez une nouvelle fiche.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -281,6 +306,7 @@ export default function ProductFormPage() {
         is_active:         isActive,
         stock_quantity:    parseInt(stockQty, 10) || 0,
         stock_threshold:   parseInt(stockThreshold, 10),
+        master:            masterMode === 'existing' && selectedMaster ? selectedMaster.id : null,
       };
 
       let productId: number;
@@ -353,6 +379,71 @@ export default function ProductFormPage() {
                 placeholder="Matière, taille, entretien, garantie, particularités…"
                 style={errors.description ? { ...iErr, resize:'vertical', minHeight:120 } : { ...iBase, resize:'vertical', minHeight:120 }}/>
             </Field>
+          </Section>
+
+          {/* FICHE PRODUIT (rattachement) */}
+          <Section title="Fiche produit" icon={<Tag size={15}/>}>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => { setMasterMode('new'); setSelectedMaster(null); }}
+                className="flex-1 px-3 py-2.5 rounded-xl text-[12.5px] font-semibold border-2 transition-all"
+                style={{
+                  background:  masterMode === 'new' ? T.orangeL : T.cream,
+                  borderColor: masterMode === 'new' ? T.orange : T.border,
+                  color:       masterMode === 'new' ? T.orange : T.text,
+                }}>
+                Nouvelle fiche
+              </button>
+              <button type="button" onClick={() => setMasterMode('existing')}
+                className="flex-1 px-3 py-2.5 rounded-xl text-[12.5px] font-semibold border-2 transition-all"
+                style={{
+                  background:  masterMode === 'existing' ? T.orangeL : T.cream,
+                  borderColor: masterMode === 'existing' ? T.orange : T.border,
+                  color:       masterMode === 'existing' ? T.orange : T.text,
+                }}>
+                Rattacher à une fiche existante
+              </button>
+            </div>
+
+            {masterMode === 'new' && (
+              <p className="text-[11px]" style={{ color: T.mutedL }}>
+                Une nouvelle fiche sera créée pour ce produit (soumise à validation).
+              </p>
+            )}
+
+            {masterMode === 'existing' && (
+              <div className="space-y-2">
+                <input value={masterQuery} onChange={e => setMasterQuery(e.target.value)}
+                  placeholder="Rechercher une fiche (ex : iPhone 15)…" style={iBase}/>
+                {masterLoading && <p className="text-[11px]" style={{ color: T.mutedL }}>Recherche…</p>}
+                {!masterLoading && masterResults.length > 0 && (
+                  <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                    {masterResults.map(m => (
+                      <button key={m.id} type="button"
+                        onClick={() => { setSelectedMaster(m); setMasterResults([]); setMasterQuery(m.title); }}
+                        className="w-full text-left px-3 py-2 text-[12.5px] transition-all"
+                        style={{ background: selectedMaster?.id === m.id ? T.orangeL : T.white,
+                                 color: T.text, borderBottom: `1px solid ${T.border}` }}>
+                        <span className="font-semibold">{m.title}</span>
+                        <span style={{ color: T.mutedL }}> · {m.category_name}{m.brand ? ` · ${m.brand}` : ''}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedMaster && (
+                  <p className="text-[11.5px] font-semibold" style={{ color: T.orange }}>
+                    Fiche choisie : {selectedMaster.title}
+                  </p>
+                )}
+                {isEdit && !selectedMaster && (
+                  <p className="text-[11px]" style={{ color: T.mutedL }}>
+                    Laissez tel quel pour conserver la fiche actuelle.
+                  </p>
+                )}
+                {errors.master && (
+                  <p className="text-[11px] font-semibold" style={{ color: T.red }}>{errors.master}</p>
+                )}
+              </div>
+            )}
           </Section>
 
           {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}

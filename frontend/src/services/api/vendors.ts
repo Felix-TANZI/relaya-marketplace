@@ -496,6 +496,15 @@ export interface CertificationData {
   tiers: CertificationTierInfo[];
   how_to_earn: { action: string; points: string }[];
 }
+
+
+export interface MasterFiche {
+  id: number;
+  title: string;
+  brand: string;
+  category: number;
+  category_name: string;
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1116,6 +1125,18 @@ export const vendorsApi = {
     return http<VendorOrderNote>(`/api/vendors/orders/${orderId}/note/`, {
       method: "PATCH",
       body: JSON.stringify({ content }),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // ── Recherche de fiches produits (pour duplication) ───────────────────────
+  searchMasters: async (search: string): Promise<MasterFiche[]> => {
+    const token = localStorage.getItem("access_token");
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return http<MasterFiche[]>(`/api/vendors/products/master-search/${qs}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,

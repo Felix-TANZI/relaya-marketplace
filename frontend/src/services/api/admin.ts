@@ -235,6 +235,9 @@ export interface AdminProduct {
   images_count:    number;
   created_at:      string;
   updated_at:      string;
+  moderation_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  master: number | null;
+  master_title: string | null;
 }
 
 export interface AdminProductUpdate {
@@ -697,13 +700,15 @@ export const adminApi = {
 
   /** Liste tous les produits */
   listProducts: async (filters?: {
-    vendor?: number; category?: number; is_active?: boolean; search?: string;
+    vendor?: number; category?: number; is_active?: boolean;
+    search?: string; moderation_status?: string;
   }): Promise<AdminProduct[]> => {
     const params = new URLSearchParams();
     if (filters?.vendor)                  params.append('vendor',    filters.vendor.toString());
-    if (filters?.category)               params.append('category',  filters.category.toString());
+    if (filters?.category)                params.append('category',  filters.category.toString());
     if (filters?.is_active !== undefined) params.append('is_active', filters.is_active.toString());
     if (filters?.search)                  params.append('search',    filters.search);
+    if (filters?.moderation_status)       params.append('moderation_status', filters.moderation_status);
     const qs = params.toString();
     return http<AdminProduct[]>(`/api/vendors/admin/products/${qs ? '?' + qs : ''}`, { headers: authHeader() });
   },
@@ -721,6 +726,14 @@ export const adminApi = {
   /** Activer/désactiver un produit */
   toggleProductStatus: async (productId: number): Promise<AdminProductDetail> =>
     http<AdminProductDetail>(`/api/vendors/admin/products/${productId}/toggle-status/`, { method: 'POST', headers: authHeader() }),
+
+  /** Approuver un produit (modération) */
+  approveProduct: async (productId: number): Promise<AdminProduct> =>
+    http<AdminProduct>(`/api/vendors/admin/products/${productId}/approve/`, { method: 'POST', headers: authHeader() }),
+
+  /** Rejeter un produit (modération) */
+  rejectProduct: async (productId: number): Promise<AdminProduct> =>
+    http<AdminProduct>(`/api/vendors/admin/products/${productId}/reject/`, { method: 'POST', headers: authHeader() }),
 
   /** Supprimer un produit */
   deleteProduct: async (productId: number): Promise<void> =>

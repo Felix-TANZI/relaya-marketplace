@@ -4114,6 +4114,10 @@ def admin_list_products(request):
         products = products.filter(
             Q(title__icontains=search) | Q(description__icontains=search)
         )
+
+    moderation_status = request.query_params.get('moderation_status')
+    if moderation_status:
+        products = products.filter(moderation_status=moderation_status)    
     
     products = products.order_by('-created_at')
     
@@ -6533,3 +6537,51 @@ def admin_broadcast_extended(request):
         'audience':   audience,
         'title':      title,
     })
+
+
+@extend_schema(tags=["Admin"], summary="Approve product (moderation)")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_product(request, product_id):
+    from apps.catalog.models import Product, ModerationStatus
+    from apps.catalog.serializers import ProductSerializer
+    from django.utils import timezone
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    product.moderation_status = ModerationStatus.APPROVED
+    product.moderated_at = timezone.now()
+    product.moderated_by = request.user
+    product.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+
+    # Cascade : valider la fiche si elle est encore en attente
+    master = product.master
+    if master and master.moderation_status != ModerationStatus.APPROVED:
+        master.moderation_status = ModerationStatus.APPROVED
+        master.moderated_at = timezone.now()
+        master.moderated_by = request.user
+        master.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+
+    return Response(ProductSerializer(product, context={'request': request}).data)
+
+
+@extend_schema(tags=["Admin"], summary="Reject product (moderation)")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_product(request, product_id):
+    from apps.catalog.models import Product, ModerationStatus
+    from apps.catalog.serializers import ProductSerializer
+    from django.utils import timezone
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    product.moderation_status = ModerationStatus.REJECTED
+    product.moderated_at = timezone.now()
+    product.moderated_by = request.user
+    product.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+
+    return Response(ProductSerializer(product, context={'request': request}).data)

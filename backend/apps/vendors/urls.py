@@ -126,6 +126,8 @@ urlpatterns = [
     path('admin/products/<int:product_id>/update/',           views.admin_update_product,         name='admin-update-product'),
     path('admin/products/<int:product_id>/delete/',           views.admin_delete_product,         name='admin-delete-product'),
     path('admin/products/<int:product_id>/toggle-status/',    views.admin_toggle_product_status,  name='admin-toggle-product-status'),
+    path('admin/products/<int:product_id>/approve/', views.admin_approve_product, name='admin-approve-product'),
+    path('admin/products/<int:product_id>/reject/',  views.admin_reject_product,  name='admin-reject-product'),
 
     #  ADMINISTRATION - COMMANDES 
     path('admin/orders/',                            views.admin_list_orders,       name='admin-list-orders'),

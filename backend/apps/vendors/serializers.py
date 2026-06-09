@@ -987,12 +987,14 @@ class AdminProductListSerializer(serializers.ModelSerializer):
     category_name   = serializers.CharField(source='category.name',                           read_only=True)
     stock_quantity  = serializers.SerializerMethodField()
     images_count    = serializers.SerializerMethodField()
+    master_title = serializers.CharField(source='master.title', read_only=True, default=None)
 
     class Meta:
         from apps.catalog.models import Product
         model  = Product
         fields = [
             'id', 'title', 'slug', 'price_xaf', 'is_active',
+            'moderation_status', 'master', 'master_title',
             'vendor', 'vendor_name', 'vendor_business',
             'category', 'category_name',
             'stock_quantity', 'images_count',

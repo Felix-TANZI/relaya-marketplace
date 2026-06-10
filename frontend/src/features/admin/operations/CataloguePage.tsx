@@ -32,6 +32,7 @@ import { productsApi, type Category } from "@/services/api/products";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
 import { useToast } from "@/context/ToastContext";
 import { useConfirm } from "@/context/ConfirmContext";
+import ProductDetailDrawer from './ProductDetailDrawer';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
@@ -537,68 +538,16 @@ export default function CataloguePage() {
       )}
 
       {/* DRAWER DÉTAIL */}
-      {detailItem && (() => {
-        const d = detailItem;
-        return (
-          <div onClick={() => setDetailItem(null)}
-            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 60, display: 'flex', justifyContent: 'flex-end' }}>
-            <div onClick={e => e.stopPropagation()}
-              style={{ background: T.card, width: '100%', maxWidth: 440, height: '100%', overflowY: 'auto', borderLeft: `1px solid ${T.border}`, padding: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
-                <h3 style={{ fontSize: 16, fontWeight: 800, color: T.text }}>Détail produit</h3>
-                <button onClick={() => setDetailItem(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted }}><X size={18} /></button>
-              </div>
-
-              {detailData?.images?.[0]?.image && (
-                <img src={detailData.images[0].image} alt={d.title}
-                  style={{ width: '100%', height: 200, objectFit: 'cover', borderRadius: 12, marginBottom: 14 }} />
-              )}
-
-              <p style={{ fontSize: 15, fontWeight: 700, color: T.text }}>{d.title}</p>
-              <p style={{ fontSize: 13, color: T.muted, marginBottom: 12 }}>{fmtXaf(d.price_xaf)}</p>
-
-              {([
-                ['Statut',    d.moderation_status],
-                ['Fiche',     d.master_title || '—'],
-                ['Catégorie', d.category_name],
-                ['Stock',     String(d.stock_quantity)],
-                ['Actif',     d.is_active ? 'Oui' : 'Non'],
-                ['Ajouté',    fmtDate(d.created_at)],
-              ] as [string, string][]).map(([k, v]) => (
-                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0', borderBottom: `1px solid ${T.border}` }}>
-                  <span style={{ fontSize: 12.5, color: T.muted }}>{k}</span>
-                  <span style={{ fontSize: 12.5, color: T.text, fontWeight: 600 }}>{v}</span>
-                </div>
-              ))}
-
-              <div style={{ padding: '10px 0' }}>
-                <span style={{ fontSize: 12.5, color: T.muted }}>Vendeur : </span>
-                <button onClick={() => navigate(`/admin/customers/${d.vendor}`)}
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.red, fontWeight: 600, fontSize: 12.5, padding: 0 }}>
-                  {d.vendor_name}
-                </button>
-                {d.vendor_profile_id && (
-                  <button onClick={() => navigate(`/admin/vendors/${d.vendor_profile_id}`)}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 12, marginLeft: 8, padding: 0 }}>
-                    (boutique)
-                  </button>
-                )}
-              </div>
-
-              {d.moderation_status === 'REJECTED' && d.moderation_reason && (
-                <div style={{ background: '#FEE2E2', color: '#B91C1C', borderRadius: 10, padding: 10, fontSize: 12.5, marginTop: 8 }}>
-                  Motif du rejet : {d.moderation_reason}
-                </div>
-              )}
-
-              {detailLoading && <p style={{ fontSize: 12, color: T.muted, marginTop: 10 }}>Chargement des détails…</p>}
-              {detailData?.description && (
-                <p style={{ fontSize: 12.5, color: T.text, marginTop: 12, whiteSpace: 'pre-wrap' }}>{detailData.description}</p>
-              )}
-            </div>
-          </div>
-        );
-      })()}
+      {detailItem && (
+        <ProductDetailDrawer
+          item={detailItem}
+          detail={detailData}
+          loading={detailLoading}
+          onClose={() => setDetailItem(null)}
+          onApprove={(p) => { setDetailItem(null); handleApprove(p); }}
+          onReject={(p) => { setDetailItem(null); handleReject(p); }}
+        />
+      )}
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}

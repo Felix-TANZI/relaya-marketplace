@@ -270,6 +270,7 @@ export interface AdminProductDetail {
   }>;
   created_at: string;
   updated_at: string;
+  compare_at_price?: number | null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

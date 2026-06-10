@@ -1212,6 +1212,7 @@
     catalogue:            'Catalogue',
     categories:           'Categories',
     reviews:              'Product Reviews',
+    masters:              'Product sheets',
     section_finances:     'Finances',
     finances:             'Finances & Commissions',
     account:              'BelivaY Account',

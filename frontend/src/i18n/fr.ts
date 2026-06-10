@@ -1203,6 +1203,7 @@
     catalogue:            'Catalogue',
     categories:           'Catégories',
     reviews:              'Avis Produits',
+    masters:              'Fiches produits',
  
     // Finances
     section_finances:     'Finances',

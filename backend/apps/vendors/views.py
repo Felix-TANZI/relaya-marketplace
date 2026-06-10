@@ -381,6 +381,87 @@ def upload_product_image(request, product_id):
 
 @extend_schema(
     tags=["Vendors"],
+    summary="Upload master (fiche) image",
+    description=(
+        "Upload une image PRO de fiche (vue acheteur), pour une fiche que le vendeur "
+        "vient de créer et qui est encore en attente de validation. "
+        "Formats : JPG, PNG, WEBP. Taille max : 5 Mo."
+    ),
+    responses={201: None},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_master_image(request, master_id):
+    """
+    Sécurité :
+      - Le vendeur doit posséder une offre sur cette fiche.
+      - La fiche ne doit pas déjà être validée (on ne touche pas à une fiche partagée/approuvée).
+    """
+    from apps.catalog.models import MasterProduct, MasterProductImage, ModerationStatus
+
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not Product.objects.filter(master=master, vendor=request.user).exists():
+        return Response({'detail': "Vous n'avez pas d'offre sur cette fiche."}, status=status.HTTP_403_FORBIDDEN)
+
+    if master.moderation_status == ModerationStatus.APPROVED:
+        return Response({'detail': "Cette fiche est déjà validée et ne peut plus être modifiée."},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    image_file = request.FILES.get('image')
+    if not image_file:
+        return Response({'detail': 'Champ "image" requis.'}, status=status.HTTP_400_BAD_REQUEST)
+    if image_file.content_type not in ALLOWED_IMAGE_MIME:
+        return Response({'detail': 'Format non supporté. Formats acceptés : JPG, PNG, WEBP.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if image_file.size > MAX_IMAGE_SIZE_BYTES:
+        return Response({'detail': 'Fichier trop volumineux. Maximum 5 Mo.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    current = MasterProductImage.objects.filter(master=master).count()
+    if current >= MAX_IMAGES_PER_PRODUCT:
+        return Response({'detail': f'Maximum {MAX_IMAGES_PER_PRODUCT} images par fiche.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        img = MasterProductImage.objects.create(
+            master=master, image=image_file,
+            is_primary=(current == 0), order=current,
+        )
+
+    return Response(
+        {'id': img.id, 'image': request.build_absolute_uri(img.image.url), 'is_primary': img.is_primary},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(tags=["Vendors"], summary="Delete master (fiche) image", responses={204: None})
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_master_image(request, master_id, image_id):
+    from apps.catalog.models import MasterProduct, MasterProductImage, ModerationStatus
+
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    if not Product.objects.filter(master=master, vendor=request.user).exists():
+        return Response({'detail': "Vous n'avez pas d'offre sur cette fiche."}, status=status.HTTP_403_FORBIDDEN)
+    if master.moderation_status == ModerationStatus.APPROVED:
+        return Response({'detail': "Fiche déjà validée."}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        img = MasterProductImage.objects.get(id=image_id, master=master)
+    except MasterProductImage.DoesNotExist:
+        return Response({'detail': 'Image introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    img.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)    
+
+
+@extend_schema(
+    tags=["Vendors"],
     summary="Delete product image",
     responses={204: None},
 )

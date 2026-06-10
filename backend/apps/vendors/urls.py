@@ -32,6 +32,10 @@ urlpatterns = [
          views.delete_product_image, name='delete-image'),
     path('products/<int:product_id>/images/<int:image_id>/set-primary/',
          views.set_primary_image, name='set-primary-image'),
+    path('masters/<int:master_id>/images/',
+         views.upload_master_image, name='upload-master-image'),
+    path('masters/<int:master_id>/images/<int:image_id>/',
+         views.delete_master_image, name='delete-master-image'),    
       
      path('', include(router.urls)),
 

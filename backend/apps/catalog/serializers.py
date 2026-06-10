@@ -3,7 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -105,6 +105,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'reviews_count',
             'created_at',
             'updated_at',
+            'condition',
+            'seller_note',
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     
@@ -147,12 +149,18 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         required=False, allow_null=True,
         help_text="Fiche existante à laquelle rattacher l'offre. Vide = nouvelle fiche.",
     )
+    condition = serializers.PrimaryKeyRelatedField(
+        queryset=ProductCondition.objects.filter(is_active=True),
+        required=False, allow_null=True,
+        help_text="État de l'offre (liste gérée par l'admin).",
+    )
 
     class Meta:
         model = Product
         fields = [
             'id', 'title', 'description', 'short_description',
             'price_xaf', 'category', 'is_active', 'master',
+            'condition', 'seller_note', 'stock_threshold',
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']

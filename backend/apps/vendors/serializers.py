@@ -706,7 +706,74 @@ class AdminUserDetailSerializer(serializers.ModelSerializer):
                 'created_at':         o.created_at.isoformat(),
                 'items_count':        o.items.count(),
             })
-        return result    
+        return result   
+
+
+class AdminMasterOfferSerializer(serializers.ModelSerializer):
+    """Offre vue ADMIN — le vendeur EST visible (contrairement à l'acheteur)."""
+    vendor_name     = serializers.CharField(source='vendor.username',                     read_only=True)
+    vendor_business = serializers.CharField(source='vendor.vendor_profile.business_name',  read_only=True, default='N/A')
+    condition_name  = serializers.CharField(source='condition.name',                       read_only=True, default=None)
+    stock_quantity  = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.catalog.models import Product
+        model  = Product
+        fields = [
+            'id', 'title', 'price_xaf', 'moderation_status', 'is_active',
+            'condition_name', 'seller_note', 'stock_quantity',
+            'vendor', 'vendor_name', 'vendor_business', 'created_at',
+        ]
+
+    def get_stock_quantity(self, obj):
+        try:
+            return obj.inventory.quantity
+        except Exception:
+            return 0
+
+
+class AdminMasterListSerializer(serializers.ModelSerializer):
+    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
+    offers_count  = serializers.SerializerMethodField()
+    primary_image = serializers.SerializerMethodField()
+
+    class Meta:
+        from apps.catalog.models import MasterProduct
+        model  = MasterProduct
+        fields = [
+            'id', 'title', 'slug', 'brand', 'category', 'category_name',
+            'moderation_status', 'offers_count', 'primary_image', 'created_at',
+        ]
+
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+
+    def get_primary_image(self, obj):
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if img and img.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
+
+
+class AdminMasterDetailSerializer(AdminMasterListSerializer):
+    images = serializers.SerializerMethodField()
+    offers = serializers.SerializerMethodField()
+
+    class Meta(AdminMasterListSerializer.Meta):
+        fields = AdminMasterListSerializer.Meta.fields + ['description', 'images', 'offers']
+
+    def get_images(self, obj):
+        request = self.context.get('request')
+        return [{
+            'id': im.id,
+            'image': request.build_absolute_uri(im.image.url) if request else im.image.url,
+            'is_primary': im.is_primary,
+        } for im in obj.images.all()]
+
+    def get_offers(self, obj):
+        qs = obj.offers.all().select_related('vendor', 'inventory', 'condition').order_by('price_xaf')
+        return AdminMasterOfferSerializer(qs, many=True, context=self.context).data     
 
 
 # ─────────────────────────────────────────────────────────────────────────────

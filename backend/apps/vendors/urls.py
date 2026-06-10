@@ -122,6 +122,12 @@ urlpatterns = [
     path('admin/conditions/create/',                views.admin_create_condition, name='admin-create-condition'),
     path('admin/conditions/<int:cond_id>/update/',  views.admin_update_condition, name='admin-update-condition'),
     path('admin/conditions/<int:cond_id>/delete/',  views.admin_delete_condition, name='admin-delete-condition'),
+    path('admin/masters/',                          views.admin_list_masters,    name='admin-masters'),
+    path('admin/masters/<int:master_id>/',          views.admin_master_detail,   name='admin-master-detail'),
+    path('admin/masters/<int:master_id>/update/',   views.admin_update_master,   name='admin-master-update'),
+    path('admin/masters/<int:master_id>/approve/',  views.admin_approve_master,  name='admin-master-approve'),
+    path('admin/masters/<int:master_id>/reject/',   views.admin_reject_master,   name='admin-master-reject'),
+    path('admin/masters/<int:master_id>/delete/',   views.admin_delete_master,   name='admin-master-delete'),
 
     #  ADMINISTRATION - DASHBOARD 
     path('admin/dashboard/stats/',     views.admin_dashboard_stats, name='admin-dashboard-stats'),

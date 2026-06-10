@@ -34,3 +34,14 @@ def test_offres_plafonnees_par_reglage(api_client):
                                is_active=True, moderation_status="APPROVED")
     resp = api_client.get(f"/api/catalog/master-products/{master.id}/")
     assert len(resp.json()["offers"]) == 2
+
+
+def test_fiche_accessible_par_slug_et_par_id(api_client):
+    cat = Category.objects.create(name="Tel", slug="tel-d1")
+    m = MasterProduct.objects.create(title="iPhone 15 D1", category=cat, moderation_status="APPROVED")
+    # par slug (auto-généré depuis le titre)
+    r = api_client.get(f"/api/catalog/master-products/{m.slug}/")
+    assert r.status_code == 200 and r.json()["id"] == m.id
+    # par id (rétrocompat)
+    r = api_client.get(f"/api/catalog/master-products/{m.id}/")
+    assert r.status_code == 200    

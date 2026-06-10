@@ -133,7 +133,16 @@ class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
     def get_serializer_class(self):
         if self.action == 'retrieve':
             return MasterProductDetailSerializer
-        return MasterProductListSerializer    
+        return MasterProductListSerializer  
+
+    def get_object(self):
+        """Récupère une fiche par id (numérique) OU par slug (chaîne)."""
+        from django.shortcuts import get_object_or_404
+        qs = self.filter_queryset(self.get_queryset())
+        value = str(self.kwargs.get(self.lookup_field, ''))
+        obj = get_object_or_404(qs, pk=value) if value.isdigit() else get_object_or_404(qs, slug=value)
+        self.check_object_permissions(self.request, obj)
+        return obj  
     
 
 @api_view(['GET'])

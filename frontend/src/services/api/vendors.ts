@@ -109,6 +109,10 @@ export interface VendorProduct {
   category: number;
   created_at: string;
   images?: ProductImage[];
+  master?: number | null;
+  condition?: number | null;
+  seller_note?: string;
+  stock_threshold?: number | null;
 }
 
 export interface VendorOrderItem {
@@ -505,6 +509,20 @@ export interface MasterFiche {
   category: number;
   category_name: string;
 }
+
+export interface ProductCondition {
+  id: number;
+  name: string;
+  display_order: number;
+  is_active: boolean;
+}
+
+export interface MasterImage {
+  id: number;
+  image: string;
+  is_primary: boolean;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1143,4 +1161,33 @@ export const vendorsApi = {
       },
     });
   },
+
+// ── États produit (lecture) ───────────────────────────────────────────────
+  listConditions: async (): Promise<ProductCondition[]> => {
+    const token = localStorage.getItem("access_token");
+    return http<ProductCondition[]>("/api/catalog/conditions/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Images PRO de la fiche (mode "nouveau produit") ───────────────────────
+  uploadMasterImage: async (masterId: number, file: File): Promise<MasterImage> => {
+    const token = localStorage.getItem("access_token");
+    const form = new FormData();
+    form.append("image", file);
+    return http<MasterImage>(`/api/vendors/masters/${masterId}/images/`, {
+      method: "POST",
+      body: form,
+      headers: { Authorization: `Bearer ${token}` }, // pas de Content-Type → multipart auto
+    });
+  },
+
+  deleteMasterImage: async (masterId: number, imageId: number): Promise<void> => {
+    const token = localStorage.getItem("access_token");
+    await http<void>(`/api/vendors/masters/${masterId}/images/${imageId}/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
 };

@@ -31,3 +31,11 @@ def test_admin_crud_condition(api_client, django_user_model):
 
     r = api_client.delete(f"/api/vendors/admin/conditions/{cid}/delete/")
     assert r.status_code == 204
+
+def test_endpoint_conditions_actives_seulement(api_client):
+    ProductCondition.objects.filter(name="Neuf").update(is_active=False)
+    resp = api_client.get("/api/catalog/conditions/")
+    assert resp.status_code == 200
+    names = [c["name"] for c in resp.json()]
+    assert "Neuf" not in names         # désactivé → absent
+    assert "Bon état" in names         # actif → présent    

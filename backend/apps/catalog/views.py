@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticate
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
 from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus
 from .serializers import (
@@ -132,3 +134,13 @@ class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
         if self.action == 'retrieve':
             return MasterProductDetailSerializer
         return MasterProductListSerializer    
+    
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_active_conditions(request):
+    """Liste des états actifs, pour le formulaire vendeur."""
+    from .models import ProductCondition
+    from .serializers import ProductConditionSerializer
+    qs = ProductCondition.objects.filter(is_active=True)
+    return Response(ProductConditionSerializer(qs, many=True).data)    

@@ -107,6 +107,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'updated_at',
             'condition',
             'seller_note',
+            'master',
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     

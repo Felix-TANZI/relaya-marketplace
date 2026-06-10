@@ -11,7 +11,7 @@ import { useNavigate, useParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, Package, Upload, X, RefreshCw, Save,
   ImageIcon, Tag, BarChart2, DollarSign,
-  CheckCircle, Clock, Info, ChevronRight, Layers,
+  CheckCircle, Clock, Info, ChevronRight, Layers, Plus,
 } from 'lucide-react';
 import {
   vendorsApi,
@@ -20,6 +20,7 @@ import {
   type VendorProduct,
   type VendorProductEnriched,
   type MasterFiche,
+  type ProductCondition,
 } from '@/services/api/vendors';
 import { productsApi, type Category } from '@/services/api/products';
 import { useToast } from '@/context/ToastContext';
@@ -111,6 +112,8 @@ type ProductPayload = Partial<VendorProduct> & {
   promo_end_date: string | null;
   stock_threshold: number;
   master: number | null;
+  condition: number | null;
+  seller_note: string;
 };
 
 function categoryId(category: ProductFormItem['category']) {
@@ -144,11 +147,18 @@ export default function ProductFormPage() {
   const [attrVals,      setAttrVals]    = useState<Record<number, string[]>>({});
 
   // ── Fiche produit (rattachement) ──
-  const [masterMode,     setMasterMode]     = useState<'new' | 'existing'>('new');
+  const [masterMode, setMasterMode] = useState<'new' | 'existing'>(id ? 'new' : 'existing');
   const [masterQuery,    setMasterQuery]    = useState('');
   const [masterResults,  setMasterResults]  = useState<MasterFiche[]>([]);
   const [selectedMaster, setSelectedMaster] = useState<MasterFiche | null>(null);
   const [masterLoading,  setMasterLoading]  = useState(false);
+
+  // ── Condition & note vendeur (occasion/reconditionné) ──
+  const [conditions,  setConditions]  = useState<ProductCondition[]>([]);
+  const [conditionId, setConditionId] = useState('');
+  const [sellerNote,  setSellerNote]  = useState('');
+  const [proImgs,     setProImgs]     = useState<{ file: File; preview: string }[]>([]);
+  const proRef = useRef<HTMLInputElement>(null);
 
   // ── UI ──
   const [allCats,    setAllCats]    = useState<Category[]>([]);
@@ -169,6 +179,9 @@ export default function ProductFormPage() {
 
   // ID catégorie effectif pour l'API (sous-cat si choisie, sinon parent)
   const effectiveCatId = subCatId || parentCatId;
+
+  // Afficher les champs FICHE ? (nouveau produit, ou édition d'une offre existante)
+  const showFicheFields = isEdit || masterMode === 'new';
 
   // ── Chargement initial ─────────────────────────────────────────────────────
   useEffect(() => {
@@ -203,6 +216,8 @@ export default function ProductFormPage() {
           setStockQty(String(p.stock_quantity));
           setThreshold(String(product.stock_threshold || ''));
           setIsActive(p.is_active);
+          setConditionId(String(product.condition || ''));
+          setSellerNote(product.seller_note || '');
           setImages(p.images || []);
           const ea: Record<number,string[]> = {};
           for (const av of product.attribute_values || [] as ProductAttributeSelection[]) ea[av.attribute.id] = av.selected_values;
@@ -213,6 +228,11 @@ export default function ProductFormPage() {
     };
     init();
   }, [id, isEdit, navigate, showToast]);
+
+  // Charger la liste des états actifs (pour le menu déroulant)
+  useEffect(() => {
+    vendorsApi.listConditions().then(setConditions).catch(() => setConditions([]));
+  }, []);
 
   // Charger attributs quand catégorie effective change
   useEffect(() => {
@@ -251,6 +271,13 @@ export default function ProductFormPage() {
     setTempImgs(prev => [...prev, ...toAdd.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]);
   };
   const rmTemp = (i: number) => setTempImgs(prev => { const n=[...prev]; URL.revokeObjectURL(n[i].preview); n.splice(i,1); return n; });
+  const addProPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const rem = 6 - proImgs.length;
+    const toAdd = Array.from(files).filter(f => f.type.startsWith('image/')).slice(0, rem);
+    setProImgs(prev => [...prev, ...toAdd.map(f => ({ file: f, preview: URL.createObjectURL(f) }))]);
+  };
+  const rmProTemp = (i: number) => setProImgs(prev => { const n=[...prev]; URL.revokeObjectURL(n[i].preview); n.splice(i,1); return n; });
   const rmExisting = async (imgId: number) => {
     try { await vendorsApi.deleteImage(parseInt(id!), imgId); setImages(prev => prev.filter(i => i.id !== imgId)); }
     catch { showToast('Erreur suppression image','error'); }
@@ -270,22 +297,31 @@ export default function ProductFormPage() {
   // ── Validation ──────────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string,string> = {};
-    if (!title.trim())                              e.title       = 'Le titre est requis.';
-    if (!parentCatId)                               e.parentCatId = 'Veuillez sélectionner une catégorie.';
-    if (shortDesc.trim().length < 10)               e.shortDesc   = 'Description courte requise (min 10 caractères).';
-    if (description.trim().length < 20)             e.description = 'Description complète requise (min 20 caractères).';
-    if (!priceXaf || price < 100)                   e.priceXaf    = 'Prix minimum : 100 FCFA.';
-    if (compare && compare <= price)                e.compareAt   = 'Le prix barré doit être supérieur au prix de vente.';
-    const sq = parseInt(stockQty, 10);
-    if (isNaN(sq) || sq < 0)                        e.stockQty    = 'Stock invalide.';
-    if (!stockThreshold.trim())                     e.threshold   = 'Seuil alerte stock requis.';
-    else if (parseInt(stockThreshold,10) < 0)       e.threshold   = 'Seuil invalide.';
-    for (const attr of attributes) {
-      if (attr.is_required && !(attrVals[attr.id]?.length))
-        e[`attr_${attr.id}`] = `"${attr.name}" est obligatoire.`;
-    }
+
+    // Mode : il faut une fiche choisie, sinon passer en "nouveau produit"
     if (!isEdit && masterMode === 'existing' && !selectedMaster)
-      e.master = 'Choisissez une fiche dans la liste, ou créez une nouvelle fiche.';
+      e.master = 'Recherchez et choisissez un produit, ou créez-en un nouveau.';
+
+    // Champs FICHE — uniquement quand on les affiche
+    if (showFicheFields) {
+      if (!title.trim())                  e.title       = 'Le titre est requis.';
+      if (!parentCatId)                   e.parentCatId = 'Veuillez sélectionner une catégorie.';
+      if (shortDesc.trim().length < 10)   e.shortDesc   = 'Description courte requise (min 10 caractères).';
+      if (description.trim().length < 20) e.description = 'Description complète requise (min 20 caractères).';
+      for (const attr of attributes) {
+        if (attr.is_required && !(attrVals[attr.id]?.length))
+          e[`attr_${attr.id}`] = `"${attr.name}" est obligatoire.`;
+      }
+    }
+
+    // Champs OFFRE — dans tous les cas
+    if (!priceXaf || price < 100)         e.priceXaf  = 'Prix minimum : 100 FCFA.';
+    if (compare && compare <= price)      e.compareAt = 'Le prix barré doit être supérieur au prix de vente.';
+    const sq = parseInt(stockQty, 10);
+    if (isNaN(sq) || sq < 0)              e.stockQty  = 'Stock invalide.';
+    if (!stockThreshold.trim())           e.threshold = 'Seuil alerte stock requis.';
+    else if (parseInt(stockThreshold,10) < 0) e.threshold = 'Seuil invalide.';
+
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -295,34 +331,56 @@ export default function ProductFormPage() {
     if (!validate()) { showToast('Corrigez les erreurs avant de continuer.','error'); return; }
     try {
       setSaving(true);
+
+      const attachMode = !isEdit && masterMode === 'existing' && !!selectedMaster;
+      const categoryForOffer = attachMode
+        ? selectedMaster!.category
+        : parseInt(effectiveCatId, 10);
+
       const payload: ProductPayload = {
-        title:             title.trim(),
+        title:             attachMode ? selectedMaster!.title : title.trim(),
         description:       description.trim(),
         short_description: shortDesc.trim(),
         price_xaf:         price,
         compare_at_price:  compare > price ? compare : null,
         promo_end_date:    promoEnd || null,
-        category:          parseInt(effectiveCatId, 10),
+        category:          categoryForOffer,
         is_active:         isActive,
         stock_quantity:    parseInt(stockQty, 10) || 0,
         stock_threshold:   parseInt(stockThreshold, 10),
-        master:            masterMode === 'existing' && selectedMaster ? selectedMaster.id : null,
+        master:            attachMode ? selectedMaster!.id : null,
+        condition:         conditionId ? parseInt(conditionId, 10) : null,
+        seller_note:       sellerNote.trim(),
       };
 
       let productId: number;
+      let masterId: number | null | undefined;
       if (isEdit && id) {
-        await vendorsApi.updateProduct(parseInt(id), payload);
+        const updated = await vendorsApi.updateProduct(parseInt(id), payload);
         productId = parseInt(id);
+        masterId  = updated.master;
         showToast('Produit mis à jour','success');
       } else {
         const created = await vendorsApi.createProduct(payload);
         productId = created.id;
+        masterId  = created.master;
         showToast('Produit créé — en attente de modération','success');
       }
+
+      // Photos RÉELLES de l'offre (vérif admin)
       for (let i = 0; i < tempImgs.length; i++) {
         try { await vendorsApi.uploadImage(productId, tempImgs[i].file, i===0 && images.length===0); }
-        catch { showToast("Une image n'a pas pu être envoyée",'error'); }
+        catch { showToast("Une photo réelle n'a pas pu être envoyée",'error'); }
       }
+
+      // Images PRO de la fiche — uniquement à la création d'un nouveau produit
+      if (!isEdit && masterMode === 'new' && masterId) {
+        for (const t of proImgs) {
+          try { await vendorsApi.uploadMasterImage(masterId, t.file); }
+          catch { showToast("Une image de fiche n'a pas pu être envoyée",'error'); }
+        }
+      }
+
       navigate('/seller/products');
     } catch (e: unknown) {
       showToast(getErrorMessage(e),'error');
@@ -359,6 +417,79 @@ export default function ProductFormPage() {
 
         {/* ── COLONNE GAUCHE (2/3) ── */}
         <div className="lg:col-span-2 space-y-5">
+          
+
+          {/* PRODUIT — recherche d'abord */}
+          {!isEdit && (
+          <Section title="Produit" icon={<Tag size={15}/>} accent>
+            {masterMode === 'existing' ? (
+              <div className="space-y-2">
+                <Field label="Rechercher le produit" required error={errors.master}
+                  hint="Vérifiez d'abord si le produit existe déjà avant d'en créer un nouveau.">
+                  <input value={masterQuery} onChange={e => { setMasterQuery(e.target.value); setSelectedMaster(null); }}
+                    placeholder="Ex : iPhone 15 Pro 128 Go" style={errors.master ? iErr : iBase}/>
+                </Field>
+
+                {masterLoading && <p className="text-[11px]" style={{ color: T.mutedL }}>Recherche…</p>}
+
+                {!masterLoading && masterResults.length > 0 && (
+                  <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                    {masterResults.map(m => (
+                      <button key={m.id} type="button"
+                        onClick={() => { setSelectedMaster(m); setMasterResults([]); setMasterQuery(m.title); }}
+                        className="w-full text-left px-3 py-2 text-[12.5px] transition-all"
+                        style={{ background: selectedMaster?.id === m.id ? T.orangeL : T.white,
+                                 color: T.text, borderBottom: `1px solid ${T.border}` }}>
+                        <span className="font-semibold">{m.title}</span>
+                        <span style={{ color: T.mutedL }}> · {m.category_name}{m.brand ? ` · ${m.brand}` : ''}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {selectedMaster && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-xl"
+                    style={{ background: T.greenL, border: `1px solid ${T.greenB}` }}>
+                    <CheckCircle size={14} style={{ color: T.green }}/>
+                    <p className="text-[11.5px] font-semibold" style={{ color: T.green }}>
+                      Produit choisi : {selectedMaster.title}
+                    </p>
+                  </div>
+                )}
+
+                {!masterLoading && !selectedMaster && masterQuery.trim().length >= 2 && masterResults.length === 0 && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[11.5px]" style={{ color: T.muted }}>
+                      Aucun produit trouvé pour « {masterQuery.trim()} ».
+                    </p>
+                    <button type="button" onClick={() => setMasterMode('new')}
+                      className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12.5px] font-semibold border-2"
+                      style={{ borderColor: T.orange, color: T.orange, background: T.orangeL }}>
+                      <Plus size={14}/> Créer un nouveau produit
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center justify-between px-3 py-2.5 rounded-xl"
+                style={{ background: T.orangeL, border: `1px solid ${T.orangeB}` }}>
+                <div className="flex items-center gap-2">
+                  <Plus size={14} style={{ color: T.orange }}/>
+                  <p className="text-[12px] font-semibold" style={{ color: T.orange }}>
+                    Nouveau produit — une fiche sera créée (validation requise).
+                  </p>
+                </div>
+                <button type="button" onClick={() => setMasterMode('existing')}
+                  className="text-[11.5px] font-semibold flex-shrink-0" style={{ color: T.muted }}>
+                  ← Recherche
+                </button>
+              </div>
+            )}
+          </Section>
+          )} 
+
+          {showFicheFields && (
+          <>
 
           {/* INFOS GÉNÉRALES */}
           <Section title="Informations générales" icon={<Package size={15}/>}>
@@ -379,71 +510,6 @@ export default function ProductFormPage() {
                 placeholder="Matière, taille, entretien, garantie, particularités…"
                 style={errors.description ? { ...iErr, resize:'vertical', minHeight:120 } : { ...iBase, resize:'vertical', minHeight:120 }}/>
             </Field>
-          </Section>
-
-          {/* FICHE PRODUIT (rattachement) */}
-          <Section title="Fiche produit" icon={<Tag size={15}/>}>
-            <div className="flex gap-2">
-              <button type="button" onClick={() => { setMasterMode('new'); setSelectedMaster(null); }}
-                className="flex-1 px-3 py-2.5 rounded-xl text-[12.5px] font-semibold border-2 transition-all"
-                style={{
-                  background:  masterMode === 'new' ? T.orangeL : T.cream,
-                  borderColor: masterMode === 'new' ? T.orange : T.border,
-                  color:       masterMode === 'new' ? T.orange : T.text,
-                }}>
-                Nouvelle fiche
-              </button>
-              <button type="button" onClick={() => setMasterMode('existing')}
-                className="flex-1 px-3 py-2.5 rounded-xl text-[12.5px] font-semibold border-2 transition-all"
-                style={{
-                  background:  masterMode === 'existing' ? T.orangeL : T.cream,
-                  borderColor: masterMode === 'existing' ? T.orange : T.border,
-                  color:       masterMode === 'existing' ? T.orange : T.text,
-                }}>
-                Rattacher à une fiche existante
-              </button>
-            </div>
-
-            {masterMode === 'new' && (
-              <p className="text-[11px]" style={{ color: T.mutedL }}>
-                Une nouvelle fiche sera créée pour ce produit (soumise à validation).
-              </p>
-            )}
-
-            {masterMode === 'existing' && (
-              <div className="space-y-2">
-                <input value={masterQuery} onChange={e => setMasterQuery(e.target.value)}
-                  placeholder="Rechercher une fiche (ex : iPhone 15)…" style={iBase}/>
-                {masterLoading && <p className="text-[11px]" style={{ color: T.mutedL }}>Recherche…</p>}
-                {!masterLoading && masterResults.length > 0 && (
-                  <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-                    {masterResults.map(m => (
-                      <button key={m.id} type="button"
-                        onClick={() => { setSelectedMaster(m); setMasterResults([]); setMasterQuery(m.title); }}
-                        className="w-full text-left px-3 py-2 text-[12.5px] transition-all"
-                        style={{ background: selectedMaster?.id === m.id ? T.orangeL : T.white,
-                                 color: T.text, borderBottom: `1px solid ${T.border}` }}>
-                        <span className="font-semibold">{m.title}</span>
-                        <span style={{ color: T.mutedL }}> · {m.category_name}{m.brand ? ` · ${m.brand}` : ''}</span>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                {selectedMaster && (
-                  <p className="text-[11.5px] font-semibold" style={{ color: T.orange }}>
-                    Fiche choisie : {selectedMaster.title}
-                  </p>
-                )}
-                {isEdit && !selectedMaster && (
-                  <p className="text-[11px]" style={{ color: T.mutedL }}>
-                    Laissez tel quel pour conserver la fiche actuelle.
-                  </p>
-                )}
-                {errors.master && (
-                  <p className="text-[11px] font-semibold" style={{ color: T.red }}>{errors.master}</p>
-                )}
-              </div>
-            )}
           </Section>
 
           {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}
@@ -538,9 +604,9 @@ export default function ProductFormPage() {
           </Section>
 
           {/* PHOTOS */}
-          <Section title="Photos du produit" icon={<ImageIcon size={15}/>}>
+          <Section title="Photos réelles de votre article" icon={<ImageIcon size={15}/>}>
             <p className="text-[12px]" style={{ color: T.muted }}>
-              Min. 1 photo · Max. 6 · JPG / PNG / WEBP · Max 5 Mo · 800×800px recommandé
+              Vos vraies photos de l'article — utilisées par l'admin pour vérifier l'offre. Min. 1 · Max. 6.
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {images.map(img => (
@@ -591,6 +657,41 @@ export default function ProductFormPage() {
               )}
             </div>
           </Section>
+
+          {/* IMAGES PRO DE LA FICHE — seulement en création d'un nouveau produit */}
+            {!isEdit && masterMode === 'new' && (
+              <Section title="Images du produit (vitrine)" icon={<ImageIcon size={15}/>}>
+                <p className="text-[12px]" style={{ color: T.muted }}>
+                  Images mises en avant sur la fiche, vues par les acheteurs. Min. 1 · Max. 6.
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {proImgs.map((t, i) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                      <img src={t.preview} alt="" className="w-full h-full object-cover"/>
+                      <button type="button" onClick={() => rmProTemp(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: T.red, color: T.white }}>
+                        <X size={10}/>
+                      </button>
+                    </div>
+                  ))}
+                  {proImgs.length < 6 && (
+                    <>
+                      <input type="file" ref={proRef} className="hidden" accept="image/*" multiple
+                        onChange={e => addProPhotos(e.target.files)}/>
+                      <button type="button" onClick={() => proRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1"
+                        style={{ borderColor: T.border, background: T.cream }}>
+                        <Upload size={18} style={{ color: T.mutedL }}/>
+                        <span className="text-[10px]" style={{ color: T.mutedL }}>Ajouter</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Section>
+            )}
+          </>
+          )}
         </div>
 
         {/* ── COLONNE DROITE (1/3) ── */}
@@ -640,6 +741,21 @@ export default function ProductFormPage() {
               <input type="number" value={stockThreshold} onChange={e => setThreshold(e.target.value)}
                 min={0} placeholder="Ex : 3"
                 style={errors.threshold?iErr:iBase}/>
+            </Field>
+
+            <div className="h-px" style={{ background: T.border }}/>
+
+            <Field label="État du produit" hint="Dans quel état est l'article que vous vendez ?">
+              <select value={conditionId} onChange={e => setConditionId(e.target.value)} style={iBase}>
+                <option value="">— Choisir —</option>
+                {conditions.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </Field>
+
+            <Field label="Note vendeur" hint="Ex : garantie 6 mois, accessoires inclus…">
+              <textarea value={sellerNote} onChange={e => setSellerNote(e.target.value)} rows={2}
+                placeholder="Information visible par l'acheteur sur votre offre."
+                style={{ ...iBase, resize: 'none' }}/>
             </Field>
 
             {/* Statut */}

@@ -24,6 +24,23 @@ class ModerationStatus(models.TextChoices):
     REJECTED = 'REJECTED', 'Rejeté'
 
 
+class ProductCondition(models.Model):
+    """
+    État d'une offre (neuf, comme neuf, bon état…).
+    Liste entièrement gérée par l'admin : il peut en ajouter/désactiver à volonté.
+    """
+    name          = models.CharField(max_length=60, unique=True, verbose_name="État")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
+    is_active     = models.BooleanField(default=True, verbose_name="Actif")
+
+    class Meta:
+        ordering            = ['display_order', 'name']
+        verbose_name        = "État de produit"
+        verbose_name_plural = "États de produit"
+
+    def __str__(self):
+        return self.name
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # CATÉGORIE

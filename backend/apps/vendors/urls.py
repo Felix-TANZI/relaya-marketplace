@@ -114,6 +114,10 @@ urlpatterns = [
     path('admin/customers/loyalty/', views.admin_customers_loyalty, name='admin-customers-loyalty'),
     path('admin/logs/',       views.admin_system_logs, name='admin-logs'),
     path('admin/logs/clear/', views.admin_clear_logs,  name='admin-logs-clear'),
+    path('admin/conditions/',                       views.admin_list_conditions,  name='admin-conditions'),
+    path('admin/conditions/create/',                views.admin_create_condition, name='admin-create-condition'),
+    path('admin/conditions/<int:cond_id>/update/',  views.admin_update_condition, name='admin-update-condition'),
+    path('admin/conditions/<int:cond_id>/delete/',  views.admin_delete_condition, name='admin-delete-condition'),
 
     #  ADMINISTRATION - DASHBOARD 
     path('admin/dashboard/stats/',     views.admin_dashboard_stats, name='admin-dashboard-stats'),

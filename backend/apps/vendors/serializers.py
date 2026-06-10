@@ -1100,6 +1100,7 @@ class PlatformSettingsSerializer(serializers.ModelSerializer):
             'updated_at',
             'updated_by',
             'updated_by_name',
+            'max_offers_displayed',
         ]
 
 

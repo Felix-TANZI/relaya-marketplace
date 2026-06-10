@@ -262,3 +262,11 @@ class MasterProductDetailSerializer(MasterProductListSerializer):
         qs = (obj.offers.filter(is_active=True, moderation_status='APPROVED')
               .select_related('vendor', 'inventory').order_by('price_xaf'))
         return OfferSerializer(qs, many=True, context=self.context).data
+    
+
+
+class ProductConditionSerializer(serializers.ModelSerializer):
+    class Meta:
+        from .models import ProductCondition
+        model  = ProductCondition
+        fields = ['id', 'name', 'display_order', 'is_active']    

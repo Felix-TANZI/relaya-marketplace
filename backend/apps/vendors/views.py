@@ -6602,3 +6602,59 @@ def admin_reject_product(request, product_id):
         )
 
     return Response(ProductSerializer(product, context={'request': request}).data)
+
+
+
+@extend_schema(tags=["Admin"], summary="List product conditions")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_conditions(request):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    qs = ProductCondition.objects.all()
+    return Response(ProductConditionSerializer(qs, many=True).data)
+
+
+@extend_schema(tags=["Admin"], summary="Create product condition")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_create_condition(request):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    name = (request.data.get('name') or '').strip()
+    if not name:
+        return Response({'detail': 'Le nom est requis.'}, status=status.HTTP_400_BAD_REQUEST)
+    if ProductCondition.objects.filter(name__iexact=name).exists():
+        return Response({'detail': 'Cet état existe déjà.'}, status=status.HTTP_400_BAD_REQUEST)
+    cond = ProductCondition.objects.create(name=name, display_order=request.data.get('display_order', 0))
+    return Response(ProductConditionSerializer(cond).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Admin"], summary="Update product condition")
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_condition(request, cond_id):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    try:
+        cond = ProductCondition.objects.get(id=cond_id)
+    except ProductCondition.DoesNotExist:
+        return Response({'detail': 'État introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    for f in ['name', 'display_order', 'is_active']:
+        if f in request.data:
+            setattr(cond, f, request.data[f])
+    cond.save()
+    return Response(ProductConditionSerializer(cond).data)
+
+
+@extend_schema(tags=["Admin"], summary="Delete product condition")
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_condition(request, cond_id):
+    from apps.catalog.models import ProductCondition
+    try:
+        cond = ProductCondition.objects.get(id=cond_id)
+    except ProductCondition.DoesNotExist:
+        return Response({'detail': 'État introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    cond.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)    

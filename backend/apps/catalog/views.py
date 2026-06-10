@@ -118,7 +118,7 @@ class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
         MasterProduct.objects
         .filter(moderation_status=ModerationStatus.APPROVED)
         .select_related('category')
-        .prefetch_related('offers', 'offers__inventory', 'offers__images', 'offers__vendor')
+        .prefetch_related('images', 'offers', 'offers__inventory', 'offers__condition')
     )
     pagination_class   = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]

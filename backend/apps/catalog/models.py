@@ -135,6 +135,23 @@ class MasterProduct(SoftDeleteModel):
         super().save(*args, **kwargs)
 
 
+class MasterProductImage(models.Model):
+    """Image PRO d'une fiche produit (mise en avant, vue acheteur)."""
+    master     = models.ForeignKey(MasterProduct, on_delete=models.CASCADE, related_name='images')
+    image      = models.ImageField(upload_to='masters/%Y/%m/')
+    is_primary = models.BooleanField(default=False)
+    order      = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering            = ['order', '-is_primary', '-created_at']
+        verbose_name        = "Image fiche"
+        verbose_name_plural = "Images fiche"
+
+    def __str__(self):
+        return f"Image fiche {self.id} — {self.master.title}"        
+
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ATTRIBUTS PRODUIT (créés par l'admin, choisis par le vendeur)
@@ -283,6 +300,12 @@ class Product(SoftDeleteModel):
         related_name='moderated_products',
     )
     moderation_reason = models.TextField(blank=True, default='', verbose_name="Motif de modération")
+
+    condition = models.ForeignKey(
+        "ProductCondition", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="products", verbose_name="État",
+    )
+    seller_note = models.TextField(blank=True, default='', verbose_name="Note du vendeur")
 
     class Meta:
         ordering            = ["-created_at"]

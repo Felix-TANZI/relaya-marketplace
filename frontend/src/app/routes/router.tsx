@@ -111,6 +111,7 @@ import DeliveriesPerformancePage from '@/features/admin/deliveries/DeliveriesPer
 import CataloguePage           from '@/features/admin/operations/CataloguePage';
 import AdminCategoriesPage     from '@/features/admin/operations/CategoriesPage';
 import ReviewsPage             from '@/features/admin/operations/ReviewsPage';
+import MasterProductsPage from '@/features/admin/operations/MasterProductsPage';
 
 // ── Système ──────────────────────────────────────────────────────────────────
 import AuditPage               from '@/features/admin/system/AuditPage';
@@ -277,6 +278,7 @@ export const router = createBrowserRouter([
       { path: 'catalogue',            element: <CataloguePage /> },
       { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
       { path: 'catalogue/reviews',    element: <ReviewsPage /> },
+      { path: 'catalogue/masters', element: <MasterProductsPage /> },
 
       // ── FINANCES ────────────────────────────────────────────────────────
       { path: 'finances', element: <FinancesPage /> },

@@ -80,6 +80,7 @@ import AdminOrderDetailPage  from './features/admin/OrderDetailPage';
 import DisputesManagementPage from './features/admin/DisputesManagementPage';
 import DisputeDetailPage     from './features/admin/DisputeDetailPage';
 import ProductsManagementPage from './features/admin/ProductsManagementPage';
+import MasterProductsPage from '@/features/admin/operations/MasterProductsPage';
 
 // ── Espace admin — System ─────────────────────────────────────────────────────
 import SettingsPage from './features/admin/SettingsPage';
@@ -188,6 +189,7 @@ function App() {
           <Route path="catalogue"            element={<ProductsManagementPage />} />
           <Route path="catalogue/categories" element={<AdminStub titleKey="categories" />} />
           <Route path="catalogue/reviews"    element={<AdminStub titleKey="reviews" />} />
+          <Route path="catalogue/masters"    element={<MasterProductsPage />} />
 
           {/* ── Finances ── */}
           <Route path="finances" element={<AdminStub titleKey="finances" />} />

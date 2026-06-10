@@ -1622,6 +1622,7 @@
     map_legend_delivered:'Delivered',
     map_legend_dispute: 'Dispute',
     map_count:          '{{n}} order(s) displayed',
+    masters: 'Product sheets',
   },
  
   disputes: {

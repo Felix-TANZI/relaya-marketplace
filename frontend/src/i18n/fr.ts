@@ -1624,6 +1624,7 @@
     col_escrow:         'Escrow',
     col_date:           'Date',
     no_orders:          'Aucune commande trouvée',
+    masters: 'Fiches produits',
  
     // Detail
     detail_title:       'Commande {{ref}}',

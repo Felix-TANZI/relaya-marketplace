@@ -673,6 +673,40 @@ export interface ProductCondition {
   is_active: boolean;
 }
 
+export interface AdminMaster {
+  id: number;
+  title: string;
+  slug: string;
+  brand: string;
+  category: number | null;
+  category_name: string | null;
+  moderation_status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  offers_count: number;
+  primary_image: string | null;
+  created_at: string;
+}
+
+export interface AdminMasterOffer {
+  id: number;
+  title: string;
+  price_xaf: number;
+  moderation_status: string;
+  is_active: boolean;
+  condition_name: string | null;
+  seller_note: string;
+  stock_quantity: number;
+  vendor: number;
+  vendor_name: string;
+  vendor_business: string;
+  created_at: string;
+}
+
+export interface AdminMasterDetail extends AdminMaster {
+  description: string;
+  images: { id: number; image: string; is_primary: boolean }[];
+  offers: AdminMasterOffer[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1300,5 +1334,31 @@ export const adminApi = {
     }),
 
   deleteCondition: async (id: number): Promise<void> =>
-    http(`/api/vendors/admin/conditions/${id}/delete/`, { method: 'DELETE', headers: authHeader() }),  
+    http(`/api/vendors/admin/conditions/${id}/delete/`, { method: 'DELETE', headers: authHeader() }),
+  
+  // ── FICHES PRODUITS (MASTER) ──────────────────────────────────────────────
+  listMasters: async (filters?: { moderation_status?: string; search?: string }): Promise<AdminMaster[]> => {
+    const p = new URLSearchParams();
+    if (filters?.moderation_status) p.set('moderation_status', filters.moderation_status);
+    if (filters?.search) p.set('search', filters.search);
+    const qs = p.toString() ? `?${p}` : '';
+    return http<AdminMaster[]>(`/api/vendors/admin/masters/${qs}`, { headers: authHeader() });
+  },
+
+  getMasterDetail: async (id: number): Promise<AdminMasterDetail> =>
+    http<AdminMasterDetail>(`/api/vendors/admin/masters/${id}/`, { headers: authHeader() }),
+
+  updateMaster: async (id: number, data: Partial<Pick<AdminMasterDetail, 'title' | 'description' | 'brand' | 'category'>>): Promise<AdminMasterDetail> =>
+    http<AdminMasterDetail>(`/api/vendors/admin/masters/${id}/update/`, {
+      method: 'PATCH', headers: authHeader(), body: JSON.stringify(data),
+    }),
+
+  approveMaster: async (id: number) =>
+    http(`/api/vendors/admin/masters/${id}/approve/`, { method: 'POST', headers: authHeader() }),
+
+  rejectMaster: async (id: number) =>
+    http(`/api/vendors/admin/masters/${id}/reject/`, { method: 'POST', headers: authHeader() }),
+
+  deleteMaster: async (id: number) =>
+    http(`/api/vendors/admin/masters/${id}/delete/`, { method: 'DELETE', headers: authHeader() }),
 };

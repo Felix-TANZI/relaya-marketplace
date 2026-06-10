@@ -649,6 +649,7 @@ export interface PlatformSettings {
   updated_at: string;
   updated_by: number | null;
   updated_by_name: string;
+  max_offers_displayed: number;
 }
 
 export interface PlatformSettingsUpdate {
@@ -662,6 +663,14 @@ export interface PlatformSettingsUpdate {
   support_email?: string;
   maintenance_mode?: boolean;
   maintenance_message?: string;
+  max_offers_displayed?: number;
+}
+
+export interface ProductCondition {
+  id: number;
+  name: string;
+  display_order: number;
+  is_active: boolean;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1275,4 +1284,21 @@ export const adminApi = {
       headers: authHeader(),
       body: JSON.stringify(data),
     }),
+
+  // ── ÉTATS PRODUIT (CONDITIONS) ──────────────────────────────────────────
+  listConditions: async (): Promise<ProductCondition[]> =>
+    http<ProductCondition[]>('/api/vendors/admin/conditions/', { headers: authHeader() }),
+
+  createCondition: async (name: string): Promise<ProductCondition> =>
+    http<ProductCondition>('/api/vendors/admin/conditions/create/', {
+      method: 'POST', headers: authHeader(), body: JSON.stringify({ name }),
+    }),
+
+  updateCondition: async (id: number, data: Partial<Pick<ProductCondition, 'name' | 'display_order' | 'is_active'>>): Promise<ProductCondition> =>
+    http<ProductCondition>(`/api/vendors/admin/conditions/${id}/update/`, {
+      method: 'PATCH', headers: authHeader(), body: JSON.stringify(data),
+    }),
+
+  deleteCondition: async (id: number): Promise<void> =>
+    http(`/api/vendors/admin/conditions/${id}/delete/`, { method: 'DELETE', headers: authHeader() }),  
 };

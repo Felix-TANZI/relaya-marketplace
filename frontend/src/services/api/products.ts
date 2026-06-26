@@ -48,6 +48,7 @@ export interface Product {
   reviews_count?: number;
   created_at: string;
   updated_at: string;
+  master_slug?: string | null;
 }
 
 export interface ProductListResponse {

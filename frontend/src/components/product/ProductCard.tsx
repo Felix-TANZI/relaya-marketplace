@@ -1,4 +1,4 @@
-import {
+﻿import {
   Baby,
   Dumbbell,
   Footprints,
@@ -13,7 +13,7 @@ import {
   Star,
   Truck,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, createElement } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/context/CartContext";
@@ -60,6 +60,7 @@ interface Product {
   compare_at_price?: number | null;
   is_on_promotion?: boolean;
   promo_end_date?: string | null;
+  master_slug?: string | null;
 }
 
 interface ProductCardProps {
@@ -126,8 +127,8 @@ export default function ProductCard({
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
   const canOrder = inStock;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
-  const CompactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
-  const productUrl = `/product/${product.id}${isMock ? "?mock=1" : ""}`;
+  const compactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
+  const productUrl = `/product/${product.master_slug ?? product.id}${isMock ? "?mock=1" : ""}`;
 
   const handleAddToCart = (event: React.MouseEvent) => {
     event.preventDefault();
@@ -185,7 +186,7 @@ export default function ProductCard({
               </div>
             ) : null}
             <div className="absolute left-2 bottom-2 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-white/90 bg-white/90 text-primary shadow-sm backdrop-blur-sm dark:border-gray-700 dark:bg-gray-900/90">
-              <CompactCategoryIcon size={12} />
+              {createElement(compactCategoryIcon, { size: 12 })}
             </div>
             {/* Verified badge */}
             <div className="absolute right-2 top-2 z-10 flex h-4 w-4 items-center justify-center rounded-full border-[1.5px] border-white bg-green-500 shadow-sm">

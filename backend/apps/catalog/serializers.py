@@ -80,6 +80,7 @@ class ProductSerializer(serializers.ModelSerializer):
     rating_average = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     price_final = serializers.SerializerMethodField()
+    master_slug = serializers.CharField(source='master.slug', read_only=True, default=None)
     
     class Meta:
         model = Product
@@ -108,6 +109,8 @@ class ProductSerializer(serializers.ModelSerializer):
             'condition',
             'seller_note',
             'master',
+            'master_slug',
+            
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
     

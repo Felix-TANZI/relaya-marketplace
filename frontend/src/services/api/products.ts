@@ -86,6 +86,58 @@ export interface CategoryListParams {
   parent?: number;
 }
 
+export interface MasterOffer {
+  id: number;
+  price_xaf: number;
+  compare_at_price: number | null;
+  price_final: number;
+  discount_percent: number;
+  is_on_promotion: boolean;
+  condition: string | null;
+  seller_note: string;
+  stock_quantity: number;
+  is_active: boolean;
+}
+
+export interface MasterImage {
+  id: number;
+  image: string;
+  is_primary: boolean;
+}
+
+export interface MasterFicheCard {
+  id: number;
+  title: string;
+  slug: string;
+  brand: string;
+  category: Category | null;
+  primary_image: string | null;
+  offers_count: number;
+  buy_box: MasterOffer | null;
+  created_at: string;
+}
+
+export interface MasterFicheDetail extends MasterFicheCard {
+  description: string;
+  images: MasterImage[];
+  offers: MasterOffer[];
+}
+
+export interface MasterListResponse {
+  count: number;
+  next: string | null;
+  previous: string | null;
+  results: MasterFicheCard[];
+}
+
+export interface MasterListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  category?: number;
+  ordering?: string;
+}
+
 export const productsApi = {
   list: async (params?: ProductListParams): Promise<ProductListResponse> => {
     const cleanParams = params ? Object.fromEntries(
@@ -125,4 +177,14 @@ export const productsApi = {
     const response = await api.get<Category>(`/catalog/categories/${id}/`);
     return response;
   },
+
+  listMasters: async (params?: MasterListParams): Promise<MasterListResponse> => {
+    const clean = params ? Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v !== undefined)
+    ) : undefined;
+    return api.get<MasterListResponse>('/catalog/master-products/', { params: clean });
+  },
+
+  getMaster: async (slugOrId: string | number): Promise<MasterFicheDetail> =>
+    api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`),
 };

@@ -98,6 +98,8 @@ export interface MasterOffer {
   seller_note: string;
   stock_quantity: number;
   is_active: boolean;
+  short_description?: string;
+  real_image?: string | null;
 }
 
 export interface MasterImage {
@@ -137,6 +139,17 @@ export interface MasterListParams {
   search?: string;
   category?: number;
   ordering?: string;
+}
+
+export interface ProductReview {
+  id: number;
+  user_name: string;
+  user_first_name?: string;
+  rating: number;
+  title: string;
+  comment: string;
+  is_verified_purchase: boolean;
+  created_at: string;
 }
 
 export const productsApi = {
@@ -188,4 +201,7 @@ export const productsApi = {
 
   getMaster: async (slugOrId: string | number): Promise<MasterFicheDetail> =>
     api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`),
+
+  getReviews: async (productId: number): Promise<ProductReview[]> =>
+    api.get<ProductReview[]>(`/catalog/products/${productId}/reviews/`),
 };

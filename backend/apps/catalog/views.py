@@ -120,7 +120,7 @@ class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
         MasterProduct.objects
         .filter(moderation_status=ModerationStatus.APPROVED)
         .select_related('category')
-        .prefetch_related('images', 'offers', 'offers__inventory', 'offers__condition')
+        .prefetch_related('images', 'offers', 'offers__inventory', 'offers__condition', 'offers__images')
     )
     pagination_class   = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]

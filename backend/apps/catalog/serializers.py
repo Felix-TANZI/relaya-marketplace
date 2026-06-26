@@ -213,6 +213,7 @@ class OfferSerializer(serializers.ModelSerializer):
     condition      = serializers.CharField(source='condition.name', read_only=True, default=None)
     stock_quantity = serializers.SerializerMethodField()
     price_final    = serializers.SerializerMethodField()
+    real_image = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -220,6 +221,7 @@ class OfferSerializer(serializers.ModelSerializer):
             'id', 'price_xaf', 'compare_at_price', 'price_final',
             'discount_percent', 'is_on_promotion',
             'condition', 'seller_note', 'stock_quantity', 'is_active',
+            'real_image',
         ]
 
     def get_stock_quantity(self, obj):
@@ -234,6 +236,13 @@ class OfferSerializer(serializers.ModelSerializer):
         if obj.discount > 0:
             return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
         return obj.price_xaf
+    
+    def get_real_image(self, obj):
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if img and img.image:
+            request = self.context.get('request')
+            return request.build_absolute_uri(img.image.url) if request else img.image.url
+        return None
 
 
 class MasterProductListSerializer(serializers.ModelSerializer):

@@ -208,7 +208,7 @@ urlpatterns = [
     path('plans/trial/', views.vendor_trial_activate, name='vendor-trial'),
 
     # BOUTIQUE PUBLIQUE
-    path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
+    #path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
 
     #  ADMINISTRATION - PARAMÈTRES 
     path('admin/settings/',         views.admin_get_settings,    name='admin-get-settings'),

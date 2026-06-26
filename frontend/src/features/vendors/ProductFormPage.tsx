@@ -603,6 +603,41 @@ export default function ProductFormPage() {
             )}
           </Section>
 
+          {/* IMAGES PRO DE LA FICHE — seulement en création d'un nouveau produit */}
+            {!isEdit && masterMode === 'new' && (
+              <Section title="Images du produit (vitrine)" icon={<ImageIcon size={15}/>}>
+                <p className="text-[12px]" style={{ color: T.muted }}>
+                  Images mises en avant sur la fiche, vues par les acheteurs. Min. 1 · Max. 6.
+                </p>
+                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                  {proImgs.map((t, i) => (
+                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
+                      <img src={t.preview} alt="" className="w-full h-full object-cover"/>
+                      <button type="button" onClick={() => rmProTemp(i)}
+                        className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
+                        style={{ background: T.red, color: T.white }}>
+                        <X size={10}/>
+                      </button>
+                    </div>
+                  ))}
+                  {proImgs.length < 6 && (
+                    <>
+                      <input type="file" ref={proRef} className="hidden" accept="image/*" multiple
+                        onChange={e => addProPhotos(e.target.files)}/>
+                      <button type="button" onClick={() => proRef.current?.click()}
+                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1"
+                        style={{ borderColor: T.border, background: T.cream }}>
+                        <Upload size={18} style={{ color: T.mutedL }}/>
+                        <span className="text-[10px]" style={{ color: T.mutedL }}>Ajouter</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+              </Section>
+            )}
+          </>
+          )}
+
           {/* PHOTOS */}
           <Section title="Photos réelles de votre article" icon={<ImageIcon size={15}/>}>
             <p className="text-[12px]" style={{ color: T.muted }}>
@@ -657,41 +692,6 @@ export default function ProductFormPage() {
               )}
             </div>
           </Section>
-
-          {/* IMAGES PRO DE LA FICHE — seulement en création d'un nouveau produit */}
-            {!isEdit && masterMode === 'new' && (
-              <Section title="Images du produit (vitrine)" icon={<ImageIcon size={15}/>}>
-                <p className="text-[12px]" style={{ color: T.muted }}>
-                  Images mises en avant sur la fiche, vues par les acheteurs. Min. 1 · Max. 6.
-                </p>
-                <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                  {proImgs.map((t, i) => (
-                    <div key={i} className="relative aspect-square rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
-                      <img src={t.preview} alt="" className="w-full h-full object-cover"/>
-                      <button type="button" onClick={() => rmProTemp(i)}
-                        className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center"
-                        style={{ background: T.red, color: T.white }}>
-                        <X size={10}/>
-                      </button>
-                    </div>
-                  ))}
-                  {proImgs.length < 6 && (
-                    <>
-                      <input type="file" ref={proRef} className="hidden" accept="image/*" multiple
-                        onChange={e => addProPhotos(e.target.files)}/>
-                      <button type="button" onClick={() => proRef.current?.click()}
-                        className="aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1"
-                        style={{ borderColor: T.border, background: T.cream }}>
-                        <Upload size={18} style={{ color: T.mutedL }}/>
-                        <span className="text-[10px]" style={{ color: T.mutedL }}>Ajouter</span>
-                      </button>
-                    </>
-                  )}
-                </div>
-              </Section>
-            )}
-          </>
-          )}
         </div>
 
         {/* ── COLONNE DROITE (1/3) ── */}

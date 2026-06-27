@@ -14,6 +14,7 @@ from .views import (
     admin_resolve_sos,
     admin_update_courier,
     RegisterView,
+    RewardAccountsView,
     me,
     profile,
     update_profile,
@@ -86,4 +87,5 @@ urlpatterns = [
     path("notifications/<int:id>/read/",   NotificationMarkReadView.as_view(),    name="client-notification-read"),
     path("notifications/<int:id>/",        NotificationDeleteView.as_view(),      name="client-notification-delete"),
     path("notifications/read-all/",        NotificationMarkAllReadView.as_view(), name="client-notifications-read-all"),
+    path("rewards/",                  RewardAccountsView.as_view(),      name="client-rewards"),
 ]

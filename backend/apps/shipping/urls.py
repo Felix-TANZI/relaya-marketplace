@@ -1,7 +1,9 @@
 from django.urls import path
 from .views import (
     ClientOrderMessagesView,
+    CourierDisputeMessageCreateView,
     CourierDisputeListView,
+    CourierDisputeReplyPermissionRequestView,
     CourierDashboardView,
     CourierNetworkView,
     CourierSettingsView,
@@ -28,6 +30,8 @@ urlpatterns = [
     path("settings/", CourierSettingsView.as_view(), name="shipping-settings"),
     path("sos/", CourierSOSAlertView.as_view(), name="shipping-sos"),
     path("disputes/", CourierDisputeListView.as_view(), name="shipping-disputes"),
+    path("disputes/<int:dispute_id>/request-reply/", CourierDisputeReplyPermissionRequestView.as_view(), name="shipping-dispute-request-reply"),
+    path("disputes/<int:dispute_id>/messages/", CourierDisputeMessageCreateView.as_view(), name="shipping-dispute-message"),
     path("scan/", CourierShipmentScanView.as_view(), name="shipping-scan"),
     path("my-shipments/", CourierMyShipmentsView.as_view(), name="shipping-my-shipments"),
     path("my-shipments/<int:id>/", CourierShipmentDetailView.as_view(), name="shipping-my-shipments-detail"),

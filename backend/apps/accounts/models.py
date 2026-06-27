@@ -189,6 +189,95 @@ class UserNotification(models.Model):
         return f"{self.user.username} - {self.title}"
 
 
+class RewardAccount(models.Model):
+    """
+    Compte points/tokens par rôle.
+
+    BelivaY n'a pas un seul compteur global: un même utilisateur peut être client,
+    vendeur ou livreur, avec des règles et des affichages différents.
+    """
+
+    class Role(models.TextChoices):
+        CLIENT = "CLIENT", "Client"
+        VENDOR = "VENDOR", "Vendeur"
+        COURIER = "COURIER", "Livreur"
+        RELAY = "RELAY", "Point Relais"
+
+    class Tier(models.TextChoices):
+        BRONZE = "BRONZE", "Bronze"
+        SILVER = "SILVER", "Argent"
+        GOLD = "GOLD", "Or"
+        PLATINUM = "PLATINUM", "Platine"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="reward_accounts")
+    role = models.CharField(max_length=20, choices=Role.choices)
+    points_balance = models.IntegerField(default=0)
+    lifetime_points = models.PositiveIntegerField(default=0)
+    trust_score = models.PositiveIntegerField(default=70)
+    tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.BRONZE)
+    last_recalculated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = [["user", "role"]]
+        ordering = ["user_id", "role"]
+        verbose_name = "Compte récompenses"
+        verbose_name_plural = "Comptes récompenses"
+
+    def __str__(self):
+        return f"{self.user.username} · {self.role} · {self.points_balance} pts"
+
+    @staticmethod
+    def tier_from_points(points: int) -> str:
+        if points >= 5000:
+            return RewardAccount.Tier.PLATINUM
+        if points >= 2000:
+            return RewardAccount.Tier.GOLD
+        if points >= 500:
+            return RewardAccount.Tier.SILVER
+        return RewardAccount.Tier.BRONZE
+
+    def apply_delta(self, delta: int) -> None:
+        self.points_balance = max(0, self.points_balance + delta)
+        if delta > 0:
+            self.lifetime_points += delta
+        self.tier = self.tier_from_points(self.lifetime_points)
+        self.save(update_fields=["points_balance", "lifetime_points", "tier", "updated_at"])
+
+
+class RewardTransaction(models.Model):
+    """
+    Journal immuable des mouvements de points/tokens.
+    Les conversions en argent réel restent interdites côté client; on journalise
+    les usages internes BelivaY pour garder une trace auditable.
+    """
+
+    class Source(models.TextChoices):
+        ORDER = "ORDER", "Commande"
+        REVIEW = "REVIEW", "Avis"
+        DISPUTE = "DISPUTE", "Litige"
+        DELIVERY = "DELIVERY", "Livraison"
+        PROMOTION = "PROMOTION", "Promotion"
+        MANUAL = "MANUAL", "Manuel"
+
+    account = models.ForeignKey(RewardAccount, on_delete=models.CASCADE, related_name="transactions")
+    delta = models.IntegerField()
+    source = models.CharField(max_length=20, choices=Source.choices, default=Source.MANUAL)
+    reason = models.CharField(max_length=180)
+    reference = models.CharField(max_length=80, blank=True, default="")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reward_transactions_created")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Transaction récompense"
+        verbose_name_plural = "Transactions récompenses"
+
+    def __str__(self):
+        return f"{self.account} · {self.delta:+d}"
+
+
 class UserSession(models.Model):
     """
     Session active par appareil, créée/mise à jour par SessionTrackingMiddleware.

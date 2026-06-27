@@ -29,7 +29,7 @@ from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
 from apps.vendors.models import VendorLocation, VendorProfile
-from apps.orders.models import Dispute, Order
+from apps.orders.models import Dispute, DisputeMessage, Order
 
 
 def _city_variants(value):
@@ -559,6 +559,55 @@ class CourierDisputeListView(generics.ListAPIView):
             .order_by("-updated_at")
             .distinct()
         )
+
+
+@extend_schema(tags=["Shipping"], summary="Demander l'autorisation de répondre à un litige livreur")
+class CourierDisputeReplyPermissionRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, dispute_id):
+        courier = _get_active_courier(request.user)
+        dispute = get_object_or_404(
+            Dispute.objects.filter(order__shipment__courier=courier),
+            id=dispute_id,
+        )
+        UserNotification.objects.create(
+            user=request.user,
+            title=f"Demande envoyée · litige #{dispute.id}",
+            message="BelivaY a reçu votre demande de réponse. Un admin peut ouvrir le canal si votre précision est nécessaire.",
+            notification_type=UserNotification.NotificationType.SUPPORT,
+            action_url="/courier",
+        )
+        return Response({"detail": "Demande transmise au support BelivaY."}, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Shipping"], summary="Répondre à un litige côté livreur")
+class CourierDisputeMessageCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, dispute_id):
+        courier = _get_active_courier(request.user)
+        dispute = get_object_or_404(
+            Dispute.objects.filter(order__shipment__courier=courier),
+            id=dispute_id,
+        )
+        if dispute.status in ["RESOLVED", "CLOSED"]:
+            return Response({"detail": "Ce litige est clôturé."}, status=status.HTTP_400_BAD_REQUEST)
+        if not dispute.courier_can_reply:
+            return Response({"detail": "Réponse livreur désactivée par BelivaY."}, status=status.HTTP_403_FORBIDDEN)
+        message_text = (request.data.get("message") or "").strip()
+        if not message_text:
+            return Response({"detail": "Le message ne peut pas être vide."}, status=status.HTTP_400_BAD_REQUEST)
+        DisputeMessage.objects.create(
+            dispute=dispute,
+            sender=request.user,
+            message=message_text,
+            sender_role=DisputeMessage.SenderRole.COURIER,
+            is_internal=False,
+        )
+        dispute.updated_at = timezone.now()
+        dispute.save(update_fields=["updated_at"])
+        return Response({"detail": "Réponse envoyée à BelivaY."}, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Shipping"], summary="Chat client ↔ livreur (accessible par les deux parties)")

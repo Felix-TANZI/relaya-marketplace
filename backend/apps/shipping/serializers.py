@@ -344,6 +344,7 @@ class CourierDisputeSerializer(serializers.ModelSerializer):
     detail = serializers.CharField(source="description", read_only=True)
     status_display = serializers.SerializerMethodField()
     reason_display = serializers.SerializerMethodField()
+    can_reply = serializers.BooleanField(source="courier_can_reply", read_only=True)
 
     class Meta:
         model = Dispute
@@ -356,6 +357,7 @@ class CourierDisputeSerializer(serializers.ModelSerializer):
             "reason",
             "reason_display",
             "detail",
+            "can_reply",
             "created_at",
             "updated_at",
         ]

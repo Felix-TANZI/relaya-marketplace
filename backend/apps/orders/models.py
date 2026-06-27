@@ -400,8 +400,9 @@ class DisputeMessage(models.Model):
     class SenderRole(models.TextChoices):
         VENDOR = 'VENDOR', 'Vendeur'
         ADMIN  = 'ADMIN',  'Admin BelivaY'
+        CLIENT = 'CLIENT', 'Client'
+        COURIER = 'COURIER', 'Livreur'
         SYSTEM = 'SYSTEM', 'Système'
-        # CLIENT et LIVREUR ajoutés quand leurs espaces seront développés
 
     dispute     = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="messages")
     sender      = models.ForeignKey(User, on_delete=models.CASCADE)

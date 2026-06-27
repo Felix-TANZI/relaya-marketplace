@@ -32,6 +32,7 @@ import {
   X,
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";
+import { api } from "@/services/api/client";
 import { vendorsApi, type VendorProfile } from "@/services/api/vendors";
 import { useTheme } from "@/context/ThemeContext";
 import { useToast } from "@/context/ToastContext";
@@ -80,6 +81,26 @@ type Conversation = {
   unread: number;
   type: "support" | "litige";
   messages: ConversationMessage[];
+};
+
+type RewardAccount = {
+  id: number;
+  role: "CLIENT" | "VENDOR" | "COURIER" | "RELAY";
+  role_display: string;
+  points_balance: number;
+  lifetime_points: number;
+  trust_score: number;
+  tier: "BRONZE" | "SILVER" | "GOLD" | "PLATINUM";
+  tier_display: string;
+  show_monetary_value: boolean;
+  transactions: Array<{
+    id: number;
+    delta: number;
+    source: string;
+    reason: string;
+    reference: string;
+    created_at: string;
+  }>;
 };
 
 const DASHBOARD_STATS = [
@@ -191,6 +212,7 @@ export default function ProfilePage() {
   const [supportConversations, setSupportConversations] = useState(INITIAL_SUPPORT_CONVERSATIONS);
   const [disputes, setDisputes] = useState<StoredOrderDispute[]>(() => getStoredOrderDisputes());
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
+  const [rewardAccounts, setRewardAccounts] = useState<RewardAccount[]>([]);
   const [sellerSubmitting, setSellerSubmitting] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [sellerForm, setSellerForm] = useState({
@@ -229,6 +251,7 @@ export default function ProfilePage() {
       .then((profile) => {
         setUser(profile);
         vendorsApi.getProfile().then(setVendorProfile).catch(() => setVendorProfile(null));
+        api.get<RewardAccount[]>("/auth/rewards/").then(setRewardAccounts).catch(() => setRewardAccounts([]));
       })
       .catch(() => showToast("Erreur chargement profil", "error"))
       .finally(() => setLoading(false));
@@ -292,6 +315,10 @@ export default function ProfilePage() {
     filteredConversations.find((conversation) => conversation.id === selectedConversationId) ??
     filteredConversations[0] ??
     null;
+  const clientReward = rewardAccounts.find((account) => account.role === "CLIENT") ?? null;
+  const fidelityPoints = clientReward?.points_balance ?? user?.loyalty_points ?? 0;
+  const fidelityTier = clientReward?.tier_display ?? user?.loyalty_tier ?? "Bronze";
+  const fidelityTrust = clientReward?.trust_score ?? 70;
 
   useEffect(() => {
     if (!filteredConversations.length) {
@@ -742,15 +769,15 @@ export default function ProfilePage() {
     <div className="flex flex-col gap-[14px]">
       <section className="overflow-hidden rounded-[20px] bg-[linear-gradient(110deg,#f47920,#FF9D4D)] p-6 text-white">
         <div className="mb-1 flex items-center gap-2 text-[13px] opacity-85"><Award size={14} />Solde BelivaY Points</div>
-        <div className="font-display text-[42px] font-extrabold leading-none">940 pts</div>
-        <div className="mb-4 mt-1 text-[14px] opacity-85">≈ 9 400 FCFA de réduction disponible</div>
+        <div className="font-display text-[42px] font-extrabold leading-none">{fidelityPoints.toLocaleString("fr-FR")} pts</div>
+        <div className="mb-4 mt-1 text-[14px] opacity-85">Niveau {fidelityTier} · Trust {fidelityTrust}/100</div>
         <div className="rounded-[12px] border border-white/20 bg-white/20 p-3">
           <div className="mb-[7px] flex items-center justify-between text-[12px] font-bold">
-            <span>Progression → Argent</span>
-            <span>350 / 500</span>
+            <span>Progression fidélité</span>
+            <span>{clientReward ? `${clientReward.lifetime_points.toLocaleString("fr-FR")} pts cumulés` : "Compte initialisé"}</span>
           </div>
           <div className="h-[7px] overflow-hidden rounded bg-white/30">
-            <div className="h-full w-[70%] rounded bg-white" />
+            <div className="h-full rounded bg-white" style={{ width: `${Math.min(100, Math.max(8, fidelityTrust))}%` }} />
           </div>
         </div>
       </section>
@@ -775,7 +802,15 @@ export default function ProfilePage() {
       </section>
       <section className="rounded-[16px] border border-[#e5e7eb] bg-white p-5 shadow-[0_2px_8px_rgba(9,14,26,.06)] dark:border-gray-800 dark:bg-gray-900">
         <div className="mb-3 flex items-center gap-2 font-display text-[14px] font-extrabold text-[#111827]"><Package size={16} />Historique des points</div>
-        {POINTS_HISTORY.map((entry) => (
+        {(clientReward?.transactions.length
+          ? clientReward.transactions.map((entry) => ({
+              label: entry.reason,
+              date: new Date(entry.created_at).toLocaleDateString("fr-FR"),
+              points: `${entry.delta > 0 ? "+" : ""}${entry.delta} pts`,
+              positive: entry.delta >= 0,
+            }))
+          : POINTS_HISTORY
+        ).map((entry) => (
           <div key={`${entry.label}-${entry.date}`} className="flex items-center justify-between border-b border-[#f3f4f6] py-[9px] last:border-b-0">
             <div>
               <div className="text-[13px] font-bold text-[#111827]">{entry.label}</div>

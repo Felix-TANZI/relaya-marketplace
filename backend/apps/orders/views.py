@@ -10,7 +10,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
 
-from .models import Order, Dispute, DisputeMessage, OrderHistory
+from .models import Order, Dispute, DisputeMessage, OrderHistory, PlatformSettings
 from .serializers import (
     OrderCreateSerializer,
     OrderDetailSerializer,
@@ -263,10 +263,12 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
 
     def create(self, request, *args, **kwargs):
         order = self.get_order()
-        dispute_window_hours = 24
+        platform_settings = PlatformSettings.get_settings()
+        dispute_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
         allowed_statuses = [
             Order.FulfillmentStatus.DELIVERED,
             Order.FulfillmentStatus.BUYER_CONFIRMED,
+            Order.FulfillmentStatus.AUTO_CONFIRMED,
         ]
         if order.fulfillment_status not in allowed_statuses:
             return Response(
@@ -274,10 +276,10 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        expires_at = order.updated_at + timezone.timedelta(hours=dispute_window_hours)
+        expires_at = order.updated_at + timezone.timedelta(days=dispute_window_days)
         if timezone.now() > expires_at:
             return Response(
-                {"detail": "Le delai de 24h apres reception est depasse pour cette commande."},
+                {"detail": f"Le delai de {dispute_window_days} jour(s) apres reception est depasse pour cette commande."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -299,6 +301,17 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             sender=request.user,
             message=dispute.description,
             is_internal=False,
+            sender_role="CLIENT",
+        )
+        old_status = order.fulfillment_status
+        order.open_dispute()
+        OrderHistory.objects.create(
+            order=order,
+            user=request.user,
+            action="Litige ouvert par le client",
+            field_name="fulfillment_status",
+            old_value=old_status,
+            new_value=Order.FulfillmentStatus.DISPUTED,
         )
         UserNotification.objects.create(
             user=request.user,

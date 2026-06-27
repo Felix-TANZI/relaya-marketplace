@@ -10,6 +10,8 @@ from .models import (
     UserActivityLog,
     UserFavorite,
     UserNotification,
+    RewardAccount,
+    RewardTransaction,
     UserSession,
     OTPCode,
 )
@@ -112,6 +114,36 @@ class UserNotificationAdmin(admin.ModelAdmin):
         count = queryset.update(is_read=False)
         self.message_user(request, f"{count} notification(s) marquée(s) comme non lue(s).")
     mark_as_unread.short_description = "Marquer comme non lue"
+
+
+class RewardTransactionInline(admin.TabularInline):
+    model = RewardTransaction
+    extra = 0
+    readonly_fields = ('delta', 'source', 'reason', 'reference', 'created_by', 'created_at')
+    can_delete = False
+
+    def has_add_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(RewardAccount)
+class RewardAccountAdmin(admin.ModelAdmin):
+    list_display = ('user', 'role', 'points_balance', 'lifetime_points', 'trust_score', 'tier', 'updated_at')
+    list_filter = ('role', 'tier')
+    search_fields = ('user__username', 'user__email')
+    readonly_fields = ('created_at', 'updated_at')
+    inlines = [RewardTransactionInline]
+
+
+@admin.register(RewardTransaction)
+class RewardTransactionAdmin(admin.ModelAdmin):
+    list_display = ('account', 'delta', 'source', 'reason', 'reference', 'created_at')
+    list_filter = ('source', 'created_at')
+    search_fields = ('account__user__username', 'reason', 'reference')
+    readonly_fields = ('account', 'delta', 'source', 'reason', 'reference', 'created_by', 'created_at')
+
+    def has_add_permission(self, request):
+        return False
 
 
 # ─── SESSIONS ACTIVES ─────────────────────────────────────────────────────────

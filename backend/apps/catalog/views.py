@@ -1,7 +1,7 @@
 # backend/apps/catalog/views.py
 # Vues pour la gestion des produits et catégories avec filtres avancés
 
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters, status, generics
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
@@ -9,12 +9,13 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
-from .models import Product, Category, ProductReview
+from .models import Product, Category, ProductReview, PromotionCampaign
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
     ProductReviewSerializer,
-    ProductReviewCreateSerializer
+    ProductReviewCreateSerializer,
+    PromotionCampaignSerializer,
 )
 from .filters import ProductFilter, CategoryFilter
 
@@ -42,7 +43,7 @@ class StandardResultsSetPagination(PageNumberPagination):
     ]
 )
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().select_related('category').prefetch_related('media', 'inventory', 'images')
+    queryset = Product.objects.all().select_related('category').prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
     serializer_class = ProductSerializer
     pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -94,6 +95,23 @@ class ProductViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
+    @extend_schema(
+        tags=["Promotions"],
+        summary="Proposer une promotion ou un Flash Deal pour ce produit",
+        request=PromotionCampaignSerializer,
+        responses={201: PromotionCampaignSerializer},
+    )
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated], url_path='promotion-request')
+    def promotion_request(self, request, pk=None):
+        product = self.get_object()
+        serializer = PromotionCampaignSerializer(
+            data={**request.data, "product": product.id},
+            context={"request": request},
+        )
+        serializer.is_valid(raise_exception=True)
+        campaign = serializer.save()
+        return Response(PromotionCampaignSerializer(campaign, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
 
 @extend_schema(
     tags=["Catalog"],
@@ -105,3 +123,27 @@ class CategoryViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CategoryFilter
+
+
+@extend_schema(tags=["Promotions"], summary="Promotions et Flash Deals actifs")
+class ActivePromotionCampaignListView(generics.ListAPIView):
+    serializer_class = PromotionCampaignSerializer
+    permission_classes = []
+
+    def get_queryset(self):
+        from django.utils import timezone
+
+        now = timezone.now()
+        campaign_type = self.request.query_params.get("type")
+        qs = (
+            PromotionCampaign.objects.filter(
+                status=PromotionCampaign.Status.APPROVED,
+                starts_at__lte=now,
+                ends_at__gte=now,
+            )
+            .select_related("product", "product__category")
+            .order_by("campaign_type", "ends_at")
+        )
+        if campaign_type in [PromotionCampaign.CampaignType.REGULAR, PromotionCampaign.CampaignType.FLASH]:
+            qs = qs.filter(campaign_type=campaign_type)
+        return qs

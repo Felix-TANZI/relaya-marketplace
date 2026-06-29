@@ -48,7 +48,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: "https://belivay.com"
+        VITE_API_URL: ${VITE_API_URL:-https://belivay.com}
     restart: unless-stopped
     networks:
       - relaya-network

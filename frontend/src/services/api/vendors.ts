@@ -111,6 +111,38 @@ export interface VendorProduct {
   images?: ProductImage[];
 }
 
+export interface VendorPromotionCampaignPayload {
+  campaign_type: "REGULAR" | "FLASH";
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  reference_price_xaf: number;
+  promo_price_xaf: number;
+  stock_reserved?: number;
+}
+
+export interface VendorPromotionCampaign {
+  id: number;
+  product: number;
+  product_title: string;
+  campaign_type: "REGULAR" | "FLASH";
+  status: "DRAFT" | "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED" | "EXPIRED";
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  reference_price_xaf: number;
+  promo_price_xaf: number;
+  discount_percent: number;
+  stock_reserved: number;
+  stock_claimed: number;
+  remaining_stock: number;
+  rejection_reason: string;
+  admin_note: string;
+  is_active_now: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface VendorOrderItem {
   id: number;
   product: number;
@@ -865,6 +897,28 @@ export const vendorsApi = {
       body: form,
       headers: { Authorization: `Bearer ${token}` },
     });
+  },
+
+  /**
+   * Crée une demande de Promotion/Flash Deal liée au produit.
+   * Le backend la garde en PENDING jusqu'à validation admin.
+   */
+  requestProductCampaign: async (
+    productId: number,
+    data: VendorPromotionCampaignPayload,
+  ): Promise<VendorPromotionCampaign> => {
+    const token = localStorage.getItem("access_token");
+    return http<VendorPromotionCampaign>(
+      `/api/catalog/products/${productId}/promotion-request/`,
+      {
+        method: "POST",
+        body: JSON.stringify(data),
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      },
+    );
   },
 
   /**

@@ -2,11 +2,13 @@
 # Vues pour la gestion des produits et catégories avec filtres avancés
 
 from rest_framework import viewsets, filters, status, generics
+from rest_framework.views import APIView
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
+from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from .models import Product, Category, ProductReview, PromotionCampaign
@@ -56,8 +58,19 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     filterset_class = ProductFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['price_xaf', 'created_at', 'title']
-    ordering = ['-created_at']
+    ordering_fields = ['price_xaf', 'created_at', 'title', 'belivay_rating_average', 'belivay_reviews_count']
+    ordering = ['-belivay_rating_average', '-belivay_reviews_count', '-created_at']
+
+    def get_queryset(self):
+        return (
+            Product.objects.all()
+            .select_related('category', 'vendor')
+            .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
+            .annotate(
+                belivay_rating_average=Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+                belivay_reviews_count=Count('reviews', filter=Q(reviews__is_approved=True)),
+            )
+        )
 
     @extend_schema(
         tags=["Reviews"],
@@ -147,3 +160,57 @@ class ActivePromotionCampaignListView(generics.ListAPIView):
         if campaign_type in [PromotionCampaign.CampaignType.REGULAR, PromotionCampaign.CampaignType.FLASH]:
             qs = qs.filter(campaign_type=campaign_type)
         return qs
+
+
+@extend_schema(tags=["Promotions"], summary="Liste admin des campagnes promotionnelles")
+class AdminPromotionCampaignListView(generics.ListAPIView):
+    serializer_class = PromotionCampaignSerializer
+    permission_classes = [IsAdminUser]
+
+    def get_queryset(self):
+        qs = (
+            PromotionCampaign.objects.select_related(
+                "product",
+                "product__category",
+                "requested_by",
+                "approved_by",
+            )
+            .order_by("-created_at")
+        )
+        campaign_type = self.request.query_params.get("type")
+        campaign_status = self.request.query_params.get("status")
+        if campaign_type in [PromotionCampaign.CampaignType.REGULAR, PromotionCampaign.CampaignType.FLASH]:
+            qs = qs.filter(campaign_type=campaign_type)
+        if campaign_status in [choice[0] for choice in PromotionCampaign.Status.choices]:
+            qs = qs.filter(status=campaign_status)
+        return qs
+
+
+@extend_schema(tags=["Promotions"], summary="Décision admin sur une campagne")
+class AdminPromotionCampaignDecisionView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def post(self, request, pk):
+        campaign = generics.get_object_or_404(PromotionCampaign, pk=pk)
+        decision = request.data.get("status")
+        if decision not in [
+            PromotionCampaign.Status.APPROVED,
+            PromotionCampaign.Status.REJECTED,
+            PromotionCampaign.Status.SUSPENDED,
+        ]:
+            return Response(
+                {"status": "Choisissez APPROVED, REJECTED ou SUSPENDED."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        campaign.status = decision
+        campaign.admin_note = request.data.get("admin_note", campaign.admin_note)
+        if decision == PromotionCampaign.Status.APPROVED:
+            campaign.approved_by = request.user
+            campaign.rejection_reason = ""
+        elif decision == PromotionCampaign.Status.REJECTED:
+            campaign.approved_by = None
+            campaign.rejection_reason = request.data.get("rejection_reason", campaign.rejection_reason)
+        campaign.full_clean()
+        campaign.save(update_fields=["status", "approved_by", "rejection_reason", "admin_note", "updated_at"])
+        return Response(PromotionCampaignSerializer(campaign, context={"request": request}).data)

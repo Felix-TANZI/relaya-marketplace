@@ -5,7 +5,9 @@ from rest_framework import serializers
 from django.conf import settings as django_settings
 from django.db.models import Count, Q
 from django.utils.text import slugify
+from django.utils import timezone
 import unicodedata
+from decimal import Decimal, ROUND_HALF_UP
 from .models import Order, OrderItem, Dispute, DisputeMessage
 from apps.catalog.models import Category, Product, ProductMedia
 
@@ -26,6 +28,35 @@ def _city_variants(value):
     }
     variants.update(aliases.get(compact, set()))
     return [variant for variant in variants if variant]
+
+
+def _commission_rate_for_product(product, settings):
+    """Taux BelivaY au moment de la commande, avec priorité au plan vendeur actif."""
+    base_rate = Decimal(str(settings.platform_commission_percent))
+    vendor_profile = getattr(getattr(product, "vendor", None), "vendor_profile", None)
+    plan = getattr(vendor_profile, "current_plan", None) if vendor_profile else None
+    plan_active = False
+    if vendor_profile and plan:
+        expires_at = getattr(vendor_profile, "plan_expires_at", None)
+        plan_active = expires_at is None or expires_at > timezone.now()
+    if plan_active:
+        base_rate = Decimal(str(plan.commission_rate))
+
+    if product.price_xaf < 5000:
+        base_rate += Decimal("3.00")
+
+    return max(base_rate, Decimal("5.00"))
+
+
+def _weighted_commission_rate(order_items_data, settings):
+    total = sum(item["line_total_xaf"] for item in order_items_data)
+    if total <= 0:
+        return Decimal(str(settings.platform_commission_percent))
+    weighted = Decimal("0.00")
+    for item in order_items_data:
+        rate = _commission_rate_for_product(item["product"], settings)
+        weighted += Decimal(item["line_total_xaf"]) * rate
+    return (weighted / Decimal(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -238,6 +269,7 @@ class OrderCreateSerializer(serializers.Serializer):
         settings = PlatformSettings.get_settings()
         delivery_fees = settings.delivery_fees or {}
         delivery_fee = 0 if delivery_mode == 'PICKUP' else delivery_fees.get(validated_data['city'], 2000)
+        commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
 
         address = validated_data.get('address', '').strip()
         if delivery_mode == 'DELIVERY' and not address:
@@ -264,6 +296,7 @@ class OrderCreateSerializer(serializers.Serializer):
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,
+            commission_rate_snapshot=commission_rate_snapshot,
             payment_status=Order.PaymentStatus.PENDING,
             fulfillment_status=Order.FulfillmentStatus.CREATED,
         )

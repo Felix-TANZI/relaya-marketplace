@@ -5006,23 +5006,51 @@ def admin_resolve_dispute(request, dispute_id):
         return Response(
             {'detail': 'La résolution est requise.'},
             status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    dispute.status = 'RESOLVED'
-    dispute.resolution = resolution
-    dispute.resolution_note = resolution_note
-    dispute.refund_amount_xaf = refund_amount
-    dispute.resolved_by = request.user
-    dispute.resolved_at = timezone.now()
-    dispute.save()
-    
-    # Message de résolution
-    DisputeMessage.objects.create(
-        dispute=dispute,
-        sender=request.user,
-        message=f"Litige résolu : {dispute.get_resolution_display()}. {resolution_note}",
-        is_internal=False
     )
+
+    try:
+        refund_amount = int(refund_amount) if refund_amount not in (None, '') else None
+    except (TypeError, ValueError):
+        return Response(
+            {'refund_amount_xaf': 'Le montant de remboursement doit être un nombre entier.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if resolution == 'PARTIAL_REFUND':
+        if not refund_amount or refund_amount <= 0:
+            return Response(
+                {'refund_amount_xaf': 'Un remboursement partiel demande un montant positif.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if refund_amount >= dispute.order.total_xaf:
+            return Response(
+                {'refund_amount_xaf': 'Pour rembourser toute la commande, choisissez REFUND.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+    with transaction.atomic():
+        dispute.status = 'RESOLVED'
+        dispute.resolution = resolution
+        dispute.resolution_note = resolution_note
+        dispute.refund_amount_xaf = refund_amount
+        dispute.resolved_by = request.user
+        dispute.resolved_at = timezone.now()
+        dispute.save()
+
+        if resolution == 'REFUND':
+            dispute.order.refund(partial=False)
+        elif resolution == 'PARTIAL_REFUND':
+            dispute.order.refund(partial=True)
+        elif resolution == 'REJECTED':
+            dispute.order.release_to_vendor()
+
+        # Message de résolution
+        DisputeMessage.objects.create(
+            dispute=dispute,
+            sender=request.user,
+            message=f"Litige résolu : {dispute.get_resolution_display()}. {resolution_note}",
+            is_internal=False
+        )
     
     serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
     return Response(serializer.data)

@@ -5,11 +5,9 @@ import {
   ArrowLeft,
   AlertCircle,
   AlertTriangle,
-  Bike,
   CheckCircle,
   Clock3,
   CreditCard,
-  Home,
   MapPin,
   MessageCircleMore,
   Package,
@@ -252,7 +250,7 @@ export default function OrderDetailPage() {
       setOrder(updatedOrder);
       const shipment = await customerApi.getOrderTracking(order.id);
       setTracking(shipment);
-    } catch (actionError) {
+    } catch {
       // silenced
     }
   };

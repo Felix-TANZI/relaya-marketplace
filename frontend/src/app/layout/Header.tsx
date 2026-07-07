@@ -55,6 +55,18 @@ function parseSearchValue(value: string) {
   };
 }
 
+type SpeechRecognitionResultEvent = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+interface SpeechRecognitionLike {
+  lang: string;
+  onresult: (event: SpeechRecognitionResultEvent) => void;
+  start: () => void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
 function composeSearchValue(category: string, details: string) {
   if (!category) return details.trim();
   return details.trim() ? `[${category}] ${details.trim()}` : `[${category}] `;
@@ -71,8 +83,12 @@ export default function Header() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [profileAvatar, setProfileAvatar] = useState<string | null>(null);
   const [favoritesCount, setFavoritesCount] = useState(0);
-  const [notifCount, setNotifCount] = useState(0);
+  const [notifCount, setNotifCount] = useState(() => {
+    const stored = localStorage.getItem("belivay_notif_count");
+    return stored ? parseInt(stored, 10) : 1;
+  });
   const [searchQuery, setSearchQuery] = useState("");
+  const [lastSyncedSearch, setLastSyncedSearch] = useState<string | null>(null);
   const [searchFilterOpen, setSearchFilterOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const desktopSearchRef = useRef<HTMLDivElement>(null);
@@ -134,12 +150,14 @@ export default function Header() {
     };
   }, []);
 
-  useEffect(() => {
+  // Sync the search box with the URL during render (avoids a setState effect).
+  if (location.search !== lastSyncedSearch) {
     const params = new URLSearchParams(location.search);
     const details = params.get("q") ?? params.get("search") ?? "";
     const category = params.get("category_label") ?? "";
+    setLastSyncedSearch(location.search);
     setSearchQuery(composeSearchValue(category, details));
-  }, [location.search]);
+  }
 
   useEffect(() => {
     const handleOutsideSearch = (event: MouseEvent) => {
@@ -157,10 +175,6 @@ export default function Header() {
 
   // Notification count
   useEffect(() => {
-    // Start with default unread count (welcome + fallback notifications)
-    const stored = localStorage.getItem("belivay_notif_count");
-    setNotifCount(stored ? parseInt(stored, 10) : 1);
-
     const handleNewNotif = () => {
       setNotifCount((prev) => {
         const next = prev + 1;
@@ -206,11 +220,15 @@ export default function Header() {
   };
 
   const handleVoiceSearch = () => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    const speechWindow = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const SR = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
     if (!SR) return;
     const rec = new SR();
     rec.lang = "fr-FR";
-    rec.onresult = (e: any) => {
+    rec.onresult = (e: SpeechRecognitionResultEvent) => {
       const transcript = e.results[0][0].transcript;
       const { category } = parseSearchValue(searchQuery);
       setSearchQuery(composeSearchValue(category, transcript));

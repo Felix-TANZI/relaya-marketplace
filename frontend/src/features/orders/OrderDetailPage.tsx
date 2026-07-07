@@ -59,6 +59,7 @@ export default function OrderDetailPage() {
   const [courierChatDraft, setCourierChatDraft] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const disputeSectionRef = useRef<HTMLElement | null>(null);
+  const courierChatEndRef = useRef<HTMLDivElement | null>(null);
 
   function getPaymentInfo(status: PaymentStatus) {
     switch (status) {
@@ -172,9 +173,14 @@ export default function OrderDetailPage() {
     };
 
     fetchMessages();
-    const interval = window.setInterval(fetchMessages, 12000);
+    const interval = window.setInterval(fetchMessages, showCourierChat ? 4000 : 12000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [order]);
+  }, [order, showCourierChat]);
+
+  useEffect(() => {
+    if (!showCourierChat) return;
+    courierChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [courierMessages, showCourierChat]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
   const activeDispute =
@@ -298,12 +304,23 @@ export default function OrderDetailPage() {
     const text = courierChatDraft.trim();
     setCourierChatDraft("");
     setChatSending(true);
+    const optimisticMessage: OrderChatMessage = {
+      id: -Date.now(),
+      shipment: tracking?.id ?? order.id,
+      channel: "CLIENT",
+      sender_role: "CLIENT",
+      sender_name: user?.first_name || user?.username || "Vous",
+      message: text,
+      created_at: new Date().toISOString(),
+    };
+    setCourierMessages((prev) => [...prev, optimisticMessage]);
     try {
       const msg = await customerApi.sendOrderChatMessage(order.id, text);
-      setCourierMessages((prev) => [...prev, msg]);
+      setCourierMessages((prev) => prev.map((item) => (item.id === optimisticMessage.id ? msg : item)));
     } catch {
       // Réaffiche le brouillon si l'envoi échoue
       setCourierChatDraft(text);
+      setCourierMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
     } finally {
       setChatSending(false);
     }
@@ -502,6 +519,7 @@ export default function OrderDetailPage() {
                         Aucun message. Lancez la conversation avec le livreur.
                       </div>
                     )}
+                    <div ref={courierChatEndRef} />
                   </div>
                   <div className="mt-3 flex gap-3">
                     <input

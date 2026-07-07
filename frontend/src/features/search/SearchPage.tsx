@@ -24,6 +24,14 @@ const PRICE_PRESETS = [
   { label: "Plus de 50 000 F", min: 50000, max: 9999999 },
 ];
 
+const LAST_SEARCH_STORAGE_KEY = "belivay_last_search";
+
+type LastSearch = {
+  query: string;
+  category: string;
+  createdAt: string;
+};
+
 function sortProducts(products: Product[], sort: SortKey): Product[] {
   const arr = [...products];
   if (sort === "price_asc")  return arr.sort((a, b) => (a.price_xaf ?? 0) - (b.price_xaf ?? 0));
@@ -54,6 +62,7 @@ export default function SearchPage() {
   const [sort, setSort]           = useState<SortKey>("relevance");
   const [sortOpen, setSortOpen]   = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [lastSearch, setLastSearch] = useState<LastSearch | null>(null);
 
   /* ── Filter state ── */
   const [minPrice, setMinPrice] = useState("");
@@ -87,6 +96,16 @@ export default function SearchPage() {
       });
   }, []);
 
+  useEffect(() => {
+    const stored = localStorage.getItem(LAST_SEARCH_STORAGE_KEY);
+    if (!stored) return;
+    try {
+      setLastSearch(JSON.parse(stored) as LastSearch);
+    } catch {
+      localStorage.removeItem(LAST_SEARCH_STORAGE_KEY);
+    }
+  }, []);
+
   const runSearch = useCallback(async (q: string) => {
     setLoading(true);
     setSearched(true);
@@ -107,6 +126,15 @@ export default function SearchPage() {
     const categoryLabel = searchParams.get("category_label") ?? "";
     setQuery(q);
     setSelectedCategoryLabel(categoryLabel);
+    if (q.trim() || categoryLabel) {
+      const nextLastSearch = {
+        query: q,
+        category: categoryLabel,
+        createdAt: new Date().toISOString(),
+      };
+      setLastSearch(nextLastSearch);
+      localStorage.setItem(LAST_SEARCH_STORAGE_KEY, JSON.stringify(nextLastSearch));
+    }
     if (q.trim()) {
       runSearch(q);
       return;
@@ -152,6 +180,14 @@ export default function SearchPage() {
   const resetFilters = () => {
     setSelCat(null); setMinPrice(""); setMaxPrice(""); setInStock(false); setMinRating(0);
     setFilterOpen(false);
+  };
+
+  const applyLastSearch = () => {
+    if (!lastSearch) return;
+    const params: Record<string, string> = {};
+    if (lastSearch.query) params.q = lastSearch.query;
+    if (lastSearch.category) params.category_label = lastSearch.category;
+    setSearchParams(params);
   };
 
   return (
@@ -287,6 +323,31 @@ export default function SearchPage() {
 
           {/* ── MAIN RESULTS AREA ── */}
           <div className="min-w-0 flex-1">
+            {lastSearch && (lastSearch.query || lastSearch.category) && (
+              <div className="mb-4 rounded-xl border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-primary">
+                  Dernière recherche
+                </p>
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
+                      {lastSearch.category ? `[${lastSearch.category}] ` : ""}
+                      {lastSearch.query || "Catégorie uniquement"}
+                    </p>
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(lastSearch.createdAt).toLocaleString("fr-FR")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={applyLastSearch}
+                    className="rounded-lg bg-primary px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-orange-700"
+                  >
+                    Reprendre
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Pas encore cherché */}
             {!searched && (

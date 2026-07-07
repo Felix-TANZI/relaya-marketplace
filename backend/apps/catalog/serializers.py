@@ -3,7 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -72,6 +72,88 @@ class ProductReviewCreateSerializer(serializers.ModelSerializer):
         return ProductReview.objects.create(**validated_data)
 
 
+class PromotionCampaignSerializer(serializers.ModelSerializer):
+    product_title = serializers.CharField(source="product.title", read_only=True)
+    discount_percent = serializers.ReadOnlyField()
+    is_active_now = serializers.ReadOnlyField()
+    remaining_stock = serializers.ReadOnlyField()
+
+    class Meta:
+        model = PromotionCampaign
+        fields = [
+            "id",
+            "product",
+            "product_title",
+            "campaign_type",
+            "status",
+            "title",
+            "starts_at",
+            "ends_at",
+            "reference_price_xaf",
+            "promo_price_xaf",
+            "discount_percent",
+            "stock_reserved",
+            "stock_claimed",
+            "remaining_stock",
+            "placement_fee_xaf",
+            "commission_uplift_points",
+            "rejection_reason",
+            "admin_note",
+            "is_active_now",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "status",
+            "stock_claimed",
+            "placement_fee_xaf",
+            "commission_uplift_points",
+            "rejection_reason",
+            "admin_note",
+            "created_at",
+            "updated_at",
+        ]
+
+    def validate_product(self, product):
+        request = self.context.get("request")
+        if request and request.user and not request.user.is_staff:
+            if product.vendor_id != request.user.id:
+                raise serializers.ValidationError("Ce produit ne vous appartient pas.")
+        return product
+
+    def validate(self, data):
+        product = data.get("product") or getattr(self.instance, "product", None)
+        campaign_type = data.get("campaign_type") or getattr(self.instance, "campaign_type", None)
+        reference_price = data.get("reference_price_xaf") or getattr(self.instance, "reference_price_xaf", None)
+        promo_price = data.get("promo_price_xaf") or getattr(self.instance, "promo_price_xaf", None)
+
+        if product and reference_price and reference_price < product.price_xaf:
+            raise serializers.ValidationError({
+                "reference_price_xaf": "Le prix de référence ne peut pas être inférieur au prix actuel du produit."
+            })
+        if reference_price and promo_price and promo_price >= reference_price:
+            raise serializers.ValidationError({
+                "promo_price_xaf": "Le prix promo doit être inférieur au prix de référence."
+            })
+        if campaign_type == PromotionCampaign.CampaignType.FLASH:
+            stock_reserved = data.get("stock_reserved") or getattr(self.instance, "stock_reserved", 0)
+            if stock_reserved < 5:
+                raise serializers.ValidationError({"stock_reserved": "Un Flash Deal demande au moins 5 unités réservées."})
+        return data
+
+    def create(self, validated_data):
+        request = self.context.get("request")
+        if request and request.user and request.user.is_authenticated:
+            validated_data["requested_by"] = request.user
+        if validated_data.get("campaign_type") == PromotionCampaign.CampaignType.FLASH:
+            validated_data.setdefault("commission_uplift_points", 5)
+        campaign = PromotionCampaign(**validated_data)
+        campaign.full_clean()
+        campaign.save()
+        return campaign
+
+
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     media = ProductMediaSerializer(many=True, read_only=True)
@@ -81,6 +163,7 @@ class ProductSerializer(serializers.ModelSerializer):
     reviews_count = serializers.SerializerMethodField()
     price_final = serializers.SerializerMethodField()
     master_slug = serializers.CharField(source='master.slug', read_only=True, default=None)
+    active_campaign = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -97,6 +180,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'discount_percent',
             'is_on_promotion',
             'price_final', 
+            'active_campaign',
             'stock_quantity',
             'is_active',
             'category',
@@ -132,11 +216,38 @@ class ProductSerializer(serializers.ModelSerializer):
     
     def get_price_final(self, obj):
         """Calculer le prix après réduction"""
+        campaign = self._get_active_campaign(obj)
+        if campaign:
+            return campaign.promo_price_xaf
         if obj.compare_at_price and obj.compare_at_price > obj.price_xaf:
             return obj.price_xaf
         if obj.discount > 0:
             return obj.price_xaf - (obj.price_xaf * obj.discount // 100)
         return obj.price_xaf
+
+    def _get_active_campaign(self, obj):
+        campaigns = getattr(obj, "promotion_campaigns", None)
+        if not campaigns:
+            return None
+        active = [campaign for campaign in campaigns.all() if campaign.is_active_now]
+        if not active:
+            return None
+        active.sort(key=lambda campaign: campaign.campaign_type == PromotionCampaign.CampaignType.FLASH, reverse=True)
+        return active[0]
+
+    def get_active_campaign(self, obj):
+        campaign = self._get_active_campaign(obj)
+        if not campaign:
+            return None
+        return {
+            "id": campaign.id,
+            "campaign_type": campaign.campaign_type,
+            "title": campaign.title,
+            "ends_at": campaign.ends_at,
+            "promo_price_xaf": campaign.promo_price_xaf,
+            "discount_percent": campaign.discount_percent,
+            "remaining_stock": campaign.remaining_stock,
+        }
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):

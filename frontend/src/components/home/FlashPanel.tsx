@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
@@ -9,19 +9,107 @@ import {
   Sparkles,
   Zap,
 } from "lucide-react";
+import { productsApi, type Product } from "@/services/api/products";
 import { FLASH_DEALS, V29_PRODUCTS } from "@/data/v29Products";
 
-function useCountdown(seconds: number) {
-  const [left, setLeft] = useState(seconds);
+type FlashDealView = {
+  id: number;
+  name: string;
+  img: string;
+  price: number;
+  old: number;
+  stock: number;
+  endsAt?: string;
+  isApiProduct: boolean;
+};
+
+function useDeadlineCountdown(endTime?: string, fallbackSeconds = 6 * 3600 + 16 * 60 + 2) {
+  const [left, setLeft] = useState(fallbackSeconds);
+
   useEffect(() => {
-    const id = setInterval(() => setLeft((s) => (s > 0 ? s - 1 : seconds)), 1000);
-    return () => clearInterval(id);
-  }, [seconds]);
+    const calculateLeft = () => {
+      if (!endTime) {
+        return fallbackSeconds;
+      }
+      return Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 1000));
+    };
+
+    setLeft(calculateLeft());
+    const id = window.setInterval(() => setLeft(calculateLeft()), 1000);
+    return () => window.clearInterval(id);
+  }, [endTime, fallbackSeconds]);
+
   return {
     h: String(Math.floor(left / 3600)).padStart(2, "0"),
     m: String(Math.floor((left % 3600) / 60)).padStart(2, "0"),
     s: String(left % 60).padStart(2, "0"),
   };
+}
+
+function parseXaf(value: string) {
+  return Number(value.replace(/\s/g, "")) || 0;
+}
+
+function getProductImage(product: Product) {
+  return product.media?.[0]?.url || product.images?.[0]?.image_url || "";
+}
+
+function productToFlashDeal(product: Product): FlashDealView {
+  const campaign = product.active_campaign;
+  return {
+    id: product.id,
+    name: campaign?.title || product.title,
+    img: getProductImage(product),
+    price: campaign?.promo_price_xaf ?? product.price_final ?? product.price_xaf,
+    old: product.compare_at_price ?? product.price_xaf,
+    stock: campaign?.remaining_stock ?? product.stock_quantity,
+    endsAt: campaign?.ends_at,
+    isApiProduct: true,
+  };
+}
+
+function fallbackToFlashDeal(deal: (typeof FLASH_DEALS)[number]): FlashDealView {
+  const linkedProduct = resolveFallbackProduct(deal.name);
+  return {
+    id: linkedProduct?.id ?? 0,
+    name: deal.name,
+    img: deal.img,
+    price: parseXaf(deal.price),
+    old: parseXaf(deal.old),
+    stock: deal.stock,
+    isApiProduct: false,
+  };
+}
+
+function resolveFallbackProduct(name: string) {
+  const exactMap: Record<string, number> = {
+    "Ensemble Wax 3 Pièces": 9,
+    "Laptop HP Intel i5": 10,
+    "Coffret Beauté Naturelle": 3,
+    "Chaussures Sport Running": 18,
+    "Pagne Hollandais Vlisco": 28,
+  };
+
+  const explicitId = exactMap[name];
+  if (explicitId) {
+    return V29_PRODUCTS.find((product) => product.id === explicitId) ?? null;
+  }
+
+  const normalize = (value: string) =>
+    value
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+
+  const normalizedName = normalize(name);
+  return (
+    V29_PRODUCTS.find((product) => {
+      const title = normalize(product.title);
+      return title.includes(normalizedName) || normalizedName.includes(title);
+    }) ?? null
+  );
 }
 
 interface FlashPanelProps {
@@ -37,48 +125,50 @@ export default function FlashPanel({
 }: FlashPanelProps) {
   const navigate = useNavigate();
   const panelRef = useRef<HTMLElement | null>(null);
-  const cd = useCountdown(6 * 3600 + 16 * 60 + 2);
   const [current, setCurrent] = useState(0);
+  const [deals, setDeals] = useState<FlashDealView[]>(() => FLASH_DEALS.map(fallbackToFlashDeal));
   const [mode, setMode] = useState<"start" | "fixed" | "end">("start");
   const [endTop, setEndTop] = useState(0);
+  const deal = deals[current] ?? deals[0];
+  const cd = useDeadlineCountdown(deal?.endsAt);
 
-  const linkedProduct = useMemo(() => {
-    const exactMap: Record<string, number> = {
-      "Ensemble Wax 3 Pièces": 9,
-      "Laptop HP Intel i5": 10,
-      "Coffret Beauté Naturelle": 3,
-      "Chaussures Sport Running": 18,
-      "Pagne Hollandais Vlisco": 28,
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFlashDeals = async () => {
+      try {
+        const response = await productsApi.list({ page_size: 100, is_active: true });
+        if (!mounted) return;
+
+        const apiDeals = response.results
+          .filter((product) => product.active_campaign?.campaign_type === "FLASH")
+          .map(productToFlashDeal)
+          .filter((item) => item.img && item.price > 0 && item.old > item.price);
+
+        if (apiDeals.length) {
+          setDeals(apiDeals);
+          setCurrent(0);
+        }
+      } catch {
+        if (mounted) {
+          setDeals(FLASH_DEALS.map(fallbackToFlashDeal));
+          setCurrent(0);
+        }
+      }
     };
 
-    const explicitId = exactMap[FLASH_DEALS[current]?.name];
-    if (explicitId) {
-      return V29_PRODUCTS.find((product) => product.id === explicitId) ?? null;
-    }
-
-    const normalize = (value: string) =>
-      value
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9]+/g, " ")
-        .trim();
-
-    const name = normalize(FLASH_DEALS[current]?.name ?? "");
-    return (
-      V29_PRODUCTS.find((product) => {
-        const title = normalize(product.title);
-        return title.includes(name) || name.includes(title);
-      }) ?? null
-    );
-  }, [current]);
+    void loadFlashDeals();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => {
-      setCurrent((value) => (value + 1) % FLASH_DEALS.length);
+      setCurrent((value) => (value + 1) % deals.length);
     }, 3500);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [deals.length]);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -112,15 +202,11 @@ export default function FlashPanel({
     };
   }, [trackTop, trackHeight, topOffset]);
 
-  const deal = FLASH_DEALS[current];
-  const discount = Math.round(
-    ((parseInt(deal.old.replace(/\s/g, "")) - parseInt(deal.price.replace(/\s/g, ""))) /
-      parseInt(deal.old.replace(/\s/g, ""))) *
-      100,
-  );
+  const discount = deal?.old ? Math.round(((deal.old - deal.price) / deal.old) * 100) : 0;
+  const stockProgress = Math.max(8, Math.min(96, 100 - deal.stock * 4));
   const openDeal = () => {
-    if (linkedProduct) {
-      navigate(`/product/${linkedProduct.id}?mock=1`);
+    if (deal?.id) {
+      navigate(deal.isApiProduct ? `/product/${deal.id}` : `/product/${deal.id}?mock=1`);
       return;
     }
     navigate("/promotions");
@@ -198,19 +284,19 @@ export default function FlashPanel({
               <div className="flex items-end gap-2">
                 <div>
                   <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#b96c2d] dark:text-orange-300">Prix flash</p>
-                  <p className="text-[18px] font-black text-primary">{deal.price} FCFA</p>
+                  <p className="text-[18px] font-black text-primary">{deal.price.toLocaleString("fr-FR")} FCFA</p>
                 </div>
-                <p className="text-[12px] font-semibold text-gray-400 line-through dark:text-gray-500">{deal.old} FCFA</p>
+                <p className="text-[12px] font-semibold text-gray-400 line-through dark:text-gray-500">{deal.old.toLocaleString("fr-FR")} FCFA</p>
               </div>
 
               <div className="mt-3 h-[5px] overflow-hidden rounded bg-[#f3f4f6] dark:bg-gray-800">
-                <div className="h-full rounded bg-[linear-gradient(90deg,#f47920,#ef4444)]" style={{ width: `${100 - deal.stock * 4}%` }} />
+                <div className="h-full rounded bg-[linear-gradient(90deg,#f47920,#ef4444)]" style={{ width: `${stockProgress}%` }} />
               </div>
 
               <div className="mt-4 flex items-center justify-between gap-2">
                 <button
                   type="button"
-                  onClick={() => setCurrent((value) => (value - 1 + FLASH_DEALS.length) % FLASH_DEALS.length)}
+                  onClick={() => setCurrent((value) => (value - 1 + deals.length) % deals.length)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   aria-label="Deal précédent"
                 >
@@ -225,7 +311,7 @@ export default function FlashPanel({
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCurrent((value) => (value + 1) % FLASH_DEALS.length)}
+                  onClick={() => setCurrent((value) => (value + 1) % deals.length)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   aria-label="Deal suivant"
                 >
@@ -234,7 +320,7 @@ export default function FlashPanel({
               </div>
 
               <div className="mt-4 flex justify-center gap-2">
-                {FLASH_DEALS.map((_, index) => (
+                {deals.map((_, index) => (
                   <button
                     key={index}
                     type="button"

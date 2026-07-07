@@ -7,7 +7,15 @@ from django.contrib.auth.models import User
 from django.contrib.auth.password_validation import validate_password
 from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
-from .models import CourierProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import (
+    CourierProfile,
+    RewardAccount,
+    RewardTransaction,
+    UserCart,
+    UserProfile,
+    UserFavorite,
+    UserNotification,
+)
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
@@ -379,3 +387,37 @@ class NotificationSerializer(serializers.ModelSerializer):
             'updated_at',
         ]
         read_only_fields = fields
+
+
+class RewardTransactionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RewardTransaction
+        fields = ["id", "delta", "source", "reason", "reference", "created_at"]
+        read_only_fields = fields
+
+
+class RewardAccountSerializer(serializers.ModelSerializer):
+    role_display = serializers.CharField(source="get_role_display", read_only=True)
+    tier_display = serializers.CharField(source="get_tier_display", read_only=True)
+    transactions = RewardTransactionSerializer(many=True, read_only=True)
+    show_monetary_value = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RewardAccount
+        fields = [
+            "id",
+            "role",
+            "role_display",
+            "points_balance",
+            "lifetime_points",
+            "trust_score",
+            "tier",
+            "tier_display",
+            "show_monetary_value",
+            "last_recalculated_at",
+            "transactions",
+        ]
+        read_only_fields = fields
+
+    def get_show_monetary_value(self, obj):
+        return obj.role != RewardAccount.Role.COURIER

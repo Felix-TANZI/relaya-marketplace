@@ -21,11 +21,11 @@ import {
   ChevronDown,
   X,
   Eye,
-  Image as ImageIcon,
+  Image as ImageIcon, Percent, Zap,
 } from "lucide-react";
 import {
   adminApi,
-  type AdminProduct,
+  type AdminProduct, type AdminPromotionCampaign,
   type AdminProductDetail,
 } from "@/services/api/admin";
 import { productsApi, type Category } from "@/services/api/products";
@@ -55,8 +55,37 @@ type SortKey = "title" | "created_at" | "price_xaf" | "stock_quantity";
 type SortDir = "asc" | "desc";
 type StatusTab = "all" | "active" | "inactive" | "pending";
 type DateFilter = "all" | "today" | "week" | "month";
+type CampaignForm = {
+  campaign_type: 'REGULAR' | 'FLASH';
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  reference_price_xaf: string;
+  promo_price_xaf: string;
+  stock_reserved: string;
+};
 
 const PAGE_SIZES = [10, 20, 50] as const;
+
+const toDateTimeLocal = (date: Date) => {
+  const offset = date.getTimezoneOffset();
+  return new Date(date.getTime() - offset * 60_000).toISOString().slice(0, 16);
+};
+
+const defaultCampaignForm = (product?: AdminProduct): CampaignForm => {
+  const start = new Date();
+  const end = new Date(start.getTime() + 6 * 60 * 60 * 1000);
+  const reference = product?.price_xaf ?? 0;
+  return {
+    campaign_type: 'FLASH',
+    title: product ? `Flash Deal ${product.title}` : '',
+    starts_at: toDateTimeLocal(start),
+    ends_at: toDateTimeLocal(end),
+    reference_price_xaf: reference ? String(reference) : '',
+    promo_price_xaf: reference ? String(Math.round(reference * 0.8)) : '',
+    stock_reserved: '5',
+  };
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // SOUS-COMPOSANTS
@@ -95,6 +124,7 @@ export default function CataloguePage() {
   const [searchParams] = useSearchParams();
 
   const [products, setProducts] = useState<AdminProduct[]>([]);
+  const [pendingCampaigns, setPendingCampaigns] = useState<AdminPromotionCampaign[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState<number | null>(null);
@@ -117,6 +147,9 @@ export default function CataloguePage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<10 | 20 | 50>(20);
   const [openDrop, setOpenDrop] = useState<"date" | null>(null);
+  const [campaignProduct, setCampaignProduct] = useState<AdminProduct | null>(null);
+  const [campaignForm, setCampaignForm] = useState<CampaignForm>(() => defaultCampaignForm());
+  const [campaignSaving, setCampaignSaving] = useState(false);
   const searchRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Chargement ───────────────────────────────────────────────────────────
@@ -134,8 +167,12 @@ export default function CataloguePage() {
       if (statusTab === "pending") filters.moderation_status = "PENDING";
       const vendorId = searchParams.get("vendor");
       if (vendorId) filters.vendor = Number(vendorId);
-      const data = await adminApi.listProducts(filters);
+      const [data, campaigns] = await Promise.all([
+        adminApi.listProducts(filters),
+        adminApi.listPromotionCampaigns({ status: 'PENDING' }).catch(() => []),
+      ]);
       setProducts(data);
+      setPendingCampaigns(campaigns);
     } catch {
       showToast("Erreur chargement du catalogue", "error");
     } finally {
@@ -347,6 +384,101 @@ export default function CataloguePage() {
       await load();
     } catch {
       showToast("Erreur lors de la suppression", "error");
+    } finally {
+      setActing(null);
+    }
+  };
+
+  const openCampaignModal = (product: AdminProduct, type: 'REGULAR' | 'FLASH' = 'FLASH') => {
+    const next = defaultCampaignForm(product);
+    next.campaign_type = type;
+    next.title = type === 'FLASH' ? `Flash Deal ${product.title}` : `Promotion ${product.title}`;
+    if (type === 'REGULAR') next.stock_reserved = '0';
+    setCampaignProduct(product);
+    setCampaignForm(next);
+  };
+
+  
+  const updateCampaignForm = <K extends keyof CampaignForm>(key: K, value: CampaignForm[K]) => {
+    setCampaignForm((current) => {
+      const next = { ...current, [key]: value };
+      if (key === 'campaign_type') {
+        next.title = campaignProduct
+          ? value === 'FLASH' ? `Flash Deal ${campaignProduct.title}` : `Promotion ${campaignProduct.title}`
+          : next.title;
+        next.stock_reserved = value === 'FLASH' ? (next.stock_reserved === '0' ? '5' : next.stock_reserved) : '0';
+      }
+      return next;
+    });
+  };
+
+  const handleCreateCampaign = async () => {
+    if (!campaignProduct) return;
+    const reference = Number(campaignForm.reference_price_xaf);
+    const promo = Number(campaignForm.promo_price_xaf);
+    const stock = Number(campaignForm.stock_reserved);
+
+    if (!campaignForm.title.trim() || !campaignForm.starts_at || !campaignForm.ends_at || !reference || !promo) {
+      showToast('Remplis le titre, les dates et les prix.', 'error');
+      return;
+    }
+    if (promo >= reference) {
+      showToast('Le prix promo doit être inférieur au prix de référence.', 'error');
+      return;
+    }
+    if (campaignForm.campaign_type === 'FLASH' && stock < 5) {
+      showToast('Un Flash Deal demande au moins 5 unités réservées.', 'error');
+      return;
+    }
+
+    setCampaignSaving(true);
+    try {
+      await adminApi.createProductCampaign(campaignProduct.id, {
+        campaign_type: campaignForm.campaign_type,
+        title: campaignForm.title.trim(),
+        starts_at: new Date(campaignForm.starts_at).toISOString(),
+        ends_at: new Date(campaignForm.ends_at).toISOString(),
+        reference_price_xaf: reference,
+        promo_price_xaf: promo,
+        stock_reserved: campaignForm.campaign_type === 'FLASH' ? stock : 0,
+      });
+      showToast(
+        campaignForm.campaign_type === 'FLASH'
+          ? 'Flash Deal créé. Il reste à l’approuver pour l’afficher.'
+          : 'Promotion créée. Elle reste à approuver pour l’afficher.',
+        'success',
+      );
+      setCampaignProduct(null);
+      await load();
+    } catch {
+      showToast('Impossible de créer la campagne. Vérifie les règles de prix, durée et stock.', 'error');
+    } finally {
+      setCampaignSaving(false);
+    }
+  };
+
+  const handleCampaignDecision = async (
+    campaign: AdminPromotionCampaign,
+    status: 'APPROVED' | 'REJECTED',
+  ) => {
+    const ok = await confirm({
+      title: status === 'APPROVED' ? 'Approuver cette campagne ?' : 'Rejeter cette campagne ?',
+      message: `${campaign.title} · ${campaign.product_title}`,
+      type: status === 'APPROVED' ? 'warning' : 'danger',
+      confirmText: status === 'APPROVED' ? 'Approuver' : 'Rejeter',
+      cancelText: 'Annuler',
+    });
+    if (!ok) return;
+    setActing(campaign.product);
+    try {
+      await adminApi.decidePromotionCampaign(campaign.id, {
+        status,
+        rejection_reason: status === 'REJECTED' ? 'Demande rejetée depuis le back-office BelivaY.' : undefined,
+      });
+      showToast(status === 'APPROVED' ? 'Campagne approuvée' : 'Campagne rejetée', 'success');
+      await load();
+    } catch {
+      showToast('Impossible de traiter cette campagne.', 'error');
     } finally {
       setActing(null);
     }
@@ -617,6 +749,124 @@ export default function CataloguePage() {
           </button>
         ))}
       </div>
+
+      {pendingCampaigns.length > 0 && (
+        <div className="rounded-2xl p-4 space-y-3" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>
+                Campagnes en attente
+              </h2>
+              <p style={{ fontSize: 12, color: T.muted }}>
+                Flash Deals et promotions demandés par les vendeurs, à valider avant affichage client.
+              </p>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 9px', borderRadius: 999, background: T.red + '18', color: T.red }}>
+              {pendingCampaigns.length} demande{pendingCampaigns.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {pendingCampaigns.slice(0, 6).map((campaign) => (
+              <div key={campaign.id}
+                className="rounded-xl p-3 flex items-center gap-3"
+                style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: campaign.campaign_type === 'FLASH' ? 'rgba(244,121,32,0.12)' : 'rgba(59,130,246,0.12)', color: campaign.campaign_type === 'FLASH' ? '#F47920' : '#3B82F6' }}>
+                  {campaign.campaign_type === 'FLASH' ? <Zap size={16}/> : <Percent size={16}/>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate" style={{ fontSize: 13, fontWeight: 800, color: T.text }}>
+                    {campaign.title}
+                  </p>
+                  <p className="truncate" style={{ fontSize: 11.5, color: T.muted }}>
+                    {campaign.product_title} · -{campaign.discount_percent}% · {fmtXaf(campaign.promo_price_xaf)}
+                    {campaign.campaign_type === 'FLASH' ? ` · stock ${campaign.stock_reserved}` : ''}
+                  </p>
+                  <p style={{ fontSize: 11, color: T.muted }}>
+                    {fmtDate(campaign.starts_at)} au {fmtDate(campaign.ends_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button type="button"
+                    onClick={() => handleCampaignDecision(campaign, 'APPROVED')}
+                    disabled={acting === campaign.product}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                    style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.28)' }}>
+                    Approuver
+                  </button>
+                  <button type="button"
+                    onClick={() => handleCampaignDecision(campaign, 'REJECTED')}
+                    disabled={acting === campaign.product}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                    style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.24)' }}>
+                    Rejeter
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {pendingCampaigns.length > 0 && (
+        <div className="rounded-2xl p-4 space-y-3" style={{ background: T.card, border: `1px solid ${T.border}` }}>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <h2 style={{ fontSize: 14, fontWeight: 800, color: T.text }}>
+                Campagnes en attente
+              </h2>
+              <p style={{ fontSize: 12, color: T.muted }}>
+                Flash Deals et promotions demandés par les vendeurs, à valider avant affichage client.
+              </p>
+            </div>
+            <span style={{ fontSize: 11, fontWeight: 800, padding: '4px 9px', borderRadius: 999, background: T.red + '18', color: T.red }}>
+              {pendingCampaigns.length} demande{pendingCampaigns.length > 1 ? 's' : ''}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+            {pendingCampaigns.slice(0, 6).map((campaign) => (
+              <div key={campaign.id}
+                className="rounded-xl p-3 flex items-center gap-3"
+                style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                  style={{ background: campaign.campaign_type === 'FLASH' ? 'rgba(244,121,32,0.12)' : 'rgba(59,130,246,0.12)', color: campaign.campaign_type === 'FLASH' ? '#F47920' : '#3B82F6' }}>
+                  {campaign.campaign_type === 'FLASH' ? <Zap size={16}/> : <Percent size={16}/>}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate" style={{ fontSize: 13, fontWeight: 800, color: T.text }}>
+                    {campaign.title}
+                  </p>
+                  <p className="truncate" style={{ fontSize: 11.5, color: T.muted }}>
+                    {campaign.product_title} · -{campaign.discount_percent}% · {fmtXaf(campaign.promo_price_xaf)}
+                    {campaign.campaign_type === 'FLASH' ? ` · stock ${campaign.stock_reserved}` : ''}
+                  </p>
+                  <p style={{ fontSize: 11, color: T.muted }}>
+                    {fmtDate(campaign.starts_at)} au {fmtDate(campaign.ends_at)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button type="button"
+                    onClick={() => handleCampaignDecision(campaign, 'APPROVED')}
+                    disabled={acting === campaign.product}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                    style={{ background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.28)' }}>
+                    Approuver
+                  </button>
+                  <button type="button"
+                    onClick={() => handleCampaignDecision(campaign, 'REJECTED')}
+                    disabled={acting === campaign.product}
+                    className="px-3 py-1.5 rounded-lg text-[11px] font-bold"
+                    style={{ background: 'rgba(239,68,68,0.10)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.24)' }}>
+                    Rejeter
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ── Filtres ───────────────────────────────────────────────────────── */}
       <div
@@ -1134,6 +1384,13 @@ export default function CataloguePage() {
                     {/* Actions */}
                     <td style={{ padding: "12px 12px" }}>
                       <div className="flex items-center gap-1.5 justify-end">
+                          {/* Promo / Flash Deal */}
+                          <button onClick={() => openCampaignModal(p, 'FLASH')} disabled={acting === p.id}
+                            title="Créer une promotion ou un Flash Deal"
+                            className="w-7 h-7 rounded-lg flex items-center justify-center transition-all"
+                            style={{ background: 'rgba(244,121,32,0.1)', color: '#F47920', border: '1px solid rgba(244,121,32,0.25)' }}>
+                            <Zap size={12} />
+                          </button>
                         {/* Toggle actif/inactif */}
                         <button
                           onClick={() => handleToggle(p)}
@@ -1323,6 +1580,12 @@ export default function CataloguePage() {
                   </div>
                   {/* Actions */}
                   <div className="flex flex-col gap-1.5 flex-shrink-0">
+                    <button onClick={() => openCampaignModal(p, 'FLASH')} disabled={acting === p.id}
+                      className="w-8 h-8 rounded-lg flex items-center justify-center"
+                      style={{ background: 'rgba(244,121,32,0.1)', color: '#F47920', border: '1px solid rgba(244,121,32,0.25)' }}
+                      aria-label="Créer une promotion ou un Flash Deal">
+                      <Zap size={13} />
+                    </button>
                     <button
                       onClick={() => handleToggle(p)}
                       disabled={acting === p.id}
@@ -1454,6 +1717,167 @@ export default function CataloguePage() {
           </div>
         )}
       </div>
+
+      {campaignProduct && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center px-4 py-6"
+          style={{ background: 'rgba(0,0,0,0.58)' }}
+          onClick={() => !campaignSaving && setCampaignProduct(null)}
+        >
+          <div
+            className="w-full max-w-[560px] rounded-2xl p-5"
+            style={{ background: T.card, border: `1px solid ${T.border}`, boxShadow: '0 24px 80px rgba(0,0,0,0.35)' }}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="mb-5 flex items-start justify-between gap-4">
+              <div>
+                <p style={{ fontSize: 11, fontWeight: 800, color: '#F47920', letterSpacing: '.08em', textTransform: 'uppercase' }}>
+                  Campagne produit
+                </p>
+                <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 20, fontWeight: 800, color: T.text, marginTop: 3 }}>
+                  {campaignProduct.title}
+                </h2>
+                <p style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>
+                  Prix actuel: {fmtXaf(campaignProduct.price_xaf)} · Stock: {campaignProduct.stock_quantity}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setCampaignProduct(null)}
+                disabled={campaignSaving}
+                className="h-9 w-9 rounded-xl flex items-center justify-center"
+                style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
+                aria-label="Fermer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="mb-4 grid grid-cols-2 gap-2">
+              {([
+                { key: 'FLASH' as const, label: 'Flash Deal', icon: Zap },
+                { key: 'REGULAR' as const, label: 'Promotion', icon: Percent },
+              ]).map((item) => (
+                <button
+                  key={item.key}
+                  type="button"
+                  onClick={() => updateCampaignForm('campaign_type', item.key)}
+                  className="flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-[13px] font-bold"
+                  style={{
+                    background: campaignForm.campaign_type === item.key ? 'rgba(244,121,32,0.16)' : T.cardAlt,
+                    color: campaignForm.campaign_type === item.key ? '#F47920' : T.muted,
+                    border: `1px solid ${campaignForm.campaign_type === item.key ? 'rgba(244,121,32,0.4)' : T.border}`,
+                  }}
+                >
+                  <item.icon size={15} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2">
+              <label className="sm:col-span-2">
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Titre</span>
+                <input
+                  value={campaignForm.title}
+                  onChange={(event) => updateCampaignForm('title', event.target.value)}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                />
+              </label>
+
+              <label>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Début</span>
+                <input
+                  type="datetime-local"
+                  value={campaignForm.starts_at}
+                  onChange={(event) => updateCampaignForm('starts_at', event.target.value)}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                />
+              </label>
+
+              <label>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Fin</span>
+                <input
+                  type="datetime-local"
+                  value={campaignForm.ends_at}
+                  onChange={(event) => updateCampaignForm('ends_at', event.target.value)}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                />
+              </label>
+
+              <label>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Prix référence</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={campaignForm.reference_price_xaf}
+                  onChange={(event) => updateCampaignForm('reference_price_xaf', event.target.value)}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                />
+              </label>
+
+              <label>
+                <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Prix promo</span>
+                <input
+                  type="number"
+                  min={1}
+                  value={campaignForm.promo_price_xaf}
+                  onChange={(event) => updateCampaignForm('promo_price_xaf', event.target.value)}
+                  className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                  style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                />
+              </label>
+
+              {campaignForm.campaign_type === 'FLASH' && (
+                <label className="sm:col-span-2">
+                  <span style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase' }}>Stock réservé flash</span>
+                  <input
+                    type="number"
+                    min={5}
+                    value={campaignForm.stock_reserved}
+                    onChange={(event) => updateCampaignForm('stock_reserved', event.target.value)}
+                    className="mt-1 w-full rounded-xl px-3 py-2.5 text-[13px] outline-none"
+                    style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
+                  />
+                </label>
+              )}
+            </div>
+
+            <div className="mt-4 rounded-xl px-3 py-3" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+              <p style={{ fontSize: 12, lineHeight: 1.6, color: T.muted }}>
+                Flash Deal: durée 2h à 48h, stock minimum 5, remise entre 15% et 70%.
+                La campagne créée reste en attente d’approbation avant d’être visible côté client.
+              </p>
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setCampaignProduct(null)}
+                disabled={campaignSaving}
+                className="rounded-xl px-4 py-2.5 text-[13px] font-bold"
+                style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
+              >
+                Annuler
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleCreateCampaign()}
+                disabled={campaignSaving}
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[13px] font-bold text-white"
+                style={{ background: '#F47920', opacity: campaignSaving ? 0.7 : 1 }}
+              >
+                {campaignSaving ? <RefreshCw size={14} className="animate-spin" /> : <Zap size={14} />}
+                Créer la campagne
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }

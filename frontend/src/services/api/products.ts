@@ -38,6 +38,15 @@ export interface Product {
   discount: number;
   discount_percent?: number;
   is_on_promotion?: boolean;
+  active_campaign?: {
+    id: number;
+    campaign_type: 'REGULAR' | 'FLASH';
+    title: string;
+    ends_at: string;
+    promo_price_xaf: number;
+    discount_percent: number;
+    remaining_stock: number;
+  } | null;
   price_final: number;
   stock_quantity: number;
   is_active: boolean;

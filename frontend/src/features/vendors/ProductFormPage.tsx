@@ -12,6 +12,7 @@ import {
   ArrowLeft, Package, Upload, X, RefreshCw, Save,
   ImageIcon, Tag, BarChart2, DollarSign,
   CheckCircle, Clock, Info, ChevronRight, Layers, Plus,
+  Zap, Percent,
 } from 'lucide-react';
 import {
   vendorsApi,
@@ -116,12 +117,42 @@ type ProductPayload = Partial<VendorProduct> & {
   seller_note: string;
 };
 
+type CampaignForm = {
+  campaignType: 'FLASH' | 'REGULAR';
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  referencePrice: string;
+  promoPrice: string;
+  stockReserved: string;
+};
+
 function categoryId(category: ProductFormItem['category']) {
   return typeof category === 'number' ? category : category.id;
 }
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Erreur lors de la sauvegarde';
+}
+
+function toDateTimeLocal(date: Date) {
+  const offsetMs = date.getTimezoneOffset() * 60_000;
+  return new Date(date.getTime() - offsetMs).toISOString().slice(0, 16);
+}
+
+function defaultCampaignForm(productTitle = '', referencePrice = 0): CampaignForm {
+  const starts = new Date(Date.now() + 60 * 60_000);
+  const ends = new Date(starts.getTime() + 6 * 60 * 60_000);
+  const ref = referencePrice > 0 ? referencePrice : '';
+  return {
+    campaignType: 'FLASH',
+    title: productTitle ? `Flash Deal - ${productTitle}` : 'Flash Deal BelivaY',
+    startsAt: toDateTimeLocal(starts),
+    endsAt: toDateTimeLocal(ends),
+    referencePrice: String(ref),
+    promoPrice: referencePrice > 0 ? String(Math.round(referencePrice * 0.8)) : '',
+    stockReserved: '5',
+  };
 }
 
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
@@ -159,6 +190,8 @@ export default function ProductFormPage() {
   const [sellerNote,  setSellerNote]  = useState('');
   const [proImgs,     setProImgs]     = useState<{ file: File; preview: string }[]>([]);
   const proRef = useRef<HTMLInputElement>(null);
+  const [requestCampaign, setRequestCampaign] = useState(false);
+  const [campaignForm, setCampaignForm] = useState<CampaignForm>(() => defaultCampaignForm());
 
   // ── UI ──
   const [allCats,    setAllCats]    = useState<Category[]>([]);
@@ -262,6 +295,14 @@ export default function ProductFormPage() {
   const compare = parseInt(compareAt, 10) || 0;
   const discPct = compare > price ? Math.round((1 - price / compare) * 100) : 0;
   const net     = price * (1 - commission / 100);
+  const campaignReference = parseInt(campaignForm.referencePrice, 10) || 0;
+  const campaignPromo = parseInt(campaignForm.promoPrice, 10) || 0;
+  const campaignDiscountPct = campaignReference > campaignPromo && campaignPromo > 0
+    ? Math.round((1 - campaignPromo / campaignReference) * 100)
+    : 0;
+  const campaignDurationHours = campaignForm.startsAt && campaignForm.endsAt
+    ? (new Date(campaignForm.endsAt).getTime() - new Date(campaignForm.startsAt).getTime()) / 3_600_000
+    : 0;
 
   // ── Photos ────────────────────────────────────────────────────────────────
   const addPhotos = (files: FileList | null) => {
@@ -294,6 +335,29 @@ export default function ProductFormPage() {
     });
   };
 
+  const toggleCampaignRequest = () => {
+    const next = !requestCampaign;
+    setRequestCampaign(next);
+    if (next) {
+      const ref = compare > price ? compare : price;
+      setCampaignForm(defaultCampaignForm(title.trim(), ref));
+    }
+  };
+
+  const updateCampaignForm = <K extends keyof CampaignForm>(key: K, value: CampaignForm[K]) => {
+    setCampaignForm(prev => {
+      const next = { ...prev, [key]: value };
+      if (key === 'campaignType') {
+        next.title = value === 'FLASH'
+          ? `Flash Deal - ${title.trim() || 'Produit BelivaY'}`
+          : `Promotion - ${title.trim() || 'Produit BelivaY'}`;
+        if (value === 'REGULAR' && !next.stockReserved) next.stockReserved = '0';
+        if (value === 'FLASH' && (parseInt(next.stockReserved, 10) || 0) < 5) next.stockReserved = '5';
+      }
+      return next;
+    });
+  };
+
   // ── Validation ──────────────────────────────────────────────────────────────
   const validate = (): boolean => {
     const e: Record<string,string> = {};
@@ -322,6 +386,26 @@ export default function ProductFormPage() {
     if (!stockThreshold.trim())           e.threshold = 'Seuil alerte stock requis.';
     else if (parseInt(stockThreshold,10) < 0) e.threshold = 'Seuil invalide.';
 
+    if (requestCampaign) {
+      const starts = campaignForm.startsAt ? new Date(campaignForm.startsAt) : null;
+      const ends = campaignForm.endsAt ? new Date(campaignForm.endsAt) : null;
+      const ref = parseInt(campaignForm.referencePrice, 10);
+      const promo = parseInt(campaignForm.promoPrice, 10);
+      const reserved = parseInt(campaignForm.stockReserved, 10) || 0;
+      if (!campaignForm.title.trim()) e.campaignTitle = 'Titre de campagne requis.';
+      if (!starts || Number.isNaN(starts.getTime())) e.campaignStartsAt = 'Début invalide.';
+      if (!ends || Number.isNaN(ends.getTime())) e.campaignEndsAt = 'Fin invalide.';
+      if (starts && ends && ends <= starts) e.campaignEndsAt = 'La fin doit être après le début.';
+      if (!ref || ref < price) e.campaignReferencePrice = 'Le prix de référence doit être au moins égal au prix produit.';
+      if (!promo || promo >= ref) e.campaignPromoPrice = 'Le prix promo doit être inférieur au prix de référence.';
+      if (campaignForm.campaignType === 'FLASH') {
+        const duration = starts && ends ? (ends.getTime() - starts.getTime()) / 3_600_000 : 0;
+        const discount = ref > promo ? Math.round((1 - promo / ref) * 100) : 0;
+        if (duration < 2 || duration > 48) e.campaignEndsAt = 'Un Flash Deal doit durer entre 2h et 48h.';
+        if (reserved < 5) e.campaignStockReserved = 'Minimum 5 unités réservées.';
+        if (discount < 15 || discount > 70) e.campaignPromoPrice = 'Remise Flash Deal attendue : 15% à 70%.';
+      }
+    }
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -359,12 +443,10 @@ export default function ProductFormPage() {
         const updated = await vendorsApi.updateProduct(parseInt(id), payload);
         productId = parseInt(id);
         masterId  = updated.master;
-        showToast('Produit mis à jour','success');
       } else {
         const created = await vendorsApi.createProduct(payload);
         productId = created.id;
         masterId  = created.master;
-        showToast('Produit créé — en attente de modération','success');
       }
 
       // Photos RÉELLES de l'offre (vérif admin)
@@ -381,6 +463,25 @@ export default function ProductFormPage() {
         }
       }
 
+      if (requestCampaign) {
+        await vendorsApi.requestProductCampaign(productId, {
+          campaign_type: campaignForm.campaignType,
+          title: campaignForm.title.trim(),
+          starts_at: new Date(campaignForm.startsAt).toISOString(),
+          ends_at: new Date(campaignForm.endsAt).toISOString(),
+          reference_price_xaf: parseInt(campaignForm.referencePrice, 10),
+          promo_price_xaf: parseInt(campaignForm.promoPrice, 10),
+          stock_reserved: campaignForm.campaignType === 'FLASH'
+            ? parseInt(campaignForm.stockReserved, 10)
+            : 0,
+        });
+      }
+      showToast(
+        requestCampaign
+          ? `${isEdit ? 'Produit mis à jour' : 'Produit créé'} — demande ${campaignForm.campaignType === 'FLASH' ? 'Flash Deal' : 'promotion'} envoyée à validation`
+          : (isEdit ? 'Produit mis à jour' : 'Produit créé — en attente de modération'),
+        'success',
+      );
       navigate('/seller/products');
     } catch (e: unknown) {
       showToast(getErrorMessage(e),'error');
@@ -770,6 +871,116 @@ export default function ProductFormPage() {
                   style={{ left: isActive ? '26px' : '2px' }}/>
               </button>
             </div>
+          </Section>
+
+          {/* CAMPAGNE BELIVAY */}
+          <Section title="Campagne BelivaY" icon={<Zap size={15}/>}>
+            <div className="flex items-center justify-between py-1">
+              <div>
+                <p className="text-[12.5px] font-semibold" style={{ color: T.text }}>
+                  Demander un Flash Deal
+                </p>
+                <p className="text-[11px]" style={{ color: T.mutedL }}>
+                  La demande sera vérifiée par l'admin avant affichage client.
+                </p>
+              </div>
+              <button type="button" onClick={toggleCampaignRequest}
+                className="w-12 h-6 rounded-full transition-all relative"
+                style={{ background: requestCampaign ? T.orange : T.border }}>
+                <span className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all"
+                  style={{ left: requestCampaign ? '26px' : '2px' }}/>
+              </button>
+            </div>
+
+            {requestCampaign && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { value: 'FLASH' as const, label: 'Flash Deal', icon: Zap },
+                    { value: 'REGULAR' as const, label: 'Promotion', icon: Percent },
+                  ].map(option => {
+                    const Icon = option.icon;
+                    const active = campaignForm.campaignType === option.value;
+                    return (
+                      <button key={option.value} type="button"
+                        onClick={() => updateCampaignForm('campaignType', option.value)}
+                        className="flex items-center justify-center gap-2 rounded-xl border-2 px-3 py-2 text-[12px] font-bold transition-all"
+                        style={{
+                          background: active ? T.orangeL : T.cream,
+                          borderColor: active ? T.orange : T.border,
+                          color: active ? T.orange : T.muted,
+                        }}>
+                        <Icon size={12}/>
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Field label="Titre campagne" required error={errors.campaignTitle}>
+                  <input value={campaignForm.title}
+                    onChange={e => updateCampaignForm('title', e.target.value)}
+                    style={errors.campaignTitle ? iErr : iBase}/>
+                </Field>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Début" required error={errors.campaignStartsAt}>
+                    <input type="datetime-local" value={campaignForm.startsAt}
+                      onChange={e => updateCampaignForm('startsAt', e.target.value)}
+                      style={errors.campaignStartsAt ? iErr : iBase}/>
+                  </Field>
+                  <Field label="Fin" required error={errors.campaignEndsAt}
+                    hint={campaignForm.campaignType === 'FLASH' && campaignDurationHours > 0
+                      ? `${Math.round(campaignDurationHours * 10) / 10}h`
+                      : undefined}>
+                    <input type="datetime-local" value={campaignForm.endsAt}
+                      onChange={e => updateCampaignForm('endsAt', e.target.value)}
+                      style={errors.campaignEndsAt ? iErr : iBase}/>
+                  </Field>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Field label="Prix référence" required error={errors.campaignReferencePrice}>
+                    <div className="relative">
+                      <input type="number" value={campaignForm.referencePrice}
+                        onChange={e => updateCampaignForm('referencePrice', e.target.value)}
+                        min={price || 100}
+                        style={{ ...(errors.campaignReferencePrice ? iErr : iBase), paddingRight: 46 }}/>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold" style={{ color: T.mutedL }}>FCFA</span>
+                    </div>
+                  </Field>
+                  <Field label="Prix promo" required error={errors.campaignPromoPrice}
+                    hint={campaignDiscountPct > 0 ? `Remise : -${campaignDiscountPct}%` : undefined}>
+                    <div className="relative">
+                      <input type="number" value={campaignForm.promoPrice}
+                        onChange={e => updateCampaignForm('promoPrice', e.target.value)}
+                        min={100}
+                        style={{ ...(errors.campaignPromoPrice ? iErr : iBase), paddingRight: 46 }}/>
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold" style={{ color: T.mutedL }}>FCFA</span>
+                    </div>
+                  </Field>
+                </div>
+
+                {campaignForm.campaignType === 'FLASH' && (
+                  <Field label="Stock réservé" required error={errors.campaignStockReserved}
+                    hint="Minimum 5 unités pour un Flash Deal.">
+                    <input type="number" value={campaignForm.stockReserved}
+                      onChange={e => updateCampaignForm('stockReserved', e.target.value)}
+                      min={5}
+                      max={parseInt(stockQty, 10) || undefined}
+                      style={errors.campaignStockReserved ? iErr : iBase}/>
+                  </Field>
+                )}
+
+                <div className="rounded-xl px-3 py-2"
+                  style={{ background: T.orangeL, border: `1px solid ${T.orangeB}` }}>
+                  <p className="text-[11.5px] leading-relaxed" style={{ color: T.muted }}>
+                    Statut envoyé : <strong style={{ color: T.orange }}>en attente admin</strong>. Après validation,
+                    la campagne apparaîtra dans Flash Deals et Promotions pendant sa période active.
+                  </p>
+                </div>
+              </div>
+            )}
           </Section>
 
           {/* RÉCAPITULATIF */}

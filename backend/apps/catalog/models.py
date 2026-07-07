@@ -374,6 +374,92 @@ class Product(SoftDeleteModel):
             Product.all_objects.filter(pk=self.pk).update(sku=self.sku)
 
 
+class PromotionCampaign(TimeStampedModel):
+    """
+    Promotion régulière ou Flash Deal.
+
+    Une promotion régulière est une remise simple. Un Flash Deal est limité dans
+    le temps et en stock, avec validation admin et règles d'éligibilité plus
+    strictes.
+    """
+
+    class CampaignType(models.TextChoices):
+        REGULAR = "REGULAR", "Promotion régulière"
+        FLASH = "FLASH", "Flash Deal"
+
+    class Status(models.TextChoices):
+        DRAFT = "DRAFT", "Brouillon"
+        PENDING = "PENDING", "En attente"
+        APPROVED = "APPROVED", "Approuvée"
+        REJECTED = "REJECTED", "Rejetée"
+        SUSPENDED = "SUSPENDED", "Suspendue"
+        EXPIRED = "EXPIRED", "Expirée"
+
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="promotion_campaigns")
+    campaign_type = models.CharField(max_length=12, choices=CampaignType.choices, default=CampaignType.REGULAR)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    requested_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="requested_promotions")
+    approved_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="approved_promotions")
+    title = models.CharField(max_length=160)
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField()
+    reference_price_xaf = models.PositiveIntegerField()
+    promo_price_xaf = models.PositiveIntegerField()
+    stock_reserved = models.PositiveIntegerField(default=0)
+    stock_claimed = models.PositiveIntegerField(default=0)
+    placement_fee_xaf = models.PositiveIntegerField(default=0)
+    commission_uplift_points = models.PositiveIntegerField(default=0)
+    rejection_reason = models.TextField(blank=True, default="")
+    admin_note = models.TextField(blank=True, default="")
+
+    class Meta:
+        ordering = ["-starts_at", "-created_at"]
+        verbose_name = "Campagne promotionnelle"
+        verbose_name_plural = "Campagnes promotionnelles"
+
+    def __str__(self):
+        return f"{self.get_campaign_type_display()} · {self.product.title}"
+
+    @property
+    def discount_percent(self) -> int:
+        if self.reference_price_xaf <= self.promo_price_xaf:
+            return 0
+        return round((1 - self.promo_price_xaf / self.reference_price_xaf) * 100)
+
+    @property
+    def is_active_now(self) -> bool:
+        from django.utils import timezone
+
+        now = timezone.now()
+        return (
+            self.status == self.Status.APPROVED
+            and self.starts_at <= now <= self.ends_at
+            and (self.campaign_type != self.CampaignType.FLASH or self.remaining_stock > 0)
+        )
+
+    @property
+    def remaining_stock(self) -> int:
+        if self.campaign_type != self.CampaignType.FLASH:
+            return 0
+        return max(0, self.stock_reserved - self.stock_claimed)
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.reference_price_xaf <= self.promo_price_xaf:
+            raise ValidationError({"promo_price_xaf": "Le prix promo doit être inférieur au prix de référence."})
+        if self.ends_at <= self.starts_at:
+            raise ValidationError({"ends_at": "La fin doit être après le début."})
+        if self.campaign_type == self.CampaignType.FLASH:
+            duration_hours = (self.ends_at - self.starts_at).total_seconds() / 3600
+            if duration_hours < 2 or duration_hours > 48:
+                raise ValidationError({"ends_at": "Un Flash Deal doit durer entre 2 h et 48 h."})
+            if self.stock_reserved < 5:
+                raise ValidationError({"stock_reserved": "Un Flash Deal demande au moins 5 unités réservées."})
+            if not 15 <= self.discount_percent <= 70:
+                raise ValidationError({"promo_price_xaf": "Un Flash Deal demande une remise entre 15 % et 70 %."})
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # VALEURS D'ATTRIBUTS PAR PRODUIT
 # ─────────────────────────────────────────────────────────────────────────────

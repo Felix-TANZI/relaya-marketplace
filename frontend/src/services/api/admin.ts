@@ -273,6 +273,38 @@ export interface AdminProductDetail {
   compare_at_price?: number | null;
 }
 
+export interface AdminPromotionCampaignPayload {
+  campaign_type: 'REGULAR' | 'FLASH';
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  reference_price_xaf: number;
+  promo_price_xaf: number;
+  stock_reserved?: number;
+}
+
+export interface AdminPromotionCampaign {
+  id: number;
+  product: number;
+  product_title: string;
+  campaign_type: 'REGULAR' | 'FLASH';
+  status: 'DRAFT' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'EXPIRED';
+  title: string;
+  starts_at: string;
+  ends_at: string;
+  reference_price_xaf: number;
+  promo_price_xaf: number;
+  discount_percent: number;
+  stock_reserved: number;
+  stock_claimed: number;
+  remaining_stock: number;
+  rejection_reason: string;
+  admin_note: string;
+  is_active_now: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ORDERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -886,6 +918,42 @@ export const adminApi = {
     http<void>(`/api/vendors/admin/products/${productId}/delete/`, {
       method: "DELETE",
       headers: authHeader(),
+    }),
+
+  /** Créer une promotion ou un Flash Deal sur un produit */
+  createProductCampaign: async (
+    productId: number,
+    data: AdminPromotionCampaignPayload,
+  ): Promise<AdminPromotionCampaign> =>
+    http<AdminPromotionCampaign>(`/api/catalog/products/${productId}/promotion-request/`, {
+      method: 'POST', headers: authHeader(), body: JSON.stringify({ ...data, product: productId }),
+    }),
+
+  /** Liste admin des promotions et Flash Deals, y compris les demandes en attente */
+  listPromotionCampaigns: async (filters?: {
+    status?: AdminPromotionCampaign['status'];
+    type?: AdminPromotionCampaign['campaign_type'];
+  }): Promise<AdminPromotionCampaign[]> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.type) params.append('type', filters.type);
+    const qs = params.toString();
+    return http<AdminPromotionCampaign[]>(`/api/catalog/promotions/admin/${qs ? '?' + qs : ''}`, {
+      headers: authHeader(),
+    });
+  },
+
+  /** Approuver, rejeter ou suspendre une campagne */
+  decidePromotionCampaign: async (
+    campaignId: number,
+    data: {
+      status: 'APPROVED' | 'REJECTED' | 'SUSPENDED';
+      admin_note?: string;
+      rejection_reason?: string;
+    },
+  ): Promise<AdminPromotionCampaign> =>
+    http<AdminPromotionCampaign>(`/api/catalog/promotions/admin/${campaignId}/decision/`, {
+      method: 'POST', headers: authHeader(), body: JSON.stringify(data),
     }),
 
   // ── ORDERS ────────────────────────────────────────────────────────────────

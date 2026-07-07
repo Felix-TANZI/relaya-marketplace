@@ -12,6 +12,7 @@ from .models import (
     Inventory,
     ProductAttribute,
     ProductAttributeValue,
+    PromotionCampaign,
     ProductReview,
 )
 
@@ -80,6 +81,43 @@ class ProductAttributeValueInline(admin.TabularInline):
     fields = ('attribute', 'selected_values')
 
 
+@admin.register(PromotionCampaign)
+class PromotionCampaignAdmin(admin.ModelAdmin):
+    list_display = (
+        'id', 'campaign_type', 'title', 'product', 'status',
+        'discount_percent', 'starts_at', 'ends_at', 'remaining_stock',
+    )
+    list_filter = ('campaign_type', 'status', 'starts_at', 'ends_at')
+    search_fields = ('title', 'product__title', 'requested_by__username')
+    readonly_fields = (
+        'discount_percent', 'remaining_stock', 'stock_claimed',
+        'created_at', 'updated_at',
+    )
+    autocomplete_fields = ('product', 'requested_by', 'approved_by')
+
+    fieldsets = (
+        ('Campagne', {
+            'fields': ('campaign_type', 'status', 'title', 'product'),
+        }),
+        ('Prix & stock', {
+            'fields': ('reference_price_xaf', 'promo_price_xaf', 'discount_percent', 'stock_reserved', 'stock_claimed', 'remaining_stock'),
+        }),
+        ('Calendrier', {
+            'fields': ('starts_at', 'ends_at'),
+        }),
+        ('Validation', {
+            'fields': ('requested_by', 'approved_by', 'rejection_reason', 'admin_note'),
+        }),
+        ('Monétisation Flash Deal', {
+            'fields': ('placement_fee_xaf', 'commission_uplift_points'),
+        }),
+        ('Dates', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
+
 # ─── PRODUITS ─────────────────────────────────────────────────────────────────
 
 @admin.register(Product)
@@ -88,7 +126,7 @@ class ProductAdmin(admin.ModelAdmin):
     list_filter         = ('is_active', 'category')
     search_fields       = ('title', 'slug', 'sku', 'vendor__username')
     prepopulated_fields = {'slug': ('title',)}
-    readonly_fields     = ('sku', 'created_at', 'updated_at')
+    readonly_fields     = ('sku', 'discount_percent', 'created_at', 'updated_at')
     ordering            = ('-created_at',)
     inlines             = [InventoryInline, ProductImageInline, ProductMediaInline, ProductAttributeValueInline]
 
@@ -100,7 +138,7 @@ class ProductAdmin(admin.ModelAdmin):
             'fields': ('description', 'short_description'),
         }),
         ('Prix & Visibilité', {
-            'fields': ('price_xaf', 'discount_percent', 'is_active'),
+            'fields': ('price_xaf', 'compare_at_price', 'promo_end_date', 'discount', 'discount_percent', 'is_active'),
         }),
         ('Dates', {
             'fields': ('created_at', 'updated_at'),

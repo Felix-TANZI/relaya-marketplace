@@ -26,6 +26,7 @@ from .serializers import (
     AvatarUploadSerializer,
     FavoriteSerializer,
     NotificationSerializer,
+    RewardAccountSerializer,
     UserCartSerializer,
 )
 from drf_spectacular.utils import extend_schema
@@ -35,7 +36,7 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer
-from .models import CourierProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, RewardAccount, UserCart, UserProfile, UserFavorite, UserNotification
 
 
 logger = logging.getLogger(__name__)
@@ -91,6 +92,28 @@ class UserCartView(APIView):
         cart.items = []
         cart.save(update_fields=["items", "updated_at"])
         return Response(UserCartSerializer(cart).data)
+
+
+@extend_schema(tags=["Client"], summary="Comptes points, tokens et Trust Score de l'utilisateur")
+class RewardAccountsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def _ensure_accounts(self, user):
+        roles = [RewardAccount.Role.CLIENT]
+        if hasattr(user, "vendor_profile"):
+            roles.append(RewardAccount.Role.VENDOR)
+        if hasattr(user, "courier_profile"):
+            roles.append(RewardAccount.Role.COURIER)
+        for role in roles:
+            RewardAccount.objects.get_or_create(user=user, role=role)
+
+    def get(self, request):
+        self._ensure_accounts(request.user)
+        role = request.query_params.get("role")
+        accounts = RewardAccount.objects.filter(user=request.user).prefetch_related("transactions")
+        if role in RewardAccount.Role.values:
+            accounts = accounts.filter(role=role)
+        return Response(RewardAccountSerializer(accounts, many=True).data)
 
 
 @extend_schema(tags=["Auth"], summary="Bootstrap admin user")

@@ -6,6 +6,7 @@ from django.contrib.auth.models import User
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils.text import slugify
 from django.db import transaction
+from apps.common.models import SoftDeleteModel
 
 
 class TimeStampedModel(models.Model):
@@ -16,11 +17,37 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+
+class ModerationStatus(models.TextChoices):
+    PENDING  = 'PENDING',  'En attente'
+    APPROVED = 'APPROVED', 'Validé'
+    REJECTED = 'REJECTED', 'Rejeté'
+
+
+class ProductCondition(models.Model):
+    """
+    État d'une offre (neuf, comme neuf, bon état…).
+    Liste entièrement gérée par l'admin : il peut en ajouter/désactiver à volonté.
+    """
+    name          = models.CharField(max_length=60, unique=True, verbose_name="État")
+    display_order = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
+    is_active     = models.BooleanField(default=True, verbose_name="Actif")
+
+    class Meta:
+        ordering            = ['display_order', 'name']
+        verbose_name        = "État de produit"
+        verbose_name_plural = "États de produit"
+
+    def __str__(self):
+        return self.name
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # CATÉGORIE
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Category(TimeStampedModel):
+
+class Category(SoftDeleteModel):
     name = models.CharField(max_length=120, unique=True)
     slug = models.SlugField(max_length=140, unique=True)
     is_active = models.BooleanField(default=True)
@@ -32,13 +59,98 @@ class Category(TimeStampedModel):
         related_name="children",
     )
 
-    class Meta:
+    class Meta(SoftDeleteModel.Meta):
         ordering = ["name"]
         verbose_name = "Catégorie"
         verbose_name_plural = "Catégories"
 
     def __str__(self):
         return self.name
+    
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# FICHE PRODUIT MAÎTRE (MasterProduct)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class MasterProduct(SoftDeleteModel):
+    """
+    Fiche produit canonique, indépendante du vendeur.
+
+    Une MasterProduct regroupe plusieurs offres (Product) du MÊME produit
+    vendues par des vendeurs différents. Ex : la fiche "iPhone 15 128 Go"
+    peut avoir 3 offres (Alice, Bruno, Carine) à des prix différents.
+    """
+
+    title       = models.CharField(max_length=200, verbose_name="Titre de la fiche")
+    slug        = models.SlugField(max_length=220, unique=True)
+    description = models.TextField(blank=True)
+    brand       = models.CharField(max_length=120, blank=True, verbose_name="Marque")
+    category    = models.ForeignKey(
+        Category,
+        on_delete=models.PROTECT,
+        related_name="master_products",
+        verbose_name="Catégorie",
+    )
+    moderation_status = models.CharField(
+        max_length=10, choices=ModerationStatus.choices,
+        default=ModerationStatus.PENDING, db_index=True,
+        verbose_name="Statut de modération",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='moderated_masterproducts',
+    )
+
+    class Meta:
+        ordering            = ["-created_at"]
+        verbose_name        = "Fiche produit maître"
+        verbose_name_plural = "Fiches produits maîtres"
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def buy_box_offer(self):
+        """
+        Offre par défaut (PROVISOIRE) : la moins chère parmi les offres
+        actives ET approuvées. L'algorithme équitable viendra en Semaine 9.
+        """
+        return (
+            self.offers
+            .filter(is_active=True, moderation_status=ModerationStatus.APPROVED)
+            .order_by("price_xaf")
+            .first()
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.title) or "fiche"
+            self.slug = base
+            counter = 1
+            while MasterProduct.all_objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
+
+
+class MasterProductImage(models.Model):
+    """Image PRO d'une fiche produit (mise en avant, vue acheteur)."""
+    master     = models.ForeignKey(MasterProduct, on_delete=models.CASCADE, related_name='images')
+    image      = models.ImageField(upload_to='masters/%Y/%m/')
+    is_primary = models.BooleanField(default=False)
+    order      = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering            = ['order', '-is_primary', '-created_at']
+        verbose_name        = "Image fiche"
+        verbose_name_plural = "Images fiche"
+
+    def __str__(self):
+        return f"Image fiche {self.id} — {self.master.title}"        
+
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -95,7 +207,7 @@ class ProductAttribute(models.Model):
 # PRODUIT
 # ─────────────────────────────────────────────────────────────────────────────
 
-class Product(TimeStampedModel):
+class Product(SoftDeleteModel):
     """
     Produit mis en vente sur BelivaY.
 
@@ -170,6 +282,30 @@ class Product(TimeStampedModel):
         null=True, blank=True,
         verbose_name="Vendeur",
     )
+    master = models.ForeignKey(
+        "MasterProduct",
+        on_delete=models.SET_NULL,
+        related_name="offers",
+        null=True, blank=True,
+        verbose_name="Fiche produit maître",
+    )
+    moderation_status = models.CharField(
+        max_length=10, choices=ModerationStatus.choices,
+        default=ModerationStatus.PENDING, db_index=True,
+        verbose_name="Statut de modération",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        User, null=True, blank=True, on_delete=models.SET_NULL,
+        related_name='moderated_products',
+    )
+    moderation_reason = models.TextField(blank=True, default='', verbose_name="Motif de modération")
+
+    condition = models.ForeignKey(
+        "ProductCondition", null=True, blank=True, on_delete=models.SET_NULL,
+        related_name="products", verbose_name="État",
+    )
+    seller_note = models.TextField(blank=True, default='', verbose_name="Note du vendeur")
 
     class Meta:
         ordering            = ["-created_at"]
@@ -224,7 +360,9 @@ class Product(TimeStampedModel):
             self.slug = slugify(self.title)
             original = self.slug
             counter  = 1
-            while Product.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+            # all_objects : on tient compte AUSSI des produits soft-deleted
+            # pour ne jamais réutiliser un slug encore présent en base (unique).
+            while Product.all_objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
                 self.slug = f"{original}-{counter}"
                 counter += 1
 
@@ -233,7 +371,7 @@ class Product(TimeStampedModel):
         # SKU auto après première sauvegarde (pour avoir le pk)
         if not self.sku:
             self.sku = self.generate_sku()
-            Product.objects.filter(pk=self.pk).update(sku=self.sku)
+            Product.all_objects.filter(pk=self.pk).update(sku=self.sku)
 
 
 class PromotionCampaign(TimeStampedModel):
@@ -381,14 +519,14 @@ class ProductImage(models.Model):
     def save(self, *args, **kwargs):
         """
         Sauvegarde de l'image avec gestion robuste du flag is_primary.
- 
+
         Contrats garantis :
           - Une seule image par produit peut être is_primary=True.
           - Si c'est la première image du produit, elle devient automatiquement
             principale (sauf si is_primary=False explicitement passé).
           - Toutes les opérations BDD se font dans une seule transaction
             atomique pour éviter les états incohérents en cas d'uploads simultanés.
- 
+
         IMPORTANT : self.product DOIT être assigné avant l'appel à save().
         Si product n'est pas encore en BDD ou non assigné, on lève une erreur
         explicite (au lieu de planter sur RelatedObjectDoesNotExist).
@@ -399,7 +537,7 @@ class ProductImage(models.Model):
                 "ProductImage.save() appelé sans produit associé. "
                 "Toujours passer product=... lors de la création."
             )
- 
+
         with transaction.atomic():
             # Cas 1 — Cette image est marquée principale : on retire le flag
             # de toutes les autres images du même produit.
@@ -407,14 +545,14 @@ class ProductImage(models.Model):
                 ProductImage.objects.filter(
                     product_id=self.product_id,
                 ).exclude(pk=self.pk).update(is_primary=False)
- 
+
             # Cas 2 — Cette image n'est pas marquée principale, mais c'est
             # la première image du produit : on la promeut automatiquement.
             elif not ProductImage.objects.filter(
                 product_id=self.product_id,
             ).exclude(pk=self.pk).exists():
                 self.is_primary = True
- 
+
             super().save(*args, **kwargs)
 
 

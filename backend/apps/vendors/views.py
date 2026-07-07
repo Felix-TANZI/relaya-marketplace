@@ -279,7 +279,23 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             return Response(ProductSerializer(product, context={'request': request}).data)
  
         except Exception as e:
-            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)    
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], url_path='master-search')
+    def master_search(self, request):
+        """Recherche de fiches maîtres (validées) pour rattacher une offre."""
+        from apps.catalog.models import MasterProduct, ModerationStatus
+        from django.db.models import Q
+        q = request.query_params.get('search', '').strip()
+        qs = MasterProduct.objects.filter(moderation_status=ModerationStatus.APPROVED)
+        if q:
+            qs = qs.filter(Q(title__icontains=q) | Q(brand__icontains=q))
+        qs = qs.select_related('category').order_by('title')[:20]
+        data = [{
+            'id': m.id, 'title': m.title, 'brand': m.brand,
+            'category': m.category_id, 'category_name': m.category.name,
+        } for m in qs]
+        return Response(data)        
 
 
 @extend_schema(
@@ -361,6 +377,87 @@ def upload_product_image(request, product_id):
         ProductImageSerializer(image, context={'request': request}).data,
         status=status.HTTP_201_CREATED,
     )
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Upload master (fiche) image",
+    description=(
+        "Upload une image PRO de fiche (vue acheteur), pour une fiche que le vendeur "
+        "vient de créer et qui est encore en attente de validation. "
+        "Formats : JPG, PNG, WEBP. Taille max : 5 Mo."
+    ),
+    responses={201: None},
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def upload_master_image(request, master_id):
+    """
+    Sécurité :
+      - Le vendeur doit posséder une offre sur cette fiche.
+      - La fiche ne doit pas déjà être validée (on ne touche pas à une fiche partagée/approuvée).
+    """
+    from apps.catalog.models import MasterProduct, MasterProductImage, ModerationStatus
+
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if not Product.objects.filter(master=master, vendor=request.user).exists():
+        return Response({'detail': "Vous n'avez pas d'offre sur cette fiche."}, status=status.HTTP_403_FORBIDDEN)
+
+    if master.moderation_status == ModerationStatus.APPROVED:
+        return Response({'detail': "Cette fiche est déjà validée et ne peut plus être modifiée."},
+                        status=status.HTTP_403_FORBIDDEN)
+
+    image_file = request.FILES.get('image')
+    if not image_file:
+        return Response({'detail': 'Champ "image" requis.'}, status=status.HTTP_400_BAD_REQUEST)
+    if image_file.content_type not in ALLOWED_IMAGE_MIME:
+        return Response({'detail': 'Format non supporté. Formats acceptés : JPG, PNG, WEBP.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+    if image_file.size > MAX_IMAGE_SIZE_BYTES:
+        return Response({'detail': 'Fichier trop volumineux. Maximum 5 Mo.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    current = MasterProductImage.objects.filter(master=master).count()
+    if current >= MAX_IMAGES_PER_PRODUCT:
+        return Response({'detail': f'Maximum {MAX_IMAGES_PER_PRODUCT} images par fiche.'},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        img = MasterProductImage.objects.create(
+            master=master, image=image_file,
+            is_primary=(current == 0), order=current,
+        )
+
+    return Response(
+        {'id': img.id, 'image': request.build_absolute_uri(img.image.url), 'is_primary': img.is_primary},
+        status=status.HTTP_201_CREATED,
+    )
+
+
+@extend_schema(tags=["Vendors"], summary="Delete master (fiche) image", responses={204: None})
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_master_image(request, master_id, image_id):
+    from apps.catalog.models import MasterProduct, MasterProductImage, ModerationStatus
+
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    if not Product.objects.filter(master=master, vendor=request.user).exists():
+        return Response({'detail': "Vous n'avez pas d'offre sur cette fiche."}, status=status.HTTP_403_FORBIDDEN)
+    if master.moderation_status == ModerationStatus.APPROVED:
+        return Response({'detail': "Fiche déjà validée."}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        img = MasterProductImage.objects.get(id=image_id, master=master)
+    except MasterProductImage.DoesNotExist:
+        return Response({'detail': 'Image introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    img.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)    
 
 
 @extend_schema(
@@ -4098,6 +4195,10 @@ def admin_list_products(request):
         products = products.filter(
             Q(title__icontains=search) | Q(description__icontains=search)
         )
+
+    moderation_status = request.query_params.get('moderation_status')
+    if moderation_status:
+        products = products.filter(moderation_status=moderation_status)    
     
     products = products.order_by('-created_at')
     
@@ -6545,3 +6646,227 @@ def admin_broadcast_extended(request):
         'audience':   audience,
         'title':      title,
     })
+
+
+@extend_schema(tags=["Admin"], summary="Approve product (moderation)")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_product(request, product_id):
+    from apps.catalog.models import Product, ModerationStatus
+    from apps.catalog.serializers import ProductSerializer
+    from django.utils import timezone
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    product.moderation_status = ModerationStatus.APPROVED
+    product.moderation_reason = ''            # efface un éventuel motif de rejet précédent
+    product.moderated_at = timezone.now()
+    product.moderated_by = request.user
+    product.save(update_fields=['moderation_status', 'moderation_reason', 'moderated_at', 'moderated_by'])
+
+    master = product.master
+    if master and master.moderation_status != ModerationStatus.APPROVED:
+        master.moderation_status = ModerationStatus.APPROVED
+        master.moderated_at = timezone.now()
+        master.moderated_by = request.user
+        master.save(update_fields=['moderation_status', 'moderated_at', 'moderated_by'])
+
+    return Response(ProductSerializer(product, context={'request': request}).data)
+
+
+@extend_schema(tags=["Admin"], summary="Reject product (moderation, optional reason)")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_product(request, product_id):
+    from apps.catalog.models import Product, ModerationStatus
+    from apps.catalog.serializers import ProductSerializer
+    from apps.accounts.models import UserNotification
+    from django.utils import timezone
+    try:
+        product = Product.objects.get(id=product_id)
+    except Product.DoesNotExist:
+        return Response({'detail': 'Produit introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    reason = (request.data.get('reason') or '').strip()
+
+    product.moderation_status = ModerationStatus.REJECTED
+    product.moderation_reason = reason
+    product.moderated_at = timezone.now()
+    product.moderated_by = request.user
+    product.save(update_fields=['moderation_status', 'moderation_reason', 'moderated_at', 'moderated_by'])
+
+    # On prévient toujours le vendeur du rejet ; le motif est optionnel.
+    if product.vendor_id:
+        message = f"Votre produit « {product.title} » a été rejeté."
+        if reason:
+            message += f"\nMotif : {reason}"
+        UserNotification.objects.create(
+            user=product.vendor,
+            title="Produit rejeté",
+            message=message,
+            notification_type='SYSTEM',
+            action_url='/seller/products',
+        )
+
+    return Response(ProductSerializer(product, context={'request': request}).data)
+
+
+# CONDITIONS PRODUITS — CRUD ADMIN
+@extend_schema(tags=["Admin"], summary="List product conditions")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_conditions(request):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    qs = ProductCondition.objects.all()
+    return Response(ProductConditionSerializer(qs, many=True).data)
+
+
+@extend_schema(tags=["Admin"], summary="Create product condition")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_create_condition(request):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    name = (request.data.get('name') or '').strip()
+    if not name:
+        return Response({'detail': 'Le nom est requis.'}, status=status.HTTP_400_BAD_REQUEST)
+    if ProductCondition.objects.filter(name__iexact=name).exists():
+        return Response({'detail': 'Cet état existe déjà.'}, status=status.HTTP_400_BAD_REQUEST)
+    cond = ProductCondition.objects.create(name=name, display_order=request.data.get('display_order', 0))
+    return Response(ProductConditionSerializer(cond).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Admin"], summary="Update product condition")
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_condition(request, cond_id):
+    from apps.catalog.models import ProductCondition
+    from apps.catalog.serializers import ProductConditionSerializer
+    try:
+        cond = ProductCondition.objects.get(id=cond_id)
+    except ProductCondition.DoesNotExist:
+        return Response({'detail': 'État introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    for f in ['name', 'display_order', 'is_active']:
+        if f in request.data:
+            setattr(cond, f, request.data[f])
+    cond.save()
+    return Response(ProductConditionSerializer(cond).data)
+
+
+@extend_schema(tags=["Admin"], summary="Delete product condition")
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_condition(request, cond_id):
+    from apps.catalog.models import ProductCondition
+    try:
+        cond = ProductCondition.objects.get(id=cond_id)
+    except ProductCondition.DoesNotExist:
+        return Response({'detail': 'État introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    cond.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+
+@extend_schema(tags=["Admin"], summary="List master products")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_masters(request):
+    from apps.catalog.models import MasterProduct
+    from apps.vendors.serializers import AdminMasterListSerializer
+    from django.db.models import Q
+    qs = MasterProduct.objects.select_related('category').prefetch_related('images', 'offers')
+    st = request.query_params.get('moderation_status')
+    if st:
+        qs = qs.filter(moderation_status=st)
+    search = (request.query_params.get('search') or '').strip()
+    if search:
+        qs = qs.filter(Q(title__icontains=search) | Q(brand__icontains=search))
+    qs = qs.order_by('-created_at')
+    return Response(AdminMasterListSerializer(qs, many=True, context={'request': request}).data)
+
+
+@extend_schema(tags=["Admin"], summary="Master product detail")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_master_detail(request, master_id):
+    from apps.catalog.models import MasterProduct
+    from apps.vendors.serializers import AdminMasterDetailSerializer
+    try:
+        master = MasterProduct.objects.select_related('category').prefetch_related(
+            'images', 'offers', 'offers__inventory', 'offers__condition', 'offers__vendor'
+        ).get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    return Response(AdminMasterDetailSerializer(master, context={'request': request}).data)
+
+
+@extend_schema(tags=["Admin"], summary="Update master product")
+@api_view(['PATCH'])
+@permission_classes([IsAdminUser])
+def admin_update_master(request, master_id):
+    from apps.catalog.models import MasterProduct, Category
+    from apps.vendors.serializers import AdminMasterDetailSerializer
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    for f in ['title', 'description', 'brand']:
+        if f in request.data:
+            setattr(master, f, request.data[f])
+    if 'category' in request.data:
+        try:
+            master.category = Category.objects.get(id=request.data['category'])
+        except Category.DoesNotExist:
+            return Response({'detail': 'Catégorie invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+    master.save()
+    return Response(AdminMasterDetailSerializer(master, context={'request': request}).data)
+
+
+@extend_schema(tags=["Admin"], summary="Approve master product")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_approve_master(request, master_id):
+    from apps.catalog.models import MasterProduct, ModerationStatus
+    from django.utils import timezone
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    master.moderation_status = ModerationStatus.APPROVED
+    master.moderated_at = timezone.now()
+    master.moderated_by = request.user
+    master.save()
+    return Response({'id': master.id, 'moderation_status': master.moderation_status})
+
+
+@extend_schema(tags=["Admin"], summary="Reject master product")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_reject_master(request, master_id):
+    from apps.catalog.models import MasterProduct, ModerationStatus
+    from django.utils import timezone
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    master.moderation_status = ModerationStatus.REJECTED
+    master.moderated_at = timezone.now()
+    master.moderated_by = request.user
+    master.save()
+    return Response({'id': master.id, 'moderation_status': master.moderation_status})
+
+
+@extend_schema(tags=["Admin"], summary="Delete master product")
+@api_view(['DELETE'])
+@permission_classes([IsAdminUser])
+def admin_delete_master(request, master_id):
+    from apps.catalog.models import MasterProduct
+    try:
+        master = MasterProduct.objects.get(id=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    master.delete()  # soft delete (SoftDeleteModel)
+    return Response(status=status.HTTP_204_NO_CONTENT)            

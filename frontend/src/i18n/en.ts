@@ -1212,6 +1212,7 @@
     catalogue:            'Catalogue',
     categories:           'Categories',
     reviews:              'Product Reviews',
+    masters:              'Product sheets',
     section_finances:     'Finances',
     finances:             'Finances & Commissions',
     account:              'BelivaY Account',
@@ -1622,6 +1623,7 @@
     map_legend_delivered:'Delivered',
     map_legend_dispute: 'Dispute',
     map_count:          '{{n}} order(s) displayed',
+    masters: 'Product sheets',
   },
  
   disputes: {

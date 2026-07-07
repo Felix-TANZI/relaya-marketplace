@@ -555,6 +555,12 @@ class PlatformSettings(models.Model):
         User, on_delete=models.SET_NULL, null=True, blank=True,
     )
 
+    max_offers_displayed = models.PositiveIntegerField(
+        default=7,
+        verbose_name="Nombre d'offres affichées par fiche",
+        help_text="Nombre maximum d'offres vendeurs visibles sur une fiche produit (côté acheteur).",
+    )
+
     class Meta:
         verbose_name = "Paramètres Plateforme"
         verbose_name_plural = "Paramètres Plateforme"

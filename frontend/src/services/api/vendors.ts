@@ -109,6 +109,10 @@ export interface VendorProduct {
   category: number;
   created_at: string;
   images?: ProductImage[];
+  master?: number | null;
+  condition?: number | null;
+  seller_note?: string;
+  stock_threshold?: number | null;
 }
 
 export interface VendorPromotionCampaignPayload {
@@ -528,6 +532,29 @@ export interface CertificationData {
   tiers: CertificationTierInfo[];
   how_to_earn: { action: string; points: string }[];
 }
+
+
+export interface MasterFiche {
+  id: number;
+  title: string;
+  brand: string;
+  category: number;
+  category_name: string;
+}
+
+export interface ProductCondition {
+  id: number;
+  name: string;
+  display_order: number;
+  is_active: boolean;
+}
+
+export interface MasterImage {
+  id: number;
+  image: string;
+  is_primary: boolean;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API SERVICE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1176,4 +1203,45 @@ export const vendorsApi = {
       },
     });
   },
+
+  // ── Recherche de fiches produits (pour duplication) ───────────────────────
+  searchMasters: async (search: string): Promise<MasterFiche[]> => {
+    const token = localStorage.getItem("access_token");
+    const qs = search ? `?search=${encodeURIComponent(search)}` : "";
+    return http<MasterFiche[]>(`/api/vendors/products/master-search/${qs}`, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+// ── États produit (lecture) ───────────────────────────────────────────────
+  listConditions: async (): Promise<ProductCondition[]> => {
+    const token = localStorage.getItem("access_token");
+    return http<ProductCondition[]>("/api/catalog/conditions/", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Images PRO de la fiche (mode "nouveau produit") ───────────────────────
+  uploadMasterImage: async (masterId: number, file: File): Promise<MasterImage> => {
+    const token = localStorage.getItem("access_token");
+    const form = new FormData();
+    form.append("image", file);
+    return http<MasterImage>(`/api/vendors/masters/${masterId}/images/`, {
+      method: "POST",
+      body: form,
+      headers: { Authorization: `Bearer ${token}` }, // pas de Content-Type → multipart auto
+    });
+  },
+
+  deleteMasterImage: async (masterId: number, imageId: number): Promise<void> => {
+    const token = localStorage.getItem("access_token");
+    await http<void>(`/api/vendors/masters/${masterId}/images/${imageId}/`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
 };

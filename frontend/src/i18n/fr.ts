@@ -1203,6 +1203,7 @@
     catalogue:            'Catalogue',
     categories:           'Catégories',
     reviews:              'Avis Produits',
+    masters:              'Fiches produits',
  
     // Finances
     section_finances:     'Finances',
@@ -1624,6 +1625,7 @@
     col_escrow:         'Escrow',
     col_date:           'Date',
     no_orders:          'Aucune commande trouvée',
+    masters: 'Fiches produits',
  
     // Detail
     detail_title:       'Commande {{ref}}',

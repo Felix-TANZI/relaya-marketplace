@@ -27,7 +27,6 @@ import RoleRoute      from '@/components/auth/RoleRoute';
 import HomePage               from '@/features/home/HomePage';
 import CatalogPage            from '@/features/catalog/CatalogPage';
 import CategoriesPage         from '@/features/categories/CategoriesPage';
-import ProductDetailPage      from '@/features/catalog/ProductDetailPage';
 import CartPage               from '@/features/cart/CartPage';
 import CheckoutPage           from '@/features/checkout/CheckoutPage';
 import CheckoutConfirmPage    from '@/features/checkout/CheckoutConfirmPage';
@@ -44,6 +43,7 @@ import BecomeSellerPage       from '@/features/vendors/BecomeSellerPage';
 import NotFoundPage           from '@/features/system/NotFoundPage';
 import PromotionsPage         from '@/features/promotions/PromotionsPage';
 import DriverApp              from '@/features/driver/DriverApp';
+import FicheDetailPage from '@/features/catalog/FicheDetailPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH PAGES
@@ -111,6 +111,7 @@ import DeliveriesPerformancePage from '@/features/admin/deliveries/DeliveriesPer
 import CataloguePage           from '@/features/admin/operations/CataloguePage';
 import AdminCategoriesPage     from '@/features/admin/operations/CategoriesPage';
 import ReviewsPage             from '@/features/admin/operations/ReviewsPage';
+import MasterProductsPage from '@/features/admin/operations/MasterProductsPage';
 
 // ── Système ──────────────────────────────────────────────────────────────────
 import AuditPage               from '@/features/admin/system/AuditPage';
@@ -153,7 +154,7 @@ export const router = createBrowserRouter([
       // Public
       { path: 'catalog',         element: <CatalogPage /> },
       { path: 'categories',      element: <CategoriesPage /> },
-      { path: 'product/:id',     element: <ProductDetailPage /> },
+      { path: 'product/:slug', element: <FicheDetailPage /> },
       { path: 'cart',            element: <CartPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
@@ -277,6 +278,7 @@ export const router = createBrowserRouter([
       { path: 'catalogue',            element: <CataloguePage /> },
       { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
       { path: 'catalogue/reviews',    element: <ReviewsPage /> },
+      { path: 'catalogue/masters', element: <MasterProductsPage /> },
 
       // ── FINANCES ────────────────────────────────────────────────────────
       { path: 'finances', element: <FinancesPage /> },

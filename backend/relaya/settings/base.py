@@ -150,6 +150,16 @@ REST_FRAMEWORK = {
         "rest_framework.filters.SearchFilter",
         "rest_framework.filters.OrderingFilter",
     ),
+    "DEFAULT_THROTTLE_CLASSES": (
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+        "apps.common.throttling.LoginRateThrottle",
+    ),
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": "300/min",    # généreux : ne gêne pas la navigation
+        "user": "2000/min",   # généreux pour les utilisateurs connectés
+        "login": "5/min",     # strict : anti-brute-force sur /auth/login
+    },
 }
 
 # DRF Spectacular settings
@@ -185,6 +195,25 @@ SIMPLE_JWT = {
     "AUTH_HEADER_TYPES": ("Bearer",),
     "UPDATE_LAST_LOGIN": True,
 }
+
+
+# ── Sécurité HTTP ───────────────────────────────────────────────────────────
+# Sûrs en dev comme en prod (HTTP ou HTTPS) :
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = "same-origin"
+X_FRAME_OPTIONS = "DENY"
+
+# Renforcements HTTPS — activés UNIQUEMENT en production (derrière Nginx/HTTPS).
+# En dev, SECURE_SSL n'est pas défini → on reste en HTTP sans rien casser.
+SECURE_SSL = os.getenv("SECURE_SSL", "0") == "1"
+if SECURE_SSL:
+    SECURE_SSL_REDIRECT = True
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 
 LOGGING = {

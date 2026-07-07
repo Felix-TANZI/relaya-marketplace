@@ -6,9 +6,9 @@ import { useEffect, useState, useCallback } from 'react';
 import {
   Save, RefreshCw, Plus, Trash2, AlertTriangle,
   Truck, DollarSign, CreditCard, Mail, Shield,
-  CheckCircle, Clock, Smartphone,
+  CheckCircle, Clock, Smartphone, Package,
 } from 'lucide-react';
-import { adminApi, type PlatformSettings } from '@/services/api/admin';
+import { adminApi, ProductCondition, type PlatformSettings } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 
@@ -78,6 +78,83 @@ function Toggle({ checked, onChange, label, description, T }: {
   );
 }
 
+
+function ConditionsManager() {
+  const T = useAdminTheme();
+  const { showToast } = useToast();
+  const [conditions, setConditions] = useState<ProductCondition[]>([]);
+  const [newName, setNewName] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const load = useCallback(async () => {
+    try { setConditions(await adminApi.listConditions()); } catch { /* ignore */ }
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  const add = async () => {
+    const name = newName.trim();
+    if (!name) return;
+    try { setBusy(true); await adminApi.createCondition(name); setNewName(''); showToast('État ajouté', 'success'); await load(); }
+    catch { showToast("Impossible d'ajouter (doublon ?)", 'error'); }
+    finally { setBusy(false); }
+  };
+  const toggle = async (c: ProductCondition) => {
+    try { await adminApi.updateCondition(c.id, { is_active: !c.is_active }); await load(); }
+    catch { showToast('Erreur', 'error'); }
+  };
+  const remove = async (c: ProductCondition) => {
+    try { await adminApi.deleteCondition(c.id); showToast('État supprimé', 'success'); await load(); }
+    catch { showToast('Erreur', 'error'); }
+  };
+
+  const inpStyle = {
+    flex: 1, padding: '9px 12px', borderRadius: 10, fontSize: 13,
+    background: T.cardAlt, border: `1px solid ${T.border}`, color: T.text, outline: 'none',
+  };
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 4 }}>États du produit</p>
+      <p style={{ fontSize: 11.5, color: T.muted, marginBottom: 10 }}>
+        La liste proposée aux vendeurs. Tu peux en ajouter, désactiver ou supprimer.
+      </p>
+
+      <div className="flex flex-col gap-1.5" style={{ marginBottom: 10 }}>
+        {conditions.map(c => (
+          <div key={c.id} className="flex items-center justify-between"
+            style={{ padding: '8px 12px', borderRadius: 10, border: `1px solid ${T.border}`, background: T.cardAlt }}>
+            <span style={{ fontSize: 13, color: c.is_active ? T.text : T.muted, textDecoration: c.is_active ? 'none' : 'line-through' }}>
+              {c.name}
+            </span>
+            <div className="flex items-center gap-2">
+              <button onClick={() => toggle(c)}
+                style={{ fontSize: 11.5, fontWeight: 600, cursor: 'pointer', background: 'none', border: 'none', color: c.is_active ? T.muted : '#15803D' }}>
+                {c.is_active ? 'Désactiver' : 'Activer'}
+              </button>
+              <button onClick={() => remove(c)} title="Supprimer"
+                className="w-7 h-7 rounded-lg flex items-center justify-center"
+                style={{ color: '#EF4444', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+                <Trash2 size={12} />
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-2">
+        <input value={newName} onChange={e => setNewName(e.target.value)}
+          placeholder="Nouvel état (ex : Reconditionné)" style={inpStyle}
+          onKeyDown={e => { if (e.key === 'Enter') add(); }} />
+        <button onClick={add} disabled={busy}
+          className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white flex-shrink-0"
+          style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
+          <Plus size={14} /> Ajouter
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // PAGE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -102,6 +179,7 @@ export default function SettingsPage() {
     support_email:               'support@belivay.cm',
     maintenance_mode:            false,
     maintenance_message:         '',
+    max_offers_displayed:        7,
   });
 
   // Frais de livraison par ville
@@ -125,6 +203,7 @@ export default function SettingsPage() {
         support_email:               data.support_email,
         maintenance_mode:            data.maintenance_mode,
         maintenance_message:         data.maintenance_message,
+        max_offers_displayed:        data.max_offers_displayed,
       });
       setFees(data.delivery_fees ?? {});
       setDirty(false);
@@ -316,6 +395,22 @@ export default function SettingsPage() {
                   </button>
                 </div>
               </div>
+            </Section>
+
+
+            <Section title="Catalogue" icon={Package} T={T}>
+              <div>
+                <Label hint="Nombre maximum d'offres vendeurs affichées sur une fiche produit (côté acheteur).">
+                  Offres affichées par fiche
+                </Label>
+                <input type="number" min="1" max="50" value={form.max_offers_displayed}
+                  onChange={e => set('max_offers_displayed', Number(e.target.value))}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
+              </div>
+
+              <ConditionsManager />
             </Section>
 
             {/* Commission & Montants */}

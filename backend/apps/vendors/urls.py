@@ -32,6 +32,10 @@ urlpatterns = [
          views.delete_product_image, name='delete-image'),
     path('products/<int:product_id>/images/<int:image_id>/set-primary/',
          views.set_primary_image, name='set-primary-image'),
+    path('masters/<int:master_id>/images/',
+         views.upload_master_image, name='upload-master-image'),
+    path('masters/<int:master_id>/images/<int:image_id>/',
+         views.delete_master_image, name='delete-master-image'),    
       
      path('', include(router.urls)),
 
@@ -114,6 +118,16 @@ urlpatterns = [
     path('admin/customers/loyalty/', views.admin_customers_loyalty, name='admin-customers-loyalty'),
     path('admin/logs/',       views.admin_system_logs, name='admin-logs'),
     path('admin/logs/clear/', views.admin_clear_logs,  name='admin-logs-clear'),
+    path('admin/conditions/',                       views.admin_list_conditions,  name='admin-conditions'),
+    path('admin/conditions/create/',                views.admin_create_condition, name='admin-create-condition'),
+    path('admin/conditions/<int:cond_id>/update/',  views.admin_update_condition, name='admin-update-condition'),
+    path('admin/conditions/<int:cond_id>/delete/',  views.admin_delete_condition, name='admin-delete-condition'),
+    path('admin/masters/',                          views.admin_list_masters,    name='admin-masters'),
+    path('admin/masters/<int:master_id>/',          views.admin_master_detail,   name='admin-master-detail'),
+    path('admin/masters/<int:master_id>/update/',   views.admin_update_master,   name='admin-master-update'),
+    path('admin/masters/<int:master_id>/approve/',  views.admin_approve_master,  name='admin-master-approve'),
+    path('admin/masters/<int:master_id>/reject/',   views.admin_reject_master,   name='admin-master-reject'),
+    path('admin/masters/<int:master_id>/delete/',   views.admin_delete_master,   name='admin-master-delete'),
 
     #  ADMINISTRATION - DASHBOARD 
     path('admin/dashboard/stats/',     views.admin_dashboard_stats, name='admin-dashboard-stats'),
@@ -126,6 +140,8 @@ urlpatterns = [
     path('admin/products/<int:product_id>/update/',           views.admin_update_product,         name='admin-update-product'),
     path('admin/products/<int:product_id>/delete/',           views.admin_delete_product,         name='admin-delete-product'),
     path('admin/products/<int:product_id>/toggle-status/',    views.admin_toggle_product_status,  name='admin-toggle-product-status'),
+    path('admin/products/<int:product_id>/approve/', views.admin_approve_product, name='admin-approve-product'),
+    path('admin/products/<int:product_id>/reject/',  views.admin_reject_product,  name='admin-reject-product'),
 
     #  ADMINISTRATION - COMMANDES 
     path('admin/orders/',                            views.admin_list_orders,       name='admin-list-orders'),
@@ -192,7 +208,7 @@ urlpatterns = [
     path('plans/trial/', views.vendor_trial_activate, name='vendor-trial'),
 
     # BOUTIQUE PUBLIQUE
-    path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
+    #path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
 
     #  ADMINISTRATION - PARAMÈTRES 
     path('admin/settings/',         views.admin_get_settings,    name='admin-get-settings'),

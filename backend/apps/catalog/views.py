@@ -10,13 +10,17 @@ from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
 
-from .models import Product, Category, ProductReview, PromotionCampaign
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
     ProductReviewSerializer,
     ProductReviewCreateSerializer,
+    MasterProductListSerializer,
+    MasterProductDetailSerializer,
     PromotionCampaignSerializer,
 )
 from .filters import ProductFilter, CategoryFilter
@@ -45,7 +49,10 @@ class StandardResultsSetPagination(PageNumberPagination):
     ]
 )
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().select_related('category').prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
+    queryset = (Product.objects
+                .filter(moderation_status=ModerationStatus.APPROVED)
+                .select_related('category')
+                .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns'))
     serializer_class = ProductSerializer
     pagination_class = StandardResultsSetPagination
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -136,6 +143,47 @@ class CategoryViewSet(viewsets.ModelViewSet):
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CategoryFilter
+
+
+@extend_schema(tags=["Catalog"], summary="Fiches produits maîtres avec leurs offres")
+class MasterProductViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = (
+        MasterProduct.objects
+        .filter(moderation_status=ModerationStatus.APPROVED)
+        .select_related('category')
+        .prefetch_related('images', 'offers', 'offers__inventory', 'offers__condition', 'offers__images')
+    )
+    pagination_class   = StandardResultsSetPagination
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields   = ['category']
+    search_fields      = ['title', 'brand']
+    ordering_fields    = ['created_at', 'title']
+    ordering           = ['-created_at']
+
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return MasterProductDetailSerializer
+        return MasterProductListSerializer  
+
+    def get_object(self):
+        """Récupère une fiche par id (numérique) OU par slug (chaîne)."""
+        from django.shortcuts import get_object_or_404
+        qs = self.filter_queryset(self.get_queryset())
+        value = str(self.kwargs.get(self.lookup_field, ''))
+        obj = get_object_or_404(qs, pk=value) if value.isdigit() else get_object_or_404(qs, slug=value)
+        self.check_object_permissions(self.request, obj)
+        return obj  
+    
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_active_conditions(request):
+    """Liste des états actifs, pour le formulaire vendeur."""
+    from .models import ProductCondition
+    from .serializers import ProductConditionSerializer
+    qs = ProductCondition.objects.filter(is_active=True)
+    return Response(ProductConditionSerializer(qs, many=True).data)    
 
 
 @extend_schema(tags=["Promotions"], summary="Promotions et Flash Deals actifs")

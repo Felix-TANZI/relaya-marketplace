@@ -3,7 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -699,3 +699,155 @@ class MasterProductAxesSerializer(serializers.ModelSerializer):
                 "is_universal": attr.is_universal,
             })
         return resolved        
+
+
+class ProductVariantLightSerializer(serializers.ModelSerializer):
+    """
+    Version légère — utilisée dans les listes (liste des Variants d'un master,
+    résultats de recherche). Pas de master imbriqué pour éviter les cycles.
+    """
+ 
+    display_name = serializers.SerializerMethodField()
+    buy_box_price_xaf = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id",
+            "sku",
+            "barcode",
+            "axis_values",
+            "axis_key",
+            "is_active",
+            "moderation_status",
+            "display_name",
+            "buy_box_price_xaf",
+            "offers_count",
+        ]
+        read_only_fields = fields   # Ce serializer est en lecture seule
+ 
+    def get_display_name(self, obj):
+        """Titre lisible : 'iPhone 15 Pro — Titane / 256 Go'."""
+        return str(obj)
+ 
+    def get_buy_box_price_xaf(self, obj):
+        """Prix Buy Box (offre gagnante). None si aucune offre approuvée."""
+        offer = obj.buy_box_offer
+        return offer.price_xaf if offer else None
+ 
+    def get_offers_count(self, obj):
+        """Nombre d'offres approuvées disponibles."""
+        return obj.offers.filter(
+            is_active=True,
+            moderation_status="APPROVED",
+        ).count()
+ 
+ 
+class ProductVariantSerializer(serializers.ModelSerializer):
+    """
+    Version complète — pour les pages détail et les endpoints admin.
+    Inclut le master imbriqué (info légère) et toutes les métadonnées.
+    """
+ 
+    display_name = serializers.SerializerMethodField()
+    master_title = serializers.CharField(source="master.title", read_only=True)
+    master_slug = serializers.CharField(source="master.slug", read_only=True)
+    master_variant_axes = serializers.JSONField(source="master.variant_axes", read_only=True)
+    buy_box_price_xaf = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id",
+            "master",
+            "master_title",
+            "master_slug",
+            "master_variant_axes",
+            "sku",
+            "barcode",
+            "axis_values",
+            "axis_key",
+            "is_active",
+            "moderation_status",
+            "moderated_at",
+            "moderation_reason",
+            "display_name",
+            "buy_box_price_xaf",
+            "offers_count",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id", "axis_key", "sku",
+            "master_title", "master_slug", "master_variant_axes",
+            "display_name", "buy_box_price_xaf", "offers_count",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+    def get_buy_box_price_xaf(self, obj):
+        offer = obj.buy_box_offer
+        return offer.price_xaf if offer else None
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.filter(
+            is_active=True,
+            moderation_status="APPROVED",
+        ).count()
+ 
+ 
+class ProductVariantCreateSerializer(serializers.ModelSerializer):
+    """
+    Serializer de création — utilisé par l'endpoint POST vendor.
+ 
+    Différences avec ProductVariantSerializer :
+      - master est en input (id)
+      - axis_values est input, axis_key et sku sont calculés côté modèle
+      - moderation_status est forcé à PENDING (le vendeur ne peut pas
+        auto-approuver son Variant)
+    """
+ 
+    class Meta:
+        model = ProductVariant
+        fields = ["master", "axis_values", "barcode"]
+ 
+    def validate(self, attrs):
+        """
+        Validation :
+          - Le master doit accepter la création (pas soft-deleted, existant)
+          - axis_values doit être cohérent avec master.variant_axes
+            (validation détaillée déléguée à ProductVariant.clean())
+          - Pas de doublon (master, axis_values) — géré par contrainte DB
+            mais on donne un message clair côté API
+        """
+        from .models import ProductVariant as PV
+ 
+        master = attrs.get("master")
+        axis_values = attrs.get("axis_values", {})
+ 
+        # Vérifier l'unicité au niveau applicatif (pour un message d'erreur clair)
+        axis_key = PV.compute_axis_key(axis_values)
+        existing = PV.objects.filter(
+            master=master, axis_key=axis_key, deleted_at__isnull=True,
+        ).first()
+        if existing is not None:
+            raise serializers.ValidationError({
+                "axis_values": (
+                    f"Un Variant identique existe déjà (id={existing.id}, "
+                    f"sku={existing.sku}). Réutilise-le pour créer ton offre."
+                ),
+                "existing_variant_id": existing.id,
+                "existing_variant_sku": existing.sku,
+            })
+ 
+        return attrs
+ 
+    def create(self, validated_data):
+        """Force les champs de modération à leur valeur initiale."""
+        validated_data["moderation_status"] = "PENDING"
+        validated_data["is_active"] = True
+        return super().create(validated_data)        

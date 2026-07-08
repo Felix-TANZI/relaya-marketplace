@@ -20,6 +20,7 @@ from .models import (
     MasterProduct,
     ColorDictionary,
     AttributeRole,
+    ProductVariant,
 )
 
 
@@ -582,7 +583,7 @@ class PromotionCampaignAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display        = ('id', 'title', 'vendor_name', 'category', 'price_xaf_fmt', 'stock', 'is_active', 'created_at')
+    list_display        = ('id', 'title', 'vendor_name', 'category', 'price_xaf_fmt', 'stock', 'is_active', 'created_at', 'variant_display')
     list_filter         = ('is_active', 'category')
     search_fields       = ('title', 'slug', 'sku', 'vendor__username')
     prepopulated_fields = {'slug': ('title',)}
@@ -632,6 +633,16 @@ class ProductAdmin(admin.ModelAdmin):
         count = queryset.update(is_active=False)
         self.message_user(request, f"{count} produit(s) désactivé(s).")
     deactivate_products.short_description = "Désactiver les produits sélectionnés"
+
+    def variant_display(self, obj):
+         if not obj.variant_id:
+             return "—"
+         return format_html(
+             '<a href="{}">{}</a>',
+             reverse("admin:catalog_productvariant_change", args=[obj.variant_id]),
+             obj.variant.sku,
+         )
+    variant_display.short_description = "Variant"
 
 
 # ─── IMAGES PRODUIT ───────────────────────────────────────────────────────────
@@ -809,3 +820,268 @@ class ColorDictionaryAdmin(admin.ModelAdmin):
     def unmark_neutral(self, request, queryset):
         n = queryset.update(is_neutral=False)
         self.message_user(request, f"{n} entrée(s) démarquée(s).", level=messages.SUCCESS)
+
+
+@admin.register(MasterProduct)
+class MasterProductAdmin(admin.ModelAdmin):
+    """
+    Admin des fiches produits canoniques.
+    Gère la modération, la marque (registre), et les axes de variante.
+    """
+
+    list_display = [
+        "title",
+        "brand_display",
+        "category",
+        "moderation_badge",
+        "variants_count_display",
+        "offers_count_display",
+        "created_at",
+    ]
+    list_filter = [
+        "moderation_status",
+        "category",
+        "brand_fk",
+    ]
+    search_fields = ["title", "slug", "brand", "brand_fk__name"]
+    autocomplete_fields = ["category", "brand_fk"]
+    prepopulated_fields = {"slug": ("title",)}
+    readonly_fields = ("created_at", "updated_at")
+    ordering = ["-created_at"]
+    list_per_page = 50
+
+    fieldsets = (
+        ("Identité", {
+            "fields": ("title", "slug", "description"),
+        }),
+        ("Classification", {
+            "fields": ("category", "brand_fk", "brand"),
+            "description": (
+                "brand_fk : registre centralisé (Phase 1.2, recommandé).<br>"
+                "brand : ancien champ texte libre, conservé pour rétrocompatibilité."
+            ),
+        }),
+        ("Modèle de variantes", {
+            "fields": ("variant_axes",),
+            "description": (
+                "Liste JSON des slugs d'attributs AXE autorisés pour créer "
+                "des Variants sur cette fiche.<br>"
+                'Ex : <code>["phone-color", "phone-storage"]</code>.<br>'
+                "Laisser vide pour une fiche mono-variant (composant atomique)."
+            ),
+        }),
+        ("Modération", {
+            "fields": ("moderation_status", "moderated_at", "moderated_by"),
+        }),
+        ("Métadonnées", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
+
+    actions = ["approve_selected", "reject_selected"]
+
+    # ─── Colonnes ──────────────────────────────────────────────────────
+
+    def brand_display(self, obj):
+        if obj.brand_fk:
+            badge = ' <span style="color:#059669;">✓</span>' if obj.brand_fk.is_verified else ''
+            return format_html("{}{}", obj.brand_fk.name, badge)
+        if obj.brand:
+            return format_html('<em style="color:#F59E0B;">{} (legacy)</em>', obj.brand)
+        return "—"
+    brand_display.short_description = "Marque"
+
+    def moderation_badge(self, obj):
+        colors = {
+            "PENDING": "#F59E0B",
+            "APPROVED": "#059669",
+            "REJECTED": "#DC2626",
+        }
+        return format_html(
+            '<span style="background:{}; color:#fff; padding:2px 10px; '
+            'border-radius:10px; font-size:11px;">{}</span>',
+            colors.get(obj.moderation_status, "#6B7280"),
+            obj.moderation_status,
+        )
+    moderation_badge.short_description = "Modération"
+    moderation_badge.admin_order_field = "moderation_status"
+
+    def variants_count_display(self, obj):
+        count = obj.variants.filter(is_active=True).count()
+        if count == 0:
+            return "—"
+        try:
+            url = reverse("admin:catalog_productvariant_changelist")
+            return format_html(
+                '<a href="{}?master__id__exact={}">{}</a>',
+                url, obj.id, count,
+            )
+        except Exception:
+            return str(count)
+    variants_count_display.short_description = "Variants"
+
+    def offers_count_display(self, obj):
+        count = obj.offers.filter(is_active=True).count()
+        if count == 0:
+            return "—"
+        return count
+    offers_count_display.short_description = "Offres"
+
+    # ─── Actions bulk ──────────────────────────────────────────────────
+
+    @admin.action(description="✅ Approuver la sélection")
+    def approve_selected(self, request, queryset):
+        from django.utils import timezone
+        n = queryset.update(
+            moderation_status="APPROVED",
+            moderated_by=request.user,
+            moderated_at=timezone.now(),
+        )
+        self.message_user(request, f"{n} fiche(s) approuvée(s).", level=messages.SUCCESS)
+
+    @admin.action(description="❌ Rejeter la sélection")
+    def reject_selected(self, request, queryset):
+        from django.utils import timezone
+        n = queryset.update(
+            moderation_status="REJECTED",
+            moderated_by=request.user,
+            moderated_at=timezone.now(),
+        )
+        self.message_user(request, f"{n} fiche(s) rejetée(s).", level=messages.WARNING)
+
+
+@admin.register(ProductVariant)
+class ProductVariantAdmin(admin.ModelAdmin):
+    """Admin ProductVariant — validation, modération, visualisation."""
+ 
+    list_display = [
+        "sku",
+        "display_name",
+        "master_link",
+        "axis_values_preview",
+        "moderation_badge",
+        "offers_count",
+        "buy_box_price_display",
+        "is_active",
+        "created_at",
+    ]
+    list_filter = [
+        "moderation_status",
+        "is_active",
+        "master__category",
+    ]
+    search_fields = ["sku", "barcode", "master__title", "master__slug"]
+    autocomplete_fields = ["master"]
+    readonly_fields = ["axis_key", "sku", "created_at", "updated_at"]
+    ordering = ["-created_at"]
+    list_per_page = 50
+ 
+    fieldsets = (
+        ("Identité canonique", {
+            "fields": ("master", "sku", "barcode"),
+            "description": "SKU auto-généré au format BLV-V-{master:06d}-{variant:04d}",
+        }),
+        ("Configuration variant", {
+            "fields": ("axis_values", "axis_key"),
+            "description": (
+                'axis_values : dict {slug_axe: valeur}. Ex : '
+                '{"phone-color": "titane", "phone-storage": "256"}. '
+                "Doit correspondre à master.variant_axes.<br>"
+                "axis_key est calculé automatiquement — ne pas modifier."
+            ),
+        }),
+        ("État & Modération", {
+            "fields": ("is_active", "moderation_status", "moderated_at", "moderated_by", "moderation_reason"),
+        }),
+        ("Métadonnées", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",),
+        }),
+    )
+ 
+    actions = ["approve_selected", "reject_selected", "activate", "deactivate"]
+ 
+    # ─── Colonnes personnalisées ───────────────────────────────────────
+ 
+    def display_name(self, obj):
+        return str(obj)
+    display_name.short_description = "Nom lisible"
+ 
+    def master_link(self, obj):
+        url = reverse("admin:catalog_masterproduct_change", args=[obj.master_id])
+        return format_html('<a href="{}">{}</a>', url, obj.master.title[:40])
+    master_link.short_description = "Fiche maître"
+ 
+    def axis_values_preview(self, obj):
+        if not obj.axis_values:
+            return format_html('<em style="color:#6B7280;">Mono-variant</em>')
+        parts = [f"{k}={v}" for k, v in sorted(obj.axis_values.items())]
+        preview = ", ".join(parts[:3])
+        if len(parts) > 3:
+            preview += f" (+{len(parts) - 3})"
+        return preview
+    axis_values_preview.short_description = "Axes"
+ 
+    def moderation_badge(self, obj):
+        colors = {
+            "PENDING": "#F59E0B",
+            "APPROVED": "#059669",
+            "REJECTED": "#DC2626",
+        }
+        return format_html(
+            '<span style="background:{}; color:#fff; padding:2px 10px; '
+            'border-radius:10px; font-size:11px;">{}</span>',
+            colors.get(obj.moderation_status, "#6B7280"),
+            obj.moderation_status,
+        )
+    moderation_badge.short_description = "Modération"
+    moderation_badge.admin_order_field = "moderation_status"
+ 
+    def offers_count(self, obj):
+        count = obj.offers.filter(
+            is_active=True, moderation_status="APPROVED",
+        ).count()
+        if count == 0:
+            return format_html('<span style="color:#6B7280;">0</span>')
+        return format_html('<strong>{}</strong>', count)
+    offers_count.short_description = "Offres"
+ 
+    def buy_box_price_display(self, obj):
+        offer = obj.buy_box_offer
+        if offer is None:
+            return "—"
+        return f"{offer.price_xaf:,} XAF".replace(",", " ")
+    buy_box_price_display.short_description = "Buy Box"
+ 
+    # ─── Actions bulk ──────────────────────────────────────────────────
+ 
+    @admin.action(description="✅ Approuver la sélection")
+    def approve_selected(self, request, queryset):
+        from django.utils import timezone
+        n = queryset.update(
+            moderation_status="APPROVED",
+            moderated_by=request.user,
+            moderated_at=timezone.now(),
+        )
+        self.message_user(request, f"{n} Variant(s) approuvé(s).", level=messages.SUCCESS)
+ 
+    @admin.action(description="❌ Rejeter la sélection")
+    def reject_selected(self, request, queryset):
+        from django.utils import timezone
+        n = queryset.update(
+            moderation_status="REJECTED",
+            moderated_by=request.user,
+            moderated_at=timezone.now(),
+        )
+        self.message_user(request, f"{n} Variant(s) rejeté(s).", level=messages.WARNING)
+ 
+    @admin.action(description="Activer")
+    def activate(self, request, queryset):
+        n = queryset.update(is_active=True)
+        self.message_user(request, f"{n} Variant(s) activé(s).", level=messages.SUCCESS)
+ 
+    @admin.action(description="Désactiver")
+    def deactivate(self, request, queryset):
+        n = queryset.update(is_active=False)
+        self.message_user(request, f"{n} Variant(s) désactivé(s).", level=messages.WARNING)        

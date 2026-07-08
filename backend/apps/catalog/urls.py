@@ -57,6 +57,33 @@ urlpatterns = [
         name="brand-detail",
     ),
 
+    # Variants d'une fiche (pour sélecteur buyer)
+    path(
+        "master-products/<slug:slug>/variants/",
+        views.master_product_variants,
+        name="master-product-variants",
+    ),
+    # Détail d'un Variant par SKU
+    path(
+        "variants/<str:sku>/",
+        views.variant_detail,
+        name="variant-detail",
+    ),
+ 
+    # ─── Vendor ────────────────────────────────────────────────────────
+    # Trouver ou créer un Variant (idempotent — pour formulaire vendeur)
+    path(
+        "vendor/variants/find-or-create/",
+        views.variant_find_or_create,
+        name="variant-find-or-create",
+    ),
+    # Liste vendeur (inclut PENDING)
+    path(
+        "vendor/masters/<int:master_id>/variants/",
+        views.vendor_master_variants,
+        name="vendor-master-variants",
+    ),
+
     # Attributs (canonique — remplace l'endpoint vendors/products/attributes/)
     path("attributes/", views.attributes_list, name="attributes-list"),
  

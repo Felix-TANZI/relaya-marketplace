@@ -47,10 +47,291 @@ class ProductCondition(models.Model):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
+class Brand(models.Model):
+    """
+    Registre centralisé des marques (Rule 4 du document).
+ 
+    Une marque est UNIVERSELLE : elle n'appartient pas à une catégorie.
+    Samsung existe en Smartphones, Wearables, Écrans. Nike existe en Mode.
+    L'unicité est portée par le `slug` (dérivé du name).
+ 
+    Deux statuts :
+      - is_verified=True  : marque officielle validée par l'admin BelivaY.
+                            Apparaît en tête des suggestions vendeur.
+      - is_verified=False : marque soumise par un vendeur, en attente de
+                            validation admin. Peut être fusionnée avec une
+                            marque existante ou supprimée.
+    """
+ 
+    name = models.CharField(
+        max_length=120,
+        unique=True,
+        verbose_name="Nom de la marque",
+        help_text="Nom officiel de la marque (ex : Samsung, Apple, Tecno).",
+    )
+    slug = models.SlugField(
+        max_length=140,
+        unique=True,
+        verbose_name="Slug",
+    )
+    logo = models.ImageField(
+        upload_to="brands/%Y/%m/",
+        blank=True,
+        null=True,
+        verbose_name="Logo",
+        help_text="Logo officiel de la marque (PNG transparent recommandé, 200x200 min).",
+    )
+    description = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Description",
+        help_text="Présentation courte de la marque, affichée sur la page marque.",
+    )
+    country_of_origin = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        verbose_name="Pays d'origine",
+        help_text="Ex : Corée du Sud, USA, Chine, Hong Kong. Utile pour la transparence.",
+    )
+    website = models.URLField(
+        blank=True,
+        default="",
+        verbose_name="Site officiel",
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Active",
+        help_text="Décocher pour cacher la marque des suggestions sans la supprimer.",
+    )
+    is_verified = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Marque vérifiée",
+        help_text=(
+            "Marque officielle validée par l'admin BelivaY. "
+            "Les marques non vérifiées apparaissent avec un badge et "
+            "peuvent être fusionnées avec une marque officielle."
+        ),
+    )
+    admin_note = models.TextField(
+        blank=True,
+        default="",
+        verbose_name="Note admin",
+        help_text="Note interne (ex : 'à fusionner avec Samsung', 'faux positif').",
+    )
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        ordering = ["-is_verified", "name"]   # Verified d'abord, puis alpha
+        verbose_name = "Marque"
+        verbose_name_plural = "Marques"
+        indexes = [
+            models.Index(fields=["is_active", "is_verified"]),
+            models.Index(fields=["name"]),
+        ]
+ 
+    def __str__(self):
+        badge = " ✓" if self.is_verified else ""
+        return f"{self.name}{badge}"
+ 
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            base = slugify(self.name) or "marque"
+            self.slug = base
+            counter = 1
+            while Brand.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
+
+
+
+class ColorFamily(models.TextChoices):
+    """
+    Familles de valeurs du dictionnaire.
+    - COLOR : couleurs vraies (Noir, Bleu, Rouge...)
+    - FINISH : finitions et matériaux (Mat, Brillant, Titane, Aluminium...)
+    """
+    COLOR = "COLOR", "Couleur"
+    FINISH = "FINISH", "Finition"
+ 
+ 
+class ColorDictionary(models.Model):
+    """
+    Dictionnaire normalisé des couleurs et finitions (Rule 3 du document).
+ 
+    Registre FERMÉ : seul l'admin peut ajouter une entrée. Les vendeurs
+    choisissent obligatoirement une valeur du dictionnaire — pas de texte
+    libre. Sinon on retrouve le chaos "Bleu / bleu marine / Bleu foncé /
+    Navy" qui casse les filtres et l'agrégation Buy Box au niveau Variant.
+ 
+    Contient à la fois les COLOR (Noir, Rouge...) et les FINISH (Mat,
+    Brillant, Titane...) parce que la logique de traitement est identique
+    et évite de dupliquer la mécanique i18n et admin.
+    """
+ 
+    # ─── Identification ────────────────────────────────────────────────
+    family = models.CharField(
+        max_length=8,
+        choices=ColorFamily.choices,
+        default=ColorFamily.COLOR,
+        db_index=True,
+        verbose_name="Famille",
+        help_text="COLOR pour une couleur vraie, FINISH pour une finition/matériau.",
+    )
+    name = models.CharField(
+        max_length=60,
+        verbose_name="Nom (français)",
+        help_text="Nom affiché en français. Ex : Noir, Titane, Mat.",
+    )
+    name_en = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        verbose_name="Nom (anglais)",
+        help_text="Nom affiché en anglais. Ex : Black, Titanium, Matte.",
+    )
+    slug = models.SlugField(
+        max_length=80,
+        unique=True,
+        verbose_name="Slug (identifiant technique)",
+        help_text="Identifiant stable, dérivé du nom français. Ne pas modifier après création.",
+    )
+ 
+    # ─── Représentation visuelle ───────────────────────────────────────
+    hex_code = models.CharField(
+        max_length=7,
+        blank=True,
+        default="",
+        verbose_name="Code hexadécimal",
+        help_text=(
+            "Format #RRGGBB. Utilisé pour rendre une pastille couleur "
+            "côté frontend. Laisser vide pour les finitions non-colorées."
+        ),
+    )
+    pattern_url = models.URLField(
+        blank=True,
+        default="",
+        verbose_name="URL image motif",
+        help_text=(
+            "Optionnel — pour les finitions à texture visuelle (Cuir, Bois, "
+            "Marbre...) ou couleurs multi-tons. URL absolue d'une image "
+            "carrée, 100x100 recommandé."
+        ),
+    )
+ 
+    # ─── Classification & filtrage ────────────────────────────────────
+    is_neutral = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Neutre",
+        help_text=(
+            "Marque les couleurs neutres (Noir, Blanc, Gris, Argent, Or). "
+            "Utile pour les filtres 'Couleurs neutres uniquement' des "
+            "acheteurs recherchant un smartphone sobre."
+        ),
+    )
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Active",
+        help_text=(
+            "Décocher pour masquer une couleur des choix vendeur sans "
+            "supprimer les valeurs existantes qui la référencent."
+        ),
+    )
+    display_order = models.PositiveSmallIntegerField(
+        default=100,
+        verbose_name="Ordre d'affichage",
+        help_text=(
+            "Ordre dans les listes frontend. Convention : "
+            "0-99 = couleurs neutres, 100-199 = couleurs primaires, "
+            "200+ = couleurs secondaires et finitions."
+        ),
+    )
+ 
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+ 
+    class Meta:
+        ordering = ["family", "display_order", "name"]
+        verbose_name = "Entrée du dictionnaire couleurs/finitions"
+        verbose_name_plural = "Dictionnaire couleurs & finitions"
+        constraints = [
+            # Un nom (français) doit être unique DANS SA FAMILLE
+            # (on peut avoir COLOR "Noir" ET FINISH "Noir mat" — c'est OK,
+            #  mais deux COLOR "Noir" c'est interdit)
+            models.UniqueConstraint(
+                fields=["family", "name"],
+                name="colordict_family_name_unique",
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["family", "is_active", "display_order"]),
+            models.Index(fields=["is_neutral"]),
+        ]
+ 
+    def __str__(self):
+        family_prefix = "🎨" if self.family == ColorFamily.COLOR else "✨"
+        return f"{family_prefix} {self.name}"
+ 
+    def clean(self):
+        """
+        Validation métier :
+          - hex_code doit être au format #RRGGBB s'il est renseigné
+          - Une entrée COLOR devrait avoir un hex_code (pas obligatoire mais recommandé)
+        """
+        from django.core.exceptions import ValidationError
+        import re
+ 
+        if self.hex_code:
+            if not re.match(r"^#[0-9A-Fa-f]{6}$", self.hex_code):
+                raise ValidationError({
+                    "hex_code": "Format invalide. Attendu : #RRGGBB (ex : #FF0000).",
+                })
+            # Normaliser en majuscules pour cohérence
+            self.hex_code = self.hex_code.upper()
+ 
+    def save(self, *args, **kwargs):
+        # Auto-slug basé sur name (français) + family pour éviter les collisions
+        # inter-familles (ex : "Noir" COLOR vs "Noir" FINISH utilisent des slugs
+        # différents grâce au préfixe de famille).
+        if not self.slug:
+            base = f"{self.family.lower()}-{slugify(self.name)}" or "entry"
+            self.slug = base
+            counter = 1
+            while ColorDictionary.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base}-{counter}"
+                counter += 1
+ 
+        # Force la validation à chaque save (protège contre bypass admin)
+        self.full_clean(exclude=None if not self.pk else ["family", "name"])
+        super().save(*args, **kwargs)
+
+ 
+
 class Category(SoftDeleteModel):
-    name = models.CharField(max_length=120, unique=True)
-    slug = models.SlugField(max_length=140, unique=True)
-    is_active = models.BooleanField(default=True)
+    """
+    Catégorie du catalogue BelivaY.
+ 
+    Hiérarchie : arbre auto-référencé via `parent`. La racine a parent=None.
+    Le champ `level` est calculé automatiquement et permet des filtres rapides
+    (ex : "toutes les catégories de niveau 2 sous Electronics").
+ 
+    Règles métier :
+      - Une catégorie deprecated reste utilisable par les fiches existantes
+        mais n'apparaît PLUS dans les formulaires de création vendeur.
+      - requires_admin_approval force la modération renforcée pour toute
+        MasterProduct/Offer créée dans cette catégorie (Rule 5 du document).
+    """
+ 
+    name = models.CharField(max_length=120)
+    slug = models.SlugField(max_length=180, unique=True)
+    is_active = models.BooleanField(default=True, db_index=True)
     parent = models.ForeignKey(
         "self",
         null=True,
@@ -58,14 +339,175 @@ class Category(SoftDeleteModel):
         on_delete=models.SET_NULL,
         related_name="children",
     )
-
+ 
+    # ─── Nouveaux champs  ─────────────────────────────────────
+    display_order = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Ordre d'affichage",
+        help_text="Ordre dans les listes frontend (0 = premier).",
+    )
+    icon_name = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        verbose_name="Nom d'icône Lucide",
+        help_text=(
+            "Nom exact d'un composant lucide-react. "
+            "Ex : Smartphone, Monitor, Headphones, Gamepad2. "
+            "Vide = pas d'icône."
+        ),
+    )
+    description = models.CharField(
+        max_length=280,
+        blank=True,
+        default="",
+        verbose_name="Description courte",
+        help_text="Une phrase affichée en dessous du titre catégorie.",
+    )
+    requires_admin_approval = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Modération renforcée",
+        help_text=(
+            "Si activé, toute fiche/offre créée dans cette catégorie "
+            "(et ses sous-catégories) exige une validation admin renforcée "
+            "avant publication. Utilisé pour drones, biométrie, batteries "
+            "industrielles, amplificateurs de signal (Rule 5)."
+        ),
+    )
+    is_deprecated = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Catégorie obsolète",
+        help_text=(
+            "Catégorie legacy conservée pour la rétrocompatibilité. "
+            "N'apparaît plus dans les nouveaux formulaires vendeur mais "
+            "reste liée aux fiches existantes jusqu'à leur re-catégorisation."
+        ),
+    )
+    level = models.PositiveSmallIntegerField(
+        default=0,
+        db_index=True,
+        editable=False,
+        verbose_name="Profondeur",
+        help_text="Calculé automatiquement. 0 = racine.",
+    )
+    # ─────────────────────────────────────────────────────────────────
+ 
+    # Slug unique — pas de contrainte "unique per parent" pour rester
+    # compatible avec le schéma actuel (slug globalement unique).
+    # Convention : les slugs de la nouvelle hiérarchie Electronics sont
+    # préfixés (ex : "electronics-phones-smartphones-ios") pour éviter
+    # tout conflit avec les catégories legacy plates.
+ 
     class Meta(SoftDeleteModel.Meta):
-        ordering = ["name"]
+        ordering = ["level", "display_order", "name"]
         verbose_name = "Catégorie"
         verbose_name_plural = "Catégories"
-
+        indexes = [
+            models.Index(fields=["parent", "display_order"]),
+            models.Index(fields=["is_active", "is_deprecated"]),
+        ]
+ 
     def __str__(self):
-        return self.name
+        return self.full_path
+ 
+    # ─── Propriétés utilitaires ────────────────────────────────────────
+ 
+    @property
+    def full_path(self) -> str:
+        """
+        Chemin complet lisible : "Electronics > Téléphonie > Smartphones iOS".
+        Utilisé dans l'admin et pour le fil d'Ariane frontend.
+        """
+        parts = [self.name]
+        node = self.parent
+        # Garde-fou anti-boucle infinie (arbre corrompu)
+        depth = 0
+        while node is not None and depth < 20:
+            parts.append(node.name)
+            node = node.parent
+            depth += 1
+        return " > ".join(reversed(parts))
+ 
+    @property
+    def effective_requires_approval(self) -> bool:
+        """
+        Vrai si CETTE catégorie OU un de ses ancêtres exige une modération
+        renforcée. Utilisé lors de la création d'une MasterProduct/Offer :
+        pas besoin de cocher chaque sous-catégorie, l'héritage suffit.
+        """
+        if self.requires_admin_approval:
+            return True
+        node = self.parent
+        depth = 0
+        while node is not None and depth < 20:
+            if node.requires_admin_approval:
+                return True
+            node = node.parent
+            depth += 1
+        return False
+ 
+    def get_ancestors(self):
+        """Liste des ancêtres du plus proche au plus lointain."""
+        ancestors = []
+        node = self.parent
+        depth = 0
+        while node is not None and depth < 20:
+            ancestors.append(node)
+            node = node.parent
+            depth += 1
+        return ancestors
+ 
+    def get_descendants_ids(self):
+        """
+        Retourne tous les IDs de sous-catégories (récursif).
+        Utile pour filtrer les produits d'une branche entière.
+        Optimisation possible en Postgres avec un CTE récursif.
+        """
+        ids = set()
+        stack = list(self.children.filter(deleted_at__isnull=True))
+        while stack:
+            node = stack.pop()
+            if node.id in ids:
+                continue
+            ids.add(node.id)
+            stack.extend(node.children.filter(deleted_at__isnull=True))
+        return ids
+ 
+    # ─── Save : calcul auto du level + garde-fous ──────────────────────
+ 
+    def save(self, *args, **kwargs):
+        # Calcul automatique du level
+        if self.parent_id is None:
+            self.level = 0
+        else:
+            # On évite un round-trip DB inutile si le parent est en mémoire
+            parent = self.parent if self.parent else Category.objects.get(pk=self.parent_id)
+            self.level = (parent.level or 0) + 1
+ 
+        # Garde-fou : cycles interdits (une catégorie ne peut être son propre ancêtre)
+        if self.pk and self.parent_id:
+            ancestor = self.parent
+            depth = 0
+            while ancestor is not None and depth < 20:
+                if ancestor.pk == self.pk:
+                    from django.core.exceptions import ValidationError
+                    raise ValidationError(
+                        f"Cycle détecté : la catégorie '{self.name}' ne peut "
+                        f"pas être descendante d'elle-même."
+                    )
+                ancestor = ancestor.parent
+                depth += 1
+ 
+        super().save(*args, **kwargs)
+ 
+        # Si le level a changé, propager aux descendants
+        # (cas rare : déplacement de branche par l'admin)
+        if self.pk:
+            for child in self.children.filter(deleted_at__isnull=True):
+                if child.level != self.level + 1:
+                    child.save(update_fields=["level"])
     
 
 
@@ -86,6 +528,20 @@ class MasterProduct(SoftDeleteModel):
     slug        = models.SlugField(max_length=220, unique=True)
     description = models.TextField(blank=True)
     brand       = models.CharField(max_length=120, blank=True, verbose_name="Marque")
+    brand_fk = models.ForeignKey(
+        "catalog.Brand",   # ← forward reference, fonctionne même si Brand
+                           #   est défini après MasterProduct dans le fichier
+        on_delete=models.PROTECT,   # Empêche de supprimer une marque utilisée
+        related_name="master_products",
+        null=True,
+        blank=True,
+        verbose_name="Marque (registre)",
+        help_text=(
+            "Marque référencée depuis le registre centralisé. "
+            "Remplace progressivement le champ texte `brand`."
+        ),
+    )
+
     category    = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,

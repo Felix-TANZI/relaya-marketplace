@@ -3,13 +3,105 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary
 
 
 class CategorySerializer(serializers.ModelSerializer):
+    """
+    Serializer de base — utilisé partout où on affiche UNE catégorie
+    (fiche produit, listing, filtres, etc.).
+ 
+    Version étendue : expose les nouveaux champs pour permettre au frontend
+    de rendre l'icône, la description, et de détecter les catégories
+    à modération renforcée.
+    """
+    full_path = serializers.CharField(read_only=True)
+    effective_requires_approval = serializers.BooleanField(read_only=True)
+ 
     class Meta:
         model = Category
-        fields = ['id', 'name', 'slug', 'is_active', 'parent']
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "parent",
+            "level",
+            "icon_name",
+            "description",
+            "display_order",
+            "is_active",
+            "is_deprecated",
+            "requires_admin_approval",
+            "effective_requires_approval",
+            "full_path",
+        ]
+        read_only_fields = [
+            "level", "full_path", "effective_requires_approval",
+        ]
+
+
+class CategoryTreeSerializer(serializers.ModelSerializer):
+    """
+    Serializer arborescent — sérialise une catégorie AVEC ses enfants
+    récursivement. Utilisé par l'endpoint /api/catalog/categories/tree/.
+ 
+    Optimisation : les enfants sont récupérés depuis un dict pré-construit
+    (voir CategoryTreeView) plutôt que via des requêtes N+1.
+    """
+    children = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "level",
+            "icon_name",
+            "description",
+            "display_order",
+            "is_active",
+            "is_deprecated",
+            "requires_admin_approval",
+            "children",
+        ]
+ 
+    def get_children(self, obj):
+        """
+        Récupère les enfants depuis le dict `children_map` du contexte,
+        évite les requêtes récursives.
+        """
+        children_map = self.context.get("children_map", {})
+        kids = children_map.get(obj.id, [])
+        # Tri : display_order, puis name pour stabilité
+        kids = sorted(kids, key=lambda c: (c.display_order, c.name))
+        return CategoryTreeSerializer(
+            kids, many=True, context=self.context,
+        ).data
+    
+
+class CategoryFlatSerializer(serializers.ModelSerializer):
+    """
+    Version plate (pas d'enfants imbriqués) — utilisée pour les selects
+    et les listes admin où on n'a pas besoin de l'arbre complet.
+    Inclut le full_path pour l'affichage sans avoir à reconstruire côté client.
+    """
+    full_path = serializers.CharField(read_only=True)
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "parent",
+            "level",
+            "icon_name",
+            "is_active",
+            "is_deprecated",
+            "requires_admin_approval",
+            "full_path",
+        ]
 
 
 class ProductMediaSerializer(serializers.ModelSerializer):
@@ -412,3 +504,106 @@ class ProductConditionSerializer(serializers.ModelSerializer):
         from .models import ProductCondition
         model  = ProductCondition
         fields = ['id', 'name', 'display_order', 'is_active']    
+
+
+class BrandLightSerializer(serializers.ModelSerializer):
+    """
+    Version légère — utilisée quand une Brand est intégrée dans un autre
+    serializer (ex : MasterProductDetailSerializer). Pas de description
+    longue pour éviter d'alourdir les réponses.
+    """
+    logo_url = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = ["id", "name", "slug", "logo_url", "is_verified"]
+ 
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+ 
+ 
+class BrandSerializer(serializers.ModelSerializer):
+    """
+    Version complète — pour les pages détail marque et les réponses admin.
+    Inclut description, country, website, master_products_count.
+    """
+    logo_url = serializers.SerializerMethodField()
+    master_products_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "id",
+            "name",
+            "slug",
+            "logo_url",
+            "description",
+            "country_of_origin",
+            "website",
+            "is_active",
+            "is_verified",
+            "master_products_count",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at", "logo_url", "master_products_count"]
+ 
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None
+ 
+    def get_master_products_count(self, obj):
+        """Nombre de fiches maîtres utilisant cette marque."""
+        return obj.master_products.count()
+ 
+ 
+class BrandAutocompleteSerializer(serializers.ModelSerializer):
+    """
+    Ultra-léger — pour l'endpoint d'autocomplete du formulaire vendeur.
+    Retourne uniquement ce qui est nécessaire pour rendre une ligne
+    de résultat : nom, slug, logo miniature, badge verified.
+    """
+    logo_url = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = ["id", "name", "slug", "logo_url", "is_verified"]
+ 
+    def get_logo_url(self, obj):
+        if obj.logo:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.logo.url)
+            return obj.logo.url
+        return None     
+
+
+class ColorDictionarySerializer(serializers.ModelSerializer):
+    """
+    Version publique — utilisée par les selects du formulaire vendeur et
+    les filtres acheteur. Léger (pas de created_at/updated_at) pour être
+    cachable côté frontend.
+    """
+ 
+    class Meta:
+        model = ColorDictionary
+        fields = [
+            "id",
+            "family",
+            "name",
+            "name_en",
+            "slug",
+            "hex_code",
+            "pattern_url",
+            "is_neutral",
+            "display_order",
+        ]
+        read_only_fields = ["id", "slug"]       

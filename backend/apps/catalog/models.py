@@ -542,6 +542,17 @@ class MasterProduct(SoftDeleteModel):
         ),
     )
 
+    variant_axes = models.JSONField(
+        default=list,
+        blank=True,
+        verbose_name="Axes de variante",
+        help_text=(
+            "Liste des slugs d'attributs (avec role=AXE) autorisés pour "
+            "créer des Variants de cette fiche. Ex : [\"color\", \"storage\"] "
+            "pour un iPhone. Vide = fiche mono-variant (composant atomique)."
+        ),
+    )
+
     category    = models.ForeignKey(
         Category,
         on_delete=models.PROTECT,
@@ -579,6 +590,62 @@ class MasterProduct(SoftDeleteModel):
             .order_by("price_xaf")
             .first()
         )
+    
+    # ─── Méthode de validation à ajouter dans MasterProduct ────────────
+ 
+    def clean(self):
+        """
+        Valide variant_axes :
+          - Doit être une liste de strings
+          - Chaque slug doit référencer un ProductAttribute existant
+          - Chaque attribut doit avoir role=AXE
+          - Chaque attribut doit être universel OU appartenir à la catégorie
+            de ce master (ou à un ancêtre de cette catégorie)
+        """
+        from django.core.exceptions import ValidationError
+        super().clean() if hasattr(super(), 'clean') else None
+ 
+        if not isinstance(self.variant_axes, list):
+            raise ValidationError({
+                "variant_axes": "Doit être une liste JSON."
+            })
+ 
+        if not self.variant_axes:
+            return  # Vide = OK (produit atomique)
+ 
+        # Vérifier chaque slug
+        errors = []
+        for slug in self.variant_axes:
+            if not isinstance(slug, str):
+                errors.append(f"Chaque axe doit être une chaîne, reçu : {type(slug).__name__}")
+                continue
+ 
+            attr = ProductAttribute.objects.filter(slug=slug).first()
+            if attr is None:
+                errors.append(f"Axe '{slug}' introuvable dans ProductAttribute.")
+                continue
+ 
+            if attr.role != AttributeRole.AXE:
+                errors.append(
+                    f"Attribut '{slug}' a le rôle '{attr.role}' — "
+                    f"seuls les attributs avec role=AXE peuvent être des axes."
+                )
+                continue
+ 
+            # Vérifier la portée : universel OU dans la branche catégorie
+            if not attr.is_universal:
+                if attr.category_id != self.category_id:
+                    # Peut aussi être un ancêtre de la catégorie
+                    ancestor_ids = [a.id for a in self.category.get_ancestors()]
+                    if attr.category_id not in ancestor_ids:
+                        errors.append(
+                            f"Attribut '{slug}' appartient à la catégorie "
+                            f"'{attr.category.name}' qui n'est ni la catégorie "
+                            f"du master ni un ancêtre."
+                        )
+ 
+        if errors:
+            raise ValidationError({"variant_axes": errors})
 
     def save(self, *args, **kwargs):
         if not self.slug:
@@ -613,6 +680,41 @@ class MasterProductImage(models.Model):
 # ATTRIBUTS PRODUIT (créés par l'admin, choisis par le vendeur)
 # ─────────────────────────────────────────────────────────────────────────────
 
+
+class AttributeRole(models.TextChoices):
+    """
+    Les 3 rôles d'attribut selon le BelivaY Product Representation Model (§3).
+ 
+    Règle de décision (§3.1) :
+      Q1. Un client choisit-il entre plusieurs valeurs pour décider quoi
+          acheter ? → AXE
+      Q2. Sinon, est-ce une caractéristique unique du modèle utile pour
+          filtrer ? → SPEC
+      Q3. Sinon, est-ce que la valeur change selon qui vend l'article ? → OFFRE
+    """
+    AXE = "AXE", "Axe (crée une variante)"
+    SPEC = "SPEC", "Spécification (fixe du modèle, filtrable)"
+    OFFRE = "OFFRE", "Offre (dépend du vendeur)"
+ 
+ 
+class AttributeValueType(models.TextChoices):
+    """
+    Type technique des valeurs d'un attribut.
+ 
+    Distinct du `role` (AXE/SPEC/OFFRE) et du `type` sémantique (SIZE/COLOR...).
+    Détermine :
+      - Comment le vendeur saisit la valeur (input HTML côté frontend)
+      - D'où viennent les valeurs autorisées
+      - Comment valider une valeur soumise
+    """
+    SELECT = "SELECT", "Liste fermée (values JSON)"
+    NUMBER = "NUMBER", "Nombre (avec unit)"
+    BOOL = "BOOL", "Oui/Non"
+    TEXT = "TEXT", "Texte libre (à éviter — préférer SELECT)"
+    COLORDICT = "COLORDICT", "Référence au dictionnaire couleurs"
+    BRAND = "BRAND", "Référence au registre Brand"
+
+
 class ProductAttribute(models.Model):
     """
     Attribut de produit défini par l'admin pour une catégorie donnée.
@@ -630,22 +732,89 @@ class ProductAttribute(models.Model):
         MATERIAL = 'MATERIAL', 'Matière'
         OTHER    = 'OTHER',    'Autre'
 
-    category      = models.ForeignKey(
-        Category,
-        on_delete=models.CASCADE,
-        related_name='attributes',
-        verbose_name="Catégorie",
+    category = models.ForeignKey(
+         Category,
+         on_delete=models.CASCADE,
+         related_name="attributes",
+         null=True,
+         blank=True,
+         verbose_name="Catégorie",
+         help_text=(
+             "Catégorie à laquelle cet attribut s'applique. "
+             "Laisser vide si is_universal=True."
+         ),
     )
     name          = models.CharField(max_length=100, verbose_name="Nom de l'attribut")
     attribute_type = models.CharField(
         max_length=10, choices=AttributeType.choices, default=AttributeType.OTHER,
         verbose_name="Type",
     )
+    slug = models.SlugField(
+        max_length=100,
+        unique=True,
+        blank=True,   # blank=True temporairement pour permettre la data migration
+                      # qui peuple les slugs des attributs existants
+        verbose_name="Slug (identifiant technique)",
+        help_text=(
+            "Identifiant stable utilisé par MasterProduct.variant_axes "
+            "pour référencer cet attribut. Auto-généré si vide (à partir "
+            "du name). Doit être unique. Convention : préfixer par la "
+            "catégorie pour les non-universels (ex : 'phone-color', "
+            "'kb-switch') et laisser simple pour les universels "
+            "(ex : 'bluetooth', 'weight')."
+        ),
+    )
+ 
+    unit = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        verbose_name="Unité",
+        help_text=(
+            "Unité de mesure affichée à côté de la valeur. "
+            "Ex : 'Go' pour un stockage, 'mAh' pour une batterie, "
+            "'W' pour une puissance. Vide pour les attributs sans unité."
+        ),
+    )
     # Liste des valeurs possibles — ex: ["XS", "S", "M", "L", "XL"]
     values        = models.JSONField(
         default=list,
         verbose_name="Valeurs disponibles",
         help_text='Liste JSON. Ex: ["S", "M", "L"] ou ["Rouge", "Bleu"]',
+    )
+    role = models.CharField(
+        max_length=5,
+        choices=AttributeRole.choices,
+        default=AttributeRole.SPEC,
+        db_index=True,
+        verbose_name="Rôle",
+        help_text=(
+            "AXE = crée une variante achetable (couleur/stockage d'un smartphone). "
+            "SPEC = caractéristique fixe du modèle, filtrable. "
+            "OFFRE = dépend du vendeur (état, garantie, import)."
+        ),
+    )
+    is_universal = models.BooleanField(
+        default=False,
+        db_index=True,
+        verbose_name="Universel",
+        help_text=(
+            "Si activé, l'attribut s'applique à TOUTES les catégories "
+            "(ex : Bluetooth, WiFi, Poids). Dans ce cas, le champ 'category' "
+            "doit être laissé vide."
+        ),
+    )
+    values_type = models.CharField(
+        max_length=10,
+        choices=AttributeValueType.choices,
+        default=AttributeValueType.SELECT,
+        verbose_name="Type de valeur",
+        help_text=(
+            "Détermine comment le vendeur saisit la valeur : "
+            "SELECT (liste fermée), NUMBER, BOOL, TEXT, "
+            "COLORDICT (piocher dans le dictionnaire couleurs), "
+            "BRAND (piocher dans le registre marques)."
+        ),
     )
     is_required   = models.BooleanField(default=False, verbose_name="Obligatoire")
     display_order = models.PositiveIntegerField(default=0, verbose_name="Ordre d'affichage")
@@ -655,8 +824,39 @@ class ProductAttribute(models.Model):
         verbose_name        = "Attribut Produit"
         verbose_name_plural = "Attributs Produit"
 
+        constraints = [
+            # ... contraintes existantes préservées ...
+ 
+            # NOUVELLE contrainte : is_universal ⇔ category IS NULL
+            # Empêche les incohérences :
+            #   - is_universal=True MAIS category renseignée
+            #   - is_universal=False MAIS category vide
+            models.CheckConstraint(
+                check=(
+                    models.Q(is_universal=True, category__isnull=True)
+                    | models.Q(is_universal=False, category__isnull=False)
+                ),
+                name="attr_universal_xor_category",
+            ),
+        ]
+
     def __str__(self):
-        return f"{self.category.name} — {self.name}"
+        category_label = self.category.name if self.category else "Universel"
+        return f"{category_label} — {self.name}"
+    
+    def save(self, *args, **kwargs):
+        """
+        Auto-slug basé sur le name si non renseigné.
+        Anti-collision : ajoute un suffixe -1, -2 en cas de doublon.
+        """
+        if not self.slug:
+            base = slugify(self.name) or "attr"
+            self.slug = base
+            counter = 1
+            while ProductAttribute.objects.filter(slug=self.slug).exclude(pk=self.pk).exists():
+                self.slug = f"{base}-{counter}"
+                counter += 1
+        super().save(*args, **kwargs)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

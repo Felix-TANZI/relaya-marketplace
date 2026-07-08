@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
 
-from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
@@ -31,6 +31,8 @@ from .serializers import (
     BrandLightSerializer, 
     BrandAutocompleteSerializer,
     ColorDictionarySerializer,
+    ProductAttributeSerializer, 
+    MasterProductAxesSerializer,
  
 )
 from .filters import ProductFilter, CategoryFilter
@@ -679,3 +681,109 @@ def color_dictionary_grouped(request):
         if family in grouped:
             grouped[family].append(entry)
     return Response(grouped)
+
+
+@extend_schema(
+    tags=["Catalog"],
+    summary="Liste des attributs (par catégorie et par rôle)",
+    description=(
+        "Retourne les attributs disponibles pour une catégorie donnée, "
+        "avec possibilité de filtrer par rôle (AXE, SPEC, OFFRE).\n\n"
+        "Comportement :\n"
+        "- Sans category : retourne uniquement les attributs universels\n"
+        "- Avec category : retourne les universels + ceux de la catégorie "
+        "  + ceux de tous les ancêtres de la catégorie\n"
+        "- Avec role : filtre supplémentaire (utile pour lister les AXES "
+        "  disponibles pour un master)"
+    ),
+    parameters=[
+        OpenApiParameter(name="category", type=OpenApiTypes.STR, required=False,
+                         description="Slug de la catégorie."),
+        OpenApiParameter(name="role", type=OpenApiTypes.STR, required=False,
+                         description="AXE, SPEC ou OFFRE.",
+                         enum=["AXE", "SPEC", "OFFRE"]),
+        OpenApiParameter(name="values_type", type=OpenApiTypes.STR, required=False,
+                         description="Filtrer par type de valeur (SELECT, NUMBER, ...)."),
+        OpenApiParameter(name="universal_only", type=OpenApiTypes.BOOL, required=False,
+                         description="Ne retourner que les universels."),
+    ],
+    responses={200: ProductAttributeSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def attributes_list(request):
+    """Endpoint canonique pour les attributs — utilisé par le formulaire vendeur."""
+    category_slug = request.query_params.get("category", "").strip()
+    role = request.query_params.get("role", "").strip().upper()
+    values_type = request.query_params.get("values_type", "").strip().upper()
+    universal_only = request.query_params.get(
+        "universal_only", "false"
+    ).lower() in ("1", "true", "yes")
+ 
+    # Validation role
+    if role and role not in [r[0] for r in AttributeRole.choices]:
+        return Response(
+            {"detail": "role invalide. Valeurs : AXE, SPEC, OFFRE."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # Base queryset
+    qs = ProductAttribute.objects.all()
+ 
+    if universal_only:
+        qs = qs.filter(is_universal=True)
+    elif category_slug:
+        # Résolution : catégorie + ancêtres + universels
+        try:
+            category = Category.objects.get(slug=category_slug)
+        except Category.DoesNotExist:
+            return Response(
+                {"detail": f"Catégorie '{category_slug}' introuvable."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+ 
+        ancestor_ids = [a.id for a in category.get_ancestors()]
+        category_ids = [category.id] + ancestor_ids
+ 
+        # Universels OU catégorie-spécifiques dans la lignée
+        from django.db.models import Q
+        qs = qs.filter(Q(is_universal=True) | Q(category_id__in=category_ids))
+    else:
+        # Ni category ni universal_only → uniquement universels par défaut
+        qs = qs.filter(is_universal=True)
+ 
+    if role:
+        qs = qs.filter(role=role)
+    if values_type:
+        qs = qs.filter(values_type=values_type)
+ 
+    # Ordre : universels d'abord, puis par ordre déclaré, puis par nom
+    qs = qs.order_by("-is_universal", "display_order", "name")
+ 
+    serializer = ProductAttributeSerializer(qs, many=True, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+@extend_schema(
+    tags=["Catalog"],
+    summary="Axes de variante d'une MasterProduct (résolus)",
+    description=(
+        "Retourne les axes déclarés dans variant_axes d'une MasterProduct, "
+        "AVEC les informations complètes de chaque attribut (name, "
+        "values_type, values, unit). Sert au formulaire vendeur pour rendre "
+        "les inputs correspondants lors de la création d'un Variant."
+    ),
+    responses={200: MasterProductAxesSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def master_product_axes(request, slug):
+    """Récupère les axes résolus d'une fiche."""
+    try:
+        master = MasterProduct.objects.get(slug=slug)
+    except MasterProduct.DoesNotExist:
+        return Response(
+            {"detail": "Fiche introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return Response(MasterProductAxesSerializer(master, context={"request": request}).data)

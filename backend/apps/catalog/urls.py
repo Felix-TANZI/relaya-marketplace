@@ -57,6 +57,16 @@ urlpatterns = [
         name="brand-detail",
     ),
 
+    # Attributs (canonique — remplace l'endpoint vendors/products/attributes/)
+    path("attributes/", views.attributes_list, name="attributes-list"),
+ 
+    # Axes résolus d'une MasterProduct
+    path(
+        "master-products/<slug:slug>/axes/",
+        views.master_product_axes,
+        name="master-product-axes",
+    ),
+
     path("colors/", views.color_dictionary_list, name="color-dictionary-list"),
     path("colors/grouped/", views.color_dictionary_grouped, name="color-dictionary-grouped"),
 

@@ -3,7 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -607,3 +607,95 @@ class ColorDictionarySerializer(serializers.ModelSerializer):
             "display_order",
         ]
         read_only_fields = ["id", "slug"]       
+
+
+class ProductAttributeSerializer(serializers.ModelSerializer):
+    """
+    Serializer pour un attribut. Expose maintenant le role (AXE/SPEC/OFFRE),
+    is_universal et values_type — nécessaires au futur formulaire vendeur
+    pour rendre le bon type d'input.
+    """
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True)
+ 
+    class Meta:
+        model = ProductAttribute
+        fields = [
+            "id",
+            "slug",
+            "name",
+            "attribute_type",           # sémantique legacy (SIZE/COLOR/MATERIAL/OTHER)
+            "role",           # AXE / SPEC / OFFRE
+            "values_type",    # SELECT / NUMBER / BOOL / TEXT / COLORDICT / BRAND
+            "values",         # liste JSON pour values_type=SELECT
+            "unit",           # unité pour values_type=NUMBER (Go, mAh, W...)
+            "is_universal",
+            "category",
+            "category_name",
+            "display_order",
+        ]
+        read_only_fields = ["id", "category_name"]
+ 
+ 
+class AttributeAxisResolvedSerializer(serializers.Serializer):
+    """
+    Serializer utilitaire — résout une liste de slugs (variant_axes)
+    en objets ProductAttribute complets. Utilisé par le futur formulaire
+    vendeur : quand on affiche une MasterProduct, on veut voir les axes
+    résolus (name, values_type, values), pas juste des slugs opaques.
+    """
+    slug = serializers.CharField()
+    name = serializers.CharField()
+    values_type = serializers.CharField()
+    values = serializers.JSONField()
+    unit = serializers.CharField(allow_blank=True)
+    is_universal = serializers.BooleanField()
+ 
+ 
+class MasterProductAxesSerializer(serializers.ModelSerializer):
+    """
+    Vue légère d'une MasterProduct avec ses variant_axes RÉSOLUS.
+    Pour l'endpoint /api/catalog/master-products/<id>/axes/.
+    """
+    variant_axes_resolved = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id",
+            "slug",
+            "title",
+            "variant_axes",           # liste brute de slugs
+            "variant_axes_resolved",  # attributs complets
+        ]
+ 
+    def get_variant_axes_resolved(self, obj):
+        """
+        Pour chaque slug de variant_axes, récupère l'attribut ProductAttribute
+        correspondant. Ordre préservé (celui de variant_axes).
+        """
+        if not obj.variant_axes:
+            return []
+ 
+        attrs_by_slug = {
+            a.slug: a
+            for a in ProductAttribute.objects.filter(
+                slug__in=obj.variant_axes,
+                role=AttributeRole.AXE,
+            )
+        }
+ 
+        resolved = []
+        for slug in obj.variant_axes:
+            attr = attrs_by_slug.get(slug)
+            if attr is None:
+                continue   # Slug orphelin — normalement bloqué par clean()
+            resolved.append({
+                "slug": attr.slug,
+                "name": attr.name,
+                "values_type": attr.values_type,
+                "values": attr.values or [],
+                "unit": attr.unit or "",
+                "is_universal": attr.is_universal,
+            })
+        return resolved        

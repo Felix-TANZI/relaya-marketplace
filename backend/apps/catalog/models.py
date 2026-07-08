@@ -591,6 +591,26 @@ class MasterProduct(SoftDeleteModel):
             .first()
         )
     
+    @property
+    def variants_count(self) -> int:
+        """Nombre de Variants actifs pour cette fiche."""
+        return self.variants.filter(is_active=True).count()
+ 
+    @property
+    def is_mono_variant(self) -> bool:
+        """True si la fiche n'a qu'un seul Variant (produit atomique)."""
+        return not self.variant_axes
+ 
+    def get_default_variant(self):
+        """
+        Retourne le Variant par défaut (axis_values={}) si mono-variant.
+        Utile pour rétrocompatibilité avec le flow legacy où on crée
+        directement un Product/Offer sans passer par le choix de Variant.
+        """
+        if not self.is_mono_variant:
+            return None
+        return self.variants.filter(axis_values={}, is_active=True).first()
+    
     # ─── Méthode de validation à ajouter dans MasterProduct ────────────
  
     def clean(self):
@@ -672,7 +692,246 @@ class MasterProductImage(models.Model):
         verbose_name_plural = "Images fiche"
 
     def __str__(self):
-        return f"Image fiche {self.id} — {self.master.title}"        
+        return f"Image fiche {self.id} — {self.master.title}"   
+
+
+
+class ProductVariant(SoftDeleteModel):
+    """
+    Combinaison achetable précise d'une fiche MasterProduct — c'est le
+    "SKU réel" au sens du BelivaY Product Representation Model (§2).
+ 
+    Exemple : la fiche 'iPhone 15 Pro' a plusieurs Variants :
+      - "iPhone 15 Pro 256GB Titane"  → axis_values={"phone-color": "titane", "phone-storage": "256"}
+      - "iPhone 15 Pro 512GB Titane"  → axis_values={"phone-color": "titane", "phone-storage": "512"}
+      - "iPhone 15 Pro 256GB Noir"    → axis_values={"phone-color": "noir",   "phone-storage": "256"}
+ 
+    Plusieurs vendeurs peuvent créer des Product/Offer sur le MÊME Variant.
+    La Buy Box compare les offres du même Variant (§6 du document).
+ 
+    ─── Unicité (master, axis_values) ──────────────────────────────────
+    PostgreSQL ne supporte pas nativement UniqueConstraint sur JSONField.
+    On calcule un `axis_key` canonique (clés triées, format
+    "phone-color=titane|phone-storage=256") et on met l'unicité dessus.
+ 
+    ─── Cas mono-variant ───────────────────────────────────────────────
+    Un composant atomique (ex : CPU Ryzen 7 7800X3D) a MasterProduct.variant_axes=[]
+    → un seul Variant avec axis_values={} et axis_key="".
+    Créé automatiquement par la data migration pour tous les MP Electronics
+    existants.
+    """
+ 
+    master = models.ForeignKey(
+        "catalog.MasterProduct",
+        on_delete=models.PROTECT,   # Un master avec Variants ne peut être supprimé
+        related_name="variants",
+        verbose_name="Fiche produit maître",
+    )
+ 
+    # ─── Configuration précise du variant ──────────────────────────────
+    axis_values = models.JSONField(
+        default=dict,
+        blank=True,
+        verbose_name="Valeurs des axes",
+        help_text=(
+            'Dict {slug_axe: valeur}. Ex : {"phone-color": "titane", '
+            '"phone-storage": "256"}. Vide = variant unique/atomique.'
+        ),
+    )
+    axis_key = models.CharField(
+        max_length=500,
+        blank=True,
+        default="",
+        db_index=True,
+        editable=False,
+        verbose_name="Clé canonique (calculée)",
+        help_text=(
+            "Représentation canonique triée de axis_values, pour "
+            "garantir l'unicité (master, axis_values). Calculée au save()."
+        ),
+    )
+ 
+    # ─── Identification canonique du Variant ───────────────────────────
+    sku = models.CharField(
+        max_length=60,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="SKU canonique",
+        help_text=(
+            "SKU CANONIQUE de ce Variant (partagé entre tous les vendeurs). "
+            "Distinct du Product.sku qui est le SKU spécifique de l'offre. "
+            "Auto-généré : BLV-V-{master_id:06d}-{variant_id:04d}."
+        ),
+    )
+    barcode = models.CharField(
+        max_length=20,
+        blank=True,
+        default="",
+        db_index=True,
+        verbose_name="Code-barres (EAN/UPC)",
+        help_text="Code-barres EAN13, UPC-A, ISBN. Optionnel.",
+    )
+ 
+    # ─── Modération ────────────────────────────────────────────────────
+    is_active = models.BooleanField(
+        default=True,
+        db_index=True,
+        verbose_name="Actif",
+    )
+    moderation_status = models.CharField(
+        max_length=10,
+        choices=ModerationStatus.choices,
+        default=ModerationStatus.PENDING,
+        db_index=True,
+        verbose_name="Statut de modération",
+    )
+    moderated_at = models.DateTimeField(null=True, blank=True)
+    moderated_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="moderated_variants",
+    )
+    moderation_reason = models.TextField(blank=True, default="")
+ 
+    class Meta(SoftDeleteModel.Meta):
+        ordering = ["master_id", "axis_key"]
+        verbose_name = "Variant produit"
+        verbose_name_plural = "Variants produit"
+        constraints = [
+            # Unicité (master, axis_key) — remplace l'unicité (master, axis_values)
+            # que PostgreSQL ne peut pas faire directement sur JSONField.
+            models.UniqueConstraint(
+                fields=["master", "axis_key"],
+                name="variant_master_axiskey_unique",
+                # deleted_at IS NULL → seulement les variants vivants comptent
+                condition=models.Q(deleted_at__isnull=True),
+            ),
+        ]
+        indexes = [
+            models.Index(fields=["master", "is_active"]),
+            models.Index(fields=["moderation_status", "is_active"]),
+        ]
+ 
+    def __str__(self):
+        if not self.axis_values:
+            return f"{self.master.title} (mono-variant)"
+        # Affichage lisible : "iPhone 15 Pro — Titane / 256 Go"
+        parts = [f"{v}" for k, v in sorted(self.axis_values.items())]
+        return f"{self.master.title} — {' / '.join(parts)}"
+ 
+    # ─── Méthodes utilitaires ──────────────────────────────────────────
+ 
+    @staticmethod
+    def compute_axis_key(axis_values: dict) -> str:
+        """
+        Calcule la clé canonique à partir d'un dict axis_values.
+ 
+        Format : "slug1=value1|slug2=value2..." avec clés triées.
+        Garantie : deux dicts avec les mêmes couples clé-valeur produisent
+        le même axis_key indépendamment de l'ordre d'insertion.
+ 
+        Ex :
+          {"phone-color": "titane", "phone-storage": "256"}
+          → "phone-color=titane|phone-storage=256"
+ 
+          {}  → ""
+        """
+        if not axis_values:
+            return ""
+        items = sorted(axis_values.items())
+        # Normalisation : lowercase pour les valeurs (couleurs, etc.)
+        # Pas obligatoire mais évite les doublons "Titane" vs "titane"
+        return "|".join(f"{k}={str(v).strip()}" for k, v in items)
+ 
+    def clean(self):
+        """
+        Valide :
+          - axis_values est un dict (pas une liste, pas une string)
+          - Chaque clé de axis_values est présente dans master.variant_axes
+          - Chaque valeur est du bon type (string ou number selon values_type
+            de l'attribut)
+        """
+        from django.core.exceptions import ValidationError
+ 
+        if not isinstance(self.axis_values, dict):
+            raise ValidationError({
+                "axis_values": "Doit être un dict JSON."
+            })
+ 
+        # Récupérer les axes déclarés par le master
+        declared_axes = set(self.master.variant_axes or [])
+ 
+        # Cas mono-variant : axis_values doit être vide
+        if not declared_axes:
+            if self.axis_values:
+                raise ValidationError({
+                    "axis_values": (
+                        "Le master ne déclare aucun axe (variant_axes vide). "
+                        "axis_values doit être vide."
+                    ),
+                })
+            return
+ 
+        # Cas multi-variant : les clés doivent correspondre aux axes déclarés
+        provided_keys = set(self.axis_values.keys())
+        errors = []
+ 
+        # Clés en trop (axes non déclarés dans le master)
+        extra = provided_keys - declared_axes
+        if extra:
+            errors.append(f"Axes non déclarés dans le master : {sorted(extra)}")
+ 
+        # Clés manquantes (axes déclarés mais absents des axis_values)
+        missing = declared_axes - provided_keys
+        if missing:
+            errors.append(f"Axes obligatoires manquants : {sorted(missing)}")
+ 
+        # Valeurs vides interdites
+        for k, v in self.axis_values.items():
+            if v is None or (isinstance(v, str) and not v.strip()):
+                errors.append(f"Axe '{k}' : valeur vide interdite.")
+ 
+        if errors:
+            raise ValidationError({"axis_values": errors})
+ 
+    def save(self, *args, **kwargs):
+        # 1. Calculer axis_key AVANT le save (pour la contrainte d'unicité)
+        self.axis_key = self.compute_axis_key(self.axis_values or {})
+ 
+        # 2. Validation métier
+        self.full_clean(exclude=["sku", "axis_key"])
+ 
+        # 3. Save initial (pour obtenir l'ID si création)
+        super().save(*args, **kwargs)
+ 
+        # 4. SKU auto après première sauvegarde (nécessite l'ID)
+        if not self.sku:
+            self.sku = f"BLV-V-{self.master_id:06d}-{self.pk:04d}"
+            ProductVariant.all_objects.filter(pk=self.pk).update(sku=self.sku)
+ 
+    # ─── Propriétés Buy Box ────────────────────────────────────────────
+ 
+    @property
+    def buy_box_offer(self):
+        """
+        Offre gagnante pour ce Variant (par condition).
+ 
+        VERSION PROVISOIRE — même logique que MasterProduct.buy_box_offer :
+        la moins chère parmi les offres actives ET approuvées.
+ 
+        Note §6 du document : la Buy Box définitive tiendra compte de
+        Condition (Neuf vs Reconditionné = deux blocs distincts), Trust Score
+        vendeur, customs_cleared, garantie. Sera fait en Phase 5.
+        """
+        return (
+            self.offers
+            .filter(is_active=True, moderation_status=ModerationStatus.APPROVED)
+            .order_by("price_xaf")
+            .first()
+        )
 
 
 
@@ -944,6 +1203,21 @@ class Product(SoftDeleteModel):
         related_name="offers",
         null=True, blank=True,
         verbose_name="Fiche produit maître",
+    )
+    variant = models.ForeignKey(
+        "catalog.ProductVariant",
+        on_delete=models.PROTECT,   # Un Variant avec offres ne peut être supprimé
+        related_name="offers",       # ← même related_name que master.offers
+                                     # (une offre est accessible via
+                                     # master.offers ET variant.offers)
+        null=True,
+        blank=True,
+        verbose_name="Variant",
+        help_text=(
+            "Variant précis auquel cette offre s'applique. "
+            "Nullable pour rétrocompat (verticales non-Electronics). "
+            "Pour Electronics : obligatoire (validation applicative)."
+        ),
     )
     moderation_status = models.CharField(
         max_length=10, choices=ModerationStatus.choices,

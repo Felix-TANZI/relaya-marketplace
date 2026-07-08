@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
 
-from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole
+from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
@@ -33,6 +33,9 @@ from .serializers import (
     ColorDictionarySerializer,
     ProductAttributeSerializer, 
     MasterProductAxesSerializer,
+    ProductVariantSerializer,
+    ProductVariantLightSerializer,
+    ProductVariantCreateSerializer,
  
 )
 from .filters import ProductFilter, CategoryFilter
@@ -787,3 +790,204 @@ def master_product_axes(request, slug):
             status=status.HTTP_404_NOT_FOUND,
         )
     return Response(MasterProductAxesSerializer(master, context={"request": request}).data)
+
+
+@extend_schema(
+    tags=["Catalog"],
+    summary="Variants d'une fiche produit",
+    description=(
+        "Retourne la liste des Variants actifs et approuvés d'une "
+        "MasterProduct. Utilisé par la page fiche buyer pour proposer "
+        "le sélecteur de Variant (couleur/stockage/etc.) au-dessus de la "
+        "Buy Box."
+    ),
+    parameters=[
+        OpenApiParameter(name="include_pending", type=OpenApiTypes.BOOL, required=False,
+                         description="Inclure les Variants en attente de modération (admin only)."),
+    ],
+    responses={200: ProductVariantLightSerializer(many=True), 404: None},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def master_product_variants(request, slug):
+    """Liste des Variants d'une fiche."""
+    try:
+        master = MasterProduct.objects.get(slug=slug)
+    except MasterProduct.DoesNotExist:
+        return Response(
+            {"detail": "Fiche introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+    qs = master.variants.filter(is_active=True)
+ 
+    # Par défaut : seulement les Variants approuvés (buyer-facing)
+    include_pending = request.query_params.get(
+        "include_pending", "false"
+    ).lower() in ("1", "true", "yes")
+    if not include_pending or not request.user.is_staff:
+        qs = qs.filter(moderation_status="APPROVED")
+ 
+    qs = qs.order_by("axis_key")
+ 
+    serializer = ProductVariantLightSerializer(
+        qs, many=True, context={"request": request},
+    )
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+#  PUBLIC — Détail d'un Variant
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Catalog"],
+    summary="Détail d'un Variant",
+    responses={200: ProductVariantSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def variant_detail(request, sku):
+    """Détail d'un Variant par son SKU canonique."""
+    try:
+        variant = ProductVariant.objects.select_related("master").get(
+            sku=sku, is_active=True, moderation_status="APPROVED",
+        )
+    except ProductVariant.DoesNotExist:
+        return Response(
+            {"detail": "Variant introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+    return Response(ProductVariantSerializer(
+        variant, context={"request": request},
+    ).data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+#  VENDOR — Trouver ou proposer un Variant (endpoint idempotent)
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# Ce endpoint est crucial pour le futur formulaire vendeur :
+# quand le vendeur soumet ses axis_values (ex : couleur=titane, stockage=256),
+# on doit soit :
+#   - Retourner le Variant existant (s'il y en a un) — le vendeur créera
+#     son Offer dessus
+#   - Créer un nouveau Variant (si aucun ne match) — soumis à modération
+#
+# C'est ce qui garantit qu'on n'a JAMAIS de doublons de Variants pour un
+# même master + axis_values.
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Trouver ou créer un Variant (idempotent)",
+    description=(
+        "Endpoint idempotent : le vendeur envoie master + axis_values, on lui "
+        "retourne le Variant existant qui match, OU on en crée un nouveau (soumis "
+        "à modération admin).\n\n"
+        "Cas d'usage : formulaire vendeur — après avoir choisi la fiche et "
+        "renseigné les axes (couleur=titane, stockage=256), on appelle cet "
+        "endpoint pour obtenir un variant_id, puis on crée le Product/Offer avec."
+    ),
+    request={
+        "application/json": {
+            "type": "object",
+            "properties": {
+                "master": {"type": "integer", "description": "ID de la MasterProduct"},
+                "axis_values": {"type": "object", "additionalProperties": True},
+                "barcode": {"type": "string", "description": "Optionnel"},
+            },
+            "required": ["master", "axis_values"],
+        },
+    },
+    responses={200: ProductVariantSerializer, 201: ProductVariantSerializer, 400: None},
+)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def variant_find_or_create(request):
+    """Trouve un Variant existant ou en crée un nouveau. Idempotent."""
+    master_id = request.data.get("master")
+    axis_values = request.data.get("axis_values", {})
+ 
+    if not master_id:
+        return Response(
+            {"detail": "Champ 'master' requis."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    if not isinstance(axis_values, dict):
+        return Response(
+            {"detail": "axis_values doit être un dict."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # Récupérer le master
+    try:
+        master = MasterProduct.objects.get(pk=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response(
+            {"detail": "Fiche produit introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+    # Chercher un Variant existant
+    axis_key = ProductVariant.compute_axis_key(axis_values)
+    existing = ProductVariant.objects.filter(
+        master=master, axis_key=axis_key, deleted_at__isnull=True,
+    ).first()
+ 
+    if existing is not None:
+        # 200 OK — on retourne le Variant existant
+        return Response(
+            ProductVariantSerializer(existing, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
+ 
+    # Créer un nouveau Variant (soumis à modération)
+    serializer = ProductVariantCreateSerializer(
+        data={
+            "master": master_id,
+            "axis_values": axis_values,
+            "barcode": request.data.get("barcode", ""),
+        },
+        context={"request": request},
+    )
+    serializer.is_valid(raise_exception=True)
+    variant = serializer.save()
+ 
+    return Response(
+        ProductVariantSerializer(variant, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+#  VENDOR — Liste des Variants d'un master (incluant PENDING pour prévisu)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Vendors"],
+    summary="Variants d'une fiche (vue vendeur)",
+    description=(
+        "Retourne TOUS les Variants d'une fiche (y compris PENDING) pour "
+        "que le vendeur voit ses propres soumissions en cours de validation."
+    ),
+    responses={200: ProductVariantLightSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def vendor_master_variants(request, master_id):
+    """Liste vendeur — inclut les Variants PENDING."""
+    try:
+        master = MasterProduct.objects.get(pk=master_id)
+    except MasterProduct.DoesNotExist:
+        return Response(
+            {"detail": "Fiche introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+    qs = master.variants.filter(is_active=True).order_by("axis_key")
+ 
+    serializer = ProductVariantLightSerializer(
+        qs, many=True, context={"request": request},
+    )
+    return Response(serializer.data)    

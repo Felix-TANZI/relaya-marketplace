@@ -19,6 +19,7 @@ from .models import (
     Brand,
     MasterProduct,
     ColorDictionary,
+    AttributeRole,
 )
 
 
@@ -367,23 +368,148 @@ class CategoryAdmin(admin.ModelAdmin):
 @admin.register(ProductAttribute)
 class ProductAttributeAdmin(admin.ModelAdmin):
     """
-    L'admin crée ici les attributs disponibles par catégorie.
-    Le vendeur choisit ensuite parmi ces attributs dans son formulaire produit.
+    Admin ProductAttribute enrichi Phase 2.
+    
+    Expose les 3 rôles AXE/SPEC/OFFRE, is_universal, values_type.
+    Actions bulk pour promouvoir/rétrograder les attributs.
     """
-    list_display  = ('name', 'category', 'attribute_type', 'is_required', 'display_order')
-    list_filter   = ('attribute_type', 'is_required', 'category')
-    search_fields = ('name', 'category__name')
-    ordering      = ('category', 'display_order', 'name')
+
+    list_display = [
+        "name",
+        "slug",
+        "role_badge",
+        "values_type",
+        "is_universal_display",
+        "category_display",
+        "values_summary",
+        "is_required",
+        "display_order",
+    ]
+    list_filter = [
+        "role",
+        "values_type",
+        "is_universal",
+        "attribute_type",   # ancien champ sémantique (SIZE, COLOR, MATERIAL, OTHER)
+        "is_required",
+        "category",
+    ]
+    search_fields = ("name", "slug", "category__name")
+    autocomplete_fields = ["category"]
+    prepopulated_fields = {"slug": ("name",)}
+    ordering = ("-is_universal", "role", "display_order", "name")
+    list_per_page = 100
 
     fieldsets = (
-        ('Attribut', {
-            'fields': ('category', 'name', 'attribute_type'),
+        ("Identité", {
+            "fields": ("name", "slug", "display_order", "is_required"),
         }),
-        ('Configuration', {
-            'fields': ('values', 'is_required', 'display_order'),
-            'description': 'values : liste JSON. Ex: ["XS", "S", "M", "L", "XL"]',
+        ("Rôle et Type", {
+            "fields": ("role", "values_type", "attribute_type"),
+            "description": (
+                "role : AXE (crée une variante), SPEC (fixe filtrable), "
+                "OFFRE (dépend du vendeur).<br>"
+                "values_type : détermine l'input du formulaire vendeur.<br>"
+                "attribute_type : classification sémantique legacy (SIZE, COLOR, MATERIAL, OTHER)."
+            ),
+        }),
+        ("Portée", {
+            "fields": ("is_universal", "category"),
+            "description": (
+                "is_universal=True → laisser category vide (attribut partagé toutes catégories). "
+                "Sinon category est obligatoire."
+            ),
+        }),
+        ("Valeurs", {
+            "fields": ("values", "unit"),
+            "description": (
+                "values : liste JSON. Ex : [\"64\", \"128\", \"256\"]. "
+                "Utilisé si values_type=SELECT.<br>"
+                "unit : suffixe unité (Go, mAh, W...) pour values_type=NUMBER."
+            ),
         }),
     )
+
+    actions = [
+        "promote_to_axe",
+        "demote_to_spec",
+        "mark_as_offer",
+        "toggle_universal",
+    ]
+
+    # ─── Colonnes personnalisées ───────────────────────────────────────
+
+    def role_badge(self, obj):
+        colors = {"AXE": "#F47920", "SPEC": "#059669", "OFFRE": "#7C3AED"}
+        return format_html(
+            '<span style="background:{}; color:#fff; padding:2px 10px; '
+            'border-radius:10px; font-size:11px; font-weight:600;">{}</span>',
+            colors.get(obj.role, "#6B7280"), obj.role,
+        )
+    role_badge.short_description = "Rôle"
+    role_badge.admin_order_field = "role"
+
+    def is_universal_display(self, obj):
+        if obj.is_universal:
+            return format_html(
+                '<span style="background:#0891B2; color:#fff; padding:2px 6px; '
+                'border-radius:4px; font-size:10px;">UNIVERSEL</span>'
+            )
+        return "—"
+    is_universal_display.short_description = "Univ."
+
+    def category_display(self, obj):
+        if obj.category:
+            return obj.category.full_path
+        return format_html('<em style="color:#6B7280;">— (universel)</em>')
+    category_display.short_description = "Catégorie"
+
+    def values_summary(self, obj):
+        if obj.values_type == "SELECT" and obj.values:
+            preview = ", ".join(str(v) for v in obj.values[:4])
+            if len(obj.values) > 4:
+                preview += f" (+{len(obj.values) - 4} autres)"
+            return preview
+        if obj.values_type == "NUMBER":
+            return format_html('<em>Nombre{}</em>', f" ({obj.unit})" if obj.unit else "")
+        if obj.values_type == "BOOL":
+            return "Oui/Non"
+        if obj.values_type == "COLORDICT":
+            return format_html('<em style="color:#0891B2;">→ ColorDictionary</em>')
+        if obj.values_type == "BRAND":
+            return format_html('<em style="color:#0891B2;">→ Registre Brand</em>')
+        return "—"
+    values_summary.short_description = "Valeurs"
+
+    # ─── Actions bulk ──────────────────────────────────────────────────
+
+    @admin.action(description="🎯 Promouvoir en AXE (créera des Variants)")
+    def promote_to_axe(self, request, queryset):
+        n = queryset.update(role=AttributeRole.AXE)
+        self.message_user(
+            request,
+            f"{n} attribut(s) promu(s) en AXE. "
+            f"Attention : les fiches devront déclarer ces slugs dans variant_axes.",
+            level=messages.WARNING,
+        )
+
+    @admin.action(description="📊 Rétrograder en SPEC (filtrable simple)")
+    def demote_to_spec(self, request, queryset):
+        n = queryset.update(role=AttributeRole.SPEC)
+        self.message_user(request, f"{n} attribut(s) → SPEC.", level=messages.SUCCESS)
+
+    @admin.action(description="🏷️ Marquer comme OFFRE (dépend du vendeur)")
+    def mark_as_offer(self, request, queryset):
+        n = queryset.update(role=AttributeRole.OFFRE)
+        self.message_user(request, f"{n} attribut(s) → OFFRE.", level=messages.SUCCESS)
+
+    @admin.action(description="Basculer le flag UNIVERSEL")
+    def toggle_universal(self, request, queryset):
+        for attr in queryset:
+            attr.is_universal = not attr.is_universal
+            if attr.is_universal:
+                attr.category = None
+            attr.save(update_fields=["is_universal", "category"])
+        self.message_user(request, f"Flag universel basculé.", level=messages.SUCCESS)
 
 
 # ─── INLINES PRODUIT ──────────────────────────────────────────────────────────

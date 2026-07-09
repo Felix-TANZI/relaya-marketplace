@@ -13,6 +13,9 @@ import {
   productsApi,
   type MasterFicheDetail, type MasterFicheCard, type MasterOffer, type ProductReview,
 } from '@/services/api/products';
+import { VariantSelector } from "./VariantSelector";
+import { attributesApi, type MasterProductAxes } from "@/services/api/attributes";
+import { variantsApi, type ProductVariantLight } from "@/services/api/variants";
 
 function fmtXAF(n: number) { return n.toLocaleString('fr-FR') + ' FCFA'; }
 
@@ -161,6 +164,10 @@ export default function FicheDetailPage() {
   const [condFilter, setCondFilter] = useState<string>('all');
   const [qty, setQty] = useState(1);
   const [reviewsByOffer, setReviewsByOffer] = useState<Record<number, ProductReview[]>>({});
+  // Variants
+  const [masterAxes, setMasterAxes] = useState<MasterProductAxes | null>(null);
+  const [variants, setVariants] = useState<ProductVariantLight[]>([]);
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
   const [reviewModalOffer, setReviewModalOffer] = useState<MasterOffer | null>(null);
   const [similar, setSimilar] = useState<MasterFicheCard[]>([]);
   const [recos, setRecos] = useState<MasterFicheCard[]>([]);
@@ -195,6 +202,38 @@ export default function FicheDetailPage() {
     };
     run();
     return () => { cancelled = true; };
+  }, [master]);
+
+  // Charger axes + variants quand master change
+  useEffect(() => {
+    if (!master) {
+      setMasterAxes(null);
+      setVariants([]);
+      setSelectedVariantId(null);
+      return;
+    }
+
+    let cancelled = false;
+    Promise.all([
+      attributesApi.getMasterAxes(master.slug).catch(() => null),
+      variantsApi.listByMaster(master.slug).catch(() => []),
+    ]).then(([axes, variantList]) => {
+      if (cancelled) return;
+      setMasterAxes(axes);
+      setVariants(variantList);
+
+      // Pré-sélectionner le premier variant avec une Buy Box disponible
+      if (variantList.length > 0 && axes && axes.variant_axes_resolved.length > 0) {
+        const withBuyBox = variantList.find(
+          (v) => v.buy_box_price_xaf !== null,
+        );
+        setSelectedVariantId(withBuyBox?.id ?? variantList[0].id);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [master]);
 
   useEffect(() => {
@@ -236,8 +275,21 @@ export default function FicheDetailPage() {
   }
 
   const heroImage = master.images[imgIndex]?.image ?? master.primary_image ?? null;
-  const buyBox = master.buy_box;
-  const otherOffers = master.offers.filter(o => !buyBox || o.id !== buyBox.id);
+
+  // Filtrer les offres selon le variant sélectionné (si applicable)
+  const hasVariantAxes =
+    masterAxes && masterAxes.variant_axes_resolved.length > 0;
+
+  const filteredMasterOffers = hasVariantAxes && selectedVariantId
+    ? master.offers.filter((o) => o.variant === selectedVariantId)
+    : master.offers;
+
+  // Buy Box = offre la moins chère du variant (ou master.buy_box en fallback)
+  const buyBox = hasVariantAxes && selectedVariantId
+    ? (filteredMasterOffers.sort((a, b) => a.price_xaf - b.price_xaf)[0] ?? null)
+    : master.buy_box;
+
+  const otherOffers = filteredMasterOffers.filter((o) => !buyBox || o.id !== buyBox.id);
   const conditions = Array.from(new Set(otherOffers.map(o => o.condition).filter((c): c is string => !!c)));
   const filteredOffers = otherOffers.filter(o => condFilter === 'all' || o.condition === condFilter);
   const shortDesc = buyBox?.short_description?.trim();
@@ -305,6 +357,26 @@ export default function FicheDetailPage() {
               </div>
             </div>
           </Panel>
+
+          {/* Sélecteur de Variant (Electronics + master avec axes) */}
+              {masterAxes && masterAxes.variant_axes_resolved.length > 0 && variants.length > 0 && (
+                <div className="mb-5 rounded-2xl border border-orange-100 bg-orange-50/30 p-4 dark:border-gray-700 dark:bg-gray-800/40">
+                  <VariantSelector
+                    axes={masterAxes.variant_axes_resolved}
+                    variants={variants}
+                    selectedVariantId={selectedVariantId}
+                    onChange={(id) => setSelectedVariantId(id)}
+                  />
+                </div>
+              )}
+
+              {/* Feedback quand aucune offre pour ce variant */}
+              {hasVariantAxes && selectedVariantId && !buyBox && (
+                <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                  Aucune offre disponible pour cette configuration.
+                  Choisis une autre combinaison ou reviens plus tard.
+                </div>
+              )}
 
           <div className="lg:col-span-4">
             {buyBox ? (

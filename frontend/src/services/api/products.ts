@@ -98,6 +98,7 @@ export interface CategoryListParams {
 
 export interface MasterOffer {
   id: number;
+  variant?: number | null;
   price_xaf: number;
   compare_at_price: number | null;
   price_final: number;

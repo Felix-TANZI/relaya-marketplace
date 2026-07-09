@@ -462,7 +462,7 @@ class OfferSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'price_xaf', 'compare_at_price', 'price_final',
+            'id', 'variant', 'price_xaf', 'compare_at_price', 'price_final',
             'discount_percent', 'is_on_promotion',
             'condition', 'seller_note', 'stock_quantity', 'is_active',
             'real_image',

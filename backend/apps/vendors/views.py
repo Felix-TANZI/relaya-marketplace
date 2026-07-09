@@ -292,9 +292,9 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             qs = qs.filter(Q(title__icontains=q) | Q(brand__icontains=q))
         qs = qs.select_related('category').order_by('title')[:20]
         data = [{
-            'id': m.id, 'title': m.title, 'brand': m.brand,
-            'category': m.category_id, 'category_name': m.category.name,
-        } for m in qs]
+        'id': m.id, 'slug': m.slug, 'title': m.title, 'brand': m.brand,
+        'category': m.category_id, 'category_name': m.category.name,
+    } for m in qs]
         return Response(data)        
 
 

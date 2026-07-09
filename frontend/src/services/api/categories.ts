@@ -36,6 +36,7 @@ export interface CategoryTreeNode {
   id: number;
   name: string;
   slug: string;
+  parent: number | null;
   level: number;
   icon_name: string;
   description: string;

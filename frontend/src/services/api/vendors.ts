@@ -111,6 +111,8 @@ export interface VendorProduct {
   images?: ProductImage[];
   master?: number | null;
   condition?: number | null;
+  variant?: number | null;
+  brand_fk?: number | null;
   seller_note?: string;
   stock_threshold?: number | null;
 }
@@ -537,6 +539,7 @@ export interface CertificationData {
 export interface MasterFiche {
   id: number;
   title: string;
+  slug: string; 
   brand: string;
   category: number;
   category_name: string;

@@ -361,12 +361,22 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         required=False, allow_null=True,
         help_text="État de l'offre (liste gérée par l'admin).",
     )
+    variant = serializers.PrimaryKeyRelatedField(
+        queryset=ProductVariant.objects.filter(deleted_at__isnull=True),
+        required=False, allow_null=True,
+        help_text=(
+            "Variant précis auquel rattacher l'offre. Obligatoire pour "
+            "les catégories Electronics où la fiche a des variant_axes déclarés. "
+            "Facultatif pour les autres catégories."
+        ),
+    )
 
     class Meta:
         model = Product
         fields = [
             'id', 'title', 'description', 'short_description',
             'price_xaf', 'category', 'is_active', 'master',
+            'variant',
             'condition', 'seller_note', 'stock_threshold',
             'created_at', 'updated_at',
         ]
@@ -374,27 +384,58 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         from .models import Inventory, MasterProduct as _MP
+ 
+        variant = validated_data.pop('variant', None)
         master = validated_data.pop('master', None)
+ 
+        # ─── Cohérence variant ↔ master ─────────────────────────────
+        # Si variant fourni, master est déduit automatiquement de variant.master
+        # (on ignore un éventuel master fourni qui serait incohérent).
+        if variant is not None:
+            master = variant.master
+ 
+        # ─── Création d'un master si aucun n'existe ─────────────────
         if master is None:
-            # Pas de fiche choisie -> on en crée une (PENDING par défaut)
+            # brand_fk : peut être fourni dans initial_data (pas dans les fields
+            # explicites du serializer). Utile quand le vendeur choisit une
+            # marque du registre Phase 1.2 pour son nouveau master.
+            brand_fk_id = self.initial_data.get('brand_fk')
+            brand_text = self.initial_data.get('brand', '')
+ 
             master = _MP.objects.create(
                 title=validated_data.get('title', ''),
                 description=validated_data.get('description', '') or '',
                 category=validated_data.get('category'),
+                brand=brand_text or '',
+                brand_fk_id=brand_fk_id if brand_fk_id else None,
             )
-        product = Product.objects.create(master=master, **validated_data)
+ 
+        product = Product.objects.create(
+            master=master,
+            variant=variant,
+            **validated_data,
+        )
         stock_quantity = self.context.get('stock_quantity', 0)
         Inventory.objects.create(product=product, quantity=stock_quantity)
         return product
 
     def update(self, instance, validated_data):
         from .models import Inventory
+ 
+        variant = validated_data.pop('variant', None)
         master = validated_data.pop('master', None)
-        if master is not None:
+ 
+        # Si le variant est fourni, on l'assigne (et on aligne le master)
+        if variant is not None:
+            instance.variant = variant
+            instance.master = variant.master
+        elif master is not None:
             instance.master = master
+ 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
+ 
         stock_quantity = self.context.get('stock_quantity')
         if stock_quantity is not None:
             inventory, _ = Inventory.objects.get_or_create(product=instance)

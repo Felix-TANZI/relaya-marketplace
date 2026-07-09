@@ -704,8 +704,6 @@ export default function ProductFormPage() {
 
       const needsVariantResolution =
         selectedMaster &&
-        selectedCategoryNode &&
-        isElectronicsCategory(selectedCategoryNode) &&
         masterAxes &&
         masterAxes.variant_axes_resolved.length > 0;
 
@@ -1035,8 +1033,6 @@ export default function ProductFormPage() {
 
           {/* Configuration du variant (Electronics + master avec axes) */}
           {selectedMaster &&
-            selectedCategoryNode &&
-            isElectronicsCategory(selectedCategoryNode) &&
             masterAxes &&
             masterAxes.variant_axes_resolved.length > 0 && (
               <Section title="Configuration du variant" icon={<span>🎯</span>}>

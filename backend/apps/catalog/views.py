@@ -15,6 +15,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiParame
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
+from django.utils import timezone
 
 from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
 from .serializers import (
@@ -36,6 +37,9 @@ from .serializers import (
     ProductVariantSerializer,
     ProductVariantLightSerializer,
     ProductVariantCreateSerializer,
+    AdminVariantListSerializer,
+    AdminVariantDetailSerializer,
+    AdminVariantModerationSerializer,
  
 )
 from .filters import ProductFilter, CategoryFilter
@@ -991,3 +995,227 @@ def vendor_master_variants(request, master_id):
         qs, many=True, context={"request": request},
     )
     return Response(serializer.data)    
+
+
+
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Liste des Variants (admin) — v2",
+    description=(
+        "Liste TOUS les Variants avec filtres avancés. "
+        "Support catégorie, sous-catégorie, master, statut, recherche."
+    ),
+    parameters=[
+        OpenApiParameter("moderation_status", str, description="PENDING / APPROVED / REJECTED"),
+        OpenApiParameter("search", str, description="SKU, titre master, ou valeur d'axe"),
+        OpenApiParameter("master", int, description="Filtrer par master ID"),
+        OpenApiParameter("category", int, description="Filtrer par catégorie ID"),
+        OpenApiParameter("parent_category", int, description="Filtrer par catégorie parente ID"),
+        OpenApiParameter("is_active", bool, description="true / false"),
+        OpenApiParameter("ordering", str, description="created_at / -created_at / sku / -sku"),
+    ],
+    responses={200: AdminVariantListSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_variants_list(request):
+    """Liste admin des Variants avec filtres avancés."""
+    qs = ProductVariant.objects.select_related(
+        "master", "master__category", "master__category__parent",
+        "moderated_by",
+    ).prefetch_related("offers", "master__images")
+ 
+    # ─── Filtres ────────────────────────────────────────────────
+    mod_status = request.query_params.get("moderation_status")
+    if mod_status:
+        qs = qs.filter(moderation_status=mod_status)
+ 
+    master_id = request.query_params.get("master")
+    if master_id:
+        qs = qs.filter(master_id=master_id)
+ 
+    category_id = request.query_params.get("category")
+    if category_id:
+        qs = qs.filter(master__category_id=category_id)
+ 
+    parent_cat_id = request.query_params.get("parent_category")
+    if parent_cat_id:
+        # Le variant hérite du master. Filtrer sur les masters dont la
+        # catégorie a ce parent OU qui EST elle-même le parent.
+        qs = qs.filter(
+            Q(master__category_id=parent_cat_id)
+            | Q(master__category__parent_id=parent_cat_id)
+        )
+ 
+    is_active_param = request.query_params.get("is_active")
+    if is_active_param is not None:
+        qs = qs.filter(is_active=is_active_param.lower() == "true")
+ 
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(sku__icontains=search)
+            | Q(master__title__icontains=search)
+            | Q(axis_key__icontains=search)
+        )
+ 
+    # ─── Ordering ───────────────────────────────────────────────
+    ordering = request.query_params.get("ordering", "-created_at")
+    allowed = {"created_at", "-created_at", "sku", "-sku",
+               "updated_at", "-updated_at"}
+    if ordering not in allowed:
+        ordering = "-created_at"
+    qs = qs.order_by(ordering)
+ 
+    # ─── Pré-charger les ProductAttribute pour axes_resolved ────
+    # Évite les N+1 queries : on collecte tous les slugs uniques
+    # utilisés dans variant_axes des masters, puis on charge en 1 requête.
+    all_axes_slugs = set()
+    for v in qs:
+        if v.master.variant_axes:
+            all_axes_slugs.update(v.master.variant_axes)
+    attrs_by_slug = {}
+    if all_axes_slugs:
+        attrs_by_slug = {
+            a.slug: a for a in ProductAttribute.objects.filter(
+                slug__in=all_axes_slugs,
+            )
+        }
+ 
+    serializer = AdminVariantListSerializer(
+        qs, many=True,
+        context={"request": request, "attrs_by_slug": attrs_by_slug},
+    )
+    return Response(serializer.data)
+ 
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Détail d'un Variant (admin)",
+    responses={200: AdminVariantDetailSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_variant_detail(request, variant_id):
+    """Détail complet d'un Variant avec offres et axes résolus."""
+    try:
+        variant = (
+            ProductVariant.objects
+            .select_related("master", "master__category", "moderated_by")
+            .prefetch_related("offers", "offers__condition", "offers__vendor")
+            .get(pk=variant_id)
+        )
+    except ProductVariant.DoesNotExist:
+        return Response({"detail": "Variant introuvable."}, status=status.HTTP_404_NOT_FOUND)
+ 
+    serializer = AdminVariantDetailSerializer(variant, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+def _apply_moderation(variant, request, new_status):
+    """Helper commun approve/reject : met à jour statut + timestamp + admin."""
+    reason = ""
+    if request.data:
+        s = AdminVariantModerationSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        reason = s.validated_data.get("moderation_reason", "")
+ 
+    variant.moderation_status = new_status
+    variant.moderated_at = timezone.now()
+    variant.moderated_by = request.user
+    if reason:
+        variant.moderation_reason = reason
+    variant.save(update_fields=[
+        "moderation_status", "moderated_at", "moderated_by", "moderation_reason",
+    ])
+ 
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Approuver un Variant",
+    request=AdminVariantModerationSerializer,
+    responses={200: AdminVariantDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_variant_approve(request, variant_id):
+    """Approuve un Variant."""
+    try:
+        variant = ProductVariant.objects.get(pk=variant_id)
+    except ProductVariant.DoesNotExist:
+        return Response({"detail": "Variant introuvable."}, status=status.HTTP_404_NOT_FOUND)
+ 
+    _apply_moderation(variant, request, "APPROVED")
+    serializer = AdminVariantDetailSerializer(variant, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Rejeter un Variant",
+    request=AdminVariantModerationSerializer,
+    responses={200: AdminVariantDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_variant_reject(request, variant_id):
+    """Rejette un Variant. Note : les offres rattachees ne sont PAS touchees automatiquement — l'admin les traite separement."""
+    try:
+        variant = ProductVariant.objects.get(pk=variant_id)
+    except ProductVariant.DoesNotExist:
+        return Response({"detail": "Variant introuvable."}, status=status.HTTP_404_NOT_FOUND)
+ 
+    _apply_moderation(variant, request, "REJECTED")
+    serializer = AdminVariantDetailSerializer(variant, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Approuver plusieurs Variants",
+    description="Body attendu : { \"variant_ids\": [1, 2, 3], \"moderation_reason\": \"optionnel\" }",
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_variants_bulk_approve(request):
+    """Approuve en masse une liste de Variants."""
+    ids = request.data.get("variant_ids", [])
+    if not isinstance(ids, list) or not ids:
+        return Response(
+            {"detail": "variant_ids doit etre une liste non vide."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    reason = request.data.get("moderation_reason", "")
+ 
+    n = ProductVariant.objects.filter(pk__in=ids).update(
+        moderation_status="APPROVED",
+        moderated_at=timezone.now(),
+        moderated_by=request.user,
+        moderation_reason=reason if reason else "",
+    )
+    return Response({"approved_count": n})
+ 
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Rejeter plusieurs Variants",
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_variants_bulk_reject(request):
+    """Rejette en masse une liste de Variants."""
+    ids = request.data.get("variant_ids", [])
+    if not isinstance(ids, list) or not ids:
+        return Response(
+            {"detail": "variant_ids doit etre une liste non vide."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    reason = request.data.get("moderation_reason", "")
+ 
+    n = ProductVariant.objects.filter(pk__in=ids).update(
+        moderation_status="REJECTED",
+        moderated_at=timezone.now(),
+        moderated_by=request.user,
+        moderation_reason=reason if reason else "",
+    )
+    return Response({"rejected_count": n})

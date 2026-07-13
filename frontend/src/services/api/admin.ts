@@ -739,6 +739,146 @@ export interface AdminMasterDetail extends AdminMaster {
   offers: AdminMasterOffer[];
 }
 
+export interface AdminVariantResolvedAxis {
+  slug: string;
+  name: string;
+  values_type: "SELECT" | "NUMBER" | "BOOL" | "TEXT" | "COLORDICT" | "BRAND";
+  unit: string;
+  value: string | number | null;
+}
+ 
+export interface AdminVariant {
+  id: number;
+  sku: string;
+  barcode: string;
+ 
+  // Master + breadcrumb
+  master: number;
+  master_title: string;
+  master_slug: string;
+  master_category_id: number;
+  master_category_name: string;
+  master_category_parent_id: number | null;
+  master_category_parent_name: string | null;
+  master_primary_image: string | null;
+ 
+  // Configuration
+  axis_values: Record<string, string | number>;
+  axis_key: string;
+  axes_resolved: AdminVariantResolvedAxis[];
+  display_name: string;
+ 
+  // Stats offres
+  offers_count: number;
+  offers_approved_count: number;
+  offers_pending_count: number;
+  buy_box_price_xaf: number | null;
+ 
+  // Modération
+  is_active: boolean;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  moderated_at: string | null;
+  moderated_by_username: string | null;
+  moderation_reason: string;
+  created_at: string;
+  updated_at: string;
+}
+ 
+export interface AdminVariantOffer {
+  id: number;
+  title: string;
+  price_xaf: number;
+  seller_note: string;
+  stock_quantity: number;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  is_active: boolean;
+ 
+  // Vendor user
+  vendor_user_id: number | null;
+  vendor_username: string | null;
+  vendor_first_name: string;
+  vendor_last_name: string;
+ 
+  // Vendor profile (boutique)
+  vendor_profile_id: number | null;
+  vendor_business_name: string | null;
+  shop_slug: string | null;
+ 
+  // Product info
+  condition_name: string | null;
+  real_image: string | null;
+ 
+  created_at: string;
+}
+ 
+export interface AdminVariantSibling {
+  id: number;
+  sku: string;
+  axis_values: Record<string, string | number>;
+  axes_resolved: AdminVariantResolvedAxis[];
+  display_name: string;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  is_active: boolean;
+}
+ 
+export interface AdminVariantStats {
+  total_offers: number;
+  approved_offers: number;
+  pending_offers: number;
+  rejected_offers: number;
+  price_min_xaf: number | null;
+  price_max_xaf: number | null;
+  total_stock: number;
+}
+ 
+export interface AdminVariantDetail {
+  id: number;
+  sku: string;
+  barcode: string;
+ 
+  // Master
+  master: number;
+  master_title: string;
+  master_slug: string;
+  master_description: string;
+  master_category_id: number;
+  master_category_name: string;
+  master_category_parent_id: number | null;
+  master_category_parent_name: string | null;
+  master_variant_axes: string[];
+  master_primary_image: string | null;
+ 
+  // Configuration
+  axis_values: Record<string, string | number>;
+  axis_key: string;
+  axes_resolved: AdminVariantResolvedAxis[];
+  display_name: string;
+ 
+  // Relations
+  offers: AdminVariantOffer[];
+  sibling_variants: AdminVariantSibling[];
+  stats: AdminVariantStats;
+ 
+  // Modération
+  is_active: boolean;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  moderated_at: string | null;
+  moderated_by_username: string | null;
+  moderation_reason: string;
+  created_at: string;
+  updated_at: string;
+}
+ 
+export interface VariantModerationFilters {
+  moderation_status?: "PENDING" | "APPROVED" | "REJECTED";
+  master?: number;
+  category?: number;
+  parent_category?: number;
+  is_active?: boolean;
+  search?: string;
+  ordering?: string;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1429,4 +1569,77 @@ export const adminApi = {
 
   deleteMaster: async (id: number) =>
     http(`/api/vendors/admin/masters/${id}/delete/`, { method: 'DELETE', headers: authHeader() }),
+
+   // ── VARIANTS (admin catalog) — v2 ──────────────────────────────────
+ 
+  listVariants: async (filters?: VariantModerationFilters): Promise<AdminVariant[]> => {
+    const params = new URLSearchParams();
+    if (filters?.moderation_status) params.append("moderation_status", filters.moderation_status);
+    if (filters?.master) params.append("master", String(filters.master));
+    if (filters?.category) params.append("category", String(filters.category));
+    if (filters?.parent_category) params.append("parent_category", String(filters.parent_category));
+    if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.ordering) params.append("ordering", filters.ordering);
+    const qs = params.toString();
+    return http<AdminVariant[]>(
+      `/api/catalog/admin/variants/${qs ? "?" + qs : ""}`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getVariantDetail: async (variantId: number): Promise<AdminVariantDetail> => {
+    return http<AdminVariantDetail>(
+      `/api/catalog/admin/variants/${variantId}/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  approveVariant: async (variantId: number, moderationReason?: string): Promise<AdminVariantDetail> => {
+    return http<AdminVariantDetail>(
+      `/api/catalog/admin/variants/${variantId}/approve/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ moderation_reason: moderationReason || "" }),
+      },
+    );
+  },
+ 
+  rejectVariant: async (variantId: number, moderationReason?: string): Promise<AdminVariantDetail> => {
+    return http<AdminVariantDetail>(
+      `/api/catalog/admin/variants/${variantId}/reject/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ moderation_reason: moderationReason || "" }),
+      },
+    );
+  },
+ 
+  bulkApproveVariants: async (
+    variantIds: number[], moderationReason?: string,
+  ): Promise<{ approved_count: number }> => {
+    return http<{ approved_count: number }>(
+      `/api/catalog/admin/variants/bulk-approve/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ variant_ids: variantIds, moderation_reason: moderationReason || "" }),
+      },
+    );
+  },
+ 
+  bulkRejectVariants: async (
+    variantIds: number[], moderationReason?: string,
+  ): Promise<{ rejected_count: number }> => {
+    return http<{ rejected_count: number }>(
+      `/api/catalog/admin/variants/bulk-reject/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ variant_ids: variantIds, moderation_reason: moderationReason || "" }),
+      },
+    );
+  },
 };

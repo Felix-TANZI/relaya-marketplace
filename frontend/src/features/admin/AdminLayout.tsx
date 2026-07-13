@@ -82,6 +82,12 @@ const SECTIONS: NavSection[] = [
     ],
   },
   {
+    key: 'section_catalog',
+    items: [
+     { key: 'catalog_variants', path: '/admin/catalog/variants', icon: Layers },
+    ],
+ },
+  {
     key: 'section_deliveries',
     items: [
       { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid },

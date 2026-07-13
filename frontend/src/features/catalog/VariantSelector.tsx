@@ -135,30 +135,56 @@ export function VariantSelector({
   }, [axes, variants, selection]);
 
   // ── Handler de clic sur une valeur ──────────────────────────────────
-  const handleSelect = (axisSlug: string, value: string, available: boolean) => {
-    if (!available) return;
+  const handleSelect = (axisSlug: string, value: string) => {
+    // Le user clique sur une valeur. Deux stratégies possibles :
+    //   1. Combinaison actuelle + nouvelle valeur = variant existant → on switch
+    //   2. Pas de match exact → on bascule vers un variant qui a AU MOINS cette
+    //      nouvelle valeur (comportement Amazon : "explorer" en cliquant)
 
+    // Stratégie 1 : chercher un match exact
     const newSelection = { ...selection, [axisSlug]: value };
-    setLocalOverrides(newSelection);
-
-    // Chercher un variant matching pour la nouvelle sélection
     const allAxesSelected = axes.every(
       (a) => newSelection[a.slug] !== undefined && newSelection[a.slug] !== null,
     );
 
+    let matching: ProductVariantLight | undefined;
     if (allAxesSelected) {
-      const matching = variants.find((v) => {
+      matching = variants.find((v) => {
         return axes.every(
           (a) => String(v.axis_values[a.slug] ?? "") === String(newSelection[a.slug] ?? ""),
         );
       });
+    }
 
-      if (matching && matching.id !== selectedVariantId) {
-        setLocalOverrides({});   // Le variant est résolu, on nettoie les overrides
+    if (matching) {
+      // Match exact : on change de variant proprement
+      setLocalOverrides({});
+      if (matching.id !== selectedVariantId) {
         onChange(matching.id, matching);
-      } else if (!matching && selectedVariantId !== null) {
-        onChange(null, null);
       }
+      return;
+    }
+
+    // Stratégie 2 : bascule intelligente — trouver n'importe quel variant qui a
+    // cette valeur pour cet axe. On adopte tous ses axis_values, ce qui change
+    // potentiellement les autres axes (comportement Amazon).
+    const fallback = variants.find(
+      (v) => String(v.axis_values[axisSlug] ?? "") === value,
+    );
+
+    if (fallback) {
+      setLocalOverrides({});
+      if (fallback.id !== selectedVariantId) {
+        onChange(fallback.id, fallback);
+      }
+      return;
+    }
+
+    // Aucune bascule possible (jamais atteint en pratique car la valeur vient
+    // d'un variant existant) — on stocke juste l'override et on informe le parent
+    setLocalOverrides(newSelection);
+    if (selectedVariantId !== null) {
+      onChange(null, null);
     }
   };
 
@@ -178,7 +204,9 @@ export function VariantSelector({
               </span>
               {selection[axis.slug] !== undefined && (
                 <span className="text-sm font-semibold text-gray-900 dark:text-white">
-                  : {String(selection[axis.slug])}
+                  : {axis.values_type === "COLORDICT" && colorDict[String(selection[axis.slug])]
+                      ? colorDict[String(selection[axis.slug])].name
+                      : String(selection[axis.slug])}
                   {axis.unit && ` ${axis.unit}`}
                 </span>
               )}
@@ -189,14 +217,14 @@ export function VariantSelector({
                 values={values}
                 colorDict={colorDict}
                 selected={selection[axis.slug]}
-                onSelect={(v, avail) => handleSelect(axis.slug, v, avail)}
+                onSelect={(v) => handleSelect(axis.slug, v)}
               />
             ) : (
               <SelectRow
                 values={values}
                 unit={axis.unit}
                 selected={selection[axis.slug]}
-                onSelect={(v, avail) => handleSelect(axis.slug, v, avail)}
+                onSelect={(v) => handleSelect(axis.slug, v)}
               />
             )}
           </div>
@@ -213,7 +241,7 @@ export function VariantSelector({
 interface RowProps {
   values: { value: string; available: boolean }[];
   selected: string | number | undefined;
-  onSelect: (value: string, available: boolean) => void;
+  onSelect: (value: string) => void;
 }
 
 /** Rangée de pastilles couleur (axe COLORDICT). */
@@ -236,8 +264,7 @@ function ColorRow({
           <button
             key={value}
             type="button"
-            disabled={!available}
-            onClick={() => onSelect(value, available)}
+            onClick={() => onSelect(value)}
             title={available ? label : `${label} (indisponible)`}
             className={cn(
               "relative flex h-11 w-11 items-center justify-center rounded-full border-2 transition-all",
@@ -280,8 +307,7 @@ function SelectRow({
           <button
             key={value}
             type="button"
-            disabled={!available}
-            onClick={() => onSelect(value, available)}
+            onClick={() => onSelect(value)}
             className={cn(
               "min-w-[64px] rounded-xl border-2 px-4 py-2.5 text-sm font-semibold transition-all",
               isSelected

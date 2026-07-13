@@ -358,27 +358,30 @@ export default function FicheDetailPage() {
             </div>
           </Panel>
 
-          {/* Sélecteur de Variant (Electronics + master avec axes) */}
-              {masterAxes && masterAxes.variant_axes_resolved.length > 0 && variants.length > 0 && (
-                <div className="mb-5 rounded-2xl border border-orange-100 bg-orange-50/30 p-4 dark:border-gray-700 dark:bg-gray-800/40">
-                  <VariantSelector
-                    axes={masterAxes.variant_axes_resolved}
-                    variants={variants}
-                    selectedVariantId={selectedVariantId}
-                    onChange={(id) => setSelectedVariantId(id)}
-                  />
-                </div>
-              )}
+          <div className="lg:col-span-4 space-y-4">
+            {/* Sélecteur de Variant — au-dessus de la Buy Box */}
+            {masterAxes && masterAxes.variant_axes_resolved.length > 0 && variants.length > 0 && (
+              <div className="rounded-2xl border border-orange-100 bg-white p-5 dark:border-gray-700 dark:bg-gray-800">
+                <h3 className="mb-4 text-sm font-bold text-gray-900 dark:text-white">
+                  Configuration
+                </h3>
+                <VariantSelector
+                  axes={masterAxes.variant_axes_resolved}
+                  variants={variants}
+                  selectedVariantId={selectedVariantId}
+                  onChange={(id) => setSelectedVariantId(id)}
+                />
+              </div>
+            )}
 
-              {/* Feedback quand aucune offre pour ce variant */}
-              {hasVariantAxes && selectedVariantId && !buyBox && (
-                <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                  Aucune offre disponible pour cette configuration.
-                  Choisis une autre combinaison ou reviens plus tard.
-                </div>
-              )}
+            {/* Feedback quand aucune offre pour ce variant */}
+            {hasVariantAxes && selectedVariantId && !buyBox && (
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
+                Aucune offre disponible pour cette configuration.
+                Choisis une autre combinaison ou reviens plus tard.
+              </div>
+            )}
 
-          <div className="lg:col-span-4">
             {buyBox ? (
               <div className="lg:sticky lg:top-24 rounded-2xl border border-primary/25 bg-orange-50/60 dark:bg-orange-900/10 shadow-sm p-5">
                 <p className="text-xs font-bold uppercase tracking-wide text-primary mb-2">Meilleure offre</p>

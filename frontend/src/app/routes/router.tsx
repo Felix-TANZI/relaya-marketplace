@@ -128,6 +128,9 @@ import LiveMapPage             from '@/features/admin/LiveMapPage';
 import UsersManagementPage     from '@/features/admin/UsersManagementPage';
 import UserDetailPage          from '@/features/admin/UserDetailPage';
 
+// ── Catalogue ─────────────────────────────────────────────────────────────
+import AdminVariantsPage from '@/features/admin/catalog/AdminVariantsPage';
+
 // ─────────────────────────────────────────────────────────────────────────────
 // STUBS — icônes pour les pages à venir
 // ─────────────────────────────────────────────────────────────────────────────
@@ -306,6 +309,9 @@ export const router = createBrowserRouter([
       { path: 'users',     element: <UsersManagementPage /> },
       { path: 'users/:id', element: <UserDetailPage /> },
       { path: 'products',  element: <CataloguePage /> },
+
+      // ── Catalogue ─────────────────────────────────────────────────────────────
+      { path: 'catalog/variants', element: <AdminVariantsPage /> },
     ],
   },
 ]);

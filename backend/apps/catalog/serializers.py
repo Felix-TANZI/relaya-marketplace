@@ -891,4 +891,364 @@ class ProductVariantCreateSerializer(serializers.ModelSerializer):
         """Force les champs de modération à leur valeur initiale."""
         validated_data["moderation_status"] = "APPROVED"
         validated_data["is_active"] = True
-        return super().create(validated_data)        
+        return super().create(validated_data)  
+
+
+class AdminVariantListSerializer(serializers.ModelSerializer):
+    """
+    Version LISTE — pour l'écran principal AdminVariantsPage.
+    Optimisée pour affichage tableau : master_title, badges, compteurs.
+    """
+    master_title = serializers.CharField(source="master.title", read_only=True)
+    master_slug = serializers.CharField(source="master.slug", read_only=True)
+    master_category_name = serializers.CharField(
+        source="master.category.name", read_only=True
+    )
+    display_name = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+    offers_approved_count = serializers.SerializerMethodField()
+    buy_box_price_xaf = serializers.SerializerMethodField()
+    moderated_by_username = serializers.CharField(
+        source="moderated_by.username", read_only=True, default=None,
+    )
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "sku", "barcode",
+            "master", "master_title", "master_slug", "master_category_name",
+            "axis_values", "axis_key",
+            "display_name",
+            "offers_count", "offers_approved_count", "buy_box_price_xaf",
+            "is_active", "moderation_status",
+            "moderated_at", "moderated_by_username", "moderation_reason",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+    def get_offers_approved_count(self, obj):
+        return obj.offers.filter(
+            is_active=True, moderation_status="APPROVED",
+        ).count()
+ 
+    def get_buy_box_price_xaf(self, obj):
+        offer = obj.buy_box_offer
+        return offer.price_xaf if offer else None
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# HELPER — Sérialisation d'un axe résolu (utilisé partout)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _resolve_axes(obj, attrs_by_slug=None):
+    """
+    Résout les axes d'un variant en utilisant le master.variant_axes et
+    un dict attrs_by_slug (préchargé) ou une query directe.
+    """
+    if not obj.master.variant_axes:
+        return []
+ 
+    if attrs_by_slug is None:
+        attrs_by_slug = {
+            a.slug: a for a in ProductAttribute.objects.filter(
+                slug__in=obj.master.variant_axes,
+            )
+        }
+ 
+    resolved = []
+    for slug in obj.master.variant_axes:
+        attr = attrs_by_slug.get(slug)
+        if attr is None:
+            continue
+        resolved.append({
+            "slug": attr.slug,
+            "name": attr.name,
+            "values_type": attr.values_type,
+            "unit": attr.unit or "",
+            "value": obj.axis_values.get(slug),
+        })
+    return resolved
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# LIST SERIALIZER 
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminVariantListSerializer(serializers.ModelSerializer):
+    """Vue tableau — avec breadcrumb catégorie, image master, axes résolus."""
+ 
+    master_title = serializers.CharField(source="master.title", read_only=True)
+    master_slug = serializers.CharField(source="master.slug", read_only=True)
+    master_category_id = serializers.IntegerField(source="master.category_id", read_only=True)
+    master_category_name = serializers.CharField(source="master.category.name", read_only=True)
+    master_category_parent_id = serializers.IntegerField(
+        source="master.category.parent_id", read_only=True, default=None,
+    )
+    master_category_parent_name = serializers.SerializerMethodField()
+    master_primary_image = serializers.SerializerMethodField()
+    axes_resolved = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+    offers_approved_count = serializers.SerializerMethodField()
+    offers_pending_count = serializers.SerializerMethodField()
+    buy_box_price_xaf = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+    moderated_by_username = serializers.CharField(
+        source="moderated_by.username", read_only=True, default=None,
+    )
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "sku", "barcode",
+            "master", "master_title", "master_slug",
+            "master_category_id", "master_category_name",
+            "master_category_parent_id", "master_category_parent_name",
+            "master_primary_image",
+            "axis_values", "axis_key", "axes_resolved",
+            "display_name",
+            "offers_count", "offers_approved_count", "offers_pending_count",
+            "buy_box_price_xaf",
+            "is_active", "moderation_status",
+            "moderated_at", "moderated_by_username", "moderation_reason",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_master_category_parent_name(self, obj):
+        parent = getattr(obj.master.category, "parent", None)
+        return parent.name if parent else None
+ 
+    def get_master_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.master.images.filter(is_primary=True).first() or obj.master.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_axes_resolved(self, obj):
+        return _resolve_axes(obj, self.context.get("attrs_by_slug"))
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+    def get_offers_approved_count(self, obj):
+        return obj.offers.filter(is_active=True, moderation_status="APPROVED").count()
+ 
+    def get_offers_pending_count(self, obj):
+        return obj.offers.filter(moderation_status="PENDING").count()
+ 
+    def get_buy_box_price_xaf(self, obj):
+        offer = obj.buy_box_offer
+        return offer.price_xaf if offer else None
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# OFFER BRIEF  — enrichi avec info vendeur complète
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminVariantOfferBriefSerializer(serializers.ModelSerializer):
+    """Carte offre riche pour la modale admin."""
+ 
+    # ── Vendor (User) ────────────────────────────────────────────────
+    vendor_user_id = serializers.IntegerField(source="vendor.id", read_only=True, default=None)
+    vendor_username = serializers.CharField(source="vendor.username", read_only=True, default=None)
+    vendor_first_name = serializers.CharField(source="vendor.first_name", read_only=True, default="")
+    vendor_last_name = serializers.CharField(source="vendor.last_name", read_only=True, default="")
+ 
+    # ── Vendor profile (boutique) ────────────────────────────────────
+    vendor_profile_id = serializers.SerializerMethodField()
+    vendor_business_name = serializers.SerializerMethodField()
+    shop_slug = serializers.SerializerMethodField()
+ 
+    # ── Product info ─────────────────────────────────────────────────
+    condition_name = serializers.CharField(source="condition.name", read_only=True, default=None)
+    real_image = serializers.SerializerMethodField()
+    stock_quantity = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Product
+        fields = [
+            "id", "title", "price_xaf", "seller_note", "stock_quantity",
+            "moderation_status", "is_active",
+            "vendor_user_id", "vendor_username", "vendor_first_name", "vendor_last_name",
+            "vendor_profile_id", "vendor_business_name", "shop_slug",
+            "condition_name", "real_image",
+            "created_at",
+        ]
+ 
+    def get_vendor_profile_id(self, obj):
+        try:
+            return obj.vendor.vendor_profile.id
+        except Exception:
+            return None
+ 
+    def get_vendor_business_name(self, obj):
+        try:
+            return obj.vendor.vendor_profile.business_name
+        except Exception:
+            return None
+ 
+    def get_shop_slug(self, obj):
+        try:
+            return obj.vendor.vendor_profile.shop_slug
+        except Exception:
+            return None
+ 
+    def get_real_image(self, obj):
+        request = self.context.get("request")
+        img_url = getattr(obj, "real_image", None)
+        if not img_url:
+            return None
+        if hasattr(img_url, "url"):
+            img_url = img_url.url
+        return request.build_absolute_uri(img_url) if request else img_url
+    
+    def get_stock_quantity(self, obj):
+        """Stock lu depuis ProductInventory.quantity (OneToOne)."""
+        try:
+            return obj.inventory.quantity
+        except Exception:
+            return 0
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# SIBLING VARIANT (léger, pour lister les autres variants du même master)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminVariantSiblingSerializer(serializers.ModelSerializer):
+    """Variant frère — juste ce qu'il faut pour naviguer entre variants."""
+ 
+    axes_resolved = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "sku", "axis_values", "axes_resolved",
+            "display_name", "moderation_status", "is_active",
+        ]
+ 
+    def get_axes_resolved(self, obj):
+        return _resolve_axes(obj, self.context.get("attrs_by_slug"))
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL, riche pour la modale
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminVariantDetailSerializer(serializers.ModelSerializer):
+    """Vue modale — master complet, axes, offres enrichies, siblings, stats."""
+ 
+    # ── Master ───────────────────────────────────────────────────────
+    master_title = serializers.CharField(source="master.title", read_only=True)
+    master_slug = serializers.CharField(source="master.slug", read_only=True)
+    master_description = serializers.CharField(source="master.description", read_only=True)
+    master_category_id = serializers.IntegerField(source="master.category_id", read_only=True)
+    master_category_name = serializers.CharField(source="master.category.name", read_only=True)
+    master_category_parent_id = serializers.IntegerField(
+        source="master.category.parent_id", read_only=True, default=None,
+    )
+    master_category_parent_name = serializers.SerializerMethodField()
+    master_variant_axes = serializers.JSONField(source="master.variant_axes", read_only=True)
+    master_primary_image = serializers.SerializerMethodField()
+ 
+    # ── Axes & display ───────────────────────────────────────────────
+    axes_resolved = serializers.SerializerMethodField()
+    display_name = serializers.SerializerMethodField()
+ 
+    # ── Relations enrichies ──────────────────────────────────────────
+    offers = AdminVariantOfferBriefSerializer(many=True, read_only=True)
+    sibling_variants = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+ 
+    # ── Modération ───────────────────────────────────────────────────
+    moderated_by_username = serializers.CharField(
+        source="moderated_by.username", read_only=True, default=None,
+    )
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "sku", "barcode",
+            "master", "master_title", "master_slug", "master_description",
+            "master_category_id", "master_category_name",
+            "master_category_parent_id", "master_category_parent_name",
+            "master_variant_axes", "master_primary_image",
+            "axis_values", "axis_key", "axes_resolved",
+            "display_name",
+            "offers", "sibling_variants", "stats",
+            "is_active", "moderation_status",
+            "moderated_at", "moderated_by_username", "moderation_reason",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_master_category_parent_name(self, obj):
+        parent = getattr(obj.master.category, "parent", None)
+        return parent.name if parent else None
+ 
+    def get_master_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.master.images.filter(is_primary=True).first() or obj.master.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_axes_resolved(self, obj):
+        return _resolve_axes(obj)
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+    def get_sibling_variants(self, obj):
+        """Autres variants du même master (exclut self)."""
+        siblings_qs = obj.master.variants.filter(is_active=True).exclude(pk=obj.pk).order_by("axis_key")
+        return AdminVariantSiblingSerializer(
+            siblings_qs, many=True, context=self.context,
+        ).data
+ 
+    def get_stats(self, obj):
+        """Statistiques globales du variant."""
+        offers = obj.offers.filter(is_active=True)
+        approved = offers.filter(moderation_status="APPROVED")
+        prices = list(approved.values_list("price_xaf", flat=True))
+
+        # Stock lu depuis ProductInventory.quantity (OneToOne 'inventory')
+        total_stock = 0
+        for o in approved:
+            try:
+                total_stock += o.inventory.quantity or 0
+            except Exception:
+                pass  # Pas d'inventory rattachée → skip
+
+        return {
+            "total_offers": obj.offers.count(),
+            "approved_offers": approved.count(),
+            "pending_offers": obj.offers.filter(moderation_status="PENDING").count(),
+            "rejected_offers": obj.offers.filter(moderation_status="REJECTED").count(),
+            "price_min_xaf": min(prices) if prices else None,
+            "price_max_xaf": max(prices) if prices else None,
+            "total_stock": total_stock,
+        }
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MODERATION PAYLOAD
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminVariantModerationSerializer(serializers.Serializer):
+    """Payload pour approve/reject : commentaire optionnel."""
+    moderation_reason = serializers.CharField(
+        required=False, allow_blank=True, default="",
+    )

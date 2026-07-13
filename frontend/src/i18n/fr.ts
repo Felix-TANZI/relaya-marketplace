@@ -1218,6 +1218,10 @@
     boost:                'Boost & Campagnes',
     marketing:            'Marketing & Com',
     ia:                   'IA Conseiller',
+
+    // Catalog
+    section_catalog:   'Catalogue',
+    catalog_variants:  'Modération Variants',
  
     // Security
     section_security:     'Sécurité',

@@ -97,5 +97,20 @@ urlpatterns = [
     path("colors/", views.color_dictionary_list, name="color-dictionary-list"),
     path("colors/grouped/", views.color_dictionary_grouped, name="color-dictionary-grouped"),
 
+
+     # ─── Admin Variants ────────────────────────────────────────────────
+    path("admin/variants/", views.admin_variants_list,
+         name="admin-variants-list"),
+    path("admin/variants/bulk-approve/", views.admin_variants_bulk_approve,
+         name="admin-variants-bulk-approve"),
+    path("admin/variants/bulk-reject/", views.admin_variants_bulk_reject,
+         name="admin-variants-bulk-reject"),
+    path("admin/variants/<int:variant_id>/", views.admin_variant_detail,
+         name="admin-variant-detail"),
+    path("admin/variants/<int:variant_id>/approve/", views.admin_variant_approve,
+         name="admin-variant-approve"),
+    path("admin/variants/<int:variant_id>/reject/", views.admin_variant_reject,
+         name="admin-variant-reject"),
+
     path('', include(router.urls)),
 ]

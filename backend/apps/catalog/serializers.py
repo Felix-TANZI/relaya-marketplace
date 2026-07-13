@@ -889,6 +889,6 @@ class ProductVariantCreateSerializer(serializers.ModelSerializer):
  
     def create(self, validated_data):
         """Force les champs de modération à leur valeur initiale."""
-        validated_data["moderation_status"] = "PENDING"
+        validated_data["moderation_status"] = "APPROVED"
         validated_data["is_active"] = True
         return super().create(validated_data)        

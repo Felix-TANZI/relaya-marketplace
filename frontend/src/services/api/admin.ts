@@ -879,6 +879,92 @@ export interface VariantModerationFilters {
   ordering?: string;
 }
 
+export interface AdminBrand {
+  id: number;
+  name: string;
+  slug: string;
+  logo_url: string | null;
+  country_of_origin: string;
+  website: string;
+  is_active: boolean;
+  is_verified: boolean;
+  master_products_count: number;
+  active_masters_count: number;
+  proposed_by: string | null;   // username extrait de admin_note
+  created_at: string;
+  updated_at: string;
+}
+ 
+export interface AdminBrandMasterBrief {
+  id: number;
+  slug: string;
+  title: string;
+  category_name: string;
+  primary_image: string | null;
+  offers_count: number;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+}
+ 
+export interface AdminBrandStats {
+  total_masters: number;
+  active_masters: number;
+  total_offers: number;
+  approved_offers: number;
+  distinct_vendors: number;
+}
+ 
+export interface AdminBrandDetail {
+  id: number;
+  name: string;
+  slug: string;
+  logo: string | null;
+  logo_url: string | null;
+  description: string;
+  country_of_origin: string;
+  website: string;
+  is_active: boolean;
+  is_verified: boolean;
+  admin_note: string;
+  proposed_by: string | null;
+  master_products: AdminBrandMasterBrief[];
+  stats: AdminBrandStats;
+  is_deletable: boolean;
+  created_at: string;
+  updated_at: string;
+}
+ 
+export interface BrandListFilters {
+  is_verified?: boolean;
+  is_active?: boolean;
+  has_masters?: boolean;
+  search?: string;
+  ordering?: string;
+}
+ 
+export interface BrandUpdatePayload {
+  name?: string;
+  logo?: File | null;
+  description?: string;
+  country_of_origin?: string;
+  website?: string;
+  is_active?: boolean;
+  is_verified?: boolean;
+  admin_note?: string;
+}
+ 
+export interface BrandMergePayload {
+  target_id: number;
+  source_ids: number[];
+}
+ 
+export interface BrandMergeResponse {
+  target_id: number;
+  target_name: string;
+  sources_deleted: number;
+  masters_reassigned: number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1641,5 +1727,154 @@ export const adminApi = {
         body: JSON.stringify({ variant_ids: variantIds, moderation_reason: moderationReason || "" }),
       },
     );
+  },
+
+
+  // ── BRANDS (admin catalog) ──────────────────────────────────────────
+ 
+  listBrands: async (filters?: BrandListFilters): Promise<AdminBrand[]> => {
+    const params = new URLSearchParams();
+    if (filters?.is_verified !== undefined) params.append("is_verified", String(filters.is_verified));
+    if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
+    if (filters?.has_masters !== undefined) params.append("has_masters", String(filters.has_masters));
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.ordering) params.append("ordering", filters.ordering);
+    const qs = params.toString();
+    return http<AdminBrand[]>(
+      `/api/catalog/admin/brands/${qs ? "?" + qs : ""}`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getBrandDetail: async (brandId: number): Promise<AdminBrandDetail> => {
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  createBrand: async (payload: BrandUpdatePayload): Promise<AdminBrandDetail> => {
+    const fd = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v === undefined || v === null) return;
+      if (v instanceof File) fd.append(k, v);
+      else fd.append(k, String(v));
+    });
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/create/`,
+      { method: "POST", headers: authHeader(), body: fd },
+    );
+  },
+ 
+  updateBrand: async (brandId: number, payload: BrandUpdatePayload): Promise<AdminBrandDetail> => {
+    const fd = new FormData();
+    Object.entries(payload).forEach(([k, v]) => {
+      if (v === undefined) return;
+      if (v === null) { fd.append(k, ""); return; }
+      if (v instanceof File) fd.append(k, v);
+      else fd.append(k, String(v));
+    });
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/update/`,
+      { method: "PATCH", headers: authHeader(), body: fd },
+    );
+  },
+ 
+  deleteBrand: async (brandId: number): Promise<void> => {
+    return http<void>(
+      `/api/catalog/admin/brands/${brandId}/delete/`,
+      { method: "DELETE", headers: authHeader() },
+    );
+  },
+ 
+  verifyBrand: async (brandId: number): Promise<AdminBrandDetail> => {
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/verify/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  unverifyBrand: async (brandId: number): Promise<AdminBrandDetail> => {
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/unverify/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  activateBrand: async (brandId: number): Promise<AdminBrandDetail> => {
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/activate/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  deactivateBrand: async (brandId: number): Promise<AdminBrandDetail> => {
+    return http<AdminBrandDetail>(
+      `/api/catalog/admin/brands/${brandId}/deactivate/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  bulkVerifyBrands: async (brandIds: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/brands/bulk-verify/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_ids: brandIds }),
+      },
+    );
+  },
+ 
+  bulkUnverifyBrands: async (brandIds: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/brands/bulk-unverify/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_ids: brandIds }),
+      },
+    );
+  },
+ 
+  bulkActivateBrands: async (brandIds: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/brands/bulk-activate/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_ids: brandIds }),
+      },
+    );
+  },
+ 
+  bulkDeactivateBrands: async (brandIds: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/brands/bulk-deactivate/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ brand_ids: brandIds }),
+      },
+    );
+  },
+ 
+  mergeBrands: async (payload: BrandMergePayload): Promise<BrandMergeResponse> => {
+    return http<BrandMergeResponse>(
+      `/api/catalog/admin/brands/merge/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  exportBrandsCsvUrl: (filters?: BrandListFilters): string => {
+    const params = new URLSearchParams();
+    if (filters?.is_verified !== undefined) params.append("is_verified", String(filters.is_verified));
+    if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
+    const qs = params.toString();
+    return `/api/catalog/admin/brands/export/csv/${qs ? "?" + qs : ""}`;
   },
 };

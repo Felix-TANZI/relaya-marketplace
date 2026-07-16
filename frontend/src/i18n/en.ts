@@ -1232,7 +1232,8 @@
     logs:                 'System Logs',
     settings:             'Settings',
     section_catalog:   'Catalog',
-    catalog_variants:  'Variants Moderation'
+    catalog_variants:  'Variants Moderation',
+    catalog_brands:   'Brands',
   },
  
   common: {

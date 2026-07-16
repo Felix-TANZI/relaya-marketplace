@@ -1222,6 +1222,7 @@
     // Catalog
     section_catalog:   'Catalogue',
     catalog_variants:  'Modération Variants',
+    catalog_brands:   'Marques', 
  
     // Security
     section_security:     'Sécurité',

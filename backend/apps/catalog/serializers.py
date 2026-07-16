@@ -3,6 +3,7 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
+import re
 from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
 
 
@@ -1252,3 +1253,276 @@ class AdminVariantModerationSerializer(serializers.Serializer):
     moderation_reason = serializers.CharField(
         required=False, allow_blank=True, default="",
     )
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HELPER — extraction du proposeur depuis admin_note
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+_PROPOSED_BY_RE = re.compile(
+    r"(?:Propos[eé][e]?\s*par\s+|Proposed by\s+)(?:@?(\w+))",
+    re.IGNORECASE,
+)
+ 
+def _extract_proposed_by(admin_note: str) -> str | None:
+    """
+    Tente d'extraire le username du vendeur qui a proposé la marque
+    depuis admin_note. Format attendu :
+    'Proposée par vendor42 le 2025-11-05' (format libre, on cherche
+    juste un username après 'Proposée par').
+    """
+    if not admin_note:
+        return None
+    m = _PROPOSED_BY_RE.search(admin_note)
+    return m.group(1) if m else None
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# LIST SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandListSerializer(serializers.ModelSerializer):
+    """Vue tableau — infos essentielles + compteurs."""
+ 
+    logo_url = serializers.SerializerMethodField()
+    master_products_count = serializers.SerializerMethodField()
+    active_masters_count = serializers.SerializerMethodField()
+    proposed_by = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "id", "name", "slug",
+            "logo_url",
+            "country_of_origin", "website",
+            "is_active", "is_verified",
+            "master_products_count", "active_masters_count",
+            "proposed_by",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.logo:
+            return None
+        url = obj.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_master_products_count(self, obj):
+        return obj.master_products.count()
+ 
+    def get_active_masters_count(self, obj):
+        return obj.master_products.filter(
+            moderation_status="APPROVED",
+        ).count()
+ 
+    def get_proposed_by(self, obj):
+        """Extrait le username depuis admin_note si présent."""
+        return _extract_proposed_by(obj.admin_note)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MASTER BRIEF (pour lister les fiches attachées)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandMasterBriefSerializer(serializers.ModelSerializer):
+    """Brève info d'une fiche maître attachée à la marque."""
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    primary_image = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id", "slug", "title", "category_name",
+            "primary_image", "offers_count",
+            "moderation_status", "created_at",
+        ]
+ 
+    def get_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandDetailSerializer(serializers.ModelSerializer):
+    """Vue modale — brand complet + fiches attachées + stats."""
+ 
+    logo_url = serializers.SerializerMethodField()
+    master_products = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+    proposed_by = serializers.SerializerMethodField()
+    is_deletable = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "id", "name", "slug",
+            "logo", "logo_url",
+            "description", "country_of_origin", "website",
+            "is_active", "is_verified",
+            "admin_note", "proposed_by",
+            "master_products", "stats", "is_deletable",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.logo:
+            return None
+        url = obj.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_master_products(self, obj):
+        """Fiches maîtres liées, limitées à 50 max pour éviter les payloads massifs."""
+        qs = obj.master_products.select_related("category").prefetch_related(
+            "images", "offers",
+        ).order_by("-created_at")[:50]
+        return AdminBrandMasterBriefSerializer(
+            qs, many=True, context=self.context,
+        ).data
+ 
+    def get_stats(self, obj):
+        """
+        Statistiques métier :
+        - Nombre de fiches maîtres (total et APPROVED)
+        - Nombre d'offres cumulées sur toutes ces fiches
+        - Nombre de vendeurs distincts qui ont une offre sous cette marque
+        """
+        from .models import Product
+        all_masters = obj.master_products
+        active_masters = all_masters.filter(moderation_status="APPROVED")
+ 
+        offers = Product.objects.filter(master__brand_fk=obj)
+        approved_offers = offers.filter(moderation_status="APPROVED")
+ 
+        vendors_count = offers.values("vendor").distinct().count()
+ 
+        return {
+            "total_masters": all_masters.count(),
+            "active_masters": active_masters.count(),
+            "total_offers": offers.count(),
+            "approved_offers": approved_offers.count(),
+            "distinct_vendors": vendors_count,
+        }
+ 
+    def get_proposed_by(self, obj):
+        return _extract_proposed_by(obj.admin_note)
+ 
+    def get_is_deletable(self, obj):
+        """
+        Une marque n'est supprimable que si AUCUNE fiche maître ne l'utilise.
+        Le champ brand_fk est protégé PROTECT côté modèle, donc tenter de
+        supprimer une marque utilisée lèverait ProtectedError.
+        """
+        return not obj.master_products.exists()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE / UPDATE SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandCreateUpdateSerializer(serializers.ModelSerializer):
+    """Formulaire admin création / édition d'une marque."""
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "name", "logo",
+            "description", "country_of_origin", "website",
+            "is_active", "is_verified",
+            "admin_note",
+        ]
+ 
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Le nom de la marque doit contenir au moins 2 caractères.",
+            )
+ 
+        # Unicité case-insensitive (au-delà de la contrainte DB `unique=True`)
+        qs = Brand.objects.filter(name__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                f"Une marque nommée '{value}' existe déjà.",
+            )
+ 
+        return value
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MERGE SERIALIZER (payload de fusion)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandMergeSerializer(serializers.Serializer):
+    """
+    Payload pour fusionner plusieurs marques dans une cible.
+ 
+    Format :
+    {
+      "target_id": 42,
+      "source_ids": [17, 23, 88]
+    }
+ 
+    Règles métier :
+    - target doit exister et être is_verified (protection contre écrasement
+      d'une marque officielle par une non-vérifiée)
+    - target ne peut pas être dans source_ids (auto-fusion interdite)
+    - source_ids doivent tous exister
+    - Toutes les fiches maîtres des sources sont réassignées à la cible
+    - Les sources sont ensuite supprimées
+    """
+    target_id = serializers.IntegerField()
+    source_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+    )
+ 
+    def validate(self, attrs):
+        target_id = attrs["target_id"]
+        source_ids = attrs["source_ids"]
+ 
+        if target_id in source_ids:
+            raise serializers.ValidationError(
+                "La marque cible ne peut pas être dans les sources.",
+            )
+ 
+        try:
+            target = Brand.objects.get(pk=target_id)
+        except Brand.DoesNotExist:
+            raise serializers.ValidationError(
+                {"target_id": "Marque cible introuvable."},
+            )
+ 
+        if not target.is_verified:
+            raise serializers.ValidationError(
+                {"target_id": (
+                    f"La marque cible '{target.name}' n'est pas vérifiée. "
+                    "Marque-la d'abord comme vérifiée avant la fusion."
+                )},
+            )
+ 
+        sources_qs = Brand.objects.filter(pk__in=source_ids)
+        if sources_qs.count() != len(source_ids):
+            raise serializers.ValidationError(
+                {"source_ids": "Une ou plusieurs marques sources sont introuvables."},
+            )
+ 
+        attrs["_target"] = target
+        attrs["_sources"] = list(sources_qs)
+        return attrs    

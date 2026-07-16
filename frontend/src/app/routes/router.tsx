@@ -130,6 +130,7 @@ import UserDetailPage          from '@/features/admin/UserDetailPage';
 
 // ── Catalogue ─────────────────────────────────────────────────────────────
 import AdminVariantsPage from '@/features/admin/catalog/AdminVariantsPage';
+import AdminBrandsPage from '@/features/admin/catalog/AdminBrandsPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // STUBS — icônes pour les pages à venir
@@ -312,6 +313,7 @@ export const router = createBrowserRouter([
 
       // ── Catalogue ─────────────────────────────────────────────────────────────
       { path: 'catalog/variants', element: <AdminVariantsPage /> },
+      { path: 'catalog/brands',   element: <AdminBrandsPage /> },
     ],
   },
 ]);

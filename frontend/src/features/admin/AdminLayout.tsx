@@ -85,6 +85,7 @@ const SECTIONS: NavSection[] = [
     key: 'section_catalog',
     items: [
      { key: 'catalog_variants', path: '/admin/catalog/variants', icon: Layers },
+     { key: 'catalog_brands',   path: '/admin/catalog/brands',   icon: Award },
     ],
  },
   {

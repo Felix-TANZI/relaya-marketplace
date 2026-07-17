@@ -1139,6 +1139,90 @@ export interface ColorUpdatePayload {
   display_order?: number;
 }
 
+export interface AdminCategory {
+  id: number;
+  name: string;
+  slug: string;
+  level: number;
+  parent: number | null;
+  parent_name: string | null;
+  icon_name: string;
+  description: string;
+  display_order: number;
+  is_active: boolean;
+  is_deprecated: boolean;
+  requires_admin_approval: boolean;
+  children_count: number;
+  masters_count: number;
+  attributes_count: number;
+}
+ 
+export interface AdminCategoryTreeNode extends AdminCategory {
+  children: AdminCategoryTreeNode[];
+}
+ 
+export interface AdminCategoryMasterBrief {
+  id: number;
+  slug: string;
+  title: string;
+  primary_image: string | null;
+  offers_count: number;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  created_at: string;
+}
+ 
+export interface AdminCategoryAttributeBrief {
+  id: number;
+  slug: string;
+  name: string;
+  role: "AXE" | "SPEC" | "OFFRE";
+  values_type: string;
+  unit: string;
+  values_count: number;
+  is_required: boolean;
+}
+ 
+export interface AdminCategoryStats {
+  total_masters: number;
+  approved_masters: number;
+  children_count: number;
+  attributes_count: number;
+  level: number;
+}
+ 
+export interface AdminCategoryDetail extends AdminCategory {
+  parent_slug: string | null;
+  ancestors: { id: number; name: string; slug: string }[];
+  children: AdminCategory[];
+  master_products: AdminCategoryMasterBrief[];
+  attributes: AdminCategoryAttributeBrief[];
+  stats: AdminCategoryStats;
+  is_deletable: boolean;
+}
+ 
+export interface CategoryListFilters {
+  level?: number;
+  parent?: number | 0;   // 0 pour racines
+  is_active?: boolean;
+  is_deprecated?: boolean;
+  requires_admin_approval?: boolean;
+  search?: string;
+}
+ 
+export interface CategoryUpdatePayload {
+  name?: string;
+  slug?: string;
+  parent?: number | null;
+  icon_name?: string;
+  description?: string;
+  display_order?: number;
+  is_active?: boolean;
+  is_deprecated?: boolean;
+  requires_admin_approval?: boolean;
+}
+ 
+export type CategoryFlag = "is_active" | "is_deprecated" | "requires_admin_approval";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2231,6 +2315,123 @@ export const adminApi = {
         method: "POST",
         headers: { ...authHeader(), "Content-Type": "application/json" },
         body: JSON.stringify({ color_ids: ids }),
+      },
+    );
+  },
+
+  // ── CATEGORIES (admin catalog) ──────────────────────────────────────
+ 
+  listCategories: async (filters?: CategoryListFilters): Promise<AdminCategory[]> => {
+    const params = new URLSearchParams();
+    if (filters?.level !== undefined) params.append("level", String(filters.level));
+    if (filters?.parent !== undefined) params.append("parent", String(filters.parent));
+    if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
+    if (filters?.is_deprecated !== undefined) params.append("is_deprecated", String(filters.is_deprecated));
+    if (filters?.requires_admin_approval !== undefined) params.append("requires_admin_approval", String(filters.requires_admin_approval));
+    if (filters?.search) params.append("search", filters.search);
+    const qs = params.toString();
+    return http<AdminCategory[]>(
+      `/api/catalog/admin/categories/${qs ? "?" + qs : ""}`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getCategoriesTree: async (): Promise<AdminCategoryTreeNode[]> => {
+    return http<AdminCategoryTreeNode[]>(
+      `/api/catalog/admin/categories/tree/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getCategoryDetail: async (id: number): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  createCategory: async (payload: CategoryUpdatePayload): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/create/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  updateCategory: async (id: number, payload: CategoryUpdatePayload): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/update/`,
+      {
+        method: "PATCH",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  deleteCategory: async (id: number): Promise<void> => {
+    return http<void>(
+      `/api/catalog/admin/categories/${id}/delete/`,
+      { method: "DELETE", headers: authHeader() },
+    );
+  },
+ 
+  toggleCategoryActive: async (id: number, value?: boolean): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/toggle-active/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(value !== undefined ? { value } : {}),
+      },
+    );
+  },
+ 
+  toggleCategoryDeprecated: async (id: number, value?: boolean): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/toggle-deprecated/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(value !== undefined ? { value } : {}),
+      },
+    );
+  },
+ 
+  toggleCategoryApproval: async (id: number, value?: boolean): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/toggle-approval/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(value !== undefined ? { value } : {}),
+      },
+    );
+  },
+ 
+  moveCategoryOrder: async (id: number, display_order: number): Promise<AdminCategoryDetail> => {
+    return http<AdminCategoryDetail>(
+      `/api/catalog/admin/categories/${id}/move/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ display_order }),
+      },
+    );
+  },
+ 
+  bulkSetCategoriesFlag: async (
+    ids: number[], flag: CategoryFlag, value: boolean,
+  ): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/categories/bulk-set-flag/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ category_ids: ids, flag, value }),
       },
     );
   },

@@ -1236,6 +1236,7 @@
     catalog_brands:   'Brands',
     catalog_attributes: 'Attributes',
     catalog_colors:     'Colors',
+    catalog_categories: 'Categories',
   },
  
   common: {

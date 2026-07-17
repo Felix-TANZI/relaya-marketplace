@@ -54,6 +54,10 @@ from .serializers import (
     AdminColorListSerializer,
     AdminColorDetailSerializer,
     AdminColorCreateUpdateSerializer,
+    AdminCategoryListSerializer,
+    AdminCategoryTreeNodeSerializer,
+    AdminCategoryDetailSerializer,
+    AdminCategoryCreateUpdateSerializer,
  
 )
 from .filters import ProductFilter, CategoryFilter
@@ -2024,3 +2028,344 @@ def admin_colors_bulk_activate(request):
 @permission_classes([IsAdminUser])
 def admin_colors_bulk_deactivate(request):
     return _bulk_toggle_colors(request, False)    
+
+
+
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Liste plate des catégories (admin)",
+    parameters=[
+        OpenApiParameter("level", int),
+        OpenApiParameter("parent", int, description="ID du parent (0 pour racines)"),
+        OpenApiParameter("is_active", bool),
+        OpenApiParameter("is_deprecated", bool),
+        OpenApiParameter("requires_admin_approval", bool),
+        OpenApiParameter("search", str),
+    ],
+    responses={200: AdminCategoryListSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_categories_list(request):
+    """Liste plate — filtres pour vue tableau alternative."""
+    qs = Category.objects.filter(deleted_at__isnull=True).select_related("parent")
+ 
+    level = request.query_params.get("level")
+    if level is not None:
+        try:
+            qs = qs.filter(level=int(level))
+        except ValueError:
+            pass
+ 
+    parent_param = request.query_params.get("parent")
+    if parent_param is not None:
+        if parent_param == "0" or parent_param == "":
+            qs = qs.filter(parent__isnull=True)
+        else:
+            try:
+                qs = qs.filter(parent_id=int(parent_param))
+            except ValueError:
+                pass
+ 
+    for flag in ["is_active", "is_deprecated", "requires_admin_approval"]:
+        val = request.query_params.get(flag)
+        if val is not None:
+            qs = qs.filter(**{flag: val.lower() == "true"})
+ 
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) | Q(slug__icontains=search),
+        )
+ 
+    qs = qs.order_by("level", "display_order", "name")
+ 
+    serializer = AdminCategoryListSerializer(qs, many=True, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# TREE (avec enfants imbriqués)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Arbre complet des catégories (admin)",
+    description=(
+        "Retourne l'arborescence entière avec compteurs préchargés. "
+        "Include categories deprecated ET inactives (contrairement à l'endpoint public)."
+    ),
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_categories_tree(request):
+    """Arbre complet — inclut deprecated + inactive pour vue admin."""
+    all_cats = list(
+        Category.objects.filter(deleted_at__isnull=True)
+        .select_related("parent")
+        .order_by("level", "display_order", "name")
+    )
+ 
+    # Compter les masters par catégorie (une seule requête)
+    masters_counts = dict(
+        MasterProduct.objects
+        .values_list("category_id")
+        .annotate(c=Count("id"))
+        .values_list("category_id", "c")
+    )
+ 
+    # Compter les attributs par catégorie
+    attrs_counts = dict(
+        ProductAttribute.objects
+        .filter(is_universal=False)
+        .values_list("category_id")
+        .annotate(c=Count("id"))
+        .values_list("category_id", "c")
+    )
+ 
+    # Construire le children_map
+    children_map: dict = {}
+    for cat in all_cats:
+        if cat.parent_id:
+            children_map.setdefault(cat.parent_id, []).append(cat)
+ 
+    # Racines
+    roots = [c for c in all_cats if c.parent_id is None]
+    roots.sort(key=lambda c: (c.display_order, c.name.lower()))
+ 
+    serializer = AdminCategoryTreeNodeSerializer(
+        roots, many=True, context={
+            "request": request,
+            "children_map": children_map,
+            "masters_counts": masters_counts,
+            "attributes_counts": attrs_counts,
+        },
+    )
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Créer une catégorie",
+    request=AdminCategoryCreateUpdateSerializer,
+    responses={201: AdminCategoryDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_categories_create(request):
+    serializer = AdminCategoryCreateUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    cat = serializer.save()
+    return Response(
+        AdminCategoryDetailSerializer(cat, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Détail d'une catégorie",
+    responses={200: AdminCategoryDetailSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_category_detail(request, cat_id):
+    try:
+        cat = Category.objects.select_related("parent").get(pk=cat_id)
+    except Category.DoesNotExist:
+        return Response({"detail": "Catégorie introuvable."}, status=404)
+    return Response(
+        AdminCategoryDetailSerializer(cat, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Modifier une catégorie",
+    request=AdminCategoryCreateUpdateSerializer,
+    responses={200: AdminCategoryDetailSerializer, 404: None},
+)
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_category_update(request, cat_id):
+    try:
+        cat = Category.objects.get(pk=cat_id)
+    except Category.DoesNotExist:
+        return Response({"detail": "Catégorie introuvable."}, status=404)
+ 
+    serializer = AdminCategoryCreateUpdateSerializer(cat, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    cat = serializer.save()
+ 
+    return Response(
+        AdminCategoryDetailSerializer(cat, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Supprimer une catégorie",
+    description="Interdit si utilisée (fiches, attributs, enfants).",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_category_delete(request, cat_id):
+    try:
+        cat = Category.objects.get(pk=cat_id)
+    except Category.DoesNotExist:
+        return Response({"detail": "Catégorie introuvable."}, status=404)
+ 
+    masters_count = cat.master_products.count()
+    children_count = cat.children.filter(deleted_at__isnull=True).count()
+    attrs_count = cat.attributes.count()
+ 
+    if masters_count > 0 or children_count > 0 or attrs_count > 0:
+        issues = []
+        if masters_count > 0:
+            issues.append(f"{masters_count} fiche(s)")
+        if children_count > 0:
+            issues.append(f"{children_count} sous-catégorie(s)")
+        if attrs_count > 0:
+            issues.append(f"{attrs_count} attribut(s) spécifique(s)")
+        return Response(
+            {"detail": (
+                f"Impossible de supprimer '{cat.name}' : "
+                f"{', '.join(issues)} y sont rattachés. "
+                "Utilise le flag 'deprecated' pour masquer sans supprimer."
+            )},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    # Soft delete via SoftDeleteModel
+    if hasattr(cat, "delete") and hasattr(cat, "deleted_at"):
+        cat.delete()
+    else:
+        cat.delete()
+ 
+    return Response(status=204)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# TOGGLES (individuels)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _toggle_flag(cat_id, flag_name, request):
+    try:
+        cat = Category.objects.get(pk=cat_id)
+    except Category.DoesNotExist:
+        return None
+    new_value = request.data.get("value")
+    if new_value is None:
+        new_value = not getattr(cat, flag_name)
+    else:
+        new_value = bool(new_value)
+    setattr(cat, flag_name, new_value)
+    cat.save(update_fields=[flag_name])
+    return cat
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Toggle is_active")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_category_toggle_active(request, cat_id):
+    cat = _toggle_flag(cat_id, "is_active", request)
+    if not cat:
+        return Response({"detail": "Introuvable."}, status=404)
+    return Response(AdminCategoryDetailSerializer(cat, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Toggle is_deprecated")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_category_toggle_deprecated(request, cat_id):
+    cat = _toggle_flag(cat_id, "is_deprecated", request)
+    if not cat:
+        return Response({"detail": "Introuvable."}, status=404)
+    return Response(AdminCategoryDetailSerializer(cat, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Toggle requires_admin_approval")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_category_toggle_approval(request, cat_id):
+    cat = _toggle_flag(cat_id, "requires_admin_approval", request)
+    if not cat:
+        return Response({"detail": "Introuvable."}, status=404)
+    return Response(AdminCategoryDetailSerializer(cat, context={"request": request}).data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MOVE (changer display_order)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Changer l'ordre d'affichage",
+    description="Body : { 'display_order': 5 }",
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_category_move(request, cat_id):
+    try:
+        cat = Category.objects.get(pk=cat_id)
+    except Category.DoesNotExist:
+        return Response({"detail": "Introuvable."}, status=404)
+ 
+    new_order = request.data.get("display_order")
+    if new_order is None:
+        return Response({"detail": "display_order requis."}, status=400)
+    try:
+        new_order = int(new_order)
+        if new_order < 0:
+            raise ValueError
+    except (ValueError, TypeError):
+        return Response({"detail": "display_order doit être un entier ≥ 0."}, status=400)
+ 
+    cat.display_order = new_order
+    cat.save(update_fields=["display_order"])
+    return Response(
+        AdminCategoryDetailSerializer(cat, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# BULK
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Modifier un flag en masse",
+    description="Body : { 'category_ids': [...], 'flag': 'is_deprecated', 'value': true }",
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_categories_bulk_set_flag(request):
+    ids = request.data.get("category_ids", [])
+    flag = request.data.get("flag")
+    value = request.data.get("value")
+ 
+    ALLOWED_FLAGS = ("is_active", "is_deprecated", "requires_admin_approval")
+ 
+    if not isinstance(ids, list) or not ids:
+        return Response({"detail": "category_ids liste requise."}, status=400)
+    if flag not in ALLOWED_FLAGS:
+        return Response(
+            {"detail": f"flag doit être parmi : {', '.join(ALLOWED_FLAGS)}."},
+            status=400,
+        )
+    value = bool(value)
+ 
+    n = Category.objects.filter(pk__in=ids, deleted_at__isnull=True).update(
+        **{flag: value},
+    )
+    return Response({"updated_count": n})    

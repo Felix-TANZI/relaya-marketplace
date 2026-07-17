@@ -1222,6 +1222,9 @@
     // Catalog
     section_catalog:   'Catalogue',
     catalog_variants:  'Modération Variants',
+    catalog_brands:   'Marques', 
+    catalog_attributes: 'Attributs',
+    catalog_colors:     'Couleurs', 
  
     // Security
     section_security:     'Sécurité',

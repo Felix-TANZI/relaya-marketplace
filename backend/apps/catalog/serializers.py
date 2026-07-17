@@ -3,7 +3,8 @@
 
 from rest_framework import serializers
 from django.db.models import Avg
-from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
+import re
+from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -1252,3 +1253,577 @@ class AdminVariantModerationSerializer(serializers.Serializer):
     moderation_reason = serializers.CharField(
         required=False, allow_blank=True, default="",
     )
+
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# HELPER — extraction du proposeur depuis admin_note
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+_PROPOSED_BY_RE = re.compile(
+    r"(?:Propos[eé][e]?\s*par\s+|Proposed by\s+)(?:@?(\w+))",
+    re.IGNORECASE,
+)
+ 
+def _extract_proposed_by(admin_note: str) -> str | None:
+    """
+    Tente d'extraire le username du vendeur qui a proposé la marque
+    depuis admin_note. Format attendu :
+    'Proposée par vendor42 le 2025-11-05' (format libre, on cherche
+    juste un username après 'Proposée par').
+    """
+    if not admin_note:
+        return None
+    m = _PROPOSED_BY_RE.search(admin_note)
+    return m.group(1) if m else None
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# LIST SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandListSerializer(serializers.ModelSerializer):
+    """Vue tableau — infos essentielles + compteurs."""
+ 
+    logo_url = serializers.SerializerMethodField()
+    master_products_count = serializers.SerializerMethodField()
+    active_masters_count = serializers.SerializerMethodField()
+    proposed_by = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "id", "name", "slug",
+            "logo_url",
+            "country_of_origin", "website",
+            "is_active", "is_verified",
+            "master_products_count", "active_masters_count",
+            "proposed_by",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.logo:
+            return None
+        url = obj.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_master_products_count(self, obj):
+        return obj.master_products.count()
+ 
+    def get_active_masters_count(self, obj):
+        return obj.master_products.filter(
+            moderation_status="APPROVED",
+        ).count()
+ 
+    def get_proposed_by(self, obj):
+        """Extrait le username depuis admin_note si présent."""
+        return _extract_proposed_by(obj.admin_note)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MASTER BRIEF (pour lister les fiches attachées)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandMasterBriefSerializer(serializers.ModelSerializer):
+    """Brève info d'une fiche maître attachée à la marque."""
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    primary_image = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id", "slug", "title", "category_name",
+            "primary_image", "offers_count",
+            "moderation_status", "created_at",
+        ]
+ 
+    def get_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandDetailSerializer(serializers.ModelSerializer):
+    """Vue modale — brand complet + fiches attachées + stats."""
+ 
+    logo_url = serializers.SerializerMethodField()
+    master_products = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+    proposed_by = serializers.SerializerMethodField()
+    is_deletable = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "id", "name", "slug",
+            "logo", "logo_url",
+            "description", "country_of_origin", "website",
+            "is_active", "is_verified",
+            "admin_note", "proposed_by",
+            "master_products", "stats", "is_deletable",
+            "created_at", "updated_at",
+        ]
+ 
+    def get_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.logo:
+            return None
+        url = obj.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_master_products(self, obj):
+        """Fiches maîtres liées, limitées à 50 max pour éviter les payloads massifs."""
+        qs = obj.master_products.select_related("category").prefetch_related(
+            "images", "offers",
+        ).order_by("-created_at")[:50]
+        return AdminBrandMasterBriefSerializer(
+            qs, many=True, context=self.context,
+        ).data
+ 
+    def get_stats(self, obj):
+        """
+        Statistiques métier :
+        - Nombre de fiches maîtres (total et APPROVED)
+        - Nombre d'offres cumulées sur toutes ces fiches
+        - Nombre de vendeurs distincts qui ont une offre sous cette marque
+        """
+        from .models import Product
+        all_masters = obj.master_products
+        active_masters = all_masters.filter(moderation_status="APPROVED")
+ 
+        offers = Product.objects.filter(master__brand_fk=obj)
+        approved_offers = offers.filter(moderation_status="APPROVED")
+ 
+        vendors_count = offers.values("vendor").distinct().count()
+ 
+        return {
+            "total_masters": all_masters.count(),
+            "active_masters": active_masters.count(),
+            "total_offers": offers.count(),
+            "approved_offers": approved_offers.count(),
+            "distinct_vendors": vendors_count,
+        }
+ 
+    def get_proposed_by(self, obj):
+        return _extract_proposed_by(obj.admin_note)
+ 
+    def get_is_deletable(self, obj):
+        """
+        Une marque n'est supprimable que si AUCUNE fiche maître ne l'utilise.
+        Le champ brand_fk est protégé PROTECT côté modèle, donc tenter de
+        supprimer une marque utilisée lèverait ProtectedError.
+        """
+        return not obj.master_products.exists()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE / UPDATE SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandCreateUpdateSerializer(serializers.ModelSerializer):
+    """Formulaire admin création / édition d'une marque."""
+ 
+    class Meta:
+        model = Brand
+        fields = [
+            "name", "logo",
+            "description", "country_of_origin", "website",
+            "is_active", "is_verified",
+            "admin_note",
+        ]
+ 
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Le nom de la marque doit contenir au moins 2 caractères.",
+            )
+ 
+        # Unicité case-insensitive (au-delà de la contrainte DB `unique=True`)
+        qs = Brand.objects.filter(name__iexact=value)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError(
+                f"Une marque nommée '{value}' existe déjà.",
+            )
+ 
+        return value
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MERGE SERIALIZER (payload de fusion)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminBrandMergeSerializer(serializers.Serializer):
+    """
+    Payload pour fusionner plusieurs marques dans une cible.
+ 
+    Format :
+    {
+      "target_id": 42,
+      "source_ids": [17, 23, 88]
+    }
+ 
+    Règles métier :
+    - target doit exister et être is_verified (protection contre écrasement
+      d'une marque officielle par une non-vérifiée)
+    - target ne peut pas être dans source_ids (auto-fusion interdite)
+    - source_ids doivent tous exister
+    - Toutes les fiches maîtres des sources sont réassignées à la cible
+    - Les sources sont ensuite supprimées
+    """
+    target_id = serializers.IntegerField()
+    source_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        min_length=1,
+    )
+ 
+    def validate(self, attrs):
+        target_id = attrs["target_id"]
+        source_ids = attrs["source_ids"]
+ 
+        if target_id in source_ids:
+            raise serializers.ValidationError(
+                "La marque cible ne peut pas être dans les sources.",
+            )
+ 
+        try:
+            target = Brand.objects.get(pk=target_id)
+        except Brand.DoesNotExist:
+            raise serializers.ValidationError(
+                {"target_id": "Marque cible introuvable."},
+            )
+ 
+        if not target.is_verified:
+            raise serializers.ValidationError(
+                {"target_id": (
+                    f"La marque cible '{target.name}' n'est pas vérifiée. "
+                    "Marque-la d'abord comme vérifiée avant la fusion."
+                )},
+            )
+ 
+        sources_qs = Brand.objects.filter(pk__in=source_ids)
+        if sources_qs.count() != len(source_ids):
+            raise serializers.ValidationError(
+                {"source_ids": "Une ou plusieurs marques sources sont introuvables."},
+            )
+ 
+        attrs["_target"] = target
+        attrs["_sources"] = list(sources_qs)
+        return attrs    
+
+
+
+class AdminAttributeListSerializer(serializers.ModelSerializer):
+    """Vue tableau — infos essentielles + compteurs."""
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True, default=None)
+    values_count = serializers.SerializerMethodField()
+    used_as_axis_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductAttribute
+        fields = [
+            "id", "name", "slug",
+            "role", "values_type", "attribute_type",
+            "is_universal", "is_required",
+            "category", "category_name",
+            "values", "values_count", "unit",
+            "used_as_axis_count",
+            "display_order",
+        ]
+ 
+    def get_values_count(self, obj):
+        if isinstance(obj.values, list):
+            return len(obj.values)
+        return 0
+ 
+    def get_used_as_axis_count(self, obj):
+        """
+        Nombre de MasterProduct utilisant cet attribut comme axe de variante
+        (via master.variant_axes JSON list contenant obj.slug).
+        Pertinent uniquement si role=AXE mais on le calcule pour tous.
+        """
+        return MasterProduct.objects.filter(variant_axes__contains=[obj.slug]).count()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MASTER USING (pour lister les fiches qui utilisent l'attribut)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminAttributeMasterUsingSerializer(serializers.ModelSerializer):
+    """Brève info d'une fiche maître qui utilise cet attribut comme axe."""
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    primary_image = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id", "slug", "title", "category_name",
+            "primary_image", "variant_axes",
+            "moderation_status",
+        ]
+ 
+    def get_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminAttributeDetailSerializer(serializers.ModelSerializer):
+    """Vue modale — attribut complet + fiches utilisatrices + stats."""
+ 
+    category_name = serializers.CharField(source="category.name", read_only=True, default=None)
+    category_parent_id = serializers.IntegerField(
+        source="category.parent_id", read_only=True, default=None,
+    )
+    category_parent_name = serializers.SerializerMethodField()
+    used_by_masters = serializers.SerializerMethodField()
+    stats = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductAttribute
+        fields = [
+            "id", "name", "slug",
+            "role", "values_type", "attribute_type",
+            "is_universal", "is_required",
+            "category", "category_name", "category_parent_id", "category_parent_name",
+            "values", "unit",
+            "used_by_masters", "stats",
+            "display_order",
+        ]
+ 
+    def get_category_parent_name(self, obj):
+        if not obj.category or not obj.category.parent:
+            return None
+        return obj.category.parent.name
+ 
+    def get_used_by_masters(self, obj):
+        """Liste des masters qui déclarent cet attribut dans variant_axes (max 50)."""
+        qs = MasterProduct.objects.filter(
+            variant_axes__contains=[obj.slug],
+        ).select_related("category").prefetch_related("images")[:50]
+        return AdminAttributeMasterUsingSerializer(
+            qs, many=True, context=self.context,
+        ).data
+ 
+    def get_stats(self, obj):
+        used_masters = MasterProduct.objects.filter(variant_axes__contains=[obj.slug])
+        return {
+            "used_as_axis_count": used_masters.count(),
+            "approved_masters_using": used_masters.filter(moderation_status="APPROVED").count(),
+            "values_count": len(obj.values) if isinstance(obj.values, list) else 0,
+        }
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE / UPDATE SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminAttributeCreateUpdateSerializer(serializers.ModelSerializer):
+    """Formulaire admin création / édition d'un attribut."""
+ 
+    class Meta:
+        model = ProductAttribute
+        fields = [
+            "name", "slug",
+            "role", "values_type", "attribute_type",
+            "is_universal", "is_required",
+            "category",
+            "values", "unit",
+            "display_order",
+        ]
+        extra_kwargs = {
+            "slug": {"required": False},   # Auto-généré si omis
+        }
+ 
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Le nom doit contenir au moins 2 caractères.",
+            )
+        return value
+ 
+    def validate(self, attrs):
+        is_universal = attrs.get(
+            "is_universal", self.instance.is_universal if self.instance else False,
+        )
+        category = attrs.get(
+            "category", self.instance.category if self.instance else None,
+        )
+ 
+        if is_universal and category is not None:
+            raise serializers.ValidationError({
+                "category": "Un attribut universel ne doit pas avoir de catégorie assignée.",
+            })
+        if not is_universal and category is None:
+            raise serializers.ValidationError({
+                "category": "Un attribut non universel DOIT avoir une catégorie.",
+            })
+ 
+        # Values doit être une liste
+        values = attrs.get("values", self.instance.values if self.instance else [])
+        if not isinstance(values, list):
+            raise serializers.ValidationError({
+                "values": "Le champ values doit être une liste JSON.",
+            })
+ 
+        return attrs
+ 
+    def create(self, validated_data):
+        # Auto-génération du slug si non fourni
+        if not validated_data.get("slug"):
+            from django.utils.text import slugify
+            base = slugify(validated_data["name"]) or "attr"
+            slug = base
+            counter = 1
+            while ProductAttribute.objects.filter(slug=slug).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            validated_data["slug"] = slug
+        return super().create(validated_data)
+
+
+
+class AdminColorListSerializer(serializers.ModelSerializer):
+    """Vue liste/grille — infos essentielles + compteur d'usage."""
+ 
+    used_by_variants_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ColorDictionary
+        fields = [
+            "id", "slug",
+            "family", "name", "name_en",
+            "hex_code", "pattern_url",
+            "is_neutral", "is_active",
+            "display_order",
+            "used_by_variants_count",
+        ]
+ 
+    def get_used_by_variants_count(self, obj):
+        """Nombre de variants référençant cette couleur (via axis_values)."""
+        # Recherche dans le JSONField axis_values — cherche cette valeur dans
+        # n'importe quelle clé (couleur peut être sur phone-color, laptop-color, etc.)
+        # NOTE : c'est une approximation, on regarde juste si le slug apparaît
+        # comme valeur dans un axis_values quelconque.
+        return ProductVariant.objects.filter(
+            axis_values__icontains=obj.slug,
+        ).count()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminColorDetailSerializer(serializers.ModelSerializer):
+    """Vue modale — couleur complète + stats usage."""
+ 
+    stats = serializers.SerializerMethodField()
+    is_deletable = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ColorDictionary
+        fields = [
+            "id", "slug",
+            "family", "name", "name_en",
+            "hex_code", "pattern_url",
+            "is_neutral", "is_active",
+            "display_order",
+            "stats", "is_deletable",
+        ]
+ 
+    def get_stats(self, obj):
+        variants_using = ProductVariant.objects.filter(
+            axis_values__icontains=obj.slug,
+        )
+        return {
+            "variants_using": variants_using.count(),
+            "approved_variants_using": variants_using.filter(
+                moderation_status="APPROVED",
+            ).count(),
+        }
+ 
+    def get_is_deletable(self, obj):
+        """Une couleur n'est supprimable QUE si aucun variant ne la référence."""
+        return not ProductVariant.objects.filter(
+            axis_values__icontains=obj.slug,
+        ).exists()
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE / UPDATE SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminColorCreateUpdateSerializer(serializers.ModelSerializer):
+    """Formulaire admin création / édition d'une couleur."""
+ 
+    class Meta:
+        model = ColorDictionary
+        fields = [
+            "family", "name", "name_en",
+            "hex_code", "pattern_url",
+            "is_neutral", "is_active",
+            "display_order",
+        ]
+ 
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if len(value) < 2:
+            raise serializers.ValidationError("Nom trop court.")
+        return value
+ 
+    def validate_hex_code(self, value):
+        if not value:
+            return value  # Vide autorisé (finitions non-colorées)
+        value = value.strip()
+        if not value.startswith("#"):
+            value = "#" + value
+        # Format #RRGGBB attendu (7 caractères total)
+        import re
+        if not re.match(r"^#[0-9A-Fa-f]{6}$", value):
+            raise serializers.ValidationError(
+                "Format hexadécimal invalide. Attendu : #RRGGBB.",
+            )
+        return value.upper()
+ 
+    def validate(self, attrs):
+        family = attrs.get(
+            "family", self.instance.family if self.instance else ColorFamily.COLOR,
+        )
+        name = attrs.get("name", self.instance.name if self.instance else "")
+ 
+        # Unicité (family, name) — au-delà de la contrainte DB
+        qs = ColorDictionary.objects.filter(family=family, name__iexact=name)
+        if self.instance:
+            qs = qs.exclude(pk=self.instance.pk)
+        if qs.exists():
+            raise serializers.ValidationError({
+                "name": f"Une entrée '{name}' existe déjà dans la famille {family}.",
+            })
+ 
+        return attrs        

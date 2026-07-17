@@ -3,16 +3,20 @@
 
 from collections import defaultdict
 
+import csv
+from django.http import HttpResponse
 from rest_framework import viewsets, filters, status, generics
 from rest_framework.views import APIView
 from rest_framework.decorators import action
+from django.db import transaction
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, Q
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiParameter, OpenApiTypes
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, parser_classes
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.permissions import AllowAny
 from django.utils.text import slugify
 from django.utils import timezone
@@ -40,9 +44,22 @@ from .serializers import (
     AdminVariantListSerializer,
     AdminVariantDetailSerializer,
     AdminVariantModerationSerializer,
+    AdminBrandListSerializer,
+    AdminBrandDetailSerializer,
+    AdminBrandCreateUpdateSerializer,
+    AdminBrandMergeSerializer,
+    AdminAttributeListSerializer,
+    AdminAttributeDetailSerializer,
+    AdminAttributeCreateUpdateSerializer,
+    AdminColorListSerializer,
+    AdminColorDetailSerializer,
+    AdminColorCreateUpdateSerializer,
  
 )
 from .filters import ProductFilter, CategoryFilter
+
+VALID_ROLES = ("AXE", "SPEC", "OFFRE")
+VALID_VALUES_TYPES = ("SELECT", "NUMBER", "BOOL", "TEXT", "COLORDICT", "BRAND")
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -1219,3 +1236,791 @@ def admin_variants_bulk_reject(request):
         moderation_reason=reason if reason else "",
     )
     return Response({"rejected_count": n})
+
+
+
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Liste des marques (admin)",
+    parameters=[
+        OpenApiParameter("is_verified", bool),
+        OpenApiParameter("is_active", bool),
+        OpenApiParameter("has_masters", bool, description="true = uniquement utilisées"),
+        OpenApiParameter("search", str, description="nom ou pays"),
+        OpenApiParameter("ordering", str, description="name / -name / -created_at / -master_products_count"),
+    ],
+    responses={200: AdminBrandListSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_brands_list(request):
+    """Liste admin des marques avec filtres et tris."""
+    qs = Brand.objects.all().annotate(
+        _masters_count=Count("master_products", distinct=True),
+    )
+ 
+    is_verified = request.query_params.get("is_verified")
+    if is_verified is not None:
+        qs = qs.filter(is_verified=is_verified.lower() == "true")
+ 
+    is_active_param = request.query_params.get("is_active")
+    if is_active_param is not None:
+        qs = qs.filter(is_active=is_active_param.lower() == "true")
+ 
+    has_masters = request.query_params.get("has_masters")
+    if has_masters is not None:
+        if has_masters.lower() == "true":
+            qs = qs.filter(_masters_count__gt=0)
+        else:
+            qs = qs.filter(_masters_count=0)
+ 
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search)
+            | Q(country_of_origin__icontains=search)
+        )
+ 
+    ordering = request.query_params.get("ordering", "-is_verified,name")
+    allowed = {
+        "name", "-name", "created_at", "-created_at",
+        "updated_at", "-updated_at",
+        "_masters_count", "-_masters_count",
+        "-is_verified,name",  # défaut : vérifiées d'abord, puis alpha
+    }
+    if ordering not in allowed:
+        ordering = "-is_verified,name"
+    # multi-fields sep par virgule
+    order_by_fields = ordering.split(",")
+    qs = qs.order_by(*order_by_fields)
+ 
+    serializer = AdminBrandListSerializer(qs, many=True, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Créer une marque (admin)",
+    request=AdminBrandCreateUpdateSerializer,
+    responses={201: AdminBrandDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def admin_brands_create(request):
+    """Créer une marque. is_verified défaut True (créée par admin = officielle)."""
+    data = dict(request.data.items()) if hasattr(request.data, "items") else request.data
+    # Par défaut, une marque créée par l'admin est vérifiée
+    if "is_verified" not in data:
+        data["is_verified"] = True
+ 
+    serializer = AdminBrandCreateUpdateSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    brand = serializer.save()
+ 
+    return Response(
+        AdminBrandDetailSerializer(brand, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Détail d'une marque (admin)",
+    responses={200: AdminBrandDetailSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_brand_detail(request, brand_id):
+    """Détail complet d'une marque avec fiches attachées et stats."""
+    try:
+        brand = Brand.objects.get(pk=brand_id)
+    except Brand.DoesNotExist:
+        return Response({"detail": "Marque introuvable."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(
+        AdminBrandDetailSerializer(brand, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Modifier une marque (admin)",
+    request=AdminBrandCreateUpdateSerializer,
+    responses={200: AdminBrandDetailSerializer, 404: None},
+)
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
+def admin_brand_update(request, brand_id):
+    """Modifier une marque."""
+    try:
+        brand = Brand.objects.get(pk=brand_id)
+    except Brand.DoesNotExist:
+        return Response({"detail": "Marque introuvable."}, status=status.HTTP_404_NOT_FOUND)
+ 
+    serializer = AdminBrandCreateUpdateSerializer(
+        brand, data=request.data, partial=True,
+    )
+    serializer.is_valid(raise_exception=True)
+    brand = serializer.save()
+ 
+    return Response(
+        AdminBrandDetailSerializer(brand, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Supprimer une marque (admin)",
+    description="Interdit si la marque est utilisée par au moins 1 fiche maître.",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_brand_delete(request, brand_id):
+    """Supprime une marque si aucune fiche ne l'utilise (PROTECT sinon)."""
+    try:
+        brand = Brand.objects.get(pk=brand_id)
+    except Brand.DoesNotExist:
+        return Response({"detail": "Marque introuvable."}, status=status.HTTP_404_NOT_FOUND)
+ 
+    if brand.master_products.exists():
+        return Response(
+            {
+                "detail": (
+                    f"Impossible de supprimer '{brand.name}' : "
+                    f"{brand.master_products.count()} fiche(s) maître(s) l'utilisent. "
+                    "Fusionne d'abord avec une autre marque."
+                ),
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+ 
+    brand.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# STATUS TOGGLES (verify / unverify / activate / deactivate)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _toggle_brand(brand_id, field, value):
+    """Helper commun pour verify/unverify/activate/deactivate."""
+    try:
+        brand = Brand.objects.get(pk=brand_id)
+    except Brand.DoesNotExist:
+        return None
+    setattr(brand, field, value)
+    brand.save(update_fields=[field, "updated_at"])
+    return brand
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Vérifier une marque")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brand_verify(request, brand_id):
+    brand = _toggle_brand(brand_id, "is_verified", True)
+    if not brand:
+        return Response({"detail": "Marque introuvable."}, status=404)
+    return Response(AdminBrandDetailSerializer(brand, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Retirer la vérification")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brand_unverify(request, brand_id):
+    brand = _toggle_brand(brand_id, "is_verified", False)
+    if not brand:
+        return Response({"detail": "Marque introuvable."}, status=404)
+    return Response(AdminBrandDetailSerializer(brand, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Activer une marque")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brand_activate(request, brand_id):
+    brand = _toggle_brand(brand_id, "is_active", True)
+    if not brand:
+        return Response({"detail": "Marque introuvable."}, status=404)
+    return Response(AdminBrandDetailSerializer(brand, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Désactiver une marque")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brand_deactivate(request, brand_id):
+    brand = _toggle_brand(brand_id, "is_active", False)
+    if not brand:
+        return Response({"detail": "Marque introuvable."}, status=404)
+    return Response(AdminBrandDetailSerializer(brand, context={"request": request}).data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# BULK ACTIONS
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _bulk_update(request, field, value):
+    ids = request.data.get("brand_ids", [])
+    if not isinstance(ids, list) or not ids:
+        return Response({"detail": "brand_ids doit etre une liste non vide."}, status=400)
+    n = Brand.objects.filter(pk__in=ids).update(**{field: value})
+    return Response({"updated_count": n})
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Vérifier plusieurs marques")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brands_bulk_verify(request):
+    return _bulk_update(request, "is_verified", True)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Retirer la vérification de plusieurs marques")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brands_bulk_unverify(request):
+    return _bulk_update(request, "is_verified", False)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Activer plusieurs marques")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brands_bulk_activate(request):
+    return _bulk_update(request, "is_active", True)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Désactiver plusieurs marques")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brands_bulk_deactivate(request):
+    return _bulk_update(request, "is_active", False)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# MERGE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Fusionner plusieurs marques dans une cible",
+    request=AdminBrandMergeSerializer,
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_brands_merge(request):
+    """
+    Fusion : rebascule toutes les fiches maîtres des sources vers la cible,
+    puis supprime les sources.
+    """
+    serializer = AdminBrandMergeSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+ 
+    target = serializer.validated_data["_target"]
+    sources = serializer.validated_data["_sources"]
+ 
+    with transaction.atomic():
+        total_moved = 0
+        for src in sources:
+            moved = MasterProduct.objects.filter(brand_fk=src).update(brand_fk=target)
+            total_moved += moved
+            src.delete()
+ 
+    return Response({
+        "target_id": target.id,
+        "target_name": target.name,
+        "sources_deleted": len(sources),
+        "masters_reassigned": total_moved,
+    })
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# EXPORT CSV
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Exporter les marques au format CSV",
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_brands_export_csv(request):
+    """Exporte la liste des marques au format CSV, avec les mêmes filtres que list."""
+    qs = Brand.objects.all().annotate(
+        _masters_count=Count("master_products", distinct=True),
+    ).order_by("-is_verified", "name")
+ 
+    is_verified = request.query_params.get("is_verified")
+    if is_verified is not None:
+        qs = qs.filter(is_verified=is_verified.lower() == "true")
+ 
+    is_active_param = request.query_params.get("is_active")
+    if is_active_param is not None:
+        qs = qs.filter(is_active=is_active_param.lower() == "true")
+ 
+    response = HttpResponse(content_type="text/csv")
+    response["Content-Disposition"] = 'attachment; filename="brands_belivay.csv"'
+    writer = csv.writer(response)
+    writer.writerow([
+        "ID", "Nom", "Slug", "Pays", "Site web",
+        "Vérifiée", "Active",
+        "Nb fiches maîtres", "Créée le",
+    ])
+    for b in qs:
+        writer.writerow([
+            b.id, b.name, b.slug,
+            b.country_of_origin, b.website,
+            "OUI" if b.is_verified else "NON",
+            "OUI" if b.is_active else "NON",
+            b._masters_count,
+            b.created_at.isoformat(),
+        ])
+    return response    
+
+
+
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Liste des attributs (admin)",
+    parameters=[
+        OpenApiParameter("role", str, description="AXE / SPEC / OFFRE"),
+        OpenApiParameter("values_type", str, description="SELECT / NUMBER / BOOL / TEXT / COLORDICT / BRAND"),
+        OpenApiParameter("is_universal", bool),
+        OpenApiParameter("is_required", bool),
+        OpenApiParameter("category", int),
+        OpenApiParameter("search", str),
+        OpenApiParameter("ordering", str),
+    ],
+    responses={200: AdminAttributeListSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_attributes_list(request):
+    """Liste admin des attributs avec filtres."""
+    qs = ProductAttribute.objects.select_related("category")
+ 
+    role = request.query_params.get("role")
+    if role and role in VALID_ROLES:
+        qs = qs.filter(role=role)
+ 
+    values_type = request.query_params.get("values_type")
+    if values_type and values_type in VALID_VALUES_TYPES:
+        qs = qs.filter(values_type=values_type)
+ 
+    is_universal = request.query_params.get("is_universal")
+    if is_universal is not None:
+        qs = qs.filter(is_universal=is_universal.lower() == "true")
+ 
+    is_required = request.query_params.get("is_required")
+    if is_required is not None:
+        qs = qs.filter(is_required=is_required.lower() == "true")
+ 
+    category_id = request.query_params.get("category")
+    if category_id:
+        qs = qs.filter(category_id=category_id)
+ 
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) | Q(slug__icontains=search),
+        )
+ 
+    ordering = request.query_params.get("ordering", "-is_universal,role,display_order,name")
+    allowed = {
+        "name", "-name", "slug", "-slug", "role", "-role",
+        "display_order", "-display_order",
+        "-is_universal,role,display_order,name",
+    }
+    if ordering not in allowed:
+        ordering = "-is_universal,role,display_order,name"
+    qs = qs.order_by(*ordering.split(","))
+ 
+    serializer = AdminAttributeListSerializer(qs, many=True, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Créer un attribut",
+    request=AdminAttributeCreateUpdateSerializer,
+    responses={201: AdminAttributeDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_attributes_create(request):
+    serializer = AdminAttributeCreateUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    attr = serializer.save()
+    return Response(
+        AdminAttributeDetailSerializer(attr, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Détail d'un attribut",
+    responses={200: AdminAttributeDetailSerializer, 404: None},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_attribute_detail(request, attr_id):
+    try:
+        attr = ProductAttribute.objects.select_related("category").get(pk=attr_id)
+    except ProductAttribute.DoesNotExist:
+        return Response({"detail": "Attribut introuvable."}, status=404)
+    return Response(
+        AdminAttributeDetailSerializer(attr, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Modifier un attribut",
+    request=AdminAttributeCreateUpdateSerializer,
+    responses={200: AdminAttributeDetailSerializer, 404: None},
+)
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_attribute_update(request, attr_id):
+    try:
+        attr = ProductAttribute.objects.get(pk=attr_id)
+    except ProductAttribute.DoesNotExist:
+        return Response({"detail": "Attribut introuvable."}, status=404)
+ 
+    # Si le slug change ET que l'attribut est utilisé comme axe → refus
+    new_slug = request.data.get("slug")
+    if new_slug and new_slug != attr.slug:
+        usage_count = MasterProduct.objects.filter(
+            variant_axes__contains=[attr.slug],
+        ).count()
+        if usage_count > 0:
+            return Response({
+                "detail": (
+                    f"Impossible de renommer le slug : {usage_count} fiche(s) "
+                    f"utilisent '{attr.slug}' comme axe de variante."
+                ),
+            }, status=400)
+ 
+    serializer = AdminAttributeCreateUpdateSerializer(attr, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    attr = serializer.save()
+ 
+    return Response(
+        AdminAttributeDetailSerializer(attr, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Supprimer un attribut",
+    description="Interdit si utilisé par au moins 1 fiche maître comme axe de variante.",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_attribute_delete(request, attr_id):
+    try:
+        attr = ProductAttribute.objects.get(pk=attr_id)
+    except ProductAttribute.DoesNotExist:
+        return Response({"detail": "Attribut introuvable."}, status=404)
+ 
+    usage_count = MasterProduct.objects.filter(
+        variant_axes__contains=[attr.slug],
+    ).count()
+    if usage_count > 0:
+        return Response({
+            "detail": (
+                f"Impossible de supprimer '{attr.name}' : {usage_count} fiche(s) "
+                f"l'utilisent comme axe de variante."
+            ),
+        }, status=400)
+ 
+    attr.delete()
+    return Response(status=204)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# SET ROLE (individuel)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Changer le rôle d'un attribut")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_attribute_set_role(request, attr_id):
+    """Change le rôle (AXE / SPEC / OFFRE)."""
+    role = request.data.get("role", "").strip().upper()
+    if role not in VALID_ROLES:
+        return Response({"detail": "role invalide."}, status=400)
+ 
+    try:
+        attr = ProductAttribute.objects.get(pk=attr_id)
+    except ProductAttribute.DoesNotExist:
+        return Response({"detail": "Introuvable."}, status=404)
+ 
+    attr.role = role
+    attr.save(update_fields=["role"])
+ 
+    return Response(
+        AdminAttributeDetailSerializer(attr, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# BULK actions
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Changer le rôle en masse")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_attributes_bulk_set_role(request):
+    ids = request.data.get("attribute_ids", [])
+    role = request.data.get("role", "").strip().upper()
+    if not isinstance(ids, list) or not ids:
+        return Response({"detail": "attribute_ids liste requise."}, status=400)
+    if role not in VALID_ROLES:
+        return Response({"detail": "role invalide."}, status=400)
+    n = ProductAttribute.objects.filter(pk__in=ids).update(role=role)
+    return Response({"updated_count": n})
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Basculer is_required en masse")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_attributes_bulk_toggle_required(request):
+    ids = request.data.get("attribute_ids", [])
+    is_required = bool(request.data.get("is_required", False))
+    if not isinstance(ids, list) or not ids:
+        return Response({"detail": "attribute_ids liste requise."}, status=400)
+    n = ProductAttribute.objects.filter(pk__in=ids).update(is_required=is_required)
+    return Response({"updated_count": n})
+
+
+
+@extend_schema(
+    tags=["Admin Catalog"],
+    summary="Liste des couleurs (admin)",
+    parameters=[
+        OpenApiParameter("family", str, description="COLOR / FINISH"),
+        OpenApiParameter("is_active", bool),
+        OpenApiParameter("is_neutral", bool),
+        OpenApiParameter("search", str),
+        OpenApiParameter("ordering", str),
+    ],
+    responses={200: AdminColorListSerializer(many=True)},
+)
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_colors_list(request):
+    """Liste admin des couleurs avec filtres."""
+    qs = ColorDictionary.objects.all()
+ 
+    family = request.query_params.get("family")
+    if family in ("COLOR", "FINISH"):
+        qs = qs.filter(family=family)
+ 
+    is_active_param = request.query_params.get("is_active")
+    if is_active_param is not None:
+        qs = qs.filter(is_active=is_active_param.lower() == "true")
+ 
+    is_neutral = request.query_params.get("is_neutral")
+    if is_neutral is not None:
+        qs = qs.filter(is_neutral=is_neutral.lower() == "true")
+ 
+    search = request.query_params.get("search", "").strip()
+    if search:
+        qs = qs.filter(
+            Q(name__icontains=search) | Q(name_en__icontains=search) | Q(slug__icontains=search),
+        )
+ 
+    ordering = request.query_params.get("ordering", "family,display_order,name")
+    allowed = {
+        "name", "-name", "family,display_order,name",
+        "-created_at", "created_at", "display_order",
+    }
+    if ordering not in allowed:
+        ordering = "family,display_order,name"
+    qs = qs.order_by(*ordering.split(","))
+ 
+    serializer = AdminColorListSerializer(qs, many=True, context={"request": request})
+    return Response(serializer.data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Créer une entrée du dictionnaire couleurs",
+    request=AdminColorCreateUpdateSerializer,
+    responses={201: AdminColorDetailSerializer},
+)
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_colors_create(request):
+    serializer = AdminColorCreateUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    color = serializer.save()
+    return Response(
+        AdminColorDetailSerializer(color, context={"request": request}).data,
+        status=status.HTTP_201_CREATED,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Détail d'une couleur",
+               responses={200: AdminColorDetailSerializer, 404: None})
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_color_detail(request, color_id):
+    try:
+        color = ColorDictionary.objects.get(pk=color_id)
+    except ColorDictionary.DoesNotExist:
+        return Response({"detail": "Couleur introuvable."}, status=404)
+    return Response(
+        AdminColorDetailSerializer(color, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# UPDATE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Modifier une couleur",
+    request=AdminColorCreateUpdateSerializer,
+    responses={200: AdminColorDetailSerializer, 404: None},
+)
+@api_view(["PATCH"])
+@permission_classes([IsAdminUser])
+def admin_color_update(request, color_id):
+    try:
+        color = ColorDictionary.objects.get(pk=color_id)
+    except ColorDictionary.DoesNotExist:
+        return Response({"detail": "Couleur introuvable."}, status=404)
+ 
+    serializer = AdminColorCreateUpdateSerializer(color, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    color = serializer.save()
+ 
+    return Response(
+        AdminColorDetailSerializer(color, context={"request": request}).data,
+    )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DELETE
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+@extend_schema(
+    tags=["Admin Catalog"], summary="Supprimer une couleur",
+    description="Interdit si utilisée par au moins 1 variant.",
+)
+@api_view(["DELETE"])
+@permission_classes([IsAdminUser])
+def admin_color_delete(request, color_id):
+    try:
+        color = ColorDictionary.objects.get(pk=color_id)
+    except ColorDictionary.DoesNotExist:
+        return Response({"detail": "Couleur introuvable."}, status=404)
+ 
+    usage_count = ProductVariant.objects.filter(
+        axis_values__icontains=color.slug,
+    ).count()
+    if usage_count > 0:
+        return Response({
+            "detail": (
+                f"Impossible de supprimer '{color.name}' : {usage_count} variant(s) "
+                f"la référencent. Désactive-la à la place (is_active=False)."
+            ),
+        }, status=400)
+ 
+    color.delete()
+    return Response(status=204)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# TOGGLES (activate / deactivate)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _toggle_color(color_id, field, value):
+    try:
+        color = ColorDictionary.objects.get(pk=color_id)
+    except ColorDictionary.DoesNotExist:
+        return None
+    setattr(color, field, value)
+    color.save(update_fields=[field])
+    return color
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Activer une couleur")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_color_activate(request, color_id):
+    color = _toggle_color(color_id, "is_active", True)
+    if not color:
+        return Response({"detail": "Introuvable."}, status=404)
+    return Response(AdminColorDetailSerializer(color, context={"request": request}).data)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Désactiver une couleur")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_color_deactivate(request, color_id):
+    color = _toggle_color(color_id, "is_active", False)
+    if not color:
+        return Response({"detail": "Introuvable."}, status=404)
+    return Response(AdminColorDetailSerializer(color, context={"request": request}).data)
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# BULK
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+def _bulk_toggle_colors(request, value):
+    ids = request.data.get("color_ids", [])
+    if not isinstance(ids, list) or not ids:
+        return Response({"detail": "color_ids liste requise."}, status=400)
+    n = ColorDictionary.objects.filter(pk__in=ids).update(is_active=value)
+    return Response({"updated_count": n})
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Activer plusieurs couleurs")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_colors_bulk_activate(request):
+    return _bulk_toggle_colors(request, True)
+ 
+ 
+@extend_schema(tags=["Admin Catalog"], summary="Désactiver plusieurs couleurs")
+@api_view(["POST"])
+@permission_classes([IsAdminUser])
+def admin_colors_bulk_deactivate(request):
+    return _bulk_toggle_colors(request, False)    

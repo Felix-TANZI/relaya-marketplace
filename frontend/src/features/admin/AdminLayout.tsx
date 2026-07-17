@@ -11,12 +11,13 @@
 //   - Fond de page : suit le thème clair/sombre (useAdminTheme)
 //   - Accent : rouge #DC2626
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useTheme }       from '@/context/ThemeContext';
 import { useAuth }        from '@/context/AuthContext';
 import { useAdminTheme }  from '@/hooks/useAdminTheme';
+import { AdminBadgesContext, useAdminAttentionBadges } from '@/hooks/useAdminAttentionBadges';
 import {
   LayoutDashboard, Users, Radio, Store, MapPin, FileCheck,
   ArrowDownToLine, CreditCard, Award, FilePenLine, Truck,
@@ -192,6 +193,8 @@ function SideNavItem({ item, onClick }: { item: NavItem; onClick?: () => void })
   const { t } = useTranslation();
   const Icon  = item.icon;
   const label = t(`admin.nav.${item.key}`);
+  const badges = useContext(AdminBadgesContext);
+  const badgeCount = badges[item.key] ?? item.badge ?? 0;
 
   if (item.soon) {
     return (
@@ -247,14 +250,14 @@ function SideNavItem({ item, onClick }: { item: NavItem; onClick?: () => void })
         <>
           <Icon size={14} style={{ flexShrink: 0 }} />
           <span className="flex-1 truncate">{label}</span>
-          {item.badge != null && item.badge > 0 && !isActive && (
+          {badgeCount > 0 && !isActive && (
             <span style={{
               fontSize: 10, fontWeight: 800,
               background: '#DC2626', color: '#fff',
               borderRadius: 9999, padding: '0 6px', minWidth: 18,
               textAlign: 'center', lineHeight: '18px',
             }}>
-              {item.badge > 99 ? '99+' : item.badge}
+              {badgeCount > 99 ? '99+' : badgeCount}
             </span>
           )}
         </>
@@ -378,6 +381,7 @@ export default function AdminLayout() {
   const T                      = useAdminTheme();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const badges = useAdminAttentionBadges();
 
   useEffect(() => {
     const close = () => setSidebarOpen(false);
@@ -391,6 +395,7 @@ export default function AdminLayout() {
     : 'A';
 
   return (
+    <AdminBadgesContext.Provider value={badges}>
     <div style={{ minHeight: '100vh', background: T.page, fontFamily: "'Plus Jakarta Sans',sans-serif" }}>
 
       {/* ═══════════════════════════════════════════════════════════════════
@@ -615,5 +620,6 @@ export default function AdminLayout() {
         }
       `}</style>
     </div>
+    </AdminBadgesContext.Provider>
   );
 }

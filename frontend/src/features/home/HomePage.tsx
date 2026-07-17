@@ -9,9 +9,11 @@ import ProductCard from "@/components/product/ProductCard";
 import {
   ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
   Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
+  Zap, Timer, ShoppingBag, Smartphone, Home, Dumbbell, Baby,
 } from "lucide-react";
 import {
   V29_PRODUCTS,
+  FLASH_DEALS,
   getByCat,
   getTopProducts,
   getNewProducts,
@@ -28,12 +30,37 @@ const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
   { slug: "shoes",  icon: Footprints, name: "Chaussures" },
 ];
 
+/* Catégories complètes — surface mobile (mirroir de la sidebar PC) */
+const MOBILE_CATEGORIES: { slug: string; icon: LucideIcon; name: string }[] = [
+  { slug: "all",    icon: ShoppingBag,  name: "Tout" },
+  { slug: "femme",  icon: Shirt,        name: "Femme" },
+  { slug: "homme",  icon: Shirt,        name: "Homme" },
+  { slug: "tech",   icon: Laptop,       name: "Électro" },
+  { slug: "phone",  icon: Smartphone,   name: "Phones" },
+  { slug: "beaute", icon: Sparkles,     name: "Beauté" },
+  { slug: "maison", icon: Home,         name: "Maison" },
+  { slug: "super",  icon: ShoppingCart, name: "Marché" },
+  { slug: "shoes",  icon: Footprints,   name: "Chauss." },
+  { slug: "sport",  icon: Dumbbell,     name: "Sport" },
+  { slug: "bebe",   icon: Baby,         name: "Bébé" },
+];
+
+/* Liens produits des Flash Deals mock (aligné sur FlashPanel) */
+const FLASH_LINK: Record<string, number> = {
+  "Ensemble Wax 3 Pièces": 9,
+  "Laptop HP Intel i5": 10,
+  "Coffret Beauté Naturelle": 3,
+  "Chaussures Sport Running": 18,
+  "Pagne Hollandais Vlisco": 28,
+};
+
 export default function HomePage() {
   const navigate = useNavigate();
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeCat, setActiveCat] = useState("all");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [lastCat, setLastCat] = useState(activeCat);
   const [mainTop, setMainTop] = useState(0);
   const [mainHeight, setMainHeight] = useState(0);
   const [topOffset, setTopOffset] = useState(132);
@@ -108,9 +135,11 @@ export default function HomePage() {
     document.documentElement.style.setProperty("--belivay-fixed-top", "100px");
   }, []);
 
-  useEffect(() => {
+  // Reset pagination when the active category changes (during render, no effect).
+  if (activeCat !== lastCat) {
+    setLastCat(activeCat);
     setVisibleCount(20);
-  }, [activeCat]);
+  }
 
   useEffect(() => {
     const updateMetrics = () => {
@@ -189,17 +218,17 @@ export default function HomePage() {
             topOffset={topOffset}
           />
 
-          <main ref={mainRef} className="min-w-0 flex-1 space-y-4">
-            <section className="overflow-hidden rounded-[30px] border border-[#f1d2bb] bg-white shadow-[0_16px_42px_rgba(244,121,32,.08)] dark:border-gray-800 dark:bg-gray-900">
+          <main ref={mainRef} className="min-w-0 flex-1 space-y-3 sm:space-y-4">
+            <section className="overflow-hidden rounded-[24px] border border-[#f1d2bb] bg-white shadow-[0_16px_42px_rgba(244,121,32,.08)] sm:rounded-[30px] dark:border-gray-800 dark:bg-gray-900">
               <div className="p-3 sm:p-4">
                 <PromoCarousel slides={slides} autoPlayMs={5000} />
               </div>
 
-              <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-3 sm:px-4 dark:border-gray-800 dark:bg-gray-900/80">
+              <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-2.5 sm:px-4 sm:py-3 dark:border-gray-800 dark:bg-gray-900/80">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
                   <button
                     onClick={() => navigate("/profile")}
-                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-primary/40 bg-[#fff1e5] px-4 py-2 text-[11.5px] font-bold text-primary hover:bg-primary hover:text-white dark:bg-primary/10"
+                    className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
                     <UserCircle size={13} />
                     Mon compte
@@ -231,7 +260,8 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="grid gap-3 bg-white px-3 py-4 sm:px-4 md:grid-cols-4 dark:bg-gray-900">
+              {/* Stats — téléphone : grille 2×2 compacte (cellules horizontales) ; ≥ md : 4 colonnes d'origine */}
+              <div className="grid grid-cols-2 gap-2 bg-white px-3 py-3 sm:px-4 md:grid-cols-4 md:gap-3 md:py-4 dark:bg-gray-900">
                 {[
                   { icon: ShoppingCart, num: "15 240", label: "Produits" },
                   { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés" },
@@ -240,13 +270,114 @@ export default function HomePage() {
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
-                    <div key={item.label} className="rounded-[20px] border border-[#f3e4d7] bg-[#fffaf6] p-4 dark:border-gray-800 dark:bg-gray-800">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#fff1e5] text-primary dark:bg-primary/10">
+                    <div
+                      key={item.label}
+                      className="flex items-center gap-2.5 rounded-2xl border border-[#f3e4d7] bg-[#fffaf6] p-2.5 md:block md:rounded-[20px] md:p-4 dark:border-gray-800 dark:bg-gray-800"
+                    >
+                      <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#fff1e5] text-primary md:h-10 md:w-10 md:rounded-2xl dark:bg-primary/10">
                         <Icon size={18} />
                       </div>
-                      <p className="mt-3 text-[22px] font-black leading-none text-[#c85e14]">{item.num}</p>
-                      <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8a6b55] dark:text-gray-400">{item.label}</p>
+                      <div className="min-w-0">
+                        <p className="text-[15px] font-black leading-none text-[#c85e14] md:mt-3 md:text-[22px]">{item.num}</p>
+                        <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[#8a6b55] md:mt-1 md:text-[11px] md:tracking-[0.12em] dark:text-gray-400">{item.label}</p>
+                      </div>
                     </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ═══ Catégories — mobile uniquement (la sidebar PC est masquée < lg) ═══ */}
+            <section className="rounded-[22px] border border-[#f1d2bb] bg-white p-3 shadow-[0_10px_30px_rgba(244,121,32,.06)] lg:hidden dark:border-gray-800 dark:bg-gray-900">
+              <div className="mb-2.5 flex items-center gap-2">
+                <div className="h-[16px] w-[3px] rounded bg-primary" />
+                <LayoutGrid size={15} className="text-primary" />
+                <h3 className="text-[14px] font-extrabold text-gray-900 dark:text-white">Catégories</h3>
+                <button
+                  onClick={() => navigate("/categories")}
+                  className="ml-auto text-[11px] font-bold text-[#c85e14] dark:text-primary"
+                >
+                  Tout voir
+                </button>
+              </div>
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
+                {MOBILE_CATEGORIES.map((c) => {
+                  const Icon = c.icon;
+                  const active = activeCat === c.slug;
+                  return (
+                    <button
+                      key={c.slug}
+                      onClick={() => setActiveCat(c.slug)}
+                      className="flex w-[60px] flex-shrink-0 flex-col items-center gap-1.5"
+                    >
+                      <span
+                        className={`flex h-14 w-14 items-center justify-center rounded-2xl border transition ${
+                          active
+                            ? "border-primary bg-[#fff1e5] text-primary dark:bg-primary/15"
+                            : "border-[#f0e0d2] bg-[#fffaf6] text-[#b5703f] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+                        }`}
+                      >
+                        <Icon size={20} />
+                      </span>
+                      <span
+                        className={`text-center text-[10.5px] font-bold leading-tight ${
+                          active ? "text-[#c85e14] dark:text-primary" : "text-gray-600 dark:text-gray-400"
+                        }`}
+                      >
+                        {c.name}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ═══ Flash Deals — mobile/tablette (le panneau PC est masqué < xl) ═══ */}
+            <section className="overflow-hidden rounded-[22px] border border-[#f3d0cf] bg-[linear-gradient(180deg,#fff4f4,#fff)] p-3 shadow-[0_10px_30px_rgba(239,68,68,.06)] xl:hidden dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+              <div className="mb-2.5 flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#fff0e6] text-primary dark:bg-primary/10">
+                  <Zap size={15} fill="currentColor" />
+                </div>
+                <div>
+                  <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary">Offres rapides</p>
+                  <h3 className="text-[14px] font-extrabold text-gray-900 dark:text-white">Flash Deals</h3>
+                </div>
+                <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#111827] px-2.5 py-1 text-[10px] font-bold text-white">
+                  <Timer size={11} className="text-primary" />
+                  Stock limité
+                </span>
+              </div>
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
+                {FLASH_DEALS.map((d) => {
+                  const oldN = Number(d.old.replace(/\s/g, ""));
+                  const newN = Number(d.price.replace(/\s/g, ""));
+                  const pct = oldN > 0 ? Math.round(((oldN - newN) / oldN) * 100) : 0;
+                  const linkId = FLASH_LINK[d.name];
+                  return (
+                    <button
+                      key={d.name}
+                      onClick={() => navigate(linkId ? `/product/${linkId}?mock=1` : "/promotions")}
+                      className="flex w-[150px] flex-shrink-0 flex-col overflow-hidden rounded-2xl border border-[#f0e0d8] bg-white text-left dark:border-gray-700 dark:bg-gray-800"
+                    >
+                      <div className="relative h-[110px] w-full">
+                        <img src={d.img} alt={d.name} loading="lazy" className="h-full w-full object-cover" />
+                        {pct > 0 && (
+                          <span className="absolute left-2 top-2 rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-black text-white">
+                            -{pct}%
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-1 flex-col gap-1 p-2.5">
+                        <p className="line-clamp-2 text-[11.5px] font-semibold leading-tight text-gray-800 dark:text-gray-100">{d.name}</p>
+                        <div className="mt-auto">
+                          <p className="text-[13px] font-black text-[#c85e14] dark:text-primary">
+                            {d.price} <span className="text-[10px] font-semibold">FCFA</span>
+                          </p>
+                          <p className="text-[10px] font-medium text-gray-400 line-through">{d.old} FCFA</p>
+                        </div>
+                        <span className="text-[9.5px] font-bold text-red-500">Plus que {d.stock} en stock</span>
+                      </div>
+                    </button>
                   );
                 })}
               </div>
@@ -254,7 +385,7 @@ export default function HomePage() {
 
             <TrustBannersStrip />
 
-            <section className="rounded-[28px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+            <section className="rounded-[22px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-3 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-4 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection
                 title="Produits populaires"
                 icon={Flame}
@@ -266,7 +397,7 @@ export default function HomePage() {
               />
             </section>
 
-            <section className="rounded-[28px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+            <section className="rounded-[22px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-3 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-4 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection
                 title="Nouveaux Arrivages"
                 icon={Sparkles}
@@ -278,7 +409,7 @@ export default function HomePage() {
               />
             </section>
 
-            <section className="overflow-hidden rounded-[28px] border border-[#dbe7f3] bg-[linear-gradient(180deg,#f7fbff,#fff)] p-4 shadow-[0_12px_32px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+            <section className="overflow-hidden rounded-[22px] border border-[#dbe7f3] bg-[linear-gradient(180deg,#f7fbff,#fff)] p-3 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-4 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
                   <div className="h-[18px] w-[3px] rounded bg-primary" />
@@ -297,7 +428,7 @@ export default function HomePage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
                 {visibleProducts.map((p) => (
                   <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
                 ))}

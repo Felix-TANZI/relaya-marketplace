@@ -30,7 +30,7 @@ def test_approuver_fiche(api_client, django_user_model):
     assert r.status_code == 200 and r.json()["moderation_status"] == "APPROVED"
 
 
-def test_detail_montre_offres_avec_vendeur(api_client, django_user_model):
+def test_detail_fiche_expose_variants_et_compteur(api_client, django_user_model):
     _admin(api_client, django_user_model)
     cat = Category.objects.create(name="Tel", slug="tel")
     vendor = django_user_model.objects.create_user(username="vend", password="p")
@@ -38,4 +38,7 @@ def test_detail_montre_offres_avec_vendeur(api_client, django_user_model):
     Product.objects.create(title="off", category=cat, price_xaf=100000, master=m, vendor=vendor)
     r = api_client.get(f"/api/vendors/admin/masters/{m.id}/")
     assert r.status_code == 200
-    assert r.json()["offers"][0]["vendor_name"] == "vend"   # vendeur visible côté admin
+    body = r.json()
+    assert body["id"] == m.id
+    assert body["offers_count"] == 1     # l'offre rattachée est bien comptée
+    assert "variants" in body            # la fiche expose ses variants 

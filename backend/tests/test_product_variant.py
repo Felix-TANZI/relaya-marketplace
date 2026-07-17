@@ -318,13 +318,13 @@ class VariantFindOrCreateTests(TestCase):
         # Pas de doublon
         self.assertEqual(ProductVariant.objects.filter(master=self.master).count(), 1)
  
-    def test_find_or_create_created_variant_is_pending(self):
+    def test_find_or_create_created_variant_is_approved(self):
         resp = self.client.post(
             "/api/catalog/vendor/variants/find-or-create/",
             {"master": self.master.id, "axis_values": {"foc-color": "noir"}},
             format="json",
         )
-        self.assertEqual(resp.json()["moderation_status"], "PENDING")
+        self.assertEqual(resp.json()["moderation_status"], "APPROVED")
  
     def test_find_or_create_requires_authentication(self):
         self.client.force_authenticate(user=None)

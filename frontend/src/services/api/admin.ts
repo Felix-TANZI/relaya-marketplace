@@ -705,17 +705,61 @@ export interface ProductCondition {
   is_active: boolean;
 }
 
+/** Axe résolu — utilise pour l'affichage des variant_axes. */
+export interface MasterAxisResolved {
+  slug: string;
+  name: string;
+  values_type: "SELECT" | "NUMBER" | "BOOL" | "TEXT" | "COLORDICT" | "BRAND" | null;
+  unit: string;
+  found: boolean;  // false si le slug n'existe plus (dette technique à nettoyer)
+}
+ 
+/** Variant brief attaché à un master (vue admin). */
+export interface AdminMasterVariantBrief {
+  id: number;
+  sku: string;
+  axis_values: Record<string, string | number>;
+  display_name: string;
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  is_active: boolean;
+  offers_count: number;
+}
+
 export interface AdminMaster {
   id: number;
-  title: string;
   slug: string;
-  brand: string;
-  category: number | null;
-  category_name: string | null;
-  moderation_status: 'PENDING' | 'APPROVED' | 'REJECTED';
-  offers_count: number;
+  title: string;
+  brand: string;  // legacy texte libre
   primary_image: string | null;
+ 
+  category: number;
+  category_name: string;
+  category_parent_id: number | null;
+  category_parent_name: string | null;
+ 
+  // Brand canonique (Phase 1.2)
+  brand_fk: number | null;
+  brand_fk_id: number | null;
+  brand_fk_name: string | null;
+  brand_fk_logo_url: string | null;
+  brand_fk_verified: boolean | null;
+ 
+  // Variant axes (Phase 2)
+  variant_axes: string[];
+  axes_resolved: MasterAxisResolved[];
+ 
+  // Compteurs
+  variants_count: number;
+  active_variants_count: number;
+  offers_count: number;
+  active_offers_count: number;
+ 
+  // Modération
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+  moderated_at: string | null;
+ 
   created_at: string;
+  updated_at: string;
 }
 
 export interface AdminMasterOffer {
@@ -735,8 +779,19 @@ export interface AdminMasterOffer {
 
 export interface AdminMasterDetail extends AdminMaster {
   description: string;
-  images: { id: number; image: string; is_primary: boolean }[];
-  offers: AdminMasterOffer[];
+  all_images: { id: number; url: string; is_primary: boolean }[];
+  variants: AdminMasterVariantBrief[];
+  moderated_by_username: string | null;
+}
+
+/** Payload d'update d'une fiche maître (admin). */
+export interface MasterUpdatePayload {
+  title?: string;
+  description?: string;
+  brand?: string;
+  category?: number;
+  brand_fk?: number | null;
+  variant_axes?: string[];
 }
 
 export interface AdminVariantResolvedAxis {
@@ -1761,10 +1816,18 @@ export const adminApi = {
   getMasterDetail: async (id: number): Promise<AdminMasterDetail> =>
     http<AdminMasterDetail>(`/api/vendors/admin/masters/${id}/`, { headers: authHeader() }),
 
-  updateMaster: async (id: number, data: Partial<Pick<AdminMasterDetail, 'title' | 'description' | 'brand' | 'category'>>): Promise<AdminMasterDetail> =>
-    http<AdminMasterDetail>(`/api/vendors/admin/masters/${id}/update/`, {
-      method: 'PATCH', headers: authHeader(), body: JSON.stringify(data),
-    }),
+  updateMaster: async (
+    id: number, data: MasterUpdatePayload,
+  ): Promise<AdminMasterDetail> => {
+    return http<AdminMasterDetail>(
+      `/api/vendors/admin/masters/${id}/update/`,
+      {
+        method: "PATCH",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    );
+  },
 
   approveMaster: async (id: number) =>
     http(`/api/vendors/admin/masters/${id}/approve/`, { method: 'POST', headers: authHeader() }),

@@ -1827,3 +1827,298 @@ class AdminColorCreateUpdateSerializer(serializers.ModelSerializer):
             })
  
         return attrs        
+    
+
+
+class AdminCategoryListSerializer(serializers.ModelSerializer):
+    """Nœud d'arbre — infos essentielles + compteurs."""
+ 
+    parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
+    children_count = serializers.SerializerMethodField()
+    masters_count = serializers.SerializerMethodField()
+    attributes_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "id", "name", "slug", "level",
+            "parent", "parent_name",
+            "icon_name", "description",
+            "display_order",
+            "is_active", "is_deprecated", "requires_admin_approval",
+            "children_count", "masters_count", "attributes_count",
+        ]
+ 
+    def get_children_count(self, obj):
+        return obj.children.filter(deleted_at__isnull=True).count()
+ 
+    def get_masters_count(self, obj):
+        return obj.master_products.count()
+ 
+    def get_attributes_count(self, obj):
+        return obj.attributes.count()
+ 
+ 
+class AdminCategoryTreeNodeSerializer(serializers.ModelSerializer):
+    """
+    Nœud d'arbre AVEC enfants imbriqués — pour la vue arborescente.
+    Utilise un dict `children_map` pré-calculé côté vue pour éviter N+1.
+    """
+    parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
+    children_count = serializers.SerializerMethodField()
+    masters_count = serializers.SerializerMethodField()
+    attributes_count = serializers.SerializerMethodField()
+    children = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "id", "name", "slug", "level",
+            "parent", "parent_name",
+            "icon_name", "description",
+            "display_order",
+            "is_active", "is_deprecated", "requires_admin_approval",
+            "children_count", "masters_count", "attributes_count",
+            "children",
+        ]
+ 
+    def get_children_count(self, obj):
+        children_map = self.context.get("children_map", {})
+        return len(children_map.get(obj.id, []))
+ 
+    def get_masters_count(self, obj):
+        counts_map = self.context.get("masters_counts", {})
+        return counts_map.get(obj.id, 0)
+ 
+    def get_attributes_count(self, obj):
+        counts_map = self.context.get("attributes_counts", {})
+        return counts_map.get(obj.id, 0)
+ 
+    def get_children(self, obj):
+        children_map = self.context.get("children_map", {})
+        kids = children_map.get(obj.id, [])
+        # Tri : display_order puis name
+        kids = sorted(kids, key=lambda c: (c.display_order, c.name.lower()))
+        return AdminCategoryTreeNodeSerializer(
+            kids, many=True, context=self.context,
+        ).data
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# BRIEFS (masters attachés, attributs attachés)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminCategoryMasterBriefSerializer(serializers.ModelSerializer):
+    """Fiche maître attachée à la catégorie."""
+ 
+    primary_image = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id", "slug", "title",
+            "primary_image", "offers_count",
+            "moderation_status", "created_at",
+        ]
+ 
+    def get_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+ 
+class AdminCategoryAttributeBriefSerializer(serializers.ModelSerializer):
+    """Attribut spécifique à la catégorie (non universel)."""
+ 
+    values_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductAttribute
+        fields = [
+            "id", "slug", "name",
+            "role", "values_type", "unit",
+            "values_count", "is_required",
+        ]
+ 
+    def get_values_count(self, obj):
+        if isinstance(obj.values, list):
+            return len(obj.values)
+        return 0
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# DETAIL SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminCategoryDetailSerializer(serializers.ModelSerializer):
+    """Modale de détail — catégorie + parent + enfants + fiches + attributs."""
+ 
+    parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
+    parent_slug = serializers.CharField(source="parent.slug", read_only=True, default=None)
+    ancestors = serializers.SerializerMethodField()
+ 
+    children = serializers.SerializerMethodField()
+    master_products = serializers.SerializerMethodField()
+    attributes = serializers.SerializerMethodField()
+ 
+    stats = serializers.SerializerMethodField()
+    is_deletable = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "id", "name", "slug", "level",
+            "parent", "parent_name", "parent_slug", "ancestors",
+            "icon_name", "description",
+            "display_order",
+            "is_active", "is_deprecated", "requires_admin_approval",
+            "children", "master_products", "attributes",
+            "stats", "is_deletable",
+        ]
+ 
+    def get_ancestors(self, obj):
+        """Chaîne d'ancêtres pour le breadcrumb (racine → parent direct)."""
+        try:
+            chain = obj.get_ancestors()
+        except AttributeError:
+            # Fallback si get_ancestors() n'existe pas
+            chain = []
+            current = obj.parent
+            while current is not None:
+                chain.insert(0, current)
+                current = current.parent
+        return [
+            {"id": a.id, "name": a.name, "slug": a.slug}
+            for a in chain
+        ]
+ 
+    def get_children(self, obj):
+        """Enfants directs, triés par display_order + name."""
+        kids = obj.children.filter(deleted_at__isnull=True).order_by(
+            "display_order", "name",
+        )
+        return AdminCategoryListSerializer(
+            kids, many=True, context=self.context,
+        ).data
+ 
+    def get_master_products(self, obj):
+        """Jusqu'à 50 fiches attachées."""
+        qs = obj.master_products.prefetch_related("images", "offers").order_by(
+            "-created_at",
+        )[:50]
+        return AdminCategoryMasterBriefSerializer(
+            qs, many=True, context=self.context,
+        ).data
+ 
+    def get_attributes(self, obj):
+        """Attributs spécifiques à cette catégorie (pas les universels)."""
+        qs = obj.attributes.order_by("role", "display_order", "name")
+        return AdminCategoryAttributeBriefSerializer(
+            qs, many=True, context=self.context,
+        ).data
+ 
+    def get_stats(self, obj):
+        all_masters = obj.master_products
+        return {
+            "total_masters": all_masters.count(),
+            "approved_masters": all_masters.filter(
+                moderation_status="APPROVED",
+            ).count(),
+            "children_count": obj.children.filter(deleted_at__isnull=True).count(),
+            "attributes_count": obj.attributes.count(),
+            "level": obj.level,
+        }
+ 
+    def get_is_deletable(self, obj):
+        """
+        Une catégorie est supprimable si :
+        - Aucune fiche maître ne l'utilise (protection PROTECT côté modèle)
+        - Aucun enfant (sinon les enfants deviennent orphelins)
+        - Aucun attribut spécifique (à réassigner ou supprimer avant)
+        """
+        return (
+            not obj.master_products.exists()
+            and not obj.children.filter(deleted_at__isnull=True).exists()
+            and not obj.attributes.exists()
+        )
+ 
+ 
+# ═══════════════════════════════════════════════════════════════════════════
+# CREATE / UPDATE SERIALIZER
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminCategoryCreateUpdateSerializer(serializers.ModelSerializer):
+    """Formulaire création / édition d'une catégorie."""
+ 
+    class Meta:
+        model = Category
+        fields = [
+            "name", "slug", "parent",
+            "icon_name", "description",
+            "display_order",
+            "is_active", "is_deprecated", "requires_admin_approval",
+        ]
+        extra_kwargs = {
+            "slug": {"required": False},  # Auto-généré si absent
+        }
+ 
+    def validate_name(self, value):
+        value = (value or "").strip()
+        if len(value) < 2:
+            raise serializers.ValidationError(
+                "Nom trop court (2 caractères minimum).",
+            )
+        return value
+ 
+    def validate_description(self, value):
+        if value and len(value) > 280:
+            raise serializers.ValidationError(
+                "Description limitée à 280 caractères.",
+            )
+        return value
+ 
+    def validate_parent(self, value):
+        """Empêche de mettre un parent qui serait un descendant de self (cycle)."""
+        if value is None:
+            return value
+        if self.instance is not None:
+            # Détection de cycle : parent ne doit pas être self ni un descendant
+            if value.id == self.instance.id:
+                raise serializers.ValidationError(
+                    "Une catégorie ne peut pas être son propre parent.",
+                )
+            # Remonter la chaîne du parent proposé jusqu'à la racine
+            # → si on rencontre self, c'est un cycle
+            current = value
+            visited = set()
+            while current is not None:
+                if current.id in visited:
+                    # Cycle déjà présent dans la BD (dette)
+                    break
+                visited.add(current.id)
+                if current.id == self.instance.id:
+                    raise serializers.ValidationError(
+                        "Ce parent créerait un cycle dans l'arbre.",
+                    )
+                current = current.parent
+        return value
+ 
+    def create(self, validated_data):
+        # Auto-slug si absent
+        if not validated_data.get("slug"):
+            from django.utils.text import slugify
+            base = slugify(validated_data["name"]) or "category"
+            slug = base
+            counter = 1
+            while Category.objects.filter(slug=slug).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            validated_data["slug"] = slug
+        return super().create(validated_data)

@@ -1225,6 +1225,7 @@
     catalog_brands:   'Marques', 
     catalog_attributes: 'Attributs',
     catalog_colors:     'Couleurs', 
+    catalog_categories: 'Catégories',
  
     // Security
     section_security:     'Sécurité',

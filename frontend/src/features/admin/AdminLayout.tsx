@@ -24,7 +24,7 @@ import {
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
-  LayoutGrid, UserPlus, Layers, Palette,
+  LayoutGrid, UserPlus, Layers, Palette, FolderTree,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -88,6 +88,7 @@ const SECTIONS: NavSection[] = [
      { key: 'catalog_brands',   path: '/admin/catalog/brands',   icon: Award },
      { key: 'catalog_attributes', path: '/admin/catalog/attributes', icon: Zap },
      { key: 'catalog_colors',     path: '/admin/catalog/colors',     icon: Palette },
+     { key: 'catalog_categories', path: '/admin/catalog/categories', icon: FolderTree },
     ],
  },
   {

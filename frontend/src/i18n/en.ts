@@ -1234,6 +1234,8 @@
     section_catalog:   'Catalog',
     catalog_variants:  'Variants Moderation',
     catalog_brands:   'Brands',
+    catalog_attributes: 'Attributes',
+    catalog_colors:     'Colors',
   },
  
   common: {

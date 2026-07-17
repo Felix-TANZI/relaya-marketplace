@@ -965,6 +965,125 @@ export interface BrandMergeResponse {
   masters_reassigned: number;
 }
 
+
+
+export type AttributeRole = "AXE" | "SPEC" | "OFFRE";
+export type AttributeValuesType = "SELECT" | "NUMBER" | "BOOL" | "TEXT" | "COLORDICT" | "BRAND";
+ 
+export interface AdminAttribute {
+  id: number;
+  name: string;
+  slug: string;
+  role: AttributeRole;
+  values_type: AttributeValuesType;
+  attribute_type: "SIZE" | "COLOR" | "MATERIAL" | "OTHER";
+  is_universal: boolean;
+  is_required: boolean;
+  category: number | null;
+  category_name: string | null;
+  values: (string | number)[];
+  values_count: number;
+  unit: string;
+  used_as_axis_count: number;
+  display_order: number;
+}
+ 
+export interface AdminAttributeMasterUsing {
+  id: number;
+  slug: string;
+  title: string;
+  category_name: string;
+  primary_image: string | null;
+  variant_axes: string[];
+  moderation_status: "PENDING" | "APPROVED" | "REJECTED";
+}
+ 
+export interface AdminAttributeStats {
+  used_as_axis_count: number;
+  approved_masters_using: number;
+  values_count: number;
+}
+ 
+export interface AdminAttributeDetail extends AdminAttribute {
+  category_parent_id: number | null;
+  category_parent_name: string | null;
+  used_by_masters: AdminAttributeMasterUsing[];
+  stats: AdminAttributeStats;
+}
+ 
+export interface AttributeListFilters {
+  role?: AttributeRole;
+  values_type?: AttributeValuesType;
+  is_universal?: boolean;
+  is_required?: boolean;
+  category?: number;
+  search?: string;
+  ordering?: string;
+}
+ 
+export interface AttributeUpdatePayload {
+  name?: string;
+  slug?: string;
+  role?: AttributeRole;
+  values_type?: AttributeValuesType;
+  attribute_type?: "SIZE" | "COLOR" | "MATERIAL" | "OTHER";
+  is_universal?: boolean;
+  is_required?: boolean;
+  category?: number | null;
+  values?: (string | number)[];
+  unit?: string;
+  display_order?: number;
+}
+ 
+// ─────────────────────────────────────────────────────────────────────────────
+// COLORS — TYPES
+// ─────────────────────────────────────────────────────────────────────────────
+ 
+export type ColorFamily = "COLOR" | "FINISH";
+ 
+export interface AdminColor {
+  id: number;
+  slug: string;
+  family: ColorFamily;
+  name: string;
+  name_en: string;
+  hex_code: string;
+  pattern_url: string;
+  is_neutral: boolean;
+  is_active: boolean;
+  display_order: number;
+  used_by_variants_count: number;
+}
+ 
+export interface AdminColorStats {
+  variants_using: number;
+  approved_variants_using: number;
+}
+ 
+export interface AdminColorDetail extends AdminColor {
+  stats: AdminColorStats;
+  is_deletable: boolean;
+}
+ 
+export interface ColorListFilters {
+  family?: ColorFamily;
+  is_active?: boolean;
+  is_neutral?: boolean;
+  search?: string;
+  ordering?: string;
+}
+ 
+export interface ColorUpdatePayload {
+  family?: ColorFamily;
+  name?: string;
+  name_en?: string;
+  hex_code?: string;
+  pattern_url?: string;
+  is_neutral?: boolean;
+  is_active?: boolean;
+  display_order?: number;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1876,5 +1995,180 @@ export const adminApi = {
     if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
     const qs = params.toString();
     return `/api/catalog/admin/brands/export/csv/${qs ? "?" + qs : ""}`;
+  },
+
+  // ── ATTRIBUTES ─────────────────────────────────────────────────────
+ 
+  listAttributes: async (filters?: AttributeListFilters): Promise<AdminAttribute[]> => {
+    const params = new URLSearchParams();
+    if (filters?.role) params.append("role", filters.role);
+    if (filters?.values_type) params.append("values_type", filters.values_type);
+    if (filters?.is_universal !== undefined) params.append("is_universal", String(filters.is_universal));
+    if (filters?.is_required !== undefined) params.append("is_required", String(filters.is_required));
+    if (filters?.category) params.append("category", String(filters.category));
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.ordering) params.append("ordering", filters.ordering);
+    const qs = params.toString();
+    return http<AdminAttribute[]>(
+      `/api/catalog/admin/attributes/${qs ? "?" + qs : ""}`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getAttributeDetail: async (id: number): Promise<AdminAttributeDetail> => {
+    return http<AdminAttributeDetail>(
+      `/api/catalog/admin/attributes/${id}/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  createAttribute: async (payload: AttributeUpdatePayload): Promise<AdminAttributeDetail> => {
+    return http<AdminAttributeDetail>(
+      `/api/catalog/admin/attributes/create/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  updateAttribute: async (id: number, payload: AttributeUpdatePayload): Promise<AdminAttributeDetail> => {
+    return http<AdminAttributeDetail>(
+      `/api/catalog/admin/attributes/${id}/update/`,
+      {
+        method: "PATCH",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  deleteAttribute: async (id: number): Promise<void> => {
+    return http<void>(
+      `/api/catalog/admin/attributes/${id}/delete/`,
+      { method: "DELETE", headers: authHeader() },
+    );
+  },
+ 
+  setAttributeRole: async (id: number, role: AttributeRole): Promise<AdminAttributeDetail> => {
+    return http<AdminAttributeDetail>(
+      `/api/catalog/admin/attributes/${id}/set-role/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ role }),
+      },
+    );
+  },
+ 
+  bulkSetAttributesRole: async (ids: number[], role: AttributeRole): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/attributes/bulk-set-role/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ attribute_ids: ids, role }),
+      },
+    );
+  },
+ 
+  bulkToggleAttributesRequired: async (ids: number[], is_required: boolean): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/attributes/bulk-toggle-required/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ attribute_ids: ids, is_required }),
+      },
+    );
+  },
+ 
+  // ── COLORS ─────────────────────────────────────────────────────────
+ 
+  listColors: async (filters?: ColorListFilters): Promise<AdminColor[]> => {
+    const params = new URLSearchParams();
+    if (filters?.family) params.append("family", filters.family);
+    if (filters?.is_active !== undefined) params.append("is_active", String(filters.is_active));
+    if (filters?.is_neutral !== undefined) params.append("is_neutral", String(filters.is_neutral));
+    if (filters?.search) params.append("search", filters.search);
+    if (filters?.ordering) params.append("ordering", filters.ordering);
+    const qs = params.toString();
+    return http<AdminColor[]>(
+      `/api/catalog/admin/colors/${qs ? "?" + qs : ""}`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  getColorDetail: async (id: number): Promise<AdminColorDetail> => {
+    return http<AdminColorDetail>(
+      `/api/catalog/admin/colors/${id}/`,
+      { headers: authHeader() },
+    );
+  },
+ 
+  createColor: async (payload: ColorUpdatePayload): Promise<AdminColorDetail> => {
+    return http<AdminColorDetail>(
+      `/api/catalog/admin/colors/create/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  updateColor: async (id: number, payload: ColorUpdatePayload): Promise<AdminColorDetail> => {
+    return http<AdminColorDetail>(
+      `/api/catalog/admin/colors/${id}/update/`,
+      {
+        method: "PATCH",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      },
+    );
+  },
+ 
+  deleteColor: async (id: number): Promise<void> => {
+    return http<void>(
+      `/api/catalog/admin/colors/${id}/delete/`,
+      { method: "DELETE", headers: authHeader() },
+    );
+  },
+ 
+  activateColor: async (id: number): Promise<AdminColorDetail> => {
+    return http<AdminColorDetail>(
+      `/api/catalog/admin/colors/${id}/activate/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  deactivateColor: async (id: number): Promise<AdminColorDetail> => {
+    return http<AdminColorDetail>(
+      `/api/catalog/admin/colors/${id}/deactivate/`,
+      { method: "POST", headers: authHeader() },
+    );
+  },
+ 
+  bulkActivateColors: async (ids: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/colors/bulk-activate/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ color_ids: ids }),
+      },
+    );
+  },
+ 
+  bulkDeactivateColors: async (ids: number[]): Promise<{ updated_count: number }> => {
+    return http<{ updated_count: number }>(
+      `/api/catalog/admin/colors/bulk-deactivate/`,
+      {
+        method: "POST",
+        headers: { ...authHeader(), "Content-Type": "application/json" },
+        body: JSON.stringify({ color_ids: ids }),
+      },
+    );
   },
 };

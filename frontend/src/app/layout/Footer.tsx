@@ -1,13 +1,13 @@
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { 
-  Facebook, 
-  Instagram, 
-  Twitter, 
+import {
+  Facebook,
+  Instagram,
+  Twitter,
   Youtube,
   Mail,
   Phone,
-  MapPin
+  MapPin,
 } from 'lucide-react';
 
 export default function Footer() {
@@ -16,10 +16,11 @@ export default function Footer() {
 
   return (
     <footer className="bg-gradient-to-br from-gray-900 to-gray-800 text-white">
-      <div className="container mx-auto px-4 py-12">
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+      {/* pb généreux < lg : dégage le contenu de la barre de navigation fixe mobile */}
+      <div className="container mx-auto px-4 pt-8 pb-24 lg:py-12">
+        <div className="mb-6 grid grid-cols-2 gap-6 md:mb-8 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
           {/* Brand */}
-          <div className="space-y-4">
+          <div className="col-span-2 space-y-4 md:col-span-1">
             <div className="flex items-center gap-3">
               <img
                 src="/belivay-logo.png"
@@ -31,16 +32,16 @@ export default function Footer() {
               {t('footer.tagline')}
             </p>
             <div className="flex items-center gap-3">
-              <a href="#" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
+              <a href="#" aria-label="Facebook" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
                 <Facebook size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
+              <a href="#" aria-label="Instagram" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
                 <Instagram size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
+              <a href="#" aria-label="Twitter" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
                 <Twitter size={18} />
               </a>
-              <a href="#" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
+              <a href="#" aria-label="YouTube" className="w-10 h-10 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-all">
                 <Youtube size={18} />
               </a>
             </div>
@@ -48,7 +49,7 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h3 className="font-display font-semibold text-lg mb-4">{t('footer.quick_links')}</h3>
+            <h3 className="font-display font-semibold text-base mb-3 md:text-lg md:mb-4">{t('footer.quick_links')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/catalog" className="text-gray-300 hover:text-primary transition-colors text-sm">
@@ -75,7 +76,7 @@ export default function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="font-display font-semibold text-lg mb-4">{t('footer.support')}</h3>
+            <h3 className="font-display font-semibold text-base mb-3 md:text-lg md:mb-4">{t('footer.support')}</h3>
             <ul className="space-y-2">
               <li>
                 <Link to="/help" className="text-gray-300 hover:text-primary transition-colors text-sm">
@@ -101,8 +102,8 @@ export default function Footer() {
           </div>
 
           {/* Contact */}
-          <div>
-            <h3 className="font-display font-semibold text-lg mb-4">{t('footer.contact_us')}</h3>
+          <div className="col-span-2 md:col-span-1">
+            <h3 className="font-display font-semibold text-base mb-3 md:text-lg md:mb-4">{t('footer.contact_us')}</h3>
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm">
                 <MapPin size={18} className="text-primary flex-shrink-0 mt-0.5" />
@@ -127,12 +128,12 @@ export default function Footer() {
         </div>
 
         {/* Bottom */}
-        <div className="pt-8 border-t border-white/10">
+        <div className="pt-6 border-t border-white/10 md:pt-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-400 text-sm text-center md:text-left">
               © {currentYear} Belivay. {t('footer.rights')}
             </p>
-            <div className="flex items-center gap-6 text-sm">
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm md:justify-start">
               <Link to="/privacy" className="text-gray-400 hover:text-primary transition-colors">
                 {t('footer.privacy')}
               </Link>

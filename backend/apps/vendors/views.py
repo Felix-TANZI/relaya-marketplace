@@ -6803,26 +6803,127 @@ def admin_master_detail(request, master_id):
     return Response(AdminMasterDetailSerializer(master, context={'request': request}).data)
 
 
-@extend_schema(tags=["Admin"], summary="Update master product")
-@api_view(['PATCH'])
+@extend_schema(tags=["Admin"], summary="Update master product (enrichi)")
+@api_view(["PATCH"])
 @permission_classes([IsAdminUser])
 def admin_update_master(request, master_id):
-    from apps.catalog.models import MasterProduct, Category
+    """
+    Met à jour une fiche maître.
+ 
+    Champs acceptés :
+    - title (str)
+    - description (str)
+    - brand (str, legacy — texte libre)
+    - category (int, ID)
+    - brand_fk (int|null, ID d'une Brand)
+    - variant_axes (list[str], slugs d'attributs AXE)
+    """
+    from apps.catalog.models import (
+        MasterProduct, Category, Brand, ProductAttribute,
+    )
     from apps.vendors.serializers import AdminMasterDetailSerializer
+ 
     try:
         master = MasterProduct.objects.get(id=master_id)
     except MasterProduct.DoesNotExist:
-        return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
-    for f in ['title', 'description', 'brand']:
+        return Response(
+            {"detail": "Fiche introuvable."},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+ 
+    # ── Champs texte simples ────────────────────────────────────────
+    for f in ["title", "description", "brand"]:
         if f in request.data:
             setattr(master, f, request.data[f])
-    if 'category' in request.data:
+ 
+    # ── Category (FK) ──────────────────────────────────────────────
+    if "category" in request.data:
         try:
-            master.category = Category.objects.get(id=request.data['category'])
+            master.category = Category.objects.get(id=request.data["category"])
         except Category.DoesNotExist:
-            return Response({'detail': 'Catégorie invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Catégorie invalide."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+    # ── brand_fk (FK Brand, nullable) ──────────────────────────────
+    if "brand_fk" in request.data:
+        val = request.data["brand_fk"]
+        if val in (None, "", "null"):
+            master.brand_fk = None
+        else:
+            try:
+                master.brand_fk = Brand.objects.get(id=int(val))
+            except (Brand.DoesNotExist, ValueError, TypeError):
+                return Response(
+                    {"detail": "Marque (brand_fk) invalide."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+ 
+    # ── variant_axes (JSON list de slugs) ──────────────────────────
+    if "variant_axes" in request.data:
+        raw = request.data["variant_axes"]
+        # Accepte list ou string JSON-encoded
+        if isinstance(raw, str):
+            import json
+            try:
+                raw = json.loads(raw)
+            except json.JSONDecodeError:
+                return Response(
+                    {"detail": "variant_axes doit être une liste JSON valide."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+ 
+        if not isinstance(raw, list):
+            return Response(
+                {"detail": "variant_axes doit être une liste."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+ 
+        # Valider que chaque slug existe et a role=AXE
+        # (autorise slug d'attributs universels ou spécifiques à la catégorie)
+        if raw:
+            existing = set(
+                ProductAttribute.objects.filter(
+                    slug__in=raw, role="AXE",
+                ).values_list("slug", flat=True)
+            )
+            invalid = [s for s in raw if s not in existing]
+            if invalid:
+                return Response(
+                    {"detail": (
+                        f"Axes invalides : {', '.join(invalid)}. "
+                        "Chaque axe doit correspondre à un attribut existant "
+                        "avec role=AXE."
+                    )},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+ 
+        # ATTENTION : si des variants existent déjà avec des axis_values
+        # basés sur les axes actuels, changer variant_axes casse les liens.
+        # On refuse le changement si des variants existent et que la liste
+        # d'axes change (protection métier).
+        old_axes = list(master.variant_axes or [])
+        new_axes = list(raw)
+        if set(old_axes) != set(new_axes):
+            variants_count = master.variants.count()
+            if variants_count > 0:
+                return Response(
+                    {"detail": (
+                        f"Impossible de changer variant_axes : {variants_count} "
+                        f"variant(s) existent déjà. Supprime-les d'abord ou "
+                        f"garde la même liste d'axes."
+                    )},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+ 
+        master.variant_axes = new_axes
+ 
     master.save()
-    return Response(AdminMasterDetailSerializer(master, context={'request': request}).data)
+ 
+    return Response(
+        AdminMasterDetailSerializer(master, context={"request": request}).data
+    )
 
 
 @extend_schema(tags=["Admin"], summary="Approve master product")

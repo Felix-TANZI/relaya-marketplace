@@ -24,6 +24,9 @@ from .models import (
     RequiredDocumentType, ShopModificationRequest,
     ShopModificationDocument, VendorLocation,
 )
+from apps.catalog.models import (
+    MasterProduct, ProductAttribute, ProductVariant, Brand, Category
+)
 
 
 def estimate_shipment_distance_km(shipment) -> float:
@@ -732,48 +735,237 @@ class AdminMasterOfferSerializer(serializers.ModelSerializer):
             return 0
 
 
+def _resolve_variant_axes(variant_axes_slugs):
+    """Résout une liste de slugs d'axes en objets riches."""
+    if not variant_axes_slugs:
+        return []
+    attrs = {
+        a.slug: a for a in ProductAttribute.objects.filter(
+            slug__in=variant_axes_slugs,
+        )
+    }
+    resolved = []
+    for slug in variant_axes_slugs:
+        attr = attrs.get(slug)
+        if attr is None:
+            resolved.append({
+                "slug": slug, "name": slug, "values_type": None,
+                "unit": "", "found": False,
+            })
+        else:
+            resolved.append({
+                "slug": attr.slug,
+                "name": attr.name,
+                "values_type": attr.values_type,
+                "unit": attr.unit or "",
+                "found": True,
+            })
+    return resolved
+
+
 class AdminMasterListSerializer(serializers.ModelSerializer):
-    category_name = serializers.CharField(source='category.name', read_only=True, default=None)
-    offers_count  = serializers.SerializerMethodField()
+    """Vue tableau — infos essentielles + variant_axes + brand_fk."""
+ 
     primary_image = serializers.SerializerMethodField()
-
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_parent_id = serializers.IntegerField(
+        source="category.parent_id", read_only=True, default=None,
+    )
+    category_parent_name = serializers.SerializerMethodField()
+ 
+    # ── Brand (Phase 1.2) ────────────────────────────────────────────
+    brand_fk_id = serializers.IntegerField(
+        source="brand_fk.id", read_only=True, default=None,
+    )
+    brand_fk_name = serializers.CharField(
+        source="brand_fk.name", read_only=True, default=None,
+    )
+    brand_fk_logo_url = serializers.SerializerMethodField()
+    brand_fk_verified = serializers.BooleanField(
+        source="brand_fk.is_verified", read_only=True, default=None,
+    )
+ 
+    # ── Variants (Phase 3) ───────────────────────────────────────────
+    variants_count = serializers.SerializerMethodField()
+    active_variants_count = serializers.SerializerMethodField()
+    axes_resolved = serializers.SerializerMethodField()
+ 
+    # ── Offres ──────────────────────────────────────────────────────
+    offers_count = serializers.SerializerMethodField()
+    active_offers_count = serializers.SerializerMethodField()
+ 
     class Meta:
-        from apps.catalog.models import MasterProduct
-        model  = MasterProduct
+        model = MasterProduct
         fields = [
-            'id', 'title', 'slug', 'brand', 'category', 'category_name',
-            'moderation_status', 'offers_count', 'primary_image', 'created_at',
+            "id", "slug", "title", "brand",  # brand (texte legacy)
+            "primary_image",
+            "category", "category_name",
+            "category_parent_id", "category_parent_name",
+            "brand_fk", "brand_fk_id", "brand_fk_name", "brand_fk_logo_url", "brand_fk_verified",
+            "variant_axes", "axes_resolved",
+            "variants_count", "active_variants_count",
+            "offers_count", "active_offers_count",
+            "moderation_status", "moderated_at",
+            "created_at", "updated_at",
         ]
-
+ 
+    def get_primary_image(self, obj):
+        request = self.context.get("request")
+        img = obj.images.filter(is_primary=True).first() or obj.images.first()
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_category_parent_name(self, obj):
+        if not obj.category or not obj.category.parent:
+            return None
+        return obj.category.parent.name
+ 
+    def get_brand_fk_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.brand_fk or not obj.brand_fk.logo:
+            return None
+        url = obj.brand_fk.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_axes_resolved(self, obj):
+        return _resolve_variant_axes(obj.variant_axes or [])
+ 
+    def get_variants_count(self, obj):
+        return obj.variants.count()
+ 
+    def get_active_variants_count(self, obj):
+        return obj.variants.filter(is_active=True, moderation_status="APPROVED").count()
+ 
     def get_offers_count(self, obj):
         return obj.offers.count()
+ 
+    def get_active_offers_count(self, obj):
+        return obj.offers.filter(is_active=True, moderation_status="APPROVED").count()
+    
 
+# ═══════════════════════════════════════════════════════════════════════════
+# VARIANT BRIEF (pour lister les variants du master)
+# ═══════════════════════════════════════════════════════════════════════════
+ 
+class AdminMasterVariantBriefSerializer(serializers.ModelSerializer):
+    """Brève info d'un variant attaché."""
+    display_name = serializers.SerializerMethodField()
+    offers_count = serializers.SerializerMethodField()
+ 
+    class Meta:
+        model = ProductVariant
+        fields = [
+            "id", "sku", "axis_values", "display_name",
+            "moderation_status", "is_active", "offers_count",
+        ]
+ 
+    def get_display_name(self, obj):
+        return str(obj)
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.filter(is_active=True).count()    
+
+
+class AdminMasterDetailSerializer(serializers.ModelSerializer):
+    """
+    Vue modale — master complet avec variants attachés, brand_fk complet,
+    axes résolus. Note : les 'offers' et 'images' restent gérés comme
+    dans la version d'origine — cet enrichissement ajoute UNIQUEMENT
+    les champs Phase 2 et Phase 1.2 sans casser les serializers legacy
+    éventuellement utilisés par le frontend existant.
+    """
+ 
+    primary_image = serializers.SerializerMethodField()
+    all_images = serializers.SerializerMethodField()
+    category_name = serializers.CharField(source="category.name", read_only=True)
+    category_parent_id = serializers.IntegerField(
+        source="category.parent_id", read_only=True, default=None,
+    )
+    category_parent_name = serializers.SerializerMethodField()
+ 
+    # Brand
+    brand_fk_id = serializers.IntegerField(source="brand_fk.id", read_only=True, default=None)
+    brand_fk_name = serializers.CharField(source="brand_fk.name", read_only=True, default=None)
+    brand_fk_logo_url = serializers.SerializerMethodField()
+    brand_fk_verified = serializers.BooleanField(
+        source="brand_fk.is_verified", read_only=True, default=None,
+    )
+ 
+    # Variants + axes
+    axes_resolved = serializers.SerializerMethodField()
+    variants = AdminMasterVariantBriefSerializer(many=True, read_only=True)
+ 
+    # Offres — on garde tel quel côté serializer léger pour ne pas casser
+    offers_count = serializers.SerializerMethodField()
+    active_offers_count = serializers.SerializerMethodField()
+ 
+    # Modération
+    moderated_by_username = serializers.CharField(
+        source="moderated_by.username", read_only=True, default=None,
+    )
+ 
+    class Meta:
+        model = MasterProduct
+        fields = [
+            "id", "slug", "title", "description",
+            "brand",  # texte legacy
+            "primary_image", "all_images",
+            "category", "category_name",
+            "category_parent_id", "category_parent_name",
+            "brand_fk", "brand_fk_id", "brand_fk_name",
+            "brand_fk_logo_url", "brand_fk_verified",
+            "variant_axes", "axes_resolved",
+            "variants",
+            "offers_count", "active_offers_count",
+            "moderation_status", "moderated_at",
+            "moderated_by_username",
+            "created_at", "updated_at",
+        ]
+ 
     def get_primary_image(self, obj):
+        request = self.context.get("request")
         img = obj.images.filter(is_primary=True).first() or obj.images.first()
-        if img and img.image:
-            request = self.context.get('request')
-            return request.build_absolute_uri(img.image.url) if request else img.image.url
-        return None
-
-
-class AdminMasterDetailSerializer(AdminMasterListSerializer):
-    images = serializers.SerializerMethodField()
-    offers = serializers.SerializerMethodField()
-
-    class Meta(AdminMasterListSerializer.Meta):
-        fields = AdminMasterListSerializer.Meta.fields + ['description', 'images', 'offers']
-
-    def get_images(self, obj):
-        request = self.context.get('request')
-        return [{
-            'id': im.id,
-            'image': request.build_absolute_uri(im.image.url) if request else im.image.url,
-            'is_primary': im.is_primary,
-        } for im in obj.images.all()]
-
-    def get_offers(self, obj):
-        qs = obj.offers.all().select_related('vendor', 'inventory', 'condition').order_by('price_xaf')
-        return AdminMasterOfferSerializer(qs, many=True, context=self.context).data     
+        if not img or not img.image:
+            return None
+        url = img.image.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_all_images(self, obj):
+        request = self.context.get("request")
+        results = []
+        for img in obj.images.all():
+            if not img.image:
+                continue
+            url = img.image.url
+            results.append({
+                "id": img.id,
+                "url": request.build_absolute_uri(url) if request else url,
+                "is_primary": img.is_primary,
+            })
+        return results
+ 
+    def get_category_parent_name(self, obj):
+        if not obj.category or not obj.category.parent:
+            return None
+        return obj.category.parent.name
+ 
+    def get_brand_fk_logo_url(self, obj):
+        request = self.context.get("request")
+        if not obj.brand_fk or not obj.brand_fk.logo:
+            return None
+        url = obj.brand_fk.logo.url
+        return request.build_absolute_uri(url) if request else url
+ 
+    def get_axes_resolved(self, obj):
+        return _resolve_variant_axes(obj.variant_axes or [])
+ 
+    def get_offers_count(self, obj):
+        return obj.offers.count()
+ 
+    def get_active_offers_count(self, obj):
+        return obj.offers.filter(is_active=True, moderation_status="APPROVED").count()     
 
 
 # ─────────────────────────────────────────────────────────────────────────────

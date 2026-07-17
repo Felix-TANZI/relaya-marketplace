@@ -187,9 +187,23 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] py-6 dark:bg-gray-950 sm:py-10">
+    <div className="min-h-screen bg-[#f8f5f1] py-3 dark:bg-gray-950 sm:py-10">
       <div className="container mx-auto max-w-5xl px-3 sm:px-4">
-        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+
+        {/* ══════════ EN-TÊTE MOBILE — slim, sans carte ══════════ */}
+        <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:hidden">
+          <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">
+            {t('notifications.title')}
+          </h1>
+          {unreadCount > 0 && (
+            <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white">
+              {unreadCount} {t('notifications.unread_label')}
+            </span>
+          )}
+        </div>
+
+        {/* ══════════ EN-TÊTE DESKTOP — carte complète ══════════ */}
+        <div className="mb-8 hidden rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 sm:block">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
@@ -209,7 +223,61 @@ export default function NotificationsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        {/* ══════════ LISTE DENSE — MOBILE ══════════ */}
+        <div className="sm:hidden">
+          {loading ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-4 text-sm text-gray-500 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-400">
+              {t('notifications.loading')}
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('notifications.empty_title')}</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('notifications.empty_description')}</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
+              {notifications.map((notification) => {
+                const visual = getNotificationVisual(notification);
+                const Icon = 'icon' in notification && notification.icon ? notification.icon : visual.icon;
+                const unread = !notification.is_read;
+
+                return (
+                  <button
+                    key={notification.id}
+                    type="button"
+                    onClick={() => openNotification(notification)}
+                    className={`flex w-full items-center gap-3 px-3 py-2.5 text-left transition active:bg-gray-50 dark:active:bg-gray-800 ${
+                      unread ? "bg-orange-50/40 dark:bg-primary/5" : ""
+                    }`}
+                  >
+                    <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border ${visual.accent}`}>
+                      <Icon size={16} />
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-2">
+                        <span className={`min-w-0 flex-1 truncate text-[13.5px] ${
+                          unread ? "font-bold text-gray-900 dark:text-white" : "font-semibold text-gray-700 dark:text-gray-200"
+                        }`}>
+                          {notification.title}
+                        </span>
+                        {unread && <span className="h-2 w-2 flex-shrink-0 rounded-full bg-primary" />}
+                        <span className="flex-shrink-0 text-[10.5px] text-gray-400 dark:text-gray-500">
+                          {notificationTime(notification)}
+                        </span>
+                      </span>
+                      <span className="mt-0.5 block truncate text-[12px] text-gray-500 dark:text-gray-400">
+                        {notificationText(notification)}
+                      </span>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ══════════ LISTE CARTES — DESKTOP ══════════ */}
+        <div className="hidden gap-4 sm:grid">
           {loading && (
             <article className="rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.loading')}</p>
@@ -223,7 +291,7 @@ export default function NotificationsPage() {
               <article
                 key={notification.id}
                 onClick={() => openNotification(notification)}
-                className="relative cursor-pointer overflow-hidden rounded-[1.25rem] border border-gray-100 bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-900 sm:rounded-[1.75rem] sm:p-5"
+                className="relative cursor-pointer overflow-hidden rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-900"
               >
                 <div className={`absolute inset-y-0 left-0 w-1.5 ${visual.rail}`} />
                 <div className="flex items-start gap-4">

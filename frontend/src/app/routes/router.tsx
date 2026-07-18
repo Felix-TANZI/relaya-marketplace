@@ -43,7 +43,9 @@ import BecomeSellerPage       from '@/features/vendors/BecomeSellerPage';
 import NotFoundPage           from '@/features/system/NotFoundPage';
 import PromotionsPage         from '@/features/promotions/PromotionsPage';
 import DriverApp              from '@/features/driver/DriverApp';
-import FicheDetailPage from '@/features/catalog/FicheDetailPage';
+import FicheDetailPage        from '@/features/catalog/FicheDetailPage';
+import RelayPointPage         from '@/features/relay/RelayPointPage';
+import DeliveryOrganizationPage from '@/features/delivery-organization/DeliveryOrganizationPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH PAGES
@@ -108,6 +110,8 @@ import AdminDisputeDetailPage  from '@/features/admin/operations/DisputeDetailPa
 import DeliveriesListPage from '@/features/admin/deliveries/DeliveriesListPage';
 import DeliveriesZonesPage from '@/features/admin/deliveries/DeliveriesZonesPage';
 import DeliveriesPerformancePage from '@/features/admin/deliveries/DeliveriesPerformancePage';
+import DeliveryOrganizationsMapPage from '@/features/admin/deliveries/DeliveryOrganizationsMapPage';
+import RelayPointsMapPage from '@/features/admin/deliveries/RelayPointsMapPage';
 import CataloguePage           from '@/features/admin/operations/CataloguePage';
 import AdminCategoriesPage     from '@/features/admin/operations/CategoriesPage';
 import ReviewsPage             from '@/features/admin/operations/ReviewsPage';
@@ -224,6 +228,14 @@ export const router = createBrowserRouter([
     path: '/driver/*',
     element: <ProtectedRoute><RoleRoute role="courier"><DriverApp /></RoleRoute></ProtectedRoute>,
   },
+  {
+    path: '/relay-point',
+    element: <ProtectedRoute><RoleRoute role="relay_point"><RelayPointPage /></RoleRoute></ProtectedRoute>,
+  },
+  {
+    path: '/delivery-organization',
+    element: <ProtectedRoute><RoleRoute role="delivery_organization"><DeliveryOrganizationPage /></RoleRoute></ProtectedRoute>,
+  },
 
   // ═══════════════════════════════════════════════════════════════════════════
   // ADMIN AREA
@@ -275,6 +287,14 @@ export const router = createBrowserRouter([
       {
         path: 'deliveries/performance',
         element: <DeliveriesPerformancePage />,
+      },
+      {
+        path: 'deliveries/organization',
+        element: <DeliveryOrganizationsMapPage />,
+      },
+      {
+        path: 'deliveries/relay-point',
+        element: <RelayPointsMapPage />,
       },
 
       // ── OPERATIONS ────────────────────────────────────────────────────────

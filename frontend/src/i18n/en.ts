@@ -1203,6 +1203,8 @@
     section_deliveries:   'Delivery Management',
     deliveries_overview:  'Overview',
     deliveries_list:      'All Drivers',
+    deliveries_organization: 'Delivery organization',
+    deliveries_relay_point:  'Relay points',
     deliveries_zones:     'Zones & Routing',
     deliveries_perf:      'Performance',
     section_operations:   'Operations',

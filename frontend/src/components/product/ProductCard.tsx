@@ -18,6 +18,7 @@ import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/context/CartContext";
 import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
+import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
 
 interface ProductImage {
@@ -149,7 +150,7 @@ export default function ProductCard({
     const nextFavoriteIds = toggleFavoriteProduct(product.id);
     const nextIsFavorite = nextFavoriteIds.includes(product.id);
     setIsFavorite(nextIsFavorite);
-    if (!localStorage.getItem('access_token')) return;
+    if (!hasValidAccessToken()) return;
     try {
       if (nextIsFavorite) {
         await customerApi.addFavorite(product.id);

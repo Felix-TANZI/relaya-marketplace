@@ -187,7 +187,7 @@ export interface CreateCourierPayload {
   id_card: string;
 }
 
-export type AdminCreateUserRole = "client" | "vendor" | "courier" | "admin";
+export type AdminCreateUserRole = "client" | "vendor" | "courier" | "delivery_org" | "relay_point" | "admin";
 
 export interface AdminCreateUserPayload {
   role: AdminCreateUserRole;
@@ -200,12 +200,22 @@ export interface AdminCreateUserPayload {
   city?: string;
   business_name?: string;
   business_description?: string;
+  company_name?: string;
+  manager_name?: string;
+  relay_point_name?: string;
+  relay_code?: string;
+  opening_hours?: string;
+  storage_capacity?: string | number;
   address?: string;
   id_document?: string;
   vendor_status?: "PENDING" | "APPROVED";
+  contract_reference?: string;
+  organization_status?: "PENDING" | "APPROVED" | "SUSPENDED";
+  relay_status?: "PENDING" | "APPROVED" | "SUSPENDED";
   zones?: string[];
   vehicle_type?: AdminCourier["vehicle_type"];
   id_card?: string;
+  delivery_organization_id?: number | string;
   is_approved?: boolean;
   is_superuser?: boolean;
 }

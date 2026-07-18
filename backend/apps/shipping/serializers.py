@@ -1,9 +1,10 @@
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone
+from django.shortcuts import get_object_or_404
 from apps.orders.models import Dispute, Order
 from apps.accounts.models import UserNotification
-from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
+from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
 
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
@@ -23,6 +24,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
     courier_payout_xaf = serializers.SerializerMethodField()
     fulfillment_status = serializers.SerializerMethodField()
     vendor_names = serializers.SerializerMethodField()
+    assignment = serializers.SerializerMethodField()
+    relay_parcel = serializers.SerializerMethodField()
 
     class Meta:
         model = Shipment
@@ -42,6 +45,10 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "fulfillment_status",
             "vendor_names",
             "relay_point",
+            "required_vehicle_type",
+            "parcel_size",
+            "assignment",
+            "relay_parcel",
             "created_at",
             "updated_at",
             "events",
@@ -104,6 +111,24 @@ class ShipmentSerializer(serializers.ModelSerializer):
             )
         return list(dict.fromkeys(names))
 
+    def get_assignment(self, obj):
+        return {
+            "issue_code": obj.assignment_issue_code,
+            "issue_message": obj.assignment_issue_message,
+            "is_blocked": obj.status in [
+                Shipment.Status.WAITING_MANUAL_ASSIGNMENT,
+                Shipment.Status.ZONE_UNCOVERED,
+                Shipment.Status.CAPACITY_BLOCKED,
+                Shipment.Status.VEHICLE_INCOMPATIBLE,
+            ],
+        }
+
+    def get_relay_parcel(self, obj):
+        parcel = getattr(obj, "relay_parcel", None)
+        if not parcel:
+            return None
+        return RelayParcelSerializer(parcel).data
+
 
 class ShipmentCreateSerializer(serializers.Serializer):
     """
@@ -115,6 +140,8 @@ class ShipmentCreateSerializer(serializers.Serializer):
     courier_name = serializers.CharField(required=False, allow_blank=True)
     courier_phone = serializers.CharField(required=False, allow_blank=True)
     relay_point = serializers.CharField(required=False, allow_blank=True, default="")
+    required_vehicle_type = serializers.CharField(required=False, allow_blank=True, default="")
+    parcel_size = serializers.CharField(required=False, allow_blank=True, default="STANDARD")
 
     def validate_order_id(self, value):
         if not Order.objects.filter(id=value).exists():
@@ -145,12 +172,20 @@ class ShipmentCreateSerializer(serializers.Serializer):
         if "courier_phone" in validated_data:
             shipment.courier_phone = validated_data["courier_phone"]
         shipment.relay_point = validated_data.get("relay_point", shipment.relay_point)
+        shipment.required_vehicle_type = validated_data.get("required_vehicle_type", shipment.required_vehicle_type)
+        shipment.parcel_size = validated_data.get("parcel_size", shipment.parcel_size or "STANDARD")
 
-        # Si livreur renseigné => ASSIGNED
+        # Si livreur renseigné => ASSIGNED, sinon tentative d'affectation partenaire.
         if shipment.courier_name or shipment.courier_phone:
             shipment.status = Shipment.Status.ASSIGNED
+            shipment.assignment_issue_code = ""
+            shipment.assignment_issue_message = ""
+            shipment.save()
+        else:
+            shipment.save()
+            from .assignment import assign_shipment_or_mark_blocked
 
-        shipment.save()
+            shipment = assign_shipment_or_mark_blocked(shipment, required_vehicle_type=shipment.required_vehicle_type)
 
         # Ajoute un event (V1 simple)
         ShipmentEvent.objects.create(
@@ -173,6 +208,152 @@ class ShipmentCreateSerializer(serializers.Serializer):
             )
 
         return shipment
+
+
+class RelayParcelSerializer(serializers.ModelSerializer):
+    shipment_id = serializers.IntegerField(source="shipment.id", read_only=True)
+    order_id = serializers.IntegerField(source="shipment.order_id", read_only=True)
+    relay_point_name = serializers.CharField(source="relay_point.name", read_only=True)
+    customer_phone = serializers.CharField(source="shipment.order.customer_phone", read_only=True)
+    delivery_address = serializers.CharField(source="shipment.order.address", read_only=True)
+    city = serializers.CharField(source="shipment.order.city", read_only=True)
+
+    class Meta:
+        model = RelayParcel
+        fields = [
+            "id",
+            "shipment_id",
+            "order_id",
+            "relay_point",
+            "relay_point_name",
+            "status",
+            "slot_code",
+            "pickup_code",
+            "proof_note",
+            "customer_phone",
+            "delivery_address",
+            "city",
+            "received_at",
+            "picked_up_at",
+            "returned_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+
+class RelayParcelReceiveSerializer(serializers.Serializer):
+    shipment_id = serializers.IntegerField(required=False)
+    order_id = serializers.IntegerField(required=False)
+    slot_code = serializers.CharField(required=False, allow_blank=True, default="")
+    proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if not attrs.get("shipment_id") and not attrs.get("order_id"):
+            raise serializers.ValidationError("shipment_id ou order_id est obligatoire.")
+        return attrs
+
+    def save(self, **kwargs):
+        relay_point = self.context["relay_point"]
+        shipment_qs = Shipment.objects.select_related("order")
+        if self.validated_data.get("shipment_id"):
+            shipment = get_object_or_404(shipment_qs, id=self.validated_data["shipment_id"])
+        else:
+            shipment = get_object_or_404(shipment_qs, order_id=self.validated_data["order_id"])
+
+        active_count = RelayParcel.objects.filter(
+            relay_point=relay_point,
+            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+        ).count()
+        capacity = relay_point.storage_capacity or 0
+        if capacity and active_count >= capacity:
+            raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."})
+
+        import secrets
+
+        parcel, _ = RelayParcel.objects.get_or_create(
+            shipment=shipment,
+            defaults={"relay_point": relay_point},
+        )
+        parcel.relay_point = relay_point
+        parcel.status = RelayParcel.Status.STORED
+        parcel.slot_code = self.validated_data.get("slot_code") or parcel.slot_code or f"SL-{relay_point.id}-{shipment.id}"
+        parcel.pickup_code = parcel.pickup_code or secrets.token_hex(3).upper()
+        parcel.proof_note = self.validated_data.get("proof_note", "")
+        parcel.received_at = timezone.now()
+        parcel.save()
+
+        shipment.relay_point = relay_point.name
+        shipment.status = Shipment.Status.IN_TRANSIT
+        shipment.assignment_issue_code = ""
+        shipment.assignment_issue_message = ""
+        shipment.save(update_fields=["relay_point", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.IN_TRANSIT,
+            message=f"Colis recu et stocke au point relais {relay_point.name}",
+            location=relay_point.name,
+        )
+        return parcel
+
+
+class RelayParcelPickupSerializer(serializers.Serializer):
+    parcel_id = serializers.IntegerField()
+    pickup_code = serializers.CharField()
+    proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def save(self, **kwargs):
+        relay_point = self.context["relay_point"]
+        parcel = get_object_or_404(
+            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point"),
+            id=self.validated_data["parcel_id"],
+            relay_point=relay_point,
+        )
+        if parcel.pickup_code and parcel.pickup_code != self.validated_data["pickup_code"]:
+            raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect."})
+        parcel.status = RelayParcel.Status.PICKED_UP
+        parcel.proof_note = self.validated_data.get("proof_note", parcel.proof_note)
+        parcel.picked_up_at = timezone.now()
+        parcel.save()
+
+        shipment = parcel.shipment
+        shipment.status = Shipment.Status.DELIVERED
+        shipment.save(update_fields=["status", "updated_at"])
+        shipment.order.mark_delivered()
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.DELIVERED,
+            message=f"Colis retire au point relais {relay_point.name}",
+            location=relay_point.name,
+        )
+        return parcel
+
+
+class RelayParcelReturnSerializer(serializers.Serializer):
+    parcel_id = serializers.IntegerField()
+    destination = serializers.ChoiceField(choices=["VENDOR", "BELIVAY"])
+    proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def save(self, **kwargs):
+        relay_point = self.context["relay_point"]
+        parcel = get_object_or_404(
+            RelayParcel.objects.select_related("shipment", "relay_point"),
+            id=self.validated_data["parcel_id"],
+            relay_point=relay_point,
+        )
+        destination = self.validated_data["destination"]
+        parcel.status = RelayParcel.Status.RETURNED_TO_VENDOR if destination == "VENDOR" else RelayParcel.Status.RETURNED_TO_BELIVAY
+        parcel.proof_note = self.validated_data.get("proof_note", parcel.proof_note)
+        parcel.returned_at = timezone.now()
+        parcel.save()
+
+        ShipmentEvent.objects.create(
+            shipment=parcel.shipment,
+            status=parcel.shipment.status,
+            message=f"Retour point relais vers {'vendeur' if destination == 'VENDOR' else 'BelivaY'}",
+            location=relay_point.name,
+        )
+        return parcel
 
 
 class ShipmentEventCreateSerializer(serializers.Serializer):

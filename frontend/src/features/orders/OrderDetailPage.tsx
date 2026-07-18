@@ -452,6 +452,38 @@ export default function OrderDetailPage() {
                 })}
               </div>
 
+              <div className="mt-6 grid gap-3 md:grid-cols-3">
+                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/20">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
+                    <ShieldCheck size={15} />
+                    Preuves BelivaY
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                    Scan, horodatage et traces de livraison sont conserves par BelivaY pour proteger le client.
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 dark:border-sky-900/30 dark:bg-sky-950/20">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
+                    <Store size={15} />
+                    Point relais
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                    {tracking?.relay_point
+                      ? `Relais prevu: ${tracking.relay_point}.`
+                      : "Si un relais est choisi, son code de retrait apparaitra ici apres depot."}
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
+                    <Scale size={15} />
+                    Litige protege
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                    En cas de probleme, le paiement reste pilote par l'escrow et le litige est arbitre par BelivaY.
+                  </p>
+                </div>
+              </div>
+
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
                   type="button"

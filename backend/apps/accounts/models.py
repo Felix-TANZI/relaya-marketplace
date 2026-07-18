@@ -15,6 +15,13 @@ class CourierProfile(models.Model):
         VAN       = "VAN", "Camionnette"
 
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="courier_profile")
+    delivery_organization = models.ForeignKey(
+        "DeliveryOrganizationProfile",
+        on_delete=models.SET_NULL,
+        related_name="couriers",
+        null=True,
+        blank=True,
+    )
     phone = models.CharField(max_length=20)
     city = models.CharField(max_length=80)
     zones = models.JSONField(default=list, blank=True)
@@ -27,6 +34,7 @@ class CourierProfile(models.Model):
     preferred_language = models.CharField(max_length=8, default="fr", blank=True)
     gps_permission_granted = models.BooleanField(default=False)
     camera_permission_granted = models.BooleanField(default=False)
+    max_active_shipments = models.PositiveIntegerField(default=5)
     is_active = models.BooleanField(default=True)
     is_approved = models.BooleanField(default=False)
     is_online = models.BooleanField(default=False)
@@ -40,6 +48,80 @@ class CourierProfile(models.Model):
 
     def __str__(self):
         return f"Livreur {self.user.username} ({self.city})"
+
+
+class DeliveryOrganizationProfile(models.Model):
+    """
+    Entreprise partenaire de livraison.
+
+    Phase 1 BelivaY: les livreurs terrain sont rattaches a une organisation de
+    livraison contractuelle, distincte du compte admin global.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En attente"
+        APPROVED = "APPROVED", "Approuvee"
+        SUSPENDED = "SUSPENDED", "Suspendue"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="delivery_organization_profile")
+    company_name = models.CharField(max_length=160)
+    manager_name = models.CharField(max_length=120, blank=True, default="")
+    phone = models.CharField(max_length=20)
+    city = models.CharField(max_length=80, blank=True, default="")
+    zones = models.JSONField(default=list, blank=True)
+    address = models.CharField(max_length=255, blank=True, default="")
+    contract_reference = models.CharField(max_length=120, blank=True, default="")
+    allowed_vehicle_types = models.JSONField(default=list, blank=True)
+    max_active_shipments = models.PositiveIntegerField(default=50)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["company_name"]
+        verbose_name = "Organisation de livraison"
+        verbose_name_plural = "Organisations de livraison"
+
+    def __str__(self):
+        return self.company_name
+
+
+class RelayPointProfile(models.Model):
+    """
+    Point relais BelivaY.
+
+    Phase 1: le point relais est un acteur operationnel rattache a un compte,
+    cree par l'admin pour recevoir, stocker et remettre les colis.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En attente"
+        APPROVED = "APPROVED", "Approuve"
+        SUSPENDED = "SUSPENDED", "Suspendu"
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="relay_point_profile")
+    name = models.CharField(max_length=160)
+    manager_name = models.CharField(max_length=120, blank=True, default="")
+    phone = models.CharField(max_length=20)
+    city = models.CharField(max_length=80, blank=True, default="")
+    zones = models.JSONField(default=list, blank=True)
+    address = models.CharField(max_length=255, blank=True, default="")
+    relay_code = models.CharField(max_length=80, blank=True, default="")
+    opening_hours = models.CharField(max_length=160, blank=True, default="")
+    storage_capacity = models.PositiveIntegerField(default=0)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "Point relais"
+        verbose_name_plural = "Points relais"
+
+    def __str__(self):
+        return self.name
 
 
 class UserProfile(models.Model):

@@ -14,6 +14,10 @@ class Shipment(models.Model):
 
     class Status(models.TextChoices):
         CREATED = "CREATED", "Created"
+        WAITING_MANUAL_ASSIGNMENT = "WAITING_MANUAL_ASSIGNMENT", "Waiting manual assignment"
+        ZONE_UNCOVERED = "ZONE_UNCOVERED", "Zone uncovered"
+        CAPACITY_BLOCKED = "CAPACITY_BLOCKED", "Capacity blocked"
+        VEHICLE_INCOMPATIBLE = "VEHICLE_INCOMPATIBLE", "Vehicle incompatible"
         ASSIGNED = "ASSIGNED", "Assigned"
         PICKED_UP = "PICKED_UP", "Picked up"
         IN_TRANSIT = "IN_TRANSIT", "In transit"
@@ -35,6 +39,10 @@ class Shipment(models.Model):
     )
     courier_name = models.CharField(max_length=120, blank=True, default="")
     courier_phone = models.CharField(max_length=32, blank=True, default="")
+    assignment_issue_code = models.CharField(max_length=40, blank=True, default="")
+    assignment_issue_message = models.CharField(max_length=255, blank=True, default="")
+    required_vehicle_type = models.CharField(max_length=20, blank=True, default="")
+    parcel_size = models.CharField(max_length=20, blank=True, default="STANDARD")
 
     # Optional: point relais (plus tard)
     relay_point = models.CharField(max_length=120, blank=True, default="")
@@ -66,6 +74,41 @@ class ShipmentEvent(models.Model):
 
     def __str__(self):
         return f"ShipmentEvent(shipment={self.shipment_id}, status={self.status})"
+
+
+class RelayParcel(models.Model):
+    class Status(models.TextChoices):
+        EXPECTED = "EXPECTED", "Attendu"
+        RECEIVED = "RECEIVED", "Recu"
+        STORED = "STORED", "Stocke"
+        PICKED_UP = "PICKED_UP", "Retire"
+        RETURN_REQUESTED = "RETURN_REQUESTED", "Retour demande"
+        RETURNED_TO_VENDOR = "RETURNED_TO_VENDOR", "Retour vendeur"
+        RETURNED_TO_BELIVAY = "RETURNED_TO_BELIVAY", "Retour BelivaY"
+
+    shipment = models.OneToOneField(Shipment, on_delete=models.CASCADE, related_name="relay_parcel")
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile",
+        on_delete=models.CASCADE,
+        related_name="parcels",
+    )
+    status = models.CharField(max_length=24, choices=Status.choices, default=Status.EXPECTED)
+    slot_code = models.CharField(max_length=80, blank=True, default="")
+    pickup_code = models.CharField(max_length=24, blank=True, default="")
+    proof_note = models.TextField(blank=True, default="")
+    received_at = models.DateTimeField(null=True, blank=True)
+    picked_up_at = models.DateTimeField(null=True, blank=True)
+    returned_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        verbose_name = "Colis point relais"
+        verbose_name_plural = "Colis points relais"
+
+    def __str__(self):
+        return f"RelayParcel(shipment={self.shipment_id}, relay={self.relay_point_id}, status={self.status})"
 
 
 class ShipmentMessage(models.Model):

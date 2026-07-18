@@ -25,7 +25,7 @@ import {
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
-  LayoutGrid, UserPlus, Layers, Palette, FolderTree,
+  LayoutGrid, UserPlus, Layers, Palette, FolderTree, Building2, Warehouse,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -97,6 +97,8 @@ const SECTIONS: NavSection[] = [
     items: [
       { key: 'deliveries_overview', path: '/admin/deliveries/overview',    icon: LayoutGrid },
       { key: 'deliveries_list',     path: '/admin/deliveries',             icon: Truck, end: true },
+      { key: 'deliveries_organization', path: '/admin/deliveries/organization', icon: Building2 },
+      { key: 'deliveries_relay_point',  path: '/admin/deliveries/relay-point',  icon: Warehouse },
       { key: 'deliveries_zones',    path: '/admin/deliveries/zones',       icon: Map },
       { key: 'deliveries_perf',     path: '/admin/deliveries/performance', icon: BarChart3 },
     ],

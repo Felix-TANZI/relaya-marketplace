@@ -19,6 +19,10 @@ from .serializers import (
     CourierSOSCreateSerializer,
     CourierShipmentScanSerializer,
     CourierShipmentActionSerializer,
+    RelayParcelPickupSerializer,
+    RelayParcelReceiveSerializer,
+    RelayParcelReturnSerializer,
+    RelayParcelSerializer,
     ShipmentMessageCreateSerializer,
     ShipmentMessageSerializer,
     ShipmentSerializer,
@@ -26,11 +30,18 @@ from .serializers import (
     ShipmentEventSerializer,
     ShipmentEventCreateSerializer,
 )
-from .models import CourierSOSAlert, Shipment, ShipmentEvent, ShipmentMessage
+from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
 from apps.vendors.models import VendorLocation, VendorProfile
 from apps.orders.models import Dispute, DisputeMessage, Order
+
+
+def _get_active_relay_point(user):
+    relay_point = getattr(user, "relay_point_profile", None)
+    if not relay_point or not relay_point.is_active or relay_point.status != relay_point.Status.APPROVED:
+        raise PermissionDenied("Relay point account is not active or approved")
+    return relay_point
 
 
 def _city_variants(value):
@@ -135,6 +146,59 @@ class ShipmentEventCreateView(generics.CreateAPIView):
         s.is_valid(raise_exception=True)
         event = s.save()
         return Response(ShipmentEventSerializer(event).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Relay Point"], summary="Colis du point relais connecte")
+class RelayPointParcelListView(generics.ListAPIView):
+    serializer_class = RelayParcelSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        relay_point = _get_active_relay_point(self.request.user)
+        status_filter = self.request.query_params.get("status")
+        qs = RelayParcel.objects.filter(relay_point=relay_point).select_related("shipment", "shipment__order", "relay_point")
+        if status_filter:
+            qs = qs.filter(status=status_filter)
+        return qs
+
+
+@extend_schema(tags=["Relay Point"], summary="Receptionner et stocker un colis au point relais")
+class RelayPointParcelReceiveView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayParcelReceiveSerializer
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        serializer = RelayParcelReceiveSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer.is_valid(raise_exception=True)
+        parcel = serializer.save()
+        return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Relay Point"], summary="Confirmer le retrait client au point relais")
+class RelayPointParcelPickupView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayParcelPickupSerializer
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        serializer = RelayParcelPickupSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer.is_valid(raise_exception=True)
+        parcel = serializer.save()
+        return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Relay Point"], summary="Retourner un colis depuis le point relais")
+class RelayPointParcelReturnView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayParcelReturnSerializer
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        serializer = RelayParcelReturnSerializer(data=request.data, context={"relay_point": relay_point})
+        serializer.is_valid(raise_exception=True)
+        parcel = serializer.save()
+        return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(

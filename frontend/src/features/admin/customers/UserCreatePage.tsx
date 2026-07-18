@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   UserPlus, ChevronLeft, RefreshCw,
   User, Store, Truck, Shield, AlertCircle,
-  Eye, EyeOff,
+  Eye, EyeOff, Building2, MapPin,
 } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -16,7 +16,7 @@ import { http } from '@/services/api/http';
 // TYPES
 // ─────────────────────────────────────────────────────────────────────────────
 
-type Role = 'client' | 'vendor' | 'courier' | 'admin';
+type Role = 'client' | 'vendor' | 'courier' | 'delivery_org' | 'relay_point' | 'admin';
 
 interface FormData {
   role:                 Role;
@@ -37,9 +37,28 @@ interface FormData {
   zones:                string;
   vehicle_type:         string;
   id_card:              string;
+  delivery_organization_id: string;
   is_approved:          boolean;
+  // Organisation de livraison
+  company_name:         string;
+  manager_name:         string;
+  contract_reference:   string;
+  organization_status:  string;
+  // Point relais
+  relay_point_name:     string;
+  relay_code:           string;
+  opening_hours:        string;
+  storage_capacity:     string;
+  relay_status:         string;
   // Admin
   is_superuser:         boolean;
+}
+
+interface DeliveryOrganizationOption {
+  id: number;
+  company_name: string;
+  city: string;
+  zones: string[];
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -50,6 +69,8 @@ const ROLES: Array<{ key: Role; label: string; desc: string; icon: React.Element
   { key: 'client',  label: 'Acheteur',  desc: 'Compte client standard',               icon: User,    color: '#3B82F6', gradient: 'linear-gradient(135deg,#3B82F6,#1D4ED8)' },
   { key: 'vendor',  label: 'Vendeur',   desc: 'Espace boutique sur BelivaY',           icon: Store,   color: '#F47920', gradient: 'linear-gradient(135deg,#F47920,#C2590A)' },
   { key: 'courier', label: 'Livreur',   desc: 'Compte livreur avec accès terrain',     icon: Truck,   color: '#10B981', gradient: 'linear-gradient(135deg,#10B981,#047857)' },
+  { key: 'delivery_org', label: 'Organisation livraison', desc: 'Entreprise partenaire logistique', icon: Building2, color: '#0891B2', gradient: 'linear-gradient(135deg,#0891B2,#155E75)' },
+  { key: 'relay_point', label: 'Point relais', desc: 'Agence de dépôt et retrait colis', icon: MapPin, color: '#7C3AED', gradient: 'linear-gradient(135deg,#7C3AED,#5B21B6)' },
   { key: 'admin',   label: 'Admin',     desc: 'Accès interface d\'administration',      icon: Shield,  color: '#EF4444', gradient: 'linear-gradient(135deg,#EF4444,#B91C1C)' },
 ];
 
@@ -91,14 +112,34 @@ export default function UserCreatePage() {
     first_name: '', last_name: '', phone: '', city: '',
     business_name: '', business_description: '', address: '', id_document: '',
     vendor_status: 'APPROVED',
-    zones: '', vehicle_type: 'MOTORBIKE', id_card: '', is_approved: true,
+    zones: '', vehicle_type: 'MOTORBIKE', id_card: '', delivery_organization_id: '', is_approved: true,
+    company_name: '', manager_name: '', contract_reference: '', organization_status: 'APPROVED',
+    relay_point_name: '', relay_code: '', opening_hours: '', storage_capacity: '', relay_status: 'APPROVED',
     is_superuser: false,
   });
+  const [deliveryOrganizations, setDeliveryOrganizations] = useState<DeliveryOrganizationOption[]>([]);
 
   const fld = (k: keyof FormData, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }));
 
   const selectedRole = ROLES.find(r => r.key === form.role)!;
+
+  useEffect(() => {
+    if (form.role !== 'courier') return;
+
+    let alive = true;
+    http<DeliveryOrganizationOption[]>('/api/auth/admin/delivery-organizations/')
+      .then((items) => {
+        if (alive) setDeliveryOrganizations(items);
+      })
+      .catch(() => {
+        if (alive) setDeliveryOrganizations([]);
+      });
+
+    return () => {
+      alive = false;
+    };
+  }, [form.role]);
 
   const handleSubmit = async () => {
     setError('');
@@ -106,8 +147,20 @@ export default function UserCreatePage() {
       setError('Username et mot de passe sont obligatoires.');
       return;
     }
-    if ((form.role === 'vendor' || form.role === 'courier') && !form.phone.trim()) {
+    if ((form.role === 'vendor' || form.role === 'courier' || form.role === 'delivery_org' || form.role === 'relay_point') && !form.phone.trim()) {
       setError('Le téléphone est obligatoire pour ce rôle.');
+      return;
+    }
+    if (form.role === 'delivery_org' && !form.company_name.trim()) {
+      setError("Le nom de l'organisation est obligatoire.");
+      return;
+    }
+    if (form.role === 'courier' && !form.delivery_organization_id) {
+      setError("Sélectionne l'entreprise de livraison à laquelle ce livreur est rattaché.");
+      return;
+    }
+    if (form.role === 'relay_point' && !form.relay_point_name.trim()) {
+      setError('Le nom du point relais est obligatoire.');
       return;
     }
 
@@ -127,12 +180,22 @@ export default function UserCreatePage() {
           city:                 form.city,
           business_name:        form.business_name.trim(),
           business_description: form.business_description.trim(),
+          company_name:         form.company_name.trim(),
+          manager_name:         form.manager_name.trim(),
+          relay_point_name:     form.relay_point_name.trim(),
+          relay_code:           form.relay_code.trim(),
+          opening_hours:        form.opening_hours.trim(),
+          storage_capacity:     form.storage_capacity.trim(),
           address:              form.address.trim(),
           id_document:          form.id_document.trim(),
           vendor_status:        form.vendor_status,
+          contract_reference:   form.contract_reference.trim(),
+          organization_status:  form.organization_status,
+          relay_status:         form.relay_status,
           zones,
           vehicle_type:         form.vehicle_type,
           id_card:              form.id_card.trim(),
+          delivery_organization_id: form.delivery_organization_id,
           is_approved:          form.is_approved,
           is_superuser:         form.is_superuser,
         }),
@@ -140,6 +203,8 @@ export default function UserCreatePage() {
       toastRef.current(`Compte @${form.username} créé avec succès.`, 'success');
       // Redirection selon le rôle
       if (form.role === 'courier') navigate('/admin/deliveries');
+      else if (form.role === 'delivery_org') navigate('/admin/deliveries/organization');
+      else if (form.role === 'relay_point') navigate('/admin/deliveries/relay-point');
       else if (form.role === 'vendor') navigate('/admin/vendors');
       else navigate('/admin/customers');
     } catch (err: unknown) {
@@ -171,7 +236,7 @@ export default function UserCreatePage() {
       {/* Sélection rôle */}
       <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <p style={{ fontSize: 12, fontWeight: 700, color: T.muted, marginBottom: 12, textTransform: 'uppercase', letterSpacing: '.06em' }}>Rôle du compte</p>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
           {ROLES.map(role => {
             const Icon   = role.icon;
             const active = form.role === role.key;
@@ -265,8 +330,8 @@ export default function UserCreatePage() {
             </div>
           </div>
 
-          {/* Champs communs vendeur + livreur */}
-          {(form.role === 'vendor' || form.role === 'courier') && (
+          {/* Champs communs vendeur + livreur + logistique */}
+          {(form.role === 'vendor' || form.role === 'courier' || form.role === 'delivery_org' || form.role === 'relay_point') && (
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
@@ -285,6 +350,136 @@ export default function UserCreatePage() {
                 </select>
               </div>
             </div>
+          )}
+
+          {/* Champs spécifiques POINT RELAIS */}
+          {form.role === 'relay_point' && (
+            <>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Nom du point relais <span style={{ color: T.red }}>*</span>
+                </label>
+                <input value={form.relay_point_name} onChange={e => fld('relay_point_name', e.target.value)}
+                  placeholder="Ex: PR BelivaY Mvan"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Responsable du point</label>
+                  <input value={form.manager_name} onChange={e => fld('manager_name', e.target.value)}
+                    placeholder="Nom du responsable"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Code point relais</label>
+                  <input value={form.relay_code} onChange={e => fld('relay_code', e.target.value)}
+                    placeholder="BLV-PR-YDE-001"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Zones desservies <span style={{ fontSize: 10.5, color: T.muted }}>(virgule-séparées)</span>
+                </label>
+                <input value={form.zones} onChange={e => fld('zones', e.target.value)}
+                  placeholder="Mvan, Odza, Nsam, Ekounou"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Adresse du point relais</label>
+                  <input value={form.address} onChange={e => fld('address', e.target.value)}
+                    placeholder="Adresse précise du dépôt/retrait"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Horaires</label>
+                  <input value={form.opening_hours} onChange={e => fld('opening_hours', e.target.value)}
+                    placeholder="Lun-Sam 08h-18h"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Capacité colis estimée</label>
+                  <input type="number" min="0" value={form.storage_capacity} onChange={e => fld('storage_capacity', e.target.value)}
+                    placeholder="Ex: 80"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Statut point relais</label>
+                  <select value={form.relay_status} onChange={e => fld('relay_status', e.target.value)}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                    <option value="APPROVED">Approuvé</option>
+                    <option value="PENDING">En attente</option>
+                    <option value="SUSPENDED">Suspendu</option>
+                  </select>
+                </div>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.25)' }}>
+                <p style={{ fontSize: 12.5, color: T.text, lineHeight: 1.6 }}>
+                  Ce compte représente un point relais BelivaY : réception, stockage court, remise client et suivi opérationnel des colis.
+                </p>
+              </div>
+            </>
+          )}
+
+          {/* Champs spécifiques ORGANISATION DE LIVRAISON */}
+          {form.role === 'delivery_org' && (
+            <>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Nom de l'organisation <span style={{ color: T.red }}>*</span>
+                </label>
+                <input value={form.company_name} onChange={e => fld('company_name', e.target.value)}
+                  placeholder="Ex: Express Logistics Cameroun"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Responsable opérationnel</label>
+                  <input value={form.manager_name} onChange={e => fld('manager_name', e.target.value)}
+                    placeholder="Nom du responsable"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Référence contrat</label>
+                  <input value={form.contract_reference} onChange={e => fld('contract_reference', e.target.value)}
+                    placeholder="BLV-LIV-2026-001"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Zones couvertes <span style={{ fontSize: 10.5, color: T.muted }}>(virgule-séparées)</span>
+                </label>
+                <input value={form.zones} onChange={e => fld('zones', e.target.value)}
+                  placeholder="Yaoundé centre, Mvan, Bastos, Douala Akwa"
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Adresse siège / agence</label>
+                  <input value={form.address} onChange={e => fld('address', e.target.value)}
+                    placeholder="Adresse opérationnelle"
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Statut organisation</label>
+                  <select value={form.organization_status} onChange={e => fld('organization_status', e.target.value)}
+                    style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                    <option value="APPROVED">Approuvée</option>
+                    <option value="PENDING">En attente</option>
+                    <option value="SUSPENDED">Suspendue</option>
+                  </select>
+                </div>
+              </div>
+              <div className="rounded-xl p-3" style={{ background: 'rgba(8,145,178,0.08)', border: '1px solid rgba(8,145,178,0.25)' }}>
+                <p style={{ fontSize: 12.5, color: T.text, lineHeight: 1.6 }}>
+                  Ce compte représente une entreprise partenaire de livraison. Les livreurs terrain pourront ensuite être rattachés à cette organisation.
+                </p>
+              </div>
+            </>
           )}
 
           {/* Champs spécifiques VENDEUR */}
@@ -323,6 +518,25 @@ export default function UserCreatePage() {
           {/* Champs spécifiques LIVREUR */}
           {form.role === 'courier' && (
             <>
+              <div>
+                <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
+                  Entreprise de livraison <span style={{ color: T.red }}>*</span>
+                </label>
+                <select value={form.delivery_organization_id} onChange={e => fld('delivery_organization_id', e.target.value)}
+                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
+                  <option value="">-- Choisir une organisation --</option>
+                  {deliveryOrganizations.map(org => (
+                    <option key={org.id} value={org.id}>
+                      {org.company_name}{org.city ? ` · ${org.city}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {deliveryOrganizations.length === 0 && (
+                  <p style={{ marginTop: 6, fontSize: 11.5, color: T.muted }}>
+                    Crée d'abord une organisation de livraison approuvée pour rattacher ce livreur.
+                  </p>
+                )}
+              </div>
               <div>
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
                   Zones <span style={{ fontSize: 10.5, color: T.muted }}>(virgule-séparées)</span>

@@ -257,6 +257,8 @@ class ProductSerializer(serializers.ModelSerializer):
     price_final = serializers.SerializerMethodField()
     master_slug = serializers.CharField(source='master.slug', read_only=True, default=None)
     active_campaign = serializers.SerializerMethodField()
+    is_flash_deal = serializers.SerializerMethodField()
+    trust_score = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
@@ -272,8 +274,10 @@ class ProductSerializer(serializers.ModelSerializer):
             'discount',
             'discount_percent',
             'is_on_promotion',
+            'is_flash_deal',
             'price_final', 
             'active_campaign',
+            'trust_score',
             'stock_quantity',
             'is_active',
             'category',
@@ -341,6 +345,23 @@ class ProductSerializer(serializers.ModelSerializer):
             "discount_percent": campaign.discount_percent,
             "remaining_stock": campaign.remaining_stock,
         }
+
+    def get_is_flash_deal(self, obj):
+        campaign = self._get_active_campaign(obj)
+        return bool(campaign and campaign.campaign_type == PromotionCampaign.CampaignType.FLASH)
+
+    def get_trust_score(self, obj):
+        annotated_score = getattr(obj, "belivay_trust_score", None)
+        if annotated_score is not None:
+            return round(float(annotated_score), 2)
+
+        rating = self.get_rating_average(obj) or 0
+        reviews_count = self.get_reviews_count(obj)
+        campaign = self._get_active_campaign(obj)
+        commercial_boost = 0
+        if campaign:
+            commercial_boost = 3 if campaign.campaign_type == PromotionCampaign.CampaignType.FLASH else 1
+        return round(float(rating) * 20 + reviews_count + commercial_boost, 2)
 
 
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):

@@ -2,7 +2,9 @@
 # Filtres avancés pour les produits et catégories
 
 import django_filters
-from .models import Product, Category
+from django.utils import timezone
+
+from .models import Product, Category, PromotionCampaign
 
 
 class ProductFilter(django_filters.FilterSet):
@@ -28,6 +30,8 @@ class ProductFilter(django_filters.FilterSet):
     
     # Filtre par statut actif
     is_active = django_filters.BooleanFilter()
+    is_flash_deal = django_filters.BooleanFilter(method='filter_is_flash_deal')
+    is_on_promotion = django_filters.BooleanFilter(method='filter_is_on_promotion')
     
     class Meta:
         model = Product
@@ -48,6 +52,29 @@ class ProductFilter(django_filters.FilterSet):
         else:
             # Produits avec stock = 0
             return queryset.filter(inventory__quantity=0)
+
+    def filter_is_flash_deal(self, queryset, name, value):
+        now = timezone.now()
+        active_flash_filter = {
+            "promotion_campaigns__campaign_type": PromotionCampaign.CampaignType.FLASH,
+            "promotion_campaigns__status": PromotionCampaign.Status.APPROVED,
+            "promotion_campaigns__starts_at__lte": now,
+            "promotion_campaigns__ends_at__gte": now,
+        }
+        if value:
+            return queryset.filter(**active_flash_filter).distinct()
+        return queryset.exclude(**active_flash_filter).distinct()
+
+    def filter_is_on_promotion(self, queryset, name, value):
+        now = timezone.now()
+        campaign_filter = {
+            "promotion_campaigns__status": PromotionCampaign.Status.APPROVED,
+            "promotion_campaigns__starts_at__lte": now,
+            "promotion_campaigns__ends_at__gte": now,
+        }
+        if value:
+            return queryset.filter(**campaign_filter).distinct()
+        return queryset.exclude(**campaign_filter).distinct()
 
 
 class CategoryFilter(django_filters.FilterSet):

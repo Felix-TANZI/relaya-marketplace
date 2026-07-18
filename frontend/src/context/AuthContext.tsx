@@ -4,6 +4,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, type User, type RegisterData } from '@/services/api/auth';
+import { clearStoredAuthTokens, getStoredAccessToken } from '@/lib/authTokens';
 
 interface AuthContextType {
   user: User | null;
@@ -23,14 +24,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Charger l'utilisateur au démarrage
   useEffect(() => {
     const loadUser = async () => {
-      const token = localStorage.getItem('access_token');
+      const token = getStoredAccessToken();
       if (token) {
         try {
           const userData = await authApi.me();
           setUser(userData);
         } catch {
-          localStorage.removeItem('access_token');
-          localStorage.removeItem('refresh_token');
+          clearStoredAuthTokens();
         }
       }
       setLoading(false);
@@ -56,8 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = () => {
     // Clear auth tokens
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearStoredAuthTokens();
     // Clear user-specific data to prevent session leakage
     localStorage.removeItem('belivay_favorite_product_ids');
     localStorage.removeItem('belivay_notif_count');

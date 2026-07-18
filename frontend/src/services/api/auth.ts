@@ -16,8 +16,12 @@ export interface User {
   is_vendor?:             boolean;   // true = compte vendeur actif
   // Profil étendu
   is_courier?: boolean;
+  is_delivery_organization?: boolean;
+  is_relay_point?: boolean;
   courier_status?: "not_applied" | "pending" | "approved";
   courier_profile?: CourierProfile | null;
+  delivery_organization_profile?: DeliveryOrganizationProfile | null;
+  relay_point_profile?: RelayPointProfile | null;
   phone?:                 string | null;
   bio?:                   string | null;
   avatar_url?:            string | null;
@@ -30,6 +34,8 @@ export interface User {
 
 export interface CourierProfile {
   id: number;
+  delivery_organization?: number | null;
+  delivery_organization_name?: string | null;
   phone: string;
   city: string;
   zones: string[];
@@ -41,6 +47,38 @@ export interface CourierProfile {
   is_active: boolean;
   is_approved: boolean;
   is_online: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DeliveryOrganizationProfile {
+  id: number;
+  company_name: string;
+  manager_name: string;
+  phone: string;
+  city: string;
+  zones: string[];
+  address: string;
+  contract_reference: string;
+  status: "PENDING" | "APPROVED" | "SUSPENDED";
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface RelayPointProfile {
+  id: number;
+  name: string;
+  manager_name: string;
+  phone: string;
+  city: string;
+  zones: string[];
+  address: string;
+  relay_code: string;
+  opening_hours: string;
+  storage_capacity: number;
+  status: "PENDING" | "APPROVED" | "SUSPENDED";
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -112,61 +150,39 @@ export const authApi = {
    * Récupérer les infos de l'utilisateur connecté
    */
   me: async (): Promise<User> => {
-    const token = localStorage.getItem('access_token');
-    return http<User>('/api/auth/me/', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return http<User>('/api/auth/me/');
   },
 
   /**
    * Récupérer le profil complet
    */
   getProfile: async (): Promise<User> => {
-    const token = localStorage.getItem('access_token');
-    return http<User>('/api/auth/profile/', {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    return http<User>('/api/auth/profile/');
   },
 
   /**
    * Mettre à jour le profil
    */
   updateProfile: async (data: UpdateProfileData): Promise<User> => {
-    const token = localStorage.getItem('access_token');
     return http<User>('/api/auth/profile/update/', {
       method: 'PATCH',
       body: JSON.stringify(data),
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   uploadAvatar: async (file: File): Promise<User> => {
-    const token = localStorage.getItem('access_token');
     const body = new FormData();
     body.append('avatar', file);
 
     return http<User>('/api/auth/profile/avatar/', {
       method: 'POST',
       body,
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 
   removeAvatar: async (): Promise<User> => {
-    const token = localStorage.getItem('access_token');
     return http<User>('/api/auth/profile/avatar/', {
       method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
     });
   },
 

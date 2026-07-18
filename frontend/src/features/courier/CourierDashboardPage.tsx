@@ -15,6 +15,7 @@ import {
   Gauge,
   LoaderCircle,
   LockKeyhole,
+  LogOut,
   Map,
   MapPin,
   Navigation,
@@ -26,7 +27,6 @@ import {
   Settings2,
   ShieldCheck,
   Send,
-  Siren,
   Sun,
   Moon,
   MoreHorizontal,
@@ -37,6 +37,7 @@ import {
 } from "lucide-react";
 import TrackingMap from "@/components/TrackingMap";
 import { useTheme } from "@/context/ThemeContext";
+import { useAuth } from "@/context/AuthContext";
 import { authApi, type CourierApplicationResponse, type User as AuthUser } from "@/services/api/auth";
 import {
   courierApi,
@@ -62,7 +63,7 @@ type CourierTab =
   | "notifications"
   | "incidents"
   | "litiges"
-  | "securite"
+  | "preuves"
   | "parametres";
 
 const VEHICLE_LABELS: Record<string, string> = {
@@ -85,7 +86,7 @@ const TAB_LABELS: Record<CourierTab, string> = {
   notifications: "Notifications",
   incidents: "Incidents",
   litiges: "Litiges",
-  securite: "Securite SOS",
+  preuves: "Preuves & Relais",
   parametres: "Parametres",
 };
 
@@ -172,11 +173,11 @@ function SectionShell({
   accent?: string;
 }) {
   return (
-    <section className="relative overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(180deg,rgba(14,21,34,.98),rgba(9,14,26,.98))] p-5 shadow-[0_24px_64px_rgba(0,0,0,.34)]">
+    <section className="relative overflow-hidden rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_24px_64px_rgba(15,23,42,.10)] dark:border-emerald-500/10 dark:bg-[linear-gradient(180deg,rgba(14,21,34,.98),rgba(9,14,26,.98))] dark:shadow-[0_24px_64px_rgba(0,0,0,.34)]">
       <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,.12),transparent_52%)]" />
       <div className="pointer-events-none absolute right-0 top-0 h-28 w-40 bg-[radial-gradient(circle_at_top_right,rgba(110,231,183,.08),transparent_60%)]" />
       <p className={`relative text-[11px] font-black uppercase tracking-[0.18em] ${accent}`}>{kicker}</p>
-      <h2 className="relative mt-1 text-[24px] font-extrabold tracking-tight text-white">{title}</h2>
+      <h2 className="relative mt-1 text-[24px] font-extrabold tracking-tight text-slate-950 dark:text-white">{title}</h2>
       <div className="mt-5">{children}</div>
     </section>
   );
@@ -196,11 +197,11 @@ function MetricCard({
   return (
     <article className={`relative overflow-hidden rounded-[24px] border p-4 shadow-[0_18px_38px_rgba(0,0,0,.22)] ${tone}`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,rgba(255,255,255,.12),transparent_65%)]" />
-      <div className="relative mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-black/10">
+      <div className="relative mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/40 text-slate-700 dark:bg-black/10 dark:text-white">
         <Icon size={19} />
       </div>
-      <div className="relative text-[11px] font-bold uppercase tracking-[0.16em] text-white/65">{label}</div>
-      <div className="relative mt-2 text-[24px] font-extrabold text-white">{value}</div>
+      <div className="relative text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-white/65">{label}</div>
+      <div className="relative mt-2 text-[24px] font-extrabold text-slate-950 dark:text-white">{value}</div>
     </article>
   );
 }
@@ -226,6 +227,7 @@ export default function CourierDashboardPage() {
   const navigate = useNavigate();
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
+  const { logout } = useAuth();
   const [tab, setTab] = useState<CourierTab>("dashboard");
   const [booting, setBooting] = useState(true);
   const [progress, setProgress] = useState(8);
@@ -250,8 +252,6 @@ export default function CourierDashboardPage() {
   const [contactLoading, setContactLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState<string | null>(null);
   const [settingsFeedback, setSettingsFeedback] = useState("");
-  const [sosLoading, setSosLoading] = useState(false);
-  const [sosFeedback, setSosFeedback] = useState("");
   const [moreOpen, setMoreOpen] = useState(false);
   const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
@@ -552,7 +552,7 @@ export default function CourierDashboardPage() {
     { id: "notifications", label: "Notifications", icon: Bell },
     { id: "incidents", label: "Incidents", icon: AlertTriangle },
     { id: "litiges", label: "Litiges", icon: ShieldCheck },
-    { id: "securite", label: "Securite SOS", icon: Siren },
+    { id: "preuves", label: "Preuves & Relais", icon: FileBadge2 },
     { id: "parametres", label: "Parametres", icon: Settings2 },
   ] as const;
   const mobileTabs = menu.slice(0, 4);
@@ -732,24 +732,6 @@ export default function CourierDashboardPage() {
     }
   }
 
-  async function handleSOSAlert() {
-    setSosLoading(true);
-    setSosFeedback("");
-    try {
-      const alert = await courierApi.triggerSOS({
-        message: "Alerte SOS declenchee depuis l'espace livreur.",
-        location: currentCourierCity,
-      });
-      setSosFeedback(`Alerte SOS #${alert.id} envoyee au support securite.`);
-      const latestNotifications = await courierApi.getNotifications();
-      setNotifications(latestNotifications);
-    } catch {
-      setSosFeedback("Impossible d'envoyer l'alerte SOS. Contacte le support par telephone.");
-    } finally {
-      setSosLoading(false);
-    }
-  }
-
   const renderDashboard = () => (
     <>
       <section className="grid gap-4 md:grid-cols-4">
@@ -769,7 +751,7 @@ export default function CourierDashboardPage() {
             key={item.label}
             className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.02))] px-5 py-4 shadow-[0_18px_38px_rgba(0,0,0,.2)]"
           >
-            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-white/45">{item.label}</div>
+            <div className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-500 dark:text-white/45">{item.label}</div>
             <div className={`mt-2 text-[24px] font-extrabold ${item.tone}`}>{item.value}</div>
           </article>
         ))}
@@ -785,16 +767,16 @@ export default function CourierDashboardPage() {
                   {currentIsOnline ? "Disponible" : "Hors ligne"}
                 </InfoPill>
               </div>
-              <div className="space-y-2 text-[14px] text-white/85">
-                <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
+              <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
+                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
                   <span>Depart conseille</span>
                   <strong>{dashboard?.recommended_departure ?? "—"}</strong>
                 </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
+                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
                   <span>Trafic</span>
                   <strong>{dashboard?.traffic_label ?? "—"}</strong>
                 </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-black/10 px-4 py-3">
+                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
                   <span>Meteo</span>
                   <strong>{dashboard?.weather_label ?? "—"}</strong>
                 </div>
@@ -804,7 +786,7 @@ export default function CourierDashboardPage() {
               <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
               <div className="space-y-3">
                 {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-[14px] bg-black/10 px-4 py-3 text-[14px] text-white">
+                  <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
                     <CheckCircle2 size={16} className="text-emerald-300" />
                     {item}
                   </div>
@@ -1732,17 +1714,17 @@ export default function CourierDashboardPage() {
                 onClick={() => setSelectedDispute(item)}
                 className={`flex w-full gap-4 rounded-[18px] border p-4 text-left transition ${
                   selectedDispute?.id === item.id
-                    ? "border-orange-500/35 bg-orange-500/10"
-                    : "border-white/5 bg-white/[0.03] hover:bg-white/[0.05]"
+                    ? "border-orange-300 bg-orange-50 dark:border-orange-500/35 dark:bg-orange-500/10"
+                    : "border-slate-200 bg-slate-50 hover:bg-white dark:border-white/5 dark:bg-white/[0.03] dark:hover:bg-white/[0.05]"
                 }`}
               >
                 <ShieldCheck size={18} className="mt-0.5 shrink-0 text-orange-300" />
                 <div className="flex-1">
                   <div className="flex items-center justify-between gap-3">
-                    <div className="font-bold text-white">{item.ref} · {item.label}</div>
+                    <div className="font-bold text-slate-950 dark:text-white">{item.ref} · {item.label}</div>
                     <div className="text-[12px] font-bold text-orange-300">{item.status_display}</div>
                   </div>
-                  <div className="mt-1 text-[13px] leading-6 text-white/75">{item.detail}</div>
+                  <div className="mt-1 text-[13px] leading-6 text-slate-600 dark:text-white/75">{item.detail}</div>
                   <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
                     {item.reason_display} · {new Date(item.updated_at).toLocaleString("fr-FR")}
                   </div>
@@ -1760,21 +1742,21 @@ export default function CourierDashboardPage() {
       <SectionShell kicker="Cadre metier" title="Droits & obligations" accent="text-orange-300">
         <div className="space-y-3">
           {selectedDispute ? (
-            <div className="rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4">
+            <div className="rounded-[18px] border border-orange-200 bg-orange-50 p-4 dark:border-orange-500/20 dark:bg-orange-500/5">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-[12px] font-black uppercase tracking-[0.16em] text-orange-300">
                     {selectedDispute.ref} · {selectedDispute.reason_display}
                   </div>
-                  <div className="mt-2 text-[14px] font-bold text-white">{selectedDispute.label}</div>
-                  <div className="mt-2 text-[13px] leading-6 text-white/75">{selectedDispute.detail}</div>
+                  <div className="mt-2 text-[14px] font-bold text-slate-950 dark:text-white">{selectedDispute.label}</div>
+                  <div className="mt-2 text-[13px] leading-6 text-slate-700 dark:text-white/75">{selectedDispute.detail}</div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${
                   selectedDisputePermission === "granted"
                     ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-300"
                     : selectedDisputePermission === "requested"
                       ? "border-amber-500/25 bg-amber-500/10 text-amber-300"
-                      : "border-white/10 bg-white/5 text-white/65"
+                      : "border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/65"
                 }`}>
                   {selectedDisputePermission === "granted"
                     ? "Autorise"
@@ -1826,9 +1808,9 @@ export default function CourierDashboardPage() {
             "Ne jamais cloturer un litige hors protocole support.",
             "Le livreur peut repondre uniquement quand l'administrateur l'autorise.",
           ].map((item) => (
-            <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+            <div key={item} className="flex gap-3 rounded-[16px] border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.03]">
               <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-300" />
-              <div className="text-[13px] leading-6 text-white/80">{item}</div>
+              <div className="text-[13px] leading-6 text-slate-700 dark:text-white/80">{item}</div>
             </div>
           ))}
         </div>
@@ -1836,47 +1818,85 @@ export default function CourierDashboardPage() {
     </section>
   );
 
-  const renderSecurite = () => (
+  const renderPreuves = () => (
     <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionShell kicker="Urgence" title="Securite SOS">
-        <div className="rounded-[26px] border border-red-500/20 bg-[radial-gradient(circle_at_top,_rgba(239,68,68,.18),_transparent_48%),#1c1013] p-6 text-center">
-          <button
-            type="button"
-            onClick={handleSOSAlert}
-            disabled={sosLoading || !isApprovedCourier}
-            className="mx-auto flex h-36 w-36 items-center justify-center rounded-full border-4 border-red-400/30 bg-red-500/15 text-red-300 shadow-[0_0_0_14px_rgba(239,68,68,.06)] transition hover:bg-red-500/25 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {sosLoading ? <LoaderCircle size={54} className="animate-spin" /> : <Siren size={54} />}
-          </button>
-          <div className="mt-5 text-[22px] font-extrabold text-white">Declencher une alerte SOS</div>
-          <div className="mt-2 text-[13px] leading-6 text-white/70">
-            Envoie une alerte backend au support securite avec ton profil livreur et ta zone actuelle.
+      <SectionShell kicker="Conformite BelivaY" title="Preuves colis & remise point relais">
+        <div className="space-y-4">
+          <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/5 p-4">
+            <div className="flex flex-wrap items-center gap-3">
+              <InfoPill icon={QrCode} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                Scan obligatoire
+              </InfoPill>
+              <InfoPill icon={FileBadge2}>Photos + signature</InfoPill>
+              <InfoPill icon={Store}>Point relais masque vendeur</InfoPill>
+            </div>
+            <p className="mt-3 text-[13px] leading-6 text-white/75">
+              Cette vue reprend la logique documentee: le livreur prouve chaque transfert par scan, photos,
+              horodatage et validation du destinataire logistique. Les champs de preuve backend complets restent a
+              brancher des que le modele ShipmentProof sera ajoute.
+            </p>
           </div>
-          {sosFeedback ? <div className="mt-4 text-[13px] font-semibold text-red-200">{sosFeedback}</div> : null}
+
+          {[
+            ["1", "Enlevement vendeur", "Scanner la mission, verifier le nombre de colis, photo etiquette et photo colis ferme."],
+            ["2", "Remise point relais", "Scanner le QR du point relais, faire signer le gerant, enregistrer l'emplacement de stockage."],
+            ["3", "Livraison client", "Verifier le code de retrait ou la confirmation client, preuve finale, puis statut livre."],
+          ].map(([step, title, body]) => (
+            <div key={step} className="flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
+                {step}
+              </div>
+              <div>
+                <div className="font-bold text-white">{title}</div>
+                <div className="mt-1 text-[13px] leading-6 text-[#8B949E]">{body}</div>
+              </div>
+            </div>
+          ))}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Protection" title="Contacts & procedures" accent="text-sky-300">
-        <div className="space-y-3">
-          <div className="grid gap-3 md:grid-cols-2">
-            {[
-              ["Livreur", firstName],
-              ["Ville", currentCourierCity],
-              ["Mode disponible", currentIsOnline ? "Actif" : "Inactif"],
-              ["GPS", currentGpsGranted ? "Autorise" : "A verifier"],
-              ["Camera", currentCameraGranted ? "Autorisee" : "A verifier"],
-              ["Support surete", "24/7"],
-            ].map(([label, value]) => (
-              <div key={label} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{label}</div>
-                <div className="mt-2 text-[14px] font-bold text-white">{value}</div>
-              </div>
-            ))}
+      <SectionShell kicker="Mission selectionnee" title={selectedShipment ? `Dossier #${selectedShipment.order}` : "Aucune mission"} accent="text-sky-300">
+        {selectedShipment ? (
+          <div className="space-y-4">
+            <div className="grid gap-3 md:grid-cols-2">
+              {[
+                ["Code mission", `BVY-${selectedShipment.order}-${selectedShipment.id}`],
+                ["Statut", statusLabel(selectedShipment.status)],
+                ["Zone", selectedShipment.city || currentCourierCity],
+                ["Relais", selectedShipment.relay_point || "A definir par BelivaY"],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
+                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{label}</div>
+                  <div className="mt-2 text-[14px] font-bold text-white">{value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="rounded-[18px] border border-amber-500/15 bg-amber-500/5 p-4 text-[13px] leading-6 text-amber-100">
+              Les noms vendeur/client restent masques dans le parcours operationnel. Le livreur travaille avec une
+              mission, une adresse de prise en charge, une adresse de remise et des codes de verification.
+            </div>
+
+            <div className="grid gap-3 md:grid-cols-3">
+              {["Photo etiquette", "Photo colis", "Signature relais/client"].map((item) => (
+                <button
+                  key={item}
+                  type="button"
+                  className="rounded-[16px] border border-dashed border-white/12 bg-white/[0.03] px-4 py-6 text-center text-[12px] font-extrabold text-white/70"
+                >
+                  {item}
+                  <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8B949E]">
+                    A connecter
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4 text-[13px] leading-6 text-white/80">
-            Chaque alerte SOS est enregistree en base et ajoute une notification support a ton compte.
+        ) : (
+          <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
+            Selectionne une course pour preparer son dossier de preuve.
           </div>
-        </div>
+        )}
       </SectionShell>
     </section>
   );
@@ -1992,8 +2012,8 @@ export default function CourierDashboardPage() {
         return renderIncidents();
       case "litiges":
         return renderLitiges();
-      case "securite":
-        return renderSecurite();
+      case "preuves":
+        return renderPreuves();
       case "parametres":
         return renderParametres();
       default:
@@ -2001,8 +2021,13 @@ export default function CourierDashboardPage() {
     }
   };
 
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
+
   return (
-    <div className="min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]">
+    <div className={theme === "dark" ? "min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "min-h-screen bg-[#F4F7F5] text-slate-950"}>
       <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"
@@ -2010,7 +2035,7 @@ export default function CourierDashboardPage() {
         />
       </div>
 
-      <header className="fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4">
+      <header className={theme === "dark" ? "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4" : "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-200 bg-white px-3 shadow-[0_2px_22px_rgba(15,23,42,.10)] sm:gap-4 sm:px-4"}>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
             <img
@@ -2021,8 +2046,8 @@ export default function CourierDashboardPage() {
             />
           </div>
           <div className="min-w-0">
-            <div className="truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]">Espace livreur</div>
-            <div className="truncate text-[10px] text-white/70 sm:text-[11px]">{isApprovedCourier ? "" : "Profil en attente"}</div>
+            <div className={theme === "dark" ? "truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]" : "truncate text-[14px] font-extrabold tracking-tight text-emerald-700 sm:text-[15px]"}>Espace livreur</div>
+            <div className={theme === "dark" ? "truncate text-[10px] text-white/70 sm:text-[11px]" : "truncate text-[10px] text-slate-500 sm:text-[11px]"}>{isApprovedCourier ? "" : "Profil en attente"}</div>
           </div>
         </div>
 
@@ -2067,6 +2092,15 @@ export default function CourierDashboardPage() {
             aria-label="Changer de thème"
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex h-10 w-10 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
+            aria-label="Se deconnecter"
+            title="Se deconnecter"
+          >
+            <LogOut size={16} />
           </button>
           <button
             type="button"
@@ -2212,8 +2246,8 @@ export default function CourierDashboardPage() {
                     {TAB_LABELS[tab]}
                   </h1>
                   <p className="mt-2 max-w-[760px] text-[14px] leading-7 text-[#8B949E]">
-                    Cette interface reprend toutes les vues du modele BelivaY Livreur: operations, securite,
-                    communication, navigation et suivi metier du livreur.
+                    Cette interface reprend les vues utiles du modele BelivaY Livreur: operations, preuves,
+                    communication supervisee, navigation et suivi metier du livreur.
                   </p>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-3">

@@ -5,7 +5,7 @@ import RoleAccessDenied from "@/components/auth/RoleAccessDenied";
 import { useAuth } from "@/context/AuthContext";
 
 type RoleRouteProps = {
-  role: "seller" | "courier";
+  role: "seller" | "courier" | "relay_point" | "delivery_organization";
   children: React.ReactNode;
 };
 
@@ -34,6 +34,36 @@ export default function RoleRoute({ role, children }: RoleRouteProps) {
         return;
       }
 
+      if (role === "relay_point") {
+        if (user?.is_relay_point) {
+          setAllowed(true);
+          return;
+        }
+
+        try {
+          const profile = await authApi.me();
+          if (!cancelled) setAllowed(Boolean(profile.is_relay_point));
+        } catch {
+          if (!cancelled) setAllowed(false);
+        }
+        return;
+      }
+
+      if (role === "delivery_organization") {
+        if (user?.is_delivery_organization) {
+          setAllowed(true);
+          return;
+        }
+
+        try {
+          const profile = await authApi.me();
+          if (!cancelled) setAllowed(Boolean(profile.is_delivery_organization));
+        } catch {
+          if (!cancelled) setAllowed(false);
+        }
+        return;
+      }
+
       if (user?.is_courier || user?.courier_status === "approved") {
         setAllowed(true);
         return;
@@ -54,7 +84,14 @@ export default function RoleRoute({ role, children }: RoleRouteProps) {
     return () => {
       cancelled = true;
     };
-  }, [role, user?.courier_status, user?.is_courier, user?.is_vendor]);
+  }, [
+    role,
+    user?.courier_status,
+    user?.is_courier,
+    user?.is_delivery_organization,
+    user?.is_relay_point,
+    user?.is_vendor,
+  ]);
 
   if (allowed === null) {
     return (

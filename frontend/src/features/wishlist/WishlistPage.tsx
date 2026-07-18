@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import ProductCard from "@/components/product/ProductCard";
 import { productsApi, type Product } from "@/services/api/products";
 import { getFavoriteProductIds } from "@/lib/favorites";
+import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
 import { V29_PRODUCTS } from "@/data/v29Products";
 import { useCart } from "@/context/CartContext";
@@ -22,7 +23,7 @@ export default function WishlistPage() {
     try {
       setLoading(true);
 
-      if (localStorage.getItem("access_token")) {
+      if (hasValidAccessToken()) {
         try {
           const favorites = await customerApi.getFavorites();
           const apiProducts = favorites.map((favorite) => favorite.product);

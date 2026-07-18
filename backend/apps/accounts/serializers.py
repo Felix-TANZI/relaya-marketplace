@@ -9,6 +9,8 @@ from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
 from .models import (
     CourierProfile,
+    DeliveryOrganizationProfile,
+    RelayPointProfile,
     RewardAccount,
     RewardTransaction,
     UserCart,
@@ -19,14 +21,23 @@ from .models import (
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
+    delivery_organization_name = serializers.CharField(
+        source="delivery_organization.company_name",
+        read_only=True,
+        allow_null=True,
+    )
+
     class Meta:
         model = CourierProfile
         fields = [
             "id",
+            "delivery_organization",
+            "delivery_organization_name",
             "phone",
             "city",
             "zones",
             "vehicle_type",
+            "max_active_shipments",
             "id_card",
             "preferred_language",
             "gps_permission_granted",
@@ -37,7 +48,51 @@ class CourierProfileSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "is_active", "is_approved", "is_online", "created_at", "updated_at"]
+        read_only_fields = ["id", "delivery_organization_name", "is_active", "is_approved", "is_online", "created_at", "updated_at"]
+
+
+class DeliveryOrganizationProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeliveryOrganizationProfile
+        fields = [
+            "id",
+            "company_name",
+            "manager_name",
+            "phone",
+            "city",
+            "zones",
+            "allowed_vehicle_types",
+            "max_active_shipments",
+            "address",
+            "contract_reference",
+            "status",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class RelayPointProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RelayPointProfile
+        fields = [
+            "id",
+            "name",
+            "manager_name",
+            "phone",
+            "city",
+            "zones",
+            "address",
+            "relay_code",
+            "opening_hours",
+            "storage_capacity",
+            "status",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class CartItemSerializer(serializers.Serializer):
@@ -98,8 +153,12 @@ class CourierApplicationSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     is_vendor = serializers.SerializerMethodField()
     is_courier = serializers.SerializerMethodField()
+    is_delivery_organization = serializers.SerializerMethodField()
+    is_relay_point = serializers.SerializerMethodField()
     courier_status = serializers.SerializerMethodField()
     courier_profile = serializers.SerializerMethodField()
+    delivery_organization_profile = serializers.SerializerMethodField()
+    relay_point_profile = serializers.SerializerMethodField()
     phone = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
     newsletter_subscribed = serializers.SerializerMethodField()
@@ -120,8 +179,12 @@ class UserSerializer(serializers.ModelSerializer):
             "is_superuser",
             "is_vendor",
             "is_courier",
+            "is_delivery_organization",
+            "is_relay_point",
             "courier_status",
             "courier_profile",
+            "delivery_organization_profile",
+            "relay_point_profile",
             "phone",
             "avatar_url",
             "newsletter_subscribed",
@@ -139,6 +202,14 @@ class UserSerializer(serializers.ModelSerializer):
         courier = getattr(obj, "courier_profile", None)
         return bool(courier and courier.is_approved and courier.is_active)
 
+    def get_is_delivery_organization(self, obj):
+        profile = getattr(obj, "delivery_organization_profile", None)
+        return bool(profile and profile.is_active and profile.status == DeliveryOrganizationProfile.Status.APPROVED)
+
+    def get_is_relay_point(self, obj):
+        profile = getattr(obj, "relay_point_profile", None)
+        return bool(profile and profile.is_active and profile.status == RelayPointProfile.Status.APPROVED)
+
     def get_courier_status(self, obj):
         courier = getattr(obj, "courier_profile", None)
         if not courier:
@@ -152,6 +223,18 @@ class UserSerializer(serializers.ModelSerializer):
         if not courier:
             return None
         return CourierProfileSerializer(courier).data
+
+    def get_delivery_organization_profile(self, obj):
+        profile = getattr(obj, "delivery_organization_profile", None)
+        if not profile:
+            return None
+        return DeliveryOrganizationProfileSerializer(profile).data
+
+    def get_relay_point_profile(self, obj):
+        profile = getattr(obj, "relay_point_profile", None)
+        if not profile:
+            return None
+        return RelayPointProfileSerializer(profile).data
 
     def _get_profile(self, obj):
         return getattr(obj, 'profile', None)

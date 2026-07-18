@@ -36,7 +36,9 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer
-from .models import CourierProfile, RewardAccount, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import CourierProfile, DeliveryOrganizationProfile, RewardAccount, UserCart, UserProfile, UserFavorite, UserNotification
+from apps.orders.models import Dispute
+from apps.shipping.models import Shipment
 
 
 logger = logging.getLogger(__name__)
@@ -284,7 +286,7 @@ def admin_list_couriers(request):
     """
     from apps.shipping.models import Shipment, CourierSOSAlert
  
-    qs = CourierProfile.objects.select_related("user").order_by("-created_at")
+    qs = CourierProfile.objects.select_related("user", "delivery_organization").order_by("-created_at")
  
     # ── Filtres ───────────────────────────────────────────────────────────────
     for field in ("is_approved", "is_active", "is_online"):
@@ -346,6 +348,8 @@ def admin_list_couriers(request):
             "email":         cp.user.email,
             "phone":         cp.phone,
             "city":          cp.city,
+            "delivery_organization_id": cp.delivery_organization_id,
+            "delivery_organization_name": cp.delivery_organization.company_name if cp.delivery_organization else "",
             "zones":         cp.zones or [],
             "vehicle_type":  cp.vehicle_type,
             "id_card":       cp.id_card,
@@ -447,13 +451,21 @@ def admin_create_courier(request):
         "vehicle_type": request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
         "id_card": request.data.get("id_card", "").strip(),
     }
+    delivery_organization_id = request.data.get("delivery_organization_id")
 
     if isinstance(payload["zones"], str):
         payload["zones"] = [zone.strip() for zone in payload["zones"].split(",") if zone.strip()]
 
-    missing = [field for field in ["username", "password", "phone", "city", "id_card"] if not (request.data.get(field) or "").strip()]
+    missing = [field for field in ["username", "password", "phone", "city", "id_card", "delivery_organization_id"] if not (request.data.get(field) or "").strip()]
     if missing:
         return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    delivery_organization = get_object_or_404(
+        DeliveryOrganizationProfile,
+        pk=delivery_organization_id,
+        is_active=True,
+        status=DeliveryOrganizationProfile.Status.APPROVED,
+    )
 
     serializer = CourierApplicationSerializer(data=payload, context={"request": request})
     serializer.is_valid(raise_exception=True)
@@ -478,6 +490,7 @@ def admin_create_courier(request):
 
     courier = CourierProfile.objects.create(
         user=user,
+        delivery_organization=delivery_organization,
         **serializer.validated_data,
         is_active=True,
         is_approved=True,
@@ -541,6 +554,7 @@ def admin_delete_courier(request, pk):
 @permission_classes([IsAdminUser])
 def admin_create_user(request):
     from apps.vendors.models import VendorProfile
+    from .models import DeliveryOrganizationProfile, RelayPointProfile
 
     role = request.data.get("role", "client")
     username = request.data.get("username", "").strip()
@@ -551,8 +565,10 @@ def admin_create_user(request):
     phone = request.data.get("phone", "").strip()
 
     missing = [field for field in ["role", "username", "password"] if not (request.data.get(field) or "").strip()]
-    if role in {"vendor", "courier"} and not phone:
+    if role in {"vendor", "courier", "delivery_org", "relay_point"} and not phone:
         missing.append("phone")
+    if role == "courier" and not request.data.get("delivery_organization_id"):
+        missing.append("delivery_organization_id")
     if missing:
         return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
     if User.objects.filter(username=username).exists():
@@ -587,22 +603,350 @@ def admin_create_user(request):
         zones = request.data.get("zones", [])
         if isinstance(zones, str):
             zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
+        max_active_shipments = request.data.get("max_active_shipments", 5)
+        try:
+            max_active_shipments = int(max_active_shipments or 5)
+        except (TypeError, ValueError):
+            max_active_shipments = 5
+        delivery_organization = get_object_or_404(
+            DeliveryOrganizationProfile,
+            pk=request.data.get("delivery_organization_id"),
+            is_active=True,
+            status=DeliveryOrganizationProfile.Status.APPROVED,
+        )
         CourierProfile.objects.create(
             user=user,
+            delivery_organization=delivery_organization,
             phone=phone,
             city=request.data.get("city", "").strip() or "Douala",
             zones=zones,
             vehicle_type=request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
+            max_active_shipments=max(max_active_shipments, 1),
             id_card=request.data.get("id_card", "").strip() or "A completer",
             is_active=True,
             is_approved=bool(request.data.get("is_approved", True)),
             is_online=False,
+        )
+    elif role == "delivery_org":
+        zones = request.data.get("zones", [])
+        if isinstance(zones, str):
+            zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
+        allowed_vehicle_types = request.data.get("allowed_vehicle_types", [])
+        if isinstance(allowed_vehicle_types, str):
+            allowed_vehicle_types = [
+                vehicle.strip()
+                for vehicle in allowed_vehicle_types.split(",")
+                if vehicle.strip()
+            ]
+        max_active_shipments = request.data.get("max_active_shipments", 50)
+        try:
+            max_active_shipments = int(max_active_shipments or 50)
+        except (TypeError, ValueError):
+            max_active_shipments = 50
+        DeliveryOrganizationProfile.objects.create(
+            user=user,
+            company_name=request.data.get("company_name", "").strip()
+            or request.data.get("business_name", "").strip()
+            or username,
+            manager_name=request.data.get("manager_name", "").strip()
+            or f"{first_name} {last_name}".strip(),
+            phone=phone,
+            city=request.data.get("city", "").strip() or "Douala",
+            zones=zones,
+            allowed_vehicle_types=allowed_vehicle_types,
+            max_active_shipments=max(max_active_shipments, 1),
+            address=request.data.get("address", "").strip(),
+            contract_reference=request.data.get("contract_reference", "").strip(),
+            status=request.data.get("organization_status", "APPROVED"),
+            is_active=True,
+        )
+    elif role == "relay_point":
+        zones = request.data.get("zones", [])
+        if isinstance(zones, str):
+            zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
+        capacity = request.data.get("storage_capacity", 0)
+        try:
+            capacity = int(capacity or 0)
+        except (TypeError, ValueError):
+            capacity = 0
+        RelayPointProfile.objects.create(
+            user=user,
+            name=request.data.get("relay_point_name", "").strip()
+            or request.data.get("business_name", "").strip()
+            or username,
+            manager_name=request.data.get("manager_name", "").strip()
+            or f"{first_name} {last_name}".strip(),
+            phone=phone,
+            city=request.data.get("city", "").strip() or "Douala",
+            zones=zones,
+            address=request.data.get("address", "").strip(),
+            relay_code=request.data.get("relay_code", "").strip(),
+            opening_hours=request.data.get("opening_hours", "").strip(),
+            storage_capacity=max(capacity, 0),
+            status=request.data.get("relay_status", "APPROVED"),
+            is_active=True,
         )
     elif role != "client":
         user.delete()
         return Response({"detail": "Role invalide."}, status=status.HTTP_400_BAD_REQUEST)
 
     return Response(UserSerializer(user, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Admin"], summary="List delivery organizations for courier assignment")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_list_delivery_organizations(request):
+    organizations = DeliveryOrganizationProfile.objects.select_related("user").filter(
+        is_active=True,
+        status=DeliveryOrganizationProfile.Status.APPROVED,
+    ).order_by("company_name")
+    return Response([
+        {
+            "id": org.id,
+            "company_name": org.company_name,
+            "manager_name": org.manager_name,
+            "phone": org.phone,
+            "city": org.city,
+            "zones": org.zones or [],
+            "address": org.address,
+            "contract_reference": org.contract_reference,
+            "status": org.status,
+        }
+        for org in organizations
+    ])
+
+
+@extend_schema(tags=["Admin"], summary="List relay points for admin map")
+@api_view(["GET"])
+@permission_classes([IsAdminUser])
+def admin_list_relay_points(request):
+    from .models import RelayPointProfile
+
+    relay_points = RelayPointProfile.objects.select_related("user").filter(
+        is_active=True,
+    ).order_by("city", "name")
+    return Response([
+        {
+            "id": relay.id,
+            "name": relay.name,
+            "manager_name": relay.manager_name,
+            "phone": relay.phone,
+            "city": relay.city,
+            "zones": relay.zones or [],
+            "address": relay.address,
+            "relay_code": relay.relay_code,
+            "opening_hours": relay.opening_hours,
+            "storage_capacity": relay.storage_capacity,
+            "status": relay.status,
+            "username": relay.user.username,
+        }
+        for relay in relay_points
+    ])
+
+
+@extend_schema(tags=["Delivery organization"], summary="List couriers attached to current delivery organization")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_couriers(request):
+    organization = getattr(request.user, "delivery_organization_profile", None)
+    if not organization or not organization.is_active:
+        return Response({"detail": "Organisation de livraison requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    couriers = CourierProfile.objects.select_related("user").filter(
+        delivery_organization=organization,
+        user__is_active=True,
+    ).order_by("user__username")
+    return Response([
+        {
+            "id": courier.id,
+            "user_id": courier.user_id,
+            "username": courier.user.username,
+            "full_name": courier.user.get_full_name().strip() or courier.user.username,
+            "email": courier.user.email,
+            "phone": courier.phone,
+            "city": courier.city,
+            "zones": courier.zones or [],
+            "vehicle_type": courier.vehicle_type,
+            "is_active": courier.is_active,
+            "is_approved": courier.is_approved,
+            "is_online": courier.is_online,
+            "created_at": courier.created_at.isoformat(),
+        }
+        for courier in couriers
+    ])
+
+
+def _get_request_delivery_organization(user):
+    organization = getattr(user, "delivery_organization_profile", None)
+    if (
+        not organization
+        or not organization.is_active
+        or organization.status != DeliveryOrganizationProfile.Status.APPROVED
+    ):
+        return None
+    return organization
+
+
+def _mission_payload(shipment):
+    courier = shipment.courier
+    courier_user = courier.user if courier else None
+    return {
+        "id": shipment.id,
+        "order_id": shipment.order_id,
+        "reference": f"BVY-{shipment.order_id}-{shipment.id}",
+        "status": shipment.status,
+        "status_display": shipment.get_status_display(),
+        "fulfillment_status": shipment.order.fulfillment_status,
+        "city": shipment.order.city,
+        "delivery_address": shipment.order.address,
+        "relay_point": shipment.relay_point,
+        "vendor_names": _shipment_vendor_names(shipment),
+        "courier": {
+            "id": courier.id,
+            "username": courier_user.username,
+            "full_name": courier_user.get_full_name().strip() or courier_user.username,
+            "phone": courier.phone,
+            "vehicle_type": courier.vehicle_type,
+        } if courier and courier_user else None,
+        "created_at": shipment.created_at.isoformat(),
+        "updated_at": shipment.updated_at.isoformat(),
+        "last_event": _shipment_last_event(shipment),
+    }
+
+
+def _shipment_vendor_names(shipment):
+    names = []
+    for item in shipment.order.items.select_related("product__vendor__vendor_profile"):
+        vendor = getattr(item.product, "vendor", None)
+        if not vendor:
+            continue
+        profile = getattr(vendor, "vendor_profile", None)
+        names.append(profile.business_name if profile and profile.business_name else vendor.get_full_name().strip() or vendor.username)
+    return list(dict.fromkeys(names))
+
+
+def _shipment_last_event(shipment):
+    event = shipment.events.order_by("-created_at").first()
+    if not event:
+        return None
+    return {
+        "status": event.status,
+        "message": event.message,
+        "location": event.location,
+        "created_at": event.created_at.isoformat(),
+    }
+
+
+def _dispute_payload(dispute):
+    shipment = getattr(dispute.order, "shipment", None)
+    return {
+        "id": dispute.id,
+        "ref": f"LIT-{dispute.id:05d}",
+        "order_id": dispute.order_id,
+        "shipment_id": shipment.id if shipment else None,
+        "mission_reference": f"BVY-{dispute.order_id}-{shipment.id}" if shipment else "",
+        "reason": dispute.reason,
+        "reason_display": dispute.get_reason_display(),
+        "status": dispute.status,
+        "status_display": dispute.get_status_display(),
+        "description": dispute.description,
+        "resolution": dispute.resolution,
+        "resolution_note": dispute.resolution_note,
+        "courier_can_reply": dispute.courier_can_reply,
+        "organization_can_reply": dispute.courier_can_reply,
+        "messages_count": dispute.messages.count(),
+        "evidences_count": dispute.evidences.count(),
+        "city": dispute.order.city,
+        "delivery_address": dispute.order.address,
+        "courier": {
+            "id": shipment.courier.id,
+            "username": shipment.courier.user.username,
+            "full_name": shipment.courier.user.get_full_name().strip() or shipment.courier.user.username,
+            "phone": shipment.courier.phone,
+        } if shipment and shipment.courier else None,
+        "opened_by": dispute.opened_by.username,
+        "created_at": dispute.created_at.isoformat(),
+        "updated_at": dispute.updated_at.isoformat(),
+    }
+
+
+def _organization_active_shipments(organization):
+    return (
+        Shipment.objects.filter(
+            courier__delivery_organization=organization,
+            courier__user__is_active=True,
+            status__in=[
+                Shipment.Status.ASSIGNED,
+                Shipment.Status.PICKED_UP,
+                Shipment.Status.IN_TRANSIT,
+                Shipment.Status.OUT_FOR_DELIVERY,
+            ],
+        )
+        .select_related("order", "courier", "courier__user")
+        .prefetch_related("events", "order__items__product__vendor__vendor_profile")
+        .order_by("-updated_at")
+        .distinct()
+    )
+
+
+def _organization_open_disputes(organization):
+    return (
+        Dispute.objects.filter(
+            order__shipment__courier__delivery_organization=organization,
+            order__shipment__courier__user__is_active=True,
+            status__in=["OPEN", "IN_PROGRESS"],
+        )
+        .select_related("order", "opened_by", "order__shipment__courier__user")
+        .prefetch_related("messages", "evidences")
+        .order_by("-updated_at")
+        .distinct()
+    )
+
+
+@extend_schema(tags=["Delivery organization"], summary="Delivery organization operational summary")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_summary(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    couriers = CourierProfile.objects.filter(delivery_organization=organization, user__is_active=True)
+    active_shipments = _organization_active_shipments(organization)
+    open_disputes = _organization_open_disputes(organization)
+    return Response({
+        "organization_id": organization.id,
+        "organization_name": organization.company_name,
+        "active_missions": active_shipments.count(),
+        "open_disputes": open_disputes.count(),
+        "couriers_total": couriers.count(),
+        "couriers_approved": couriers.filter(is_approved=True, is_active=True).count(),
+        "couriers_online": couriers.filter(is_online=True, is_active=True).count(),
+        "covered_zones": organization.zones or [],
+    })
+
+
+@extend_schema(tags=["Delivery organization"], summary="Active delivery missions for current delivery organization")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_active_missions(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    return Response([_mission_payload(shipment) for shipment in _organization_active_shipments(organization)])
+
+
+@extend_schema(tags=["Delivery organization"], summary="Open disputes linked to current delivery organization")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_open_disputes(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    return Response([_dispute_payload(dispute) for dispute in _organization_open_disputes(organization)])
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile")

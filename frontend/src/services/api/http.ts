@@ -1,5 +1,6 @@
 // frontend/src/services/api/http.ts
 // Helper HTTP avec refresh token automatique
+import { clearStoredAuthTokens, getStoredAccessToken, getStoredRefreshToken } from "@/lib/authTokens";
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
@@ -25,6 +26,27 @@ function friendlyHttpError(status: number) {
   return "Impossible de terminer cette action pour le moment.";
 }
 
+async function responseErrorMessage(response: Response) {
+  const fallback = friendlyHttpError(response.status);
+  const raw = await response.text().catch(() => "");
+  if (!raw) return fallback;
+
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (data && typeof data === "object") {
+      const record = data as Record<string, unknown>;
+      if (typeof record.detail === "string") return record.detail;
+      const firstValue = Object.values(record)[0];
+      if (typeof firstValue === "string") return firstValue;
+      if (Array.isArray(firstValue) && typeof firstValue[0] === "string") return firstValue[0];
+    }
+  } catch {
+    // Response was not JSON; use generic message.
+  }
+
+  return fallback;
+}
+
 async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
   const delays = [450, 1200];
   let lastError: unknown;
@@ -46,7 +68,7 @@ async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestIni
  * Rafraîchir le token JWT automatiquement
  */
 async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = localStorage.getItem('refresh_token');
+  const refreshToken = getStoredRefreshToken();
   
   if (!refreshToken) {
     return null;
@@ -63,8 +85,7 @@ async function refreshAccessToken(): Promise<string | null> {
 
     if (!response.ok) {
       // Refresh token invalide, déconnecter l'utilisateur
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
+      clearStoredAuthTokens();
       window.location.href = '/login';
       return null;
     }
@@ -74,8 +95,7 @@ async function refreshAccessToken(): Promise<string | null> {
     return data.access;
   } catch (error) {
     console.error('Error refreshing token:', error);
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    clearStoredAuthTokens();
     window.location.href = '/login';
     return null;
   }
@@ -104,7 +124,7 @@ export async function http<T>(
   }
 
   // Ajouter le token si présent
-  const token = localStorage.getItem('access_token');
+  const token = getStoredAccessToken();
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
@@ -116,7 +136,7 @@ export async function http<T>(
     });
 
     // Si 401 et qu'on a un refresh token, on tente de rafraîchir
-    if (response.status === 401 && localStorage.getItem('refresh_token')) {
+    if (response.status === 401 && getStoredRefreshToken()) {
       const newToken = await refreshAccessToken();
       
       if (newToken) {
@@ -128,8 +148,7 @@ export async function http<T>(
         });
 
         if (!retryResponse.ok) {
-          await retryResponse.text().catch(() => "");
-          throw new Error(friendlyHttpError(retryResponse.status));
+          throw new Error(await responseErrorMessage(retryResponse));
         }
 
         if (retryResponse.status === 204) {
@@ -141,8 +160,7 @@ export async function http<T>(
     }
 
     if (!response.ok) {
-      await response.text().catch(() => "");
-      throw new Error(friendlyHttpError(response.status));
+      throw new Error(await responseErrorMessage(response));
     }
 
     // Handle 204 No Content

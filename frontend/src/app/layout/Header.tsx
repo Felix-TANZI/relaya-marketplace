@@ -30,6 +30,7 @@ import {
   getUserInitials,
 } from "@/lib/profileAvatar";
 import { getFavoriteProductIds } from "@/lib/favorites";
+import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
 
 const SEARCH_FILTER_CATEGORIES = [
@@ -132,7 +133,7 @@ export default function Header() {
       setFavoritesCount(getFavoriteProductIds().length);
 
       // Then sync from API if logged in (may update later)
-      if (localStorage.getItem('access_token')) {
+      if (hasValidAccessToken()) {
         customerApi.getFavorites()
           .then((favorites) => setFavoritesCount(favorites.length))
           .catch(() => {/* keep localStorage count */});

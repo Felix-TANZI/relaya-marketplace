@@ -8,12 +8,13 @@ from django.http import HttpResponse
 from rest_framework import viewsets, filters, status, generics
 from rest_framework.views import APIView
 from rest_framework.decorators import action
-from django.db import transaction
+from django.db import models, transaction
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Avg, Count, Q
+from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value
+from django.db.models.functions import Coalesce
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiParameter, OpenApiTypes
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -105,17 +106,49 @@ class ProductViewSet(viewsets.ModelViewSet):
     
     filterset_class = ProductFilter
     search_fields = ['title', 'description']
-    ordering_fields = ['price_xaf', 'created_at', 'title', 'belivay_rating_average', 'belivay_reviews_count']
-    ordering = ['-belivay_rating_average', '-belivay_reviews_count', '-created_at']
+    ordering_fields = [
+        'price_xaf',
+        'created_at',
+        'title',
+        'belivay_rating_average',
+        'belivay_reviews_count',
+        'belivay_trust_score',
+    ]
+    ordering = ['-belivay_trust_score', '-belivay_rating_average', '-belivay_reviews_count', '-created_at']
 
     def get_queryset(self):
+        now = timezone.now()
+        approved_campaign = Q(
+            promotion_campaigns__status=PromotionCampaign.Status.APPROVED,
+            promotion_campaigns__starts_at__lte=now,
+            promotion_campaigns__ends_at__gte=now,
+        )
+        active_flash_campaign = approved_campaign & Q(
+            promotion_campaigns__campaign_type=PromotionCampaign.CampaignType.FLASH,
+            promotion_campaigns__stock_claimed__lt=models.F("promotion_campaigns__stock_reserved"),
+        )
         return (
             Product.objects.all()
             .select_related('category', 'vendor')
             .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
             .annotate(
-                belivay_rating_average=Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+                belivay_rating_average=Coalesce(
+                    Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
+                    Value(0.0),
+                    output_field=FloatField(),
+                ),
                 belivay_reviews_count=Count('reviews', filter=Q(reviews__is_approved=True)),
+                belivay_active_promo_count=Count('promotion_campaigns', filter=approved_campaign, distinct=True),
+                belivay_active_flash_count=Count('promotion_campaigns', filter=active_flash_campaign, distinct=True),
+            )
+            .annotate(
+                belivay_trust_score=ExpressionWrapper(
+                    models.F('belivay_rating_average') * Value(20.0)
+                    + models.F('belivay_reviews_count') * Value(1.0)
+                    + models.F('belivay_active_flash_count') * Value(3.0)
+                    + models.F('belivay_active_promo_count') * Value(1.0),
+                    output_field=FloatField(),
+                )
             )
         )
 

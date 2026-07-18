@@ -3,7 +3,7 @@
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Shipment, ShipmentEvent, ShipmentMessage
+from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
 
 
 # ─── INLINE : Événements d'une livraison ─────────────────────────────────────
@@ -20,9 +20,9 @@ class ShipmentEventInline(admin.TabularInline):
 
 @admin.register(Shipment)
 class ShipmentAdmin(admin.ModelAdmin):
-    list_display  = ('id', 'order_ref', 'status_badge', 'courier_name', 'courier_phone', 'created_at')
-    list_filter   = ('status',)
-    search_fields = ('order__id', 'courier_name', 'courier_phone')
+    list_display  = ('id', 'order_ref', 'status_badge', 'courier_name', 'courier_phone', 'assignment_issue_code', 'created_at')
+    list_filter   = ('status', 'required_vehicle_type', 'parcel_size')
+    search_fields = ('order__id', 'courier_name', 'courier_phone', 'assignment_issue_code', 'assignment_issue_message')
     readonly_fields = ('created_at', 'updated_at')
     inlines       = [ShipmentEventInline]
     ordering      = ('-created_at',)
@@ -32,10 +32,13 @@ class ShipmentAdmin(admin.ModelAdmin):
             'fields': ('order',),
         }),
         ('Statut', {
-            'fields': ('status',),
+            'fields': ('status', 'assignment_issue_code', 'assignment_issue_message'),
         }),
         ('Livreur', {
             'fields': ('courier_name', 'courier_phone', 'relay_point'),
+        }),
+        ('Contraintes colis', {
+            'fields': ('required_vehicle_type', 'parcel_size'),
         }),
         ('Dates', {
             'fields': ('created_at', 'updated_at'),
@@ -50,6 +53,10 @@ class ShipmentAdmin(admin.ModelAdmin):
     def status_badge(self, obj):
         colors = {
             'CREATED':          'gray',
+            'WAITING_MANUAL_ASSIGNMENT': 'orange',
+            'ZONE_UNCOVERED':   'red',
+            'CAPACITY_BLOCKED': 'orange',
+            'VEHICLE_INCOMPATIBLE': 'orange',
             'ASSIGNED':         'blue',
             'PICKED_UP':        'purple',
             'IN_TRANSIT':       'orange',
@@ -96,3 +103,12 @@ class ShipmentMessageAdmin(admin.ModelAdmin):
     search_fields = ("shipment__order__id", "sender__username", "message")
     readonly_fields = ("created_at",)
     ordering = ("-created_at",)
+
+
+@admin.register(RelayParcel)
+class RelayParcelAdmin(admin.ModelAdmin):
+    list_display = ("id", "shipment", "relay_point", "status", "slot_code", "pickup_code", "updated_at")
+    list_filter = ("status", "relay_point")
+    search_fields = ("shipment__order__id", "relay_point__name", "slot_code", "pickup_code")
+    readonly_fields = ("created_at", "updated_at", "received_at", "picked_up_at", "returned_at")
+    ordering = ("-updated_at",)

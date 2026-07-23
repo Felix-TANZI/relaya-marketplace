@@ -237,12 +237,12 @@ const capabilitiesFr: Record<OrgTab, { title: string; description: string; metho
   },
   fleet: {
     title: "Flotte et livreurs rattaches",
-    description: "Gerer les livreurs fournis par l'entreprise de livraison partenaire.",
+    description: "Gerer les livreurs et les vehicules appartenant a l'entreprise de livraison partenaire.",
     empty: "Aucun module de création livreur par organisation n'est encore connecté.",
     methods: [
       "Lister les livreurs rattaches a l'organisation.",
-      "Suivre leur disponibilite, moyen de transport et zones.",
-      "Creer ou demander l'activation de livreurs pour l'entreprise.",
+      "Suivre disponibilite, absence, conge et statut operationnel.",
+      "Affecter ou reaffecter les vehicules de l'entreprise aux livreurs disponibles.",
     ],
   },
   missions: {
@@ -362,9 +362,9 @@ const capabilitiesEn: Record<OrgTab, { title: string; description: string; metho
   },
   fleet: {
     title: "Fleet and attached couriers",
-    description: "Manage couriers provided by the partner delivery company.",
+    description: "Manage couriers and vehicles owned by the partner delivery company.",
     empty: "Courier creation by organization is not connected yet.",
-    methods: ["List couriers attached to the organization.", "Track availability, vehicle type and zones.", "Create or request activation of company couriers."],
+    methods: ["List couriers attached to the organization.", "Track availability, absence, leave and operational status.", "Assign or reassign company-owned vehicles to available couriers."],
   },
   missions: {
     title: "Delivery missions",
@@ -435,6 +435,14 @@ function groupTabs() {
   }, {});
 }
 
+function formatCoverageZone(zone: string, city: string) {
+  const trimmedZone = zone.trim();
+  const normalizedCity = city.trim().toUpperCase();
+  if (!trimmedZone || !normalizedCity || trimmedZone.toUpperCase() === normalizedCity) return trimmedZone;
+  if (trimmedZone.toUpperCase().startsWith(`${normalizedCity},`)) return trimmedZone;
+  return `${normalizedCity}, ${trimmedZone}`;
+}
+
 function Panel({
   kicker,
   title,
@@ -453,11 +461,13 @@ function Panel({
   );
 }
 
-function StatusPill({ children, tone = "cyan" }: { children: React.ReactNode; tone?: "cyan" | "slate" | "emerald" }) {
+function StatusPill({ children, tone = "cyan" }: { children: React.ReactNode; tone?: "cyan" | "slate" | "emerald" | "amber" | "red" }) {
   const cls = {
     cyan: "border-cyan-200 bg-cyan-50 text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-200",
     slate: "border-slate-200 bg-slate-50 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200",
     emerald: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200",
+    amber: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200",
+    red: "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200",
   }[tone];
   return <span className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-black ${cls}`}>{children}</span>;
 }
@@ -475,7 +485,7 @@ export default function DeliveryOrganizationPage() {
   const [disputes, setDisputes] = useState<OrganizationDispute[]>([]);
   const [couriersLoading, setCouriersLoading] = useState(true);
   const [operationsLoading, setOperationsLoading] = useState(true);
-  const menu = useMemo(groupTabs, []);
+  const menu = useMemo(() => groupTabs(), []);
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
   const ui = copy[locale];
   const capabilities = locale === "en" ? capabilitiesEn : capabilitiesFr;
@@ -500,7 +510,8 @@ export default function DeliveryOrganizationPage() {
   };
   const tabIcon = tabs.find((item) => item.id === tab)?.icon ?? Gauge;
   const ActiveIcon = tabIcon;
-  const coveredZones = organization.zones.length ? organization.zones : [locale === "en" ? "No covered zone declared" : "Aucune zone couverte déclarée"];
+  const displayZones = organization.zones.map((zone) => formatCoverageZone(zone, organization.city));
+  const coveredZones = displayZones.length ? displayZones : [locale === "en" ? "No covered zone declared" : "Aucune zone couverte déclarée"];
   const approvedCouriers = summary?.couriers_approved ?? couriers.filter((courier) => courier.is_approved).length;
   const onlineCouriers = summary?.couriers_online ?? couriers.filter((courier) => courier.is_online).length;
   const activeMissionsCount = summary?.active_missions ?? missions.length;
@@ -508,6 +519,32 @@ export default function DeliveryOrganizationPage() {
   const assignedMissions = missions.filter((mission) => mission.status === "ASSIGNED").length;
   const pickedUpMissions = missions.filter((mission) => ["PICKED_UP", "IN_TRANSIT"].includes(mission.status)).length;
   const outForDeliveryMissions = missions.filter((mission) => mission.status === "OUT_FOR_DELIVERY").length;
+  const isOrgApproved = orgProfile?.status === "APPROVED";
+  const isOrgSuspended = orgProfile?.status === "SUSPENDED";
+  const hasContract = Boolean(orgProfile?.contract_reference?.trim());
+  const hasAgencyAddress = Boolean(orgProfile?.address?.trim());
+  const hasZones = organization.zones.length > 0;
+  const hasFleet = approvedCouriers > 0;
+  const operationalStatus = isOrgSuspended
+    ? locale === "en" ? "Suspended" : "Suspendue"
+    : isOrgApproved && hasContract && hasAgencyAddress && hasZones && hasFleet
+      ? locale === "en" ? "Ready" : "Opérationnelle"
+      : locale === "en" ? "Configuring" : "En configuration";
+  const operationalTone = isOrgSuspended ? "red" : operationalStatus === "Opérationnelle" || operationalStatus === "Ready" ? "emerald" : "amber";
+  const activationSteps = [
+    [locale === "en" ? "BelivaY validation" : "Validation BelivaY", isOrgApproved, organization.status],
+    [locale === "en" ? "Contract reference" : "Référence contrat", hasContract, organization.contract],
+    [locale === "en" ? "Covered zones" : "Zones couvertes", hasZones, hasZones ? displayZones.join(", ") : locale === "en" ? "To declare" : "À déclarer"],
+    [locale === "en" ? "Agency address" : "Adresse agence", hasAgencyAddress, organization.address],
+    [locale === "en" ? "Approved couriers" : "Livreurs approuvés", hasFleet, `${approvedCouriers}/${couriers.length}`],
+  ] as const;
+  const kycItems = [
+    [locale === "en" ? "Legal company record" : "Registre de commerce", isOrgApproved ? locale === "en" ? "Verified" : "Vérifié" : locale === "en" ? "To send" : "À envoyer", locale === "en" ? "Legal document identifying the partner company." : "Document légal identifiant l'entreprise partenaire."],
+    [locale === "en" ? "Manager identity" : "Pièce du responsable", isOrgApproved ? locale === "en" ? "Verified" : "Vérifié" : locale === "en" ? "To send" : "À envoyer", locale === "en" ? "Identity document for the operations manager." : "Pièce d'identité du responsable opérationnel."],
+    [locale === "en" ? "Contract reference" : "Référence contrat", hasContract ? locale === "en" ? "Ready" : "Prêt" : locale === "en" ? "Missing" : "Manquant", locale === "en" ? "BelivaY contract used for pricing and payout rules." : "Contrat BelivaY utilisé pour la grille tarifaire et les paiements."],
+    [locale === "en" ? "Covered zones" : "Zones couvertes", hasZones ? locale === "en" ? "Ready" : "Prêt" : locale === "en" ? "Missing" : "Manquant", hasZones ? displayZones.join(", ") : locale === "en" ? "Declared delivery coverage for routing." : "Couverture déclarée pour le routage des missions."],
+    [locale === "en" ? "Payment method" : "Moyen de paiement", locale === "en" ? "To connect" : "À connecter", locale === "en" ? "Mobile Money or bank account for settlements." : "Compte Mobile Money ou virement pour les règlements."],
+  ] as const;
 
   const Field = ({ label, value, icon: Icon }: { label: string; value: string; icon: IconComponent }) => (
     <div className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -525,30 +562,28 @@ export default function DeliveryOrganizationPage() {
     </div>
   );
 
-  const MobileBrief = () => (
-    <section className="space-y-3 rounded-3xl border border-cyan-100 bg-white p-4 shadow-sm dark:border-cyan-900/50 dark:bg-slate-900 lg:hidden">
-      <div className="flex items-start gap-3">
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
+  const renderMobileBrief = () => (
+    <section className="mb-3 rounded-2xl border border-cyan-100 bg-white p-3 shadow-sm dark:border-cyan-900/50 dark:bg-slate-900 lg:hidden">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
           <ActiveIcon size={20} />
         </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{ui.tabs[tab]}</p>
-          <h2 className="mt-1 text-lg font-black leading-tight text-slate-950 dark:text-white">{active.title}</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{active.description}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-300">{ui.shell.brand}</p>
+          <h2 className="truncate text-lg font-black leading-tight text-slate-950 dark:text-white">{ui.tabs[tab]}</h2>
         </div>
+        <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
       </div>
-      <div className="grid gap-2 text-sm">
-        {active.methods.map((method, index) => (
-          <div key={method} className="flex gap-3 rounded-2xl bg-cyan-50 p-3 text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-50">
-            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-cyan-700 dark:bg-slate-900 dark:text-cyan-200">{index + 1}</span>
-            <span className="font-semibold leading-6">{method}</span>
-          </div>
-        ))}
-      </div>
-      <div className="grid gap-2 sm:grid-cols-3">
-        <Field label={locale === "en" ? "Partner" : "Partenaire"} value={organization.name} icon={Building2} />
-        <Field label={locale === "en" ? "Contract" : "Contrat"} value={organization.contract} icon={FileText} />
-        <Field label={locale === "en" ? "Status" : "Statut"} value={organization.status} icon={ShieldCheck} />
+      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 text-xs font-black">
+        <span className="flex-shrink-0 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
+          {approvedCouriers}/{couriers.length} livreurs
+        </span>
+        <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {activeMissionsCount} missions
+        </span>
+        <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+          {displayZones.length} zones
+        </span>
       </div>
     </section>
   );
@@ -568,19 +603,19 @@ export default function DeliveryOrganizationPage() {
     </article>
   );
 
-  const BrandBlock = () => (
+  const renderBrandBlock = () => (
     <div className="mb-5 rounded-[22px] border border-cyan-100/15 bg-[linear-gradient(145deg,rgba(103,232,249,.18),rgba(255,255,255,.04))] p-4 shadow-[0_18px_40px_rgba(8,51,68,.35)]">
       <div className="flex min-h-16 items-center justify-center">
         <img src="/belivay-logo-delivery-org.png" alt="BelivaY" className="h-14 w-full object-contain drop-shadow-[0_10px_24px_rgba(103,232,249,.18)]" />
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 px-1">
         <span className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/65">{ui.shell.brand}</span>
-        <span className="rounded-full bg-cyan-100/15 px-2 py-1 text-[10px] font-black text-cyan-50">{organization.status}</span>
+        <span className="rounded-full bg-cyan-100/15 px-2 py-1 text-[10px] font-black text-cyan-50">{operationalStatus}</span>
       </div>
     </div>
   );
 
-  const SectionIntro = () => (
+  const renderSectionIntro = () => (
     <Panel kicker={ui.tabs[tab]} title={active.title}>
       <div className="flex gap-4">
         <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
@@ -601,7 +636,20 @@ export default function DeliveryOrganizationPage() {
   );
 
   const renderFleet = () => (
-    <Panel kicker={ui.tabs.fleet} title={locale === "en" ? "Attached courier roster" : "Registre des livreurs rattachés"}>
+    <Panel
+      kicker={ui.tabs.fleet}
+      title={locale === "en" ? "Attached courier roster" : "Registre des livreurs rattachés"}
+    >
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
+        <p className="max-w-2xl text-sm font-semibold leading-6 text-cyan-950 dark:text-cyan-100">
+          {locale === "en"
+            ? "The partner company manages its couriers and owns the vehicles. A vehicle can be reassigned when a courier is absent, on leave or unavailable."
+            : "L'entreprise partenaire gère ses livreurs et possède les véhicules. Un véhicule peut être réaffecté lorsqu'un livreur est absent, en congé ou indisponible."}
+        </p>
+        <button className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white">
+          {locale === "en" ? "Add courier" : "Ajouter un livreur"}
+        </button>
+      </div>
       {couriers.length === 0 ? (
         <EmptyState>
           {couriersLoading
@@ -621,11 +669,11 @@ export default function DeliveryOrganizationPage() {
                 <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? "Online" : "Offline"}</StatusPill>
               </div>
               <div className="mt-4 grid gap-2">
-                <Field label={locale === "en" ? "Vehicle" : "Moyen"} value={courier.vehicle_type || "-"} icon={Truck} />
+                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={courier.vehicle_type || "-"} icon={Truck} />
                 <Field label={locale === "en" ? "City" : "Ville"} value={courier.city || "-"} icon={Map} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {(courier.zones.length ? courier.zones : ["-"]).map((zone) => (
+                {(courier.zones.length ? courier.zones.map((zone) => formatCoverageZone(zone, courier.city || organization.city)) : ["-"]).map((zone) => (
                   <span key={zone} className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-black text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">{zone}</span>
                 ))}
               </div>
@@ -636,7 +684,7 @@ export default function DeliveryOrganizationPage() {
           <div className="min-w-[680px]">
             <div className="grid grid-cols-[1.2fr_.8fr_.8fr_.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-800/70">
               <span>{locale === "en" ? "Courier" : "Livreur"}</span>
-              <span>{locale === "en" ? "Vehicle" : "Moyen"}</span>
+              <span>{locale === "en" ? "Assigned vehicle" : "Véhicule affecté"}</span>
               <span>{locale === "en" ? "Zones" : "Zones"}</span>
               <span>{locale === "en" ? "Status" : "Statut"}</span>
             </div>
@@ -648,7 +696,7 @@ export default function DeliveryOrganizationPage() {
                 </div>
                 <div className="font-bold text-slate-700 dark:text-slate-200">{courier.vehicle_type || "-"}</div>
                 <div className="flex flex-wrap gap-1">
-                  {(courier.zones.length ? courier.zones : ["-"]).slice(0, 3).map((zone) => (
+                  {(courier.zones.length ? courier.zones.map((zone) => formatCoverageZone(zone, courier.city || organization.city)) : ["-"]).slice(0, 3).map((zone) => (
                     <span key={zone} className="rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">{zone}</span>
                   ))}
                 </div>
@@ -658,6 +706,19 @@ export default function DeliveryOrganizationPage() {
               </div>
             ))}
           </div>
+        </div>
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          {[
+            [locale === "en" ? "Approve / suspend" : "Approuver / suspendre", locale === "en" ? "Control which couriers can receive missions." : "Contrôler les livreurs autorisés à recevoir des missions."],
+            [locale === "en" ? "Absence / leave" : "Absence / congé", locale === "en" ? "Mark a courier unavailable without losing the vehicle." : "Marquer un livreur indisponible sans immobiliser le véhicule."],
+            [locale === "en" ? "Reassign vehicle" : "Réaffecter véhicule", locale === "en" ? "Move a company vehicle to another available courier." : "Affecter le véhicule de l'entreprise à un autre livreur disponible."],
+            [locale === "en" ? "Assign zones" : "Affecter les zones", locale === "en" ? "Limit missions to covered zones and vehicle capacity." : "Limiter les missions aux zones et capacités véhicule compatibles."],
+          ].map(([title, body]) => (
+            <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+              <div className="font-black text-slate-950 dark:text-white">{title}</div>
+              <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
+            </div>
+          ))}
         </div>
         </>
       )}
@@ -862,6 +923,21 @@ export default function DeliveryOrganizationPage() {
       return (
         <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
           <Panel kicker={ui.tabs.contract} title={locale === "en" ? "Company verification file" : "Dossier entreprise"}>
+            <div className="mb-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-300">
+                    {locale === "en" ? "Activation status" : "Statut d'activation"}
+                  </div>
+                  <p className="mt-1 text-sm font-semibold text-cyan-950 dark:text-cyan-100">
+                    {locale === "en"
+                      ? "The company can operate only after validation, zones, fleet and contract setup."
+                      : "L'entreprise ne peut opérer qu'après validation, zones, flotte et contrat configurés."}
+                  </p>
+                </div>
+                <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
+              </div>
+            </div>
             <div className="grid gap-3 md:grid-cols-2">
               <Field label={locale === "en" ? "Legal name" : "Nom légal"} value={organization.name} icon={Building2} />
               <Field label={locale === "en" ? "Contract reference" : "Référence contrat"} value={organization.contract} icon={FileText} />
@@ -873,19 +949,35 @@ export default function DeliveryOrganizationPage() {
           </Panel>
           <Panel kicker="KYC" title={locale === "en" ? "Compliance checklist" : "Checklist conformité"}>
             <div className="space-y-3">
-              {[
-                [locale === "en" ? "Identity and mandate" : "Identité et mandat", true],
-                [locale === "en" ? "Contract reference" : "Référence contrat", Boolean(orgProfile?.contract_reference)],
-                [locale === "en" ? "Coverage zones declared" : "Zones de couverture déclarées", organization.zones.length > 0],
-                [locale === "en" ? "Agency address" : "Adresse agence", Boolean(orgProfile?.address)],
-              ].map(([label, done]) => (
-                <div key={label as string} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                  <span className="font-bold text-slate-800 dark:text-slate-100">{label as string}</span>
-                  <StatusPill tone={done ? "emerald" : "slate"}>{done ? locale === "en" ? "Ready" : "Prêt" : locale === "en" ? "Missing" : "Manquant"}</StatusPill>
+              {kycItems.map(([label, status, body]) => (
+                <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="font-bold text-slate-800 dark:text-slate-100">{label}</span>
+                    <StatusPill tone={["Vérifié", "Verified", "Prêt", "Ready"].includes(status) ? "emerald" : status === "À connecter" || status === "To connect" ? "slate" : "amber"}>{status}</StatusPill>
+                  </div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
+                  <button className="mt-3 rounded-xl border border-cyan-200 bg-white px-4 py-2 text-sm font-black text-cyan-700 dark:border-cyan-800 dark:bg-slate-900 dark:text-cyan-200">
+                    {locale === "en" ? "Send / update" : "Envoyer / mettre à jour"}
+                  </button>
                 </div>
               ))}
             </div>
           </Panel>
+          <div className="xl:col-span-2">
+            <Panel kicker={locale === "en" ? "Activation chain" : "Chaîne d'activation"} title={locale === "en" ? "What still blocks operations" : "Ce qui conditionne les opérations"}>
+              <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+                {activationSteps.map(([label, ok, detail]) => (
+                  <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                    <div className="flex items-center justify-between gap-3">
+                      <strong className="text-sm text-slate-950 dark:text-white">{label}</strong>
+                      {ok ? <CheckCircle2 className="text-emerald-600" size={18} /> : <AlertTriangle className="text-amber-600" size={18} />}
+                    </div>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{detail}</p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+          </div>
         </div>
       );
     }
@@ -898,6 +990,21 @@ export default function DeliveryOrganizationPage() {
             <WorkCard title={locale === "en" ? "Approved" : "Approuvés"} value={approvedCouriers.toString()} body={locale === "en" ? "Allowed to receive delivery missions." : "Autorisés à recevoir des missions."} icon={ShieldCheck} />
             <WorkCard title={locale === "en" ? "Online" : "En ligne"} value={onlineCouriers.toString()} body={locale === "en" ? "Live availability will update from courier app." : "La disponibilité viendra de l'application livreur."} icon={Truck} />
           </section>
+          <Panel kicker={locale === "en" ? "Company assets" : "Actifs de l'entreprise"} title={locale === "en" ? "Vehicle pool" : "Parc véhicules"}>
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                [locale === "en" ? "Owned by organization" : "Propriété entreprise", locale === "en" ? "Vehicles belong to the delivery company, not to individual couriers." : "Les véhicules appartiennent à l'entreprise de livraison, pas aux livreurs."],
+                [locale === "en" ? "Temporary assignment" : "Affectation temporaire", locale === "en" ? "A courier uses a vehicle while available for operations." : "Un livreur utilise un véhicule tant qu'il est disponible pour les opérations."],
+                [locale === "en" ? "Absence handling" : "Gestion absence", locale === "en" ? "If a courier is absent or on leave, the vehicle can be reassigned." : "Si un livreur est absent ou en congé, le véhicule peut être réaffecté."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <Truck className="text-cyan-700 dark:text-cyan-300" size={20} />
+                  <div className="mt-3 font-black text-slate-950 dark:text-white">{title}</div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
           {renderFleet()}
         </div>
       );
@@ -928,6 +1035,168 @@ export default function DeliveryOrganizationPage() {
               <Field label={locale === "en" ? "Partner status" : "Statut partenaire"} value={organization.status} icon={ShieldCheck} />
             </div>
           </Panel>
+        </div>
+      );
+    }
+
+    if (tab === "zones") {
+      return (
+        <div className="space-y-5">
+          {renderSectionIntro()}
+          <Panel kicker={ui.tabs.zones} title={locale === "en" ? "Coverage declared by the partner" : "Couverture déclarée par l'entreprise"}>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
+              <p className="max-w-2xl text-sm font-semibold leading-6 text-cyan-950 dark:text-cyan-100">
+                {locale === "en"
+                  ? "Zones drive routing, courier compatibility and mission blocking reasons."
+                  : "Les zones pilotent le routage, la compatibilité livreur et les raisons de blocage mission."}
+              </p>
+              <button className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white">
+                {locale === "en" ? "Declare zone" : "Déclarer une zone"}
+              </button>
+            </div>
+            <div className="grid gap-3 md:grid-cols-3">
+              {(displayZones.length ? displayZones : [locale === "en" ? "No zone declared" : "Aucune zone déclarée"]).map((zone) => (
+                <div key={zone} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <Map className="text-cyan-700 dark:text-cyan-300" size={20} />
+                  <div className="mt-3 font-black text-slate-950 dark:text-white">{zone}</div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                    {locale === "en" ? "Capacity, vehicle rules and attached couriers remain to connect." : "Capacité, moyens compatibles et livreurs rattachés restent à connecter."}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      );
+    }
+
+    if (tab === "pricing") {
+      return (
+        <div className="space-y-5">
+          {renderSectionIntro()}
+          <Panel kicker={ui.tabs.pricing} title={locale === "en" ? "BelivaY contract pricing grid" : "Grille tarifaire contractuelle BelivaY"}>
+            <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5 dark:border-cyan-900 dark:bg-cyan-950/40">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-black text-cyan-950 dark:text-cyan-50">
+                    {hasContract ? organization.contract : locale === "en" ? "Contract pending" : "Contrat en attente"}
+                  </h3>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-cyan-950/75 dark:text-cyan-100/80">
+                    {locale === "en"
+                      ? "The partner views the negotiated grid in read-only mode. BelivaY defines prices by contract, zone, package profile and service level."
+                      : "Le partenaire consulte la grille négociée en lecture seule. BelivaY fixe les prix par contrat, zone, profil colis et niveau de service."}
+                  </p>
+                </div>
+                <StatusPill tone={hasContract ? "emerald" : "amber"}>{hasContract ? locale === "en" ? "Active" : "Active" : locale === "en" ? "Pending" : "En attente"}</StatusPill>
+              </div>
+            </div>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                [locale === "en" ? "Zone rates" : "Tarifs par zone", locale === "en" ? "Waiting for BelivaY pricing data." : "En attente des données tarifaires BelivaY."],
+                ["SLA", locale === "en" ? "Pickup and delivery commitments by contract." : "Engagements de collecte et remise selon le contrat."],
+                [locale === "en" ? "Exceptions" : "Exceptions", locale === "en" ? "Missions requiring BelivaY decision." : "Missions nécessitant une décision BelivaY."],
+              ].map(([title, body]) => (
+                <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                  <div className="font-black text-slate-950 dark:text-white">{title}</div>
+                  <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      );
+    }
+
+    if (tab === "payments") {
+      return (
+        <div className="space-y-5">
+          {renderSectionIntro()}
+          <section className="grid gap-4 md:grid-cols-4">
+            <WorkCard title={locale === "en" ? "To settle" : "À régler"} value="0 FCFA" body={locale === "en" ? "Validated missions pending payout." : "Missions validées en attente de règlement."} icon={WalletCards} />
+            <WorkCard title={locale === "en" ? "Paid" : "Payé"} value="0 FCFA" body={locale === "en" ? "Closed settlements by period." : "Règlements clôturés par période."} icon={CheckCircle2} />
+            <WorkCard title={locale === "en" ? "Next payout" : "Prochaine échéance"} value={hasContract ? locale === "en" ? "By contract" : "Selon contrat" : locale === "en" ? "Pending" : "En attente"} body={locale === "en" ? "Frequency comes from the negotiated contract." : "La fréquence vient du contrat négocié."} icon={Clock3} />
+            <WorkCard title={locale === "en" ? "Payment method" : "Moyen paiement"} value={locale === "en" ? "To connect" : "À connecter"} body={locale === "en" ? "Mobile Money or bank transfer." : "Mobile Money ou virement."} icon={CreditCard} />
+          </section>
+          <Panel kicker={locale === "en" ? "Reconciliation" : "Rapprochement"} title={locale === "en" ? "Settlement history" : "Historique des règlements"}>
+            <EmptyState>
+              {locale === "en"
+                ? "No real settlement is connected yet. Future rows will show period, amount, payout method, status and transaction reference."
+                : "Aucun règlement réel n'est encore connecté. Les lignes afficheront période, montant, moyen de paiement, statut et référence transaction."}
+            </EmptyState>
+          </Panel>
+        </div>
+      );
+    }
+
+    if (tab === "messages") {
+      return (
+        <div className="space-y-5">
+          {renderSectionIntro()}
+          <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+            <Panel kicker={ui.tabs.messages} title={locale === "en" ? "Conversation channels" : "Canaux de conversation"}>
+              <div className="space-y-3">
+                {[
+                  [locale === "en" ? "BelivaY operations" : "Opérations BelivaY", locale === "en" ? "Contract, mission and incident coordination." : "Coordination contrat, mission et incident."],
+                  [locale === "en" ? "Courier threads" : "Fils livreurs", locale === "en" ? "Messages linked to attached couriers." : "Messages liés aux livreurs rattachés."],
+                  [locale === "en" ? "Incident notes" : "Notes incidents", locale === "en" ? "Notes attached to disputes and exceptions." : "Notes attachées aux litiges et exceptions."],
+                ].map(([title, body]) => (
+                  <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+                    <div className="font-black text-slate-950 dark:text-white">{title}</div>
+                    <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
+                  </div>
+                ))}
+              </div>
+            </Panel>
+            <Panel kicker={locale === "en" ? "Composer" : "Composer"} title={locale === "en" ? "New message" : "Nouveau message"}>
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
+                <MessageSquareText className="text-cyan-700 dark:text-cyan-300" />
+                <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
+                  {locale === "en"
+                    ? "Messaging is ready visually and waits for backend threads, recipients and attachments."
+                    : "La messagerie est structurée visuellement et attend les fils backend, destinataires et pièces jointes."}
+                </p>
+                <button className="mt-4 rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white">
+                  {locale === "en" ? "Start message" : "Démarrer un message"}
+                </button>
+              </div>
+            </Panel>
+          </div>
+        </div>
+      );
+    }
+
+    if (tab === "proofs" || tab === "parcels" || tab === "performance") {
+      const configs: Array<[string, IconComponent, string]> = {
+        parcels: [
+          [locale === "en" ? "Pickup queue" : "File collecte", PackageSearch, locale === "en" ? "Vendor or relay pickup parcels." : "Colis à collecter chez vendeur ou point relais."],
+          [locale === "en" ? "In transit" : "En transit", Truck, locale === "en" ? "Parcels currently moving through the network." : "Colis en mouvement dans le réseau."],
+          [locale === "en" ? "Closed" : "Clôturés", CheckCircle2, locale === "en" ? "Delivered, returned or cancelled parcels." : "Colis livrés, retournés ou annulés."],
+        ],
+        proofs: [
+          [locale === "en" ? "Pickup proof" : "Preuve collecte", ClipboardCheck, locale === "en" ? "Photo, scan or vendor OTP." : "Photo, scan ou OTP vendeur."],
+          [locale === "en" ? "Delivery proof" : "Preuve remise", FileCheck2, locale === "en" ? "Signature, OTP or handoff photo." : "Signature, OTP ou photo de remise."],
+          [locale === "en" ? "Review queue" : "File de revue", Search, locale === "en" ? "Proofs reviewed during disputes." : "Preuves examinées pendant les litiges."],
+        ],
+        performance: [
+          [locale === "en" ? "Success rate" : "Taux réussite", BarChart3, locale === "en" ? "Completed missions compared with assigned missions." : "Missions terminées sur missions assignées."],
+          [locale === "en" ? "SLA delays" : "Retards SLA", Clock3, locale === "en" ? "Late pickup or delivery by zone and courier." : "Retards collecte ou livraison par zone et livreur."],
+          [locale === "en" ? "Proof quality" : "Qualité preuves", ShieldCheck, locale === "en" ? "Missing or rejected operational proofs." : "Preuves opérationnelles manquantes ou rejetées."],
+        ],
+      }[tab] as Array<[string, IconComponent, string]>;
+      return (
+        <div className="space-y-5">
+          {renderSectionIntro()}
+          <section className="grid gap-4 md:grid-cols-3">
+            {configs.map(([title, Icon, body]) => (
+              <div key={title as string} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                <Icon className="text-cyan-700 dark:text-cyan-300" size={24} />
+                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{title as string}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
+                <StatusPill tone="slate">{locale === "en" ? "Waiting for data" : "En attente de données"}</StatusPill>
+              </div>
+            ))}
+          </section>
+          <EmptyState>{active.empty}</EmptyState>
         </div>
       );
     }
@@ -986,7 +1255,7 @@ export default function DeliveryOrganizationPage() {
 
     return (
       <div className="space-y-5">
-        <SectionIntro />
+        {renderSectionIntro()}
         <section className="grid gap-4 md:grid-cols-3">
           {operationalCards[tab].map(([title, value, body, Icon]) => (
             <WorkCard key={title} title={title} value={value} body={body} icon={Icon} />
@@ -1009,8 +1278,6 @@ export default function DeliveryOrganizationPage() {
 
   useEffect(() => {
     let alive = true;
-    setCouriersLoading(true);
-    setOperationsLoading(true);
     http<OrganizationCourier[]>("/api/auth/delivery-organization/couriers/")
       .then((items) => {
         if (alive) setCouriers(items);
@@ -1051,7 +1318,7 @@ export default function DeliveryOrganizationPage() {
     <main className="min-h-screen bg-[#f4f7fb] text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="flex">
         <aside className="hidden min-h-screen w-[278px] flex-shrink-0 bg-[linear-gradient(185deg,#083344,#0E7490_58%,#155E75)] p-4 text-white lg:block">
-          <BrandBlock />
+          {renderBrandBlock()}
 
           <div className="mb-5 rounded-2xl border border-white/10 bg-white/8 p-4">
             <div className="font-black">{organization.name}</div>
@@ -1059,7 +1326,7 @@ export default function DeliveryOrganizationPage() {
             <div className="mt-1 text-xs text-cyan-100/55">{organization.contract}</div>
             <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs">
               <span className="text-cyan-100/70">{ui.shell.status}</span>
-              <strong>{organization.status}</strong>
+              <strong>{operationalStatus}</strong>
             </div>
           </div>
 
@@ -1167,24 +1434,7 @@ export default function DeliveryOrganizationPage() {
           </div>
 
           <div className="space-y-5 p-4 sm:p-6">
-            <MobileBrief />
-            <section className="grid gap-4 md:grid-cols-4">
-              {[
-                [locale === "en" ? "Attached couriers" : "Livreurs rattachés", couriersLoading ? "..." : couriers.length.toString(), Users],
-                [locale === "en" ? "Active missions" : "Missions en cours", operationsLoading ? "..." : activeMissionsCount.toString(), Truck],
-                [locale === "en" ? "Covered zones" : "Zones couvertes", organization.zones.length.toString(), Map],
-                [locale === "en" ? "Open disputes" : "Litiges ouverts", operationsLoading ? "..." : openDisputesCount.toString(), AlertTriangle],
-              ].map(([label, value, Icon]) => (
-                <article key={label as string} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
-                    <Icon size={20} />
-                  </div>
-                  <div className="mt-4 text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{label as string}</div>
-                  <div className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{value as string}</div>
-                </article>
-              ))}
-            </section>
-
+            {renderMobileBrief()}
             {renderModuleContent()}
           </div>
         </section>

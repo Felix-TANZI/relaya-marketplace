@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BelivaY · Rappel complet par page</title>
+<style>
+  :root{
+    --navy:#0f3a4d; --navy2:#12495f; --teal:#1ba5c4; --teal-soft:#e6f6fa;
+    --ink:#12232b; --muted:#5b6b72; --line:#e6edf0; --bg:#f4f7f8; --card:#ffffff;
+    --red:#e5484d; --amber:#e0a106; --blue:#2f7fd1; --green:#2fa06b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  header.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:18px;padding:28px 30px;margin-bottom:18px;box-shadow:0 10px 30px rgba(15,58,77,.18)}
+  header.top .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9fd8e6;font-weight:700}
+  header.top h1{margin:6px 0 8px;font-size:25px;letter-spacing:-.01em}
+  header.top p{margin:0;color:#cfe6ee;font-size:14px;max-width:76ch}
+
+  .context{background:#eaf7fa;border:1px solid #c3e6ef;border-radius:12px;padding:13px 16px;margin-bottom:12px;font-size:13.5px;color:#215366}
+  .context b{color:#0f3a4d}
+  .chain{background:#fff4e9;border:1px solid #f0d8b4;border-radius:12px;padding:13px 16px;margin-bottom:20px;font-size:13.5px;color:#6b4f1d}
+  .chain b{color:#4a3610}
+  .chain code{background:#fbe6c9;border-radius:5px;padding:1px 7px;font-size:12.5px;color:#7a4d0a;font-weight:700}
+
+  .progress-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:22px;display:flex;align-items:center;gap:16px}
+  .bar{flex:1;height:10px;background:#eef2f4;border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),#2fa06b);transition:width .3s}
+  .progress-box b{font-size:14px;white-space:nowrap}
+  .progress-box .pct{font-size:22px;font-weight:800;color:var(--teal);min-width:52px;text-align:right}
+
+  h2.section{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;margin:30px 0 12px;font-weight:800;display:flex;align-items:center;gap:10px}
+  h2.section .pill{font-size:11px;padding:3px 10px;border-radius:999px;letter-spacing:.02em}
+  .p-block{background:#fdeaea;color:var(--red)} .p-prod{background:#e8f1fb;color:var(--blue)} .p-low{background:#eef1f3;color:#5c6a72}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;box-shadow:0 2px 6px rgba(18,35,43,.04);overflow:hidden}
+  .card .head{display:flex;align-items:flex-start;gap:12px;padding:16px 20px 10px}
+  .card .head input{margin-top:4px;width:18px;height:18px;accent-color:var(--teal);flex:none;cursor:pointer}
+  .card .head .t{flex:1}
+  .card h3{margin:0;font-size:17px}
+  .card .where{font-size:12px;color:var(--teal);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .sev{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:7px;white-space:nowrap;flex:none;margin-top:2px}
+  .s-block{background:#fdeaea;color:var(--red)} .s-prod{background:#e8f1fb;color:var(--blue)} .s-med{background:#fbf3e0;color:#a97a06} .s-low{background:#eef1f3;color:#5c6a72}
+
+  .attendu{background:var(--teal-soft);border:1px solid #cfeef4;border-radius:10px;padding:10px 13px;margin:0 20px 10px 50px;font-size:13.5px;color:#134e5e}
+  .attendu .h{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#0d7f9a;display:block;margin-bottom:3px}
+  .attendu b{color:#0f3a4d}
+  .attendu .rep{display:block;margin-top:6px;color:#3a6b78}
+  .attendu .rep i{font-style:normal;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.05em;color:#5a8a96;margin-right:6px}
+
+  .pir{padding:0 20px 16px 50px}
+  .pir .row{display:flex;gap:10px;padding:5px 0;font-size:14px;align-items:baseline}
+  .pir .lab{flex:none;width:78px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+  .lab-p{color:var(--red)} .lab-i{color:#b4441a} .lab-r{color:var(--green)}
+  .pir .val{flex:1}
+  .pir .val b{color:var(--ink)}
+  .pir ul.acts{margin:5px 0 0;padding-left:16px}
+  .pir ul.acts li{margin:3px 0}
+  .card.done{opacity:.55}
+  .card.done h3{text-decoration:line-through}
+
+  .note{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:14px 18px;margin-top:24px;font-size:13px;color:var(--muted)}
+  .note h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.1em;color:#8a97a0}
+  footer{margin-top:30px;color:var(--muted);font-size:12.5px;text-align:center;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">Espace entreprise partenaire · Rappel complet</div>
+    <h1>BelivaY — Ce qui doit être là, page par page</h1>
+    <p>Pour chaque écran : <b>le contenu attendu</b> (données réelles + représentation), puis <b>Problème → Impact si non fait → Solution</b>. Les Problèmes décrivent l'<b>état actuel</b> et ce qui manque, pour être clairs côté développeur. Ordre du plus important au moins important.</p>
+  </header>
+
+  <div class="context">
+    <b>Modèle confirmé :</b> l'entreprise <b>déclare ses zones</b>, <b>crée et gère totalement ses livreurs</b> (validation, affectation, messagerie) et <b>ajoute son moyen de paiement</b>. <b>BelivaY</b> crée le compte, <b>vérifie les documents</b>, <b>fixe la grille tarifaire au contrat</b> (négociée, propre à chaque entreprise), arbitre les litiges et règle les paiements (2 à 4 fois par mois selon contrat). Toute l'app est une interface à <b>remplir de données réelles de l'entreprise</b>.
+  </div>
+
+  <div class="chain">
+    <b>Règle d'or :</b> une entreprise <b>ne peut pas opérer</b> tant que ses documents ne sont pas <b>envoyés et vérifiés</b>. Ensuite la chaîne d'activation <code>Documents vérifiés</code> → <code>Zones</code> → <code>Flotte</code> → <code>Grille (BelivaY)</code> conditionne tout le reste. Tant qu'elle n'est pas complète, <b>Missions, Colis, Preuves, Litiges, Règlements et Score restent vides</b>.
+  </div>
+
+  <div class="progress-box">
+    <b>Points traités</b>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="pct" id="pct">0%</div>
+  </div>
+
+  <!-- =============== PRIORITÉ 1 =============== -->
+  <h2 class="section"><span class="pill p-block">Priorité 1</span> Préalables — sans eux, l'entreprise ne peut pas opérer</h2>
+
+  <!-- KYC -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Contrat &amp; KYC</h3><div class="where">Soumission + vérification des documents</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Fiche entreprise complète (nom légal, responsable, <b>adresse opérationnelle</b>, <b>adresse agence</b>, téléphone, référence contrat) + un espace où l'entreprise <b>envoie ses documents</b> (registre de commerce, pièce du responsable, etc.), chacun avec son <b>statut de vérification</b>.
+      <span class="rep"><i>Représentation</i> Fiche à champs + checklist conformité avec statut par item : <b>À envoyer · En vérification · Vérifié · Rejeté</b>, et boutons « Envoyer le document » / « Compléter ».</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page est en lecture seule et affiche un statut <b>« Approuvée »</b> qui n'est relié à aucune vérification : la checklist montre pourtant <b>3 items « Manquant »</b> (référence contrat, zones, adresse agence) et des champs vides (adresse, contrat). Il n'y a <b>ni champ d'upload, ni statut par document</b> — donc rien ne peut passer de « Manquant » à « Vérifié ».</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">L'entreprise se croit prête et ne peut rien faire — ou pire, opère <b>sans conformité</b> : risque juridique pour BelivaY, litiges non couverts, paiements contestables. La contradiction décrédibilise la plateforme dès la 1ʳᵉ page.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Appliquer la règle « pas d'opération sans documents envoyés + vérifiés » : compte créé par l'admin → l'entreprise <b>soumet ses docs</b> → BelivaY <b>vérifie</b> → seulement alors « Peut opérer ». Tant que non vérifié : bandeau clair et <b>pas de statut « Approuvée »</b>.</span></div>
+    </div>
+  </div>
+
+  <!-- FLOTTE -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Flotte &amp; livreurs</h3><div class="where">Gestion complète des livreurs</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      La <b>liste réelle des livreurs</b> de l'entreprise : par livreur → nom, moyen de transport, capacité, zones, statut (approuvé/suspendu), disponibilité (en ligne). Compteurs réels : total, approuvés, en ligne.
+      <span class="rep"><i>Représentation</i> Registre (une ligne par livreur) + bouton <b>« Ajouter un livreur »</b> + actions par ligne.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page n'affiche qu'un <b>état vide</b> (« Aucun livreur rattaché ») et des compteurs à 0. Toute la couche de gestion livreur manque : <b>pas de bouton de création, pas de fiche livreur, aucune action</b> de statut ou d'affectation. Rien ne permet de peupler la liste.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans flotte, <b>aucune mission ne peut être affectée → 0 revenu</b>. C'est le blocage racine : missions, colis, preuves, règlements et score en dépendent tous.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Écran de gestion :
+        <ul class="acts">
+          <li><b>Créer un livreur</b> (identité, transport, capacité, zones).</li>
+          <li><b>Approuver / suspendre / retirer</b> (l'entreprise pilote seule « Approuvés »).</li>
+          <li><b>Affecter</b> véhicule / capacité / zones.</li>
+          <li><b>Voir</b> disponibilité / statut en ligne (app livreur).</li>
+          <li><b>Envoyer</b> message / notification au livreur.</li>
+        </ul>
+      </span></div>
+    </div>
+  </div>
+
+  <!-- ZONES -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Zones &amp; capacité</h3><div class="where">Déclaration des zones par l'entreprise</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Les <b>zones déclarées par l'entreprise</b> : par zone → capacité, moyen(s) de transport, livreurs rattachés, état (active / saturée / bloquée).
+      <span class="rep"><i>Représentation</i> Liste/carte des zones + bouton <b>« Déclarer une zone »</b> + jauge de capacité par zone + raisons de blocage.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page décrit la fonction (« Déclarer les zones ») mais <b>n'expose ni bouton ni formulaire</b> de création ; les cartes Capacité et Zones bloquées sont en « À connecter ». Tant que la saisie n'existe pas, l'item KYC « Zones de couverture déclarées » reste bloqué sur <b>« Manquant »</b>.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans zone, <b>aucune mission compatible n'est routable</b> vers l'entreprise, <b>et</b> le dossier KYC reste bloqué : double blocage.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">« Déclarer une zone » (zone + capacité + transport), relié à l'affectation des livreurs et aux raisons de blocage (non couverte / saturée / indisponibilité) ; complète automatiquement l'item KYC.</span></div>
+    </div>
+  </div>
+
+  <!-- PRIX -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Prix &amp; SLA</h3><div class="where">Grille définie par BelivaY (lecture seule)</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      La <b>grille tarifaire définie par BelivaY après le contrat</b>, <b>propre à cette entreprise</b> (tarifs négociés par zone / poids / volume / niveau de service) + les <b>SLA</b> (collecte, remise). <b>En lecture seule</b> pour l'entreprise — elle consulte, elle ne configure pas.
+      <span class="rep"><i>Représentation</i> Tableau des tarifs + SLA + mention « Grille définie par BelivaY selon votre contrat » ; état « En attente de contrat » / « Active ».</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Les 3 cartes (Grille / SLA / Validation) affichent <b>« À connecter »</b> : aucune donnée n'est chargée. Comme la grille est fixée par BelivaY au contrat, le besoin n'est <b>pas un formulaire de saisie</b> mais l'<b>affichage en lecture seule</b> de la grille propre à cette entreprise, plus un état « en attente de contrat ».</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">L'entreprise <b>ignore sa rémunération</b> → impossible de vérifier ses règlements → litiges financiers et méfiance ; sans grille rattachée, les missions ne sont pas chiffrables.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Afficher la grille réelle (BelivaY, par contrat, différente par entreprise) en lecture seule ; avant contrat : « Grille en attente de votre contrat ».</span></div>
+    </div>
+  </div>
+
+  <!-- =============== PRIORITÉ 2 — OPÉRATIONS =============== -->
+  <h2 class="section"><span class="pill p-prod">Priorité 2</span> Écrans opérationnels à remplir de données réelles</h2>
+
+  <!-- MISSIONS -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Missions</h3><div class="where">Suivi + affectation aux livreurs</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Les <b>missions réelles</b> assignées à l'entreprise : statut (assignée → en route boutique → récupérée → en livraison → livrée), zone, boutique, livreur affecté, SLA. Plus les <b>exceptions</b> (échecs, refus, réaffectation).
+      <span class="rep"><i>Représentation</i> Onglets/filtres par statut + fiche mission + bouton <b>« Affecter »</b> (livreur compatible par zone/moyen/capacité) + section exceptions.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder : « En cours 0 », « À affecter » et « Exceptions » sont en <b>« À connecter »</b>. Aucune liste de missions, <b>aucun filtre par statut</b>, <b>aucune action d'affectation</b> n'est branchée.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans cet écran, même avec des livreurs, <b>l'entreprise ne peut pas dispatcher</b> → missions bloquées, SLA dépassés, litiges.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher la liste réelle + onglets par statut + action d'affectation + gestion des exceptions.</span></div>
+    </div>
+  </div>
+
+  <!-- RÈGLEMENTS -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Règlements</h3><div class="where">Paiement, revenus &amp; prochaine échéance</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Le <b>moyen de paiement</b> de l'entreprise (à ajouter/gérer) ; les montants <b>à régler</b> et <b>payés</b> (historique par période) ; les <b>revenus gagnés</b> et le <b>volume de travail</b> (missions/livraisons réalisées) ; la <b>prochaine date de paiement</b> et la <b>fréquence</b> (hebdomadaire ou bi-hebdomadaire selon contrat = 2 à 4 paiements/mois) ; le rapprochement Mobile Money / virement.
+      <span class="rep"><i>Représentation</i> Carte « Prochaine échéance » (date + montant estimé) + solde à régler + total gagné + volume + historique par période + moyen de paiement.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Les 3 cartes (À régler / Payé / Rapprochement) sont en <b>« À connecter »</b>. Il manque <b>trois choses distinctes</b> : (1) l'écran de saisie du <b>moyen de paiement</b>, (2) l'<b>agrégation</b> des montants par période/statut, (3) les indicateurs <b>revenus/volume</b> + la <b>prochaine échéance</b> calculée depuis la fréquence du contrat.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">L'entreprise ne sait <b>ni quand, ni combien</b> elle sera payée, ni <b>où</b> arrive l'argent → méfiance, litiges de paiement et <b>abandon probable</b> de la plateforme.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Ajouter le moyen de paiement + afficher revenus / volume / prochaine date / fréquence + à régler / payé + rapprochement.</span></div>
+    </div>
+  </div>
+
+  <!-- LITIGES -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Litiges &amp; incidents</h3><div class="where">Défense de l'entreprise + décision BelivaY</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Les <b>litiges liés aux missions</b> de l'entreprise : dossier, preuves du livreur, commentaires opérationnels, et la <b>décision BelivaY</b> (livreur disculpé / remboursement / retour / pénalité).
+      <span class="rep"><i>Représentation</i> Liste des dossiers + fiche litige (preuves + réponse de l'entreprise + décision) ; réponse possible quand BelivaY l'autorise.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder (« Dossiers ouverts 0 » ; Preuves et Décision en « À connecter »). <b>Deux libellés désignent la même chose</b> — « Litiges ouverts » (barre du haut) et « Dossiers ouverts » (page) — à unifier. Manquent la liste des dossiers et le détail (preuves + réponse + décision).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">L'entreprise <b>ne peut pas se défendre</b> → pénalités subies sans recours → pertes financières directes.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher les dossiers + réponse (preuves/commentaires) + affichage de la décision ; unifier le vocabulaire litige / dossier / incident.</span></div>
+    </div>
+  </div>
+
+  <!-- PREUVES -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Preuves de livraison</h3><div class="where">Collecte &amp; remise, par mission</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Les <b>preuves de collecte</b> (photo / scan / OTP vendeur) et de <b>remise</b> (signature / OTP / photo client) par mission, + une <b>file de revue</b> pour les litiges.
+      <span class="rep"><i>Représentation</i> Liste par mission avec vignettes de preuve + statut : présente / manquante / rejetée.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder : les 3 cartes (Preuve collecte / Preuve remise / File de revue) sont en <b>« À connecter »</b>. Aucune preuve n'est reliée à une mission.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans preuve de remise, l'entreprise <b>perd les litiges</b> (responsabilité / pénalité) → pertes évitables.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher les preuves aux missions + file de revue.</span></div>
+    </div>
+  </div>
+
+  <!-- COLIS -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Colis &amp; commandes</h3><div class="where">Visibilité opérationnelle</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Les <b>colis par statut</b> (file collecte / en transit / clôturés), boutique de départ, zone de destination — <b>sans données client inutiles</b>. Identifier les colis non affectés ou incompatibles (capacité/transport).
+      <span class="rep"><i>Représentation</i> Liste filtrable par statut / boutique / zone + badges d'incompatibilité.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder : File collecte / En transit / Clôturés sont en <b>« À connecter »</b>. Pas de liste de colis ni de <b>filtres statut / boutique / zone</b>.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans visibilité, <b>erreurs de prise en charge</b> et colis oubliés → retards et litiges.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher les 3 files + filtres + signalement d'incompatibilité.</span></div>
+    </div>
+  </div>
+
+  <!-- SCORE -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Score qualité</h3><div class="where">Pilotage de la performance</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Taux de livraison réussie, retards / dépassements SLA, litiges, qualité des preuves, <b>comparaison par zone et par livreur</b>.
+      <span class="rep"><i>Représentation</i> Indicateurs + tendance + comparatifs. <b>Le message d'état vide actuel est déjà le bon modèle</b> — à réutiliser partout.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder — mais son message d'état vide est <b>correct</b> (« sera calculé lorsque… »). Rien à corriger sur la forme : il attend seulement le <b>branchement des données</b>.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans pilotage, l'entreprise <b>ne voit pas ses faiblesses</b> et risque le déréférencement sans comprendre pourquoi.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher une fois missions / preuves / litiges reliés (déjà annoncé).</span></div>
+    </div>
+  </div>
+
+  <!-- MESSAGES -->
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Messages</h3><div class="where">Canal de support &amp; coordination</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Le <b>canal avec BelivaY</b> (échanges opérationnels), les <b>fils par livreur</b>, et les <b>notes</b> liées aux missions / litiges.
+      <span class="rep"><i>Représentation</i> Liste de conversations + fil + zone de saisie + bouton « Nouveau message ».</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Écran placeholder (Canal BelivaY / Fils livreurs / Notes en « À connecter »). Aucune liste de conversations ni <b>zone de saisie</b> : impossible d'écrire à BelivaY depuis le portail.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans messagerie, <b>aucun canal de support</b> : en cas d'incident, l'entreprise est bloquée sans interlocuteur.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher canal BelivaY + fils livreurs + notes incidents + zone de saisie.</span></div>
+    </div>
+  </div>
+
+  <!-- =============== PRIORITÉ 2 — UX =============== -->
+  <h2 class="section"><span class="pill p-prod">Priorité 2</span> UX — lisibilité du tableau de bord</h2>
+
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Tableau de bord</h3><div class="where">Synthèse sans doublons</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Synthèse réelle (livreurs, missions, zones, litiges) + pipeline (assignées / collectées / dernier km) + disponibilité flotte + risques + couverture/contrat + <b>progression d'activation</b> tant que le dossier est incomplet.
+      <span class="rep"><i>Représentation</i> Une seule occurrence par indicateur ; 2ᵉ rangée = indicateurs utiles non redondants.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val"><b>Doublon de composants KPI</b> : « Missions en cours » et « Litiges ouverts » sont rendus <b>deux fois sur le même écran</b> (barre supérieure + 2ᵉ rangée). La barre supérieure est en plus <b>répétée sur toutes les pages</b> et double la carte propre à chaque page. Enfin « Disponibilité flotte 0/0 » n'explique pas ce que sont les deux nombres.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Écran confus, <b>doute sur la fiabilité</b> des chiffres, et aucun guide de démarrage pour un compte neuf.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Une occurrence par indicateur ; 2ᵉ rangée = taux de réussite / missions du jour / SLA à risque ; expliciter « 0/0 » (0 en ligne / 0 approuvés) ; ajouter une progression d'onboarding.</span></div>
+    </div>
+  </div>
+
+  <!-- =============== PRIORITÉ 3 =============== -->
+  <h2 class="section"><span class="pill p-low">Priorité 3</span> Mineur — à traiter en dernier</h2>
+
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Paramètres — gestion de compte</h3><div class="where">Paramètres</div></div>
+      <span class="sev s-med">Moyen</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page ne contient que <b>langue / thème / déconnexion</b> (ces trois sont OK). Manquent la gestion de compte (mot de passe, notifications) et un accès au moyen de paiement.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Pas de sécurité de compte (mot de passe, notifications) ni d'accès aux coordonnées de règlement.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Ajouter mot de passe / notifications et un renvoi vers le moyen de paiement (cf. Règlements).</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Numéro de téléphone au format douteux</h3><div class="where">Contrat &amp; KYC</div></div>
+      <span class="sev s-med">Moyen</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Le champ téléphone affiche « 2027499559 », <b>sans indicatif ni validation</b> : format non conforme à un numéro camerounais (+237).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Contact opérationnel potentiellement injoignable ; données non fiables.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Format international (+237…) avec validation à la saisie et affichage formaté.</span></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="head">
+      <input type="checkbox">
+      <div class="t"><h3>Accents / encodage</h3><div class="where">Presque tous les titres et textes</div></div>
+      <span class="sev s-low">Faible</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Accents absents dans les titres et libellés (rendu « operationnelle », « rattaches », « capacite »…). Cause probable : <b>encodage non UTF‑8</b> (fichiers de libellés, police ou base) ou chaînes saisies sans accents.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Image peu professionnelle vis-à-vis du partenaire. Non bloquant.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Une seule passe UTF‑8 de bout en bout (ou reprise des libellés source). À faire en dernier.</span></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <h4>Couverture</h4>
+    Les 13 écrans sont couverts. Regroupés pour éviter le bruit : « À connecter » (traité par écran ci-dessus au lieu d'être répété), et chaque faute d'accent isolée (regroupée en un point unique en fin de liste).
+  </div>
+
+  <footer>
+    BelivaY · Espace entreprise partenaire (Pengus Market) — rappel complet : contenu attendu + Problème / Impact / Solution, du plus important au moins important.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+    var boxes = cards.map(function(c){return c.querySelector('input[type=checkbox]');}).filter(Boolean);
+    var bar = document.getElementById('bar');
+    var pct = document.getElementById('pct');
+    function refresh(){
+      var done = boxes.filter(function(b){return b.checked;}).length;
+      var p = boxes.length ? Math.round(done/boxes.length*100) : 0;
+      bar.style.width = p + '%';
+      pct.textContent = p + '%';
+    }
+    cards.forEach(function(c){
+      var b = c.querySelector('input[type=checkbox]');
+      if(!b) return;
+      b.addEventListener('change', function(){ c.classList.toggle('done', b.checked); refresh(); });
+    });
+    refresh();
+  })();
+</script>
+</body>
+</html>

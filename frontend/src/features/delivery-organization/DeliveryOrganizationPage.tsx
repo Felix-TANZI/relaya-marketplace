@@ -525,6 +525,34 @@ export default function DeliveryOrganizationPage() {
     </div>
   );
 
+  const MobileBrief = () => (
+    <section className="space-y-3 rounded-3xl border border-cyan-100 bg-white p-4 shadow-sm dark:border-cyan-900/50 dark:bg-slate-900 lg:hidden">
+      <div className="flex items-start gap-3">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
+          <ActiveIcon size={20} />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{ui.tabs[tab]}</p>
+          <h2 className="mt-1 text-lg font-black leading-tight text-slate-950 dark:text-white">{active.title}</h2>
+          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{active.description}</p>
+        </div>
+      </div>
+      <div className="grid gap-2 text-sm">
+        {active.methods.map((method, index) => (
+          <div key={method} className="flex gap-3 rounded-2xl bg-cyan-50 p-3 text-cyan-950 dark:bg-cyan-950/40 dark:text-cyan-50">
+            <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-white text-xs font-black text-cyan-700 dark:bg-slate-900 dark:text-cyan-200">{index + 1}</span>
+            <span className="font-semibold leading-6">{method}</span>
+          </div>
+        ))}
+      </div>
+      <div className="grid gap-2 sm:grid-cols-3">
+        <Field label={locale === "en" ? "Partner" : "Partenaire"} value={organization.name} icon={Building2} />
+        <Field label={locale === "en" ? "Contract" : "Contrat"} value={organization.contract} icon={FileText} />
+        <Field label={locale === "en" ? "Status" : "Statut"} value={organization.status} icon={ShieldCheck} />
+      </div>
+    </section>
+  );
+
   const WorkCard = ({ title, value, body, icon: Icon }: { title: string; value: string; body: string; icon: IconComponent }) => (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
       <div className="flex items-start justify-between gap-3">
@@ -581,7 +609,30 @@ export default function DeliveryOrganizationPage() {
             : locale === "en" ? "No courier is attached to this organization yet." : "Aucun livreur n'est encore rattaché à cette organisation."}
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+        <>
+        <div className="grid gap-3 md:hidden">
+          {couriers.map((courier) => (
+            <article key={courier.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-black text-slate-950 dark:text-white">{courier.full_name || courier.username}</h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">@{courier.username} · {courier.phone || courier.email}</p>
+                </div>
+                <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? "Online" : "Offline"}</StatusPill>
+              </div>
+              <div className="mt-4 grid gap-2">
+                <Field label={locale === "en" ? "Vehicle" : "Moyen"} value={courier.vehicle_type || "-"} icon={Truck} />
+                <Field label={locale === "en" ? "City" : "Ville"} value={courier.city || "-"} icon={Map} />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {(courier.zones.length ? courier.zones : ["-"]).map((zone) => (
+                  <span key={zone} className="rounded-full bg-cyan-100 px-2.5 py-1 text-xs font-black text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">{zone}</span>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
           <div className="min-w-[680px]">
             <div className="grid grid-cols-[1.2fr_.8fr_.8fr_.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-800/70">
               <span>{locale === "en" ? "Courier" : "Livreur"}</span>
@@ -608,6 +659,7 @@ export default function DeliveryOrganizationPage() {
             ))}
           </div>
         </div>
+        </>
       )}
     </Panel>
   );
@@ -621,7 +673,31 @@ export default function DeliveryOrganizationPage() {
             : locale === "en" ? "No active mission for this organization." : "Aucune mission en cours pour cette organisation."}
         </EmptyState>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+        <>
+        <div className="grid gap-3 md:hidden">
+          {missions.map((mission) => (
+            <article key={mission.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-black text-slate-950 dark:text-white">{mission.reference}</h3>
+                  <p className="mt-1 text-xs font-semibold text-slate-500">{mission.city} · {mission.delivery_address}</p>
+                </div>
+                <StatusPill>{mission.status_display}</StatusPill>
+              </div>
+              <div className="mt-4 grid gap-2">
+                <Field label={locale === "en" ? "Courier" : "Livreur"} value={mission.courier?.full_name || "-"} icon={Users} />
+                <Field label={locale === "en" ? "Vehicle" : "Moyen"} value={mission.courier?.vehicle_type || "-"} icon={Truck} />
+                <Field label={locale === "en" ? "Updated" : "Mise à jour"} value={new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")} icon={Clock3} />
+              </div>
+              {mission.vendor_names.length ? (
+                <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-cyan-800 dark:bg-slate-900 dark:text-cyan-200">
+                  {locale === "en" ? "Origin" : "Origine"}: {mission.vendor_names.join(", ")}
+                </p>
+              ) : null}
+            </article>
+          ))}
+        </div>
+        <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
           <div className="min-w-[780px]">
             <div className="grid grid-cols-[.8fr_1fr_1.2fr_.9fr_.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-800/70">
               <span>{locale === "en" ? "Mission" : "Mission"}</span>
@@ -648,6 +724,7 @@ export default function DeliveryOrganizationPage() {
             ))}
           </div>
         </div>
+        </>
       )}
     </Panel>
   );
@@ -1090,6 +1167,7 @@ export default function DeliveryOrganizationPage() {
           </div>
 
           <div className="space-y-5 p-4 sm:p-6">
+            <MobileBrief />
             <section className="grid gap-4 md:grid-cols-4">
               {[
                 [locale === "en" ? "Attached couriers" : "Livreurs rattachés", couriersLoading ? "..." : couriers.length.toString(), Users],

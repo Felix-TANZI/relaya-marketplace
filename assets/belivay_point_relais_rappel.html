@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BelivaY · Point Relais — Rappel complet par page</title>
+<style>
+  :root{
+    --navy:#0f2f4d; --navy2:#14405f; --accent:#2f6fe0; --accent-soft:#e7effc;
+    --ink:#12232b; --muted:#5b6b72; --line:#e6edf0; --bg:#f4f7f8; --card:#ffffff;
+    --red:#e5484d; --amber:#e0a106; --blue:#2f6fe0; --green:#2fa06b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.55}
+  .wrap{max-width:1000px;margin:0 auto;padding:32px 20px 80px}
+  header.top{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:18px;padding:28px 30px;margin-bottom:18px;box-shadow:0 10px 30px rgba(15,47,77,.18)}
+  header.top .kicker{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#9fc4ee;font-weight:700}
+  header.top h1{margin:6px 0 8px;font-size:25px;letter-spacing:-.01em}
+  header.top p{margin:0;color:#cfe0f2;font-size:14px;max-width:76ch}
+
+  .context{background:#eaf1fb;border:1px solid #c6dbf6;border-radius:12px;padding:13px 16px;margin-bottom:12px;font-size:13.5px;color:#22456b}
+  .context b{color:#0f2f4d}
+  .chain{background:#fff4e9;border:1px solid #f0d8b4;border-radius:12px;padding:13px 16px;margin-bottom:20px;font-size:13.5px;color:#6b4f1d}
+  .chain b{color:#4a3610}
+  .chain code{background:#fbe6c9;border-radius:5px;padding:1px 7px;font-size:12.5px;color:#7a4d0a;font-weight:700}
+
+  .progress-box{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 18px;margin-bottom:24px;display:flex;align-items:center;gap:16px}
+  .bar{flex:1;height:10px;background:#eef2f4;border-radius:999px;overflow:hidden}
+  .bar > i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),#2fa06b);transition:width .3s}
+  .progress-box b{font-size:14px;white-space:nowrap}
+  .progress-box .pct{font-size:22px;font-weight:800;color:var(--accent);min-width:52px;text-align:right}
+
+  h2.section{font-size:12.5px;letter-spacing:.13em;text-transform:uppercase;margin:30px 0 12px;font-weight:800;display:flex;align-items:center;gap:10px}
+  h2.section .pill{font-size:11px;padding:3px 10px;border-radius:999px;letter-spacing:.02em}
+  .p-block{background:#fdeaea;color:var(--red)} .p-prod{background:#e7effc;color:var(--blue)} .p-low{background:#eef1f3;color:#5c6a72}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;margin-bottom:14px;box-shadow:0 2px 6px rgba(18,35,43,.04);overflow:hidden}
+  .card .head{display:flex;align-items:flex-start;gap:12px;padding:16px 20px 10px}
+  .card .head input{margin-top:4px;width:18px;height:18px;accent-color:var(--accent);flex:none;cursor:pointer}
+  .card .head .t{flex:1}
+  .card h3{margin:0;font-size:17px}
+  .card .where{font-size:12px;color:var(--accent);font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .sev{font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:7px;white-space:nowrap;flex:none;margin-top:2px}
+  .s-block{background:#fdeaea;color:var(--red)} .s-prod{background:#e7effc;color:var(--blue)} .s-med{background:#fbf3e0;color:#a97a06} .s-low{background:#eef1f3;color:#5c6a72}
+
+  .attendu{background:var(--accent-soft);border:1px solid #cfe0f9;border-radius:10px;padding:10px 13px;margin:0 20px 10px 50px;font-size:13.5px;color:#1c3f66}
+  .attendu .h{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:#2f6fe0;display:block;margin-bottom:3px}
+  .attendu b{color:#0f2f4d}
+  .attendu .rep{display:block;margin-top:6px;color:#3a5c7c}
+  .attendu .rep i{font-style:normal;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.05em;color:#5a7a96;margin-right:6px}
+
+  .pir{padding:0 20px 16px 50px}
+  .pir .row{display:flex;gap:10px;padding:5px 0;font-size:14px;align-items:baseline}
+  .pir .lab{flex:none;width:78px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding-top:2px}
+  .lab-p{color:var(--red)} .lab-i{color:#b4441a} .lab-r{color:var(--green)}
+  .pir .val{flex:1}
+  .pir .val b{color:var(--ink)}
+  .pir ul.acts{margin:5px 0 0;padding-left:16px}
+  .pir ul.acts li{margin:3px 0}
+  .card.done{opacity:.55}
+  .card.done h3{text-decoration:line-through}
+
+  .good{background:#eafaf1;border:1px solid #bfe8d1;border-radius:14px;padding:14px 18px;margin-top:8px;font-size:13.5px;color:#1c6440}
+  .good h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:#2fa06b}
+  .good ul{margin:6px 0 0;padding-left:18px}.good li{margin:3px 0}
+
+  .note{background:var(--card);border:1px dashed var(--line);border-radius:14px;padding:14px 18px;margin-top:22px;font-size:13px;color:var(--muted)}
+  .note h4{margin:0 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:.1em;color:#8a97a0}
+  .note ul{margin:6px 0 0;padding-left:18px}.note li{margin:3px 0}
+  footer{margin-top:26px;color:var(--muted);font-size:12.5px;text-align:center;border-top:1px solid var(--line);padding-top:16px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="kicker">Espace gérant point relais · Rappel complet</div>
+    <h1>BelivaY — Point Relais : ce qui doit être là, page par page</h1>
+    <p>Pour chaque écran : <b>le contenu attendu</b> (données réelles + représentation), puis <b>Problème → Impact si non fait → Solution</b>, décrit pour un dev. Du plus important au moins important.</p>
+  </header>
+
+  <div class="context">
+    <b>Vision (bandeau du portail) :</b> anonymat vendeur, preuves de transfert, <b>stockage par slot</b>, <b>code de retrait</b>, <b>litiges J+7</b>, <b>Trust Score public</b>, <b>finances MoMo</b>. Deux modules sont <b>volontairement en développement</b> (Relais Tokens, Niveaux PR) — assumés et bien présentés, <b>non comptés comme défauts</b>.
+  </div>
+
+  <div class="chain">
+    <b>Règle d'ouverture :</b> un point relais ne devrait pas être <code>Ouvert</code> tant que son <code>KYC</code> n'est pas validé, sa <code>Capacité</code> déclarée et ses <code>Horaires</code> définis. Cœur opérationnel : <code>Réception (scan + preuves)</code> → <code>Stockage par slot</code> → <code>Retrait (code)</code> → <code>Litige J+7</code>.
+  </div>
+
+  <div class="progress-box">
+    <b>Points traités</b>
+    <div class="bar"><i id="bar"></i></div>
+    <div class="pct" id="pct">0%</div>
+  </div>
+
+  <!-- ===================== PRIORITÉ 1 ===================== -->
+  <h2 class="section"><span class="pill p-block">Priorité 1</span> Préalables &amp; cohérence — le PR ne peut pas opérer proprement</h2>
+
+  <!-- KYC -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Documents KYC — aucune soumission possible</h3><div class="where">Risque · Documents KYC</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Un espace d'<b>envoi des pièces</b> (CNI, registre de commerce, numéro MoMo, photos du local) + un <b>statut de vérification par pièce</b> + l'étape de <b>validation physique</b> BelivaY.
+      <span class="rep"><i>Représentation</i> Liste de documents avec bouton « Envoyer », statut <b>À envoyer · En vérification · Vérifié · Rejeté</b>, et un encart « validation physique planifiée / faite ».</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page est <b>uniquement descriptive</b> (« CNI, registre, MoMo, photos du local… sera connectée au backend »). Aucun upload — et pourtant le PR est marqué <b>« Ouvert »</b>.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Un point relais peut sembler opérationnel <b>sans dossier vérifié</b> → des colis confiés à un point non contrôlé (perte, fraude), et le dossier ne se complète jamais.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Espace d'upload + statut par document + règle <b>« ne peut pas recevoir de colis tant que le KYC n'est pas validé »</b>.</span></div>
+    </div>
+  </div>
+
+  <!-- STATUT OUVERT -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Statut « Ouvert » incohérent avec l'état réel</h3><div class="where">En-tête (toutes pages)</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="pir" style="padding-top:8px">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">L'en-tête affiche <b>« Ouvert »</b> en même temps que <b>« 0/0 places »</b> et <b>« Horaires à compléter »</b> (et KYC non fait). Un PR sans capacité ni horaires ne devrait pas être ouvert.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Un acheteur/livreur peut choisir un PR <b>incapable de recevoir</b> → colis bloqués, litiges, mauvaise première expérience côté marketplace.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Conditionner « Ouvert » à <b>KYC validé + capacité &gt; 0 + horaires définis</b>. Sinon afficher <b>« En configuration »</b> et rendre le PR non sélectionnable côté acheteur.</span></div>
+    </div>
+  </div>
+
+  <!-- CAPACITÉ & HORAIRES -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Capacité &amp; horaires — impossible de les configurer</h3><div class="where">Gestion · Capacité &amp; horaires</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Un <b>formulaire de capacité</b> (nombre de places / slots) + un <b>éditeur d'horaires</b> (jours + créneaux) + une <b>bascule ouvert/fermé</b>.
+      <span class="rep"><i>Représentation</i> Champ capacité + grille horaire hebdomadaire + statut, reliés au badge d'ouverture.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">La page affiche « 0 colis sur 0 places » et « Horaires à compléter » mais <b>n'offre aucun bouton de saisie</b> (et le texte est peu lisible, cf. contraste).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Le PR ne peut <b>ni déclarer sa capacité ni ses horaires</b> → reste bloqué à 0/0 et ne peut pas être ouvert correctement.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Ajouter « Configurer la capacité » et « Définir les horaires », reliés au statut d'ouverture.</span></div>
+    </div>
+  </div>
+
+  <!-- TRUST SCORE -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Trust Score — le total (0) contredit les sous-scores (72)</h3><div class="where">Qualité · Trust Score PR</div></div>
+      <span class="sev s-block">Bloquant</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Un <b>score global calculé</b> à partir des 4 composantes (ponctualité réception, sécurité stockage, retraits sans litige, satisfaction acheteur) + un <b>état vide cohérent</b> si pas de données.
+      <span class="rep"><i>Représentation</i> Grand score = somme réelle des composantes ; sans données, tout est vide (pas de sous-scores de démo).</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Le score affiche <b>« 0/100 »</b> alors que les sous-scores affichés valent <b>22+20+18+12 = 72/100</b>. Le total ne vient pas des composantes (valeurs de démo codées en dur).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Ce score est <b>public</b> (visible par l'acheteur au moment de choisir le PR) : un chiffre contradictoire <b>décrédibilise</b> le point relais et la marketplace.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Calculer le total depuis les composantes ; sans données réelles, afficher un état vide partout (pas de sous-scores fictifs).</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== PRIORITÉ 2 — CŒUR OPÉRATIONNEL ===================== -->
+  <h2 class="section"><span class="pill p-prod">Priorité 2</span> Cœur opérationnel à brancher — le métier même du PR</h2>
+
+  <!-- RÉCEPTION -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Réception colis — brancher le scan + les preuves</h3><div class="where">Opérations · Réception colis</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Scan du <b>QR de mission</b> → vérif appartenance réseau → contrôle colis (état / étiquette / nombre) → <b>photos</b> (face, dos, étiquette) → <b>double signature</b> → transfert de responsabilité → mise en <b>stock (slot)</b>.
+      <span class="rep"><i>Représentation</i> L'écran existe et est bien construit (bouton « Démarrer le scan » + 4 étapes de contrôle).</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Le flux est une <b>vitrine probablement non connectée</b> : le scan et la validation ne créent pas de colis en stock.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">C'est <b>LE cœur du métier PR</b>. Non branché = le point relais ne peut pas réceptionner → aucun colis, aucun revenu, aucune donnée pour tout le reste.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher le scan QR + capture des preuves + double signature au backend. <b>Priorité de branchement n°1.</b></span></div>
+    </div>
+  </div>
+
+  <!-- RETRAIT -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Retrait acheteur — brancher le code + la remise</h3><div class="where">Opérations · Retrait acheteur</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Saisie du <b>code à 6 chiffres</b> → vérification (correspondance colis) → contrôle <b>identité</b> (CNI si requis) → <b>photo de remise</b> → clôture.
+      <span class="rep"><i>Représentation</i> L'écran existe (champ 6 chiffres + « Vérifier et remettre » + 3 contrôles).</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Probablement <b>non connecté</b> : le bouton ne vérifie rien de réel.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans retrait fonctionnel, l'acheteur <b>ne peut pas récupérer</b> son colis → blocages et <b>litiges J+7 systématiques</b>.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher la vérification du code + preuve de remise + clôture. <b>Priorité de branchement n°2.</b></span></div>
+    </div>
+  </div>
+
+  <!-- COLIS EN STOCK -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Colis en stock — brancher la liste et respecter l'anonymat</h3><div class="where">Opérations · Colis en stock</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Tableau des colis en stock (<b>Référence, Slot, Acheteur, Délai, Statut, Action</b>) + jauge de capacité utilisée. <b>Anonymat</b> : afficher un identifiant acheteur minimal (code), pas de données personnelles inutiles.
+      <span class="rep"><i>Représentation</i> Table déjà en place (colonnes définies) + alerte sur les délais (J+6 / J+7).</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Table vide (« Aucun colis en stock connecté ») ; la colonne <b>« Acheteur »</b> doit être limitée au strict nécessaire pour rester conforme à l'anonymat de la vision.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Sans stock connecté, aucun suivi ; si « Acheteur » expose trop, <b>contradiction avec le principe d'anonymat</b>.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher la liste ; limiter « Acheteur » à un code/pseudonyme ; signaler les délais J+6/J+7.</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== PRIORITÉ 2 — LISIBILITÉ & FINITION ===================== -->
+  <h2 class="section"><span class="pill p-prod">Priorité 2</span> Lisibilité &amp; finition</h2>
+
+  <!-- CONTRASTE -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Texte illisible (quasi blanc sur cartes claires)</h3><div class="where">Finances MoMo · Capacité &amp; horaires · Formation</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="pir" style="padding-top:8px">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Sur ces 3 pages, des <b>valeurs et titres sont en texte très clair sur fond clair</b> → quasi illisibles (ex. « 150 FCFA / colis », « Hebdomadaire », « Stockage », titres de modules).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Des informations clés (tarif, montant, horaires, modules obligatoires) sont <b>inaccessibles</b> → erreurs et accessibilité insuffisante.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Corriger la couleur/opacité du texte sur ces cartes (contraste <b>AA minimum</b>) et harmoniser le thème sombre.</span></div>
+    </div>
+  </div>
+
+  <!-- FINANCES MOMO -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Finances MoMo — compléter la vue revenus</h3><div class="where">Gestion · Finances MoMo</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Le <b>compte / numéro MoMo</b> (à configurer) + le <b>tarif</b> (150 FCFA / colis) + le <b>montant du mois</b> + la <b>prochaine date de versement</b> + l'<b>historique des versements</b> + la <b>fréquence</b> (hebdomadaire).
+      <span class="rep"><i>Représentation</i> Carte « Prochaine échéance » (date + montant) + total du mois + historique + moyen MoMo.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">3 cartes statiques (tarif / mois courant / versement), <b>pas de compte MoMo saisissable</b>, pas d'historique ni de prochaine échéance (et texte peu lisible).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Le gérant ne sait <b>ni où ni quand</b> il est payé → méfiance, démotivation, abandon du réseau.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Ajouter le compte MoMo + historique + prochaine échéance ; garder tarif / mois / fréquence, lisibles.</span></div>
+    </div>
+  </div>
+
+  <!-- PLACEHOLDERS -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Historique · Aide &amp; support · Notifications — structurer les placeholders</h3><div class="where">Opérations &amp; Support</div></div>
+      <span class="sev s-prod">Important</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      <b>Historique :</b> timeline/tableau (réceptions, retraits, rappels, alertes, litiges) avec date, type, référence + filtres et plage de dates.<br>
+      <b>Aide &amp; support :</b> FAQ recherchable + contact support BelivaY + demande de médiateur.<br>
+      <b>Notifications :</b> liste (rappels J+6/J+7, messages support, alertes de capacité) avec type, date, lu/non-lu, action.
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Pages <b>purement descriptives</b> (« reprend la structure prévue… sera connectée au backend »).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Pas d'historique = <b>pas de traçabilité</b> en litige ; pas de support = gérant <b>bloqué sans interlocuteur</b> ; pas de notifications = <b>rappels J+6/J+7 manqués</b> → litiges évitables.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Brancher chaque liste avec la structure ci-dessus ; réutiliser le bon modèle d'état vide du tableau de bord.</span></div>
+    </div>
+  </div>
+
+  <!-- DONNÉES DÉMO -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Données de démo mélangées aux états vides</h3><div class="where">Transversal</div></div>
+      <span class="sev s-med">Moyen</span>
+    </div>
+    <div class="pir" style="padding-top:8px">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Les sous-scores Trust (72), le litige <b>BV-9F2931</b> et 2 modules Formation « faits » sont <b>codés en dur</b>, alors que tout le reste est à 0 / vide.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Le gérant <b>ne distingue pas le réel du fictif</b> → confusion, décisions sur de fausses données.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Choisir <b>une seule approche</b> (démo seedée cohérente OU réel-vide partout) et l'appliquer à tous les écrans.</span></div>
+    </div>
+  </div>
+
+  <!-- ===================== PRIORITÉ 3 — MINEUR ===================== -->
+  <h2 class="section"><span class="pill p-low">Priorité 3</span> Mineur — à traiter en dernier</h2>
+
+  <!-- LIBELLÉS INTERNES -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Libellé interne visible dans l'UI</h3><div class="where">Opérations · Réception colis</div></div>
+      <span class="sev s-med">Moyen</span>
+    </div>
+    <div class="pir" style="padding-top:8px">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">« <b>WORKFLOW V5</b> » est un nom de version interne affiché à l'utilisateur.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Donne une impression de <b>maquette non finie</b>.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Remplacer par un intitulé métier (« Contrôle avant acceptation »), sans numéro de version.</span></div>
+    </div>
+  </div>
+
+  <!-- FORMATION -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Formation — rendre les modules actionnables</h3><div class="where">Support · Formation</div></div>
+      <span class="sev s-med">Moyen</span>
+    </div>
+    <div class="attendu">
+      <span class="h">Ce qui doit y être</span>
+      Chaque module <b>ouvre son contenu</b> et <b>suit l'avancement</b> (fait / à faire), avec impact sur l'ouverture ou le Trust Score s'il est obligatoire.
+      <span class="rep"><i>Représentation</i> Liste de modules cliquables avec état réel de complétion.</span>
+    </div>
+    <div class="pir">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Modules affichés avec statut (2 « Obligatoire » cochés, 2 « Recommandé ») mais <b>probablement non cliquables</b> ; statuts en dur ; texte peu lisible.</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">La formation obligatoire ne peut pas être <b>suivie ni vérifiée</b> → risque opérationnel (mauvaise manipulation, litiges).</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Rendre les modules cliquables + suivi de complétion réel + lisibilité.</span></div>
+    </div>
+  </div>
+
+  <!-- ACCENTS -->
+  <div class="card">
+    <div class="head"><input type="checkbox">
+      <div class="t"><h3>Accents / encodage</h3><div class="where">Presque tous les titres et textes</div></div>
+      <span class="sev s-low">Faible</span>
+    </div>
+    <div class="pir" style="padding-top:8px">
+      <div class="row"><span class="lab lab-p">Problème</span><span class="val">Accents absents (« operationnel », « developpement », « ponctualite », « securite », « Verifier », « controler »…).</span></div>
+      <div class="row"><span class="lab lab-i">Impact</span><span class="val">Image peu professionnelle. Non bloquant.</span></div>
+      <div class="row"><span class="lab lab-r">Solution</span><span class="val">Une seule passe UTF‑8 globale. À faire en dernier.</span></div>
+    </div>
+  </div>
+
+  <!-- CE QUI EST DÉJÀ BIEN -->
+  <div class="good">
+    <h4>Ce qui est déjà bien (à garder / à réutiliser comme modèle)</h4>
+    <ul>
+      <li><b>Relais Tokens</b> et <b>Niveaux PR</b> : modules volontairement en développement, avec un message clair et aucun solde fictif — <b>c'est la bonne façon</b> de présenter une fonctionnalité différée.</li>
+      <li><b>Tableau de bord</b> : bons états vides (« Aucune arrivée… », « Aucune activité… »), bouton « Réceptionner », et un « Workflow guichet » (Réception → Stockage → Retrait → Litige J+7) très clair.</li>
+      <li><b>Litiges J+7</b> : dossier + décision (« Retour livreur vers vendeur » / « Retour BelivaY arbitre ») — flux bien pensé, conforme à la vision.</li>
+      <li><b>Réception / Retrait</b> : écrans bien structurés — il « reste » à les brancher.</li>
+    </ul>
+  </div>
+
+  <!-- COUVERTURE -->
+  <div class="note">
+    <h4>Couverture — les 15 pages</h4>
+    <ul>
+      <li><b>Pilotage</b> : Tableau de bord (statut « Ouvert » + données démo).</li>
+      <li><b>Opérations</b> : Réception colis · Colis en stock · Retrait acheteur · Historique.</li>
+      <li><b>Qualité</b> : Trust Score PR · Relais Tokens (dev voulu) · Niveaux PR (dev voulu).</li>
+      <li><b>Gestion</b> : Finances MoMo · Capacité &amp; horaires.</li>
+      <li><b>Risque</b> : Litiges (OK) · Documents KYC.</li>
+      <li><b>Support</b> : Aide &amp; support · Notifications · Formation.</li>
+    </ul>
+  </div>
+
+  <footer>
+    BelivaY · Espace gérant point relais (Mama René · Yaoundé) — rappel complet : contenu attendu + Problème / Impact / Solution, du plus important au moins important.
+  </footer>
+
+</div>
+
+<script>
+  (function(){
+    var cards = Array.prototype.slice.call(document.querySelectorAll('.card'));
+    var boxes = cards.map(function(c){return c.querySelector('input[type=checkbox]');}).filter(Boolean);
+    var bar = document.getElementById('bar');
+    var pct = document.getElementById('pct');
+    function refresh(){
+      var done = boxes.filter(function(b){return b.checked;}).length;
+      var p = boxes.length ? Math.round(done/boxes.length*100) : 0;
+      bar.style.width = p + '%';
+      pct.textContent = p + '%';
+    }
+    cards.forEach(function(c){
+      var b = c.querySelector('input[type=checkbox]');
+      if(!b) return;
+      b.addEventListener('change', function(){ c.classList.toggle('done', b.checked); refresh(); });
+    });
+    refresh();
+  })();
+</script>
+</body>
+</html>

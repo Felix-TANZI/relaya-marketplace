@@ -36,6 +36,7 @@ DESKTOP_TABS = [
     ("Historique", "relay-rect-10-historique-desktop"),
     ("Notifications", "relay-rect-11-notifications-desktop"),
     ("Formation", "relay-rect-12-formation-desktop"),
+    ("Aide & support", "relay-rect-25-aide-support-desktop"),
 ]
 
 MOBILE_TABS = [
@@ -45,6 +46,7 @@ MOBILE_TABS = [
     ("Capacité & horaires", "relay-rect-16-capacite-mobile"),
     ("Documents KYC", "relay-rect-17-kyc-mobile"),
     ("Formation", "relay-rect-18-formation-mobile"),
+    ("Aide & support", "relay-rect-26-aide-support-mobile"),
 ]
 
 
@@ -132,6 +134,7 @@ def main():
                 ("Documents KYC", "relay-rect-22-kyc-mobile-full"),
                 ("Litiges", "relay-rect-23-litiges-mobile-full"),
                 ("Formation", "relay-rect-24-formation-mobile-full"),
+                ("Aide & support", "relay-rect-27-aide-support-mobile-full"),
             ],
         )
 

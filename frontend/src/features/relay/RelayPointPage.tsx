@@ -184,6 +184,22 @@ function fmtXaf(value: number) {
   return `${value.toLocaleString("fr-FR")} FCFA`;
 }
 
+function anonymizedBuyerRef(parcel: RelayParcel) {
+  const seed = `${parcel.order_id || parcel.id}`.padStart(4, "0").slice(-4);
+  return `BV-ACH-${seed}`;
+}
+
+function nextRelayPayoutDate(locale: "fr" | "en") {
+  const date = new Date();
+  const daysUntilFriday = (5 - date.getDay() + 7) % 7 || 7;
+  date.setDate(date.getDate() + daysUntilFriday);
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 function progressTone(value: number) {
   if (value >= 80) return "bg-emerald-500";
   if (value >= 55) return "bg-blue-600";
@@ -272,7 +288,7 @@ export default function RelayPointPage() {
         .map((parcel) => ({
           ref: `BV-${parcel.order_id}`,
           slot: parcel.slot_code || "A definir",
-          buyer: parcel.customer_phone || "Client",
+          buyer: anonymizedBuyerRef(parcel),
           age: parcel.received_at ? new Date(parcel.received_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR") : "-",
           status: parcel.status === "STORED" ? (locale === "en" ? "Stored" : "Stocke") : parcel.status,
           tone: "emerald" as const,
@@ -318,6 +334,7 @@ export default function RelayPointPage() {
   const capacityPct = Math.round((relayProfile.capacityUsed / relayProfile.capacityMax) * 100);
   const safeCapacityPct = Number.isFinite(capacityPct) ? capacityPct : 0;
   const statusTone = relayProfile.status === "Ouvert" ? "emerald" : relayProfile.status === "Suspendu" ? "red" : "amber";
+  const relayPayoutDate = nextRelayPayoutDate(locale);
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
   const handleLogout = () => {
     logout();
@@ -367,7 +384,7 @@ export default function RelayPointPage() {
       <section className="grid gap-4 md:grid-cols-4">
         {[
           ["Arrivees a confirmer", arrivals.length.toString(), PackagePlus, "Scan QR + preuves"],
-          ["Colis en stock", parcels.length.toString(), PackageCheck, "Slots anonymises"],
+          ["Colis en stock", parcels.length.toString(), PackageCheck, "Slots anonymisés"],
           ["Capacite", `${relayProfile.capacityUsed}/${relayProfile.capacityMax}`, Warehouse, `${safeCapacityPct}% utilise`],
           [ui.tabs.tokens, ui.dev, BadgeCheck, locale === "en" ? "Module pending" : "Module en cours"],
         ].map(([label, value, Icon, sub]) => (
@@ -439,8 +456,8 @@ export default function RelayPointPage() {
           <div className="space-y-3">
             {[
               ["1", "Reception livreur", "Scanner la mission, controler l'etat du colis, prendre les preuves.", QrCode],
-              ["2", "Stockage anonyme", "Attribuer un slot sans exposer le vendeur ni le detail client inutile.", Warehouse],
-              ["3", "Retrait acheteur", "Verifier le code de retrait et la piece d'identite si BelivaY l'exige.", KeyRound],
+              ["2", "Stockage anonyme", "Attribuer un slot sans exposer le vendeur ni le détail client inutile.", Warehouse],
+              ["3", "Retrait acheteur", "Vérifier le code de retrait et la pièce d'identité si BelivaY l'exige.", KeyRound],
               ["4", "Litige J+7", "Remonter tout colis bloque, endommage ou non retire.", Scale],
             ].map(([step, title, body, Icon]) => (
               <div key={step as string} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -488,15 +505,15 @@ export default function RelayPointPage() {
           <p className="mt-5 text-sm leading-6 text-slate-600">
             Le gerant scanne le QR de mission presente par le livreur, puis valide les preuves obligatoires avant stockage.
           </p>
-          <button className="mt-5 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Demarrer le scan</button>
+          <button className="mt-5 rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white">Démarrer le scan</button>
         </div>
       </Panel>
       <Panel kicker="Contrôle avant acceptation" title="Transfert de responsabilité">
         <div className="space-y-3">
           {[
-            ["QR mission", "Verifier que la mission appartient bien au reseau BelivaY.", QrCode],
-            ["Controle colis", "Etat visuel, etiquette lisible, nombre de colis conforme.", ClipboardCheck],
-            ["Photos preuve", "Face, dos et etiquette avant transfert de responsabilite.", Camera],
+            ["QR mission", "Vérifier que la mission appartient bien au réseau BelivaY.", QrCode],
+            ["Contrôle colis", "État visuel, étiquette lisible, nombre de colis conforme.", ClipboardCheck],
+            ["Photos preuve", "Face, dos et étiquette avant transfert de responsabilité.", Camera],
             ["Double signature", "Validation gerant point relais et livreur.", FileBadge2],
           ].map(([title, body, Icon]) => (
             <div key={title as string} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -606,7 +623,7 @@ export default function RelayPointPage() {
             placeholder="000000"
           />
           <button disabled={pickupCode.length !== 6} className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
-            Verifier et remettre
+            Vérifier et remettre
           </button>
         </div>
       </Panel>
@@ -614,8 +631,8 @@ export default function RelayPointPage() {
         <div className="grid gap-3 md:grid-cols-3">
           {[
             ["Code retrait", "Correspondance exacte avec le colis.", KeyRound],
-            ["Identite", "Controle CNI si requis par BelivaY.", IdCard],
-            ["Photo remise", "Preuve de remise avant cloture.", Camera],
+            ["Identité", "Contrôle CNI si requis par BelivaY.", IdCard],
+            ["Photo remise", "Preuve de remise avant clôture.", Camera],
           ].map(([title, body, Icon]) => (
             <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <Icon className="text-blue-700" size={22} />
@@ -689,11 +706,12 @@ export default function RelayPointPage() {
 
   const renderFinances = () => (
     <Panel kicker="Reversements" title="Finances MoMo">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-4">
         {[
           [Banknote, "Tarif actuel", "150 FCFA / colis", "Montant prévu par opération validée."],
           [CreditCard, "Mois courant", fmtXaf(relayProfile.monthlyRevenue), "Calculé uniquement depuis les retraits clôturés."],
           [WalletCards, "Versement", "Hebdomadaire", "Reversement MoMo après consolidation BelivaY."],
+          [Clock3, "Prochain versement", relayPayoutDate, "Échéance estimée selon le cycle hebdomadaire."],
         ].map(([Icon, label, value, body]) => (
           <div key={label as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
             <Icon className="text-blue-700 dark:text-blue-300" />
@@ -829,6 +847,13 @@ export default function RelayPointPage() {
     if (kind === "historique") {
       return (
         <Panel kicker="Traçabilité" title="Historique opérationnel">
+          <div className="mb-4 grid gap-3 md:grid-cols-4">
+            {["Aujourd'hui", "7 jours", "30 jours", "Tous statuts"].map((filter) => (
+              <button key={filter} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
+                {filter}
+              </button>
+            ))}
+          </div>
           <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
               <History className="text-blue-700 dark:text-blue-300" />
@@ -876,10 +901,10 @@ export default function RelayPointPage() {
         <Panel kicker="Alertes" title="Notifications opérationnelles">
           <div className="space-y-3">
             {[
-              ["Rappel J+6", "Prévenir avant ouverture automatique d'un litige.", "À connecter"],
-              ["Alerte capacité", "Bloquer les nouvelles affectations si le stock est plein.", "Surveillance"],
-              ["Message support", "Réponse BelivaY sur un dossier en cours.", "À connecter"],
-            ].map(([title, body, status]) => (
+              ["Rappel J+6", "Prévenir avant ouverture automatique d'un litige.", "À connecter", "Non lu"],
+              ["Alerte capacité", "Bloquer les nouvelles affectations si le stock est plein.", "Surveillance", "Lu"],
+              ["Message support", "Réponse BelivaY sur un dossier en cours.", "À connecter", "Non lu"],
+            ].map(([title, body, status, readState]) => (
               <div key={title} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex gap-3">
                   <Bell className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
@@ -888,7 +913,10 @@ export default function RelayPointPage() {
                     <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
                   </div>
                 </div>
-                <StatusPill tone="slate">{status}</StatusPill>
+                <div className="flex flex-wrap gap-2">
+                  <StatusPill tone="slate">{status}</StatusPill>
+                  <StatusPill tone={readState === "Lu" ? "emerald" : "amber"}>{readState}</StatusPill>
+                </div>
               </div>
             ))}
           </div>

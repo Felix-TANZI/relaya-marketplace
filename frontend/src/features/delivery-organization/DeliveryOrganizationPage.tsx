@@ -443,6 +443,58 @@ function formatCoverageZone(zone: string, city: string) {
   return `${normalizedCity}, ${trimmedZone}`;
 }
 
+function normalizeCoverageZones(zones: string[], city: string) {
+  const formattedZones = zones.map((zone) => formatCoverageZone(zone, city)).filter(Boolean);
+  const seen = new Set<string>();
+  const uniqueZones = formattedZones.filter((zone) => {
+    const key = zone.toUpperCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const normalizedCity = city.trim().toUpperCase();
+  const hasDetailedCityZones = uniqueZones.some((zone) => zone.toUpperCase().startsWith(`${normalizedCity},`));
+
+  if (!hasDetailedCityZones) return uniqueZones;
+  return uniqueZones.filter((zone) => zone.toUpperCase() !== normalizedCity);
+}
+
+function nextSettlementDate(locale: "fr" | "en") {
+  const date = new Date();
+  const daysUntilFriday = (5 - date.getDay() + 7) % 7 || 7;
+  date.setDate(date.getDate() + daysUntilFriday);
+  return date.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function vehicleLabel(value?: string) {
+  const labels: Record<string, string> = {
+    MOTORBIKE: "Moto",
+    CAR: "Voiture",
+    VAN: "Fourgon",
+    TRUCK: "Camion",
+    BICYCLE: "Vélo",
+  };
+  return labels[value || ""] || value || "-";
+}
+
+function missionStatusLabel(status: string, fallback: string, locale: "fr" | "en") {
+  if (locale === "en") return fallback;
+  const labels: Record<string, string> = {
+    ASSIGNED: "Assignée",
+    PICKED_UP: "Collectée",
+    IN_TRANSIT: "En transit",
+    OUT_FOR_DELIVERY: "En livraison",
+    DELIVERED: "Livrée",
+    FAILED: "Échec",
+    RETURNED: "Retournée",
+  };
+  return labels[status] || fallback;
+}
+
 function Panel({
   kicker,
   title,
@@ -510,7 +562,7 @@ export default function DeliveryOrganizationPage() {
   };
   const tabIcon = tabs.find((item) => item.id === tab)?.icon ?? Gauge;
   const ActiveIcon = tabIcon;
-  const displayZones = organization.zones.map((zone) => formatCoverageZone(zone, organization.city));
+  const displayZones = normalizeCoverageZones(organization.zones, organization.city);
   const coveredZones = displayZones.length ? displayZones : [locale === "en" ? "No covered zone declared" : "Aucune zone couverte déclarée"];
   const approvedCouriers = summary?.couriers_approved ?? couriers.filter((courier) => courier.is_approved).length;
   const onlineCouriers = summary?.couriers_online ?? couriers.filter((courier) => courier.is_online).length;
@@ -519,6 +571,7 @@ export default function DeliveryOrganizationPage() {
   const assignedMissions = missions.filter((mission) => mission.status === "ASSIGNED").length;
   const pickedUpMissions = missions.filter((mission) => ["PICKED_UP", "IN_TRANSIT"].includes(mission.status)).length;
   const outForDeliveryMissions = missions.filter((mission) => mission.status === "OUT_FOR_DELIVERY").length;
+  const payoutDate = nextSettlementDate(locale);
   const isOrgApproved = orgProfile?.status === "APPROVED";
   const isOrgSuspended = orgProfile?.status === "SUSPENDED";
   const hasContract = Boolean(orgProfile?.contract_reference?.trim());
@@ -666,10 +719,10 @@ export default function DeliveryOrganizationPage() {
                   <h3 className="font-black text-slate-950 dark:text-white">{courier.full_name || courier.username}</h3>
                   <p className="mt-1 text-xs font-semibold text-slate-500">@{courier.username} · {courier.phone || courier.email}</p>
                 </div>
-                <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? "Online" : "Offline"}</StatusPill>
+                <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? locale === "en" ? "Online" : "En ligne" : locale === "en" ? "Offline" : "Hors ligne"}</StatusPill>
               </div>
               <div className="mt-4 grid gap-2">
-                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={courier.vehicle_type || "-"} icon={Truck} />
+                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={vehicleLabel(courier.vehicle_type)} icon={Truck} />
                 <Field label={locale === "en" ? "City" : "Ville"} value={courier.city || "-"} icon={Map} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -694,7 +747,7 @@ export default function DeliveryOrganizationPage() {
                   <div className="font-black text-slate-950 dark:text-white">{courier.full_name || courier.username}</div>
                   <div className="mt-1 text-xs font-semibold text-slate-500">@{courier.username} · {courier.phone || courier.email}</div>
                 </div>
-                <div className="font-bold text-slate-700 dark:text-slate-200">{courier.vehicle_type || "-"}</div>
+                <div className="font-bold text-slate-700 dark:text-slate-200">{vehicleLabel(courier.vehicle_type)}</div>
                 <div className="flex flex-wrap gap-1">
                   {(courier.zones.length ? courier.zones.map((zone) => formatCoverageZone(zone, courier.city || organization.city)) : ["-"]).slice(0, 3).map((zone) => (
                     <span key={zone} className="rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">{zone}</span>
@@ -743,11 +796,11 @@ export default function DeliveryOrganizationPage() {
                   <h3 className="font-black text-slate-950 dark:text-white">{mission.reference}</h3>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{mission.city} · {mission.delivery_address}</p>
                 </div>
-                <StatusPill>{mission.status_display}</StatusPill>
+                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
               </div>
               <div className="mt-4 grid gap-2">
                 <Field label={locale === "en" ? "Courier" : "Livreur"} value={mission.courier?.full_name || "-"} icon={Users} />
-                <Field label={locale === "en" ? "Vehicle" : "Moyen"} value={mission.courier?.vehicle_type || "-"} icon={Truck} />
+                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={vehicleLabel(mission.courier?.vehicle_type)} icon={Truck} />
                 <Field label={locale === "en" ? "Updated" : "Mise à jour"} value={new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")} icon={Clock3} />
               </div>
               {mission.vendor_names.length ? (
@@ -779,7 +832,7 @@ export default function DeliveryOrganizationPage() {
                   <div className="mt-1 line-clamp-1 text-xs text-slate-500">{mission.delivery_address}</div>
                   {mission.vendor_names.length ? <div className="mt-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300">{mission.vendor_names.join(", ")}</div> : null}
                 </div>
-                <StatusPill>{mission.status_display}</StatusPill>
+                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
                 <div className="text-xs font-semibold text-slate-500">{new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}</div>
               </div>
             ))}
@@ -865,7 +918,7 @@ export default function DeliveryOrganizationPage() {
                       <div className="font-black text-slate-950 dark:text-white">{mission.reference}</div>
                       <div className="mt-1 text-sm text-slate-500">{mission.city} · {mission.courier?.full_name || "-"}</div>
                     </div>
-                    <StatusPill>{mission.status_display}</StatusPill>
+                    <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
                   </div>
                 ))}
                 {missions.length === 0 ? <EmptyState>{locale === "en" ? "No active mission for this organization yet." : "Aucune mission active pour cette organisation."}</EmptyState> : null}
@@ -895,9 +948,9 @@ export default function DeliveryOrganizationPage() {
                   <div key={courier.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                     <div>
                       <div className="font-black text-slate-950 dark:text-white">{courier.full_name}</div>
-                      <div className="mt-1 text-xs font-semibold text-slate-500">{courier.city} · {courier.vehicle_type}</div>
+                      <div className="mt-1 text-xs font-semibold text-slate-500">{courier.city} · {vehicleLabel(courier.vehicle_type)}</div>
                     </div>
-                    <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? "Online" : "Offline"}</StatusPill>
+                    <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? locale === "en" ? "Online" : "En ligne" : locale === "en" ? "Offline" : "Hors ligne"}</StatusPill>
                   </div>
                 ))}
                 {couriers.length === 0 ? <EmptyState>{locale === "en" ? "No courier attached yet." : "Aucun livreur rattaché pour le moment."}</EmptyState> : null}
@@ -1021,7 +1074,7 @@ export default function DeliveryOrganizationPage() {
               </button>
               <button type="button" onClick={toggleTheme} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
                 <span className="flex items-center gap-3">{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}{locale === "en" ? "Display theme" : "Thème d'affichage"}</span>
-                <StatusPill>{theme === "dark" ? "Dark" : "Light"}</StatusPill>
+                <StatusPill>{theme === "dark" ? locale === "en" ? "Dark" : "Sombre" : locale === "en" ? "Light" : "Clair"}</StatusPill>
               </button>
               <button type="button" onClick={handleLogout} className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-left font-bold text-red-700 transition hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30">
                 <span className="flex items-center gap-3"><LogOut size={18} />{ui.shell.logout}</span>
@@ -1030,7 +1083,7 @@ export default function DeliveryOrganizationPage() {
           </Panel>
           <Panel kicker={locale === "en" ? "Account" : "Compte"} title={locale === "en" ? "Profile summary" : "Résumé du profil"}>
             <div className="space-y-3">
-              <Field label="Username" value={user?.username || "-"} icon={UserCircle} />
+              <Field label={locale === "en" ? "Username" : "Identifiant"} value={user?.username || "-"} icon={UserCircle} />
               <Field label={locale === "en" ? "Organization" : "Organisation"} value={organization.name} icon={Building2} />
               <Field label={locale === "en" ? "Partner status" : "Statut partenaire"} value={organization.status} icon={ShieldCheck} />
             </div>
@@ -1114,9 +1167,33 @@ export default function DeliveryOrganizationPage() {
           <section className="grid gap-4 md:grid-cols-4">
             <WorkCard title={locale === "en" ? "To settle" : "À régler"} value="0 FCFA" body={locale === "en" ? "Validated missions pending payout." : "Missions validées en attente de règlement."} icon={WalletCards} />
             <WorkCard title={locale === "en" ? "Paid" : "Payé"} value="0 FCFA" body={locale === "en" ? "Closed settlements by period." : "Règlements clôturés par période."} icon={CheckCircle2} />
-            <WorkCard title={locale === "en" ? "Next payout" : "Prochaine échéance"} value={hasContract ? locale === "en" ? "By contract" : "Selon contrat" : locale === "en" ? "Pending" : "En attente"} body={locale === "en" ? "Frequency comes from the negotiated contract." : "La fréquence vient du contrat négocié."} icon={Clock3} />
-            <WorkCard title={locale === "en" ? "Payment method" : "Moyen paiement"} value={locale === "en" ? "To connect" : "À connecter"} body={locale === "en" ? "Mobile Money or bank transfer." : "Mobile Money ou virement."} icon={CreditCard} />
+            <WorkCard title={locale === "en" ? "Next payout" : "Prochaine échéance"} value={hasContract ? payoutDate : locale === "en" ? "Pending" : "En attente"} body={locale === "en" ? "Estimated from the weekly contract cycle." : "Estimée depuis le cycle hebdomadaire du contrat."} icon={Clock3} />
+            <WorkCard title={locale === "en" ? "Payment method" : "Moyen paiement"} value={locale === "en" ? "To configure" : "À configurer"} body={locale === "en" ? "Mobile Money or bank transfer." : "Mobile Money ou virement."} icon={CreditCard} />
           </section>
+          <Panel kicker={locale === "en" ? "Payment method" : "Moyen de paiement"} title={locale === "en" ? "Settlement account" : "Compte de règlement"}>
+            <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+              <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5 dark:border-cyan-900 dark:bg-cyan-950/40">
+                <CreditCard className="text-cyan-700 dark:text-cyan-300" />
+                <h3 className="mt-4 font-black text-cyan-950 dark:text-cyan-50">
+                  {locale === "en" ? "Mobile Money / bank transfer" : "Mobile Money / virement"}
+                </h3>
+                <p className="mt-2 text-sm leading-6 text-cyan-950/75 dark:text-cyan-100/80">
+                  {locale === "en"
+                    ? "The company must add a settlement account before payouts can be executed."
+                    : "L'entreprise doit ajouter un compte de règlement avant l'exécution des paiements."}
+                </p>
+                <button className="mt-4 rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white">
+                  {locale === "en" ? "Add payment method" : "Ajouter un moyen de paiement"}
+                </button>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <Field label={locale === "en" ? "Operator" : "Opérateur"} value={locale === "en" ? "Orange Money / MTN MoMo / Bank" : "Orange Money / MTN MoMo / Banque"} icon={WalletCards} />
+                <Field label={locale === "en" ? "Account number" : "Numéro de compte"} value={locale === "en" ? "To complete" : "À compléter"} icon={CreditCard} />
+                <Field label={locale === "en" ? "Holder name" : "Titulaire"} value={organization.name} icon={Building2} />
+                <Field label={locale === "en" ? "Validation" : "Validation"} value={locale === "en" ? "BelivaY verification required" : "Vérification BelivaY requise"} icon={ShieldCheck} />
+              </div>
+            </div>
+          </Panel>
           <Panel kicker={locale === "en" ? "Reconciliation" : "Rapprochement"} title={locale === "en" ? "Settlement history" : "Historique des règlements"}>
             <EmptyState>
               {locale === "en"

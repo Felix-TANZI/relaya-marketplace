@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   Flame,
   Home as HomeIcon,
@@ -16,10 +18,9 @@ import {
   Sparkles,
   Smartphone,
   Star,
-  Truck,
   X,
 } from "lucide-react";
-import ProductCard from "@/components/product/ProductCard";
+import CatalogProductCard from "@/components/product/CatalogProductCard";
 import {
   productsApi,
   type Category,
@@ -158,7 +159,7 @@ export default function CatalogPage() {
         setCategoriesLoading(true);
         const response = await productsApi.listCategories();
         setCategories(response.results || []);
-      } catch (fetchError) {
+      } catch {
         // silenced
       } finally {
         setCategoriesLoading(false);
@@ -188,7 +189,7 @@ export default function CatalogPage() {
         const response: ProductListResponse = await productsApi.list(params);
         setProducts(response.results || []);
         setTotalCount(response.count || 0);
-      } catch (fetchError) {
+      } catch {
         // silenced
         setError(t('catalog_page.load_error'));
       } finally {
@@ -197,7 +198,7 @@ export default function CatalogPage() {
     };
 
     fetchProducts();
-  }, [searchQuery, selectedCategory, priceRange, sortBy, currentPage, inStockOnly]);
+  }, [searchQuery, selectedCategory, priceRange, sortBy, currentPage, inStockOnly, t]);
 
   const toggleCategory = (categoryId: number) => {
     setExpandedCategories((previous) =>
@@ -693,51 +694,63 @@ export default function CatalogPage() {
             ) : (
               <>
                 <div
-                  data-tutorial="catalog-products"
-                  className="grid grid-cols-1 gap-4 min-[480px]:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
-                >
-                  {visibleProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} showPromo />
-                  ))}
-                </div>
+  data-tutorial="catalog-products"
+  className="grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5"
+>
+  {visibleProducts.map((product) => (
+    <CatalogProductCard key={product.id} product={product} showPromo />
+  ))}
+</div>
 
                 {totalPages > 1 && (
-                  <div className="mt-10 flex flex-wrap items-center justify-center gap-2">
-                    {currentPage > 1 && (
-                      <button
-                        onClick={() => setCurrentPage(currentPage - 1)}
-                        className="rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                      >
-                        {t('catalog_page.previous')}
-                      </button>
-                    )}
+  <div className="mt-8 flex flex-col items-center gap-3">
+    <div className="flex items-center gap-1.5">
+      <button
+        onClick={() => { setCurrentPage(Math.max(1, currentPage - 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        disabled={currentPage === 1}
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-primary hover:text-primary disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+        aria-label="Page précédente"
+      >
+        <ChevronLeft size={16} />
+      </button>
 
-                    {Array.from({ length: Math.min(totalPages, 5) }, (_, index) => index + 1).map(
-                      (page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`h-10 w-10 rounded-2xl text-sm font-semibold transition-all ${
-                            currentPage === page
-                              ? "bg-primary text-white shadow-lg shadow-primary/20"
-                              : "border border-gray-200 bg-white text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ),
-                    )}
+      {(() => {
+        const pages: (number | "dots")[] = [];
+        for (let p = 1; p <= totalPages; p++) {
+          if (p === 1 || p === totalPages || (p >= currentPage - 1 && p <= currentPage + 1)) pages.push(p);
+          else if (pages[pages.length - 1] !== "dots") pages.push("dots");
+        }
+        return pages.map((p, i) =>
+          p === "dots" ? (
+            <span key={`d${i}`} className="px-1 text-sm text-gray-400">…</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => { setCurrentPage(p); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+              className={`h-9 min-w-[36px] rounded-xl px-2 text-sm font-semibold transition ${
+                currentPage === p
+                  ? "bg-primary text-white shadow"
+                  : "border border-gray-200 bg-white text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+              }`}
+            >
+              {p}
+            </button>
+          ),
+        );
+      })()}
 
-                    {currentPage < totalPages && (
-                      <button
-                        onClick={() => setCurrentPage(currentPage + 1)}
-                        className="rounded-2xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm transition-all hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
-                      >
-                        {t('catalog_page.next')}
-                      </button>
-                    )}
-                  </div>
-                )}
+      <button
+        onClick={() => { setCurrentPage(Math.min(totalPages, currentPage + 1)); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+        disabled={currentPage === totalPages}
+        className="flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 transition hover:border-primary hover:text-primary disabled:opacity-40 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
+        aria-label="Page suivante"
+      >
+        <ChevronRight size={16} />
+      </button>
+    </div>
+    <p className="text-xs text-gray-400">Page {currentPage} sur {totalPages}</p>
+  </div>
+)}
               </>
             )}
           </main>

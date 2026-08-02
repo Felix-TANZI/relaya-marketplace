@@ -20,6 +20,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/context/ToastContext';
+import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from '@/lib/phone';
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const T = {
@@ -59,6 +60,49 @@ const inp: React.CSSProperties = {
   background: T.cream, border: `1px solid ${T.border}`, color: T.text,
   borderRadius: 12, padding: '10px 14px', fontSize: 13.5, outline: 'none', width: '100%',
 };
+
+// Champ téléphone thémé (drapeau + indicatif +237 + validation opérateur).
+function PhoneFieldInline({
+  value, onChange, placeholder, disabled,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+}) {
+  const national = toNationalNumber(value);
+  const operator = detectOperator(national);
+  const filled = national.length > 0;
+  const valid = !filled || isValidNationalNumber(national, CAMEROON);
+  return (
+    <>
+      <div style={{ position: 'relative' }}>
+        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 13, fontWeight: 700, color: T.muted, pointerEvents: 'none' }}>
+          <span style={{ fontSize: 15, lineHeight: 1 }}>{CAMEROON.flag}</span>+237
+        </span>
+        <input
+          type="tel"
+          inputMode="tel"
+          value={formatNational(national)}
+          onChange={(e) => onChange(toE164(toNationalNumber(e.target.value)))}
+          placeholder={placeholder ?? '6XX XX XX XX'}
+          disabled={disabled}
+          style={{ ...inp, paddingLeft: 74, paddingRight: operator && valid ? 64 : 14, border: `1px solid ${!valid ? T.red : T.border}` }}
+        />
+        {operator && valid && (
+          <span style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 11, fontWeight: 700, color: T.muted, background: T.creamAlt, borderRadius: 6, padding: '2px 6px', pointerEvents: 'none' }}>
+            {operator.name}
+          </span>
+        )}
+      </div>
+      {!valid && (
+        <p style={{ fontSize: 11, marginTop: 4, color: T.red }}>
+          Numéro invalide — 9 chiffres et un préfixe opérateur valide requis.
+        </p>
+      )}
+    </>
+  );
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface VendorData {
@@ -451,16 +495,17 @@ export default function SellerSettingsPage() {
   // ── 2FA ──────────────────────────────────────────────────────────────────────
   const handleOTPVerified = async (code: string) => {
     try {
-      const token = localStorage.getItem('access_token');
       if (otpPurpose === '2FA_ENABLE') {
-        const res = await fetch('/api/auth/2fa/enable/', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ code, method: twoFAMethod, phone: twoFAPhone }),
-        });
-        const data = await res.json() as Record<string, unknown>;
-        if (!res.ok) { showToast((data.detail as string) || 'Code incorrect', 'error'); return; }
-        showToast('Double authentification activée', 'success');
+        try {
+          await http('/api/auth/2fa/enable/', {
+            method: 'POST',
+            body: JSON.stringify({ code, method: twoFAMethod, phone: twoFAPhone }),
+          });
+          showToast('Double authentification activée', 'success');
+        } catch (e) {
+          showToast(e instanceof Error ? e.message : 'Code incorrect', 'error');
+          return;
+        }
       }
       setShowOTPModal(false);
       load(); loadSessions();
@@ -471,14 +516,6 @@ export default function SellerSettingsPage() {
     if (!disablePwd) { showToast('Entrez votre mot de passe pour confirmer', 'error'); return; }
     try {
       setDisabling2FA(true);
-      const token = localStorage.getItem('access_token');
-      const res = await fetch('/api/auth/2fa/disable/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ password: disablePwd }),
-      });
-      const data = await res.json() as Record<string, unknown>;
-      if (!res.ok) { showToast((data.detail as string) || 'Mot de passe incorrect', 'error'); return; }
       showToast('Double authentification désactivée', 'success');
       setDisablePwd('');
       load();
@@ -646,7 +683,7 @@ export default function SellerSettingsPage() {
         </div>
         <div className="mb-3">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('seller_settings.phone')}</label>
-          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+237 6XX XXX XXX" style={inp}/>
+          <PhoneFieldInline value={phone} onChange={setPhone} />
         </div>
         <div className="mb-5">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
@@ -917,8 +954,7 @@ export default function SellerSettingsPage() {
                     Vérification à venir
                   </span>
                 </label>
-                <input value={twoFAPhone} onChange={e => setTwoFAPhone(e.target.value)}
-                  placeholder="+237 6XX XXX XXX" style={inp}/>
+                <PhoneFieldInline value={twoFAPhone} onChange={setTwoFAPhone} />
                 <p className="text-[11px] mt-1" style={{ color: T.mutedL }}>
                   Ce numéro sera vérifié par code SMS lors de l'activation complète.
                 </p>
@@ -1063,7 +1099,7 @@ export default function SellerSettingsPage() {
         </div>
         <div className="mb-5">
           <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Numéro Mobile Money</label>
-          <input value={momoPhone} onChange={e => setMomoPhone(e.target.value)} placeholder="+237 6XX XXX XXX" style={inp}/>
+          <PhoneFieldInline value={momoPhone} onChange={setMomoPhone} />
         </div>
         <button type="button" onClick={handleSaveMomo} disabled={savingMomo || !momoOp || !momoPhone}
           className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"

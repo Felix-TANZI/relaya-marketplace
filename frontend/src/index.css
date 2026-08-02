@@ -209,3 +209,19 @@
     opacity: 0.9;
   }
 }
+
+.belivay-client,
+.belivay-client h1,
+.belivay-client h2,
+.belivay-client h3,
+.belivay-client h4,
+.belivay-client h5,
+.belivay-client h6,
+.belivay-client .font-display,
+.belivay-client .font-vendor-display,
+.belivay-client button,
+.belivay-client input,
+.belivay-client select,
+.belivay-client textarea {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}

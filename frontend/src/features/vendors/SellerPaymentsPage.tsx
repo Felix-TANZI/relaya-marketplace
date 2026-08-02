@@ -24,6 +24,7 @@ import {
 } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 import { fmtXAF, fmtDate, orderRef, openInvoice } from './orderUtils';
+import { CAMEROON, detectOperator, isValidNationalNumber } from '@/lib/phone';
 
 // ─────────────────────────────────────────────────────────────
 // TOKENS DESIGN
@@ -237,7 +238,14 @@ export default function SellerPaymentsPage() {
   const minAmount  = summary?.minimum_withdrawal_xaf ?? 1000;
   const solde      = summary?.total_released_xaf ?? 0;
   const hasPending = !!summary?.pending_withdrawal;
-  const canWithdraw = !hasPending && amountNum >= minAmount && amountNum <= solde && phone.length >= 9;
+
+  const phoneOperator = detectOperator(phone);
+  const phoneValid = isValidNationalNumber(phone, CAMEROON);
+  const expectedOperator = operator === 'ORANGE_MONEY' ? 'Orange' : 'MTN';
+  const operatorMismatch = phoneValid && phoneOperator !== null && phoneOperator.name !== expectedOperator;
+  const phoneOk = phoneValid && !operatorMismatch;
+
+  const canWithdraw = !hasPending && amountNum >= minAmount && amountNum <= solde && phoneOk;
 
   const handleWithdraw = async () => {
     if (!canWithdraw) return;
@@ -530,8 +538,8 @@ export default function SellerPaymentsPage() {
               Votre numéro {operator === 'ORANGE_MONEY' ? 'Orange Money' : 'MTN MoMo'}
             </label>
             <div className="relative">
-              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[13px] font-bold"
-                style={{ color: T.muted }}>+237</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1 text-[13px] font-bold"
+                style={{ color: T.muted }}><span className="text-[15px] leading-none">{CAMEROON.flag}</span>+237</span>
               <input
                 type="tel"
                 maxLength={9}
@@ -539,18 +547,28 @@ export default function SellerPaymentsPage() {
                 onChange={e => setPhone(e.target.value.replace(/\D/g, ''))}
                 placeholder="690 000 000"
                 disabled={hasPending}
-                className="w-full rounded-xl pl-14 pr-4 py-3 text-[14px] font-bold outline-none transition-all"
+                className="w-full rounded-xl pl-[4.75rem] pr-4 py-3 text-[14px] font-bold outline-none transition-all"
                 style={{
                   background:    hasPending ? T.creamAlt : T.cream,
-                  border:        `1px solid ${T.border}`,
+                  border:        `1px solid ${operatorMismatch || (phone.length > 0 && !phoneValid) ? '#ef4444' : T.border}`,
                   color:         T.text,
                   letterSpacing: '0.05em',
                 }}
               />
             </div>
-            <p className="text-[10.5px] mt-1" style={{ color: T.mutedL }}>
-              Format : 690 000 000 (Orange) ou 680 000 000 (MTN)
-            </p>
+            {phone.length > 0 && !phoneValid ? (
+              <p className="text-[10.5px] mt-1" style={{ color: '#ef4444' }}>
+                Numéro invalide — 9 chiffres et un préfixe opérateur valide requis.
+              </p>
+            ) : operatorMismatch ? (
+              <p className="text-[10.5px] mt-1" style={{ color: '#ef4444' }}>
+                Ce numéro semble être {phoneOperator?.name}, mais vous avez choisi {expectedOperator === 'Orange' ? 'Orange Money' : 'MTN MoMo'}.
+              </p>
+            ) : (
+              <p className="text-[10.5px] mt-1" style={{ color: T.mutedL }}>
+                Format : 690 000 000 (Orange) ou 680 000 000 (MTN)
+              </p>
+            )}
           </div>
 
           {/* Montant + aperçu */}

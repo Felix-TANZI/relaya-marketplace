@@ -243,6 +243,18 @@ export default function Header() {
     setSearchFilterOpen(false);
   };
 
+  // Palette de la barre de recherche — suit le thème clair/sombre
+  const isDark = theme === "dark";
+  const searchBarStyles = {
+    border: isDark ? "#1F2937" : "#E5E7EB",
+    background: isDark ? "#111827" : "#fff",
+    text: isDark ? "#F9FAFB" : "#1F2937",
+    sideButtonBg: isDark ? "#0F1626" : "#F9FAFB",
+    sideButtonBgHover: isDark ? "#1B2436" : "#F3F4F6",
+    icon: isDark ? "#D1D5DB" : "#4B5563",
+    iconMuted: isDark ? "#6B7280" : "#9CA3AF",
+  };
+
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
   const clientNavItems = [
@@ -279,10 +291,10 @@ export default function Header() {
               className="search-bar-v29 flex w-full"
               style={{
                 height: "42px",
-                border: "1.5px solid #E5E7EB",
+                border: `1.5px solid ${searchBarStyles.border}`,
                 borderRadius: "10px",
                 overflow: "hidden",
-                background: "#fff",
+                background: searchBarStyles.background,
                 transition: "border-color 150ms, box-shadow 150ms",
               }}
               onFocus={(e) => {
@@ -293,7 +305,7 @@ export default function Header() {
               onBlur={(e) => {
                 if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                   const el = e.currentTarget;
-                  el.style.borderColor = "#E5E7EB";
+                  el.style.borderColor = searchBarStyles.border;
                   el.style.boxShadow = "none";
                 }
               }}
@@ -306,18 +318,22 @@ export default function Header() {
                 aria-label="Ouvrir les filtres"
                 style={{
                   padding: "0 12px",
-                  background: "#F9FAFB",
-                  borderRight: "1.5px solid #E5E7EB",
+                  background: searchBarStyles.sideButtonBg,
+                  borderRight: `1.5px solid ${searchBarStyles.border}`,
                   flexShrink: 0,
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
                   transition: "background 150ms",
-                  color: "#4B5563",
+                  color: searchBarStyles.icon,
                 }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "#F3F4F6")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "#F9FAFB")}
+                onMouseEnter={(e) =>
+                  (e.currentTarget.style.background = searchBarStyles.sideButtonBgHover)
+                }
+                onMouseLeave={(e) =>
+                  (e.currentTarget.style.background = searchBarStyles.sideButtonBg)
+                }
               >
                 <Filter size={15} strokeWidth={2.5} />
               </button>
@@ -330,11 +346,12 @@ export default function Header() {
                 onKeyDown={handleSearchKey}
                 placeholder={t("header.search_placeholder") || "Rechercher votre produit"}
                 aria-label="Rechercher"
+                className="placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 style={{
                   flex: 1,
                   padding: "0 12px",
                   fontSize: "13.5px",
-                  color: "#1F2937",
+                  color: searchBarStyles.text,
                   background: "transparent",
                   border: "none",
                   outline: "none",
@@ -356,11 +373,11 @@ export default function Header() {
                   alignItems: "center",
                   justifyContent: "center",
                   cursor: "pointer",
-                  color: "#9CA3AF",
+                  color: searchBarStyles.iconMuted,
                   transition: "color 150ms",
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "#F47920")}
-                onMouseLeave={(e) => (e.currentTarget.style.color = "#9CA3AF")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = searchBarStyles.iconMuted)}
               >
                 <Mic size={15} strokeWidth={2} />
               </button>
@@ -685,10 +702,10 @@ export default function Header() {
             className="flex w-full"
             style={{
               height: "40px",
-              border: "1.5px solid #E5E7EB",
+              border: `1.5px solid ${searchBarStyles.border}`,
               borderRadius: "10px",
               overflow: "hidden",
-              background: "#fff",
+              background: searchBarStyles.background,
             }}
           >
             <button
@@ -696,13 +713,13 @@ export default function Header() {
               onClick={() => setSearchFilterOpen((open) => !open)}
               style={{
                 width: "42px",
-                background: "#F9FAFB",
-                borderRight: "1.5px solid #E5E7EB",
+                background: searchBarStyles.sideButtonBg,
+                borderRight: `1.5px solid ${searchBarStyles.border}`,
                 flexShrink: 0,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                color: "#4B5563",
+                color: searchBarStyles.icon,
                 cursor: "pointer",
               }}
             >
@@ -714,11 +731,12 @@ export default function Header() {
               onChange={(e) => setSearchQuery(e.target.value)}
               onKeyDown={handleSearchKey}
               placeholder={t("header.search_placeholder") || "Rechercher votre produit"}
+              className="placeholder:text-gray-400 dark:placeholder:text-gray-500"
               style={{
                 flex: 1,
                 padding: "0 12px",
                 fontSize: "13px",
-                color: "#1F2937",
+                color: searchBarStyles.text,
                 background: "transparent",
                 border: "none",
                 outline: "none",

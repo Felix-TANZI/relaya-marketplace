@@ -1,16 +1,19 @@
 // frontend/src/context/AuthContext.tsx
-// Contexte pour la gestion de l'authentification des utilisateurs
-// Fournit des fonctions pour la connexion, l'inscription, la déconnexion et le suivi de l'état d'authentification
+// Gestion de l'authentification (login, 2FA, register, logout).
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, type User, type RegisterData } from '@/services/api/auth';
-import { clearStoredAuthTokens, getStoredAccessToken } from '@/lib/authTokens';
+
+type LoginOutcome =
+  | { twoFactorRequired: false }
+  | { twoFactorRequired: true; userId: number; email: string };
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>; 
+  login: (username: string, password: string) => Promise<LoginOutcome>;
+  verify2FA: (userId: number, code: string) => Promise<void>;
+  register: (data: RegisterData) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
 }
@@ -21,62 +24,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Charger l'utilisateur au démarrage
   useEffect(() => {
     const loadUser = async () => {
-      const token = getStoredAccessToken();
+      const token = localStorage.getItem('access_token');
       if (token) {
-        try {
-          const userData = await authApi.me();
-          setUser(userData);
-        } catch {
-          clearStoredAuthTokens();
+        try { setUser(await authApi.me()); }
+        catch {
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
         }
       }
       setLoading(false);
     };
-
     loadUser();
   }, []);
 
-  const login = async (username: string, password: string) => {
-    const response = await authApi.login({ username, password });
-    localStorage.setItem('access_token', response.access);
-    localStorage.setItem('refresh_token', response.refresh);
-    
-    const userData = await authApi.me();
-    setUser(userData);
+  const applyTokens = async (access: string, refresh: string) => {
+    localStorage.setItem('access_token', access);
+    localStorage.setItem('refresh_token', refresh);
+    setUser(await authApi.me());
   };
 
-  const register = async (data: RegisterData) => { 
+  const login = async (username: string, password: string): Promise<LoginOutcome> => {
+    const response = await authApi.login({ username, password });
+    if ('2fa_required' in response) {
+      return { twoFactorRequired: true, userId: response.user_id, email: response.email };
+    }
+    await applyTokens(response.access, response.refresh);
+    return { twoFactorRequired: false };
+  };
+
+  const verify2FA = async (userId: number, code: string): Promise<void> => {
+    const tokens = await authApi.verify2FALogin(userId, code);
+    await applyTokens(tokens.access, tokens.refresh);
+  };
+
+  const register = async (data: RegisterData) => {
     await authApi.register(data);
-    // Auto-login après register
-    await login(data.username, data.password);
+    await login(data.username, data.password); // nouveau compte → jamais de 2FA
   };
 
   const logout = () => {
-    // Clear auth tokens
-    clearStoredAuthTokens();
-    // Clear user-specific data to prevent session leakage
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('belivay_favorite_product_ids');
     localStorage.removeItem('belivay_notif_count');
     localStorage.removeItem('belivay-profile-avatar');
     setUser(null);
-    // Notify other components
     window.dispatchEvent(new Event('belivay-favorites-updated'));
     window.dispatchEvent(new Event('belivay-avatar-updated'));
   };
 
   return (
     <AuthContext.Provider
-      value={{
-        user,
-        loading,
-        login,
-        register,
-        logout,
-        isAuthenticated: !!user,
-      }}
+      value={{ user, loading, login, verify2FA, register, logout, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

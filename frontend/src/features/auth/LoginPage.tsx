@@ -1,14 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, ShieldCheck } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 
 export default function LoginPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, verify2FA } = useAuth();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -16,20 +16,56 @@ export default function LoginPage() {
     username: '',
     password: '',
   });
+  const [twoFA, setTwoFA] = useState<{ userId: number; email: string } | null>(null);
+  const [code, setCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      await login(formData.username, formData.password);
-      showToast(t('auth.login_success') || 'Connexion réussie !', 'success');
-      navigate('/');
+      const res = await login(formData.username, formData.password);
+      if (res.twoFactorRequired) {
+        setTwoFA({ userId: res.userId, email: res.email });
+        setCode('');
+        showToast(`Un code de vérification a été envoyé à ${res.email}`, 'success');
+      } else {
+        showToast(t('auth.login_success') || 'Connexion réussie !', 'success');
+        navigate('/');
+      }
     } catch (error) {
       console.error('Login error:', error);
       showToast(t('auth.login_error'), 'error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!twoFA || code.trim().length < 6) { showToast('Entrez le code à 6 chiffres.', 'error'); return; }
+    setVerifying(true);
+    try {
+      await verify2FA(twoFA.userId, code.trim());
+      showToast(t('auth.login_success') || 'Connexion réussie !', 'success');
+      navigate('/');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Code invalide.', 'error');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await login(formData.username, formData.password); // renvoie un nouveau code
+      showToast('Nouveau code envoyé.', 'success');
+    } catch {
+      showToast('Impossible de renvoyer le code.', 'error');
+    } finally {
+      setResending(false);
     }
   };
 
@@ -94,6 +130,7 @@ export default function LoginPage() {
 
           {/* Form Card - Glassmorphism TRÈS transparent */}
           <div className="backdrop-blur-2xl bg-white/40 rounded-3xl p-8 shadow-2xl border border-white/20">
+            {!twoFA && (
             <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email/Username */}
               <div className="space-y-2">
@@ -182,6 +219,45 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+            )}
+
+            {twoFA && (
+            <form onSubmit={handleVerify} className="space-y-5">
+              <div className="flex items-center gap-2 justify-center">
+                <ShieldCheck size={20} className="text-primary" />
+                <h2 className="text-lg font-bold text-gray-900" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}>
+                  Vérification en deux étapes
+                </h2>
+              </div>
+              <p className="text-center text-sm text-gray-800" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.6)' }}>
+                Un code à 6 chiffres a été envoyé à <span className="font-semibold">{twoFA.email}</span>.
+              </p>
+              <input
+                type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6}
+                value={code}
+                onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                disabled={verifying}
+                className="w-full text-center tracking-[0.5em] text-2xl font-bold py-3.5 rounded-xl backdrop-blur-xl bg-white/30 border border-white/40 focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/30 focus:bg-white/40 transition-all text-gray-900 placeholder:text-gray-500"
+              />
+              <button type="submit" disabled={verifying || code.length < 6}
+                className="w-full py-3.5 bg-primary hover:bg-primary-dark text-white font-semibold rounded-xl transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg hover:shadow-xl">
+                {verifying
+                  ? <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  : (<>Vérifier <ArrowRight size={20} /></>)}
+              </button>
+              <div className="flex items-center justify-between text-sm">
+                <button type="button" onClick={() => { setTwoFA(null); setCode(''); }}
+                  className="text-gray-800 hover:text-primary font-semibold" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}>
+                  ← Retour
+                </button>
+                <button type="button" onClick={handleResend} disabled={resending}
+                  className="text-primary hover:underline font-semibold disabled:opacity-50" style={{ textShadow: '0 1px 3px rgba(255,255,255,0.7)' }}>
+                  {resending ? 'Envoi…' : 'Renvoyer le code'}
+                </button>
+              </div>
+            </form>
+            )}
           </div>
 
           {/* Back to Home */}

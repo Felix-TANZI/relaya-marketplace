@@ -115,6 +115,14 @@ export interface TokenResponse {
   refresh: string;
 }
 
+export interface TwoFactorRequired {
+  '2fa_required': true;
+  user_id: number;
+  email: string;
+}
+
+export type LoginResult = TokenResponse | TwoFactorRequired;
+
 export interface UpdateProfileData {
   email?: string;
   first_name?: string;
@@ -127,13 +135,29 @@ export interface UpdateProfileData {
 
 export const authApi = {
   /**
-   * Connexion utilisateur
+   * Connexion — renvoie soit des tokens, soit un signal 2FA (2fa_required).
    */
-  login: async (credentials: LoginCredentials): Promise<TokenResponse> => {
-    return http<TokenResponse>('/api/auth/login/', {
+  login: async (credentials: LoginCredentials): Promise<LoginResult> => {
+    return http<LoginResult>('/api/auth/login/', {
       method: 'POST',
       body: JSON.stringify(credentials),
     });
+  },
+
+  /**
+   * Vérifie le code OTP de connexion (2FA) et renvoie les tokens.
+   * Fetch direct pour remonter le message d'erreur exact du backend.
+   */
+  verify2FALogin: async (userId: number, code: string): Promise<TokenResponse> => {
+    const base = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
+    const res = await fetch(`${base}/api/auth/2fa/verify-login/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, code }),
+    });
+    const data = await res.json().catch(() => ({} as Record<string, unknown>));
+    if (!res.ok) throw new Error((data.detail as string) || 'Code invalide.');
+    return data as TokenResponse;
   },
 
   /**

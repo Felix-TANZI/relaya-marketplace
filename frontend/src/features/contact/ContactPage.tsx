@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PhoneInput } from "@/components/ui/PhoneInput";
 import {
   Mail,
   Phone,
@@ -167,14 +168,11 @@ export default function ContactPage() {
                     <label className="block text-sm font-medium mb-2 text-gray-700 dark:text-gray-300">
                       {t('contact.form.phone_label')}
                     </label>
-                    <input
-                      type="tel"
+                    <PhoneInput
                       name="phone"
                       value={formData.phone}
-                      onChange={handleChange}
+                      onChange={(phone) => setFormData((prev) => ({ ...prev, phone }))}
                       required
-                      className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-all"
-                      placeholder={t('contact.form.phone_placeholder')}
                     />
                   </div>
                 </div>

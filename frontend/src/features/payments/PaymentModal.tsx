@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { PaymentProvider, PaymentTransaction } from "@/services/api/payments";
 import { initPayment } from "@/services/api/payments";
+import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from "@/lib/phone";
 
 type Props = {
   orderId: number;
@@ -10,8 +11,6 @@ type Props = {
   onClose: () => void;
   onSuccess: (tx: PaymentTransaction) => void;
 };
-
-const DEFAULT_PHONE_PREFIX = "+237";
 
 function toErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
@@ -23,26 +22,10 @@ function toErrorMessage(err: unknown): string {
   }
 }
 
-function normalizePhone(v: string) {
-  const cleaned = v.replace(/\s/g, "");
-  if (cleaned.startsWith("+237")) return cleaned;
-  if (/^\d{9}$/.test(cleaned)) return `+237${cleaned}`;
-  return cleaned;
-}
-
-function validatePhone(v: string) {
-  const cleaned = v.replace(/\s/g, "");
-  if (cleaned.startsWith("+237")) {
-    const rest = cleaned.slice(4);
-    return /^\d{9}$/.test(rest);
-  }
-  return /^\d{9}$/.test(cleaned);
-}
-
 export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose, onSuccess }: Props) {
   const { t } = useTranslation();
 
-  const initialPhone = useMemo(() => defaultPhone || DEFAULT_PHONE_PREFIX, [defaultPhone]);
+  const initialPhone = useMemo(() => toE164(toNationalNumber(defaultPhone || "")), [defaultPhone]);
 
   const [provider, setProvider] = useState<PaymentProvider>("MTN_MOMO");
   const [phone, setPhone] = useState(initialPhone);
@@ -52,7 +35,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
   const onSubmit = async () => {
     setError(null);
 
-    if (!validatePhone(phone)) {
+    if (!isValidNationalNumber(toNationalNumber(phone), CAMEROON)) {
       setError(t("payments.phoneInvalid", "Phone number is invalid."));
       return;
     }
@@ -62,7 +45,7 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
       const tx = await initPayment({
         order_id: orderId,
         provider,
-        phone: normalizePhone(phone),
+        phone: toE164(toNationalNumber(phone)),
       });
       onSuccess(tx);
     } catch (e: unknown) {
@@ -121,16 +104,50 @@ export default function PaymentModal({ orderId, defaultPhone, amountXaf, onClose
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
             {t("payments.phone", "Phone")}
           </div>
-          <input
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            placeholder={t("payments.phonePh", "+2376XXXXXXXX")}
-            style={inputStyle()}
-            disabled={submitting}
-          />
-          <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 6 }}>
-            {t("payments.phoneHint", "Example: +2376XXXXXXXX or 6XXXXXXXX")}
-          </div>
+          {(() => {
+            const national = toNationalNumber(phone);
+            const op = detectOperator(national);
+            const valid = national.length === 0 || isValidNationalNumber(national, CAMEROON);
+            return (
+              <>
+                <div style={{ display: "flex", alignItems: "stretch", gap: 8 }}>
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4,
+                      border: "1px solid var(--border)",
+                      background: "var(--bg)",
+                      color: "var(--text)",
+                      borderRadius: 12,
+                      padding: "10px 12px",
+                      fontWeight: 700,
+                      whiteSpace: "nowrap",
+                    }}
+                    title={CAMEROON.name}
+                  >
+                    <span style={{ fontSize: 16, lineHeight: 1 }}>{CAMEROON.flag}</span>+237
+                  </span>
+                  <input
+                    value={formatNational(national)}
+                    onChange={(e) => setPhone(toE164(toNationalNumber(e.target.value)))}
+                    placeholder={t("payments.phonePh", "6XX XX XX XX")}
+                    type="tel"
+                    inputMode="tel"
+                    style={{ ...inputStyle(), border: `1px solid ${valid ? "var(--border)" : "#ef4444"}` }}
+                    disabled={submitting}
+                  />
+                </div>
+                <div style={{ fontSize: 12, color: valid ? "var(--muted)" : "#ef4444", marginTop: 6 }}>
+                  {!valid
+                    ? t("payments.phoneInvalid", "Phone number is invalid.")
+                    : op
+                      ? `${op.name} · ${t("payments.phoneHint", "Ex: 6XX XX XX XX")}`
+                      : t("payments.phoneHint", "Ex: 6XX XX XX XX")}
+                </div>
+              </>
+            );
+          })()}
         </div>
 
         <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 16 }}>

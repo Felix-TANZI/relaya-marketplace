@@ -11,6 +11,7 @@ import {
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
+import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from '@/lib/phone';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -337,9 +338,29 @@ export default function UserCreatePage() {
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
                   Téléphone <span style={{ color: T.red }}>*</span>
                 </label>
-                <input value={form.phone} onChange={e => fld('phone', e.target.value)}
-                  placeholder="+237 6XX XXX XXX"
-                  style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
+                {(() => {
+                  const national = toNationalNumber(form.phone);
+                  const op = detectOperator(national);
+                  const valid = national.length === 0 || isValidNationalNumber(national, CAMEROON);
+                  return (
+                    <>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', display: 'flex', alignItems: 'center', gap: 3, fontSize: 12.5, fontWeight: 700, color: T.muted, pointerEvents: 'none' }}>
+                          <span style={{ fontSize: 14, lineHeight: 1 }}>{CAMEROON.flag}</span>+237
+                        </span>
+                        <input value={formatNational(national)} onChange={e => fld('phone', toE164(toNationalNumber(e.target.value)))}
+                          type="tel" inputMode="tel" placeholder="6XX XX XX XX"
+                          style={{ width: '100%', background: T.input, border: `1px solid ${valid ? T.inputBorder : T.red}`, color: T.text, borderRadius: 8, padding: '9px 12px 9px 68px', fontSize: 13, outline: 'none' }} />
+                        {op && valid && (
+                          <span style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', fontSize: 10.5, fontWeight: 700, color: T.muted, pointerEvents: 'none' }}>{op.name}</span>
+                        )}
+                      </div>
+                      {!valid && (
+                        <span style={{ fontSize: 10.5, color: T.red, display: 'block', marginTop: 3 }}>Numéro invalide (9 chiffres + préfixe opérateur).</span>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
               <div>
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Ville</label>

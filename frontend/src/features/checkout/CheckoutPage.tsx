@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 /* ── Confetti ── */
 function launchConfetti(el: HTMLElement) {
@@ -303,7 +304,7 @@ export default function CheckoutPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label><input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} /></div>
                   <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label><input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} /></div>
-                  <div className="sm:col-span-2"><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.phone')}</label><input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder={t('checkout.phone_placeholder')} className={inputClass} /><p className="mt-1.5 text-xs text-gray-400">{t('checkout.phone_helper')}</p></div>
+                  <div className="sm:col-span-2"><PhoneInput required label={t('checkout.phone')} value={formData.phone} onChange={(phone) => setFormData({ ...formData, phone })} helperText={t('checkout.phone_helper')} /></div>
                 </div>
               </section>
             )}
@@ -325,9 +326,13 @@ export default function CheckoutPage() {
                     <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">Numéro pour le retrait</label>
-                    <input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+237 6XX XXX XXX" className={inputClass} />
-                    <p className="mt-1.5 text-xs text-gray-400">Ce numéro servira à envoyer le code et les informations de retrait.</p>
+                    <PhoneInput
+                      required
+                      label="Numéro pour le retrait"
+                      value={formData.phone}
+                      onChange={(phone) => setFormData({ ...formData, phone })}
+                      helperText="Ce numéro servira à envoyer le code et les informations de retrait."
+                    />
                   </div>
                 </div>
               </section>

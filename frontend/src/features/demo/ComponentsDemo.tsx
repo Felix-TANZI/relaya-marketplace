@@ -1,10 +1,12 @@
 // frontend/src/features/demo/ComponentsDemo.tsx
 // Composant de démonstration des composants UI Relaya
 
-import { Button, Input, Card, Badge } from "@/components/ui";
+import { useState } from "react";
+import { Button, Input, Card, Badge, PhoneInput } from "@/components/ui";
 import { Heart, Star, ShoppingCart, Zap } from "lucide-react";
 
 export default function ComponentsDemo() {
+  const [demoPhone, setDemoPhone] = useState("");
   return (
     <div className="container mx-auto px-4 py-12 space-y-16">
       <div className="text-center">
@@ -72,11 +74,11 @@ export default function ComponentsDemo() {
               type="password"
               placeholder="••••••••"
             />
-            <Input 
+            <PhoneInput
               label="Téléphone"
-              type="tel"
-              placeholder="+237 6XX XXX XXX"
-              error="Format invalide"
+              value={demoPhone}
+              onChange={setDemoPhone}
+              helperText="Sélection du pays + validation opérateur"
             />
           </div>
         </Card>

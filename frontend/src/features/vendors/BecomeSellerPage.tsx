@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Store, CheckCircle, ShieldCheck, CreditCard, HeadphonesIcon } from 'lucide-react';
 import { vendorsApi, type VendorApplication } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
+import { PhoneInput } from "@/components/ui/PhoneInput";
 
 export default function BecomeSellerPage() {
   const { t } = useTranslation();
@@ -125,8 +126,7 @@ export default function BecomeSellerPage() {
             </div>
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
-                <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('seller.phone_label')}</label>
-                <input type="tel" required value={formData.phone} onChange={(e) => setFormData({ ...formData, phone: e.target.value })} placeholder="+237 6XX XXX XXX" className={inputClass} />
+                <PhoneInput required label={t('seller.phone_label')} value={formData.phone} onChange={(phone) => setFormData({ ...formData, phone })} />
               </div>
               <div>
                 <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('seller.city_label')}</label>

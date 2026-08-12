@@ -27,6 +27,7 @@ import TrackingMap from "@/components/TrackingMap";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
+import { OrderProtectionPanel } from "@/features/payments/embeds";
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -363,6 +364,13 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+
+        <OrderProtectionPanel
+          orderId={order.id}
+          fulfillmentStatus={order.fulfillment_status}
+          onConfirmReceipt={handleConfirmReceipt}
+          onOpenDispute={handleOpenDispute}
+        />
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">

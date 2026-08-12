@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Slide {
@@ -17,7 +16,6 @@ interface PromoCarouselProps {
 }
 
 export default function PromoCarousel({ slides, autoPlayMs = 5000 }: PromoCarouselProps) {
-  const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
   const total = slides.length;
 
@@ -42,7 +40,7 @@ export default function PromoCarousel({ slides, autoPlayMs = 5000 }: PromoCarous
         {slides.map((slide, i) => (
           <div
             key={i}
-            className="relative min-w-full cursor-pointer overflow-hidden"
+            className="relative min-w-full cursor-pointer overflow-hidden sm:h-[300px]"
             style={{ background: slide.bg, minHeight: 180 }}
             onClick={() => slide.action?.()}
           >

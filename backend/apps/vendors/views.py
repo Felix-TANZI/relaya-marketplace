@@ -940,6 +940,26 @@ def vendor_withdrawal_create(request):
     Raison : gestion admin manuelle dans cette version (sans API MoMo automatique).
     Simplifie le traitement et évite les doublons / dépassements de solde.
     """
+    # ── Bascule vers le module financier ─────────────────────────────────
+    # BelivaY regle ses partenaires PAR CYCLE, pas a la demande. Deux
+    # decisions sur le meme argent — un retrait demande ici et un reglement
+    # prepare par le module financier — produiraient un double versement.
+    #
+    # Cet endpoint reste en place, desactive. Le retirer viendra avec la
+    # contraction, une fois la coexistence validee.
+    return Response(
+        {
+            'detail': (
+                "Les retraits a la demande sont desactives. BelivaY vous "
+                "regle automatiquement selon votre cycle contractuel."
+            ),
+            'code': 'WITHDRAWAL_DISABLED',
+            'see': '/api/payments/v2/partner/due/',
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+    # ── Fin de la bascule ────────────────────────────────────────────────
+
     try:
         vendor_profile = VendorProfile.objects.get(user=request.user)
         if not vendor_profile.is_active_vendor:
@@ -3289,6 +3309,27 @@ def admin_list_withdrawals(request):
 @permission_classes([IsAdminUser])
 def admin_approve_withdrawal(request, wd_id):
     """Approuve un retrait (statut → APPROVED). Admin confirme le virement MoMo effectué."""
+    # ── Bascule vers le module financier ─────────────────────────────────
+    # Approuver ici passe le statut a APPROVED SANS AUCUNE ECRITURE
+    # COMPTABLE. L'argent part manuellement par MoMo et le registre
+    # l'ignore : la reconciliation N3 le verrait comme une transaction
+    # fantome — de l'argent sorti sans contrepartie.
+    #
+    # Les versements passent desormais par PayoutRequest : double
+    # approbation, appel prestataire reel, ecriture au registre.
+    return Response(
+        {
+            'detail': (
+                "L'approbation des retraits est desactivee. Les versements "
+                "passent par le module financier : Demandes de versement "
+                "dans l'administration."
+            ),
+            'code': 'WITHDRAWAL_DISABLED',
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+    # ── Fin de la bascule ────────────────────────────────────────────────
+
     from apps.vendors.models import WithdrawalRequest
  
     try:

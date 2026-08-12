@@ -27,3 +27,12 @@ Pillow>=10.0.0,<11.0
 
 # Production Server
 gunicorn==21.2.0
+
+# Development
+pytest-django==4.11.1
+
+# Chiffrement des donnees sensibles (numeros Mobile Money)
+cryptography>=42.0,<47.0
+
+# Client HTTP — timeouts connexion/lecture distincts, indispensable pour un PSP
+requests>=2.31,<3.0

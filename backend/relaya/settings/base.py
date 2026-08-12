@@ -159,6 +159,7 @@ REST_FRAMEWORK = {
         "anon": "300/min",    # généreux : ne gêne pas la navigation
         "user": "2000/min",   # généreux pour les utilisateurs connectés
         "login": "5/min",     # strict : anti-brute-force sur /auth/login
+        "payments_webhook": "120/min", # strict : anti-spam sur les webhooks de paiement
     },
 }
 
@@ -263,6 +264,21 @@ OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:5174")
 OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Belivay Catalog Assistant")
 
 SUPPORT_EMAIL = "support@belivay.com"
+
+# ── PAIEMENTS — chiffrement des donnees sensibles ────────────────────────────
+# La cle vit UNIQUEMENT en variable d'environnement. Jamais en base,
+# jamais lisible depuis l'administration.
+PAYMENTS_ENCRYPTION_KEY = os.getenv("PAYMENTS_ENCRYPTION_KEY", "")
+# Deuxieme cle acceptee en lecture pendant une rotation.
+PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
+PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+
+# ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────
+# Jamais en base, jamais lisibles depuis l'administration.
+CAMPAY_TOKEN = os.getenv("CAMPAY_TOKEN", "")
+CAMPAY_TOKEN_SANDBOX = os.getenv("CAMPAY_TOKEN_SANDBOX", "")
+CAMPAY_TOKEN_LIVE = os.getenv("CAMPAY_TOKEN_LIVE", "")
+CAMPAY_WEBHOOK_KEY = os.getenv("CAMPAY_WEBHOOK_KEY", "")
 
 
 # ========================================

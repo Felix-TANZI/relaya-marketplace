@@ -23,7 +23,7 @@ import {
   PayoutDetailPage, PayoutsPage, ReconciliationPage, RiskPage, SchedulerPage,
 } from '@/features/payments/admin';
 import {
-  PaymentDetailPage, PaymentHistoryPage, RefundsPage,
+  PaymentCheckoutPage, PaymentDetailPage, PaymentHistoryPage, RefundsPage,
 } from '@/features/payments/buyer';
 import FinanceRoute from '@/features/payments/permissions/FinanceRoute';
 import {
@@ -93,6 +93,8 @@ export const relayPaymentRoutes = buildPayeeRoutes(
  * `features/payments/embeds/`.
  */
 export const buyerPaymentRoutes: RouteObject[] = [
+  // L'ecran de paiement reel, ou le tunnel d'achat renvoie.
+  { path: 'checkout/payment/:reference', element: <PaymentCheckoutPage /> },
   { path: 'payments', element: <PaymentHistoryPage /> },
   { path: 'payments/:reference', element: <PaymentDetailPage /> },
   { path: 'refunds', element: <RefundsPage /> },

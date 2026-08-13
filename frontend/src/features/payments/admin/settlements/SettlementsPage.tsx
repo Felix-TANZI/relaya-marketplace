@@ -148,7 +148,10 @@ export default function AdminSettlementsPage({
               </p>
               <p style={{ fontSize: 11.5, margin: '2px 0 0', color: FT.faint }}>
                 {formatPeriod(lot.period_start, lot.period_end)}
-                {lot.lines.length > 0 && ` · ${lot.lines.length} ligne${
+                {/* La liste admin ne porte pas `lines` : seul le detail les
+                    expose (AdminBatchDetailSerializer). On n'affiche donc le
+                    compte que lorsqu'il est reellement disponible. */}
+                {!!lot.lines?.length && ` · ${lot.lines.length} ligne${
                   lot.lines.length > 1 ? 's' : ''}`}
                 {/* Un lot hors cycle est une derogation : elle doit se voir. */}
                 {lot.is_exceptional && (

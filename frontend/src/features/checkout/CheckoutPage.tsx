@@ -8,27 +8,13 @@ import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
 import { PhoneInput } from "@/components/ui/PhoneInput";
 
-/* ── Confetti ── */
-function launchConfetti(el: HTMLElement) {
-  const colors = ['#F47920','#FF9D4D','#16A34A','#3B82F6','#EC4899','#FBBF24','#7C3AED','#EF4444'];
-  for (let i = 0; i < 80; i++) {
-    const p = document.createElement('div');
-    p.style.cssText = `position:absolute;top:-10px;left:${Math.random()*100}%;width:${6+Math.random()*6}px;height:${6+Math.random()*6}px;background:${colors[Math.floor(Math.random()*colors.length)]};border-radius:${Math.random()>.5?'50%':'2px'};pointer-events:none;`;
-    p.animate([
-      { transform:'translateY(0) rotate(0)', opacity:1 },
-      { transform:`translateY(${600+Math.random()*400}px) rotate(${360+Math.random()*720}deg)`, opacity:0 },
-    ], { duration:1800+Math.random()*1200, easing:'cubic-bezier(.25,.46,.45,.94)', fill:'forwards' });
-    el.appendChild(p);
-    setTimeout(() => p.remove(), 3200);
-  }
-}
-
+// Ces etapes decrivent la CREATION de la commande, pas un paiement : le
+// paiement reel se fait sur l'ecran suivant. Annoncer « paiement confirme »
+// ici serait mensonger — aucun franc n'a encore bouge.
 const PAY_STEPS = [
-  { text: "Connexion sécurisée...", pct: 15 },
-  { text: "Vérification du compte...", pct: 35 },
-  { text: "Traitement du paiement...", pct: 60 },
-  { text: "Confirmation en cours...", pct: 85 },
-  { text: "Paiement confirmé !", pct: 100 },
+  { text: "Connexion sécurisée...", pct: 25 },
+  { text: "Enregistrement de la commande...", pct: 60 },
+  { text: "Préparation du paiement...", pct: 90 },
 ];
 
 const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
@@ -85,6 +71,8 @@ export default function CheckoutPage() {
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
   const isPickup = new URLSearchParams(window.location.search).get("mode") === "pickup";
   const confettiRef = useRef<HTMLDivElement>(null);
+  // Vrai pendant la sortie du tunnel : neutralise le garde « panier vide ».
+  const [redirecting, setRedirecting] = useState(false);
   const [payOverlay, setPayOverlay] = useState(false);
   const [payStep, setPayStep] = useState(0);
 
@@ -109,8 +97,12 @@ export default function CheckoutPage() {
     paymentMethod: "momo",
     orderId: 0,
   });
-  const [step, setStep] = useState<"form" | "success">("form");
+  const [step] = useState<"form" | "success">("form");
 
+  // `items.length` n'est pas lu par la fabrique : c'est volontairement une cle
+  // de recalcul, pour relire la selection stockee quand le panier change — il
+  // peut s'hydrater apres le montage.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const selectedCheckoutIds = useMemo(() => readCheckoutSelection(), [items.length]);
   const checkoutItems = selectedCheckoutIds.length > 0
     ? items.filter((item) => selectedCheckoutIds.includes(item.id))
@@ -122,13 +114,20 @@ export default function CheckoutPage() {
   const selectedPickupCenter = pickupCenters.find((center) => center.id === formData.pickupCenterId) ?? pickupCenters[0];
 
   const runPayment = useCallback(async () => {
+    // ─────────────────────────────────────────────────────────────────────
+    // LE PAIEMENT NE SE SIMULE PLUS
+    //
+    // Cet ecran affichait une animation, des confettis et « Paiement
+    // confirme » — sans qu'aucun franc ne bouge.
+    //
+    // Desormais il CREE la commande, puis renvoie vers l'ecran de paiement
+    // reel. L'ordre compte : si l'invite USSD echoue, la commande existe
+    // deja et l'acheteur reessaie sans reconstituer son panier.
+    // ─────────────────────────────────────────────────────────────────────
     setPayOverlay(true);
     setPayStep(0);
-    for (let i = 0; i < PAY_STEPS.length; i++) {
-      setPayStep(i);
-      await new Promise(r => setTimeout(r, 900 + Math.random() * 600));
-    }
-    let orderId = Math.floor(10000 + Math.random() * 90000);
+    let orderId = 0;
+    let paymentReference = '';
     try {
       const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
       const order = await ordersApi.create({
@@ -150,8 +149,15 @@ export default function CheckoutPage() {
         })),
       });
       orderId = order.id;
+      // Le backend renvoie l'intention creee par `checkout()`. Sans elle,
+      // aucun paiement n'est possible — mieux vaut le dire que d'afficher
+      // une reussite mensongere.
+      paymentReference =
+        (order as { payment_intent?: { reference?: string } })
+          .payment_intent?.reference ?? '';
     } catch (error) {
       setPayOverlay(false);
+      setRedirecting(false);
       showToast(
         error instanceof Error
           ? `Commande refusee par le backend: ${error.message}`
@@ -160,6 +166,9 @@ export default function CheckoutPage() {
       );
       throw error;
     }
+    // Avant de vider le panier : sinon le garde nous ramene sur /cart.
+    setRedirecting(true);
+
     if (checkoutItems.length === items.length) {
       clearCart();
     } else {
@@ -168,11 +177,22 @@ export default function CheckoutPage() {
     window.sessionStorage.removeItem(CHECKOUT_SELECTED_CART_IDS_KEY);
     setPayOverlay(false);
     setFormData(prev => ({ ...prev, orderId }));
-    setStep('success');
     window.dispatchEvent(new Event("belivay-new-notification"));
-    showToast("Paiement confirmé. Redirection vers le suivi de commande...", "success");
-    requestAnimationFrame(() => { if (confettiRef.current) launchConfetti(confettiRef.current); });
-    window.setTimeout(() => navigate(`/orders/${orderId}`), 900);
+
+    if (!paymentReference) {
+      // Sans intention, la commande est enregistree mais IMPAYEE. On le dit
+      // clairement plutot que de lancer des confettis.
+      showToast(
+        "Commande enregistrée, mais le paiement n'a pas pu être préparé. "
+        + "Vous pourrez payer depuis le détail de la commande.",
+        "error",
+      );
+      navigate(`/orders/${orderId}`);
+      return;
+    }
+
+    showToast("Commande enregistrée. Procédez au paiement.", "success");
+    navigate(`/checkout/payment/${paymentReference}?order=${orderId}`);
   }, [checkoutItems, formData, isPickup, items.length, clearCart, removeItem, selectedPickupCenter, showToast, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -192,10 +212,30 @@ export default function CheckoutPage() {
     }
   };
 
-  // Redirect to cart if empty
+  // ─────────────────────────────────────────────────────────────────────
+  // LE GARDE NE DOIT PAS GAGNER LA COURSE CONTRE LA REDIRECTION
+  //
+  // Ce garde renvoie vers le panier des qu'il est vide. Or la commande
+  // vide le panier AVANT de rediriger vers le paiement : l'effet se
+  // declenchait et ramenait l'acheteur sur /cart, laissant sa commande
+  // creee mais impayee.
+  //
+  // `redirecting` neutralise le garde pendant la transition. Sans lui, la
+  // sortie du tunnel serait toujours perdante — c'est une course, et
+  // l'effet part en premier.
+  // ─────────────────────────────────────────────────────────────────────
   useEffect(() => {
+    if (redirecting) return;
     if (checkoutItems.length === 0 && step !== "success") navigate("/cart");
-  }, [checkoutItems.length, step, navigate]);
+  }, [checkoutItems.length, step, navigate, redirecting]);
+
+  if (redirecting) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
+      </div>
+    );
+  }
 
   if (checkoutItems.length === 0 && step !== "success") {
     return <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" /></div>;

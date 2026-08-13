@@ -1,5 +1,6 @@
 // frontend/src/features/payments/buyer/index.ts
 
+export { default as PaymentCheckoutPage } from './PaymentCheckoutPage';
 export { default as PaymentDetailPage } from './PaymentDetailPage';
 export { default as PaymentHistoryPage } from './PaymentHistoryPage';
 export { default as RefundsPage } from './RefundsPage';

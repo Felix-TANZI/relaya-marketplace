@@ -27,7 +27,7 @@ import TrackingMap from "@/components/TrackingMap";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
-import { OrderProtectionPanel } from "@/features/payments/embeds";
+import { OrderPaymentPrompt, OrderProtectionPanel } from "@/features/payments/embeds";
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -364,6 +364,14 @@ export default function OrderDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Reprendre un paiement laisse en suspens. Le bandeau disparait
+            des que la commande est payee — et l'API refuse d'encaisser
+            deux fois la meme intention. */}
+        <OrderPaymentPrompt
+          orderId={order.id}
+          paymentStatus={order.payment_status}
+        />
 
         <OrderProtectionPanel
           orderId={order.id}

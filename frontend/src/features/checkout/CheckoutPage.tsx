@@ -1,64 +1,38 @@
 import { useTranslation } from 'react-i18next';
-import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, CreditCard, CheckCircle, Package, ShieldCheck, User, Phone, MapPin, Store, Truck } from "lucide-react";
+import { ArrowLeft, Check, Lock, Package, ShieldCheck, Store, Truck } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { ordersApi } from '@/services/api/orders';
 import { useToast } from '@/context/ToastContext';
 import { PhoneInput } from "@/components/ui/PhoneInput";
-
-// Ces etapes decrivent la CREATION de la commande, pas un paiement : le
-// paiement reel se fait sur l'ecran suivant. Annoncer « paiement confirme »
-// ici serait mensonger — aucun franc n'a encore bouge.
-const PAY_STEPS = [
-  { text: "Connexion sécurisée...", pct: 25 },
-  { text: "Enregistrement de la commande...", pct: 60 },
-  { text: "Préparation du paiement...", pct: 90 },
-];
+import { PfShellStyles } from "@/styles/pfShell";
+import PaymentSheet from "@/features/payments/PaymentSheet";
+import { OperatorLogo } from "@/features/payments/OperatorLogo";
+import { getDefaultPaymentMethod } from "@/features/payments/SavedPaymentMethods";
+import type { PaymentTransaction } from "@/services/api/payments";
 
 const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 
 const PICKUP_CENTERS = {
   "Yaoundé": [
-    {
-      id: "yaounde-mokolo",
-      name: "Centre BelivaY Mokolo",
-      address: "Mokolo, face marché central, Yaoundé",
-      hours: "Lun-Sam · 8h30-18h30",
-    },
-    {
-      id: "yaounde-bastos",
-      name: "Centre BelivaY Bastos",
-      address: "Bastos, rond-point Nlongkak, Yaoundé",
-      hours: "Lun-Sam · 9h00-18h00",
-    },
+    { id: "yaounde-mokolo", name: "Centre BelivaY Mokolo", address: "Mokolo, face marché central", hours: "Lun-Sam · 8h30-18h30" },
+    { id: "yaounde-bastos", name: "Centre BelivaY Bastos", address: "Bastos, rond-point Nlongkak", hours: "Lun-Sam · 9h00-18h00" },
   ],
   "Douala": [
-    {
-      id: "douala-akwa",
-      name: "Centre BelivaY Akwa",
-      address: "Akwa, boulevard de la Liberté, Douala",
-      hours: "Lun-Sam · 8h30-18h30",
-    },
-    {
-      id: "douala-bonapriso",
-      name: "Centre BelivaY Bonapriso",
-      address: "Bonapriso, avenue Charles de Gaulle, Douala",
-      hours: "Lun-Sam · 9h00-18h00",
-    },
+    { id: "douala-akwa", name: "Centre BelivaY Akwa", address: "Akwa, boulevard de la Liberté", hours: "Lun-Sam · 8h30-18h30" },
+    { id: "douala-bonapriso", name: "Centre BelivaY Bonapriso", address: "Bonapriso, av. Charles de Gaulle", hours: "Lun-Sam · 9h00-18h00" },
   ],
 } as const;
 
-function readCheckoutSelection() {
+function readCheckoutSelection(): number[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = window.sessionStorage.getItem(CHECKOUT_SELECTED_CART_IDS_KEY);
     const ids = raw ? JSON.parse(raw) : [];
     return Array.isArray(ids) ? ids.filter((id) => typeof id === "number") : [];
-  } catch {
-    return [];
-  }
+  } catch { return []; }
 }
 
 export default function CheckoutPage() {
@@ -66,134 +40,36 @@ export default function CheckoutPage() {
   const { items, clearCart, removeItem } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const { showToast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
   const isPickup = new URLSearchParams(window.location.search).get("mode") === "pickup";
-  const confettiRef = useRef<HTMLDivElement>(null);
-  // Vrai pendant la sortie du tunnel : neutralise le garde « panier vide ».
-  const [redirecting, setRedirecting] = useState(false);
-  const [payOverlay, setPayOverlay] = useState(false);
-  const [payStep, setPayStep] = useState(0);
-
-  useEffect(() => {
-    if (!payOverlay) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [payOverlay]);
 
   const [formData, setFormData] = useState({
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
-    phone: user?.phone || "",
+    phone: user?.phone || getDefaultPaymentMethod()?.phone || "",
     address: "",
-    city: "Yaoundé",
+    city: "Yaoundé" as "Yaoundé" | "Douala",
     pickupCenterId: "yaounde-mokolo",
-    paymentMethod: "momo",
-    orderId: 0,
   });
-  const [step] = useState<"form" | "success">("form");
 
   // `items.length` n'est pas lu par la fabrique : c'est volontairement une cle
   // de recalcul, pour relire la selection stockee quand le panier change — il
   // peut s'hydrater apres le montage.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const selectedCheckoutIds = useMemo(() => readCheckoutSelection(), [items.length]);
-  const checkoutItems = selectedCheckoutIds.length > 0
-    ? items.filter((item) => selectedCheckoutIds.includes(item.id))
-    : items;
-  const checkoutSubtotal = checkoutItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shippingCost = isPickup ? 0 : 2000;
-  const finalTotal = checkoutSubtotal + shippingCost;
-  const pickupCenters = PICKUP_CENTERS[formData.city as keyof typeof PICKUP_CENTERS] ?? PICKUP_CENTERS["Yaoundé"];
-  const selectedPickupCenter = pickupCenters.find((center) => center.id === formData.pickupCenterId) ?? pickupCenters[0];
+  const selectedIds = useMemo(() => readCheckoutSelection(), [items.length]);
+  const checkoutItems = selectedIds.length > 0 ? items.filter((i) => selectedIds.includes(i.id)) : items;
+  const subtotal = checkoutItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  const shipping = isPickup ? 0 : 2000;
+  const finalTotal = subtotal + shipping;
+  const centers = PICKUP_CENTERS[formData.city];
+  const center = centers.find((c) => c.id === formData.pickupCenterId) ?? centers[0];
+  const fmt = (n: number) => `${n.toLocaleString(locale)} FCFA`;
 
-  const runPayment = useCallback(async () => {
-    // ─────────────────────────────────────────────────────────────────────
-    // LE PAIEMENT NE SE SIMULE PLUS
-    //
-    // Cet ecran affichait une animation, des confettis et « Paiement
-    // confirme » — sans qu'aucun franc ne bouge.
-    //
-    // Desormais il CREE la commande, puis renvoie vers l'ecran de paiement
-    // reel. L'ordre compte : si l'invite USSD echoue, la commande existe
-    // deja et l'acheteur reessaie sans reconstituer son panier.
-    // ─────────────────────────────────────────────────────────────────────
-    setPayOverlay(true);
-    setPayStep(0);
-    let orderId = 0;
-    let paymentReference = '';
-    try {
-      const cityMap: Record<string, 'YAOUNDE' | 'DOUALA'> = { 'Yaoundé': 'YAOUNDE', 'Douala': 'DOUALA' };
-      const order = await ordersApi.create({
-        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
-        city: cityMap[formData.city] || 'YAOUNDE',
-        address: isPickup ? `${selectedPickupCenter.name} - ${selectedPickupCenter.address}` : formData.address,
-        customer_phone: formData.phone,
-        customer_email: '',
-        note: isPickup
-          ? `CLICK_AND_COLLECT - ${selectedPickupCenter.name} - ${selectedPickupCenter.address} - ${selectedPickupCenter.hours}`
-          : '',
-        cart_items: checkoutItems.map((item) => ({
-          product_id: item.id,
-          qty: item.quantity,
-          title: item.name,
-          price_xaf: item.price,
-          image_url: item.image,
-          is_demo: item.isDemo,
-        })),
-      });
-      orderId = order.id;
-      // Le backend renvoie l'intention creee par `checkout()`. Sans elle,
-      // aucun paiement n'est possible — mieux vaut le dire que d'afficher
-      // une reussite mensongere.
-      paymentReference =
-        (order as { payment_intent?: { reference?: string } })
-          .payment_intent?.reference ?? '';
-    } catch (error) {
-      setPayOverlay(false);
-      setRedirecting(false);
-      showToast(
-        error instanceof Error
-          ? `Commande refusee par le backend: ${error.message}`
-          : "Commande refusee par le backend.",
-        "error",
-      );
-      throw error;
-    }
-    // Avant de vider le panier : sinon le garde nous ramene sur /cart.
-    setRedirecting(true);
-
-    if (checkoutItems.length === items.length) {
-      clearCart();
-    } else {
-      checkoutItems.forEach((item) => removeItem(item.id));
-    }
-    window.sessionStorage.removeItem(CHECKOUT_SELECTED_CART_IDS_KEY);
-    setPayOverlay(false);
-    setFormData(prev => ({ ...prev, orderId }));
-    window.dispatchEvent(new Event("belivay-new-notification"));
-
-    if (!paymentReference) {
-      // Sans intention, la commande est enregistree mais IMPAYEE. On le dit
-      // clairement plutot que de lancer des confettis.
-      showToast(
-        "Commande enregistrée, mais le paiement n'a pas pu être préparé. "
-        + "Vous pourrez payer depuis le détail de la commande.",
-        "error",
-      );
-      navigate(`/orders/${orderId}`);
-      return;
-    }
-
-    showToast("Commande enregistrée. Procédez au paiement.", "success");
-    navigate(`/checkout/payment/${paymentReference}?order=${orderId}`);
-  }, [checkoutItems, formData, isPickup, items.length, clearCart, removeItem, selectedPickupCenter, showToast, navigate]);
+  const infoDone = Boolean(formData.firstName.trim() && formData.phone.trim());
+  const placeDone = isPickup ? Boolean(center) : Boolean(formData.address.trim());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -204,342 +80,283 @@ export default function CheckoutPage() {
     }
     setLoading(true);
     try {
-      await runPayment();
-    } catch {
-      // L'erreur est deja affichee dans runPayment.
+      const order = await ordersApi.create({
+        delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
+        city: formData.city === 'Douala' ? 'DOUALA' : 'YAOUNDE',
+        address: isPickup ? `${center.name} - ${center.address}` : formData.address,
+        customer_phone: formData.phone,
+        customer_email: '',
+        note: isPickup ? `CLICK_AND_COLLECT - ${center.name} - ${center.address} - ${center.hours}` : '',
+        cart_items: checkoutItems.map((item) => ({
+          product_id: item.id, qty: item.quantity, title: item.name,
+          price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
+        })),
+      });
+      setPayingOrderId(order.id);
+    } catch (error) {
+      showToast(error instanceof Error ? `Commande refusée : ${error.message}` : "Commande refusée par le serveur.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // ─────────────────────────────────────────────────────────────────────
-  // LE GARDE NE DOIT PAS GAGNER LA COURSE CONTRE LA REDIRECTION
-  //
-  // Ce garde renvoie vers le panier des qu'il est vide. Or la commande
-  // vide le panier AVANT de rediriger vers le paiement : l'effet se
-  // declenchait et ramenait l'acheteur sur /cart, laissant sa commande
-  // creee mais impayee.
-  //
-  // `redirecting` neutralise le garde pendant la transition. Sans lui, la
-  // sortie du tunnel serait toujours perdante — c'est une course, et
-  // l'effet part en premier.
-  // ─────────────────────────────────────────────────────────────────────
+  const handlePaid = useCallback((tx: PaymentTransaction) => {
+    if (checkoutItems.length === items.length) clearCart();
+    else checkoutItems.forEach((item) => removeItem(item.id));
+    window.sessionStorage.removeItem(CHECKOUT_SELECTED_CART_IDS_KEY);
+    window.dispatchEvent(new Event("belivay-new-notification"));
+    showToast("Paiement confirmé", {
+      description: `Commande #${tx.order} · ${tx.amount_xaf.toLocaleString(locale)} FCFA sous séquestre.`,
+      type: "success",
+    });
+    navigate(`/orders/${tx.order}`);
+  }, [checkoutItems, items.length, clearCart, removeItem, showToast, navigate, locale]);
+
   useEffect(() => {
-    if (redirecting) return;
-    if (checkoutItems.length === 0 && step !== "success") navigate("/cart");
-  }, [checkoutItems.length, step, navigate, redirecting]);
+    if (checkoutItems.length === 0 && payingOrderId === null) navigate("/cart");
+  }, [checkoutItems.length, payingOrderId, navigate]);
 
-  if (redirecting) {
+  if (checkoutItems.length === 0 && payingOrderId === null) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950">
-        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" />
-      </div>
-    );
-  }
-
-  if (checkoutItems.length === 0 && step !== "success") {
-    return <div className="flex min-h-screen items-center justify-center bg-[#f8f5f1] dark:bg-gray-950"><div className="h-10 w-10 animate-spin rounded-full border-4 border-primary/30 border-t-primary" /></div>;
-  }
-
-  const inputClass = "w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white placeholder:text-gray-400";
-
-  // ── Payment loading overlay ──
-  if (payOverlay) {
-    const ps = PAY_STEPS[payStep];
-    return (
-      <div className="fixed inset-0 z-[9999] flex h-dvh min-h-dvh items-center justify-center bg-black px-4">
-        <div className="w-[90%] max-w-[300px] rounded-3xl bg-white p-8 text-center shadow-2xl dark:bg-gray-900">
-          <div className="mx-auto mb-4 h-[52px] w-[52px] rounded-full border-4 border-gray-200 border-t-primary dark:border-gray-700" style={{ animation: 'spin 650ms linear infinite' }} />
-          <p className="text-[15px] font-bold text-gray-900 dark:text-white">{ps.text}</p>
-          <p className="mt-1 text-xs text-gray-400">Ne fermez pas cette fenêtre</p>
-          <div className="mt-4 h-1 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
-            <div className="h-full rounded-full bg-primary transition-all duration-500" style={{ width: `${ps.pct}%` }} />
-          </div>
+      <>
+        <PfShellStyles />
+        <div className="pf-root pf-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="pf-flow-ic spin" style={{ width: 44, height: 44 }} />
         </div>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      </div>
+      </>
     );
   }
 
-  // ── Success screen ──
-  if (step === "success") {
-    return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[#f8f5f1] py-20 dark:bg-gray-950 px-4">
-        {/* Confetti container */}
-        <div ref={confettiRef} className="pointer-events-none fixed inset-0 z-[9000] overflow-hidden" />
-        <div className="mx-auto max-w-md text-center">
-          {/* Points earned badge */}
-          <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-gradient-to-r from-primary to-orange-400 px-5 py-2 text-sm font-extrabold text-white" style={{ animation: 'popIn 500ms cubic-bezier(.34,1.56,.64,1)' }}>
-            +{Math.floor(finalTotal / 100)} points de fidélité gagnés
-          </div>
-          <style>{`@keyframes popIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}`}</style>
-          <div className="mx-auto mb-6 flex h-24 w-24 items-center justify-center rounded-full bg-green-50 dark:bg-green-900/20" style={{ animation: 'popIn 450ms cubic-bezier(.34,1.56,.64,1)' }}>
-            <CheckCircle className="text-green-500" size={48} />
-          </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('checkout.success_title')}</h1>
-          <div className="mx-auto mt-4 inline-block rounded-2xl bg-white px-6 py-4 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
-            <p className="text-xs text-gray-400">Commande</p>
-            <p className="mt-1 text-2xl font-bold text-primary">#{formData.orderId}</p>
-          </div>
-          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">{t('checkout.success_message')}</p>
-          <div className="mt-6 rounded-2xl border border-gray-100 bg-white p-5 text-left shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h3 className="mb-3 text-sm font-semibold text-gray-900 dark:text-white">
-              {isPickup ? "Retrait au centre BelivaY" : t('checkout.delivery_details')}
-            </h3>
-            <div className="space-y-2 text-sm text-gray-500">
-              <div className="flex items-center gap-2"><User size={14} className="text-gray-400" /><span>{formData.firstName} {formData.lastName}</span></div>
-              <div className="flex items-center gap-2"><Phone size={14} className="text-gray-400" /><span>{formData.phone}</span></div>
-              {isPickup ? (
-                <>
-                  <div className="flex items-center gap-2"><Store size={14} className="text-green-500" /><span className="font-medium text-green-700 dark:text-green-400">{selectedPickupCenter.name}</span></div>
-                  <div className="flex items-start gap-2"><MapPin size={14} className="mt-0.5 text-gray-400" /><span>{selectedPickupCenter.address}</span></div>
-                </>
-              ) : (
-                <div className="flex items-center gap-2"><MapPin size={14} className="text-gray-400" /><span>{formData.address}, {formData.city}</span></div>
-              )}
-            </div>
-          </div>
-          <div className="mt-6 flex flex-col gap-3">
-            <Link to="/" className="inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white hover:bg-primary-dark">{t('checkout.back_home')}</Link>
-            <Link to="/orders" className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">Voir mes commandes</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const steps = [
+    { n: 1, label: isPickup ? "Retrait" : "Informations", done: infoDone },
+    { n: 2, label: isPickup ? "Centre" : "Livraison", done: placeDone },
+    { n: 3, label: "Paiement", done: false },
+  ];
 
-  // ── Checkout form ──
+  const stepBadge = (n: number, done: boolean) => (
+    <span className={`pf-d ${done ? "done" : "cur"}`} style={{ width: 32, height: 32, fontSize: 13.5, fontWeight: 800, flexShrink: 0 }}>
+      {done ? <Check size={14} strokeWidth={3.2} color="#fff" /> : n}
+    </span>
+  );
+
   return (
-    <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8" data-tour="checkout">
-      <div className="container mx-auto max-w-6xl">
-        <Link to="/cart" className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 hover:text-primary dark:text-gray-400">
-          <ArrowLeft size={18} />{t('checkout.back_to_cart')}
-        </Link>
+    <>
+      <PfShellStyles />
+      <div className="pf-root pf-page" data-tour="checkout">
+        <div className="pf-wrap">
 
-        {/* Header with mode indicator */}
-        <div className="mb-6 rounded-[1.5rem] bg-white p-4 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 sm:mb-8 sm:rounded-[2rem] sm:p-6">
-          <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isPickup ? "bg-green-50 text-green-600 dark:bg-green-900/20" : "bg-primary/10 text-primary"}`}>
-              {isPickup ? <Store size={20} /> : <Truck size={20} />}
+          <Link to="/cart">
+            <button className="pf-link" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14 }}>
+              <ArrowLeft size={16} />{t('checkout.back_to_cart')}
+            </button>
+          </Link>
+
+          {/* En-tête + stepper */}
+          <div className="pf-ident pf-anim">
+            <span className="pf-notif-ic">{isPickup ? <Store size={20} /> : <Truck size={20} />}</span>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div className="pf-k">Paiement sécurisé</div>
+              <div className="pf-name" style={{ fontSize: 21, marginTop: 2 }}>
+                {isPickup ? "Payer et retirer au centre" : t('checkout.title')}
+              </div>
             </div>
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Paiement</p>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white sm:text-3xl">
-                {isPickup ? "Payer et retirer au centre BelivaY" : t('checkout.title')}
-              </h1>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              {steps.map((s, i) => (
+                <div key={s.n} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    {stepBadge(s.n, s.done)}
+                    <span className="pf-support-t" style={{ fontSize: 12.5, color: s.done ? "var(--pf-text)" : "var(--pf-text2)" }}>{s.label}</span>
+                  </div>
+                  {i < steps.length - 1 && <span style={{ width: 26, height: 2, borderRadius: 2, background: s.done ? "var(--pf-aring)" : "var(--pf-border)" }} />}
+                </div>
+              ))}
             </div>
           </div>
-        </div>
 
-        <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="pf-flex" style={{ marginTop: 20 }}>
+            <form onSubmit={handleSubmit} className="pf-main">
 
-            {/* Infos personnelles - only for delivery mode */}
-            {!isPickup && (
-              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">1</div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_info')}</h2>
-                </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label><input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} /></div>
-                  <div><label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label><input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} /></div>
-                  <div className="sm:col-span-2"><PhoneInput required label={t('checkout.phone')} value={formData.phone} onChange={(phone) => setFormData({ ...formData, phone })} helperText={t('checkout.phone_helper')} /></div>
-                </div>
-              </section>
-            )}
-
-            {isPickup && (
-              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">1</div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Informations de retrait</h2>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.first_name')}</label>
-                    <input type="text" required value={formData.firstName} onChange={(e) => setFormData({ ...formData, firstName: e.target.value })} placeholder={t('checkout.first_name_placeholder')} className={inputClass} />
+              {/* 1 — Informations */}
+              <section className="pf-card pf-anim">
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                  {stepBadge(1, infoDone)}
+                  <div className="pf-card-title" style={{ fontSize: 16 }}>
+                    {isPickup ? "Qui vient retirer ?" : t('checkout.step_info')}
                   </div>
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.last_name')}</label>
-                    <input type="text" required value={formData.lastName} onChange={(e) => setFormData({ ...formData, lastName: e.target.value })} placeholder={t('checkout.last_name_placeholder')} className={inputClass} />
+                </div>
+                <div className="pf-form-grid">
+                  <div className="pf-field">
+                    <label className="pf-label">{t('checkout.first_name')}</label>
+                    <input className="pf-input" type="text" required value={formData.firstName}
+                      onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                      placeholder={t('checkout.first_name_placeholder')} />
                   </div>
-                  <div className="sm:col-span-2">
-                    <PhoneInput
-                      required
-                      label="Numéro pour le retrait"
+                  <div className="pf-field">
+                    <label className="pf-label">{t('checkout.last_name')}</label>
+                    <input className="pf-input" type="text" required value={formData.lastName}
+                      onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
+                      placeholder={t('checkout.last_name_placeholder')} />
+                  </div>
+                  <div className="pf-field pf-col2">
+                    <PhoneInput required
+                      label={isPickup ? "Numéro pour le retrait" : t('checkout.phone')}
                       value={formData.phone}
                       onChange={(phone) => setFormData({ ...formData, phone })}
-                      helperText="Ce numéro servira à envoyer le code et les informations de retrait."
-                    />
+                      helperText={isPickup ? "Le code de retrait arrive par SMS sur ce numéro." : t('checkout.phone_helper')} />
                   </div>
                 </div>
               </section>
-            )}
 
-            {/* Address - only for delivery */}
-            {!isPickup && (
-              <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-                <div className="mb-5 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">2</div>
-                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_address')}</h2>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.city')}</label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {["Yaoundé", "Douala"].map((city) => (
-                        <button key={city} type="button" onClick={() => setFormData({ ...formData, city })}
-                          className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${formData.city === city ? "bg-primary text-white shadow-lg shadow-primary/20" : "border border-gray-200 bg-white text-gray-700 hover:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"}`}>
-                          {city}
-                        </button>
-                      ))}
-                    </div>
+              {/* 2 — Livraison / Centre */}
+              <section className="pf-card pf-anim">
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                  {stepBadge(2, placeDone)}
+                  <div className="pf-card-title" style={{ fontSize: 16 }}>
+                    {isPickup ? "Choisir le centre de retrait" : t('checkout.step_address')}
                   </div>
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-gray-400">{t('checkout.address')}</label>
-                    <input type="text" required value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })} placeholder={t('checkout.address_placeholder')} className={inputClass} />
-                    <p className="mt-1.5 text-xs text-gray-400">{t('checkout.address_helper')}</p>
+                </div>
+
+                <div className="pf-field" style={{ marginBottom: 16 }}>
+                  <label className="pf-label">{t('checkout.city')}</label>
+                  <div className="pf-type-toggle">
+                    {(["Yaoundé", "Douala"] as const).map((city) => (
+                      <button key={city} type="button"
+                        className={`pf-type-btn${formData.city === city ? " on" : ""}`}
+                        onClick={() => setFormData({ ...formData, city, pickupCenterId: PICKUP_CENTERS[city][0].id })}>
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {isPickup ? (
+                  <div className="pf-addr-grid">
+                    {centers.map((c) => (
+                      <button key={c.id} type="button"
+                        className={`pf-addr${center.id === c.id ? " def" : ""}`}
+                        style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
+                        onClick={() => setFormData({ ...formData, pickupCenterId: c.id })}>
+                        <div className="pf-addr-label">
+                          <span className="pf-addr-ic"><Store size={14} /></span>
+                          {c.name}
+                          {center.id === c.id && <span className="pf-badge-soft">Choisi</span>}
+                        </div>
+                        <div className="pf-addr-line">{c.address}</div>
+                        <div className="pf-k" style={{ marginTop: 8 }}>{c.hours}</div>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="pf-field">
+                    <label className="pf-label">{t('checkout.address')}</label>
+                    <input className="pf-input" type="text" required value={formData.address}
+                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                      placeholder={t('checkout.address_placeholder')} />
+                    <div className="pf-muted-sm" style={{ marginTop: 6 }}>{t('checkout.address_helper')}</div>
+                  </div>
+                )}
+              </section>
+
+              {/* 3 — Paiement */}
+              <section className="pf-card pf-anim" style={{ borderColor: "var(--pf-aring)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
+                  {stepBadge(3, false)}
+                  <div className="pf-card-title" style={{ fontSize: 16 }}>{t('checkout.step_payment')}</div>
+                  <span className="pf-muted-sm" style={{ marginLeft: "auto" }}>Débit unique · aucun frais caché</span>
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: 12 }}>
+                  {([
+                    { p: "MTN_MOMO" as const, n: "MTN Mobile Money", d: "Validation par code secret" },
+                    { p: "ORANGE_MONEY" as const, n: "Orange Money", d: "Validation par code secret" },
+                    { p: "CARD" as const, n: "Carte bancaire", d: "Visa · Mastercard" },
+                  ]).map((m) => (
+                    <div key={m.p} style={{ display: "flex", alignItems: "center", gap: 11, padding: 13, borderRadius: 16, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
+                      <OperatorLogo provider={m.p} size={38} />
+                      <div style={{ minWidth: 0 }}>
+                        <div className="pf-support-t" style={{ fontSize: 12.5 }}>{m.n}</div>
+                        <div className="pf-muted-sm">{m.d}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="pf-info-note">
+                  <span className="pf-info-ic"><ShieldCheck size={15} /></span>
+                  <div className="pf-muted-sm" style={{ lineHeight: 1.6 }}>
+                    Vous choisirez votre opérateur juste après. Une demande de paiement arrivera sur votre téléphone :
+                    validez-la avec votre code secret, rien à recopier ici.
                   </div>
                 </div>
               </section>
-            )}
 
-            {/* Pickup info box */}
-            {isPickup && (
-              <section className="rounded-[1.5rem] border border-green-200 bg-green-50 p-4 shadow-sm dark:border-green-800 dark:bg-green-900/20 sm:rounded-[2rem] sm:p-6">
-                <div className="mb-5 flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-green-100 text-green-600 dark:bg-green-800">
-                    <Store size={24} />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-green-800 dark:text-green-200">Retrait au centre BelivaY</h3>
-                    <p className="mt-1 text-sm text-green-700 dark:text-green-300">
-                      Choisissez le centre où votre colis sera gardé. Vous recevrez les informations de retrait sur le numéro indiqué.
-                    </p>
-                  </div>
+              <button type="submit" className="pf-btn-accent pf-btn-block" disabled={loading}>
+                <Lock size={16} />{loading ? "Création de la commande…" : `Payer ${fmt(finalTotal)}`}
+              </button>
+            </form>
+
+            {/* Résumé */}
+            <aside className="pf-side" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+              {/* Bloc montant — signature visuelle de la maquette */}
+              <div className="pf-hero pf-anim">
+                <i />
+                <div className="pf-hero-k">Total à payer</div>
+                <div className="pf-hero-v">{finalTotal.toLocaleString(locale)}<span>FCFA</span></div>
+                <div style={{ position: "relative", marginTop: 14, display: "flex", gap: 18, fontSize: 12, opacity: .88 }}>
+                  <span>Articles <b>{subtotal.toLocaleString(locale)}</b></span>
+                  <span style={{ opacity: .4 }}>|</span>
+                  <span>{isPickup ? "Retrait " : "Livraison "}<b>{shipping === 0 ? "Gratuit" : shipping.toLocaleString(locale)}</b></span>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-green-700 dark:text-green-300">Ville de retrait</label>
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                      {["Yaoundé", "Douala"].map((city) => {
-                        const nextCenters = PICKUP_CENTERS[city as keyof typeof PICKUP_CENTERS];
-                        return (
-                          <button
-                            key={city}
-                            type="button"
-                            onClick={() => setFormData({ ...formData, city, pickupCenterId: nextCenters[0].id })}
-                            className={`rounded-xl px-4 py-3 text-sm font-semibold transition-all ${formData.city === city ? "bg-green-600 text-white shadow-lg shadow-green-600/20" : "border border-green-200 bg-white text-green-800 hover:border-green-500 dark:border-green-800 dark:bg-gray-900 dark:text-green-200"}`}
-                          >
-                            {city}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="mb-2 block text-xs font-medium uppercase tracking-widest text-green-700 dark:text-green-300">Centre BelivaY</label>
-                    <div className="grid gap-3">
-                      {pickupCenters.map((center) => (
-                        <button
-                          key={center.id}
-                          type="button"
-                          onClick={() => setFormData({ ...formData, pickupCenterId: center.id })}
-                          className={`rounded-2xl border p-4 text-left transition-all ${selectedPickupCenter.id === center.id ? "border-green-600 bg-white shadow-lg shadow-green-600/10 dark:bg-gray-900" : "border-green-200 bg-white/70 hover:border-green-500 dark:border-green-800 dark:bg-gray-900/70"}`}
-                        >
-                          <div className="flex items-start gap-3">
-                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-100">
-                              <Store size={20} />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="font-bold text-green-900 dark:text-green-100">{center.name}</p>
-                              <p className="mt-1 text-sm text-green-700 dark:text-green-300">{center.address}</p>
-                              <p className="mt-1 text-xs font-semibold uppercase tracking-[0.12em] text-green-600 dark:text-green-400">{center.hours}</p>
-                            </div>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {/* Payment - always shown */}
-            <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-sm font-bold text-white">
-                  {isPickup ? "2" : "3"}
-                </div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">{t('checkout.step_payment')}</h2>
               </div>
-              <div className="space-y-3">
-                {[
-                  { id: "momo", name: t('checkout.payment_momo'), icon: <Phone size={20} /> },
-                  { id: "orange", name: t('checkout.payment_orange'), icon: <Phone size={20} /> },
-                  { id: "card", name: "Carte bancaire (Visa / Mastercard)", icon: <CreditCard size={20} /> },
-                ].map((method) => (
-                  <button key={method.id} type="button" onClick={() => setFormData({ ...formData, paymentMethod: method.id })}
-                    className={`flex w-full items-center gap-4 rounded-xl border-2 p-4 text-left transition-all ${formData.paymentMethod === method.id ? "border-primary bg-primary/5 dark:bg-primary/10" : "border-gray-200 bg-white hover:border-gray-300 dark:border-gray-700 dark:bg-gray-800"}`}>
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">{method.icon}</div>
-                    <span className="flex-1 text-sm font-semibold text-gray-900 dark:text-white">{method.name}</span>
-                    {formData.paymentMethod === method.id && <CheckCircle className="text-primary" size={22} />}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-4 flex items-start gap-2 text-xs text-gray-400">
-                <ShieldCheck className="mt-0.5 shrink-0 text-primary" size={14} />
-                {t('checkout.payment_helper')}
-              </p>
-            </section>
 
-            <button type="submit" disabled={loading} className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-6 py-4 text-sm font-semibold text-white shadow-lg shadow-primary/20 hover:bg-primary-dark disabled:opacity-60">
-              <CreditCard size={18} />{loading ? '...' : isPickup ? "Payer maintenant" : t('checkout.confirm')}
-            </button>
-          </form>
+              <section className="pf-glass-panel pf-anim">
+                <div className="pf-card-title pf-mb">{t('checkout.summary')}</div>
 
-          {/* Order Summary sidebar */}
-          <div className="lg:sticky lg:top-24 lg:self-start">
-            <section className="rounded-[1.5rem] border border-gray-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-              <h2 className="mb-5 text-xl font-bold text-gray-900 dark:text-white">{t('checkout.summary')}</h2>
-              <div className="space-y-3">
                 {checkoutItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3">
-                    <div className="h-14 w-14 shrink-0 overflow-hidden rounded-xl bg-[#fcfbf8] dark:bg-gray-800">
-                      {item.image ? <img src={item.image} alt={item.name} className="h-full w-full object-cover" /> : <div className="flex h-full w-full items-center justify-center"><Package className="text-gray-300" size={20} /></div>}
+                  <div key={item.id} className="pf-order-line">
+                    <span className="pf-thumb" style={{ width: 46, height: 46, borderRadius: 13 }}>
+                      {item.image ? <img src={item.image} alt={item.name} /> : <Package size={18} strokeWidth={1.6} />}
+                    </span>
+                    <div className="pf-order-mid">
+                      <div className="pf-order-id" style={{ fontSize: 12.5, fontWeight: 600 }}>{item.name}</div>
+                      <div className="pf-muted-sm">Qté {item.quantity}</div>
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-gray-900 dark:text-white">{item.name}</p>
-                      <p className="text-xs text-gray-400">Qté {item.quantity}</p>
-                    </div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{(item.price * item.quantity).toLocaleString(locale)} FCFA</p>
+                    <div className="pf-order-total" style={{ color: "var(--pf-text)" }}>{fmt(item.price * item.quantity)}</div>
                   </div>
                 ))}
-              </div>
-              <div className="mt-5 space-y-3 border-t border-gray-100 pt-5 text-sm dark:border-gray-800">
-                <div className="flex justify-between text-gray-500">
-                  <span>{t('cart.subtotal')}</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">{checkoutSubtotal.toLocaleString(locale)} FCFA</span>
+
+                <div style={{ marginTop: 14, borderTop: "1px solid var(--pf-border)", paddingTop: 12 }}>
+                  <div className="pf-summary-row"><span className="pf-muted-sm">{t('cart.subtotal')}</span><span className="pf-summary-v">{fmt(subtotal)}</span></div>
+                  <div className="pf-summary-row">
+                    <span className="pf-muted-sm">{isPickup ? "Retrait boutique" : t('cart.shipping')}</span>
+                    <span className="pf-summary-v" style={isPickup ? { color: "#128a45" } : undefined}>{isPickup ? "Gratuit" : fmt(shipping)}</span>
+                  </div>
+                  <div className="pf-total-row" style={{ marginTop: 10, paddingTop: 12, borderTop: "1px dashed var(--pf-border)" }}>
+                    <span className="pf-muted-sm">{t('cart.total')}</span><b>{fmt(finalTotal)}</b>
+                  </div>
                 </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>{isPickup ? "Retrait boutique" : t('cart.shipping')}</span>
-                  <span className={`font-semibold ${isPickup ? "text-green-600" : "text-gray-900 dark:text-white"}`}>
-                    {isPickup ? "0 FCFA" : `${shippingCost.toLocaleString(locale)} FCFA`}
-                  </span>
+
+                <div className="pf-info-note">
+                  <span className="pf-info-ic"><ShieldCheck size={15} /></span>
+                  <div className="pf-muted-sm">Le vendeur n'est payé qu'après votre confirmation de réception.</div>
                 </div>
-                <div className="flex justify-between border-t border-gray-100 pt-3 dark:border-gray-800">
-                  <span className="font-semibold text-gray-900 dark:text-white">{t('cart.total')}</span>
-                  <span className="text-2xl font-bold text-primary">{finalTotal.toLocaleString(locale)} FCFA</span>
-                </div>
-              </div>
-            </section>
+              </section>
+            </aside>
           </div>
         </div>
       </div>
-    </div>
+
+      {payingOrderId !== null && (
+        <PaymentSheet
+          orderId={payingOrderId}
+          amountXaf={finalTotal}
+          defaultPhone={formData.phone}
+          onClose={() => { const id = payingOrderId; setPayingOrderId(null); navigate(`/orders/${id}`); }}
+          onSuccess={handlePaid}
+        />
+      )}
+    </>
   );
 }

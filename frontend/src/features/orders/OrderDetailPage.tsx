@@ -2,32 +2,17 @@ import { useState, useEffect, useMemo, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
 import {
-  ArrowLeft,
-  AlertCircle,
-  AlertTriangle,
-  CheckCircle,
-  Clock3,
-  CreditCard,
-  MapPin,
-  MessageCircleMore,
-  Package,
-  Phone,
-  ShieldCheck,
-  Store,
-  Send,
-  Scale,
-  Truck,
-  Warehouse,
-  UserCircle2,
-  XCircle,
+  AlertCircle, AlertTriangle, ArrowLeft, CheckCircle, Clock3, MapPin, MessageCircleMore,
+  Package, Phone, Scale, Send, ShieldCheck, Store, Truck, UserCircle2, Warehouse,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
-import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
+import type { FulfillmentStatus, Order } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
-import { OrderPaymentPrompt, OrderProtectionPanel } from "@/features/payments/embeds";
+import { PfShellStyles } from "@/styles/pfShell";
+import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -60,60 +45,19 @@ export default function OrderDetailPage() {
   const disputeSectionRef = useRef<HTMLElement | null>(null);
   const courierChatEndRef = useRef<HTMLDivElement | null>(null);
 
-  function getPaymentInfo(status: PaymentStatus) {
-    switch (status) {
-      case "PAID":
-        return {
-          label: t('order.detail.payment_confirmed'),
-          color: "text-green-600",
-          bg: "bg-green-50 dark:bg-green-900/20",
-          icon: CheckCircle,
-        };
-      case "PENDING":
-        return {
-          label: t('order.detail.payment_pending'),
-          color: "text-yellow-600",
-          bg: "bg-yellow-50 dark:bg-yellow-900/20",
-          icon: Clock3,
-        };
-      case "FAILED":
-        return {
-          label: t('order.detail.payment_failed'),
-          color: "text-red-600",
-          bg: "bg-red-50 dark:bg-red-900/20",
-          icon: XCircle,
-        };
-      case "REFUNDED":
-        return {
-          label: t('order.detail.payment_refunded'),
-          color: "text-gray-600",
-          bg: "bg-gray-100 dark:bg-gray-800",
-          icon: CreditCard,
-        };
-      default:
-        return {
-          label: t('order.detail.payment_pending'),
-          color: "text-gray-600",
-          bg: "bg-gray-100 dark:bg-gray-800",
-          icon: CreditCard,
-        };
-    }
-  }
+  const reloadOrder = async () => {
+    if (!id) return;
+    try { setOrder(await ordersApi.get(parseInt(id, 10))); } catch { /* silencieux */ }
+  };
 
   function getFulfillmentInfo(status: FulfillmentStatus) {
     switch (status) {
-      case "PENDING":
-        return { label: t('order.detail.fulfillment_received'), step: 0 };
-      case "PROCESSING":
-        return { label: t('order.detail.fulfillment_processing'), step: 1 };
-      case "SHIPPED":
-        return { label: t('order.detail.fulfillment_shipped'), step: 2 };
-      case "DELIVERED":
-        return { label: t('order.detail.fulfillment_delivered'), step: 3 };
-      case "CANCELLED":
-        return { label: t('order.detail.fulfillment_cancelled'), step: -1 };
-      default:
-        return { label: t('order.detail.fulfillment_processing'), step: 0 };
+      case "PENDING": return { label: t('order.detail.fulfillment_received'), step: 0 };
+      case "PROCESSING": return { label: t('order.detail.fulfillment_processing'), step: 1 };
+      case "SHIPPED": return { label: t('order.detail.fulfillment_shipped'), step: 2 };
+      case "DELIVERED": return { label: t('order.detail.fulfillment_delivered'), step: 3 };
+      case "CANCELLED": return { label: t('order.detail.fulfillment_cancelled'), step: -1 };
+      default: return { label: t('order.detail.fulfillment_processing'), step: 0 };
     }
   }
 
@@ -121,25 +65,17 @@ export default function OrderDetailPage() {
     const fetchOrder = async () => {
       if (!id) return;
       const orderId = parseInt(id, 10);
-
       try {
         setLoading(true);
         setError(null);
-        const data = await ordersApi.get(orderId);
-        setOrder(data);
-        try {
-          const shipment = await customerApi.getOrderTracking(orderId);
-          setTracking(shipment);
-        } catch {
-          setTracking(null);
-        }
+        setOrder(await ordersApi.get(orderId));
+        try { setTracking(await customerApi.getOrderTracking(orderId)); } catch { setTracking(null); }
       } catch {
         setError(t('order.detail.error_load'));
       } finally {
         setLoading(false);
       }
     };
-
     fetchOrder();
   }, [id, t]);
 
@@ -147,14 +83,9 @@ export default function OrderDetailPage() {
     if (!order) return;
     let cancelled = false;
     const fetchDisputes = () => {
-      customerApi.getOrderDisputes(order.id)
-        .then((data) => {
-          if (!cancelled) {
-            setDisputes(data);
-            setActiveDisputeId((current) => current ?? data[0]?.id ?? null);
-          }
-        })
-        .catch(() => {});
+      customerApi.getOrderDisputes(order.id).then((data) => {
+        if (!cancelled) { setDisputes(data); setActiveDisputeId((c) => c ?? data[0]?.id ?? null); }
+      }).catch(() => {});
     };
     fetchDisputes();
     const interval = window.setInterval(fetchDisputes, 12000);
@@ -163,14 +94,12 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
-
     let cancelled = false;
     const fetchMessages = () => {
       customerApi.getOrderChatMessages(order.id)
         .then((msgs) => { if (!cancelled) setCourierMessages(msgs); })
-        .catch(() => {/* shipment peut ne pas encore exister */});
+        .catch(() => {});
     };
-
     fetchMessages();
     const interval = window.setInterval(fetchMessages, showCourierChat ? 4000 : 12000);
     return () => { cancelled = true; window.clearInterval(interval); };
@@ -178,109 +107,90 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!showCourierChat) return;
-    courierChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+    const el = courierChatEndRef.current?.parentElement;
+    if (el) el.scrollTop = el.scrollHeight;
   }, [courierMessages, showCourierChat]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
-  const activeDispute =
-    disputes.find((dispute) => dispute.id === activeDisputeId) ?? disputes[0] ?? null;
-  const canSeeDisputeArea = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order?.fulfillment_status ?? "");
+  const activeDispute = disputes.find((d) => d.id === activeDisputeId) ?? disputes[0] ?? null;
+  const canSeeDisputeArea = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"]
+    .includes(order?.fulfillment_status ?? "");
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center">
-          <div className="inline-block h-12 w-12 rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
-          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-            {t('order.detail.loading')}
-          </p>
+      <>
+        <PfShellStyles />
+        <div className="pf-root pf-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ textAlign: "center" }}>
+            <div className="pf-flow-ic spin" style={{ width: 44, height: 44, margin: "0 auto" }} />
+            <p className="pf-muted-sm" style={{ marginTop: 14 }}>{t('order.detail.loading')}</p>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   if (error || !order) {
     return (
-      <div className="min-h-screen flex items-center justify-center py-20">
-        <div className="text-center max-w-md px-4">
-          <AlertCircle className="mx-auto mb-4 text-red-500" size={40} />
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{t('order.detail.error_title')}</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{error}</p>
-          <button
-            onClick={() => navigate("/orders")}
-            className="mt-6 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
-          >
-            {t('order.detail.error_button')}
-          </button>
+      <>
+        <PfShellStyles />
+        <div className="pf-root pf-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="pf-glass-panel" style={{ maxWidth: 420, textAlign: "center" }}>
+            <span className="pf-notif-ic" style={{ margin: "0 auto 14px", background: "rgba(217,45,32,.12)", color: "#d92d20" }}>
+              <AlertCircle size={22} />
+            </span>
+            <div className="pf-panel-title">{t('order.detail.error_title')}</div>
+            <p className="pf-panel-sub">{error}</p>
+            <button className="pf-btn-accent" style={{ marginTop: 18 }} onClick={() => navigate("/orders")}>
+              {t('order.detail.error_button')}
+            </button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  const payment = getPaymentInfo(order.payment_status);
   const fulfillment = getFulfillmentInfo(order.fulfillment_status);
-  const PaymentIcon = payment.icon;
   const trackingEvents = Array.isArray(tracking?.events)
     ? tracking.events
-        .filter((event): event is NonNullable<Shipment["events"]>[number] => Boolean(event))
-        .map((event) => ({
-          time: event.created_at
-            ? new Date(event.created_at).toLocaleTimeString("fr-FR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "ETA",
-          label: event.message || event.status || t('order.detail.timeline.processing'),
+        .filter((e): e is NonNullable<Shipment["events"]>[number] => Boolean(e))
+        .map((e) => ({
+          time: e.created_at ? new Date(e.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "ETA",
+          label: e.message || e.status || t('order.detail.timeline.processing'),
         }))
-        .filter((event) => Boolean(event.label))
+        .filter((e) => Boolean(e.label))
     : [];
 
-  const timelineSteps = trackingEvents.length
-    ? trackingEvents
-    : [
-        { time: "10:15", label: t('order.detail.timeline.received') },
-        { time: "14:30", label: t('order.detail.timeline.processing') },
-        { time: "14:45", label: t('order.detail.timeline.shipped') },
-        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta') },
-      ];
+  const timelineSteps = trackingEvents.length ? trackingEvents : [
+    { time: "10:15", label: t('order.detail.timeline.received') },
+    { time: "14:30", label: t('order.detail.timeline.processing') },
+    { time: "14:45", label: t('order.detail.timeline.shipped') },
+    { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta') },
+  ];
 
   const handleConfirmReceipt = async () => {
-    if (!order) return;
     try {
-      const updatedOrder = await customerApi.confirmReceipt(order.id);
-      setOrder(updatedOrder);
-      const shipment = await customerApi.getOrderTracking(order.id);
-      setTracking(shipment);
-    } catch {
-      // silenced
-    }
+      setOrder(await customerApi.confirmReceipt(order.id));
+      setTracking(await customerApi.getOrderTracking(order.id));
+    } catch { /* silencieux */ }
   };
 
-  const handleOpenDispute = async () => {
+  const handleOpenDispute = () => {
     if (activeDispute) {
       disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
     }
-
     setShowDisputeComposer(true);
-    window.setTimeout(() => {
-      disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 30);
   };
 
   const handleCreateDispute = async () => {
     if (!disputeDraft.trim()) return;
     try {
-      await customerApi.createOrderDispute(order.id, {
-        reason: "OTHER",
-        description: disputeDraft.trim(),
-      });
+      await customerApi.createOrderDispute(order.id, { reason: "OTHER", description: disputeDraft.trim() });
       const data = await customerApi.getOrderDisputes(order.id);
       setDisputes(data);
       setActiveDisputeId(data[0]?.id ?? null);
-    } catch {
-      // silenced
-    }
+    } catch { /* silencieux */ }
     setShowDisputeComposer(false);
     setDisputeDraft("");
   };
@@ -291,589 +201,385 @@ export default function OrderDetailPage() {
     setDisputeReply("");
     try {
       await customerApi.addDisputeMessage(activeDispute.id, text);
-      const data = await customerApi.getOrderDisputes(order.id);
-      setDisputes(data);
-    } catch {
-      setDisputeReply(text);
-    }
+      setDisputes(await customerApi.getOrderDisputes(order.id));
+    } catch { setDisputeReply(text); }
   };
 
   const handleSendCourierMessage = async () => {
-    if (!order || !courierChatDraft.trim() || chatSending) return;
+    if (!courierChatDraft.trim() || chatSending) return;
     const text = courierChatDraft.trim();
     setCourierChatDraft("");
     setChatSending(true);
-    const optimisticMessage: OrderChatMessage = {
-      id: -Date.now(),
-      shipment: tracking?.id ?? order.id,
-      channel: "CLIENT",
-      sender_role: "CLIENT",
-      sender_name: user?.first_name || user?.username || "Vous",
-      message: text,
-      created_at: new Date().toISOString(),
+    const optimistic: OrderChatMessage = {
+      id: -Date.now(), shipment: tracking?.id ?? order.id, channel: "CLIENT", sender_role: "CLIENT",
+      sender_name: user?.first_name || user?.username || "Vous", message: text, created_at: new Date().toISOString(),
     };
-    setCourierMessages((prev) => [...prev, optimisticMessage]);
+    setCourierMessages((prev) => [...prev, optimistic]);
     try {
       const msg = await customerApi.sendOrderChatMessage(order.id, text);
-      setCourierMessages((prev) => prev.map((item) => (item.id === optimisticMessage.id ? msg : item)));
+      setCourierMessages((prev) => prev.map((i) => (i.id === optimistic.id ? msg : i)));
     } catch {
-      // Réaffiche le brouillon si l'envoi échoue
       setCourierChatDraft(text);
-      setCourierMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
+      setCourierMessages((prev) => prev.filter((i) => i.id !== optimistic.id));
     } finally {
       setChatSending(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
-      <div className="container mx-auto max-w-6xl px-4">
-        <Link
-          to="/orders"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
-        >
-          <ArrowLeft size={18} />
-          {t('order.detail.back_link')}
-        </Link>
+    <>
+      <PfShellStyles />
+      <div className="pf-root pf-page">
+        <div className="pf-wrap">
 
-        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
-          <div className="flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                {t('order.detail.breadcrumb')}
-              </p>
-              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {t('order.detail.order_title', { id: order.id })}
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {t('order.detail.placed_on', { date: new Date(order.created_at).toLocaleDateString("fr-FR") })}
-              </p>
-            </div>
+          <Link to="/orders">
+            <button className="pf-link" style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 16 }}>
+              <ArrowLeft size={16} />{t('order.detail.back_link')}
+            </button>
+          </Link>
 
-            <div className="flex flex-wrap gap-2">
-              <span
-                className={`inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold ${payment.bg} ${payment.color}`}
-              >
-                <PaymentIcon size={16} />
-                {payment.label}
-              </span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-2 text-sm font-semibold text-primary dark:bg-primary/10">
-                {order.delivery_mode === "PICKUP" ? <Package size={16} /> : <Truck size={16} />}
-                {order.delivery_mode === "PICKUP" ? "Retrait en boutique" : fulfillment.label}
-              </span>
+          {/* En-tête */}
+          <div className="pf-ident pf-anim">
+            <span className="pf-notif-ic">
+              {order.delivery_mode === "PICKUP" ? <Store size={20} /> : <Truck size={20} />}
+            </span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div className="pf-k">{t('order.detail.breadcrumb')}</div>
+              <div className="pf-name" style={{ fontSize: 22 }}>{t('order.detail.order_title', { id: order.id })}</div>
+              <div className="pf-meta">
+                <span>{t('order.detail.placed_on', { date: new Date(order.created_at).toLocaleDateString("fr-FR") })}</span>
+                <span>{order.items.length} article{order.items.length > 1 ? "s" : ""}</span>
+                <span>{order.city}</span>
+              </div>
             </div>
+            <span className="pf-chip">
+              {order.delivery_mode === "PICKUP" ? <Package size={14} /> : <Truck size={14} />}
+              {order.delivery_mode === "PICKUP" ? "Retrait en boutique" : fulfillment.label}
+            </span>
           </div>
-        </div>
 
-        {/* Reprendre un paiement laisse en suspens. Le bandeau disparait
-            des que la commande est payee — et l'API refuse d'encaisser
-            deux fois la meme intention. */}
-        <OrderPaymentPrompt
-          orderId={order.id}
-          paymentStatus={order.payment_status}
-        />
+          <div className="pf-flex" style={{ marginTop: 22 }}>
+            <div className="pf-main">
 
-        <OrderProtectionPanel
-          orderId={order.id}
-          fulfillmentStatus={order.fulfillment_status}
-          onConfirmReceipt={handleConfirmReceipt}
-          onOpenDispute={handleOpenDispute}
-        />
-
-        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-          <div className="space-y-6">
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="mb-5 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                  <MapPin size={22} />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                    {t('order.detail.tracking_title')}
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {order.delivery_mode === "PICKUP"
-                      ? `Votre commande #${order.id} est en préparation pour retrait`
-                      : t('order.detail.in_delivery', { id: order.id })}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-6 overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
-                {order.delivery_mode === "PICKUP" ? (
-                  <div className="flex h-56 flex-col justify-between bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900">
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>{t('order.detail.city_label')}: {order.city}</span>
-                      <span>Point de retrait</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-6 text-5xl">
-                      <Package className="text-primary" size={44} strokeWidth={1.75} />
-                      <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
-                      <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
-                    </div>
-                    <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
-                      Retrait en boutique : {order.city}
+              {/* Suivi */}
+              <section className="pf-card pf-anim">
+                <div style={{ display: "flex", alignItems: "center", gap: 13, marginBottom: 18 }}>
+                  <span className="pf-notif-ic"><MapPin size={20} /></span>
+                  <div>
+                    <div className="pf-t">{t('order.detail.tracking_title')}</div>
+                    <div className="pf-sub">
+                      {order.delivery_mode === "PICKUP"
+                        ? `Commande #${order.id} en préparation pour retrait`
+                        : t('order.detail.in_delivery', { id: order.id })}
                     </div>
                   </div>
-                ) : (
-                  <div className="relative">
-                    <TrackingMap
-                      destinationAddress={order.address}
-                      destinationCity={order.city}
-                      destinationLabel={`Adresse de livraison : ${order.address}`}
-                      originLabel={tracking?.courier_name ? `Livreur : ${tracking.courier_name}` : "Position livreur"}
-                      height={280}
-                      className="rounded-none border-0"
-                    />
-                    <div className="absolute left-3 right-3 top-3 z-[500] flex flex-wrap gap-2">
-                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
-                        Ville: {order.city}
-                      </span>
-                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
-                        Zone suivie
-                      </span>
-                    </div>
-                    <div className="border-t border-orange-100 bg-white px-4 py-3 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                      Adresse de livraison : {order.address}
-                    </div>
-                  </div>
-                )}
-              </div>
+                </div>
 
-              <div className="space-y-4">
+                <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid var(--pf-border)", marginBottom: 22 }}>
+                  {order.delivery_mode === "PICKUP" ? (
+                    <div style={{ height: 224, padding: 20, display: "flex", flexDirection: "column", justifyContent: "space-between", background: "var(--pf-s3)" }}>
+                      <div className="pf-row-between pf-muted-sm">
+                        <span>{t('order.detail.city_label')} : {order.city}</span>
+                        <span>Point de retrait</span>
+                      </div>
+                      <div style={{ display: "flex", justifyContent: "center", gap: 26, color: "var(--pf-accent)" }}>
+                        <Package size={42} strokeWidth={1.6} />
+                        <Store size={42} strokeWidth={1.6} style={{ color: "var(--pf-muted)" }} />
+                        <Warehouse size={42} strokeWidth={1.6} />
+                      </div>
+                      <div className="pf-addr-line" style={{ padding: "12px 16px", borderRadius: 14, background: "var(--pf-glass)", border: "1px solid var(--pf-glass-border)" }}>
+                        Retrait en boutique : {order.city}
+                      </div>
+                    </div>
+                  ) : (
+                    <div style={{ position: "relative" }}>
+                      <TrackingMap
+                        destinationAddress={order.address}
+                        destinationCity={order.city}
+                        destinationLabel={`Adresse de livraison : ${order.address}`}
+                        originLabel={tracking?.courier_name ? `Livreur : ${tracking.courier_name}` : "Position livreur"}
+                        height={280}
+                        className="rounded-none border-0"
+                      />
+                      <div style={{ position: "absolute", left: 12, top: 12, zIndex: 500, display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span className="pf-tag" style={{ background: "rgba(255,255,255,.94)", color: "#1a1420", fontWeight: 700 }}>Ville : {order.city}</span>
+                        <span className="pf-tag" style={{ background: "rgba(255,255,255,.94)", color: "#1a1420", fontWeight: 700 }}>Zone suivie</span>
+                      </div>
+                      <div className="pf-addr-line" style={{ padding: "12px 16px", borderTop: "1px solid var(--pf-border)" }}>
+                        Adresse de livraison : {order.address}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Timeline livraison */}
                 {timelineSteps.map((step, index) => {
                   const isActive = fulfillment.step >= index;
-
+                  const last = index === timelineSteps.length - 1;
                   return (
-                    <div key={step.label} className="flex items-start gap-4">
-                      <div
-                        className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${
-                          isActive
-                            ? "bg-primary text-white"
-                            : "bg-gray-100 text-gray-400 dark:bg-gray-800"
-                        }`}
-                      >
-                        {isActive ? <CheckCircle size={18} /> : <Clock3 size={18} />}
+                    <div key={`${step.label}-${index}`} style={{ display: "flex", gap: 16 }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 26, flexShrink: 0 }}>
+                        <span className={`pf-d ${isActive ? "done" : "todo"}`}>
+                          {isActive
+                            ? <CheckCircle size={12} strokeWidth={3} color="#fff" />
+                            : <Clock3 size={12} style={{ color: "var(--pf-muted)" }} />}
+                        </span>
+                        {!last && <span style={{ flex: 1, width: 2, minHeight: 26, margin: "5px 0", background: isActive ? "var(--pf-aring)" : "var(--pf-border)" }} />}
                       </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                          {step.time}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
-                          {step.label}
-                        </p>
+                      <div style={{ paddingBottom: last ? 0 : 18, flex: 1 }}>
+                        <div className="pf-muted-sm" style={{ fontWeight: 700, letterSpacing: ".14em", fontSize: 10.5 }}>{step.time}</div>
+                        <div className="pf-support-t" style={{ marginTop: 3 }}>{step.label}</div>
                       </div>
                     </div>
                   );
                 })}
-              </div>
 
-              <div className="mt-6 grid gap-3 md:grid-cols-3">
-                <div className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 dark:border-emerald-900/30 dark:bg-emerald-950/20">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-emerald-700 dark:text-emerald-300">
-                    <ShieldCheck size={15} />
-                    Preuves BelivaY
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
-                    Scan, horodatage et traces de livraison sont conserves par BelivaY pour proteger le client.
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 dark:border-sky-900/30 dark:bg-sky-950/20">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
-                    <Store size={15} />
-                    Point relais
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
-                    {tracking?.relay_point
-                      ? `Relais prevu: ${tracking.relay_point}.`
-                      : "Si un relais est choisi, son code de retrait apparaitra ici apres depot."}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
-                  <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-amber-700 dark:text-amber-300">
-                    <Scale size={15} />
-                    Litige protege
-                  </div>
-                  <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
-                    En cas de probleme, le paiement reste pilote par l'escrow et le litige est arbitre par BelivaY.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCourierChat((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Truck size={18} />
-                  {t('order.detail.contact_courier')}
-                </button>
-                {canSeeDisputeArea && (
-                  <button
-                    onClick={handleOpenDispute}
-                    disabled={!activeDispute && !disputeEligibility.eligible}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-orange-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:bg-orange-50 hover:text-primary disabled:cursor-not-allowed disabled:opacity-55 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  >
-                    <MessageCircleMore size={18} />
-                    {activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
-                  </button>
-                )}
-                {order.fulfillment_status === "DELIVERED" && (
-                  <button
-                    onClick={handleConfirmReceipt}
-                    className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"
-                  >
-                    <CheckCircle size={18} />
-                    {t('order.detail.confirm_receipt')}
-                  </button>
-                )}
-              </div>
-
-              {showCourierChat && (
-                <div className="mt-5 rounded-[1.6rem] border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-800 dark:bg-gray-950">
-                  <div className="mb-4 flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-extrabold text-gray-900 dark:text-white">Chat avec le livreur</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Le livreur peut répondre directement à ces messages.
-                      </p>
+                {/* Garanties */}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 12, marginTop: 22 }}>
+                  {[
+                    { ic: <ShieldCheck size={14} />, k: "Preuves BelivaY", d: "Scan, horodatage et traces de livraison sont conservés par BelivaY pour protéger le client." },
+                    { ic: <Store size={14} />, k: "Point relais", d: tracking?.relay_point ? `Relais prévu : ${tracking.relay_point}.` : "Si un relais est choisi, son code de retrait apparaîtra ici après dépôt." },
+                    { ic: <Scale size={14} />, k: "Litige protégé", d: "En cas de problème, le paiement reste piloté par l'escrow et le litige est arbitré par BelivaY." },
+                  ].map((b) => (
+                    <div key={b.k} style={{ borderRadius: 16, padding: 14, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
+                      <div className="pf-k" style={{ display: "flex", alignItems: "center", gap: 7 }}>{b.ic}{b.k}</div>
+                      <p className="pf-muted-sm" style={{ marginTop: 8, lineHeight: 1.55 }}>{b.d}</p>
                     </div>
-                    {tracking?.courier_name && (
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-600 shadow-sm dark:bg-gray-900 dark:text-gray-300">
-                        {tracking.courier_name}
-                      </span>
-                    )}
-                  </div>
-                  <div className="max-h-72 space-y-3 overflow-y-auto rounded-2xl bg-white p-3 dark:bg-gray-900">
-                    {courierMessages.length > 0 ? courierMessages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`max-w-[86%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                          message.sender_role === "CLIENT"
-                            ? "ml-auto bg-primary text-white"
-                            : "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                        }`}
-                      >
-                        <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "CLIENT" ? "text-white/70" : "text-gray-400"}`}>
-                          {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
-                        </div>
-                        {message.message}
-                      </div>
-                    )) : (
-                      <div className="rounded-2xl border border-dashed border-orange-200 p-5 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">
-                        Aucun message. Lancez la conversation avec le livreur.
-                      </div>
-                    )}
-                    <div ref={courierChatEndRef} />
-                  </div>
-                  <div className="mt-3 flex gap-3">
-                    <input
-                      value={courierChatDraft}
-                      onChange={(event) => setCourierChatDraft(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") handleSendCourierMessage();
-                      }}
-                      disabled={chatSending}
-                      className="min-w-0 flex-1 rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:opacity-50 dark:border-gray-700 dark:bg-gray-900"
-                      placeholder="Votre message au livreur..."
-                    />
-                    <button
-                      type="button"
-                      onClick={handleSendCourierMessage}
-                      disabled={chatSending || !courierChatDraft.trim()}
-                      className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white hover:bg-primary-dark disabled:opacity-50"
-                      aria-label="Envoyer au livreur"
-                    >
-                      <Send size={16} />
+                  ))}
+                </div>
+
+                {/* Actions */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 20 }}>
+                  <button className="pf-btn-accent" onClick={() => setShowCourierChat((c) => !c)}>
+                    <Truck size={15} />{t('order.detail.contact_courier')}
+                  </button>
+                  {canSeeDisputeArea && (
+                    <button className="pf-btn-ghost" onClick={handleOpenDispute} disabled={!activeDispute && !disputeEligibility.eligible}>
+                      <MessageCircleMore size={15} />{activeDispute ? "Voir le litige" : t('order.detail.open_dispute')}
                     </button>
-                  </div>
+                  )}
+                  {order.fulfillment_status === "DELIVERED" && (
+                    <button className="pf-btn-ghost" onClick={handleConfirmReceipt}>
+                      <CheckCircle size={15} />{t('order.detail.confirm_receipt')}
+                    </button>
+                  )}
                 </div>
-              )}
-            </section>
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-                {t('order.detail.items_title')}
-              </h2>
-              <div className="space-y-3">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-2xl bg-[#fcfbf8] px-4 py-4 dark:bg-gray-800"
-                  >
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {item.title_snapshot}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {item.qty} × {item.price_xaf_snapshot.toLocaleString()} FCFA
-                      </p>
+                {/* Chat livreur */}
+                {showCourierChat && (
+                  <div style={{ marginTop: 18, borderRadius: 18, padding: 16, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
+                    <div className="pf-row-between pf-mb">
+                      <div>
+                        <div className="pf-support-t">Chat avec le livreur</div>
+                        <div className="pf-muted-sm">Le livreur peut répondre directement à ces messages.</div>
+                      </div>
+                      {tracking?.courier_name && <span className="pf-tag">{tracking.courier_name}</span>}
                     </div>
-                    <p className="text-lg font-bold text-primary">
-                      {item.line_total_xaf.toLocaleString()} FCFA
-                    </p>
+                    <div style={{ maxHeight: 288, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10, padding: 12, borderRadius: 14, background: "var(--pf-glass)" }}>
+                      {courierMessages.length > 0 ? courierMessages.map((m) => (
+                        <div key={m.id} style={{
+                          maxWidth: "86%", padding: "11px 14px", fontSize: 12.5, lineHeight: 1.55,
+                          ...(m.sender_role === "CLIENT"
+                            ? { marginLeft: "auto", borderRadius: "16px 16px 6px 16px", background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))", color: "#fff" }
+                            : { borderRadius: "16px 16px 16px 6px", background: "var(--pf-s3)", color: "var(--pf-text2)", border: "1px solid var(--pf-border)" }),
+                        }}>
+                          <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", opacity: .7, marginBottom: 5 }}>
+                            {m.sender_name} · {new Date(m.created_at).toLocaleString("fr-FR")}
+                          </div>
+                          {m.message}
+                        </div>
+                      )) : (
+                        <div className="pf-muted-sm" style={{ padding: 18, textAlign: "center", border: "1px dashed var(--pf-bstrong)", borderRadius: 14 }}>
+                          Aucun message. Lancez la conversation avec le livreur.
+                        </div>
+                      )}
+                      <div ref={courierChatEndRef} />
+                    </div>
+                    <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
+                      <input
+                        className="pf-input"
+                        value={courierChatDraft}
+                        onChange={(e) => setCourierChatDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") handleSendCourierMessage(); }}
+                        disabled={chatSending}
+                        placeholder="Votre message au livreur…"
+                      />
+                      <button className="pf-btn-accent" onClick={handleSendCourierMessage} disabled={chatSending || !courierChatDraft.trim()} aria-label="Envoyer">
+                        <Send size={15} />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* Articles */}
+              <section className="pf-card pf-anim">
+                <div className="pf-card-title pf-mb">{t('order.detail.items_title')}</div>
+                {order.items.map((item) => (
+                  <div key={item.id} className="pf-order-line">
+                    <span className="pf-order-ic"><Package size={16} /></span>
+                    <div className="pf-order-mid">
+                      <div className="pf-order-id">{item.title_snapshot}</div>
+                      <div className="pf-muted-sm">{item.qty} × {item.price_xaf_snapshot.toLocaleString("fr-FR")} FCFA</div>
+                    </div>
+                    <div className="pf-order-total">{item.line_total_xaf.toLocaleString("fr-FR")} FCFA</div>
                   </div>
                 ))}
-              </div>
-            </section>
+              </section>
 
-            {canSeeDisputeArea && (
-            <section
-              ref={disputeSectionRef}
-              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
-            >
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.22em] text-primary">
-                    Litige commande
-                  </p>
-                  <h2 className="mt-2 text-xl font-bold text-gray-900 dark:text-white">
-                    Chat de litige pour cette commande
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                    Le litige se declenche ici, depuis la commande recue. Vous avez 24h apres reception pour ouvrir la discussion de mediation.
-                  </p>
-                </div>
-                <div className={`rounded-full px-4 py-2 text-xs font-bold ${
-                  disputeEligibility.eligible
-                    ? "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300"
-                    : "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300"
-                }`}>
-                  {disputeEligibility.eligible
-                    ? `Fenetre ouverte · ${formatRemainingDisputeTime(disputeEligibility.remainingMs)} restantes`
-                    : disputeEligibility.message}
-                </div>
-              </div>
-
-              {showDisputeComposer && !activeDispute ? (
-                <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
-                  <div className="w-full max-w-xl rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
-                    <div className="mb-5 flex items-start gap-4">
-                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-orange-50 text-primary dark:bg-primary/10">
-                        <Scale size={24} />
-                      </div>
-                      <div>
-                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">Ouvrir un litige</h3>
-                        <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
-                          Commande #{order.id} · {order.total_xaf.toLocaleString("fr-FR")} FCFA
-                        </p>
-                      </div>
+              {/* Litige */}
+              {canSeeDisputeArea && (
+                <section ref={disputeSectionRef} className="pf-card pf-anim">
+                  <div className="pf-panel-head">
+                    <div>
+                      <div className="pf-k">Litige commande</div>
+                      <div className="pf-panel-title" style={{ fontSize: 17, marginTop: 4 }}>Chat de médiation</div>
+                      <p className="pf-panel-sub" style={{ maxWidth: 520 }}>
+                        Le litige se déclenche depuis la commande reçue. Vous avez 24h après réception pour ouvrir la discussion.
+                      </p>
                     </div>
-
-                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
-                      Motif du litige
-                    </label>
-                    <select
-                      value={disputeReason}
-                      onChange={(event) => setDisputeReason(event.target.value)}
-                      className="w-full rounded-2xl border-2 border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white"
-                    >
-                      {DISPUTE_REASONS.map((reason) => (
-                        <option key={reason} value={reason}>{reason}</option>
-                      ))}
-                    </select>
-
-                    <label className="mb-2 mt-4 block text-sm font-bold text-gray-800 dark:text-gray-200">
-                      Description
-                    </label>
-                    <textarea
-                      value={disputeDraft}
-                      onChange={(event) => setDisputeDraft(event.target.value)}
-                      className="min-h-[132px] w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950"
-                      placeholder="Décrivez précisément le problème constaté."
-                    />
-
-                    <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-800 dark:bg-primary/10 dark:text-orange-200">
-                      L'équipe BelivaY examinera votre demande et pourra contacter le vendeur ou le livreur.
-                    </div>
-
-                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                      <button
-                        type="button"
-                        onClick={() => void handleCreateDispute()}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark"
-                      >
-                        <AlertTriangle size={17} />
-                        Ouvrir le litige
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setShowDisputeComposer(false)}
-                        className="inline-flex items-center justify-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                      >
-                        Annuler
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : null}
-
-              {disputes.length > 0 ? (
-                <div className="mt-5 grid gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
-                  <div className="space-y-3">
-                    {disputes.map((dispute) => (
-                      <button
-                        type="button"
-                        key={dispute.id}
-                        onClick={() => setActiveDisputeId(dispute.id)}
-                        className={`w-full rounded-[1.4rem] border p-4 text-left transition ${
-                          activeDispute?.id === dispute.id
-                            ? "border-primary bg-[#fff4eb] dark:bg-primary/10"
-                            : "border-gray-200 bg-white hover:border-orange-200 hover:bg-orange-50/50 dark:border-gray-700 dark:bg-gray-950"
-                        }`}
-                      >
-                        <p className="text-xs font-black uppercase tracking-[0.18em] text-primary">
-                          {`Commande #${dispute.order}`}
-                        </p>
-                        <p className="mt-2 text-sm font-bold text-gray-900 dark:text-white">
-                          {dispute.reason}
-                        </p>
-                        <p className="mt-2 line-clamp-2 text-sm text-gray-500 dark:text-gray-400">
-                          {dispute.messages[dispute.messages.length - 1]?.message}
-                        </p>
-                      </button>
-                    ))}
+                    <span className="pf-chip" style={disputeEligibility.eligible ? undefined : { color: "#b45309", background: "rgba(180,83,9,.12)", borderColor: "rgba(180,83,9,.28)" }}>
+                      {disputeEligibility.eligible
+                        ? `Fenêtre ouverte · ${formatRemainingDisputeTime(disputeEligibility.remainingMs)} restantes`
+                        : disputeEligibility.message}
+                    </span>
                   </div>
 
-                  <div className="rounded-[1.6rem] border border-gray-200 bg-[#fcfbf8] p-4 dark:border-gray-700 dark:bg-gray-950">
-                    {activeDispute ? (
-                      <>
-                        <div className="mb-4 border-b border-gray-200 pb-4 dark:border-gray-800">
-                          <p className="text-lg font-bold text-gray-900 dark:text-white">
-                            {`Commande #${activeDispute.order}`} · {activeDispute.reason}
-                          </p>
-                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                            Conversation de mediation ouverte pour cette commande.
-                          </p>
-                        </div>
-
-                        <div className="space-y-3">
-                          {activeDispute.messages.map((message) => (
-                            <div
-                              key={message.id}
-                              className={`max-w-[88%] rounded-[1.1rem] px-4 py-3 text-sm leading-6 ${
-                                message.sender === user?.id
-                                  ? "ml-auto bg-[#fff1e5] text-gray-900 dark:bg-primary/10 dark:text-white"
-                                  : "bg-white text-gray-600 dark:bg-gray-900 dark:text-gray-300"
-                              }`}
-                            >
-                              <div className="mb-1 text-xs font-bold uppercase tracking-[0.12em] text-gray-400">
-                                {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
-                              </div>
-                              {message.message}
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="mt-4 flex gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
-                          <input
-                            value={disputeReply}
-                            onChange={(event) => setDisputeReply(event.target.value)}
-                            className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
-                            placeholder="Repondre au litige..."
-                          />
-                          <button
-                            type="button"
-                            onClick={() => void handleSendDisputeReply()}
-                            className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark"
-                            aria-label="Envoyer la reponse"
-                          >
-                            <Send size={16} />
+                  {disputes.length > 0 ? (
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(0,280px) minmax(0,1fr)", gap: 14 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        {disputes.map((d) => (
+                          <button key={d.id} type="button" onClick={() => setActiveDisputeId(d.id)}
+                            className={`pf-addr${activeDispute?.id === d.id ? " def" : ""}`}
+                            style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
+                            <div className="pf-k">{`Commande #${d.order}`}</div>
+                            <div className="pf-support-t" style={{ marginTop: 6 }}>{d.reason}</div>
+                            <div className="pf-muted-sm" style={{ marginTop: 6 }}>{d.messages[d.messages.length - 1]?.message}</div>
                           </button>
-                        </div>
-                      </>
-                    ) : null}
-                  </div>
-                </div>
-              ) : !showDisputeComposer ? (
-                <div className="mt-5 rounded-[1.5rem] border border-dashed border-orange-200 bg-[#fffaf6] p-5 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-950 dark:text-gray-300">
-                  Aucun litige ouvert sur cette commande. {disputeEligibility.eligible ? "Utilisez le bouton ci-dessus pour demarrer le chat de mediation." : "La fenetre d'ouverture n'est plus disponible."}
-                </div>
-              ) : null}
-            </section>
-            )}
-          </div>
+                        ))}
+                      </div>
 
-          <div className="space-y-6">
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
-                {t('order.detail.summary_title')}
-              </h2>
-              <div className="space-y-3 text-sm">
-                <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>{t('order.detail.subtotal')}</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {order.subtotal_xaf.toLocaleString()} FCFA
-                  </span>
-                </div>
-                <div className="flex justify-between text-gray-500 dark:text-gray-400">
-                  <span>{order.delivery_mode === "PICKUP" ? "Retrait boutique" : t('order.detail.delivery_fee')}</span>
-                  <span className="font-semibold text-gray-900 dark:text-white">
-                    {order.delivery_fee_xaf === 0 ? "0 FCFA" : `${order.delivery_fee_xaf.toLocaleString()} FCFA`}
-                  </span>
-                </div>
-                <div className="flex justify-between border-t border-gray-100 pt-3 font-semibold dark:border-gray-800">
-                  <span className="text-gray-900 dark:text-white">{t('order.detail.total')}</span>
-                  <span className="text-xl text-primary">{order.total_xaf.toLocaleString()} FCFA</span>
-                </div>
-              </div>
-            </section>
+                      <div style={{ borderRadius: 18, padding: 16, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
+                        {activeDispute && (
+                          <>
+                            <div style={{ paddingBottom: 14, borderBottom: "1px solid var(--pf-border)" }}>
+                              <div className="pf-support-t" style={{ fontSize: 15 }}>{`Commande #${activeDispute.order}`} · {activeDispute.reason}</div>
+                              <div className="pf-muted-sm" style={{ marginTop: 3 }}>Conversation de médiation ouverte pour cette commande.</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 14 }}>
+                              {activeDispute.messages.map((m) => (
+                                <div key={m.id} style={{
+                                  maxWidth: "88%", padding: "11px 14px", fontSize: 12.5, lineHeight: 1.55,
+                                  ...(m.sender === user?.id
+                                    ? { marginLeft: "auto", borderRadius: "16px 16px 6px 16px", background: "var(--pf-asoft)", border: "1px solid var(--pf-aring)", color: "var(--pf-text)" }
+                                    : { borderRadius: "16px 16px 16px 6px", background: "var(--pf-glass)", border: "1px solid var(--pf-border)", color: "var(--pf-text2)" }),
+                                }}>
+                                  <div style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: ".12em", textTransform: "uppercase", color: "var(--pf-muted)", marginBottom: 5 }}>
+                                    {m.sender_name} · {new Date(m.created_at).toLocaleString("fr-FR")}
+                                  </div>
+                                  {m.message}
+                                </div>
+                              ))}
+                            </div>
+                            <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid var(--pf-border)", display: "flex", gap: 10 }}>
+                              <input className="pf-input" value={disputeReply} onChange={(e) => setDisputeReply(e.target.value)}
+                                onKeyDown={(e) => { if (e.key === "Enter") handleSendDisputeReply(); }} placeholder="Répondre au litige…" />
+                              <button className="pf-btn-accent" onClick={handleSendDisputeReply} aria-label="Envoyer"><Send size={15} /></button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  ) : !showDisputeComposer ? (
+                    <div className="pf-muted-sm" style={{ padding: 18, borderRadius: 16, border: "1px dashed var(--pf-bstrong)", background: "var(--pf-s3)" }}>
+                      Aucun litige ouvert sur cette commande.{" "}
+                      {disputeEligibility.eligible ? "Utilisez le bouton ci-dessus pour démarrer la médiation." : "La fenêtre d'ouverture n'est plus disponible."}
+                    </div>
+                  ) : null}
+                </section>
+              )}
+            </div>
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
-                {t('order.detail.shipping_title')}
-              </h2>
-              <div className="space-y-4 text-sm text-gray-600 dark:text-gray-400">
-                <div className="flex items-start gap-3">
-                  {order.delivery_mode === "PICKUP" ? (
-                    <Store size={18} className="mt-0.5 text-primary" />
-                  ) : (
-                    <MapPin size={18} className="mt-0.5 text-primary" />
-                  )}
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{order.city}</p>
-                    <p>
-                      {order.delivery_mode === "PICKUP"
-                        ? "Retrait en boutique partenaire"
-                        : order.address}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <Phone size={18} className="mt-0.5 text-primary" />
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_phone_label')}</p>
-                    <p>{order.customer_phone}</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <UserCircle2 size={18} className="mt-0.5 text-primary" />
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_courier_label')}</p>
-                    <p>
-                      {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
-                      {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* Colonne droite */}
+            <aside className="pf-side" style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <OrderPaymentPanel order={order} onPaid={reloadOrder} />
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-900/20">
-                  <ShieldCheck size={20} />
+              <section className="pf-glass-panel pf-anim">
+                <div className="pf-card-title pf-mb">{t('order.detail.summary_title')}</div>
+                <div className="pf-summary-row"><span className="pf-muted-sm">{t('order.detail.subtotal')}</span><span className="pf-summary-v">{order.subtotal_xaf.toLocaleString("fr-FR")} FCFA</span></div>
+                <div className="pf-summary-row">
+                  <span className="pf-muted-sm">{order.delivery_mode === "PICKUP" ? "Retrait boutique" : t('order.detail.delivery_fee')}</span>
+                  <span className="pf-summary-v">{order.delivery_fee_xaf === 0 ? "Gratuit" : `${order.delivery_fee_xaf.toLocaleString("fr-FR")} FCFA`}</span>
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.secure_payment_title')}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{t('order.detail.secure_payment_subtitle')}</p>
+                <div style={{ margin: "12px 0", borderTop: "1px dashed var(--pf-border)" }} />
+                <div className="pf-total-row">
+                  <span className="pf-muted-sm">{t('order.detail.total')}</span>
+                  <b>{order.total_xaf.toLocaleString("fr-FR")} FCFA</b>
                 </div>
-              </div>
-            </section>
+              </section>
+
+              <section className="pf-glass-panel pf-anim">
+                <div className="pf-card-title pf-mb">{t('order.detail.shipping_title')}</div>
+                {[
+                  { ic: order.delivery_mode === "PICKUP" ? <Store size={16} /> : <MapPin size={16} />, t: order.city, d: order.delivery_mode === "PICKUP" ? "Retrait en boutique partenaire" : order.address },
+                  { ic: <Phone size={16} />, t: t('order.detail.shipping_phone_label'), d: order.customer_phone },
+                  { ic: <UserCircle2 size={16} />, t: t('order.detail.shipping_courier_label'), d: `${tracking?.courier_name || t('order.detail.shipping_courier_pending')}${tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}` },
+                ].map((row, i) => (
+                  <div key={i} className="pf-order-line">
+                    <span className="pf-order-ic">{row.ic}</span>
+                    <div className="pf-order-mid">
+                      <div className="pf-order-id">{row.t}</div>
+                      <div className="pf-muted-sm">{row.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </section>
+            </aside>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Modale d'ouverture de litige */}
+      {showDisputeComposer && !activeDispute && (
+        <div className="pf-root">
+          <div className="pf-backdrop">
+            <div className="pf-sheet" style={{ maxWidth: 520 }}>
+              <div className="pf-row-between pf-mb">
+                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
+                  <span className="pf-notif-ic"><Scale size={20} /></span>
+                  <div>
+                    <div className="pf-panel-title" style={{ fontSize: 18 }}>Ouvrir un litige</div>
+                    <div className="pf-muted-sm">Commande #{order.id} · {order.total_xaf.toLocaleString("fr-FR")} FCFA</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="pf-field">
+                <label className="pf-label">Motif du litige</label>
+                <select className="pf-input" value={disputeReason} onChange={(e) => setDisputeReason(e.target.value)}>
+                  {DISPUTE_REASONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </div>
+
+              <div className="pf-field" style={{ marginTop: 14 }}>
+                <label className="pf-label">Description</label>
+                <textarea className="pf-input pf-textarea" value={disputeDraft} onChange={(e) => setDisputeDraft(e.target.value)}
+                  placeholder="Décrivez précisément le problème constaté." />
+              </div>
+
+              <div className="pf-info-note">
+                <span className="pf-info-ic"><AlertTriangle size={15} /></span>
+                <div className="pf-muted-sm">L'équipe BelivaY examinera votre demande et pourra contacter le vendeur ou le livreur.</div>
+              </div>
+
+              <button className="pf-btn-accent pf-btn-block" onClick={handleCreateDispute} disabled={!disputeDraft.trim()}>
+                <AlertTriangle size={16} />Ouvrir le litige
+              </button>
+              <button className="pf-btn-ghost pf-btn-block" onClick={() => setShowDisputeComposer(false)}>Annuler</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

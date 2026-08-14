@@ -24,7 +24,12 @@ class PaymentInitSerializer(serializers.Serializer):
             order = Order.objects.get(id=value)
         except Order.DoesNotExist:
             raise serializers.ValidationError("Commande introuvable")
-        
+
+        # Un client ne peut initier un paiement que sur SA commande.
+        request = self.context.get("request")
+        if request and not request.user.is_staff and order.user_id != request.user.id:
+            raise serializers.ValidationError("Cette commande ne vous appartient pas")
+
         # Vérifier que la commande n'est pas déjà payée
         if order.payment_status == Order.PaymentStatus.PAID:
             raise serializers.ValidationError("Cette commande est déjà payée")
@@ -75,9 +80,11 @@ class PaymentTransactionSerializer(serializers.ModelSerializer):
             'payer_phone',
             'order_payment_status',
             'order_payment_status_display',
-            'created_at'
+            'raw_payload',
+            'created_at',
+            'updated_at',
         ]
-        read_only_fields = ['id', 'created_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
 
 
 class SimulatePaymentSerializer(serializers.Serializer):
@@ -92,22 +99,16 @@ class SimulatePaymentSerializer(serializers.Serializer):
         success = validated_data.get('success', True)
         
         if success:
-            # Marquer la transaction comme réussie
-            instance.status = PaymentTransaction.Status.CONFIRMED
-            instance.save()
-            
-            # Marquer la commande comme payée
+            instance.status = PaymentTransaction.Status.SUCCESS   # était CONFIRMED (inexistant)
+            instance.save(update_fields=["status", "updated_at"])
             order = instance.order
             order.payment_status = Order.PaymentStatus.PAID
-            order.save()
+            order.save(update_fields=["payment_status", "updated_at"])
         else:
-            # Marquer la transaction comme échouée
             instance.status = PaymentTransaction.Status.FAILED
-            instance.save()
-            
-            # Marquer le paiement comme échoué
+            instance.save(update_fields=["status", "updated_at"])
             order = instance.order
             order.payment_status = Order.PaymentStatus.FAILED
-            order.save()
-        
+            order.save(update_fields=["payment_status", "updated_at"])
+
         return instance

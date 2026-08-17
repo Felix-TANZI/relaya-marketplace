@@ -1144,8 +1144,9 @@
     // solde qu'il pourrait retirer quand il veut.
     nav_wallet: 'Mon compte BelivaY',
     nav_settlements: 'Mes règlements',
+    nav_pending_funds: 'Mes fonds en attente',
     nav_escrow: 'Fonds en attente',
-    nav_adjustments: 'Ajustements',
+    nav_adjustments: 'Mes ajustements',
     nav_settings: 'Paramètres',
     nav_shop: 'Ma boutique',
     nav_analytics_short: 'Analytiques',

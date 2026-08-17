@@ -68,6 +68,11 @@ import SellerBoostPage          from '@/features/vendors/SellerBoostPage';
 import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
 import SellerPlansPage          from '@/features/vendors/SellerPlansPage';
 import SellerSettingsPage       from '@/features/vendors/SellerSettingsPage';
+import SellerPaymentsPage        from '@/features/vendors/SellerPaymentsPage';
+import SellerWalletPage          from '@/features/vendors/SellerWalletPage';
+import SellerSettlementsPage     from '@/features/vendors/SellerSettlementsPage';
+import SellerPendingFundsPage    from '@/features/vendors/SellerPendingFundsPage';
+import SellerAdjustmentsPage     from '@/features/vendors/SellerAdjustmentsPage';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTES FINANCIÈRES PARTENAIRES
@@ -224,6 +229,16 @@ export const router = createBrowserRouter([
       { path: 'certifications',    element: <SellerCertificationsPage /> },
       { path: 'plans',             element: <SellerPlansPage /> },
       { path: 'settings',          element: <SellerSettingsPage /> },
+
+      // Pages financières vendeur. Declarees AVANT `sellerPaymentRoutes` :
+      // ce jeu generique expose aussi `wallet`, `payments` et `adjustments`,
+      // et React Router retient la premiere correspondance.
+      { path: 'wallet',        element: <SellerWalletPage /> },
+      { path: 'payments',      element: <SellerPaymentsPage /> },
+      { path: 'settlements',   element: <SellerSettlementsPage /> },
+      { path: 'pending-funds', element: <SellerPendingFundsPage /> },
+      { path: 'adjustments',   element: <SellerAdjustmentsPage /> },
+
       ...sellerPaymentRoutes,
     ],
   },

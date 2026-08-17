@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Clock, Download, Lock, RefreshCw, ShieldCheck, TriangleAlert } from "lucide-react";
-import { listPaymentsByOrder, PROVIDER_LABELS, type PaymentTransaction } from "@/services/api/payments";
+import { getOrderProtection, listPaymentsByOrder, PROVIDER_LABELS, type PaymentTransaction } from "@/services/api/payments";
+import type { OrderProtection } from "@/services/api/payments";
 import type { Order } from "@/types/order";
 import { PfShellStyles } from "@/styles/pfShell";
 import { OperatorLogo } from "./OperatorLogo";
@@ -27,6 +28,47 @@ export function OrderPaymentPanel({ order, onPaid }: { order: Order; onPaid?: ()
   const released = RELEASED.includes(order.fulfillment_status);
   const fmtDate = (iso?: string) => (iso ? new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—");
 
+  // ─────────────────────────────────────────────────────────────────────
+  // L'ECHEANCE VIENT DU BACKEND, PAS D'UNE CONSTANTE
+  //
+  // Ce panneau annoncait « 72h » en dur. Or le delai depend de la
+  // politique de sequestre configuree, et peut changer.
+  //
+  // Surtout : passe cette echeance, la commande est confirmee AUTOMATIQUE-
+  // MENT et l'argent part au vendeur. Un acheteur qui l'ignore peut perdre
+  // son recours sans avoir ete prevenu — c'est la seule information dont
+  // l'absence lui coute de l'argent.
+  // ─────────────────────────────────────────────────────────────────────
+  const [protection, setProtection] = useState<OrderProtection | null>(null);
+  // Le compte a rebours est fige au chargement, pas recalcule a chaque rendu :
+  // `Date.now()` pendant le rendu rendrait le composant impur, et le nombre de
+  // jours sauterait au gre de re-rendus sans rapport.
+  const [joursRestants, setJoursRestants] = useState<number | null>(null);
+
+  useEffect(() => {
+    let monte = true;
+    getOrderProtection(order.id)
+      .then((lignes) => {
+        if (!monte) return;
+        const ligne = lignes.find((l) => l.component === "GOODS") ?? null;
+        setProtection(ligne);
+        setJoursRestants(
+          ligne?.auto_confirm_at
+            ? Math.ceil(
+              (new Date(ligne.auto_confirm_at).getTime() - Date.now()) / 86_400_000,
+            )
+            : null,
+        );
+      })
+      .catch(() => {
+        // Silence : une commande anterieure au module financier n'a pas de
+        // sequestre. Afficher une erreur serait inquietant sans raison.
+      });
+    return () => { monte = false; };
+  }, [order.id]);
+
+  const echeance = protection?.auto_confirm_at ?? null;
+
   const steps = [
     { title: "Paiement initié", time: fmtDate(last?.created_at ?? order.created_at),
       desc: last ? `Demande ${PROVIDER_LABELS[last.provider]} envoyée au ${last.payer_phone}.` : "Commande créée.",
@@ -37,8 +79,15 @@ export function OrderPaymentPanel({ order, onPaid }: { order: Order; onPaid?: ()
     { title: "Fonds sous séquestre", time: released ? fmtDate(order.updated_at) : paid ? "En cours" : "À venir",
       desc: "L'argent est conservé par BelivaY pendant la préparation et la livraison.",
       state: released ? "done" : paid ? "cur" : "todo" },
-    { title: "Libération au vendeur", time: released ? fmtDate(order.updated_at) : "À venir",
-      desc: "72h après livraison, ou dès que vous confirmez la réception.", state: released ? "done" : "todo" },
+    { title: "Libération au vendeur",
+      time: released ? fmtDate(order.updated_at) : echeance ? fmtDate(echeance) : "À venir",
+      desc: echeance && !released
+        ? `Confirmation automatique le ${fmtDate(echeance)}${
+          joursRestants !== null && joursRestants > 0
+            ? ` — dans ${joursRestants} jour${joursRestants > 1 ? "s" : ""}`
+            : ""}, ou dès que vous confirmez la réception.`
+        : "Dès que vous confirmez la réception de votre commande.",
+      state: released ? "done" : "todo" },
   ] as const;
 
   const progress = DELIVERED.includes(order.fulfillment_status) ? 78 : paid ? 38 : 12;
@@ -53,7 +102,14 @@ export function OrderPaymentPanel({ order, onPaid }: { order: Order; onPaid?: ()
         <div className="pf-hero-v">{order.total_xaf.toLocaleString("fr-FR")}<span>FCFA</span></div>
         <div style={{ position: "relative", marginTop: 14, fontSize: 12, lineHeight: 1.6, opacity: .85 }}>
           {paid
-            ? <>Libération au vendeur <b>72h après livraison</b>, ou dès que vous confirmez la réception.</>
+            ? echeance
+              // On l'ecrit en clair : cacher une echeance qui joue en
+              // faveur du vendeur serait deloyal.
+              ? <>Confirmation automatique le <b>{fmtDate(echeance)}</b>
+                {joursRestants !== null && joursRestants > 0
+                  && <> — dans <b>{joursRestants} jour{joursRestants > 1 ? "s" : ""}</b></>}
+                , ou dès que vous confirmez la réception.</>
+              : <>Libération au vendeur dès que vous confirmez la réception.</>
             : <>Les articles restent réservés jusqu'au paiement. Aucun débit n'a eu lieu.</>}
         </div>
         <div style={{ position: "relative", marginTop: 16, height: 7, borderRadius: 999, background: "rgba(255,255,255,.25)", overflow: "hidden" }}>

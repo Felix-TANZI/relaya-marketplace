@@ -1,77 +1,54 @@
 import { useTranslation } from "react-i18next";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  AlertCircle,
-  CreditCard,
-  MapPin,
-  Package,
-  Store,
-  Truck,
-  X,
-  XCircle,
-} from "lucide-react";
-import { Button } from "@/components/ui";
+import { AlertCircle, Lock, MapPin, Package, Store, Truck, X, XCircle } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
 import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
+import { PfShellStyles } from "@/styles/pfShell";
+import { OperatorLogo } from "@/features/payments/OperatorLogo";
+import PaymentSheet from "@/features/payments/PaymentSheet";
 
 const TrackingMap = lazy(() =>
   import("@/components/TrackingMap").catch(() => ({
     default: (() => (
-      <div className="flex h-full min-h-[200px] items-center justify-center rounded-2xl bg-gray-100 text-sm text-gray-400 dark:bg-gray-800">
+      <div style={{ height: "100%", minHeight: 200, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 18, background: "var(--pf-s3)", fontSize: 13, color: "var(--pf-muted)" }}>
         Carte indisponible
       </div>
     )) as (typeof import("@/components/TrackingMap"))["default"],
   }))
 );
 
-type TabKey = "all" | "in_delivery" | "preparing" | "delivered" | "cancelled";
+type TabKey = "all" | "to_pay" | "in_delivery" | "preparing" | "delivered" | "cancelled";
 
-const TABS: { key: TabKey; label: string; statuses: FulfillmentStatus[] }[] = [
-  { key: "all", label: "Toutes", statuses: [] },
-  { key: "in_delivery", label: "En livraison", statuses: ["OUT_FOR_DELIVERY", "SHIPPED"] },
-  { key: "preparing", label: "En cours", statuses: ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"] },
-  { key: "delivered", label: "Livrées", statuses: ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"] },
-  { key: "cancelled", label: "Annulées", statuses: ["CANCELLED", "REFUNDED"] },
+const PREPARING: FulfillmentStatus[] = ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"];
+const DELIVERED: FulfillmentStatus[] = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"];
+const SHIPPING: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED"];
+const CLOSED: FulfillmentStatus[] = ["CANCELLED", "REFUNDED"];
+const LIVE: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP", "DRIVER_ASSIGNED"];
+
+const TABS: { key: TabKey; label: string }[] = [
+  { key: "all", label: "Toutes" },
+  { key: "to_pay", label: "À payer" },
+  { key: "in_delivery", label: "En livraison" },
+  { key: "preparing", label: "En cours" },
+  { key: "delivered", label: "Livrées" },
+  { key: "cancelled", label: "Annulées" },
 ];
 
-const PREPARING_STATUSES: FulfillmentStatus[] = ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"];
+const FULFILLMENT_LABELS: Record<string, string> = {
+  OUT_FOR_DELIVERY: "En livraison", SHIPPED: "En livraison",
+  READY_FOR_PICKUP: "Prête au retrait", DRIVER_ASSIGNED: "Prise en charge", PICKED_UP: "Prise en charge",
+  DELIVERED: "Livrée", BUYER_CONFIRMED: "Livrée", AUTO_CONFIRMED: "Livrée",
+  RELEASED_TO_VENDOR: "Terminée", DISPUTED: "Litige", CANCELLED: "Annulée", REFUNDED: "Remboursée",
+};
 
-function getFulfillmentBadge(status: FulfillmentStatus) {
-  const green = { cls: "bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300", dot: "bg-green-500" };
-  const blue = { cls: "bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300", dot: "bg-blue-500" };
-  const orange = { cls: "bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300", dot: "bg-orange-500" };
-  const gray = { cls: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400", dot: "bg-gray-400" };
-
-  const map: Record<string, { label: string; cls: string; dot: string }> = {
-    OUT_FOR_DELIVERY: { label: "En livraison", ...orange },
-    SHIPPED: { label: "En livraison", ...orange },
-    READY_FOR_PICKUP: { label: "Prête au retrait", ...blue },
-    DRIVER_ASSIGNED: { label: "Prise en charge", ...blue },
-    PICKED_UP: { label: "Prise en charge", ...blue },
-    DELIVERED: { label: "Livrée", ...green },
-    BUYER_CONFIRMED: { label: "Livrée", ...green },
-    AUTO_CONFIRMED: { label: "Livrée", ...green },
-    RELEASED_TO_VENDOR: { label: "Terminée", ...green },
-    DISPUTED: { label: "Litige", cls: "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300", dot: "bg-red-500" },
-    CANCELLED: { label: "Annulée", ...gray },
-    REFUNDED: { label: "Remboursée", ...gray },
-  };
-  return map[status] ?? { label: "En préparation", cls: "bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300", dot: "bg-amber-500" };
-}
-
-function getPaymentBadge(status: PaymentStatus) {
-  const map: Record<PaymentStatus, { label: string; cls: string }> = {
-    PAID: { label: "Payé", cls: "text-green-600 dark:text-green-400" },
-    PENDING: { label: "Paiement en attente", cls: "text-amber-600 dark:text-amber-400" },
-    FAILED: { label: "Paiement échoué", cls: "text-red-600 dark:text-red-400" },
-    REFUNDED: { label: "Remboursé", cls: "text-gray-500 dark:text-gray-400" },
-  };
-  return map[status];
-}
-
-const ACTIVE_STATUSES: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP", "DRIVER_ASSIGNED"];
+const PAYMENT_LABELS: Record<PaymentStatus, { label: string; tone: "ok" | "wait" | "err" | "mut" }> = {
+  PAID: { label: "Payé", tone: "ok" },
+  PENDING: { label: "À payer", tone: "wait" },
+  FAILED: { label: "Paiement échoué", tone: "err" },
+  REFUNDED: { label: "Remboursé", tone: "mut" },
+};
 
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
@@ -82,69 +59,64 @@ export default function OrdersHistoryPage() {
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [cancelCandidate, setCancelCandidate] = useState<Order | null>(null);
   const [cancelFeedback, setCancelFeedback] = useState("");
+  const [payTarget, setPayTarget] = useState<Order | null>(null);
 
-  useEffect(() => {
-    ordersApi
-      .getMyOrders()
-      .then((data) => {
-        setOrders(getResilientOrders(data));
-      })
+  const load = () => {
+    ordersApi.getMyOrders()
+      .then((data) => setOrders(getResilientOrders(data)))
       .catch(() => {
         setOrders([]);
         setError("Nous n'arrivons pas à charger vos commandes pour le moment. Réessayez dans un instant.");
       })
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(load, []);
 
   const locale = i18n.language === "fr" ? "fr-FR" : "en-US";
   const fmt = (n: number) => `${Math.round(n).toLocaleString(locale)} FCFA`;
-  const formatDate = (d: string) =>
+  const fmtDate = (d: string) =>
     new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" }).format(new Date(d));
 
-  const filteredOrders = useMemo(() => {
-    const tab = TABS.find((tabItem) => tabItem.key === activeTab);
-    if (!tab || tab.statuses.length === 0) return orders;
-    return orders.filter((order) => tab.statuses.includes(order.fulfillment_status));
-  }, [orders, activeTab]);
+  const isUnpaid = (o: Order) =>
+    (o.payment_status === "PENDING" || o.payment_status === "FAILED") && !CLOSED.includes(o.fulfillment_status);
 
-  const tabCounts = useMemo(() => {
-    const counts: Record<TabKey, number> = { all: orders.length, in_delivery: 0, preparing: 0, delivered: 0, cancelled: 0 };
-    for (const order of orders) {
-      if (["OUT_FOR_DELIVERY", "SHIPPED"].includes(order.fulfillment_status)) counts.in_delivery++;
-      else if (PREPARING_STATUSES.includes(order.fulfillment_status)) counts.preparing++;
-      else if (["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order.fulfillment_status)) counts.delivered++;
-      else if (["CANCELLED", "REFUNDED"].includes(order.fulfillment_status)) counts.cancelled++;
+  const counts = useMemo(() => {
+    const c: Record<TabKey, number> = { all: orders.length, to_pay: 0, in_delivery: 0, preparing: 0, delivered: 0, cancelled: 0 };
+    for (const o of orders) {
+      if (isUnpaid(o)) c.to_pay++;
+      if (SHIPPING.includes(o.fulfillment_status)) c.in_delivery++;
+      else if (PREPARING.includes(o.fulfillment_status)) c.preparing++;
+      else if (DELIVERED.includes(o.fulfillment_status)) c.delivered++;
+      else if (CLOSED.includes(o.fulfillment_status)) c.cancelled++;
     }
-    return counts;
+    return c;
   }, [orders]);
 
-  const stats = {
-    total: orders.length,
-    inProgress: tabCounts.in_delivery + tabCounts.preparing,
-    delivered: tabCounts.delivered,
-  };
+  const filtered = useMemo(() => {
+    switch (activeTab) {
+      case "to_pay": return orders.filter(isUnpaid);
+      case "in_delivery": return orders.filter((o) => SHIPPING.includes(o.fulfillment_status));
+      case "preparing": return orders.filter((o) => PREPARING.includes(o.fulfillment_status));
+      case "delivered": return orders.filter((o) => DELIVERED.includes(o.fulfillment_status));
+      case "cancelled": return orders.filter((o) => CLOSED.includes(o.fulfillment_status));
+      default: return orders;
+    }
+  }, [orders, activeTab]);
 
-  const activeDeliveries = useMemo(
-    () => orders.filter((order) => ["OUT_FOR_DELIVERY", "SHIPPED"].includes(order.fulfillment_status)),
-    [orders],
-  );
+  const activeDeliveries = useMemo(() => orders.filter((o) => SHIPPING.includes(o.fulfillment_status)), [orders]);
+  const escrowTotal = orders.filter((o) => o.payment_status === "PAID" && !DELIVERED.includes(o.fulfillment_status))
+    .reduce((s, o) => s + o.total_xaf, 0);
 
-  const canCancelOrder = (order: Order) =>
-    !["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR", "CANCELLED", "REFUNDED"].includes(order.fulfillment_status);
+  const canCancel = (o: Order) => ![...DELIVERED, ...CLOSED].includes(o.fulfillment_status);
 
-  const handleCancelOrder = (order: Order) => {
-    setCancelCandidate(order);
-    setCancelFeedback("");
-  };
-
-  const confirmCancelOrder = async () => {
+  const confirmCancel = async () => {
     if (!cancelCandidate) return;
     const order = cancelCandidate;
     setCancelCandidate(null);
-
     try {
       const cancelled = await ordersApi.cancel(order.id);
-      setOrders((current) => current.map((item) => (item.id === order.id ? cancelled : item)));
+      setOrders((cur) => cur.map((i) => (i.id === order.id ? cancelled : i)));
       setCancelFeedback(`Commande #${order.id} annulée.`);
       window.dispatchEvent(new Event("belivay-new-notification"));
     } catch {
@@ -152,336 +124,281 @@ export default function OrdersHistoryPage() {
     }
   };
 
-  /* ── Loading ── */
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8">
-        <div className="mx-auto max-w-7xl space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl bg-white/70 dark:bg-gray-900/70" />
-          ))}
+      <>
+        <PfShellStyles />
+        <div className="pf-root pf-page">
+          <div className="pf-wrap" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="pf-glass-panel" style={{ height: 148, opacity: .55 }} />
+            ))}
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
-  /* ── Error ── */
   if (error) {
     return (
-      <div className="min-h-screen bg-[#f8f5f1] px-4 py-10 dark:bg-gray-950">
-        <div className="mx-auto max-w-md rounded-2xl border border-red-100 bg-white p-8 text-center shadow-sm dark:border-red-900/30 dark:bg-gray-900">
-          <AlertCircle size={32} className="mx-auto mb-4 text-red-500" />
-          <h1 className="text-lg font-bold text-gray-900 dark:text-white">{t("orders.error")}</h1>
-          <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">{error}</p>
-          <Button variant="primary" className="mt-5 rounded-2xl" onClick={() => window.location.reload()}>
-            Réessayer
-          </Button>
+      <>
+        <PfShellStyles />
+        <div className="pf-root pf-page" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div className="pf-glass-panel" style={{ maxWidth: 420, textAlign: "center" }}>
+            <span className="pf-notif-ic" style={{ margin: "0 auto 14px", background: "rgba(217,45,32,.12)", color: "#d92d20" }}>
+              <AlertCircle size={22} />
+            </span>
+            <div className="pf-panel-title">{t("orders.error")}</div>
+            <p className="pf-panel-sub">{error}</p>
+            <button className="pf-btn-accent" style={{ marginTop: 18 }} onClick={() => window.location.reload()}>Réessayer</button>
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8">
-      <div className="mx-auto max-w-7xl">
-        {/* ══════════ EN-TÊTE ══════════ */}
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Package size={20} />
-            </span>
-            <div className="min-w-0">
-              <h1 className="text-lg font-extrabold text-gray-900 dark:text-white sm:text-xl">Mes commandes</h1>
-              <p className="text-[11px] text-gray-500 dark:text-gray-400 sm:text-xs">Suivez et gérez tous vos achats</p>
+    <>
+      <PfShellStyles />
+      <div className="pf-root pf-page">
+        <div className="pf-wrap">
+
+          {/* En-tête */}
+          <div className="pf-ident pf-anim">
+            <span className="pf-notif-ic"><Package size={20} /></span>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div className="pf-k">Espace client</div>
+              <div className="pf-name" style={{ fontSize: 21, marginTop: 2 }}>Mes commandes</div>
+              <div className="pf-meta">
+                <span>{orders.length} commande{orders.length > 1 ? "s" : ""}</span>
+                {counts.to_pay > 0 && <span style={{ color: "var(--pf-accent)", fontWeight: 700 }}>{counts.to_pay} à payer</span>}
+                {escrowTotal > 0 && <span>{fmt(escrowTotal)} sous séquestre</span>}
+              </div>
             </div>
           </div>
 
-          {orders.length > 0 && (
-            <div className="flex gap-2">
-              {[
-                { value: stats.total, label: "Total", cls: "text-gray-900 dark:text-white" },
-                { value: stats.inProgress, label: "En cours", cls: "text-amber-600 dark:text-amber-400" },
-                { value: stats.delivered, label: "Livrées", cls: "text-green-600 dark:text-green-400" },
-              ].map((item) => (
-                <div key={item.label} className="rounded-xl bg-white px-3 py-1.5 text-center shadow-sm ring-1 ring-gray-100 dark:bg-gray-900 dark:ring-gray-800">
-                  <div className={`text-base font-black leading-none ${item.cls}`}>{item.value}</div>
-                  <div className="mt-0.5 text-[9px] font-bold uppercase tracking-wide text-gray-400">{item.label}</div>
-                </div>
-              ))}
+          {cancelFeedback && (
+            <div className="pf-info-note" style={{ marginTop: 14 }}>
+              <span className="pf-info-ic"><AlertCircle size={15} /></span>
+              <div className="pf-muted-sm" style={{ flex: 1 }}>{cancelFeedback}</div>
+              <button className="pf-x" style={{ width: 28, height: 28 }} onClick={() => setCancelFeedback("")} aria-label="Fermer"><X size={14} /></button>
             </div>
           )}
-        </div>
 
-        {cancelFeedback && (
-          <div className="mb-4 flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-[12px] text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
-            <AlertCircle size={15} className="flex-shrink-0 text-primary" />
-            <span className="min-w-0 flex-1">{cancelFeedback}</span>
-            <button type="button" onClick={() => setCancelFeedback("")} className="flex-shrink-0 text-gray-400 hover:text-gray-600" aria-label="Fermer">
-              <X size={15} />
-            </button>
-          </div>
-        )}
-
-        {orders.length === 0 ? (
-          /* ══════════ AUCUNE COMMANDE ══════════ */
-          <div className="rounded-[1.75rem] border border-orange-100 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-primary dark:bg-primary/10">
-              <Package size={28} />
+          {orders.length === 0 ? (
+            <div className="pf-glass-panel pf-anim" style={{ marginTop: 20, textAlign: "center", padding: 32 }}>
+              <span className="pf-notif-ic" style={{ margin: "0 auto 16px", width: 60, height: 60, borderRadius: 20 }}><Package size={26} /></span>
+              <div className="pf-panel-title">{t("orders.no_orders")}</div>
+              <p className="pf-panel-sub" style={{ maxWidth: 380, margin: "8px auto 0" }}>{t("orders.no_orders_desc")}</p>
+              <Link to="/catalog"><button className="pf-btn-accent" style={{ marginTop: 20 }}><Package size={15} />Explorer le catalogue</button></Link>
             </div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white sm:text-xl">{t("orders.no_orders")}</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-gray-500 dark:text-gray-400">{t("orders.no_orders_desc")}</p>
-            <Link to="/catalog" className="mt-6 inline-flex">
-              <Button variant="primary" size="lg">
-                <Package size={18} />
-                Explorer le catalogue
-              </Button>
-            </Link>
-          </div>
-        ) : (
-          <>
-            {/* ══════════ LIVRAISONS EN COURS ══════════ */}
-            {activeDeliveries.length > 0 && (
-              <div className="mb-4 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <div className="flex items-center gap-2 border-b border-gray-50 px-4 py-3 dark:border-gray-800">
-                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Truck size={16} />
-                  </span>
-                  <h3 className="text-sm font-extrabold text-gray-900 dark:text-white">Livraisons en cours</h3>
-                  <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold text-white">
-                    {activeDeliveries.length}
-                  </span>
+          ) : (
+            <>
+              {/* Bandeau de reprise de paiement */}
+              {counts.to_pay > 0 && (
+                <div className="pf-hero pf-anim" style={{ marginTop: 16 }}>
+                  <i />
+                  <div className="pf-hero-k">Paiement en attente</div>
+                  <div className="pf-hero-v" style={{ fontSize: 28 }}>
+                    {counts.to_pay} commande{counts.to_pay > 1 ? "s" : ""}<span>à régler</span>
+                  </div>
+                  <div style={{ position: "relative", marginTop: 12, fontSize: 12, lineHeight: 1.6, opacity: .9 }}>
+                    Les articles restent réservés une heure. Aucun montant n'a été débité.
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("to_pay")}
+                    style={{ position: "relative", marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.22)", border: "1px solid rgba(255,255,255,.35)", color: "#fff", padding: "9px 16px", borderRadius: 999, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    <Lock size={14} />Voir les commandes à payer
+                  </button>
                 </div>
-                <div className="grid gap-4 p-4 lg:grid-cols-[1.05fr_0.95fr]">
-                  <div className="min-w-0">
-                    <Suspense fallback={<div className="h-[220px] animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800 lg:h-[300px]" />}>
+              )}
+
+              {/* Livraisons en cours */}
+              {activeDeliveries.length > 0 && (
+                <section className="pf-card pf-anim" style={{ marginTop: 16, padding: 0, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 11, padding: "14px 18px", borderBottom: "1px solid var(--pf-border)" }}>
+                    <span className="pf-order-ic"><Truck size={16} /></span>
+                    <div className="pf-card-title">Livraisons en cours</div>
+                    <span className="pf-badge-soft" style={{ marginLeft: "auto" }}>{activeDeliveries.length}</span>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1.05fr) minmax(0,.95fr)", gap: 16, padding: 16 }}>
+                    <Suspense fallback={<div style={{ height: 260, borderRadius: 18, background: "var(--pf-s3)" }} />}>
                       {(() => {
-                        const mapOrder = selectedOrderId
-                          ? orders.find((order) => order.id === selectedOrderId)
-                          : activeDeliveries[0];
+                        const mapOrder = selectedOrderId ? orders.find((o) => o.id === selectedOrderId) : activeDeliveries[0];
                         return (
                           <TrackingMap
-                            className="h-[220px] w-full overflow-hidden rounded-2xl lg:h-[300px]"
+                            className="rounded-none border-0"
+                            height={260}
                             destinationAddress={mapOrder?.address}
                             destinationCity={mapOrder?.city}
-                            destinationPrecision={mapOrder?.address_precision}
                             destinationLabel={mapOrder ? `${mapOrder.address}, ${mapOrder.city}` : undefined}
                           />
                         );
                       })()}
                     </Suspense>
-                  </div>
 
-                  <div className="min-w-0 space-y-2">
-                    {activeDeliveries.slice(0, 3).map((o) => {
-                      const b = getFulfillmentBadge(o.fulfillment_status);
-                      const current = selectedOrderId ?? activeDeliveries[0]?.id;
-                      const isSel = current === o.id;
-                      return (
-                        <button
-                          key={o.id}
-                          type="button"
-                          onClick={() => setSelectedOrderId(o.id)}
-                          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition ${
-                            isSel
-                              ? "border-primary bg-orange-50 dark:border-primary/50 dark:bg-primary/10"
-                              : "border-gray-100 bg-gray-50 hover:border-primary/30 dark:border-gray-800 dark:bg-gray-800"
-                          }`}
-                        >
-                          <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
-                            <Truck size={14} />
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-xs font-bold text-gray-900 dark:text-white">Commande #{o.id}</span>
-                            <span className="block truncate text-[10px] text-gray-400">
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      {activeDeliveries.slice(0, 3).map((o) => {
+                        const sel = (selectedOrderId ?? activeDeliveries[0]?.id) === o.id;
+                        return (
+                          <button key={o.id} type="button" onClick={() => setSelectedOrderId(o.id)}
+                            className={`pf-addr${sel ? " def" : ""}`}
+                            style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}>
+                            <div className="pf-addr-label">
+                              <span className="pf-addr-ic"><Truck size={14} /></span>
+                              Commande #{o.id}
+                              <span className="pf-badge-soft">{FULFILLMENT_LABELS[o.fulfillment_status] ?? "En préparation"}</span>
+                            </div>
+                            <div className="pf-addr-line">
                               {o.items.length} article{o.items.length > 1 ? "s" : ""} · {fmt(o.total_xaf)} · {o.city}
-                            </span>
-                          </span>
-                          <span className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${b.cls}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${b.dot} animate-pulse`} />
-                            {b.label}
-                          </span>
-                        </button>
-                      );
-                    })}
-                    <Link
-                      to={`/orders/${selectedOrderId ?? activeDeliveries[0]?.id}`}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-primary/30 bg-white px-4 py-2.5 text-[12px] font-bold text-primary transition hover:bg-orange-50 dark:border-primary/30 dark:bg-gray-900 dark:hover:bg-primary/10"
-                    >
-                      <MapPin size={13} />
-                      Suivre en détail
-                    </Link>
+                            </div>
+                          </button>
+                        );
+                      })}
+                      <Link to={`/orders/${selectedOrderId ?? activeDeliveries[0]?.id}`}>
+                        <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 0 }}><MapPin size={14} />Suivre en détail</button>
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </section>
+              )}
 
-            {/* ══════════ ONGLETS (scrollable) ══════════ */}
-            <div className="-mx-3 mb-4 flex gap-2 overflow-x-auto scrollbar-hide px-3 sm:mx-0 sm:flex-wrap sm:px-0">
-              {TABS.map((tab) => {
-                const active = activeTab === tab.key;
-                return (
-                  <button
-                    key={tab.key}
-                    type="button"
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[12px] font-bold transition ${
-                      active
-                        ? "bg-primary text-white shadow-sm"
-                        : "border border-gray-200 bg-white text-gray-600 hover:border-primary/40 hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    }`}
-                  >
+              {/* Onglets */}
+              <div className="pf-type-toggle" style={{ marginTop: 18, flexWrap: "wrap" }}>
+                {TABS.map((tab) => (
+                  <button key={tab.key} type="button"
+                    className={`pf-type-btn${activeTab === tab.key ? " on" : ""}`}
+                    onClick={() => setActiveTab(tab.key)}>
                     {tab.label}
-                    <span className={`rounded-full px-1.5 text-[10px] ${active ? "bg-white/25 text-white" : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"}`}>
-                      {tabCounts[tab.key]}
-                    </span>
+                    <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts[tab.key]}</span>
                   </button>
-                );
-              })}
-            </div>
-
-            {/* ══════════ LISTE ══════════ */}
-            {filteredOrders.length === 0 ? (
-              <div className="rounded-2xl border border-gray-100 bg-white p-10 text-center dark:border-gray-800 dark:bg-gray-900">
-                <Package size={30} className="mx-auto mb-3 text-gray-300" />
-                <p className="text-sm font-bold text-gray-500 dark:text-gray-400">Aucune commande dans cette catégorie</p>
+                ))}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredOrders.map((order) => {
-                  const fb = getFulfillmentBadge(order.fulfillment_status);
-                  const pb = getPaymentBadge(order.payment_status);
-                  const isActive = ACTIVE_STATUSES.includes(order.fulfillment_status);
-                  const extra = order.items.length - 2;
-                  return (
-                    <article
-                      key={order.id}
-                      className="overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
-                    >
-                      <div className={`h-1 w-full ${fb.dot}`} />
-                      <div className="p-4">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-2.5">
-                            <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                              <Package size={15} />
-                            </span>
-                            <div className="min-w-0">
-                              <p className="text-[13px] font-extrabold text-gray-900 dark:text-white">Commande #{order.id}</p>
-                              <p className="text-[11px] text-gray-400">{formatDate(order.created_at)}</p>
+
+              {/* Liste */}
+              {filtered.length === 0 ? (
+                <div className="pf-glass-panel" style={{ marginTop: 16, padding: 34, textAlign: "center" }}>
+                  <Package size={28} style={{ margin: "0 auto 10px", color: "var(--pf-muted)" }} />
+                  <div className="pf-muted-sm">Aucune commande dans cette catégorie</div>
+                </div>
+              ) : (
+                <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 14 }}>
+                  {filtered.map((order) => {
+                    const pb = PAYMENT_LABELS[order.payment_status];
+                    const unpaid = isUnpaid(order);
+                    const extra = order.items.length - 2;
+                    const live = LIVE.includes(order.fulfillment_status);
+                    return (
+                      <article key={order.id} className="pf-card pf-anim">
+                        <div className="pf-row-between" style={{ flexWrap: "wrap", gap: 10 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0 }}>
+                            <span className="pf-order-ic"><Package size={16} /></span>
+                            <div style={{ minWidth: 0 }}>
+                              <div className="pf-order-id">Commande #{order.id}</div>
+                              <div className="pf-muted-sm">{fmtDate(order.created_at)}</div>
                             </div>
                           </div>
-                          <span className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${fb.cls}`}>
-                            <span className={`h-1.5 w-1.5 rounded-full ${fb.dot} ${isActive ? "animate-pulse" : ""}`} />
-                            {fb.label}
-                          </span>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                            <span className={`pf-badge-state ${pb.tone}`}>{pb.label}</span>
+                            <span className="pf-chip">
+                              {live && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--pf-accent)" }} />}
+                              {FULFILLMENT_LABELS[order.fulfillment_status] ?? "En préparation"}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
-                          <span className="inline-flex items-center gap-1">
+                        <div className="pf-meta" style={{ marginTop: 12 }}>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}>
                             {order.delivery_mode === "PICKUP" ? <Store size={12} /> : <Truck size={12} />}
                             {order.delivery_mode === "PICKUP" ? "Retrait" : "Livraison"}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin size={12} />
-                            {order.city}
-                          </span>
-                          <span className={`inline-flex items-center gap-1 font-semibold ${pb.cls}`}>
-                            <CreditCard size={12} />
-                            {pb.label}
-                          </span>
-                        </div>
-
-                        <div className="mt-3 space-y-1.5 rounded-xl bg-gray-50 p-3 dark:bg-gray-800/50">
-                          {order.items.slice(0, 2).map((it) => (
-                            <div key={it.id} className="flex items-center justify-between gap-2 text-[12px]">
-                              <span className="truncate text-gray-700 dark:text-gray-200">{it.title_snapshot}</span>
-                              <span className="flex-shrink-0 font-semibold text-gray-400">×{it.qty}</span>
-                            </div>
-                          ))}
-                          {extra > 0 && (
-                            <p className="text-[11px] font-semibold text-primary">
-                              + {extra} autre{extra > 1 ? "s" : ""} article{extra > 1 ? "s" : ""}
-                            </p>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><MapPin size={12} />{order.city}</span>
+                          {order.payment_status === "PAID" && (
+                            <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                              <OperatorLogo provider="MTN_MOMO" size={18} />Mobile Money
+                            </span>
                           )}
                         </div>
 
-                        <div className="mt-3 flex items-center justify-between gap-2">
-                          <div className="min-w-0">
-                            <p className="text-[9px] font-bold uppercase tracking-wide text-gray-400">Total</p>
-                            <p className="text-[15px] font-black text-primary">{fmt(order.total_xaf)}</p>
+                        <div style={{ marginTop: 14, padding: 13, borderRadius: 14, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
+                          {order.items.slice(0, 2).map((it) => (
+                            <div key={it.id} className="pf-summary-row">
+                              <span className="pf-muted-sm" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title_snapshot}</span>
+                              <span className="pf-summary-v">×{it.qty}</span>
+                            </div>
+                          ))}
+                          {extra > 0 && (
+                            <div className="pf-k" style={{ marginTop: 6 }}>+ {extra} autre{extra > 1 ? "s" : ""} article{extra > 1 ? "s" : ""}</div>
+                          )}
+                        </div>
+
+                        <div className="pf-row-between" style={{ marginTop: 14, flexWrap: "wrap", gap: 12 }}>
+                          <div>
+                            <div className="pf-k">{unpaid ? "Reste à payer" : "Total"}</div>
+                            <div className="pf-total-row"><b style={{ fontSize: 20 }}>{fmt(order.total_xaf)}</b></div>
                           </div>
-                          <div className="flex flex-shrink-0 gap-2">
-                            {canCancelOrder(order) && (
-                              <button
-                                type="button"
-                                onClick={() => handleCancelOrder(order)}
-                                className="rounded-full border border-gray-200 px-3 py-2 text-[12px] font-bold text-gray-500 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-red-900/20"
-                              >
-                                Annuler
+                          <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                            {canCancel(order) && (
+                              <button className="pf-btn-danger" onClick={() => setCancelCandidate(order)}>Annuler</button>
+                            )}
+                            {unpaid && (
+                              <button className="pf-btn-accent" onClick={() => setPayTarget(order)}>
+                                <Lock size={14} />Reprendre le paiement
                               </button>
                             )}
-                            <Link
-                              to={`/orders/${order.id}`}
-                              className="rounded-full bg-primary px-4 py-2 text-[12px] font-bold text-white transition hover:bg-primary-dark"
-                            >
-                              Détails
+                            <Link to={`/orders/${order.id}`}>
+                              <button className={unpaid ? "pf-btn-ghost" : "pf-btn-accent"}>Détails</button>
                             </Link>
                           </div>
                         </div>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-            )}
-          </>
-        )}
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
-      {/* ══════════ MODALE D'ANNULATION ══════════ */}
+      {/* Modale d'annulation */}
       {cancelCandidate && (
-        <div className="fixed inset-0 z-[1300] flex items-end bg-black/50 p-0 sm:items-center sm:justify-center sm:p-4">
-          <div className="w-full rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:max-w-md sm:rounded-[2rem] sm:p-6">
-            <div className="flex items-start gap-4">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-300">
-                <XCircle size={24} />
+        <div className="pf-root">
+          <div className="pf-backdrop">
+            <div className="pf-sheet" style={{ maxWidth: 480 }}>
+              <div style={{ display: "flex", gap: 14, marginBottom: 4 }}>
+                <span className="pf-notif-ic" style={{ background: "rgba(217,45,32,.12)", color: "#d92d20" }}><XCircle size={22} /></span>
+                <div style={{ minWidth: 0 }}>
+                  <div className="pf-k" style={{ color: "#d92d20" }}>Annulation</div>
+                  <div className="pf-panel-title" style={{ fontSize: 19, marginTop: 3 }}>Commande #{cancelCandidate.id}</div>
+                  <p className="pf-panel-sub">
+                    Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison.
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-red-500">Annulation</p>
-                <h2 className="mt-1 text-xl font-extrabold text-gray-900 dark:text-white">
-                  Commande #{cancelCandidate.id}
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-gray-500 dark:text-gray-400">
-                  Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison.
-                </p>
+
+              <div className="pf-card" style={{ marginTop: 16 }}>
+                <div className="pf-support-t">{cancelCandidate.items[0]?.title_snapshot ?? "Commande"}</div>
+                <div className="pf-total-row" style={{ marginTop: 6 }}><b>{fmt(cancelCandidate.total_xaf)}</b></div>
               </div>
-            </div>
-            <div className="mt-5 rounded-2xl bg-gray-50 p-4 dark:bg-gray-800">
-              <p className="text-sm font-bold text-gray-900 dark:text-white">
-                {cancelCandidate.items[0]?.title_snapshot ?? "Commande"}
-              </p>
-              <p className="mt-1 text-lg font-black text-primary">
-                {cancelCandidate.total_xaf.toLocaleString("fr-FR")} XAF
-              </p>
-            </div>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <button
-                type="button"
-                onClick={() => setCancelCandidate(null)}
-                className="rounded-2xl border border-gray-200 px-4 py-3 text-sm font-bold text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-              >
-                Garder la commande
-              </button>
-              <button
-                type="button"
-                onClick={() => void confirmCancelOrder()}
-                className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-bold text-white hover:bg-red-700"
-              >
-                Annuler la commande
-              </button>
+
+              <button className="pf-btn-ghost pf-btn-block" onClick={() => setCancelCandidate(null)}>Garder la commande</button>
+              <button className="pf-btn-danger pf-btn-block" onClick={() => void confirmCancel()}>Annuler la commande</button>
             </div>
           </div>
         </div>
       )}
-    </div>
+
+      {payTarget && (
+        <PaymentSheet
+          orderId={payTarget.id}
+          amountXaf={payTarget.total_xaf}
+          defaultPhone={payTarget.customer_phone}
+          onClose={() => { setPayTarget(null); load(); }}
+          onSuccess={() => { setPayTarget(null); load(); }}
+        />
+      )}
+    </>
   );
 }

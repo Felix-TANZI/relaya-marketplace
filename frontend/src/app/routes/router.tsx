@@ -62,7 +62,6 @@ import SellerProductsPage       from '@/features/vendors/SellerProductsPage';
 import ProductFormPage          from '@/features/vendors/ProductFormPage';
 import SellerOrdersPage         from '@/features/vendors/SellerOrdersPage';
 import SellerOrderDetailPage    from '@/features/vendors/SellerOrderDetailPage';
-import SellerPaymentsPage       from '@/features/vendors/SellerPaymentsPage';
 import SellerDisputesPage       from '@/features/vendors/SellerDisputesPage';
 import SellerShopPage           from '@/features/vendors/SellerShopPage';
 import SellerAnalyticsPage      from '@/features/vendors/SellerAnalyticsPage';
@@ -70,7 +69,22 @@ import SellerBoostPage          from '@/features/vendors/SellerBoostPage';
 import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
 import SellerPlansPage          from '@/features/vendors/SellerPlansPage';
 import SellerSettingsPage       from '@/features/vendors/SellerSettingsPage';
-import SellerWalletPage         from '@/features/vendors/SellerWalletPage';
+import SellerPaymentsPage        from '@/features/vendors/SellerPaymentsPage';
+import SellerWalletPage          from '@/features/vendors/SellerWalletPage';
+import SellerSettlementsPage     from '@/features/vendors/SellerSettlementsPage';
+import SellerPendingFundsPage    from '@/features/vendors/SellerPendingFundsPage';
+import SellerAdjustmentsPage     from '@/features/vendors/SellerAdjustmentsPage';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTES FINANCIÈRES PARTENAIRES
+// ─────────────────────────────────────────────────────────────────────────────
+import {
+  buyerPaymentRoutes,
+  sellerPaymentRoutes,
+  deliveryPaymentRoutes,
+  relayPaymentRoutes,
+  adminFinanceRoutes,
+} from './payments.routes';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — PARTAGÉ
@@ -195,6 +209,7 @@ export const router = createBrowserRouter([
       { path: 'orders/:id',       element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
       { path: 'notifications',    element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
       { path: 'profile',          element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+      ...buyerPaymentRoutes,
 
       // Fallback
       { path: '*', element: <NotFoundPage /> },
@@ -215,7 +230,6 @@ export const router = createBrowserRouter([
       { path: 'products/:id/edit', element: <ProductFormPage /> },
       { path: 'orders',            element: <SellerOrdersPage /> },
       { path: 'orders/:id',        element: <SellerOrderDetailPage /> },
-      { path: 'payments',          element: <SellerPaymentsPage /> },
       { path: 'disputes',          element: <SellerDisputesPage /> },
       { path: 'shop',              element: <SellerShopPage /> },
       { path: 'analytics',         element: <SellerAnalyticsPage /> },
@@ -223,7 +237,17 @@ export const router = createBrowserRouter([
       { path: 'certifications',    element: <SellerCertificationsPage /> },
       { path: 'plans',             element: <SellerPlansPage /> },
       { path: 'settings',          element: <SellerSettingsPage /> },
-      { path: 'wallet',            element: <SellerWalletPage /> },
+
+      // Pages financières vendeur. Declarees AVANT `sellerPaymentRoutes` :
+      // ce jeu generique expose aussi `wallet`, `payments` et `adjustments`,
+      // et React Router retient la premiere correspondance.
+      { path: 'wallet',        element: <SellerWalletPage /> },
+      { path: 'payments',      element: <SellerPaymentsPage /> },
+      { path: 'settlements',   element: <SellerSettlementsPage /> },
+      { path: 'pending-funds', element: <SellerPendingFundsPage /> },
+      { path: 'adjustments',   element: <SellerAdjustmentsPage /> },
+
+      ...sellerPaymentRoutes,
     ],
   },
 
@@ -239,10 +263,16 @@ export const router = createBrowserRouter([
   {
     path: '/relay-point',
     element: <ProtectedRoute><RoleRoute role="relay_point"><RelayPointPage /></RoleRoute></ProtectedRoute>,
+    children: [
+      ...relayPaymentRoutes,
+    ],
   },
   {
     path: '/delivery-organization',
     element: <ProtectedRoute><RoleRoute role="delivery_organization"><DeliveryOrganizationPage /></RoleRoute></ProtectedRoute>,
+    children: [
+      ...deliveryPaymentRoutes,
+    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -321,6 +351,7 @@ export const router = createBrowserRouter([
       { path: 'account',  element: <AccountPage /> },
       { path: 'plans',    element: <PlansPage /> },
       { path: 'commissions', element: <CommissionsPage /> },
+      ...adminFinanceRoutes,
 
       // ── GROWTH (SOON) ───────────────────────────────────────────────────
       { path: 'analytics', element: <AdminStub title="Analytics & Tendances"    description="Bientôt disponible." icon={TrendingUp} /> },

@@ -957,6 +957,88 @@ def vendor_withdrawal_create(request):
     Raison : gestion admin manuelle dans cette version (sans API MoMo automatique).
     Simplifie le traitement et évite les doublons / dépassements de solde.
     """
+    # ─────────────────────────────────────────────────────────────────────
+    # LE RETRAIT PASSE PAR LE MODULE FINANCIER
+    #
+    # Il emprunte EXACTEMENT le meme circuit qu'un reglement par cycle :
+    # lot, confirmation, demande de versement, approbation par un tiers,
+    # execution. Seul le DECLENCHEUR change — le partenaire au lieu du
+    # calendrier.
+    #
+    # L'ancien chemin est conserve plus bas, inatteignable : il creait une
+    # WithdrawalRequest sans aucune ecriture comptable. Un administrateur
+    # approuvait, l'argent partait manuellement, et le registre l'ignorait.
+    # ─────────────────────────────────────────────────────────────────────
+    from apps.payments.bridge.actors import payee_for_vendor
+    from apps.payments.settlements.services import (
+        SettlementError, request_withdrawal,
+    )
+
+    try:
+        profil = VendorProfile.objects.get(user=request.user)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'},
+                        status=status.HTTP_404_NOT_FOUND)
+
+    if not profil.is_active_vendor:
+        return Response(
+            {'detail': "Votre compte vendeur n'est pas encore approuve."},
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    compte = payee_for_vendor(profil, create=True)
+    if compte is None:
+        return Response(
+            {'detail': "Aucun compte financier n'est rattache a votre "
+                       "boutique. Contactez le support."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    montant = request.data.get('amount_xaf') or 0
+    try:
+        montant = int(montant)
+    except (TypeError, ValueError):
+        montant = 0
+
+    try:
+        demande = request_withdrawal(
+            compte, requested_by=request.user, amount_xaf=montant,
+            justification='Retrait demande depuis l\'espace vendeur',
+        )
+    except SettlementError as exc:
+        # Le message du service, TEL QUEL : il explique ce qui manque et
+        # comment y remedier.
+        return Response({'detail': str(exc)},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    return Response(
+        {
+            'reference': demande.reference,
+            'amount_xaf': demande.amount_xaf,
+            'status': demande.status,
+            'status_display': demande.get_status_display(),
+            'detail': (
+                "Demande enregistree. Elle sera validee par BelivaY puis "
+                "versee sur votre numero Mobile Money."
+            ),
+        },
+        status=status.HTTP_201_CREATED,
+    )
+
+    # ── Ancien chemin, conserve pour reference ───────────────────────────
+    return Response(
+        {
+            'detail': (
+                "Les retraits a la demande sont desactives. BelivaY vous "
+                "regle automatiquement selon votre cycle contractuel."
+            ),
+            'code': 'WITHDRAWAL_DISABLED',
+            'see': '/api/payments/v2/partner/due/',
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+    # ── Fin de la bascule ────────────────────────────────────────────────
+
     try:
         vendor_profile = VendorProfile.objects.get(user=request.user)
         if not vendor_profile.is_active_vendor:
@@ -3379,6 +3461,27 @@ def admin_list_withdrawals(request):
 @permission_classes([IsAdminUser])
 def admin_approve_withdrawal(request, wd_id):
     """Approuve un retrait (statut → APPROVED). Admin confirme le virement MoMo effectué."""
+    # ── Bascule vers le module financier ─────────────────────────────────
+    # Approuver ici passe le statut a APPROVED SANS AUCUNE ECRITURE
+    # COMPTABLE. L'argent part manuellement par MoMo et le registre
+    # l'ignore : la reconciliation N3 le verrait comme une transaction
+    # fantome — de l'argent sorti sans contrepartie.
+    #
+    # Les versements passent desormais par PayoutRequest : double
+    # approbation, appel prestataire reel, ecriture au registre.
+    return Response(
+        {
+            'detail': (
+                "L'approbation des retraits est desactivee. Les versements "
+                "passent par le module financier : Demandes de versement "
+                "dans l'administration."
+            ),
+            'code': 'WITHDRAWAL_DISABLED',
+        },
+        status=status.HTTP_409_CONFLICT,
+    )
+    # ── Fin de la bascule ────────────────────────────────────────────────
+
     from apps.vendors.models import WithdrawalRequest
  
     try:
@@ -7186,4 +7289,4 @@ def admin_delete_master(request, master_id):
     except MasterProduct.DoesNotExist:
         return Response({'detail': 'Fiche introuvable.'}, status=status.HTTP_404_NOT_FOUND)
     master.delete()  # soft delete (SoftDeleteModel)
-    return Response(status=status.HTTP_204_NO_CONTENT)            
+    return Response(status=status.HTTP_204_NO_CONTENT)

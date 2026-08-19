@@ -2,7 +2,7 @@
 # Serializers pour les commandes avec séparation payment_status et fulfillment_status
 
 from rest_framework import serializers
-from django.conf import settings as django_settings
+import os
 from django.db.models import Count, Q
 from django.utils.text import slugify
 from django.utils import timezone
@@ -363,13 +363,34 @@ class OrderCreateSerializer(serializers.Serializer):
             location=order.city,
         )
 
-        # En mode local/dev, on court-circuite le paiement externe pour fluidifier les tests.
-        if django_settings.DEBUG:
+        # ─────────────────────────────────────────────────────────────────
+        # LE COURT-CIRCUIT DE PAIEMENT EST DESACTIVE
+        #
+        # Ce bloc marquait la commande PAID et liberait les fonds au vendeur
+        # des sa creation, quand le paiement n'existait pas encore.
+        #
+        # Il EMPECHE desormais tout paiement reel : `split_order_by_vendor`
+        # refuse d'eclater une commande deja payee — on ne redistribue pas
+        # de l'argent encaisse. Le checkout echouait donc silencieusement,
+        # et aucune intention n'etait creee.
+        #
+        # Il rendait aussi le sequestre inutile : liberer au vendeur avant
+        # meme la livraison annule toute la protection acheteur.
+        #
+        # La commande reste en PENDING. C'est l'encaissement reel qui la
+        # fera passer en PAID, via le miroir du module financier.
+        #
+        # Pour reactiver ce raccourci — tests d'interface sans paiement —
+        # poser BELIVAY_SIMULATE_PAYMENT=1 dans l'environnement. Le module
+        # financier refusera alors d'eclater, ce qui est le comportement
+        # attendu : on ne peut pas avoir les deux a la fois.
+        # ─────────────────────────────────────────────────────────────────
+        if os.environ.get("BELIVAY_SIMULATE_PAYMENT") == "1":
             order.confirm_payment()
             OrderHistory.objects.create(
                 order=order,
                 user=user,
-                action="Paiement simulé automatiquement (dev)",
+                action="Paiement simulé (BELIVAY_SIMULATE_PAYMENT)",
                 field_name="payment_status",
                 old_value=Order.PaymentStatus.PENDING,
                 new_value=Order.PaymentStatus.PAID,
@@ -379,7 +400,7 @@ class OrderCreateSerializer(serializers.Serializer):
             OrderHistory.objects.create(
                 order=order,
                 user=user,
-                action="Fonds libérés automatiquement au vendeur (dev)",
+                action="Fonds libérés automatiquement au vendeur (simulation)",
                 field_name="escrow_status",
                 old_value=Order.EscrowStatus.BLOCKED,
                 new_value=Order.EscrowStatus.RELEASED,

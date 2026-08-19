@@ -3,7 +3,7 @@
 # Remplace le fichier existant — ajoute VendorLocation, WithdrawalRequest, VendorOrderNote
 # et complète VendorProfile avec tous ses champs.
 
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.html import format_html
 from django.utils import timezone
 from datetime import timedelta
@@ -246,13 +246,15 @@ class WithdrawalRequestAdmin(admin.ModelAdmin):
     actions = ['approve_withdrawal', 'reject_withdrawal']
 
     def approve_withdrawal(self, request, queryset):
-        count = queryset.filter(status='PENDING').update(
-            status='APPROVED',
-            processed_at=timezone.now(),
-            processed_by=request.user,
+        # Meme raison que l'endpoint : aucune ecriture comptable n'est
+        # produite ici. Les versements passent par PayoutRequest.
+        self.message_user(
+            request,
+            "Approbation desactivee. Les versements passent par le module "
+            "financier — voir « Demandes de versement ».",
+            level=messages.WARNING,
         )
-        self.message_user(request, f"{count} retrait(s) approuvé(s).")
-    approve_withdrawal.short_description = "Approuver les retraits sélectionnés"
+    approve_withdrawal.short_description = "Approuver (DESACTIVE)"
 
     def reject_withdrawal(self, request, queryset):
         count = queryset.filter(status='PENDING').update(

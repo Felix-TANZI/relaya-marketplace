@@ -74,6 +74,10 @@ class VendorProfileSerializer(serializers.ModelSerializer):
             'plan_code', 'plan_name',
             'total_products', 'active_products',
             'total_revenue', 'total_orders',
+            # Mobile Money de versement. Sans ces deux champs, l'espace vendeur
+            # ne peut ni pre-remplir le numero enregistre, ni confirmer sa mise
+            # a jour : `vendor_update_settings` renvoie ce meme serializer.
+            'default_withdrawal_operator', 'default_withdrawal_phone',
             'created_at', 'updated_at', 'approved_at',
         ]
  
@@ -1581,6 +1585,9 @@ class VendorDisputeListSerializer(serializers.ModelSerializer):
             'vendor_reply_type', 'vendor_reply_display',
             'vendor_deadline_iso', 'hours_remaining',
             'assigned_admin_name', 'unread_messages',
+            # Montant arbitre, necessaire pour chiffrer les remboursements
+            # partiels dans « Mes ajustements » sans ouvrir chaque litige.
+            'refund_amount_xaf',
             'created_at', 'updated_at',
         ]
         read_only_fields = fields
@@ -1649,8 +1656,11 @@ class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
     evidence_requests = serializers.SerializerMethodField()
 
     class Meta(VendorDisputeListSerializer.Meta):
+        # `refund_amount_xaf` a remonte dans le serializer LISTE : l'espace
+        # vendeur en a besoin pour chiffrer les remboursements partiels sans
+        # ouvrir chaque litige. Le laisser ici le declarerait deux fois.
         fields = VendorDisputeListSerializer.Meta.fields + [
-            'resolution', 'resolution_note', 'refund_amount_xaf',
+            'resolution', 'resolution_note',
             'vendor_reply_text', 'vendor_proposed_amount', 'vendor_replied_at',
             'messages', 'evidences', 'evidence_requests',
             'resolved_at',

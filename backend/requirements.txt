@@ -34,3 +34,9 @@ gunicorn==21.2.0
 
 # Cache (Redis)
 redis>=5.0,<6.0
+
+# Development
+pytest-django==4.11.1
+
+# Chiffrement des donnees sensibles (numeros Mobile Money)
+cryptography>=42.0,<47.0

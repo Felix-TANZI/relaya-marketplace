@@ -6,6 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
+  FileText, Lock, CircleCheckBig,
   Plus, TrendingUp, Zap, Store, Award, CreditCard, Wallet,
   Settings, Sun, Moon, Bell, X, Menu, LogOut,
   ChevronRight, MoreHorizontal, Sparkles, ExternalLink,
@@ -47,7 +48,6 @@ function buildNav(t: TFn): NavSection[] {
       items: [
         { label: t('seller_layout.nav_dashboard'), path: '/seller/dashboard', icon: LayoutDashboard },
         { label: t('seller_layout.nav_orders'),    path: '/seller/orders',    icon: ShoppingBag, badge: true },
-        { label: t('seller_layout.nav_payments'),  path: '/seller/payments',  icon: DollarSign },
         { label: t('seller_layout.nav_disputes'),  path: '/seller/disputes',  icon: Scale },
       ],
     },
@@ -76,8 +76,12 @@ function buildNav(t: TFn): NavSection[] {
     {
       label: t('seller_layout.section_account'),
       items: [
-        { label: t('seller_layout.nav_wallet'),   path: '/seller/wallet',   icon: Wallet },
-        { label: t('seller_layout.nav_settings'), path: '/seller/settings', icon: Settings },
+        { label: t('seller_layout.nav_wallet'),        path: '/seller/wallet',        icon: Wallet },
+        { label: t('seller_layout.nav_payments'),      path: '/seller/payments',      icon: FileText },
+        { label: t('seller_layout.nav_settlements'),   path: '/seller/settlements',   icon: CircleCheckBig },
+        { label: t('seller_layout.nav_pending_funds'), path: '/seller/pending-funds', icon: Lock },
+        { label: t('seller_layout.nav_adjustments'),   path: '/seller/adjustments',   icon: Scale },
+        { label: t('seller_layout.nav_settings'),      path: '/seller/settings',      icon: Settings },
       ],
     },
   ];

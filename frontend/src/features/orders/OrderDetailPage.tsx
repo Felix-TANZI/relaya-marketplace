@@ -30,6 +30,7 @@ import { ordersApi } from "@/services/api/orders";
 import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
+import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import QrScanner from "@/components/QrScanner";
 import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
@@ -457,6 +458,16 @@ export default function OrderDetailPage() {
         ...current,
         [item.id]: message.includes("existe deja") || message.includes("already") ? "exists" : "error",
       }));
+    }
+  };
+
+  const reloadOrder = async () => {
+    if (!id) return;
+    try {
+      const data = await ordersApi.get(parseInt(id, 10));
+      setOrder(data);
+    } catch {
+      // silencieux — l'utilisateur reste sur les données déjà affichées
     }
   };
 
@@ -1141,6 +1152,8 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="space-y-6">
+            <OrderPaymentPanel order={order} onPaid={reloadOrder} />
+
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 {t('order.detail.summary_title')}

@@ -1,5 +1,7 @@
-﻿import { useEffect, useState } from 'react';
+﻿import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { listMyPayments } from '@/services/api/payments';
+import { useToast } from '@/context/ToastContext';
 import Header from './Header';
 import Footer from './Footer';
 import ClientTutorial from '@/features/tutorial/ClientTutorial';
@@ -38,6 +40,7 @@ function ScrollToTopOnRouteChange() {
 }
 
 export default function AppLayout() {
+  const { showToast } = useToast();
   const { pathname } = useLocation();
   const isAuthPage = ['/login', '/register', '/forgot-password'].some((path) => pathname.startsWith(path));
   const hideChrome = isAuthPage && isDedicatedPortal;
@@ -79,6 +82,50 @@ export default function AppLayout() {
       window.removeEventListener('touchend', onTouchEnd);
     };
   }, [online]);
+
+  // `null` tant qu'aucun sondage n'a eu lieu : le premier passage sert de
+  // reference et ne notifie rien, sinon toutes les transactions existantes
+  // declencheraient un toast au chargement de l'app.
+  const seenRef = useRef<Map<string, string> | null>(null);
+
+  useEffect(() => {
+    if (!localStorage.getItem("access_token")) return;
+    let cancelled = false;
+
+    const poll = async () => {
+      try {
+        const txs = await listMyPayments();
+        if (cancelled) return;
+        const seen = seenRef.current;
+        if (seen === null) {
+          seenRef.current = new Map(txs.map((t) => [t.id, t.status]));
+          return;
+        }
+        for (const tx of txs) {
+          const before = seen.get(tx.id);
+          if (before && before !== tx.status) {
+            if (tx.status === "SUCCESS") {
+              showToast("Paiement confirmé", {
+                description: `Commande #${tx.order} · ${tx.amount_xaf.toLocaleString("fr-FR")} FCFA sous séquestre.`,
+                type: "success",
+              });
+            } else if (tx.status === "FAILED" || tx.status === "CANCELLED") {
+              showToast("Paiement non abouti", {
+                description: `Commande #${tx.order} · aucun montant débité. Vous pouvez réessayer.`,
+                type: "error",
+              });
+            }
+            window.dispatchEvent(new Event("belivay-new-notification"));
+          }
+          seen.set(tx.id, tx.status);
+        }
+      } catch { /* silencieux */ }
+    };
+
+    poll();
+    const interval = window.setInterval(poll, 20000);
+    return () => { cancelled = true; window.clearInterval(interval); };
+  }, [showToast]);
 
   return (
     /* `belivay-client` : scope typographique de l'espace client.

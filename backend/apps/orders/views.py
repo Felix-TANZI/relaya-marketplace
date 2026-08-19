@@ -91,6 +91,41 @@ class OrderCreateView(generics.CreateAPIView):
 
         order = serializer.save()
 
+        # ── Lot 12 : éclatement du panier par vendeur (Option A) ──────────
+        # Une commande multi-vendeurs rend le litige et la libération de
+        # séquestre ambigus. On l'égrène en N commandes mono-vendeur, toutes
+        # couvertes par UNE seule intention de paiement.
+        #
+        # L'échec n'annule PAS la commande : elle reste créée et payable par
+        # l'ancien chemin. Mieux vaut une commande non éclatée qu'un panier
+        # perdu.
+        orders = [order]
+        payment_intent = None
+        try:
+            from apps.payments.bridge.checkout import checkout as _split_checkout
+
+            payer_msisdn = (
+                request.data.get("payer_msisdn")
+                or request.data.get("customer_phone")
+                or order.customer_phone
+            )
+            payer_operator = request.data.get("payer_operator", "")
+
+            orders, payment_intent = _split_checkout(
+                order,
+                payer_msisdn=payer_msisdn,
+                payer_operator=payer_operator,
+                idempotency_key=f"cart-{order.pk}",
+            )
+            order = orders[0]
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Éclatement du panier impossible pour la commande #%s. "
+                "La commande reste valide et payable par l'ancien chemin.",
+                order.pk,
+            )
+
         if request.user.is_authenticated:
             UserNotification.objects.create(
                 user=request.user,
@@ -101,7 +136,18 @@ class OrderCreateView(generics.CreateAPIView):
             )
 
         out = OrderDetailSerializer(order)
-        return Response(out.data, status=status.HTTP_201_CREATED)
+        donnees = dict(out.data)
+        if len(orders) > 1:
+            donnees["split_orders"] = [
+                OrderDetailSerializer(o).data for o in orders
+            ]
+        if payment_intent is not None:
+            donnees["payment_intent"] = {
+                "reference": payment_intent.reference,
+                "amount_xaf": payment_intent.amount_xaf,
+                "status": payment_intent.status,
+            }
+        return Response(donnees, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Orders"], summary="Détails commande")
@@ -200,6 +246,21 @@ class CancelOrderView(APIView):
             action_url="/orders",
         )
 
+        # ── Lot 12 : annuler le séquestre correspondant ───────────────────
+        try:
+            from apps.payments.bridge import events_in
+            events_in.order_cancelled(
+                order_id=order.id,
+                reason="Annulée par le client.",
+                event_id=f"cancel-{order.id}",
+                emitter="apps.orders.CancelOrderView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement d'annulation non transmis pour #%s.", order.id,
+            )
+
         return Response(OrderDetailSerializer(order).data)
 
 
@@ -260,6 +321,24 @@ class ConfirmReceiptView(APIView):
             notification_type=UserNotification.NotificationType.ORDER,
             action_url=f"/orders/{order.id}",
         )
+
+        # ── Lot 12 : informer le domaine financier ────────────────────────
+        # PRINCIPE P9 : le financier ne juge pas les faits métier. Il
+        # consomme cet événement APRÈS les contrôles effectués ci-dessus.
+        # `event_id` garantit l'idempotence : rejouer n'a aucun effet.
+        try:
+            from apps.payments.bridge import events_in
+            events_in.buyer_confirmed_receipt(
+                order_id=order.id,
+                event_id=f"receipt-{order.id}",
+                emitter="apps.orders.ConfirmReceiptView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement de confirmation non transmis pour #%s. "
+                "L'auto-confirmation prendra le relais.", order.id,
+            )
 
         return Response(OrderDetailSerializer(order).data)
 
@@ -378,6 +457,26 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             notification_type=UserNotification.NotificationType.SUPPORT,
             action_url=f"/orders/{order.id}",
         )
+
+        # ── Lot 12 : geler le séquestre de CETTE commande ─────────────────
+        # Un litige sur le colis 1 ne gèle ni le colis 2 du même vendeur,
+        # ni le transport, ni les autres bénéficiaires. C'est ce que la clé
+        # à quatre dimensions du séquestre rend possible.
+        try:
+            from apps.payments.bridge import events_in
+            events_in.dispute_opened(
+                order_id=dispute.order_id,
+                reason=dispute.reason or "Litige ouvert par l'acheteur.",
+                event_id=f"dispute-{dispute.id}",
+                emitter="apps.orders.OrderDisputeListCreateView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement de litige non transmis pour la commande #%s.",
+                dispute.order_id,
+            )
+
         return Response(DisputeSerializer(dispute, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 

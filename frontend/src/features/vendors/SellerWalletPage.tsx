@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import NextSettlementCard from '@/features/vendors/components/NextSettlementCard';
 import {
   ArrowDownToLine, Check, Clock, Info, Lock, RefreshCw, Save,
   ShieldCheck, TriangleAlert, Users, Wallet, XCircle,
@@ -259,6 +260,13 @@ export default function SellerWalletPage() {
           </>
         }
       />
+
+      {/* ═══ PROCHAIN RÈGLEMENT ═══ */}
+      {/* Le solde répond à « combien ». Cette carte répond à « quand »,
+          et surtout à « pourquoi pas encore ». */}
+      <div className="mb-5">
+        <NextSettlementCard />
+      </div>
 
       {/* ═══ SOLDE ═══ */}
       <Hero gradient={HERO.dark} blobColor="rgba(52,211,153,.5)">

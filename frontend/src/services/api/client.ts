@@ -42,6 +42,41 @@ function friendlyHttpError(status: number) {
   return "Impossible de terminer cette action pour le moment.";
 }
 
+/**
+ * Extrait le message d'erreur envoye par le serveur.
+ *
+ * DRF renvoie `{"detail": "..."}` pour une erreur metier, et
+ * `{"champ": ["..."]}` pour une erreur de validation. On traite les deux,
+ * et on retombe sur un message generique seulement si le corps est vide ou
+ * illisible.
+ */
+async function serverErrorMessage(response: Response): Promise<string> {
+  const repli = friendlyHttpError(response.status);
+  const brut = await response.text().catch(() => "");
+  if (!brut) return repli;
+
+  try {
+    const donnees = JSON.parse(brut) as unknown;
+    if (donnees && typeof donnees === "object") {
+      const enregistrement = donnees as Record<string, unknown>;
+
+      if (typeof enregistrement.detail === "string") {
+        return enregistrement.detail;
+      }
+      // Erreur de validation : on prend le premier champ en faute.
+      const premiere = Object.values(enregistrement)[0];
+      if (typeof premiere === "string") return premiere;
+      if (Array.isArray(premiere) && typeof premiere[0] === "string") {
+        return premiere[0];
+      }
+    }
+  } catch {
+    // Reponse non JSON — page d'erreur du serveur, par exemple.
+  }
+  return repli;
+}
+
+
 async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
   const delays = [450, 1200];
   let lastError: unknown;
@@ -150,8 +185,17 @@ try {
   }
 
   if (!response.ok) {
-    await response.text().catch(() => "");
-    throw new Error(friendlyHttpError(response.status));
+    // ─────────────────────────────────────────────────────────────────────
+    // LE MESSAGE DU SERVEUR EST LU, PAS JETE
+    //
+    // Le corps etait recupere puis IGNORE, et l'appelant recevait un
+    // message generique. « Impossible de terminer cette action » a la
+    // place de « Montant 19 inferieur au minimum de versement 1000 ».
+    //
+    // Le backend ecrit ces phrases pour etre lues par un humain : les
+    // masquer oblige a rechercher chaque erreur en ligne de commande.
+    // ─────────────────────────────────────────────────────────────────────
+    throw new Error(await serverErrorMessage(response));
   }
 
   return response.json();

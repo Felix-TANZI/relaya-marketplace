@@ -713,6 +713,116 @@ def execute_approved_payouts(limit: int = 50) -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
+# RETRAIT A LA DEMANDE
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# UN RETRAIT N'EST PAS UN CHEMIN PARALLELE
+#
+# Il emprunte EXACTEMENT le meme circuit qu'un reglement par cycle : lot,
+# confirmation, demande de versement, approbation par un tiers, execution.
+#
+# La seule difference est le DECLENCHEUR : le partenaire au lieu du
+# calendrier. Tout le reste — separation des roles, ecritures comptables,
+# traitement de l'issue inconnue — est identique.
+#
+# Un chemin parallele aurait produit deux comptabilites, et c'est
+# exactement ce que le module existe pour eviter.
+#
+# ─────────────────────────────────────────────────────────────────────────────
+# RAPPEL REGLEMENTAIRE
+#
+# Un partenaire qui peut reclamer son argent a tout moment fait de BelivaY
+# un detenteur de monnaie electronique — regime qui suppose, en zone CEMAC,
+# un agrement COBAC ou un partenariat avec un emetteur agree.
+#
+# Cette fonction rend le retrait possible ; elle ne rend pas la question
+# reglementaire caduque. Voir le document destine a l'administration.
+# ─────────────────────────────────────────────────────────────────────────────
+
+
+@db_transaction.atomic
+def request_withdrawal(payee: PayeeAccount, *, requested_by,
+                       amount_xaf: int = 0, justification: str = ""):
+    """
+    Cree une demande de versement a l'initiative du partenaire.
+
+    Sans montant, la totalite du du est demandee. Avec un montant, il ne
+    peut EXCEDER le du : on ne verse pas ce qu'on ne doit pas.
+
+    Retourne la PayoutRequest creee. Elle suit ensuite le circuit normal :
+    approbation par un tiers, puis execution.
+    """
+    situation = amount_due(payee)
+    disponible = int(situation.get("due_xaf") or 0)
+
+    if disponible <= 0:
+        raise SettlementError(
+            "Aucun montant disponible. Les fonds sous sequestre "
+            "correspondent a des commandes en cours : ils deviennent "
+            "disponibles apres confirmation de reception par l'acheteur."
+        )
+
+    # Les blocages sont verifies AVANT de construire quoi que ce soit :
+    # produire un lot pour un partenaire qui ne peut pas etre paye laisserait
+    # de l'argent immobilise dans un etat intermediaire.
+    blocages = payout_blockers(payee)
+    if blocages:
+        raise SettlementError(
+            "Versement impossible : " + " ".join(blocages)
+        )
+
+    montant = int(amount_xaf or 0) or disponible
+    if montant > disponible:
+        raise SettlementError(
+            f"Montant demande {montant} XAF superieur au montant disponible "
+            f"{disponible} XAF."
+        )
+
+    politique = payout_policy_for(payee)
+    minimum = int(_politique_valeur(politique, "min_payout_xaf", 0))
+    if minimum and montant < minimum:
+        raise SettlementError(
+            f"Montant {montant} XAF inferieur au minimum de retrait "
+            f"{minimum} XAF."
+        )
+
+    # Une demande deja en cours interdit la suivante : sans cela, un
+    # partenaire pourrait demander deux fois le meme argent.
+    en_cours = PayoutRequest.objects.filter(
+        payee=payee,
+        status__in=[PayoutRequest.Status.DRAFT,
+                    PayoutRequest.Status.PENDING_APPROVAL,
+                    PayoutRequest.Status.APPROVED,
+                    PayoutRequest.Status.PROCESSING,
+                    PayoutRequest.Status.UNKNOWN],
+    ).first()
+    if en_cours is not None:
+        raise SettlementError(
+            f"Une demande de versement est deja en cours "
+            f"({en_cours.reference}, {en_cours.get_status_display()}). "
+            "Attendez son traitement avant d'en demander une autre."
+        )
+
+    lot = build_batch(payee)
+    if lot is None:
+        raise SettlementError(
+            "Aucun sequestre libere a regrouper. Le montant du provient "
+            "d'ajustements : contactez le support."
+        )
+
+    confirm_batch(lot)
+
+    return request_payout(
+        lot, requested_by=requested_by,
+        justification=(
+            justification.strip()
+            or f"Retrait demande par le partenaire {payee.payee_code}"
+        ),
+    )
+
+
+# ─────────────────────────────────────────────────────────────────────────────
 # REMBOURSEMENTS
 # ─────────────────────────────────────────────────────────────────────────────
 #

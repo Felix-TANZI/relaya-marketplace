@@ -60,11 +60,27 @@ export interface Product {
   master_slug?: string | null;
 }
 
+/**
+ * Nature des résultats renvoyés par la recherche tolérante du backend.
+ *   exact   — correspondance franche
+ *   loose   — une partie des mots seulement
+ *   fuzzy   — orthographe rattrapée
+ *   related — rien de correspondant, rayon voisin proposé
+ *   empty   — aucune piste
+ */
+export interface SearchMeta {
+  query: string;
+  mode: 'exact' | 'loose' | 'fuzzy' | 'related' | 'empty';
+  is_fallback: boolean;
+  suggested_category: { id: number; name: string; slug: string } | null;
+}
+
 export interface ProductListResponse {
   count: number;
   next: string | null;
   previous: string | null;
   results: Product[];
+  search_meta?: SearchMeta | null;
 }
 
 export interface CategoryListResponse {

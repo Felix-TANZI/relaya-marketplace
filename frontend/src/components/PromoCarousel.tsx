@@ -13,9 +13,15 @@ interface Slide {
 interface PromoCarouselProps {
   slides: Slide[];
   autoPlayMs?: number;
+  /** Classes de hauteur du visuel — permet d'aligner le carrousel sur d'autres heros. */
+  minHeightClass?: string;
 }
 
-export default function PromoCarousel({ slides, autoPlayMs = 5000 }: PromoCarouselProps) {
+export default function PromoCarousel({
+  slides,
+  autoPlayMs = 5000,
+  minHeightClass = "min-h-[180px]",
+}: PromoCarouselProps) {
   const [current, setCurrent] = useState(0);
   const total = slides.length;
 
@@ -40,8 +46,8 @@ export default function PromoCarousel({ slides, autoPlayMs = 5000 }: PromoCarous
         {slides.map((slide, i) => (
           <div
             key={i}
-            className="relative min-w-full cursor-pointer overflow-hidden sm:h-[300px]"
-            style={{ background: slide.bg, minHeight: 180 }}
+            className={`relative min-w-full cursor-pointer overflow-hidden ${minHeightClass}`}
+            style={{ background: slide.bg }}
             onClick={() => slide.action?.()}
           >
             {/* Overlay gradient */}

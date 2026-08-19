@@ -21,6 +21,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Enregistre les lookups `__unaccent` et `__trigram_*` utilisés par la
+    # recherche tolérante du catalogue (apps/catalog/search.py).
+    "django.contrib.postgres",
 
     # Third-party
     "rest_framework",

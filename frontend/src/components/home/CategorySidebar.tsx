@@ -15,6 +15,7 @@ import {
   Package,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { CATEGORY_THEMES } from "@/data/categoryThemes";
 
 export interface HomeCategoryItem {
   id: number | null;
@@ -29,7 +30,11 @@ const ICONS: Record<string, LucideIcon> = {
   ShoppingBag, ShoppingCart, Smartphone, Sparkles,
 };
 
+const THEME_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
+
 export function categoryIcon(category: Pick<HomeCategoryItem, "name" | "slug" | "iconName">) {
+  const theme = THEME_BY_SLUG.get(category.slug);
+  if (theme) return theme.icon;
   if (category.iconName && ICONS[category.iconName]) return ICONS[category.iconName];
   const value = `${category.slug} ${category.name}`.toLowerCase();
   if (value.includes("phone") || value.includes("télé") || value.includes("smart")) return Smartphone;
@@ -44,6 +49,13 @@ export function categoryIcon(category: Pick<HomeCategoryItem, "name" | "slug" | 
   return category.slug === "all" ? ShoppingBag : Package;
 }
 
+const THEME_HOME_CATEGORIES: HomeCategoryItem[] = CATEGORY_THEMES.map((theme) => ({
+  id: null,
+  slug: theme.slug,
+  name: theme.name,
+  count: Number(theme.count.replace(/\D/g, "")) || 0,
+}));
+
 interface CategorySidebarProps {
   activeCategory: string;
   onSelectCategory: (slug: string) => void;
@@ -52,7 +64,8 @@ interface CategorySidebarProps {
   trackTop: number;
   trackHeight: number;
   topOffset: number;
-  categories: HomeCategoryItem[];
+  /** Par défaut : le thème statique br1, pour les pages qui ne chargent pas le catalogue live. */
+  categories?: HomeCategoryItem[];
 }
 
 export default function CategorySidebar({
@@ -63,7 +76,7 @@ export default function CategorySidebar({
   trackTop,
   trackHeight,
   topOffset,
-  categories,
+  categories = THEME_HOME_CATEGORIES,
 }: CategorySidebarProps) {
   const panelRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<"start" | "fixed" | "end">("start");

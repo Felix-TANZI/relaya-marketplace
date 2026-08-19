@@ -2,6 +2,9 @@
 // Service API pour l'authentification et la gestion du profil utilisateur
 
 import { http } from './http';
+import { getStoredAccessToken } from '@/lib/authTokens';
+
+const AUTH_API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').replace(/\/api\/?$/, '');
 
 export interface User {
   id:                     number;
@@ -104,6 +107,7 @@ export interface LoginCredentials {
 export interface RegisterData {
   username: string;
   email: string;
+  phone?: string;
   password: string;
   password2?: string;
   first_name?: string;
@@ -141,6 +145,13 @@ export const authApi = {
     return http<LoginResult>('/api/auth/login/', {
       method: 'POST',
       body: JSON.stringify(credentials),
+    });
+  },
+
+  googleLogin: async (credential: string): Promise<LoginResult> => {
+    return http<LoginResult>('/api/auth/google/', {
+      method: 'POST',
+      body: JSON.stringify({ credential }),
     });
   },
 
@@ -194,13 +205,33 @@ export const authApi = {
     });
   },
 
-  uploadAvatar: async (file: File): Promise<User> => {
+  uploadAvatar: async (file: File, onProgress?: (percent: number) => void): Promise<User> => {
     const body = new FormData();
     body.append('avatar', file);
+    const token = getStoredAccessToken();
 
-    return http<User>('/api/auth/profile/avatar/', {
-      method: 'POST',
-      body,
+    return new Promise<User>((resolve, reject) => {
+      const request = new XMLHttpRequest();
+      request.open('POST', `${AUTH_API_BASE_URL}/api/auth/profile/avatar/`);
+      if (token) request.setRequestHeader('Authorization', `Bearer ${token}`);
+      request.upload.onprogress = (event) => {
+        if (event.lengthComputable) onProgress?.(Math.min(99, Math.round(event.loaded / event.total * 100)));
+      };
+      request.onerror = () => reject(new Error('Connexion interrompue pendant le transfert.'));
+      request.onload = () => {
+        let response: unknown;
+        try { response = JSON.parse(request.responseText); } catch { response = null; }
+        if (request.status >= 200 && request.status < 300) {
+          onProgress?.(100);
+          resolve(response as User);
+          return;
+        }
+        const detail = response && typeof response === 'object' && 'detail' in response
+          ? String((response as { detail: unknown }).detail)
+          : "Impossible d'envoyer la photo.";
+        reject(new Error(detail));
+      };
+      request.send(body);
     });
   },
 

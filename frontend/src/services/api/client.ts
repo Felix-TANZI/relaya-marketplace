@@ -1,5 +1,6 @@
 // frontend/src/services/api/client.ts
 // Client API pour interagir avec le backend Relaya Marketplace
+import { notifyOfflineFallback, readOfflineCache, writeOfflineCache } from "@/lib/offlineCache";
 
 // Configuration du client API
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
@@ -24,6 +25,13 @@ function normalizeEndpoint(endpoint: string): string {
 
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
+}
+
+class ApiResponseError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "ApiResponseError";
+  }
 }
 
 function isTransientNetworkError(error: unknown) {
@@ -124,12 +132,6 @@ try {
     ...fetchOptions,
     headers,
   });
-} catch (error) {
-  if (isTransientNetworkError(error)) {
-    throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
-  }
-  throw error;
-}
 
   if (response.status === 401 && localStorage.getItem('refresh_token')) {
     const newToken = await refreshAccessToken();
@@ -149,12 +151,40 @@ try {
     }
   }
 
-  if (!response.ok) {
-    await response.text().catch(() => "");
-    throw new Error(friendlyHttpError(response.status));
-  }
+    if (!response.ok) {
+      const rawBody = await response.text().catch(() => "");
+      let backendDetail = "";
+      if (rawBody) {
+        try {
+          const parsed = JSON.parse(rawBody) as { detail?: unknown };
+          if (typeof parsed.detail === "string") backendDetail = parsed.detail;
+        } catch {
+          // Corps non-JSON (ex: page d'erreur HTML) : on garde le message generique.
+        }
+      }
+      throw new ApiResponseError(backendDetail || friendlyHttpError(response.status), response.status);
+    }
 
-  return response.json();
+    const data = await response.json() as T;
+    if ((fetchOptions.method || "GET").toUpperCase() === "GET") writeOfflineCache(url, data);
+    return data;
+  } catch (error) {
+    const isGet = (fetchOptions.method || "GET").toUpperCase() === "GET";
+    const canUseCache = isTransientNetworkError(error)
+      || !navigator.onLine
+      || (error instanceof ApiResponseError && error.status >= 500);
+    if (isGet && canUseCache) {
+      const cached = readOfflineCache<T>(url);
+      if (cached !== null) {
+        notifyOfflineFallback();
+        return cached;
+      }
+    }
+    if (isTransientNetworkError(error) || !navigator.onLine) {
+      throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+    }
+    throw error;
+  }
 }
 
 export const api = {
@@ -165,7 +195,7 @@ export const api = {
     apiFetch<T>(endpoint, {
       ...options,
       method: "POST",
-      body: JSON.stringify(data),
+      body: data instanceof FormData ? data : JSON.stringify(data),
     }),
   
   put: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>

@@ -11,6 +11,7 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.validators import MinValueValidator
 from django.utils import timezone
 from datetime import timedelta
 from apps.catalog.models import Product
@@ -101,6 +102,12 @@ class Order(TimeStampedModel):
     )
     city    = models.CharField(max_length=50)
     address = models.CharField(max_length=255)
+    address_precision = models.JSONField(
+        blank=True,
+        default=dict,
+        verbose_name="Analyse de précision adresse",
+        help_text="Adresse structurée pour aider le livreur: quartier, repères, score et instruction.",
+    )
     note    = models.TextField(blank=True, null=True)
 
     # Statuts
@@ -297,6 +304,7 @@ class Dispute(models.Model):
         ("DAMAGED",          "Article endommagé"),
         ("WRONG_ITEM",       "Mauvais article"),
         ("NOT_AS_DESCRIBED", "Non conforme à la description"),
+        ("COUNTERFEIT",      "Suspicion de contrefaçon"),
         ("REFUND_REQUEST",   "Demande de remboursement"),
         ("OTHER",            "Autre"),
     ]
@@ -314,7 +322,19 @@ class Dispute(models.Model):
         ("OTHER",          "Autre"),
     ]
 
-    order     = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="disputes")
+    order      = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="disputes")
+    order_item = models.ForeignKey(
+        OrderItem, on_delete=models.CASCADE, null=True, blank=True, related_name="disputes",
+        help_text="Article précis concerné par le litige. Requis pour les commandes multi-articles.",
+    )
+    product = models.ForeignKey(
+        Product, on_delete=models.SET_NULL, null=True, blank=True, related_name="disputes",
+        help_text="Snapshot relationnel du produit concerné, dérivé de order_item.",
+    )
+    vendor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="vendor_disputes",
+        help_text="Vendeur concerné par l'article litigieux.",
+    )
     opened_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="opened_disputes")
 
     reason      = models.CharField(max_length=50, choices=REASON_CHOICES)
@@ -385,6 +405,9 @@ class Dispute(models.Model):
         ordering = ["-created_at"]
         verbose_name = "Litige"
         verbose_name_plural = "Litiges"
+        indexes = [
+            models.Index(fields=["order_item", "opened_by", "status"], name="orders_disp_order_i_1bfe29_idx"),
+        ]
 
     def __str__(self):
         return f"Litige #{self.id} — Commande #{self.order.id}"
@@ -402,6 +425,8 @@ class DisputeMessage(models.Model):
         ADMIN  = 'ADMIN',  'Admin BelivaY'
         CLIENT = 'CLIENT', 'Client'
         COURIER = 'COURIER', 'Livreur'
+        LOGISTICS = 'LOGISTICS', 'Organisation logistique'
+        RELAY_POINT = 'RELAY_POINT', 'Point relais'
         SYSTEM = 'SYSTEM', 'Système'
 
     dispute     = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="messages")
@@ -412,7 +437,7 @@ class DisputeMessage(models.Model):
         help_text="True = note interne admin uniquement, invisible pour le vendeur.",
     )
     sender_role = models.CharField(
-        max_length=10, choices=SenderRole.choices, default=SenderRole.ADMIN,
+        max_length=20, choices=SenderRole.choices, default=SenderRole.ADMIN,
         verbose_name="Rôle de l'expéditeur",
     )
     created_at  = models.DateTimeField(auto_now_add=True)
@@ -428,10 +453,28 @@ class DisputeMessage(models.Model):
 
 class DisputeEvidence(models.Model):
     """Pièce justificative jointe à un litige."""
+    class EvidenceType(models.TextChoices):
+        PHOTO = 'PHOTO', 'Photo'
+        VIDEO = 'VIDEO', 'Vidéo'
+        DOCUMENT = 'DOCUMENT', 'Document'
+        OTHER = 'OTHER', 'Autre'
+
     dispute     = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="evidences")
+    request     = models.ForeignKey(
+        "DisputeEvidenceRequest",
+        on_delete=models.SET_NULL,
+        related_name="evidences",
+        null=True,
+        blank=True,
+    )
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    evidence_type = models.CharField(max_length=16, choices=EvidenceType.choices, default=EvidenceType.PHOTO)
+    uploader_role = models.CharField(max_length=20, blank=True)
     file        = models.FileField(upload_to="disputes/%Y/%m/")
     description = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -441,6 +484,42 @@ class DisputeEvidence(models.Model):
 
     def __str__(self):
         return f"Preuve — Litige #{self.dispute.id}"
+
+
+class DisputeEvidenceRequest(models.Model):
+    class RecipientRole(models.TextChoices):
+        CLIENT = 'CLIENT', 'Client'
+        VENDOR = 'VENDOR', 'Vendeur'
+        COURIER = 'COURIER', 'Livreur'
+        LOGISTICS = 'LOGISTICS', 'Organisation logistique'
+        RELAY_POINT = 'RELAY_POINT', 'Point relais'
+
+    class Status(models.TextChoices):
+        PENDING = 'PENDING', 'En attente'
+        SUBMITTED = 'SUBMITTED', 'Reçue'
+        CANCELLED = 'CANCELLED', 'Annulée'
+        EXPIRED = 'EXPIRED', 'Expirée'
+
+    dispute = models.ForeignKey(Dispute, on_delete=models.CASCADE, related_name="evidence_requests")
+    recipient_role = models.CharField(max_length=20, choices=RecipientRole.choices)
+    requested_from = models.ForeignKey(User, on_delete=models.PROTECT, related_name="received_evidence_requests")
+    requested_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="created_evidence_requests")
+    evidence_types = models.JSONField(blank=True, default=list)
+    instructions = models.TextField()
+    due_at = models.DateTimeField(blank=True, null=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    responded_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["requested_from", "status"], name="orders_disp_request_8c68a8_idx"),
+        ]
+
+    def __str__(self):
+        return f"Demande preuve #{self.id} — Litige #{self.dispute_id}"
 
 
 class PlatformSettings(models.Model):
@@ -494,6 +573,15 @@ class PlatformSettings(models.Model):
         default=7,
         verbose_name="Fenêtre litige (jours)",
         help_text="Jours après livraison pendant lesquels l'acheteur peut ouvrir un litige.",
+    )
+    evidence_retention_days = models.PositiveIntegerField(
+        default=8,
+        validators=[MinValueValidator(1)],
+        verbose_name="Conservation des preuves colis (jours)",
+        help_text=(
+            "Délai après lequel une preuve de livraison (ShipmentEvidence) sans litige "
+            "ouvert est purgée. Sans effet sur une preuve déjà gelée par un litige actif."
+        ),
     )
 
     # ── Commande ─────────────────────────────────────────────────────────────

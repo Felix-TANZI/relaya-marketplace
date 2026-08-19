@@ -13,6 +13,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import {
   Search, Check, X, RefreshCw, Eye, ExternalLink,
   Award, Plus, Download, Upload,
@@ -1120,8 +1121,10 @@ function BrandFormModal({ brand, onClose, onSaved }: {
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setLogoFile(file);
-    setLogoPreview(URL.createObjectURL(file));
+    void ensureImageUnderLimit(file).then((compressed) => {
+      setLogoFile(compressed);
+      setLogoPreview(URL.createObjectURL(compressed));
+    });
   };
 
   const handleSubmit = async () => {

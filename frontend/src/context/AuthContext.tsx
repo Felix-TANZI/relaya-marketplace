@@ -3,6 +3,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, type User, type RegisterData } from '@/services/api/auth';
+import { clearOfflineCache } from '@/lib/offlineCache';
 
 type LoginOutcome =
   | { twoFactorRequired: false }
@@ -12,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<LoginOutcome>;
+  googleLogin: (credential: string) => Promise<LoginOutcome>;
   verify2FA: (userId: number, code: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -40,6 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const applyTokens = async (access: string, refresh: string) => {
+    clearOfflineCache();
     localStorage.setItem('access_token', access);
     localStorage.setItem('refresh_token', refresh);
     setUser(await authApi.me());
@@ -47,6 +50,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string): Promise<LoginOutcome> => {
     const response = await authApi.login({ username, password });
+    if ('2fa_required' in response) {
+      return { twoFactorRequired: true, userId: response.user_id, email: response.email };
+    }
+    await applyTokens(response.access, response.refresh);
+    return { twoFactorRequired: false };
+  };
+
+  const googleLogin = async (credential: string): Promise<LoginOutcome> => {
+    const response = await authApi.googleLogin(credential);
     if ('2fa_required' in response) {
       return { twoFactorRequired: true, userId: response.user_id, email: response.email };
     }
@@ -65,9 +77,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    clearOfflineCache();
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    localStorage.removeItem('belivay_favorite_product_ids');
     localStorage.removeItem('belivay_notif_count');
     localStorage.removeItem('belivay-profile-avatar');
     setUser(null);
@@ -77,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, verify2FA, register, logout, isAuthenticated: !!user }}
+      value={{ user, loading, login, googleLogin, verify2FA, register, logout, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

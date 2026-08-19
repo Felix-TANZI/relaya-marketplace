@@ -25,6 +25,12 @@ interface Category {
   products_count?: number;
 }
 
+interface PaginatedCategories {
+  count: number;
+  next: string | null;
+  results: Category[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPERS
 // ─────────────────────────────────────────────────────────────────────────────
@@ -245,10 +251,24 @@ export default function CategoriesPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      // L'API peut retourner un tableau ou un objet paginé {count, results: [...]}
-      const raw = await http<Category[] | { results: Category[]; count: number }>('/api/catalog/categories/', { headers: authHeader() });
-      const data = Array.isArray(raw) ? raw : (raw as { results: Category[] }).results ?? [];
-      setCategories(data);
+      const loaded: Category[] = [];
+      let endpoint: string | null = '/api/catalog/categories/?page_size=100';
+
+      while (endpoint) {
+        const raw: Category[] | PaginatedCategories = await http<Category[] | PaginatedCategories>(endpoint, { headers: authHeader() });
+        if (Array.isArray(raw)) {
+          loaded.push(...raw);
+          break;
+        }
+
+        loaded.push(...(raw.results ?? []));
+        if (!raw.next) break;
+
+        const nextUrl: URL = new URL(raw.next, window.location.origin);
+        endpoint = `${nextUrl.pathname}${nextUrl.search}`;
+      }
+
+      setCategories(loaded);
     } catch {
       showToast('Erreur chargement des catégories', 'error');
     } finally {

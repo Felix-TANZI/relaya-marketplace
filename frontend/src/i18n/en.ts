@@ -308,7 +308,7 @@
       },
       payment_methods: {
         question: 'What payment methods do you accept?',
-        answer: 'We accept mobile wallets (MTN Money, Orange Money), credit cards, and cash on delivery. All payments are secured with SSL encryption.',
+        answer: 'We accept mobile wallets (MTN Money, Orange Money) and credit cards. All payments are secured with SSL encryption.',
       },
       delivery_time: {
         question: 'What is the delivery time?',
@@ -493,7 +493,7 @@
       return_question: 'Can I return a product?',
       return_answer: 'Yes, you have 10 days to return a non-conforming product.',
       payment_question: 'What payment methods do you accept?',
-      payment_answer: 'We accept Mobile Money (MTN, Orange), credit cards and cash on delivery.',
+      payment_answer: 'We accept Mobile Money (MTN, Orange) and credit cards.',
     },
     methods: {
       phone_title: 'Phone',

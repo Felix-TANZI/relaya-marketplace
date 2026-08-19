@@ -1,6 +1,7 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
 import {
   AlertTriangle,
   ArrowRight,
@@ -8,6 +9,7 @@ import {
   Bell,
   Bike,
   BookOpen,
+  Camera,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -50,6 +52,9 @@ import {
   type CourierSettings,
 } from "@/services/api/courier";
 import { customerApi, type OrderChatMessage } from "@/services/api/customer";
+import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
+import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
+import * as QRCode from "qrcode";
 
 type CourierTab =
   | "dashboard"
@@ -65,6 +70,27 @@ type CourierTab =
   | "litiges"
   | "preuves"
   | "parametres";
+
+const COURIER_TABS: CourierTab[] = [
+  "dashboard",
+  "tournee",
+  "courses",
+  "scanner",
+  "map",
+  "reseau",
+  "profil",
+  "formation",
+  "notifications",
+  "incidents",
+  "litiges",
+  "preuves",
+  "parametres",
+];
+
+function getInitialCourierTab(): CourierTab {
+  const requested = new URLSearchParams(window.location.search).get("tab") as CourierTab | null;
+  return requested && COURIER_TABS.includes(requested) ? requested : "dashboard";
+}
 
 const VEHICLE_LABELS: Record<string, string> = {
   MOTORBIKE: "Moto",
@@ -228,10 +254,11 @@ export default function CourierDashboardPage() {
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
-  const [tab, setTab] = useState<CourierTab>("dashboard");
+  const [tab, setTab] = useState<CourierTab>(getInitialCourierTab);
   const [booting, setBooting] = useState(true);
   const [progress, setProgress] = useState(8);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [application, setApplication] = useState<CourierApplicationResponse | null>(null);
   const [dashboard, setDashboard] = useState<CourierDashboard | null>(null);
   const [network, setNetwork] = useState<CourierNetwork | null>(null);
@@ -247,6 +274,7 @@ export default function CourierDashboardPage() {
   const [scanCode, setScanCode] = useState("");
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
+  const [receiptQrDataUrl, setReceiptQrDataUrl] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState("");
   const [contactLoading, setContactLoading] = useState(false);
@@ -259,6 +287,8 @@ export default function CourierDashboardPage() {
   const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
   const [disputeFeedback, setDisputeFeedback] = useState("");
+  const [trackingFeedback, setTrackingFeedback] = useState("");
+  const lastLocationPublishRef = useRef(0);
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -376,6 +406,49 @@ export default function CourierDashboardPage() {
       event.status === "ASSIGNED" && ["ACCEPT", "ACCEPTED", "Acceptee", "Accept"].includes(event.message),
     ),
   );
+
+  useEffect(() => {
+    if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
+    if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
+    if (!("geolocation" in navigator)) {
+      setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        if (now - lastLocationPublishRef.current < 5000) return;
+        lastLocationPublishRef.current = now;
+        courierApi.publishLocation(selectedShipment.id, {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy_m: position.coords.accuracy,
+          speed_mps: position.coords.speed,
+          heading_deg: position.coords.heading,
+          source: "DEVICE",
+          captured_at: new Date(position.timestamp).toISOString(),
+        }).then((location) => {
+          setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
+          setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
+            ? {
+                ...shipment,
+                latest_location: location,
+                location_history: [...shipment.location_history, location].slice(-100),
+              }
+            : shipment));
+        }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS."));
+      },
+      (error) => setTrackingFeedback(
+        error.code === error.PERMISSION_DENIED
+          ? "Autorisez la localisation dans le navigateur pour démarrer le suivi."
+          : "Position GPS momentanément indisponible.",
+      ),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status]);
 
   useEffect(() => {
     if (!selectedShipment) {
@@ -589,6 +662,11 @@ export default function CourierDashboardPage() {
 
   const liveHeaderStats = [
     {
+      label: "Trust Score",
+      value: dashboard ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}` : "—",
+      tone: dashboard?.trust_score.veto_active ? "text-red-300" : "text-emerald-300",
+    },
+    {
       label: "Temps en ligne",
       value: `${Math.floor((dashboard?.online_minutes ?? 0) / 60)}h ${String((dashboard?.online_minutes ?? 0) % 60).padStart(2, "0")}`,
       tone: "text-emerald-300",
@@ -602,6 +680,18 @@ export default function CourierDashboardPage() {
   const unreadNotifications = notifications.filter((item) => !item.is_read).length;
 
   const mapShipment = selectedShipment ?? activeShipments[0] ?? shipments[0] ?? null;
+  const receiptCode = mapShipment?.receipt_confirmation_code || "";
+
+  useEffect(() => {
+    if (!receiptCode) {
+      setReceiptQrDataUrl("");
+      return;
+    }
+    QRCode.toDataURL(receiptCode, { width: 220, margin: 1 })
+      .then(setReceiptQrDataUrl)
+      .catch(() => setReceiptQrDataUrl(""));
+  }, [receiptCode]);
+
   const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
   const estimatedTourMinutes =
     activeShipments.length > 0
@@ -745,7 +835,7 @@ export default function CourierDashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
         {liveHeaderStats.map((item) => (
           <article
             key={item.label}
@@ -756,6 +846,24 @@ export default function CourierDashboardPage() {
           </article>
         ))}
       </section>
+
+      {dashboard?.trust_score && (
+        <section className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">Plafond de mission</div>
+              <div className="mt-1 font-extrabold text-slate-950 dark:text-white">
+                {dashboard.trust_score.parcel_value_cap_xaf === null
+                  ? "Déplafonné avec assurance transport"
+                  : `${dashboard.trust_score.parcel_value_cap_xaf.toLocaleString("fr-FR")} FCFA par colis`}
+              </div>
+            </div>
+            <div className="rounded-xl border border-emerald-500/20 bg-white/70 px-4 py-2 font-bold dark:bg-black/10">
+              {dashboard.trust_score.sample_size} observations analysées
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
@@ -832,7 +940,15 @@ export default function CourierDashboardPage() {
               <TrackingMap
                 destinationAddress={mapShipment?.delivery_address}
                 destinationCity={mapShipment?.city}
+                destinationPrecision={mapShipment?.delivery_location_precision}
                 destinationLabel="Destination client"
+                currentLocation={mapShipment?.latest_location
+                  ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
+                  : undefined}
+                locationHistory={(mapShipment?.location_history || []).map((location) => [
+                  Number(location.latitude),
+                  Number(location.longitude),
+                ] as [number, number])}
                 className="rounded-[22px] border-none"
                 height={300}
               />
@@ -1287,6 +1403,23 @@ export default function CourierDashboardPage() {
   );
 
   const renderScanner = () => (
+    <div className="space-y-5">
+    {receiptCode && (
+      <SectionShell kicker="A presenter au client" title="Code de confirmation de reception" accent="text-emerald-300">
+        <div className="flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-[#0d1520] p-6 text-center sm:flex-row sm:text-left">
+          {receiptQrDataUrl ? (
+            <img src={receiptQrDataUrl} alt="QR de confirmation" className="h-[140px] w-[140px] rounded-2xl bg-white p-2" />
+          ) : null}
+          <div>
+            <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-300">Commande #{mapShipment?.order}</div>
+            <div className="mt-2 text-3xl font-black tracking-[0.3em] text-white">{receiptCode}</div>
+            <p className="mt-2 text-[12px] leading-5 text-[#8B949E]">
+              Montre ce QR ou ce code au client a la remise : il doit le scanner ou le saisir pour confirmer la reception.
+            </p>
+          </div>
+        </div>
+      </SectionShell>
+    )}
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker="Verification colis" title="Scanner QR">
         <div className="rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,.18),_transparent_55%),#0d1520] p-6">
@@ -1359,6 +1492,7 @@ export default function CourierDashboardPage() {
         </div>
       </SectionShell>
     </section>
+    </div>
   );
 
   const renderMap = () => (
@@ -1369,10 +1503,24 @@ export default function CourierDashboardPage() {
             <TrackingMap
               destinationAddress={mapShipment?.delivery_address}
               destinationCity={mapShipment?.city}
+              destinationPrecision={mapShipment?.delivery_location_precision}
               destinationLabel="Destination client"
+              currentLocation={mapShipment?.latest_location
+                ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
+                : undefined}
+              locationHistory={(mapShipment?.location_history || []).map((location) => [
+                Number(location.latitude),
+                Number(location.longitude),
+              ] as [number, number])}
               className="rounded-[22px] border-none"
               height={420}
             />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
+            <span>{trackingFeedback || (mapShipment?.latest_location
+              ? `Dernière position : ${new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR")}`
+              : "Activez le GPS et le statut en ligne pour partager votre position.")}</span>
+            <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
@@ -1515,6 +1663,32 @@ export default function CourierDashboardPage() {
   const renderProfil = () => (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker="Identite" title="Mon Profil">
+        <div className="mb-5 flex flex-col gap-4 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4 sm:flex-row sm:items-center">
+          <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-[#07130f] text-2xl font-black text-emerald-300">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Photo du livreur" className="h-full w-full object-cover" />
+            ) : (
+              (user?.first_name?.[0] || user?.username?.[0] || "L").toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-extrabold text-white">Photo de profil</div>
+            <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">Rognez votre photo avant l'envoi. Elle sera compressée en WebP pour limiter l'espace utilisé.</p>
+          </div>
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-black text-[#022c22] transition hover:bg-emerald-400">
+            <Camera size={16} />
+            Modifier
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => {
+                setAvatarFile(event.target.files?.[0] || null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           {[
             { label: "Telephone", value: courierProfile?.phone || user?.phone || "—", icon: Phone },
@@ -1985,6 +2159,12 @@ export default function CourierDashboardPage() {
           {settingsFeedback ? <div className="text-[13px] font-semibold text-emerald-300">{settingsFeedback}</div> : null}
         </div>
       </SectionShell>
+
+      <div className="xl:col-span-2">
+        <SectionShell kicker="Versements BelivaY" title="Compte Mobile Money livreur" accent="text-emerald-300">
+          <PayoutAccountVerificationCard ownerRole="COURIER" accent="#10B981" surfaceClassName="border-white/10 bg-white/[0.04] text-white dark:bg-white/[0.04]" />
+        </SectionShell>
+      </div>
     </section>
   );
 
@@ -2235,6 +2415,7 @@ export default function CourierDashboardPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-5">
+            <EvidenceRequestInbox accent="#10B981" />
             <section className="overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-6 shadow-[0_20px_56px_rgba(0,0,0,.32)]">
               <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
                 <div>
@@ -2325,6 +2506,18 @@ export default function CourierDashboardPage() {
           );
         })}
       </div>
+      {avatarFile ? (
+        <AvatarCropDialog
+          file={avatarFile}
+          accent="#10B981"
+          onClose={() => setAvatarFile(null)}
+          onUploaded={(updatedUser) => {
+            setUser(updatedUser);
+            setAvatarFile(null);
+            setSettingsFeedback("Photo de profil mise à jour.");
+          }}
+        />
+      ) : null}
     </div>
   );
 }

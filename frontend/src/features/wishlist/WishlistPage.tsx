@@ -1,25 +1,21 @@
-import { useEffect, useRef, useState } from "react";
-import { Check, Heart, ShoppingBag, ShoppingCart, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Heart, ShoppingBag, Sparkles } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { productsApi, type Product } from "@/services/api/products";
-import { getFavoriteProductIds, toggleFavoriteProduct } from "@/lib/favorites";
+import { getFavoriteProductIds } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
 import { V29_PRODUCTS } from "@/data/v29Products";
-import { useCart } from "@/context/CartContext";
-
-const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} FCFA`;
+import { useAuth } from "@/context/AuthContext";
+import CatalogProductCard from "@/components/product/CatalogProductCard";
 
 export default function WishlistPage() {
   const { t } = useTranslation();
-  const { addItem } = useCart();
+  const { isAuthenticated } = useAuth();
 
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [removingIds, setRemovingIds] = useState<Set<number>>(new Set());
-  const [justAddedId, setJustAddedId] = useState<number | null>(null);
-  const removedIdsRef = useRef<Set<number>>(new Set());
 
   const fetchProducts = async (silent = false) => {
     try {
@@ -37,7 +33,7 @@ export default function WishlistPage() {
             ...apiProducts,
             ...fallbackProducts.filter((product) => !knownIds.has(product.id)),
           ];
-          setProducts(list.filter((product) => !removedIdsRef.current.has(product.id)));
+          setProducts(list);
           return;
         } catch {
           // fall through to resilient local favorites
@@ -60,9 +56,9 @@ export default function WishlistPage() {
           ...apiProducts,
           ...fallbackProducts.filter((product) => !knownIds.has(product.id)),
         ];
-        setProducts(list.filter((product) => !removedIdsRef.current.has(product.id)));
+        setProducts(list);
       } catch {
-        setProducts(fallbackProducts.filter((product) => !removedIdsRef.current.has(product.id)));
+        setProducts(fallbackProducts);
       }
     } finally {
       if (!silent) setLoading(false);
@@ -79,60 +75,8 @@ export default function WishlistPage() {
     return () => window.removeEventListener("belivay-favorites-updated", onFavoritesUpdated);
   }, []);
 
-  const addProductToCart = (product: Product) => {
-    addItem({
-      id: product.id,
-      name: product.title,
-      price: product.price_final,
-      quantity: 1,
-      image:
-        product.images?.find((image) => image.is_primary)?.image_url ||
-        product.images?.[0]?.image_url ||
-        product.media?.find((media) => media.media_type === "image")?.url,
-      isDemo: V29_PRODUCTS.some((item) => item.id === product.id),
-    });
-  };
-
-  const handleAdd = (product: Product) => {
-    addProductToCart(product);
-    setJustAddedId(product.id);
-    window.setTimeout(
-      () => setJustAddedId((current) => (current === product.id ? null : current)),
-      1100,
-    );
-  };
-
-  const handleRemove = (product: Product) => {
-    const id = product.id;
-    setRemovingIds((prev) => new Set(prev).add(id));
-
-    window.setTimeout(() => {
-      removedIdsRef.current.add(id);
-      setProducts((current) => current.filter((item) => item.id !== id));
-      setRemovingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-
-      toggleFavoriteProduct(id);
-
-      if (hasValidAccessToken()) {
-        void (async () => {
-          try {
-            const favorites = await customerApi.getFavorites();
-            const favorite = favorites.find((item) => item.product.id === id);
-            if (favorite) await customerApi.removeFavorite(favorite.id);
-          } catch {
-            // suppression locale déjà appliquée — on n'interrompt pas l'UI
-          }
-        })();
-      }
-    }, 280);
-  };
-
   const gridClass =
-    "grid grid-cols-3 gap-2.5 sm:grid-cols-4 sm:gap-3 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 2xl:grid-cols-10";
+    "grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5";
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-3 py-4 dark:bg-gray-950 sm:px-4 sm:py-8">
@@ -172,6 +116,15 @@ export default function WishlistPage() {
             Explorer le catalogue
           </Link>
         </div>
+
+        {!isAuthenticated ? (
+          <div className="mb-5 rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm leading-6 text-gray-700 shadow-sm dark:border-orange-900/30 dark:bg-gray-900 dark:text-gray-200">
+            Vos favoris sont conservés sur cet appareil. Connectez-vous au moment de commander pour les retrouver avec votre panier et suivre vos achats.
+            <Link to="/login" state={{ from: "/wishlist" }} className="ml-1 font-extrabold text-primary hover:underline">
+              Se connecter
+            </Link>
+          </div>
+        ) : null}
 
         {loading ? (
           /* ══════════ CHARGEMENT ══════════ */
@@ -220,95 +173,7 @@ export default function WishlistPage() {
           </div>
         ) : (
           /* ══════════ GRILLE FAVORIS ══════════ */
-          <div className={gridClass}>
-            {products.map((product, index) => {
-              const removing = removingIds.has(product.id);
-              const finalPrice = product.price_final ?? product.price_xaf;
-              const discountPercent = product.discount_percent ?? product.discount ?? 0;
-              const compareAt =
-                product.compare_at_price && product.compare_at_price > finalPrice
-                  ? product.compare_at_price
-                  : product.discount
-                    ? product.price_xaf
-                    : null;
-              const image =
-                product.images?.find((img) => img.is_primary)?.image_url ||
-                product.images?.[0]?.image_url ||
-                product.media?.find((media) => media.media_type === "image")?.url;
-              const isMock = V29_PRODUCTS.some((item) => item.id === product.id);
-              const detail = `/product/${product.master_slug ?? product.id}${isMock ? "?mock=1" : ""}`;
-              const added = justAddedId === product.id;
-
-              return (
-                <div
-                  key={product.id}
-                  className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900"
-                  style={
-                    removing
-                      ? { animation: "wishlistOut .28s ease-in forwards" }
-                      : { animation: "wishlistIn .45s ease-out both", animationDelay: `${Math.min(index, 24) * 35}ms` }
-                  }
-                >
-                  <div className="relative aspect-square overflow-hidden bg-[#fff7ef] dark:bg-gray-800">
-                    <Link to={detail} className="block h-full w-full">
-                      {image ? (
-                        <img
-                          src={image}
-                          alt={product.title}
-                          loading="lazy"
-                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-primary/40">
-                          <ShoppingBag size={28} />
-                        </div>
-                      )}
-                    </Link>
-
-                    {discountPercent > 0 && (
-                      <span className="absolute left-1.5 top-1.5 rounded-full bg-red-500 px-1.5 py-0.5 text-[9px] font-black text-white shadow">
-                        -{discountPercent}%
-                      </span>
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => handleRemove(product)}
-                      aria-label={`Retirer ${product.title} des favoris`}
-                      className="absolute right-1.5 top-1.5 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 text-pink-500 shadow-sm backdrop-blur-sm transition hover:scale-110 hover:bg-pink-500 hover:text-white active:scale-95 dark:bg-gray-900/80"
-                    >
-                      <Heart size={14} fill="currentColor" />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleAdd(product)}
-                      aria-label={`Ajouter ${product.title} au panier`}
-                      className={`absolute bottom-1.5 right-1.5 flex h-8 w-8 items-center justify-center rounded-full shadow-md transition-all duration-200 hover:scale-110 active:scale-95 ${
-                        added ? "bg-green-500 text-white" : "bg-primary text-white hover:bg-primary-dark"
-                      }`}
-                    >
-                      {added ? <Check size={15} /> : <ShoppingCart size={15} />}
-                    </button>
-                  </div>
-
-                  <div className="flex flex-1 flex-col p-2">
-                    <Link to={detail} className="block">
-                      <h3 className="line-clamp-2 min-h-[28px] text-[11px] font-semibold leading-tight text-gray-800 transition-colors hover:text-primary dark:text-gray-100 sm:text-xs">
-                        {product.title}
-                      </h3>
-                    </Link>
-                    <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-                      <span className="text-[12px] font-black text-primary sm:text-[13px]">{fmt(finalPrice)}</span>
-                      {compareAt && (
-                        <span className="text-[9px] text-gray-400 line-through">{fmt(compareAt)}</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          <div className={gridClass}>{products.map((product) => <CatalogProductCard key={product.id} product={product} showPromo isMock={V29_PRODUCTS.some((item) => item.id === product.id)} />)}</div>
         )}
       </div>
     </div>

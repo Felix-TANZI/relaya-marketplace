@@ -1,7 +1,16 @@
+import secrets
+
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
 from apps.orders.models import Order
 from apps.accounts.models import CourierProfile
+
+
+def shipment_evidence_retention_deadline():
+    from apps.orders.models import PlatformSettings
+    days = PlatformSettings.get_settings().evidence_retention_days
+    return timezone.now() + timezone.timedelta(days=days)
 
 
 class Shipment(models.Model):
@@ -18,6 +27,7 @@ class Shipment(models.Model):
         ZONE_UNCOVERED = "ZONE_UNCOVERED", "Zone uncovered"
         CAPACITY_BLOCKED = "CAPACITY_BLOCKED", "Capacity blocked"
         VEHICLE_INCOMPATIBLE = "VEHICLE_INCOMPATIBLE", "Vehicle incompatible"
+        VALUE_LIMIT_EXCEEDED = "VALUE_LIMIT_EXCEEDED", "Parcel value exceeds courier trust tier"
         ASSIGNED = "ASSIGNED", "Assigned"
         PICKED_UP = "PICKED_UP", "Picked up"
         IN_TRANSIT = "IN_TRANSIT", "In transit"
@@ -49,9 +59,19 @@ class Shipment(models.Model):
     accepted_at = models.DateTimeField(null=True, blank=True)
     penalty_notified_at = models.DateTimeField(null=True, blank=True)
 
+    # Code que le livreur presente (QR ou saisie) pour que le client prouve
+    # une remise physique reelle avant de confirmer la reception.
+    receipt_confirmation_code = models.CharField(max_length=6, blank=True, default="")
+
     # Horodatage
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def ensure_receipt_confirmation_code(self) -> str:
+        if not self.receipt_confirmation_code:
+            self.receipt_confirmation_code = f"{secrets.randbelow(1_000_000):06d}"
+            self.save(update_fields=["receipt_confirmation_code"])
+        return self.receipt_confirmation_code
 
     def __str__(self):
         return f"Shipment(order={self.order_id}, status={self.status})"
@@ -74,6 +94,76 @@ class ShipmentEvent(models.Model):
 
     def __str__(self):
         return f"ShipmentEvent(shipment={self.shipment_id}, status={self.status})"
+
+
+class ShipmentLocation(models.Model):
+    class Source(models.TextChoices):
+        DEVICE = "DEVICE", "Appareil livreur"
+        SIMULATION = "SIMULATION", "Simulation locale"
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="locations")
+    courier = models.ForeignKey(CourierProfile, on_delete=models.CASCADE, related_name="shipment_locations")
+    latitude = models.DecimalField(max_digits=9, decimal_places=6)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6)
+    accuracy_m = models.FloatField(null=True, blank=True)
+    speed_mps = models.FloatField(null=True, blank=True)
+    heading_deg = models.FloatField(null=True, blank=True)
+    source = models.CharField(max_length=16, choices=Source.choices, default=Source.DEVICE)
+    captured_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["captured_at", "id"]
+        indexes = [
+            models.Index(fields=["shipment", "-captured_at"], name="shipping_lo_shipmen_4ea9a9_idx"),
+            models.Index(fields=["courier", "-captured_at"], name="shipping_lo_courier_1be985_idx"),
+        ]
+
+    def __str__(self):
+        return f"ShipmentLocation(shipment={self.shipment_id}, {self.latitude}, {self.longitude})"
+
+
+class ShipmentEvidence(models.Model):
+    """Photo de chaîne de garde, purgable après PlatformSettings.evidence_retention_days sauf gel lié à un litige."""
+
+    class Stage(models.TextChoices):
+        VENDOR_PACKED = "VENDOR_PACKED", "Emballage vendeur"
+        COURIER_PICKUP_VENDOR = "COURIER_PICKUP_VENDOR", "Enlèvement vendeur"
+        RELAY_RECEIVED = "RELAY_RECEIVED", "Réception point relais"
+        RELAY_RELEASED = "RELAY_RELEASED", "Sortie point relais"
+        CUSTOMER_DELIVERY = "CUSTOMER_DELIVERY", "Remise client"
+        RETURN_DEPOSIT = "RETURN_DEPOSIT", "Dépôt retour"
+
+    shipment = models.ForeignKey(Shipment, on_delete=models.CASCADE, related_name="evidences")
+    order_item = models.ForeignKey(
+        "orders.OrderItem",
+        on_delete=models.SET_NULL,
+        related_name="shipment_evidences",
+        null=True,
+        blank=True,
+    )
+    stage = models.CharField(max_length=30, choices=Stage.choices)
+    uploaded_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="shipment_evidences")
+    actor_role = models.CharField(max_length=20)
+    file = models.FileField(upload_to="shipment-evidences/%Y/%m/", blank=True)
+    description = models.CharField(max_length=255, blank=True)
+    content_type = models.CharField(max_length=100, blank=True)
+    size_bytes = models.PositiveBigIntegerField(default=0)
+    sha256 = models.CharField(max_length=64, blank=True)
+    retain_until = models.DateTimeField(default=shipment_evidence_retention_deadline)
+    litigation_hold = models.BooleanField(default=False)
+    purged_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+        indexes = [
+            models.Index(fields=["retain_until", "litigation_hold", "purged_at"]),
+            models.Index(fields=["shipment", "stage"]),
+        ]
+
+    def __str__(self):
+        return f"Preuve {self.stage} — Livraison #{self.shipment_id}"
 
 
 class RelayParcel(models.Model):

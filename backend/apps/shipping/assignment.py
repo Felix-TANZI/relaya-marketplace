@@ -2,7 +2,8 @@ import unicodedata
 
 from django.db.models import Count, Q
 
-from apps.accounts.models import CourierProfile, DeliveryOrganizationProfile
+from apps.accounts.models import CourierProfile, DeliveryOrganizationProfile, TrustScoreProfile
+from apps.accounts.trust_score import calculate_trust_score
 from apps.orders.models import Order
 from .models import Shipment, ShipmentEvent
 
@@ -98,8 +99,23 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
     if not available:
         return None, "CAPACITY_BLOCKED", "Tous les livreurs couvrant cette zone ont atteint leur capacite active."
 
-    available.sort(key=lambda item: (item.active_shipments_count, item.updated_at))
-    return available[0], "", ""
+    value_eligible = []
+    for courier in available:
+        trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
+        cap = trust.parcel_value_cap_xaf
+        if cap is None and not courier.delivery_organization.transport_insurance_verified:
+            cap = 250000
+        if cap is None or order.total_xaf <= cap:
+            value_eligible.append(courier)
+    if not value_eligible:
+        return (
+            None,
+            "VALUE_LIMIT_EXCEEDED",
+            "La valeur du colis depasse le plafond Trust Score des livreurs disponibles.",
+        )
+
+    value_eligible.sort(key=lambda item: (item.active_shipments_count, item.updated_at))
+    return value_eligible[0], "", ""
 
 
 def assign_shipment_or_mark_blocked(shipment: Shipment, required_vehicle_type=""):
@@ -138,6 +154,7 @@ def assign_shipment_or_mark_blocked(shipment: Shipment, required_vehicle_type=""
         "ZONE_UNCOVERED": Shipment.Status.ZONE_UNCOVERED,
         "CAPACITY_BLOCKED": Shipment.Status.CAPACITY_BLOCKED,
         "VEHICLE_INCOMPATIBLE": Shipment.Status.VEHICLE_INCOMPATIBLE,
+        "VALUE_LIMIT_EXCEEDED": Shipment.Status.VALUE_LIMIT_EXCEEDED,
     }
     shipment.status = status_by_issue.get(issue_code, Shipment.Status.WAITING_MANUAL_ASSIGNMENT)
     shipment.assignment_issue_code = issue_code or "WAITING_MANUAL_ASSIGNMENT"

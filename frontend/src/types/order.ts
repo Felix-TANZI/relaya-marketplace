@@ -40,6 +40,7 @@ export interface Order {
   delivery_mode?: DeliveryMethod;
   city: string;
   address: string;
+  address_precision?: Record<string, unknown>;
   note: string | null;
   payment_status: PaymentStatus;
   fulfillment_status: FulfillmentStatus;

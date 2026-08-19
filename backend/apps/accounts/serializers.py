@@ -4,12 +4,15 @@
 
 from rest_framework import serializers
 from django.contrib.auth.models import User
+from django.db.models import Q
 from django.contrib.auth.password_validation import validate_password
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
 from .models import (
     CourierProfile,
     DeliveryOrganizationProfile,
+    PayoutAccount,
     RelayPointProfile,
     RewardAccount,
     RewardTransaction,
@@ -18,6 +21,89 @@ from .models import (
     UserFavorite,
     UserNotification,
 )
+from apps.common.phone import normalize_cameroon_phone
+from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+
+
+def user_with_email_exists(email: str, exclude_user_id=None) -> bool:
+    email = (email or "").strip()
+    if not email:
+        return False
+    qs = User.objects.filter(email__iexact=email)
+    if exclude_user_id:
+        qs = qs.exclude(id=exclude_user_id)
+    return qs.exists()
+
+
+def users_with_phone(phone: str, exclude_user_id=None):
+    normalized = normalize_cameroon_phone(phone)
+    if not normalized["is_valid"]:
+        return User.objects.none()
+    variants = {
+        normalized["national"],
+        normalized["e164"],
+        f"237{normalized['national']}",
+    }
+    qs = User.objects.filter(
+        Q(profile__phone__in=variants)
+        | Q(courier_profile__phone__in=variants)
+        | Q(delivery_organization_profile__phone__in=variants)
+        | Q(relay_point_profile__phone__in=variants)
+        | Q(vendor_profile__phone__in=variants)
+    ).distinct()
+    if exclude_user_id:
+        qs = qs.exclude(id=exclude_user_id)
+    return qs
+
+
+def resolve_login_identifier(identifier: str) -> str:
+    """
+    Convertit username/email/téléphone en username Django.
+
+    SimpleJWT authentifie ensuite normalement avec username + password.
+    Si un email ou numéro correspond à plusieurs comptes, on bloque pour éviter
+    une connexion ambiguë.
+    """
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return identifier
+
+    if "@" in identifier:
+        matches = User.objects.filter(email__iexact=identifier)
+        if matches.count() == 1:
+            return matches.first().username
+        if matches.count() > 1:
+            raise serializers.ValidationError({
+                "username": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."
+            })
+        return identifier
+
+    normalized = normalize_cameroon_phone(identifier)
+    if normalized["is_valid"]:
+        phone_values = {identifier, normalized["national"], normalized["e164"], f"237{normalized['national']}"}
+        matches = User.objects.filter(
+            Q(profile__phone__in=phone_values)
+            | Q(courier_profile__phone__in=phone_values)
+            | Q(delivery_organization_profile__phone__in=phone_values)
+            | Q(relay_point_profile__phone__in=phone_values)
+            | Q(vendor_profile__phone__in=phone_values)
+        ).distinct()
+        if matches.count() == 1:
+            return matches.first().username
+        if matches.count() > 1:
+            raise serializers.ValidationError({
+                "username": "Plusieurs comptes utilisent ce numero. Connectez-vous avec votre username."
+            })
+    return identifier
+
+
+class BelivayTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = User.USERNAME_FIELD
+
+    def validate(self, attrs):
+        attrs = attrs.copy()
+        attrs["username"] = resolve_login_identifier(attrs.get("username", ""))
+        return super().validate(attrs)
 
 
 class CourierProfileSerializer(serializers.ModelSerializer):
@@ -63,6 +149,7 @@ class DeliveryOrganizationProfileSerializer(serializers.ModelSerializer):
             "zones",
             "allowed_vehicle_types",
             "max_active_shipments",
+            "transport_insurance_verified",
             "address",
             "contract_reference",
             "status",
@@ -93,6 +180,119 @@ class RelayPointProfileSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+
+
+class PhoneValidationSerializer(serializers.Serializer):
+    phone = serializers.CharField(max_length=30)
+
+    def validate_phone(self, value):
+        normalized = normalize_cameroon_phone(value)
+        if not normalized["is_valid"]:
+            raise serializers.ValidationError("Numero camerounais invalide ou operateur non reconnu.")
+        return value
+
+    def to_representation(self, instance):
+        phone = instance.get("phone") if isinstance(instance, dict) else self.validated_data["phone"]
+        return normalize_cameroon_phone(phone)
+
+
+class PayoutAccountSerializer(serializers.ModelSerializer):
+    masked_phone = serializers.SerializerMethodField()
+
+    class Meta:
+        model = PayoutAccount
+        fields = [
+            "id",
+            "owner_role",
+            "label",
+            "phone_e164",
+            "national_number",
+            "operator",
+            "status",
+            "is_primary",
+            "masked_phone",
+            "verified_at",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "id",
+            "phone_e164",
+            "national_number",
+            "operator",
+            "status",
+            "verified_at",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_masked_phone(self, obj):
+        if not obj.national_number:
+            return ""
+        return f"+237 {obj.national_number[:3]} *** {obj.national_number[-3:]}"
+
+
+class PayoutAccountCreateSerializer(serializers.Serializer):
+    owner_role = serializers.ChoiceField(choices=PayoutAccount.OwnerRole.choices)
+    phone = serializers.CharField(max_length=30)
+    label = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    is_primary = serializers.BooleanField(required=False, default=True)
+
+    def validate(self, data):
+        normalized = normalize_cameroon_phone(data["phone"])
+        if not normalized["is_valid"] or not normalized["is_mobile"]:
+            raise serializers.ValidationError({"phone": "Utilisez un numero mobile camerounais valide."})
+
+        user = self.context["request"].user
+        role = data["owner_role"]
+        role_profile_map = {
+            PayoutAccount.OwnerRole.VENDOR: "vendor_profile",
+            PayoutAccount.OwnerRole.COURIER: "courier_profile",
+            PayoutAccount.OwnerRole.DELIVERY_ORGANIZATION: "delivery_organization_profile",
+            PayoutAccount.OwnerRole.RELAY_POINT: "relay_point_profile",
+        }
+        if not hasattr(user, role_profile_map[role]):
+            raise serializers.ValidationError({
+                "owner_role": "Ce compte utilisateur n'a pas ce role operationnel."
+            })
+        data["normalized_phone"] = normalized
+        return data
+
+    def create(self, validated_data):
+        import random
+
+        user = self.context["request"].user
+        normalized = validated_data["normalized_phone"]
+        is_primary = validated_data.get("is_primary", True)
+        if is_primary:
+            PayoutAccount.objects.filter(
+                user=user,
+                owner_role=validated_data["owner_role"],
+                is_primary=True,
+            ).update(is_primary=False)
+
+        account, _ = PayoutAccount.objects.update_or_create(
+            user=user,
+            owner_role=validated_data["owner_role"],
+            phone_e164=normalized["e164"],
+            defaults={
+                "label": validated_data.get("label", ""),
+                "national_number": normalized["national"],
+                "operator": normalized["operator"],
+                "status": PayoutAccount.Status.PENDING_VERIFICATION,
+                "is_primary": is_primary,
+                "verified_at": None,
+            },
+        )
+        code = f"{random.randint(0, 999999):06d}"
+        account.set_verification_code(code)
+        account.save()
+        account.dev_code = code
+        return account
+
+
+class PayoutAccountVerifySerializer(serializers.Serializer):
+    code = serializers.CharField(min_length=4, max_length=8)
 
 
 class CartItemSerializer(serializers.Serializer):
@@ -196,7 +396,7 @@ class UserSerializer(serializers.ModelSerializer):
     
     def get_is_vendor(self, obj):
         """Vérifier si l'utilisateur a un profil vendeur actif"""
-        return hasattr(obj, 'vendor_profile') and obj.vendor_profile.status == 'approved'
+        return hasattr(obj, 'vendor_profile') and str(obj.vendor_profile.status).upper() == 'APPROVED'
 
     def get_is_courier(self, obj):
         courier = getattr(obj, "courier_profile", None)
@@ -275,10 +475,33 @@ class UserSerializer(serializers.ModelSerializer):
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
     password2 = serializers.CharField(write_only=True, required=True)
+    phone = serializers.CharField(write_only=True, required=False, allow_blank=True, max_length=30)
 
     class Meta:
         model = User
-        fields = ["username", "email", "password", "password2", "first_name", "last_name"]
+        fields = ["username", "email", "phone", "password", "password2", "first_name", "last_name"]
+
+    def validate_username(self, value):
+        value = value.strip()
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("Ce nom d'utilisateur existe deja. Choisissez-en un autre.")
+        return value
+
+    def validate_email(self, value):
+        value = value.strip().lower()
+        if value and user_with_email_exists(value):
+            raise serializers.ValidationError("Cette adresse email existe deja. Connectez-vous ou utilisez-en une autre.")
+        return value
+
+    def validate_phone(self, value):
+        if not value.strip():
+            return ""
+        normalized = normalize_cameroon_phone(value)
+        if not normalized["is_valid"] or not normalized["is_mobile"]:
+            raise serializers.ValidationError("Saisissez un numero mobile camerounais valide.")
+        if users_with_phone(normalized["e164"]).exists():
+            raise serializers.ValidationError("Ce numero de telephone existe deja. Connectez-vous ou utilisez-en un autre.")
+        return normalized["e164"]
 
     def validate(self, attrs):
         if attrs["password"] != attrs["password2"]:
@@ -287,6 +510,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         validated_data.pop("password2")
+        phone = validated_data.pop("phone", "")
         user = User.objects.create_user(
             username=validated_data["username"],
             email=validated_data.get("email", ""),
@@ -294,6 +518,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             first_name=validated_data.get("first_name", ""),
             last_name=validated_data.get("last_name", ""),
         )
+        UserProfile.objects.update_or_create(user=user, defaults={"phone": phone or None})
         return user
 
 
@@ -431,6 +656,25 @@ class AvatarUploadSerializer(serializers.ModelSerializer):
     class Meta:
         model = UserProfile
         fields = ['avatar']
+
+    def validate_avatar(self, avatar):
+        try:
+            return optimize_uploaded_image(
+                avatar,
+                max_input_bytes=10 * 1024 * 1024,
+                max_dimension=512,
+                quality=78,
+                filename_prefix="avatar",
+            )
+        except ImageOptimizationError as error:
+            raise serializers.ValidationError(str(error)) from error
+
+    def update(self, instance, validated_data):
+        old_avatar = instance.avatar.name if instance.avatar else None
+        instance = super().update(instance, validated_data)
+        if old_avatar and instance.avatar.name != old_avatar:
+            instance.avatar.storage.delete(old_avatar)
+        return instance
 
 
 class FavoriteSerializer(serializers.ModelSerializer):

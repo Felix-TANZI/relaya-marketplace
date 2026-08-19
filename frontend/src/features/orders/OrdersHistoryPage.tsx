@@ -156,7 +156,7 @@ export default function OrdersHistoryPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8">
-        <div className="mx-auto max-w-3xl space-y-3">
+        <div className="mx-auto max-w-7xl space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-40 animate-pulse rounded-2xl bg-white/70 dark:bg-gray-900/70" />
           ))}
@@ -183,7 +183,7 @@ export default function OrdersHistoryPage() {
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] px-3 pb-24 pt-4 dark:bg-gray-950 sm:px-4 sm:py-8">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-7xl">
         {/* ══════════ EN-TÊTE ══════════ */}
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
@@ -263,6 +263,7 @@ export default function OrdersHistoryPage() {
                             className="h-[220px] w-full overflow-hidden rounded-2xl lg:h-[300px]"
                             destinationAddress={mapOrder?.address}
                             destinationCity={mapOrder?.city}
+                            destinationPrecision={mapOrder?.address_precision}
                             destinationLabel={mapOrder ? `${mapOrder.address}, ${mapOrder.city}` : undefined}
                           />
                         );

@@ -6,15 +6,53 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib.auth.models import User
 from .models import (
+    ComplianceDocument,
+    DeliveryVehicle,
     UserProfile,
     UserActivityLog,
     UserFavorite,
     UserNotification,
     RewardAccount,
     RewardTransaction,
+    TrustScoreProfile,
     UserSession,
     OTPCode,
 )
+
+
+@admin.register(TrustScoreProfile)
+class TrustScoreProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "role", "score", "tier", "sample_size", "veto_active", "calculated_at")
+    list_filter = ("role", "tier", "veto_active")
+    search_fields = ("user__username", "user__email", "veto_reason")
+    readonly_fields = ("score", "tier", "candidate_tier", "candidate_since", "breakdown", "sample_size", "calculated_at")
+
+
+@admin.register(DeliveryVehicle)
+class DeliveryVehicleAdmin(admin.ModelAdmin):
+    list_display = ('label', 'registration', 'vehicle_type', 'organization', 'assigned_courier', 'is_active')
+    list_filter = ('vehicle_type', 'is_active', 'organization')
+    search_fields = ('label', 'registration', 'organization__company_name', 'assigned_courier__user__username')
+    readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ComplianceDocument)
+class ComplianceDocumentAdmin(admin.ModelAdmin):
+    list_display = ('document_type', 'owner_role', 'user', 'status', 'updated_at')
+    list_filter = ('owner_role', 'status', 'document_type')
+    search_fields = ('user__username', 'user__email', 'document_type')
+    readonly_fields = ('user', 'owner_role', 'document_type', 'file', 'created_at', 'updated_at')
+    fields = ('user', 'owner_role', 'document_type', 'file', 'status', 'review_note', 'created_at', 'updated_at')
+
+    actions = ('approve_documents', 'reject_documents')
+
+    @admin.action(description="Valider les documents sélectionnés")
+    def approve_documents(self, request, queryset):
+        self.message_user(request, f"{queryset.update(status=ComplianceDocument.Status.APPROVED)} document(s) validé(s).")
+
+    @admin.action(description="Rejeter les documents sélectionnés")
+    def reject_documents(self, request, queryset):
+        self.message_user(request, f"{queryset.update(status=ComplianceDocument.Status.REJECTED)} document(s) rejeté(s).")
 
 
 # ─── PROFIL UTILISATEUR ───────────────────────────────────────────────────────

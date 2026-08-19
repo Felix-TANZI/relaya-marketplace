@@ -167,6 +167,7 @@ urlpatterns = [
     path('admin/disputes/<int:dispute_id>/message/',       views.admin_add_dispute_message,  name='admin-add-dispute-message'),
     path('admin/disputes/<int:dispute_id>/resolve/',       views.admin_resolve_dispute,      name='admin-resolve-dispute'),
     path('admin/disputes/<int:dispute_id>/toggle-reply/', views.admin_toggle_dispute_reply,  name='admin-toggle-dispute-reply'),
+    path('admin/disputes/<int:dispute_id>/request-evidence/', views.admin_request_dispute_evidence, name='admin-request-dispute-evidence'),
 
     #  ADMINISTRATION — LIVREURS & BROADCAST ÉTENDU
     path('admin/couriers/',                       views.admin_list_couriers,       name='admin-list-couriers'),

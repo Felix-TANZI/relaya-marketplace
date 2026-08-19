@@ -6,6 +6,7 @@
 //   AdminLayout  → /admin/* (AdminRoute = ProtectedRoute + is_staff check)
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { isDedicatedPortal, portalHomePath } from '@/config/portals';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LAYOUTS
@@ -148,6 +149,13 @@ import {
   Zap, Bot, Shield, HeadphonesIcon,
 } from 'lucide-react';
 
+function PortalIndexPage() {
+  if (isDedicatedPortal) {
+    return <Navigate to={portalHomePath} replace />;
+  }
+  return <HomePage />;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,13 +169,14 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: <PortalIndexPage /> },
 
       // Public
       { path: 'catalog',         element: <CatalogPage /> },
       { path: 'categories',      element: <CategoriesPage /> },
       { path: 'product/:slug', element: <FicheDetailPage /> },
       { path: 'cart',            element: <CartPage /> },
+      { path: 'wishlist',        element: <WishlistPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
       { path: 'contact',         element: <ContactPage /> },
@@ -184,7 +193,6 @@ export const router = createBrowserRouter([
       { path: 'checkout/confirm', element: <ProtectedRoute><CheckoutConfirmPage /></ProtectedRoute> },
       { path: 'orders',           element: <ProtectedRoute><OrdersHistoryPage /></ProtectedRoute> },
       { path: 'orders/:id',       element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
-      { path: 'wishlist',         element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
       { path: 'notifications',    element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
       { path: 'profile',          element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
 

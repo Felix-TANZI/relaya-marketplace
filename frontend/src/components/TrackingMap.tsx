@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { geocodingApiUrl, mapAttribution, mapTileUrl } from "@/config/maps";
 
 // Fix default marker icons in React
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -83,6 +84,9 @@ const NEIGHBORHOODS: Record<string, [number, number]> = {
   "mimboman":     [3.8730, 11.5450],
   "awae":         [3.8350, 11.5280],
   "efoulan":      [3.8480, 11.4880],
+  "jouvence":     [3.8300, 11.4820],
+  "odza":         [3.7986, 11.5291],
+  "nkolndongo":   [3.8650, 11.5280],
   "centre ville": [3.8667, 11.5167],
   "yaounde":      [3.8667, 11.5167],
 
@@ -127,24 +131,52 @@ function writeGeocodeCache(query: string, coords: [number, number]) {
   }
 }
 
-/** Resolve an address string to GPS coordinates */
-function resolveAddress(address?: string | null, city?: string | null): [number, number] {
-  if (!address && !city) return DEFAULT_DEST;
-  const search = `${address || ""} ${city || ""}`.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  // Search for neighborhood match
+/** Resolve an address string to GPS coordinates. Returns null when nothing but the generic city center matches. */
+function findNeighborhoodMatch(address?: string | null, city?: string | null, district?: string | null): [number, number] | null {
+  const search = `${district || ""} ${address || ""} ${city || ""}`.toLowerCase();
   for (const [name, coords] of Object.entries(NEIGHBORHOODS)) {
-    if (search.includes(name)) return coords;
+    if (name !== "yaounde" && name !== "douala" && name !== "centre ville" && search.includes(name)) return coords;
   }
+  return null;
+}
+
+function resolveAddress(address?: string | null, city?: string | null, district?: string | null): [number, number] {
+  if (!address && !city) return DEFAULT_DEST;
+  const known = findNeighborhoodMatch(address, city, district);
+  if (known) return known;
+  const search = `${address || ""} ${city || ""}`.toLowerCase();
   // If city is Douala, return Douala center
   if (search.includes("douala")) return NEIGHBORHOODS["douala"];
   // Default to Yaoundé center
   return NEIGHBORHOODS["yaounde"];
 }
 
+/** Sous-ensemble du resultat de l'assistant IA de precision d'adresse utile a la carte. */
+export interface AddressPrecisionHint {
+  district?: string;
+  landmarks?: string[];
+  driverHint?: string;
+}
+
 function buildGeocodeQuery(address?: string | null, city?: string | null) {
   const parts = [address, city, "Cameroon"]
     .map((part) => (part || "").trim())
     .filter(Boolean);
+  return parts.length > 1 ? parts.join(", ") : "";
+}
+
+/**
+ * Les adresses camerounaises informelles ("Odza Petit Doubi", "Jouvence,
+ * royaume des temoins") contiennent des reperes locaux que le geocodeur
+ * public ne connait pas et echouent donc a resoudre. Le quartier englobant
+ * qu'un assistant IA en extrait (ex. "Jouvence", "Odza") est lui generalement
+ * connu — on tente cette requete plus courte en priorite avant l'adresse
+ * complete.
+ */
+function buildDistrictGeocodeQuery(precision: AddressPrecisionHint | null | undefined, city?: string | null) {
+  const district = precision?.district?.trim();
+  if (!district) return "";
+  const parts = [district, city, "Cameroon"].map((part) => (part || "").trim()).filter(Boolean);
   return parts.length > 1 ? parts.join(", ") : "";
 }
 
@@ -159,7 +191,7 @@ async function geocodeAddress(query: string, signal: AbortSignal): Promise<[numb
     countrycodes: "cm",
     q: query,
   });
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?${params.toString()}`, {
+  const response = await fetch(`${geocodingApiUrl}/search?${params.toString()}`, {
     signal,
     headers: { Accept: "application/json", "Accept-Language": "fr" },
   });
@@ -182,16 +214,33 @@ interface TrackingMapProps {
   customerLocation?: [number, number];
   /** Override current delivery truck position */
   currentLocation?: [number, number];
+  /** Ordered GPS trail captured for the current shipment */
+  locationHistory?: [number, number][];
   /** Client address string (e.g. "Biyemassi, Yaoundé") — used to resolve GPS */
   destinationAddress?: string | null;
   /** Client city */
   destinationCity?: string | null;
+  /** Analyse IA de l'adresse (district/reperes) — ameliore la resolution des adresses informelles */
+  destinationPrecision?: AddressPrecisionHint | Record<string, unknown> | null;
   /** Vendor label */
   originLabel?: string;
   /** Destination label */
   destinationLabel?: string;
   className?: string;
   height?: number;
+}
+
+function distanceInMeters(from: [number, number], to: [number, number]) {
+  const earthRadius = 6_371_000;
+  const toRadians = (value: number) => (value * Math.PI) / 180;
+  const latitudeDelta = toRadians(to[0] - from[0]);
+  const longitudeDelta = toRadians(to[1] - from[1]);
+  const fromLatitude = toRadians(from[0]);
+  const toLatitude = toRadians(to[0]);
+  const haversine =
+    Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(fromLatitude) * Math.cos(toLatitude) * Math.sin(longitudeDelta / 2) ** 2;
+  return earthRadius * 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
 }
 
 function FitBounds({ points }: { points: [number, number][] }) {
@@ -209,8 +258,10 @@ export default function TrackingMap({
   vendorLocation,
   customerLocation,
   currentLocation,
+  locationHistory = [],
   destinationAddress,
   destinationCity,
+  destinationPrecision,
   originLabel = "Mokolo — Centre BelivaY",
   destinationLabel,
   className = "",
@@ -219,47 +270,76 @@ export default function TrackingMap({
   // Origin: always Mokolo by default
   const origin = vendorLocation || MOKOLO;
 
+  const precisionHint = destinationPrecision as AddressPrecisionHint | null | undefined;
+  const knownNeighborhood = useMemo(
+    () => customerLocation ? origin : findNeighborhoodMatch(destinationAddress, destinationCity, precisionHint?.district),
+    [customerLocation, origin, destinationAddress, destinationCity, precisionHint?.district],
+  );
   // Destination: resolve from address string, or use explicit prop, or default
-  const fallbackDestination = customerLocation || resolveAddress(destinationAddress, destinationCity);
-  const geocodeQuery = useMemo(
+  const fallbackDestination = customerLocation || resolveAddress(destinationAddress, destinationCity, precisionHint?.district);
+
+  // Les adresses informelles ("Odza Petit Doubi") echouent au geocodage complet ;
+  // le quartier englobant extrait par l'IA ("Odza") reussit generalement seul.
+  const districtGeocodeQuery = useMemo(
+    () => customerLocation ? "" : buildDistrictGeocodeQuery(precisionHint, destinationCity),
+    [customerLocation, precisionHint, destinationCity],
+  );
+  const fullAddressGeocodeQuery = useMemo(
     () => customerLocation ? "" : buildGeocodeQuery(destinationAddress, destinationCity),
     [customerLocation, destinationAddress, destinationCity],
   );
   const [geocodedDestination, setGeocodedDestination] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    if (!geocodeQuery) {
+    if (!districtGeocodeQuery && !fullAddressGeocodeQuery) {
       setGeocodedDestination(null);
       return;
     }
 
     const controller = new AbortController();
-    geocodeAddress(geocodeQuery, controller.signal)
-      .then((coords) => {
-        if (!controller.signal.aborted) setGeocodedDestination(coords);
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setGeocodedDestination(null);
-      });
+    (async () => {
+      const districtResult = districtGeocodeQuery
+        ? await geocodeAddress(districtGeocodeQuery, controller.signal).catch(() => null)
+        : null;
+      if (controller.signal.aborted) return;
+      if (districtResult) {
+        setGeocodedDestination(districtResult);
+        return;
+      }
+      const fullResult = fullAddressGeocodeQuery
+        ? await geocodeAddress(fullAddressGeocodeQuery, controller.signal).catch(() => null)
+        : null;
+      if (!controller.signal.aborted) setGeocodedDestination(fullResult);
+    })();
 
     return () => controller.abort();
-  }, [geocodeQuery]);
+  }, [districtGeocodeQuery, fullAddressGeocodeQuery]);
 
   const destination = geocodedDestination || fallbackDestination;
+  // Ni geocodage ni quartier connu : le pin affiche est un centre-ville generique, pas une vraie position.
+  const isApproximate = !customerLocation && !geocodedDestination && !knownNeighborhood;
 
-  // Delivery truck: midway between origin and destination
+  // Keep the map centered between both endpoints until the courier shares GPS.
   const deliveryPos = useMemo(() => {
     if (currentLocation) return currentLocation;
-    const seed = Math.sin((origin[0] + destination[0]) * 97 + (origin[1] + destination[1]) * 53);
-    const latOffset = seed * 0.004;
-    const lngOffset = Math.cos(seed * 11) * 0.004;
     return [
-      (origin[0] + destination[0]) / 2 + latOffset,
-      (origin[1] + destination[1]) / 2 + lngOffset,
+      (origin[0] + destination[0]) / 2,
+      (origin[1] + destination[1]) / 2,
     ] as [number, number];
   }, [currentLocation, destination, origin]);
 
-  const routePoints: [number, number][] = [origin, deliveryPos, destination];
+  const trailPoints = locationHistory.length
+    ? locationHistory
+    : currentLocation
+      ? [currentLocation]
+      : [];
+  const routePoints: [number, number][] = [origin, ...trailPoints, destination];
+  const remainingDistance = currentLocation
+    ? distanceInMeters(currentLocation, destination)
+    : null;
+  // A district-only address (for example "Mvan, Yaounde") is not precise enough
+  // for a door-level geofence, so use a one-kilometre arrival zone.
+  const isNearDestination = remainingDistance !== null && remainingDistance <= 1000;
 
   // Build destination label from address
   const destLabel = destinationLabel || destinationAddress || "Adresse de livraison";
@@ -271,18 +351,22 @@ export default function TrackingMap({
         zoom={13}
         style={{ height: `${height}px`, width: "100%" }}
         scrollWheelZoom={false}
-        attributionControl={false}
+        attributionControl
+        fadeAnimation={false}
+        zoomAnimation={false}
       >
-        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <FitBounds points={[origin, deliveryPos, destination]} />
+        <TileLayer url={mapTileUrl} attribution={mapAttribution} keepBuffer={4} />
+        <FitBounds points={routePoints} />
 
         <Marker position={origin} icon={vendorIcon}>
           <Popup>{originLabel}</Popup>
         </Marker>
 
-        <Marker position={deliveryPos} icon={deliveryIcon}>
-          <Popup>Position actuelle du livreur</Popup>
-        </Marker>
+        {currentLocation ? (
+          <Marker position={currentLocation} icon={deliveryIcon}>
+            <Popup>Position GPS actuelle du livreur</Popup>
+          </Marker>
+        ) : null}
 
         <Marker position={destination} icon={customerIcon}>
           <Popup>{destLabel}</Popup>
@@ -292,7 +376,33 @@ export default function TrackingMap({
           positions={routePoints}
           pathOptions={{ color: "#F47920", weight: 4, dashArray: "10 6", opacity: 0.8 }}
         />
+        {trailPoints.length > 1 ? (
+          <Polyline
+            positions={trailPoints}
+            pathOptions={{ color: "#0284C7", weight: 6, opacity: 0.9 }}
+          />
+        ) : null}
       </MapContainer>
+      {isApproximate ? (
+        <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">
+          Position approximative — repère non localisé précisément
+        </div>
+      ) : null}
+      {remainingDistance !== null ? (
+        <div
+          className={`absolute bottom-3 left-3 z-[500] rounded-full px-3 py-2 text-xs font-black shadow-lg backdrop-blur ${
+            isNearDestination
+              ? "bg-emerald-600/95 text-white"
+              : "bg-white/95 text-gray-800 dark:bg-gray-900/95 dark:text-white"
+          }`}
+        >
+          {isNearDestination
+            ? "Livreur arrivé dans la zone de destination"
+            : `Distance restante : ${remainingDistance < 1000
+                ? `${Math.round(remainingDistance)} m`
+                : `${(remainingDistance / 1000).toFixed(1)} km`}`}
+        </div>
+      ) : null}
     </div>
   );
 }

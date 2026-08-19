@@ -17,6 +17,7 @@ from .views import (
     CourierMyShipmentsView,
     CourierShipmentActionView,
     CourierShipmentDetailView,
+    CourierShipmentLocationView,
     CourierAvailableShipmentsView,
     CourierClaimShipmentView,
     ShipmentCreateView,
@@ -45,6 +46,7 @@ urlpatterns = [
     path("my-shipments/<int:id>/", CourierShipmentDetailView.as_view(), name="shipping-my-shipments-detail"),
     path("my-shipments/<int:id>/messages/", CourierShipmentMessageListCreateView.as_view(), name="shipping-my-shipments-messages"),
     path("my-shipments/<int:id>/action/", CourierShipmentActionView.as_view(), name="shipping-my-shipments-action"),
+    path("my-shipments/<int:id>/location/", CourierShipmentLocationView.as_view(), name="shipping-my-shipments-location"),
     path("available/", CourierAvailableShipmentsView.as_view(), name="shipping-available"),
     path("available/<int:id>/claim/", CourierClaimShipmentView.as_view(), name="shipping-claim"),
 ]

@@ -4,12 +4,11 @@ import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
 import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import FlashPanel from "@/components/home/FlashPanel";
-import CategorySidebar from "@/components/home/CategorySidebar";
-import ProductCard from "@/components/product/ProductCard";
+import CategorySidebar, { categoryIcon, type HomeCategoryItem } from "@/components/home/CategorySidebar";
+import CatalogProductCard from "@/components/product/CatalogProductCard";
 import {
-  ArrowRight, LayoutGrid, ShoppingCart, ShieldCheck, Star, Truck,
-  Flame, Sparkles, Shirt, Laptop, Sparkle, Footprints, Globe, UserCircle,
-  Zap, Timer, ShoppingBag, Smartphone, Home, Dumbbell, Baby,
+  ArrowRight, LayoutGrid, Star, Truck,
+  Flame, Sparkles, Globe, UserCircle, Zap, Timer,
 } from "lucide-react";
 import {
   V29_PRODUCTS,
@@ -18,32 +17,9 @@ import {
   getTopProducts,
   getNewProducts,
 } from "@/data/v29Products";
-import type { LucideIcon } from "lucide-react";
 import { productsApi, type Product } from "@/services/api/products";
-
-const QUICK_PILLS: { slug: string; icon: LucideIcon; name: string }[] = [
-  { slug: "all",    icon: LayoutGrid, name: "Tout" },
-  { slug: "femme",  icon: Shirt,      name: "Femme" },
-  { slug: "homme",  icon: Shirt,      name: "Homme" },
-  { slug: "tech",   icon: Laptop,     name: "Tech" },
-  { slug: "beaute", icon: Sparkle,    name: "Beauté" },
-  { slug: "shoes",  icon: Footprints, name: "Chaussures" },
-];
-
-/* Catégories complètes — surface mobile (mirroir de la sidebar PC) */
-const MOBILE_CATEGORIES: { slug: string; icon: LucideIcon; name: string }[] = [
-  { slug: "all",    icon: ShoppingBag,  name: "Tout" },
-  { slug: "femme",  icon: Shirt,        name: "Femme" },
-  { slug: "homme",  icon: Shirt,        name: "Homme" },
-  { slug: "tech",   icon: Laptop,       name: "Électro" },
-  { slug: "phone",  icon: Smartphone,   name: "Phones" },
-  { slug: "beaute", icon: Sparkles,     name: "Beauté" },
-  { slug: "maison", icon: Home,         name: "Maison" },
-  { slug: "super",  icon: ShoppingCart, name: "Marché" },
-  { slug: "shoes",  icon: Footprints,   name: "Chauss." },
-  { slug: "sport",  icon: Dumbbell,     name: "Sport" },
-  { slug: "bebe",   icon: Baby,         name: "Bébé" },
-];
+import { categoriesApi, type Category } from "@/services/api/categories";
+import { useAuth } from "@/context/AuthContext";
 
 /* Liens produits des Flash Deals mock (aligné sur FlashPanel) */
 const FLASH_LINK: Record<string, number> = {
@@ -54,8 +30,36 @@ const FLASH_LINK: Record<string, number> = {
   "Pagne Hollandais Vlisco": 28,
 };
 
+// The demo catalogue predates the seeded taxonomy. Keep its short slugs mapped
+// to the official root categories so the home navigation reflects the seed.
+const DEMO_SLUGS_BY_ROOT: Record<string, string[]> = {
+  electronics: ["tech", "phone"],
+  femme: ["femme"],
+  homme: ["homme"],
+  beaute: ["beaute"],
+  maison: ["maison"],
+  super: ["super"],
+  shoes: ["shoes"],
+  sport: ["sport"],
+  bebe: ["bebe"],
+};
+
+const FALLBACK_HOME_CATEGORIES = [
+  { slug: "femme", name: "Mode Femme" },
+  { slug: "homme", name: "Mode Homme" },
+  { slug: "tech", name: "Électronique" },
+  { slug: "phone", name: "Téléphones" },
+  { slug: "beaute", name: "Beauté & Santé" },
+  { slug: "maison", name: "Maison & Déco" },
+  { slug: "super", name: "Supermarché" },
+  { slug: "shoes", name: "Chaussures" },
+  { slug: "sport", name: "Sport & Loisirs" },
+  { slug: "bebe", name: "Bébé & Enfant" },
+] as const;
+
 export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const mainRef = useRef<HTMLElement | null>(null);
   const [activeCat, setActiveCat] = useState("all");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -66,6 +70,7 @@ export default function HomePage() {
   const [topOffset, setTopOffset] = useState(132);
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [usingMockProducts, setUsingMockProducts] = useState(true);
+  const [catalogCategories, setCatalogCategories] = useState<Category[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -77,7 +82,10 @@ export default function HomePage() {
         const results = response.results ?? [];
         if (results.length > 0) {
           setApiProducts(results);
-          setUsingMockProducts(results.length < 20);
+          setUsingMockProducts(false);
+        } else {
+          setApiProducts([]);
+          setUsingMockProducts(true);
         }
       })
       .catch(() => {
@@ -92,15 +100,101 @@ export default function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadCategories = () => {
+      categoriesApi.flat().then((items) => {
+        if (!cancelled) setCatalogCategories(items);
+      }).catch(() => {
+        if (!cancelled) setCatalogCategories([]);
+      });
+    };
+    loadCategories();
+    window.addEventListener("focus", loadCategories);
+    const refreshTimer = window.setInterval(loadCategories, 30_000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("focus", loadCategories);
+      window.clearInterval(refreshTimer);
+    };
+  }, []);
+
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+
+  const categoryIdsByRoot = useMemo(() => {
+    const children = new Map<number, number[]>();
+    catalogCategories.forEach((category) => {
+      if (category.parent !== null) {
+        children.set(category.parent, [...(children.get(category.parent) ?? []), category.id]);
+      }
+    });
+    const descendants = (rootId: number) => {
+      const ids = new Set<number>([rootId]);
+      const queue = [rootId];
+      while (queue.length) {
+        const current = queue.shift()!;
+        (children.get(current) ?? []).forEach((id) => {
+          if (!ids.has(id)) { ids.add(id); queue.push(id); }
+        });
+      }
+      return ids;
+    };
+    return new Map(catalogCategories.filter((category) => category.parent === null).map((category) => [category.id, descendants(category.id)]));
+  }, [catalogCategories]);
+
+  const homeCategories = useMemo<HomeCategoryItem[]>(() => {
+    const productCount = (category: Category) => {
+      if (usingMockProducts) {
+        const demoSlugs = DEMO_SLUGS_BY_ROOT[category.slug];
+        if (!demoSlugs) return 0;
+        return sourceProducts.filter((product) =>
+          demoSlugs.includes(product.category?.slug ?? ""),
+        ).length;
+      }
+
+      const ids = categoryIdsByRoot.get(category.id);
+      return sourceProducts.filter((product) => {
+        const categoryId = product.category?.id;
+        return Boolean(categoryId && ids?.has(categoryId));
+      }).length;
+    };
+    const roots = catalogCategories
+      .filter((category) => category.parent === null)
+      .map((category) => ({
+        id: category.id,
+        slug: category.slug,
+        name: category.name,
+        iconName: category.icon_name,
+        count: productCount(category),
+      }))
+      .filter((category) => category.count > 0);
+    const visibleCategories = roots.length > 0
+      ? roots
+      : FALLBACK_HOME_CATEGORIES.map((category, index) => ({
+          id: -(index + 1),
+          ...category,
+          count: sourceProducts.filter((product) => product.category?.slug === category.slug).length,
+        })).filter((category) => category.count > 0);
+    return [{ id: null, slug: "all", name: "Tout voir", iconName: "ShoppingBag", count: sourceProducts.length }, ...visibleCategories];
+  }, [catalogCategories, categoryIdsByRoot, sourceProducts]);
 
   const allFiltered = useMemo(
     () => {
-      if (usingMockProducts) {
-        return activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat);
+      if (activeCat === "all") return sourceProducts;
+
+      const selectedCategory = catalogCategories.find((category) => category.slug === activeCat);
+      if (selectedCategory) {
+        if (usingMockProducts) {
+          const demoSlugs = DEMO_SLUGS_BY_ROOT[selectedCategory.slug] ?? [];
+          return sourceProducts.filter((product) =>
+            demoSlugs.includes(product.category?.slug ?? ""),
+          );
+        }
+        const allowedIds = categoryIdsByRoot.get(selectedCategory.id) ?? new Set([selectedCategory.id]);
+        return sourceProducts.filter((product) => Boolean(product.category?.id && allowedIds.has(product.category.id)));
       }
 
-      if (activeCat === "all") return sourceProducts;
+      if (usingMockProducts) return getByCat(activeCat);
 
       return sourceProducts.filter((product) => {
         const slug = product.category?.slug?.toLowerCase() ?? "";
@@ -121,7 +215,7 @@ export default function HomePage() {
         return slug.includes(activeCat) || name.includes(activeCat);
       });
     },
-    [activeCat, sourceProducts, usingMockProducts]
+    [activeCat, catalogCategories, categoryIdsByRoot, sourceProducts, usingMockProducts]
   );
 
   const visibleProducts = useMemo(
@@ -173,7 +267,7 @@ export default function HomePage() {
       labelBg: "rgba(255,255,255,0.2)",
       action: () => {},
     },
-    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => setActiveCat("femme") },
+    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "Sélection mode · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => setActiveCat("femme") },
     { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => setActiveCat("tech") },
     { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => setActiveCat("beaute") },
     { label: "Made in Cameroon", title: "Produits artisanaux locaux", subtitle: "Soutenez les PME camerounaises · Certifié BelivaY", bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => {} },
@@ -185,7 +279,7 @@ export default function HomePage() {
   /* ── Featured sections (horizontal scroll, top of page) ── */
   const popular = useMemo(() => {
     if (usingMockProducts) {
-      return activeCat === "all" ? getTopProducts() : getByCat(activeCat);
+      return activeCat === "all" ? getTopProducts() : allFiltered;
     }
 
     return [...allFiltered]
@@ -216,6 +310,7 @@ export default function HomePage() {
             trackTop={mainTop}
             trackHeight={mainHeight}
             topOffset={topOffset}
+            categories={homeCategories}
           />
 
           <main ref={mainRef} className="min-w-0 flex-1 space-y-3 sm:space-y-4">
@@ -226,13 +321,13 @@ export default function HomePage() {
 
               <div className="border-y border-[#f5e2d4] bg-[#fffaf5] px-3 py-2.5 sm:px-4 sm:py-3 dark:border-gray-800 dark:bg-gray-900/80">
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                  <button
+                  {user ? <button
                     onClick={() => navigate("/profile")}
                     className="flex flex-shrink-0 items-center gap-1.5 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                   >
                     <UserCircle size={13} />
                     Mon compte
-                  </button>
+                  </button> : null}
                   <button
                     onClick={() => navigate("/categories")}
                     className="flex flex-shrink-0 items-center gap-1 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[11.5px] font-bold text-gray-700 hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
@@ -240,8 +335,8 @@ export default function HomePage() {
                     <LayoutGrid size={13} />
                     Catégories
                   </button>
-                  {QUICK_PILLS.map((p) => {
-                    const Icon = p.icon;
+                  {homeCategories.slice(0, 7).map((p) => {
+                    const Icon = categoryIcon(p);
                     return (
                       <button
                         key={p.slug}
@@ -260,11 +355,8 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Stats — téléphone : grille 2×2 compacte (cellules horizontales) ; ≥ md : 4 colonnes d'origine */}
-              <div className="grid grid-cols-2 gap-2 bg-white px-3 py-3 sm:px-4 md:grid-cols-4 md:gap-3 md:py-4 dark:bg-gray-900">
+              <div className="grid grid-cols-2 gap-2 bg-white px-3 py-3 sm:px-4 md:gap-3 md:py-4 dark:bg-gray-900">
                 {[
-                  { icon: ShoppingCart, num: "15 240", label: "Produits" },
-                  { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés" },
                   { icon: Star, num: "4.8 / 5", label: "Note moyenne" },
                   { icon: Truck, num: "24–72h", label: "Livraison" },
                 ].map((item) => {
@@ -301,8 +393,8 @@ export default function HomePage() {
                 </button>
               </div>
               <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-1">
-                {MOBILE_CATEGORIES.map((c) => {
-                  const Icon = c.icon;
+                {homeCategories.map((c) => {
+                  const Icon = categoryIcon(c);
                   const active = activeCat === c.slug;
                   return (
                     <button
@@ -416,7 +508,7 @@ export default function HomePage() {
                   <Globe size={16} className="text-primary" />
                   <div>
                     <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">
-                      {activeCat === "all" ? "Catalogue de l'accueil" : `${QUICK_PILLS.find((p) => p.slug === activeCat)?.name ?? activeCat}`}
+                      {activeCat === "all" ? "Catalogue de l'accueil" : `${homeCategories.find((category) => category.slug === activeCat)?.name ?? activeCat}`}
                     </h3>
                     <p className="text-[12px] text-gray-500 dark:text-gray-400">
                       Sélection finie pour garder le footer visible et une lecture claire de la page.
@@ -430,7 +522,7 @@ export default function HomePage() {
 
               <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
                 {visibleProducts.map((p) => (
-                  <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
+                  <CatalogProductCard key={p.id} product={p} showPromo isMock={usingMockProducts} />
                 ))}
               </div>
 

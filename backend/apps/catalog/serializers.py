@@ -127,15 +127,31 @@ class ProductImageSerializer(serializers.ModelSerializer):
             return obj.image.url
         return None
 
+    def validate_image(self, image):
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+
+        try:
+            return optimize_uploaded_image(
+                image,
+                max_input_bytes=5 * 1024 * 1024,
+                max_dimension=1600,
+                quality=80,
+                filename_prefix="product",
+            )
+        except ImageOptimizationError as error:
+            raise serializers.ValidationError(str(error)) from error
+
 
 class ProductReviewSerializer(serializers.ModelSerializer):
     user_name = serializers.CharField(source='user.username', read_only=True)
     user_first_name = serializers.CharField(source='user.first_name', read_only=True)
+    order_item_title = serializers.CharField(source='order_item.title_snapshot', read_only=True)
     
     class Meta:
         model = ProductReview
         fields = [
             'id', 'user', 'user_name', 'user_first_name',
+            'order', 'order_item', 'order_item_title',
             'rating', 'title', 'comment',
             'is_verified_purchase', 'created_at'
         ]
@@ -145,21 +161,54 @@ class ProductReviewSerializer(serializers.ModelSerializer):
 class ProductReviewCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProductReview
-        fields = ['product', 'rating', 'title', 'comment', 'order']
+        fields = ['product', 'rating', 'title', 'comment', 'order', 'order_item']
     
     def validate(self, data):
         user = self.context['request'].user
         product = data['product']
+        order = data.get('order')
+        order_item = data.get('order_item')
         
-        if ProductReview.objects.filter(product=product, user=user).exists():
-            raise serializers.ValidationError("Vous avez déjà laissé un avis pour ce produit.")
+        if order_item is None and order and order.items.count() == 1:
+            order_item = order.items.select_related('product').first()
+            data['order_item'] = order_item
+
+        if order_item is None:
+            raise serializers.ValidationError({
+                "order_item": "Choisissez l'article achete a noter."
+            })
+
+        if order_item.product_id != product.id:
+            raise serializers.ValidationError({
+                "order_item": "Cet article ne correspond pas au produit note."
+            })
+
+        order = order or order_item.order
+        data['order'] = order
+        if order.user_id != user.id:
+            raise serializers.ValidationError("Vous ne pouvez noter que vos propres achats.")
+
+        allowed_statuses = {
+            "DELIVERED",
+            "BUYER_CONFIRMED",
+            "AUTO_CONFIRMED",
+            "RELEASED_TO_VENDOR",
+            "DISPUTED",
+        }
+        if order.fulfillment_status not in allowed_statuses:
+            raise serializers.ValidationError(
+                "Vous pourrez noter ce produit apres livraison ou reception."
+            )
+
+        if ProductReview.objects.filter(order_item=order_item).exists():
+            raise serializers.ValidationError("Un avis existe deja pour cet article de commande.")
         
         return data
     
     def create(self, validated_data):
         validated_data['user'] = self.context['request'].user
         
-        if validated_data.get('order'):
+        if validated_data.get('order_item'):
             validated_data['is_verified_purchase'] = True
         
         return ProductReview.objects.create(**validated_data)
@@ -279,6 +328,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'active_campaign',
             'trust_score',
             'stock_quantity',
+            'stock_threshold',
             'is_active',
             'category',
             'media',
@@ -302,13 +352,19 @@ class ProductSerializer(serializers.ModelSerializer):
             return 0
     
     def get_rating_average(self, obj):
+        annotated_avg = getattr(obj, "belivay_rating_average", None)
+        if annotated_avg is not None:
+            return round(annotated_avg, 1) if annotated_avg else None
         avg = ProductReview.objects.filter(
-            product=obj, 
+            product=obj,
             is_approved=True
         ).aggregate(Avg('rating'))['rating__avg']
         return round(avg, 1) if avg else None
-    
+
     def get_reviews_count(self, obj):
+        annotated_count = getattr(obj, "belivay_reviews_count", None)
+        if annotated_count is not None:
+            return annotated_count
         return ProductReview.objects.filter(product=obj, is_approved=True).count()
     
     def get_price_final(self, obj):
@@ -397,7 +453,8 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
         model = Product
         fields = [
             'id', 'title', 'description', 'short_description',
-            'price_xaf', 'category', 'is_active', 'master',
+            'price_xaf', 'compare_at_price', 'promo_end_date',
+            'category', 'is_active', 'master',
             'variant',
             'condition', 'seller_note', 'stock_threshold',
             'created_at', 'updated_at',
@@ -480,6 +537,8 @@ class OfferSerializer(serializers.ModelSerializer):
     stock_quantity = serializers.SerializerMethodField()
     price_final    = serializers.SerializerMethodField()
     real_image = serializers.SerializerMethodField()
+    offer_score = serializers.SerializerMethodField()
+    offer_score_breakdown = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -487,7 +546,7 @@ class OfferSerializer(serializers.ModelSerializer):
             'id', 'variant', 'price_xaf', 'compare_at_price', 'price_final',
             'discount_percent', 'is_on_promotion',
             'condition', 'seller_note', 'stock_quantity', 'is_active',
-            'real_image',
+            'real_image', 'offer_score', 'offer_score_breakdown',
         ]
 
     def get_stock_quantity(self, obj):
@@ -509,6 +568,26 @@ class OfferSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             return request.build_absolute_uri(img.image.url) if request else img.image.url
         return None
+
+    def _score(self, obj):
+        from apps.catalog.scoring import calculate_offer_score
+
+        return calculate_offer_score(obj)
+
+    def get_offer_score(self, obj):
+        return self._score(obj).total
+
+    def get_offer_score_breakdown(self, obj):
+        score = self._score(obj)
+        return {
+            "price": score.price_score,
+            "vendor_rating": score.vendor_rating_score,
+            "product_rating": score.product_rating_score,
+            "sales": score.sales_score,
+            "stock": score.stock_score,
+            "reliability": score.reliability_score,
+            "penalty": score.penalty_score,
+        }
 
 
 class MasterProductListSerializer(serializers.ModelSerializer):
@@ -554,11 +633,13 @@ class MasterProductDetailSerializer(MasterProductListSerializer):
 
     def get_offers(self, obj):
         from apps.orders.models import PlatformSettings
+        from apps.catalog.scoring import ranked_offers
+
         limit = PlatformSettings.get_settings().max_offers_displayed
         qs = (obj.offers.filter(is_active=True, moderation_status='APPROVED')
               .select_related('vendor', 'inventory', 'condition')
-              .order_by('price_xaf')[:limit])
-        return OfferSerializer(qs, many=True, context=self.context).data
+              .prefetch_related('reviews'))
+        return OfferSerializer(ranked_offers(qs)[:limit], many=True, context=self.context).data
     
 
 

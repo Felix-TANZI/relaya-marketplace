@@ -11,6 +11,8 @@ import {
   Store,
   Trash2,
   Truck,
+  Heart,
+  Undo2,
 } from "lucide-react";
 import { Button } from "@/components/ui";
 import { useCart } from "@/context/CartContext";
@@ -24,6 +26,10 @@ export default function CartPage() {
   const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((item) => item.id));
   const itemIdsKey = items.map((item) => item.id).join(",");
   const [lastItemIdsKey, setLastItemIdsKey] = useState(itemIdsKey);
+  const [receiptMode, setReceiptMode] = useState<"delivery" | "pickup">("delivery");
+  const [promoOpen, setPromoOpen] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [removedItem, setRemovedItem] = useState<(typeof items)[number] | null>(null);
 
   // Sync the selection with the cart contents during render (keep existing, add new).
   if (itemIdsKey !== lastItemIdsKey) {
@@ -43,7 +49,7 @@ export default function CartPage() {
   const selectedItems = items.filter((item) => selectedIdSet.has(item.id));
   const selectedItemCount = selectedItems.reduce((sum, item) => sum + item.quantity, 0);
   const selectedTotal = selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shippingCost = selectedItems.length > 0 ? 2000 : 0;
+  const shippingCost = selectedItems.length > 0 && receiptMode === "delivery" ? 2000 : 0;
   const totalWithShipping = selectedTotal + shippingCost;
   const savings = Math.round(selectedTotal * 0.04);
   const allSelected = selectedItems.length === items.length;
@@ -54,6 +60,13 @@ export default function CartPage() {
 
   const persistCheckoutSelection = () => {
     window.sessionStorage.setItem(CHECKOUT_SELECTED_CART_IDS_KEY, JSON.stringify(selectedIds));
+  };
+
+  const removeWithUndo = (id: number) => {
+    const item = items.find((candidate) => candidate.id === id) ?? null;
+    setRemovedItem(item);
+    removeItem(id);
+    window.setTimeout(() => setRemovedItem((current) => current?.id === id ? null : current), 5000);
   };
 
   if (items.length === 0) {
@@ -145,7 +158,7 @@ export default function CartPage() {
                         </Link>
                         <button
                           type="button"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => removeWithUndo(item.id)}
                           aria-label={`Retirer ${item.name}`}
                           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
                         >
@@ -187,6 +200,12 @@ export default function CartPage() {
                             <Plus size={13} />
                           </button>
                         </div>
+                      </div>
+                      <div className="mt-2 flex items-center gap-3 text-[11px] font-semibold">
+                        <button type="button" className="inline-flex min-h-8 items-center gap-1 text-gray-500 hover:text-primary">
+                          <Heart size={13} /> Garder pour plus tard
+                        </button>
+                        <span className="text-green-600">En stock · départ sous 24 h</span>
                       </div>
                     </div>
                   </div>
@@ -271,6 +290,39 @@ export default function CartPage() {
           >
             <h2 className="text-[11px] font-bold uppercase tracking-[0.18em] text-primary">Récapitulatif</h2>
 
+            <div className="mt-4 grid grid-cols-2 gap-2" aria-label="Mode de réception">
+              <button
+                type="button"
+                onClick={() => setReceiptMode("delivery")}
+                className={`min-h-16 rounded-xl border-2 p-3 text-left transition ${receiptMode === "delivery" ? "border-primary bg-orange-50 text-primary" : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"}`}
+              >
+                <Truck size={17} />
+                <span className="mt-1 block text-xs font-bold">Livraison</span>
+                <span className="block text-[10px]">2 000 FCFA · 24–72 h</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setReceiptMode("pickup")}
+                className={`min-h-16 rounded-xl border-2 p-3 text-left transition ${receiptMode === "pickup" ? "border-primary bg-orange-50 text-primary" : "border-gray-200 text-gray-600 dark:border-gray-700 dark:text-gray-300"}`}
+              >
+                <Store size={17} />
+                <span className="mt-1 block text-xs font-bold">Point relais</span>
+                <span className="block text-[10px]">Gratuit · relais proche</span>
+              </button>
+            </div>
+
+            <div className="mt-4">
+              <button type="button" onClick={() => setPromoOpen((current) => !current)} className="text-xs font-bold text-primary hover:underline">
+                {promoOpen ? "Masquer le code promotionnel" : "Ajouter un code promotionnel"}
+              </button>
+              {promoOpen && (
+                <div className="mt-2 flex gap-2">
+                  <input value={promoCode} onChange={(event) => setPromoCode(event.target.value.toUpperCase())} placeholder="CODE PROMO" className="min-w-0 flex-1 rounded-xl border border-gray-200 px-3 py-2.5 text-sm font-semibold outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800" />
+                  <button type="button" className="rounded-xl border border-primary px-3 text-xs font-bold text-primary">Appliquer</button>
+                </div>
+              )}
+            </div>
+
             <div className="mt-3 space-y-2 text-sm">
               <div className="flex items-center justify-between text-gray-600 dark:text-gray-300">
                 <span>{t("cart.subtotal")}</span>
@@ -297,7 +349,7 @@ export default function CartPage() {
 
             <div className="mt-4 space-y-2">
               <Link
-                to="/checkout"
+                to={receiptMode === "pickup" ? "/checkout?mode=pickup" : "/checkout"}
                 className="block"
                 onClick={(event) => {
                   if (selectedItems.length === 0) {
@@ -310,25 +362,8 @@ export default function CartPage() {
                 <Button variant="primary" size="lg" className="w-full min-w-0 rounded-2xl text-sm">
                   <Truck size={18} />
                   <span className="sm:hidden">Passer commande</span>
-                  <span className="hidden sm:inline">Passer commande (avec livraison)</span>
+                  <span className="hidden sm:inline">Continuer · {fmt(totalWithShipping)}</span>
                   <ArrowRight className="hidden sm:block" size={18} />
-                </Button>
-              </Link>
-              <Link
-                to="/checkout?mode=pickup"
-                className="block"
-                onClick={(event) => {
-                  if (selectedItems.length === 0) {
-                    event.preventDefault();
-                    return;
-                  }
-                  persistCheckoutSelection();
-                }}
-              >
-                <Button variant="secondary" size="lg" className="w-full min-w-0 rounded-2xl text-sm">
-                  <Store size={18} />
-                  <span className="sm:hidden">Payer au retrait</span>
-                  <span className="hidden sm:inline">Payer maintenant (retrait au centre BelivaY)</span>
                 </Button>
               </Link>
               <Link to="/catalog" className="block">
@@ -351,6 +386,18 @@ export default function CartPage() {
             </div>
           </aside>
         </div>
+      </div>
+      {removedItem && (
+        <div className="fixed bottom-20 left-1/2 z-[90] flex w-[min(420px,calc(100%-2rem))] -translate-x-1/2 items-center justify-between gap-3 rounded-xl bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl lg:bottom-6">
+          <span className="truncate">{removedItem.name} retiré du panier</span>
+          <button type="button" onClick={() => { addItem(removedItem); setRemovedItem(null); }} className="inline-flex shrink-0 items-center gap-1 font-bold text-orange-300">
+            <Undo2 size={15} /> Annuler
+          </button>
+        </div>
+      )}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex items-center justify-between gap-3 border-t border-orange-100 bg-white px-4 py-3 shadow-[0_-8px_24px_rgba(15,23,42,.08)] dark:border-gray-800 dark:bg-gray-900 lg:hidden">
+        <div><p className="text-[10px] text-gray-500">{selectedItemCount} article{selectedItemCount > 1 ? "s" : ""}</p><p className="font-black text-primary">{fmt(totalWithShipping)}</p></div>
+        <Link to={receiptMode === "pickup" ? "/checkout?mode=pickup" : "/checkout"} onClick={persistCheckoutSelection} className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-primary px-4 text-sm font-bold text-white">Commander <ArrowRight size={16} /></Link>
       </div>
     </div>
   );

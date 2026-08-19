@@ -11,6 +11,15 @@
     --belivay-surface: #ffffff;
     --belivay-page: #f3f4f6;
     --belivay-text: #1f2937;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --radius-control: 12px;
+    --radius-card: 16px;
+    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
   }
 
   * {
@@ -26,6 +35,23 @@
     @apply bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark antialiased;
     background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--belivay-orange);
+    outline-offset: 2px;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--belivay-text);
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    transition: background-color 9999s ease-out 0s;
   }
 
   h1, h2, h3, h4, h5, h6 {

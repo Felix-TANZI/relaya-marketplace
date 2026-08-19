@@ -4,7 +4,7 @@ import {
   Search, SlidersHorizontal, ChevronDown, ChevronUp,
   ArrowUpDown, Star, Tag, Package,
 } from "lucide-react";
-import ProductCard from "@/components/product/ProductCard";
+import CatalogProductCard from "@/components/product/CatalogProductCard";
 import { productsApi, type Category, type Product, type ProductListResponse } from "@/services/api/products";
 import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
 
@@ -453,7 +453,7 @@ export default function SearchPage() {
                 {displayedProducts.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
                     {displayedProducts.map((product) => (
-                      <ProductCard key={product.id} product={product} showPromo />
+                      <CatalogProductCard key={product.id} product={product} showPromo />
                     ))}
                   </div>
                 ) : (

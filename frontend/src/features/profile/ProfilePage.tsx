@@ -58,6 +58,7 @@ import { useCart } from "@/context/CartContext";
 import PhoneInput from './PhoneInput';
 import { useTranslation } from "react-i18next";
 import SessionsCard from './SessionsCard';
+import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 
 type FontSize = "small" | "normal" | "large";
 type PanelId =
@@ -198,6 +199,7 @@ export default function ProfilePage() {
   const [pfNewsletter, setPfNewsletter] = useState(true);
   const [pfSms, setPfSms] = useState(true);
   const [pfSaving, setPfSaving] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [payMethods, setPayMethods] = useState<Array<{ id: string; operator: "MTN" | "ORANGE"; phone: string; default: boolean }>>([]);
   const [payDraft, setPayDraft] = useState<{ operator: "MTN" | "ORANGE"; phone: string }>({ operator: "MTN", phone: "" });
   const [activePanel, setActivePanel] = useState<PanelId>("dashboard");
@@ -425,16 +427,6 @@ export default function ProfilePage() {
       showToast("Erreur lors de la mise à jour.", "error");
     } finally {
       setPfSaving(false);
-    }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    try {
-      const updated = await authApi.uploadAvatar(file);
-      setUser(updated);
-      showToast("Photo mise à jour.", "success");
-    } catch {
-      showToast("Erreur lors de l'envoi de la photo.", "error");
     }
   };
 
@@ -886,7 +878,8 @@ export default function ProfilePage() {
                 hidden
                 onChange={(event) => {
                   const file = event.target.files?.[0];
-                  if (file) handleAvatarUpload(file);
+                  if (file) setAvatarFile(file);
+                  event.target.value = '';
                 }}
               />
             </label>
@@ -1118,7 +1111,7 @@ export default function ProfilePage() {
         <span className="pf-info-ic"><Wallet size={15} /></span>
         <div>
           <div className="pf-toggle-t" style={{ fontSize: 13 }}>Modes acceptés sur BelivaY</div>
-          <div className="pf-muted-sm">Mobile Money (MTN, Orange) et paiement à la livraison. Le règlement en ligne s'effectue au moment de la commande.</div>
+          <div className="pf-muted-sm">Mobile Money (MTN, Orange) et paiement en ligne. Le règlement s'effectue au moment de la commande.</div>
         </div>
       </div>
     </section>
@@ -1586,9 +1579,9 @@ export default function ProfilePage() {
 .pf-stat-ic.b{background:linear-gradient(135deg,#5bb8ff,#2563eb);box-shadow:0 6px 16px rgba(37,99,235,.35)}
 .pf-stat-ic.p{background:linear-gradient(135deg,#ff86bb,#e11d74);box-shadow:0 6px 16px rgba(225,29,116,.35)}
 .pf-stat-ic.a{background:linear-gradient(135deg,#ffd45c,#f59e0b);box-shadow:0 6px 16px rgba(245,158,11,.35)}
-.pf-stat-body{min-width:0}
-.pf-stat-n{font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--pf-text);line-height:1.1}
-.pf-stat-l{font-size:12px;color:var(--pf-text2);margin-top:2px}
+.pf-stat-body{min-width:0;display:block}
+.pf-stat-n{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;color:var(--pf-text);line-height:1.1}
+.pf-stat-l{display:block;font-size:12px;color:var(--pf-text2);margin-top:4px}
 .pf-twoup{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
 @media(max-width:640px){.pf-twoup{grid-template-columns:1fr}}
 .pf-bar{height:9px;border-radius:999px;background:var(--pf-s3);overflow:hidden}
@@ -1740,6 +1733,17 @@ export default function ProfilePage() {
           </main>
         </div>
       </div>
+      {avatarFile && (
+        <AvatarCropDialog
+          file={avatarFile}
+          onClose={() => setAvatarFile(null)}
+          onUploaded={(updated) => {
+            setUser(updated);
+            setAvatarFile(null);
+            showToast("Photo rognée, compressée et enregistrée.", "success");
+          }}
+        />
+      )}
     </div>
   );
 }

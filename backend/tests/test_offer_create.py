@@ -1,6 +1,6 @@
 # backend/tests/test_offer_create.py
 import pytest
-from apps.catalog.models import Category, Product, MasterProduct, ProductCondition
+from apps.catalog.models import Category, Inventory, Product, MasterProduct, ProductCondition
 from apps.catalog.serializers import ProductCreateUpdateSerializer
 
 pytestmark = pytest.mark.django_db
@@ -40,3 +40,40 @@ def test_upload_fiche_image_exige_un_fichier(api_client, django_user_model):
     api_client.force_authenticate(user=user)
     resp = api_client.post(f"/api/vendors/masters/{master.id}/images/", {}, format="multipart")
     assert resp.status_code == 400   # garde-fous OK (offre + fiche PENDING), mais pas de fichier
+
+
+def test_modification_offre_conserve_stock_et_persiste_promotion(api_client, django_user_model):
+    user = django_user_model.objects.create_user(username="seller-update", password="p")
+    cat = _cat()
+    product = Product.objects.create(
+        title="Offre à modifier",
+        description="Description initiale suffisamment longue",
+        short_description="Description courte",
+        category=cat,
+        vendor=user,
+        price_xaf=10000,
+        stock_threshold=2,
+    )
+    Inventory.objects.create(product=product, quantity=7)
+    api_client.force_authenticate(user=user)
+
+    resp = api_client.patch(
+        f"/api/vendors/products/{product.id}/",
+        {
+            "price_xaf": 9000,
+            "compare_at_price": 12000,
+            "promo_end_date": "2026-08-30",
+            "stock_threshold": 3,
+        },
+        format="json",
+    )
+
+    assert resp.status_code == 200, resp.json()
+    product.refresh_from_db()
+    product.inventory.refresh_from_db()
+    assert product.price_xaf == 9000
+    assert product.compare_at_price == 12000
+    assert str(product.promo_end_date) == "2026-08-30"
+    assert product.stock_threshold == 3
+    assert product.inventory.quantity == 7
+    assert resp.json()["stock_threshold"] == 3

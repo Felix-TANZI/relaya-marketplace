@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, Clock3, MapPin, Package, Phone, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
+import { offsetPosition, OpenStreetMap, resolveCameroonPosition, type OpenStreetMapMarker } from "@/components/maps/OpenStreetMap";
 
 interface RelayPoint {
   id: number;
@@ -17,15 +18,6 @@ interface RelayPoint {
   status: "PENDING" | "APPROVED" | "SUSPENDED";
   username: string;
 }
-
-const mapPositions = [
-  { top: "38%", left: "56%" },
-  { top: "62%", left: "38%" },
-  { top: "49%", left: "48%" },
-  { top: "28%", left: "66%" },
-  { top: "70%", left: "54%" },
-  { top: "42%", left: "31%" },
-];
 
 function statusLabel(status: RelayPoint["status"]) {
   if (status === "APPROVED") return "Approuve";
@@ -79,6 +71,28 @@ export default function RelayPointsMapPage() {
   const selected = filtered.find((relay) => relay.id === selectedId) ?? filtered[0] ?? null;
   const approvedCount = relayPoints.filter((relay) => relay.status === "APPROVED").length;
   const totalCapacity = relayPoints.reduce((sum, relay) => sum + (relay.storage_capacity || 0), 0);
+  const markers: OpenStreetMapMarker[] = filtered.map((relay, index) => {
+    const position = offsetPosition(resolveCameroonPosition(relay.address, relay.city, relay.zones.join(" ")), relay.id || index);
+    const active = selected?.id === relay.id;
+    return {
+      id: relay.id,
+      position,
+      title: relay.name,
+      subtitle: relay.address || relay.city,
+      color: active ? "#4f46e5" : "#2563eb",
+      iconHtml: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="white"/><circle cx="12" cy="10" r="3" fill="${active ? "#4f46e5" : "#2563eb"}"/></svg>`,
+      popup: (
+        <button type="button" onClick={() => setSelectedId(relay.id)} className="block min-w-[210px] text-left">
+          <div className="text-sm font-black text-slate-950">{relay.name}</div>
+          <div className="mt-1 text-xs font-semibold text-slate-600">{relay.address || relay.city}</div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+            <span className="font-bold text-blue-700">{relay.relay_code || "Code a definir"}</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-700">{statusLabel(relay.status)}</span>
+          </div>
+        </button>
+      ),
+    };
+  });
 
   return (
     <div className="space-y-5">
@@ -142,35 +156,7 @@ export default function RelayPointsMapPage() {
             </span>
           </div>
 
-          <div className="relative min-h-[520px] overflow-hidden bg-[#edf5f3]">
-            <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(15,23,42,.08)_1px,transparent_1px),linear-gradient(90deg,rgba(15,23,42,.08)_1px,transparent_1px)] [background-size:42px_42px]" />
-            <div className="absolute left-[10%] top-[16%] h-[70%] w-[74%] rounded-[48%] border-[18px] border-emerald-200/60" />
-            <div className="absolute left-[22%] top-[26%] h-[45%] w-[55%] rotate-[-15deg] rounded-[45%] border-[12px] border-blue-200/70" />
-            <div className="absolute left-[6%] top-[58%] h-4 w-[92%] -rotate-6 rounded-full bg-slate-300/70" />
-            <div className="absolute left-[18%] top-[34%] h-3 w-[76%] rotate-12 rounded-full bg-slate-300/70" />
-
-            {filtered.map((relay, index) => {
-              const position = mapPositions[index % mapPositions.length];
-              const active = selected?.id === relay.id;
-              return (
-                <button
-                  key={relay.id}
-                  type="button"
-                  onClick={() => setSelectedId(relay.id)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition"
-                  style={{ top: position.top, left: position.left }}
-                  title={relay.name}
-                >
-                  <span className={`flex h-12 w-12 items-center justify-center rounded-full border-4 shadow-lg ${active ? "border-violet-700 bg-violet-600 text-white" : "border-white bg-white text-violet-700"}`}>
-                    <MapPin size={22} fill={active ? "currentColor" : "none"} />
-                  </span>
-                  <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2 py-1 text-[11px] font-bold text-white shadow">
-                    {relay.city || relay.name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <OpenStreetMap markers={markers} height={520} className="rounded-none" />
         </div>
 
         <aside className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>

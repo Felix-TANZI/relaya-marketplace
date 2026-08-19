@@ -476,23 +476,23 @@ export default function CatalogPage() {
   return (
     <div className="min-h-screen bg-[#f8f5f1] dark:bg-gray-950">
       <div className="border-b border-orange-100 bg-white/90 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/90">
-        <div className="container mx-auto px-4 py-3">
-          <div className="grid gap-3 md:grid-cols-3">
+        <div className="container mx-auto px-4 py-2">
+          <div className="flex gap-3 overflow-x-auto scrollbar-hide">
             {TRUST_POINTS.map((point) => {
               const Icon = point.icon;
               return (
                 <div
                   key={point.title}
-                  className="flex items-center gap-3 rounded-2xl bg-[#fff7ef] px-4 py-3 dark:bg-gray-800"
+                  className="flex min-w-fit items-center gap-2 rounded-lg bg-[#fff7ef] px-3 py-2 dark:bg-gray-800"
                 >
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                     <Icon size={18} />
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  <div className="whitespace-nowrap">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
                       {point.title}
                     </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                    <p className="hidden text-xs text-gray-500 dark:text-gray-400 sm:block">
                       {point.description}
                     </p>
                   </div>
@@ -504,14 +504,14 @@ export default function CatalogPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8 overflow-hidden rounded-[2rem] bg-white p-5 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 lg:p-8">
-          <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <div className="mb-6 border-b border-orange-100 pb-5 dark:border-gray-800">
+          <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr] lg:items-end">
             <div>
               <div className="mb-4 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-primary shadow-sm dark:bg-gray-800">
                 <Flame size={14} />
                 {t('catalog_page.mega_promos')}
               </div>
-              <h1 className="max-w-2xl text-3xl font-bold tracking-tight text-gray-900 dark:text-white lg:text-5xl">
+              <h1 className="max-w-2xl text-3xl font-bold text-gray-900 dark:text-white">
                 {t('catalog_page.hero_title')}
               </h1>
               <p className="mt-3 max-w-2xl text-sm text-gray-600 dark:text-gray-300 lg:text-base">
@@ -535,7 +535,7 @@ export default function CatalogPage() {
               </div>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+            <div className="flex gap-2 overflow-x-auto scrollbar-hide lg:justify-end">
               {featuredCategories.map((category) => {
                 const Icon = CATEGORY_ICONS[category.name] || ShoppingBag;
                 const isSelected = selectedCategory === category.id;
@@ -547,18 +547,18 @@ export default function CatalogPage() {
                       setSelectedCategory(category.id);
                       setCurrentPage(1);
                     }}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 text-left transition-all ${
+                    className={`flex min-w-fit items-center gap-2 rounded-lg border px-3 py-2 text-left transition-all ${
                       isSelected
                         ? "border-primary bg-white text-primary shadow-md dark:bg-gray-800"
                         : "border-white bg-white/80 text-gray-700 hover:border-orange-200 hover:bg-white dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                     }`}
                   >
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
                       <Icon size={20} />
                     </div>
                     <div>
                       <p className="text-sm font-semibold">{category.name}</p>
-                      <p className="text-xs text-gray-400">
+                      <p className="hidden text-xs text-gray-400 sm:block">
                         {category.children.length > 0
                           ? `${category.children.length} ${t('catalog_page.subcategories')}`
                           : t('catalog_page.explore')}

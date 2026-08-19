@@ -97,7 +97,7 @@
     slide_hero_subtitle: 'MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j',
     slide_women_label: 'Mode Femme',
     slide_women_title: 'Robes · Pagnes · Wax Premium',
-    slide_women_subtitle: '3 400 produits · Vendeurs certifiés BelivaY',
+    slide_women_subtitle: 'Sélection mode · Vendeurs certifiés BelivaY',
     slide_tech_label: 'Électronique',
     slide_tech_title: 'Smartphones & Accessoires',
     slide_tech_subtitle: 'Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or',
@@ -356,7 +356,7 @@
       return_question: 'Puis-je retourner un produit ?',
       return_answer: 'Oui, vous disposez de 10 jours pour retourner un produit non conforme.',
       payment_question: 'Quels modes de paiement acceptez-vous ?',
-      payment_answer: 'Nous acceptons Mobile Money (MTN, Orange), cartes bancaires et paiement à la livraison.',
+      payment_answer: 'Nous acceptons Mobile Money (MTN, Orange) et cartes bancaires.',
     },
     methods: {
       phone_title: 'Téléphone',
@@ -601,7 +601,7 @@
       },
       payment_methods: {
         question: 'Quels modes de paiement acceptez-vous ?',
-        answer: 'Nous acceptons MTN Money, Orange Money, cartes bancaires et paiement à la livraison.',
+        answer: 'Nous acceptons MTN Money, Orange Money et cartes bancaires.',
       },
       delivery_time: {
         question: 'Quel est le délai de livraison ?',

@@ -17,6 +17,7 @@
 import hashlib
 from rest_framework import serializers
 from apps.orders.models import Order, OrderItem
+from apps.orders.serializers import DisputeEvidenceRequestSerializer
 from apps.shipping.models import Shipment
 from .models import (
     VendorProfile, VendorOrderNote, WithdrawalRequest,
@@ -1027,6 +1028,7 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
     resolved_by_name = serializers.CharField(source='resolved_by.username', read_only=True, default=None)
     messages         = DisputeMessageSerializer(many=True, read_only=True)
     evidences        = DisputeEvidenceSerializer(many=True, read_only=True)
+    evidence_requests = DisputeEvidenceRequestSerializer(many=True, read_only=True)
 
     class Meta:
         from apps.orders.models import Dispute
@@ -1037,7 +1039,7 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
             'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
             'refund_amount_xaf',
             'vendor_can_reply', 'courier_can_reply',
-            'messages', 'evidences',
+            'messages', 'evidences', 'evidence_requests',
             'created_at', 'updated_at',
         ]
 
@@ -1348,6 +1350,7 @@ class PlatformSettingsSerializer(serializers.ModelSerializer):
             'escrow_auto_confirm_h',
             'escrow_release_h',
             'litige_window_days',
+            'evidence_retention_days',
             'minimum_order_amount_xaf',
             'default_delivery_days',
             'mtn_momo_enabled',
@@ -1643,12 +1646,13 @@ class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
     """
     messages  = serializers.SerializerMethodField()
     evidences = VendorDisputeEvidenceSerializer(many=True, read_only=True)
+    evidence_requests = serializers.SerializerMethodField()
 
     class Meta(VendorDisputeListSerializer.Meta):
         fields = VendorDisputeListSerializer.Meta.fields + [
             'resolution', 'resolution_note', 'refund_amount_xaf',
             'vendor_reply_text', 'vendor_proposed_amount', 'vendor_replied_at',
-            'messages', 'evidences',
+            'messages', 'evidences', 'evidence_requests',
             'resolved_at',
         ]
 
@@ -1664,6 +1668,13 @@ class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
         return VendorDisputeMessageSerializer(
             qs, many=True, context=self.context,
         ).data
+
+    def get_evidence_requests(self, obj):
+        vendor = self.context.get('vendor')
+        if not vendor:
+            return []
+        requests = obj.evidence_requests.filter(requested_from=vendor)
+        return DisputeEvidenceRequestSerializer(requests, many=True, context=self.context).data
 
 
 class VendorDisputeReplySerializer(serializers.Serializer):

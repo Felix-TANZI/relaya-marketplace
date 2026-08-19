@@ -22,6 +22,8 @@ import 'leaflet/dist/leaflet.css';
 import { vendorsApi } from '@/services/api/vendors';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
+import { geocodingApiUrl, mapAttribution, mapTileUrl } from '@/config/maps';
+import { ensureImageUnderLimit, ensureImagesUnderLimit } from '@/lib/imageCompression';
 import * as QRCode from 'qrcode';
 
 // ─── Fix icônes Leaflet (Vite / Webpack) ─────────────────────────────────────
@@ -214,14 +216,13 @@ const DraggableMarker = memo(function DraggableMarker({
 });
 
 // ─── SERVICES GÉOCODAGE (Nominatim / OpenStreetMap) ──────────────────────────
-// Gratuit, pas de clé API. User-Agent obligatoire selon les conditions d'utilisation.
-
-const NOMINATIM_HEADERS = { 'User-Agent': 'BelivaY/1.0 (contact@belivay.com)' };
+// Gratuit pour les tests légers. En production, remplacer VITE_GEOCODING_API_URL
+// par un service maîtrisé ou un prestataire.
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-    const res  = await fetch(url, { headers: NOMINATIM_HEADERS });
+    const url = `${geocodingApiUrl}/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+    const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
     const data = await res.json() as { lat: string; lon: string }[];
     if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
     return null;
@@ -230,8 +231,8 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
-    const res  = await fetch(url, { headers: NOMINATIM_HEADERS });
+    const url = `${geocodingApiUrl}/reverse?lat=${lat}&lon=${lng}&format=json`;
+    const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
     const data = await res.json() as { display_name?: string };
     return data.display_name || null;
   } catch { return null; }
@@ -280,8 +281,8 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
         scrollWheelZoom={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url={mapTileUrl}
+          attribution={mapAttribution}
         />
         <FitBoundsController positions={positions}/>
         {validLocs.map((loc, i) => (
@@ -467,7 +468,10 @@ function ModRequestModal({
               <div>
                 <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>Pièces jointes (optionnel)</p>
                 <input type="file" ref={fileRef} className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={e => { if (e.target.files) setFiles(Array.from(e.target.files)); }}/>
+                  onChange={e => {
+                    const selected = Array.from(e.target.files || []);
+                    if (selected.length) void ensureImagesUnderLimit(selected).then(setFiles);
+                  }}/>
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12.5px] font-semibold"
                   style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
@@ -758,8 +762,8 @@ function LocationModal({
                 scrollWheelZoom
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url={mapTileUrl}
+                  attribution={mapAttribution}
                 />
                 <MapClickHandler onMapClick={handleMapClick}/>
                 <RecenterMap position={mapPosition}/>
@@ -889,7 +893,8 @@ export default function SellerShopPage() {
 
   const handlePhoto = async (file: File) => {
     try {
-      const res = await vendorsApi.uploadShopPhoto(file);
+      const compressedFile = await ensureImageUnderLimit(file);
+      const res = await vendorsApi.uploadShopPhoto(compressedFile);
       setShop(p => p ? { ...p, photo_url: res.photo_url } : p);
       showToast('Photo mise à jour', 'success');
     } catch { showToast('Erreur upload photo', 'error'); }
@@ -897,7 +902,8 @@ export default function SellerShopPage() {
 
   const handleBanner = async (file: File) => {
     try {
-      const res = await vendorsApi.uploadShopBanner(file);
+      const compressedFile = await ensureImageUnderLimit(file);
+      const res = await vendorsApi.uploadShopBanner(compressedFile);
       setShop(p => p ? { ...p, banner_url: res.banner_url } : p);
       showToast('Bannière mise à jour', 'success');
     } catch { showToast('Erreur upload bannière', 'error'); }

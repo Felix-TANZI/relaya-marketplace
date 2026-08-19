@@ -7,6 +7,7 @@
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
+R2_STORAGE_ENABLED = False
 
 # Hachage rapide en test (sécurité non requise sur une base jetable)
 PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]

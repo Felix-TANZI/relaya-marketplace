@@ -8,7 +8,10 @@ from django.utils.text import slugify
 from django.utils import timezone
 import unicodedata
 from decimal import Decimal, ROUND_HALF_UP
-from .models import Order, OrderItem, Dispute, DisputeMessage
+from .models import (
+    Order, OrderItem, Dispute, DisputeMessage,
+    DisputeEvidence, DisputeEvidenceRequest,
+)
 from apps.catalog.models import Category, Product, ProductMedia
 
 
@@ -97,6 +100,7 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'customer_phone',
             'city',
             'address',
+            'address_precision',
             'note',
             'delivery_mode',
             'payment_status',
@@ -145,6 +149,10 @@ class OrderCreateSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
         help_text="Adresse complète de livraison"
+    )
+    address_precision = serializers.JSONField(
+        required=False,
+        help_text="Analyse structurée de l'adresse validée par le client"
     )
     customer_phone = serializers.CharField(
         max_length=20,
@@ -280,6 +288,10 @@ class OrderCreateSerializer(serializers.Serializer):
         if delivery_mode == 'PICKUP':
             address = address or f"Retrait en boutique - {validated_data['city']}"
 
+        address_precision = validated_data.get('address_precision') or {}
+        if not isinstance(address_precision, dict):
+            address_precision = {}
+
         note = validated_data.get('note', '').strip()
         if delivery_mode == 'PICKUP':
             note = f"[PICKUP] {note}".strip()
@@ -292,6 +304,7 @@ class OrderCreateSerializer(serializers.Serializer):
             delivery_method=delivery_mode,
             city=validated_data['city'],
             address=address,
+            address_precision=address_precision,
             note=note,
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
@@ -401,14 +414,63 @@ class DisputeMessageSerializer(serializers.ModelSerializer):
         return obj.sender.get_full_name() or obj.sender.username
 
 
+class DisputeEvidenceSerializer(serializers.ModelSerializer):
+    uploaded_by_name = serializers.CharField(source='uploaded_by.username', read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = DisputeEvidence
+        fields = ['id', 'request', 'evidence_type', 'uploader_role', 'uploaded_by_name', 'file_url', 'description', 'created_at']
+        read_only_fields = fields
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if not obj.file:
+            return None
+        return request.build_absolute_uri(obj.file.url) if request else obj.file.url
+
+
+class DisputeEvidenceRequestSerializer(serializers.ModelSerializer):
+    requested_from_name = serializers.CharField(source='requested_from.username', read_only=True)
+    requested_by_name = serializers.CharField(source='requested_by.username', read_only=True)
+    evidences = DisputeEvidenceSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = DisputeEvidenceRequest
+        fields = [
+            'id', 'dispute', 'recipient_role', 'requested_from', 'requested_from_name',
+            'requested_by_name', 'evidence_types', 'instructions', 'due_at',
+            'status', 'responded_at', 'created_at', 'evidences',
+        ]
+        read_only_fields = fields
+
+
 class DisputeSerializer(serializers.ModelSerializer):
     messages = DisputeMessageSerializer(many=True, read_only=True)
+    evidences = DisputeEvidenceSerializer(many=True, read_only=True)
+    evidence_requests = serializers.SerializerMethodField()
+    product_title = serializers.CharField(source='product.title', read_only=True)
+    vendor_username = serializers.CharField(source='vendor.username', read_only=True)
+    order_item_title = serializers.CharField(source='order_item.title_snapshot', read_only=True)
+
+    def get_evidence_requests(self, obj):
+        request = self.context.get('request')
+        queryset = obj.evidence_requests.all()
+        if request and not request.user.is_staff:
+            queryset = queryset.filter(requested_from=request.user)
+        return DisputeEvidenceRequestSerializer(queryset, many=True, context=self.context).data
 
     class Meta:
         model = Dispute
         fields = [
             'id',
             'order',
+            'order_item',
+            'order_item_title',
+            'product',
+            'product_title',
+            'vendor',
+            'vendor_username',
             'opened_by',
             'reason',
             'status',
@@ -419,10 +481,14 @@ class DisputeSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'messages',
+            'evidences',
+            'evidence_requests',
         ]
         read_only_fields = [
             'id',
             'order',
+            'product',
+            'vendor',
             'opened_by',
             'status',
             'resolution',
@@ -431,13 +497,15 @@ class DisputeSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
             'messages',
+            'evidences',
+            'evidence_requests',
         ]
 
 
 class DisputeCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Dispute
-        fields = ['reason', 'description']
+        fields = ['order_item', 'reason', 'description']
 
 
 class DisputeMessageCreateSerializer(serializers.ModelSerializer):

@@ -8,6 +8,7 @@ import {
   Send, ExternalLink, ShoppingCart, User, CheckCircle,
   Clock, AlertCircle, Lock, Eye, EyeOff, ChevronDown,
   FileText, DollarSign, Store, Truck, ShieldCheck, ShieldOff,
+  FileSearch,
 } from 'lucide-react';
 import { adminApi, type AdminDisputeDetail } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
@@ -94,6 +95,12 @@ export default function DisputeDetailPage() {
   const [acting,        setActing]       = useState(false);
   const [togglingReply, setTogglingReply]= useState(false);
   const [showResolve,   setShowResolve]  = useState(false);
+  const [requestingEvidence, setRequestingEvidence] = useState(false);
+  const [evidenceRequestForm, setEvidenceRequestForm] = useState({
+    recipient_role: 'VENDOR',
+    instructions: '',
+    due_at: '',
+  });
   const [resolveForm,   setResolveForm]  = useState({
     resolution:        'REFUND',
     resolution_note:   '',
@@ -190,6 +197,26 @@ export default function DisputeDetailPage() {
       await load();
     } catch { showToast('Erreur lors de la résolution', 'error'); }
     finally  { setActing(false); }
+  };
+
+  const handleRequestEvidence = async () => {
+    if (!dispute || !evidenceRequestForm.instructions.trim()) return;
+    setRequestingEvidence(true);
+    try {
+      const updated = await adminApi.requestDisputeEvidence(dispute.id, {
+        recipient_role: evidenceRequestForm.recipient_role,
+        evidence_types: ['PHOTO', 'DOCUMENT'],
+        instructions: evidenceRequestForm.instructions.trim(),
+        due_at: evidenceRequestForm.due_at ? new Date(evidenceRequestForm.due_at).toISOString() : undefined,
+      });
+      setDispute(updated);
+      setEvidenceRequestForm((current) => ({ ...current, instructions: '', due_at: '' }));
+      showToast('Demande de preuve envoyée', 'success');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Impossible d'envoyer la demande", 'error');
+    } finally {
+      setRequestingEvidence(false);
+    }
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────
@@ -518,6 +545,50 @@ export default function DisputeDetailPage() {
               </div>
             )}
           </Section>
+
+          {/* Demandes de preuve */}
+          {!isResolved && (
+            <Section title="Demander une preuve" icon={FileSearch} T={T}>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: T.muted }}>Acteur concerné</label>
+                  <select value={evidenceRequestForm.recipient_role} onChange={e => setEvidenceRequestForm(current => ({ ...current, recipient_role: e.target.value }))} className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}>
+                    <option value="CLIENT">Client</option>
+                    <option value="VENDOR">Vendeur</option>
+                    <option value="COURIER">Livreur</option>
+                    <option value="LOGISTICS">Organisation de livraison</option>
+                    <option value="RELAY_POINT">Point relais</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-[12px] font-semibold" style={{ color: T.muted }}>Échéance</label>
+                  <input type="datetime-local" value={evidenceRequestForm.due_at} onChange={e => setEvidenceRequestForm(current => ({ ...current, due_at: e.target.value }))} className="w-full rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
+                </div>
+              </div>
+              <textarea value={evidenceRequestForm.instructions} onChange={e => setEvidenceRequestForm(current => ({ ...current, instructions: e.target.value }))} rows={3} placeholder="Ex. Photographiez le scellé, l'emballage et l'étiquette du colis." className="mt-3 w-full resize-none rounded-xl px-3 py-2.5 text-[13px] outline-none" style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }} />
+              <button onClick={handleRequestEvidence} disabled={!evidenceRequestForm.instructions.trim() || requestingEvidence} className="mt-3 inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-bold text-white disabled:opacity-50" style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
+                {requestingEvidence ? <RefreshCw size={14} className="animate-spin" /> : <FileSearch size={14} />}
+                Envoyer la demande
+              </button>
+
+              {dispute.evidence_requests?.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {dispute.evidence_requests.map(item => (
+                    <div key={item.id} className="flex items-start justify-between gap-3 rounded-xl p-3" style={{ background: T.cardAlt, border: `1px solid ${T.border}` }}>
+                      <div>
+                        <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>{item.requested_from_name} · {item.recipient_role}</p>
+                        <p className="mt-1" style={{ fontSize: 12, color: T.muted }}>{item.instructions}</p>
+                        {item.due_at && <p className="mt-1" style={{ fontSize: 11, color: T.muted }}>Échéance : {fmtDateTime(item.due_at)}</p>}
+                      </div>
+                      <span className="shrink-0 rounded-full px-2.5 py-1 text-[10px] font-black" style={{ background: item.status === 'SUBMITTED' ? 'rgba(16,185,129,.12)' : 'rgba(245,158,11,.12)', color: item.status === 'SUBMITTED' ? '#10B981' : '#F59E0B' }}>
+                        {item.status === 'SUBMITTED' ? 'REÇUE' : 'EN ATTENTE'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Section>
+          )}
 
           {/* Preuves */}
           {dispute.evidences && dispute.evidences.length > 0 && (

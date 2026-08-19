@@ -17,6 +17,7 @@ from django.utils import timezone
 from datetime import timedelta, date
 from rest_framework.decorators import action
 from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
 from django.db import transaction
 
 from .models import VendorProfile, VendorOrderNote
@@ -54,7 +55,9 @@ from .serializers import (
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
-from apps.orders.models import Order, OrderItem
+from apps.orders.models import Order, OrderItem, DisputeEvidenceRequest, DisputeMessage
+from apps.orders.evidence import create_evidence, resolve_dispute_actor
+from apps.accounts.models import UserNotification
 
 
 # Constantes de validation upload — centralisées et réutilisables
@@ -172,8 +175,10 @@ class VendorProductViewSet(viewsets.ModelViewSet):
         """Ajouter stock_quantity au contexte"""
         context = super().get_serializer_context()
         if self.action in ['create', 'update', 'partial_update']:
-            stock_quantity = self.request.data.get('stock_quantity', 0)
-            context['stock_quantity'] = int(stock_quantity) if stock_quantity else 0
+            if 'stock_quantity' in self.request.data:
+                context['stock_quantity'] = int(self.request.data['stock_quantity'])
+            elif self.action == 'create':
+                context['stock_quantity'] = 0
         return context
     
     def perform_create(self, serializer):
@@ -426,9 +431,21 @@ def upload_master_image(request, master_id):
         return Response({'detail': f'Maximum {MAX_IMAGES_PER_PRODUCT} images par fiche.'},
                         status=status.HTTP_400_BAD_REQUEST)
 
+    from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+    try:
+        optimized_image = optimize_uploaded_image(
+            image_file,
+            max_input_bytes=MAX_IMAGE_SIZE_BYTES,
+            max_dimension=1600,
+            quality=80,
+            filename_prefix="master",
+        )
+    except ImageOptimizationError as error:
+        return Response({'detail': str(error)}, status=status.HTTP_400_BAD_REQUEST)
+
     with transaction.atomic():
         img = MasterProductImage.objects.create(
-            master=master, image=image_file,
+            master=master, image=optimized_image,
             is_primary=(current == 0), order=current,
         )
 
@@ -1866,7 +1883,7 @@ def vendor_dispute_upload_evidence(request, dispute_id):
                 status=status.HTTP_403_FORBIDDEN,
             )
  
-        from apps.orders.models import Dispute, DisputeEvidence
+        from apps.orders.models import Dispute
  
         try:
             dispute = Dispute.objects.filter(
@@ -1884,6 +1901,20 @@ def vendor_dispute_upload_evidence(request, dispute_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
  
+        evidence_request_id = request.data.get('request_id')
+        evidence_request = DisputeEvidenceRequest.objects.filter(
+            id=evidence_request_id,
+            dispute=dispute,
+            requested_from=request.user,
+            recipient_role=DisputeEvidenceRequest.RecipientRole.VENDOR,
+            status=DisputeEvidenceRequest.Status.PENDING,
+        ).first()
+        if not evidence_request:
+            return Response(
+                {'detail': "L'admin doit d'abord vous adresser une demande de preuve active."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         file = request.FILES.get('file')
         if not file:
             return Response(
@@ -1891,27 +1922,18 @@ def vendor_dispute_upload_evidence(request, dispute_id):
                 status=status.HTTP_400_BAD_REQUEST,
             )
  
-        # Validation type et taille
-        allowed_types = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf']
-        if file.content_type not in allowed_types:
-            return Response(
-                {'detail': f"Type de fichier non autorisé ({file.content_type}). Formats acceptés : JPG, PNG, GIF, WEBP, PDF."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        if file.size > 10 * 1024 * 1024:  # 10 Mo
-            return Response(
-                {'detail': 'Fichier trop volumineux. Taille maximum : 10 Mo.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
- 
         description = request.data.get('description', '')[:255]
- 
-        evidence = DisputeEvidence.objects.create(
-            dispute     = dispute,
-            uploaded_by = request.user,
-            file        = file,
-            description = description,
+        evidence = create_evidence(
+            dispute=dispute,
+            user=request.user,
+            upload=file,
+            uploader_role=DisputeEvidenceRequest.RecipientRole.VENDOR,
+            description=description,
+            evidence_request=evidence_request,
         )
+        evidence_request.status = DisputeEvidenceRequest.Status.SUBMITTED
+        evidence_request.responded_at = timezone.now()
+        evidence_request.save(update_fields=['status', 'responded_at', 'updated_at'])
  
         result = VendorDisputeEvidenceSerializer(evidence, context={'request': request})
         return Response(result.data, status=status.HTTP_201_CREATED)
@@ -2544,13 +2566,33 @@ def admin_live_users(request):
 @permission_classes([IsAdminUser])
 def admin_vendors_map(request):
     """
-    Distribution géographique des vendeurs par ville.
-    Retourne les données pour la visualisation SVG Cameroun.
+    Distribution géographique des vendeurs par ville + emplacements physiques.
+    La carte admin doit afficher les vrais points de boutique quand ils existent,
+    puis signaler les vendeurs qui restent à géolocaliser.
     """
-    from django.db.models import Sum, Count
+    from django.db.models import Prefetch
  
-    approved = VendorProfile.objects.filter(status='APPROVED').select_related('user')
-    all_vp   = VendorProfile.objects.select_related('user')
+    approved = (
+        VendorProfile.objects
+        .filter(status='APPROVED')
+        .select_related('user')
+        .prefetch_related(
+            Prefetch(
+                'locations',
+                queryset=VendorLocation.objects.filter(is_active=True).order_by('name'),
+            )
+        )
+    )
+    all_vp = (
+        VendorProfile.objects
+        .select_related('user')
+        .prefetch_related(
+            Prefetch(
+                'locations',
+                queryset=VendorLocation.objects.filter(is_active=True).order_by('name'),
+            )
+        )
+    )
  
     # Agréger par ville
     city_data: dict = {}
@@ -2598,14 +2640,62 @@ def admin_vendors_map(request):
             'certification_tier':vp.certification_tier or 'BRONZE',
             'total_revenue':     getattr(vp, 'total_revenue', 0) or 0,
         })
+
+    # Emplacements physiques : un marqueur par point de boutique.
+    # Si un vendeur n'a pas encore créé d'emplacement, on renvoie sa fiche
+    # principale en "fallback" pour que l'admin voie ce qui reste à compléter.
+    locations_list = []
+    for vp in all_vp:
+        active_locations = list(vp.locations.all())
+        if active_locations:
+            for loc in active_locations:
+                locations_list.append({
+                    'id': loc.id,
+                    'vendor_id': vp.id,
+                    'business_name': vp.business_name,
+                    'location_name': loc.name,
+                    'address': loc.address,
+                    'city': vp.city or '',
+                    'phone': loc.phone or vp.phone,
+                    'representative_name': loc.representative_name,
+                    'representative_phone': loc.representative_phone,
+                    'status': vp.status,
+                    'certification_tier': vp.certification_tier or 'BRONZE',
+                    'latitude': float(loc.latitude) if loc.latitude is not None else None,
+                    'longitude': float(loc.longitude) if loc.longitude is not None else None,
+                    'is_geocoded': loc.latitude is not None and loc.longitude is not None,
+                    'is_profile_fallback': False,
+                })
+        else:
+            locations_list.append({
+                'id': f'profile-{vp.id}',
+                'vendor_id': vp.id,
+                'business_name': vp.business_name,
+                'location_name': 'Boutique principale',
+                'address': vp.address,
+                'city': vp.city or '',
+                'phone': vp.phone,
+                'representative_name': vp.user.get_full_name() or vp.user.username,
+                'representative_phone': vp.phone,
+                'status': vp.status,
+                'certification_tier': vp.certification_tier or 'BRONZE',
+                'latitude': None,
+                'longitude': None,
+                'is_geocoded': False,
+                'is_profile_fallback': True,
+            })
  
     top_city = cities_list[0]['city'] if cities_list else 'N/A'
  
     return Response({
         'cities':        cities_list,
         'vendors':       vendors_list,
+        'locations':     locations_list,
         'total_approved':approved.count(),
         'total_cities':  len([c for c in cities_list if c['approved'] > 0]),
+        'total_locations': len(locations_list),
+        'geocoded_locations': len([loc for loc in locations_list if loc['is_geocoded']]),
+        'pending_geo_locations': len([loc for loc in locations_list if not loc['is_geocoded']]),
         'top_city':      top_city,
     })  
 
@@ -4974,7 +5064,9 @@ def admin_dispute_detail(request, dispute_id):
             'messages',
             'messages__sender',
             'evidences',
-            'evidences__uploaded_by'
+            'evidences__uploaded_by',
+            'evidence_requests__requested_from',
+            'evidence_requests__evidences',
         ).get(id=dispute_id)
         
         serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
@@ -4984,6 +5076,67 @@ def admin_dispute_detail(request, dispute_id):
             {'detail': 'Litige introuvable.'},
             status=status.HTTP_404_NOT_FOUND
         )
+
+
+@extend_schema(tags=["Admin"], summary="Demander une preuve à une partie du litige")
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_request_dispute_evidence(request, dispute_id):
+    from apps.orders.models import Dispute
+    from apps.vendors.serializers import AdminDisputeDetailSerializer
+
+    dispute = get_object_or_404(
+        Dispute.objects.select_related(
+            'opened_by', 'vendor', 'order__shipment__courier__delivery_organization',
+        ),
+        id=dispute_id,
+    )
+    role = str(request.data.get('recipient_role', '')).upper()
+    valid_roles = {choice for choice, _ in DisputeEvidenceRequest.RecipientRole.choices}
+    if role not in valid_roles:
+        return Response({'recipient_role': 'Rôle destinataire invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+    recipient = resolve_dispute_actor(dispute, role)
+    if not recipient:
+        return Response(
+            {'recipient_role': "Aucun compte correspondant n'est rattaché à ce colis."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+    instructions = str(request.data.get('instructions', '')).strip()
+    if not instructions:
+        return Response({'instructions': 'Précisez la preuve attendue.'}, status=status.HTTP_400_BAD_REQUEST)
+    due_at = request.data.get('due_at') or None
+    if due_at:
+        from django.utils.dateparse import parse_datetime
+        due_at = parse_datetime(due_at)
+        if not due_at:
+            return Response({'due_at': 'Date limite invalide.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    evidence_request = DisputeEvidenceRequest.objects.create(
+        dispute=dispute,
+        requested_by=request.user,
+        requested_from=recipient,
+        recipient_role=role,
+        evidence_types=request.data.get('evidence_types') or ['PHOTO'],
+        instructions=instructions,
+        due_at=due_at,
+    )
+    DisputeMessage.objects.create(
+        dispute=dispute,
+        sender=request.user,
+        sender_role=DisputeMessage.SenderRole.ADMIN,
+        message=f"Preuve demandée à {evidence_request.get_recipient_role_display()} : {instructions}",
+        is_internal=True,
+    )
+    UserNotification.objects.create(
+        user=recipient,
+        title=f"Preuve demandée pour le litige #{dispute.id}",
+        message=instructions,
+        notification_type=UserNotification.NotificationType.SUPPORT,
+        action_url='/orders' if role == 'CLIENT' else '/',
+    )
+    dispute.status = 'IN_PROGRESS'
+    dispute.save(update_fields=['status', 'updated_at'])
+    return Response(AdminDisputeDetailSerializer(dispute, context={'request': request}).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
@@ -5232,15 +5385,42 @@ def admin_update_settings(request):
     """Modifier les paramètres plateforme"""
     from apps.orders.models import PlatformSettings
     from apps.vendors.serializers import PlatformSettingsSerializer
-    
+
     settings = PlatformSettings.get_settings()
+    previous_retention_days = settings.evidence_retention_days
     serializer = PlatformSettingsSerializer(settings, data=request.data, partial=True)
-    
+
     if serializer.is_valid():
         serializer.save(updated_by=request.user)
+
+        new_retention_days = serializer.instance.evidence_retention_days
+        if 'evidence_retention_days' in request.data and new_retention_days != previous_retention_days:
+            _reschedule_pending_shipment_evidence(new_retention_days)
+
         return Response(serializer.data)
-    
+
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+def _reschedule_pending_shipment_evidence(retention_days):
+    """
+    Recalcule retain_until = created_at + retention_days pour les preuves déjà
+    créées mais pas encore purgées ni gelées par un litige. Une preuve en
+    litigation_hold n'est jamais concernée : elle reste gelée tant que le
+    litige n'est pas clos, quel que soit ce réglage.
+    """
+    from django.db.models import DateTimeField, ExpressionWrapper, F
+    from apps.shipping.models import ShipmentEvidence
+
+    ShipmentEvidence.objects.filter(
+        purged_at__isnull=True,
+        litigation_hold=False,
+    ).update(
+        retain_until=ExpressionWrapper(
+            F('created_at') + timedelta(days=retention_days),
+            output_field=DateTimeField(),
+        )
+    )
 
 
 
@@ -5303,13 +5483,22 @@ def vendor_upload_shop_photo(request):
             return Response({'detail': 'Fichier trop volumineux. Maximum 5 Mo.'}, status=400)
  
         # Supprimer l'ancienne photo si elle existe
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+        try:
+            optimized_photo = optimize_uploaded_image(
+                photo, max_input_bytes=5 * 1024 * 1024, max_dimension=768,
+                quality=80, filename_prefix='shop',
+            )
+        except ImageOptimizationError as error:
+            return Response({'detail': str(error)}, status=400)
+
         if profile.profile_photo:
             try:
                 profile.profile_photo.delete(save=False)
             except Exception:
                 pass
  
-        profile.profile_photo = photo
+        profile.profile_photo = optimized_photo
         profile.save(update_fields=['profile_photo', 'updated_at'])
  
         request_obj = request
@@ -5344,13 +5533,22 @@ def vendor_upload_shop_banner(request):
         if banner.size > 8 * 1024 * 1024:
             return Response({'detail': 'Fichier trop volumineux. Maximum 8 Mo.'}, status=400)
  
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+        try:
+            optimized_banner = optimize_uploaded_image(
+                banner, max_input_bytes=8 * 1024 * 1024, max_dimension=1920,
+                quality=80, filename_prefix='banner',
+            )
+        except ImageOptimizationError as error:
+            return Response({'detail': str(error)}, status=400)
+
         if profile.banner_image:
             try:
                 profile.banner_image.delete(save=False)
             except Exception:
                 pass
  
-        profile.banner_image = banner
+        profile.banner_image = optimized_banner
         profile.save(update_fields=['banner_image', 'updated_at'])
  
         request_obj = request
@@ -5508,12 +5706,21 @@ def vendor_upload_shop_photo(request):
             return Response({'detail': 'Format non supporté. JPG, PNG ou WEBP.'}, status=400)
         if photo.size > 5 * 1024 * 1024:
             return Response({'detail': 'Fichier trop volumineux. Max 5 Mo.'}, status=400)
+
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+        try:
+            optimized_photo = optimize_uploaded_image(
+                photo, max_input_bytes=5 * 1024 * 1024, max_dimension=768,
+                quality=80, filename_prefix='shop',
+            )
+        except ImageOptimizationError as error:
+            return Response({'detail': str(error)}, status=400)
  
         if profile.profile_photo:
             try: profile.profile_photo.delete(save=False)
             except Exception: pass
  
-        profile.profile_photo = photo
+        profile.profile_photo = optimized_photo
         profile.save(update_fields=['profile_photo', 'updated_at'])
  
         photo_url = request.build_absolute_uri(profile.profile_photo.url) if profile.profile_photo else None
@@ -5538,12 +5745,21 @@ def vendor_upload_shop_banner(request):
             return Response({'detail': 'Format non supporté.'}, status=400)
         if banner.size > 8 * 1024 * 1024:
             return Response({'detail': 'Fichier trop volumineux. Max 8 Mo.'}, status=400)
+
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+        try:
+            optimized_banner = optimize_uploaded_image(
+                banner, max_input_bytes=8 * 1024 * 1024, max_dimension=1920,
+                quality=80, filename_prefix='banner',
+            )
+        except ImageOptimizationError as error:
+            return Response({'detail': str(error)}, status=400)
  
         if profile.banner_image:
             try: profile.banner_image.delete(save=False)
             except Exception: pass
  
-        profile.banner_image = banner
+        profile.banner_image = optimized_banner
         profile.save(update_fields=['banner_image', 'updated_at'])
  
         banner_url = request.build_absolute_uri(profile.banner_image.url) if profile.banner_image else None

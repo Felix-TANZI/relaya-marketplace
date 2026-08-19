@@ -153,6 +153,9 @@ export interface MasterListParams {
 
 export interface ProductReview {
   id: number;
+  order?: number | null;
+  order_item?: number | null;
+  order_item_title?: string | null;
   user_name: string;
   user_first_name?: string;
   rating: number;
@@ -214,4 +217,10 @@ export const productsApi = {
 
   getReviews: async (productId: number): Promise<ProductReview[]> =>
     api.get<ProductReview[]>(`/catalog/products/${productId}/reviews/`),
+
+  addReview: async (
+    productId: number,
+    data: { order_item: number; rating: number; title?: string; comment?: string }
+  ): Promise<ProductReview> =>
+    api.post<ProductReview>(`/catalog/products/${productId}/add_review/`, data),
 };

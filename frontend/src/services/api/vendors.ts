@@ -366,6 +366,15 @@ export interface VendorDisputeEvidence {
   created_at: string;
 }
 
+export interface VendorEvidenceRequest {
+  id: number;
+  recipient_role: string;
+  instructions: string;
+  due_at: string | null;
+  status: 'PENDING' | 'SUBMITTED' | 'CANCELLED' | 'EXPIRED';
+  created_at: string;
+}
+
 export interface VendorDisputeListItem {
   id: number;
   order: number;
@@ -398,6 +407,7 @@ export interface VendorDisputeDetail extends VendorDisputeListItem {
   vendor_replied_at: string | null;
   messages: VendorDisputeMessage[];
   evidences: VendorDisputeEvidence[];
+  evidence_requests: VendorEvidenceRequest[];
   resolved_at: string | null;
 }
 
@@ -1066,12 +1076,14 @@ export const vendorsApi = {
    */
   uploadDisputeEvidence: async (
     disputeId: number,
+    requestId: number,
     file: File,
     description?: string,
   ): Promise<VendorDisputeEvidence> => {
     const token = localStorage.getItem("access_token");
     const form = new FormData();
     form.append("file", file);
+    form.append("request_id", String(requestId));
     if (description) form.append("description", description);
     return http<VendorDisputeEvidence>(
       `/api/vendors/disputes/${disputeId}/evidences/`,

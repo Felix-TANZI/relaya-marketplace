@@ -1,39 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Menu,
-  ShoppingBag,
-  Shirt,
-  Laptop,
-  Smartphone,
-  Sparkles,
-  Home,
-  ShoppingCart,
-  Footprints,
-  Dumbbell,
-  Baby,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-
-interface Category {
-  slug: string;
-  icon: LucideIcon;
-  name: string;
-  count: string;
-}
-
-const CATEGORIES: Category[] = [
-  { slug: "all", icon: ShoppingBag, name: "Tout voir", count: "15 240" },
-  { slug: "femme", icon: Shirt, name: "Mode Femme", count: "3 400" },
-  { slug: "homme", icon: Shirt, name: "Mode Homme", count: "2 100" },
-  { slug: "tech", icon: Laptop, name: "Électronique", count: "1 850" },
-  { slug: "phone", icon: Smartphone, name: "Téléphones", count: "980" },
-  { slug: "beaute", icon: Sparkles, name: "Beauté & Santé", count: "2 600" },
-  { slug: "maison", icon: Home, name: "Maison & Déco", count: "1 720" },
-  { slug: "super", icon: ShoppingCart, name: "Supermarché", count: "890" },
-  { slug: "shoes", icon: Footprints, name: "Chaussures", count: "1 100" },
-  { slug: "sport", icon: Dumbbell, name: "Sport & Loisirs", count: "640" },
-  { slug: "bebe", icon: Baby, name: "Bébé & Enfant", count: "520" },
-];
+import { Menu, ShoppingBag } from "lucide-react";
+import { CATEGORY_THEMES as CATEGORIES } from "@/data/categoryThemes";
 
 interface CategorySidebarProps {
   activeCategory: string;

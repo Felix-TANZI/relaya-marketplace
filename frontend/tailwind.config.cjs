@@ -145,12 +145,37 @@ module.exports = {
           '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
           '50%':      { opacity: '1',   transform: 'scale(1.2)' },
         },
+        // Bandeau promotions : reflet qui balaie la frame, flamme qui vacille.
+        'promo-sweep': {
+          '0%':        { transform: 'translateX(-120%) skewX(-18deg)' },
+          '60%, 100%': { transform: 'translateX(320%) skewX(-18deg)' },
+        },
+        'flame-flicker': {
+          '0%, 100%': { transform: 'scale(1) rotate(-2deg)',    opacity: '0.92' },
+          '35%':      { transform: 'scale(1.14) rotate(3deg)',  opacity: '1' },
+          '65%':      { transform: 'scale(0.97) rotate(-4deg)', opacity: '0.96' },
+        },
+        // Diamant Premium et étoile Sélection : scintillement lent.
+        'gem-sparkle': {
+          '0%, 100%': { transform: 'scale(1) rotate(0deg)',      opacity: '0.9' },
+          '30%':      { transform: 'scale(1.12) rotate(-6deg)',  opacity: '1' },
+          '60%':      { transform: 'scale(0.98) rotate(5deg)',   opacity: '0.94' },
+        },
+        // Bandeau d'annonces : défilement continu du ruban dupliqué.
+        'marquee': {
+          from: { transform: 'translateX(0)' },
+          to:   { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         'card-slide-in': 'card-slide-in 0.4s cubic-bezier(.4,0,.2,1) both',
         'page-in':       'page-in 0.3s cubic-bezier(.4,0,.2,1)',
         'badge-pulse':   'badge-pulse 3s ease-in-out infinite',
         'sparkle':       'sparkle 2s ease-in-out infinite',
+        'promo-sweep':   'promo-sweep 4.5s ease-in-out infinite',
+        'flame-flicker': 'flame-flicker 1.4s ease-in-out infinite',
+        'gem-sparkle':   'gem-sparkle 2.6s ease-in-out infinite',
+        'marquee':       'marquee 32s linear infinite',
       },
     },
   },

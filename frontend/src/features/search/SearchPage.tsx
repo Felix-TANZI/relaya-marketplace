@@ -2,10 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import {
   Search, SlidersHorizontal, ChevronDown, ChevronUp,
-  ArrowUpDown, Star, Tag, Package,
+  ArrowUpDown, Star, Tag, Package, Lightbulb,
 } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-import { productsApi, type Category, type Product, type ProductListResponse } from "@/services/api/products";
+import { productsApi, type Category, type Product, type ProductListResponse, type SearchMeta } from "@/services/api/products";
 import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
 
 type SortKey = "relevance" | "price_asc" | "price_desc" | "newest";
@@ -63,6 +63,7 @@ export default function SearchPage() {
   const [sortOpen, setSortOpen]   = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
   const [lastSearch, setLastSearch] = useState<LastSearch | null>(null);
+  const [searchMeta, setSearchMeta] = useState<SearchMeta | null>(null);
 
   /* ── Filter state ── */
   const [minPrice, setMinPrice] = useState("");
@@ -112,8 +113,10 @@ export default function SearchPage() {
     try {
       const response: ProductListResponse = await productsApi.list({ search: q, page_size: 40 });
       const results = response.results ?? [];
+      setSearchMeta(response.search_meta ?? null);
       setProducts(results.length > 0 ? results : searchMockProducts(q));
     } catch {
+      setSearchMeta(null);
       setProducts(searchMockProducts(q));
     } finally {
       setLoading(false);
@@ -386,6 +389,43 @@ export default function SearchPage() {
             {/* Results */}
             {!loading && searched && (
               <>
+                {/* Résultats approchants — on explique pourquoi ils diffèrent de la demande. */}
+                {searchMeta?.is_fallback && displayedProducts.length > 0 && (
+                  <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-3 dark:border-primary/30 dark:bg-primary/10">
+                    <Lightbulb size={16} className="mt-0.5 flex-shrink-0 text-primary" />
+                    <p className="text-[12.5px] font-semibold leading-relaxed text-[#8a5a2b] dark:text-orange-200">
+                      {searchMeta.mode === "fuzzy" && (
+                        <>
+                          Aucun article ne correspond exactement à{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span>. Voici les
+                          articles dont l'orthographe s'en rapproche le plus.
+                        </>
+                      )}
+                      {searchMeta.mode === "loose" && (
+                        <>
+                          Aucun article ne réunit tous les mots de{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span>. Voici ceux
+                          qui en contiennent une partie.
+                        </>
+                      )}
+                      {searchMeta.mode === "related" && (
+                        <>
+                          Nous n'avons pas encore{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span> au catalogue.
+                          Voici le rayon le plus proche
+                          {searchMeta.suggested_category && (
+                            <>
+                              {" "}:{" "}
+                              <span className="font-extrabold">{searchMeta.suggested_category.name}</span>
+                            </>
+                          )}
+                          .
+                        </>
+                      )}
+                    </p>
+                  </div>
+                )}
+
                 {/* Sort bar */}
                 <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-2">

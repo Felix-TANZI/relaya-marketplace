@@ -27,6 +27,9 @@ import RoleRoute      from '@/components/auth/RoleRoute';
 import HomePage               from '@/features/home/HomePage';
 import CatalogPage            from '@/features/catalog/CatalogPage';
 import CategoriesPage         from '@/features/categories/CategoriesPage';
+import CategoryThemePage      from '@/features/categories/CategoryThemePage';
+import PremiumPage             from '@/features/premium/PremiumPage';
+import SelectionPremiumPage    from '@/features/premium/SelectionPremiumPage';
 import CartPage               from '@/features/cart/CartPage';
 import CheckoutPage           from '@/features/checkout/CheckoutPage';
 import CheckoutConfirmPage    from '@/features/checkout/CheckoutConfirmPage';
@@ -175,10 +178,13 @@ export const router = createBrowserRouter([
       // Public
       { path: 'catalog',         element: <CatalogPage /> },
       { path: 'categories',      element: <CategoriesPage /> },
+      { path: 'categorie/:slug', element: <CategoryThemePage /> },
       { path: 'product/:slug', element: <FicheDetailPage /> },
       { path: 'cart',            element: <CartPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
+      { path: 'premium',         element: <PremiumPage /> },
+      { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },
       { path: 'help',            element: <HelpPage /> },
       { path: 'about',           element: <AboutPage /> },

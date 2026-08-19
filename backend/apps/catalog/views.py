@@ -23,6 +23,7 @@ from django.utils.text import slugify
 from django.utils import timezone
 
 from .models import Product, Category, ProductReview, MasterProduct, ModerationStatus, PromotionCampaign, Brand, ColorDictionary, ColorFamily, ProductAttribute, MasterProduct, AttributeRole, ProductVariant
+from .search import smart_product_search
 from .serializers import (
     ProductSerializer, 
     CategorySerializer,
@@ -151,6 +152,37 @@ class ProductViewSet(viewsets.ModelViewSet):
                 )
             )
         )
+
+    def filter_queryset(self, queryset):
+        """
+        Recherche tolérante : on court-circuite le SearchFilter de DRF, qui ne fait
+        qu'un `icontains` littéral, au profit de smart_product_search — fautes de
+        frappe, synonymes et repli sur un rayon voisin.
+        """
+        self.search_meta = None
+        query = self.request.query_params.get('search', '').strip()
+
+        if not query:
+            return super().filter_queryset(queryset)
+
+        # Les autres backends (filtres à facettes, tri) restent en place ; seul le
+        # SearchFilter est retiré puisque smart_product_search le remplace.
+        for backend in self.filter_backends:
+            if backend is filters.SearchFilter:
+                continue
+            queryset = backend().filter_queryset(self.request, queryset, self)
+
+        results, meta = smart_product_search(queryset, query)
+        self.search_meta = meta
+        return results
+
+    def list(self, request, *args, **kwargs):
+        """Ajoute le contexte de recherche pour que le front puisse l'expliquer."""
+        response = super().list(request, *args, **kwargs)
+        meta = getattr(self, 'search_meta', None)
+        if meta and isinstance(response.data, dict):
+            response.data['search_meta'] = meta
+        return response
 
     @extend_schema(
         tags=["Reviews"],

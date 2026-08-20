@@ -166,12 +166,13 @@ import {
   Zap, Bot, Shield, HeadphonesIcon,
 } from 'lucide-react';
 
-function PortalIndexPage() {
-  if (isDedicatedPortal) {
-    return <Navigate to={portalHomePath} replace />;
-  }
-  return <HomePage />;
-}
+// Le portail dedie se decide au chargement du module — `isDedicatedPortal` et
+// `portalHomePath` sont des constantes de `@/config/portals`. L'element est
+// donc calcule ici plutot que dans un composant : un fichier de routes qui
+// declare un composant casse le Fast Refresh (react-refresh/only-export-components).
+const portalIndexElement = isDedicatedPortal
+  ? <Navigate to={portalHomePath} replace />
+  : <HomePage />;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
@@ -186,7 +187,7 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <PortalIndexPage /> },
+      { index: true, element: portalIndexElement },
 
       // Public
       { path: 'catalog',         element: <CatalogPage /> },

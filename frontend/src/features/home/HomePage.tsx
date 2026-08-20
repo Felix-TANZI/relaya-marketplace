@@ -194,7 +194,7 @@ export default function HomePage() {
           count: sourceProducts.filter((product) => product.category?.slug === category.slug).length,
         })).filter((category) => category.count > 0);
     return [{ id: null, slug: "all", name: "Tout voir", iconName: "ShoppingBag", count: sourceProducts.length }, ...visibleCategories];
-  }, [catalogCategories, categoryIdsByRoot, sourceProducts]);
+  }, [catalogCategories, categoryIdsByRoot, sourceProducts, usingMockProducts]);
 
   const allFiltered = useMemo(
     () => {

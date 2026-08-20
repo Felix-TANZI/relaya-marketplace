@@ -181,14 +181,20 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id, t]);
 
+  // Condition sortie de l'effet : en dependant du booleen plutot que de
+  // l'objet `tracking`, l'intervalle n'est pas recree a chaque sondage — il ne
+  // l'est que lorsque la course s'ouvre ou se ferme reellement.
+  const shouldPollTracking =
+    Boolean(tracking) && !["DELIVERED", "FAILED", "CANCELLED"].includes(tracking?.status ?? "");
+
   useEffect(() => {
-    if (!id || !tracking || ["DELIVERED", "FAILED", "CANCELLED"].includes(tracking.status)) return;
+    if (!id || !shouldPollTracking) return;
     const orderId = Number(id);
     const interval = window.setInterval(() => {
       customerApi.getOrderTracking(orderId).then(setTracking).catch(() => undefined);
     }, 5000);
     return () => window.clearInterval(interval);
-  }, [id, tracking?.status]);
+  }, [id, shouldPollTracking]);
 
   useEffect(() => {
     if (!order) return;

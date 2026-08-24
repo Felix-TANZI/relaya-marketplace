@@ -113,6 +113,8 @@ def build_database_config():
 DATABASES = {
     "default": build_database_config(),
 }
+DATABASES["default"]["CONN_MAX_AGE"] = int(os.getenv("DB_CONN_MAX_AGE", "60"))
+DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 REDIS_HOST = os.getenv("REDIS_HOST", "redis").strip()
 REDIS_PORT = os.getenv("REDIS_PORT", "6379").strip()
@@ -122,6 +124,15 @@ CACHES = {
         "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
     },
 }
+
+# Celery : sort les envois d'emails (et autres taches lentes) du cycle
+# requete/reponse. Broker et resultats sur Redis, meme instance que le
+# cache mais une base logique dediee pour ne pas melanger les cles.
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/2")
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_TASK_ALWAYS_EAGER = os.getenv("CELERY_TASK_ALWAYS_EAGER", "False") == "True"
+CELERY_TASK_DEFAULT_QUEUE = "belivay"
+CELERY_TIMEZONE = "Africa/Douala"
 
 LANGUAGE_CODE = "fr"
 TIME_ZONE = "Africa/Douala"

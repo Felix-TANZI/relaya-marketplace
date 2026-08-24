@@ -1,5 +1,6 @@
-﻿import { useEffect, useRef, useState } from 'react';
+﻿import { Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import { listMyPayments } from '@/services/api/payments';
 import { useToast } from '@/context/ToastContext';
 import Header from './Header';
@@ -137,7 +138,9 @@ export default function AppLayout() {
       {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">Mode hors ligne : les données affichées proviennent du cache et peuvent ne plus être à jour.</div>}
       {!hideChrome && !isCheckout && <Header />}
       <main id="main-content" tabIndex={-1} className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[132px] pb-16 lg:pb-0'}`}>
-        <Outlet />
+        <Suspense fallback={<PageLoader />}>
+          <Outlet />
+        </Suspense>
       </main>
       {!hideChrome && !isCheckout && <Footer />}
       {!hideChrome && !isCheckout && <GlobalAssistant />}

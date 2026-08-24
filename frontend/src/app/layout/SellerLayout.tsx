@@ -2,8 +2,9 @@
 // Espace vendeur BelivaY — même ADN que l'espace client (chaud, orange, propre).
 // Sidebar brun foncé chaleureux + fond crème + orange dominant.
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
   FileText, Lock, CircleCheckBig,
@@ -285,7 +286,7 @@ export default function SellerLayout() {
           <img
             src="/belivay-logo.png"
             alt="BelivaY"
-            className="h-8 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </Link>
 
@@ -358,7 +359,9 @@ export default function SellerLayout() {
       {/* ═══ MAIN ═══ */}
       <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
         <div className="max-w-[1100px] mx-auto px-4 sm:px-5 lg:px-7 py-6">
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

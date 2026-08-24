@@ -15,7 +15,7 @@ import random
 import string
 from datetime import timedelta
 from django.utils import timezone
-from django.core.mail import send_mail
+from apps.common.tasks import send_plain_email
 from django.conf import settings as django_settings
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
 from .serializers import (
@@ -1859,7 +1859,7 @@ def _create_and_send_otp(user, purpose: str) -> None:
     label = labels.get(purpose, 'Vérification')
     from_email = getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'BelivaY <noreply@belivay.com>')
  
-    send_mail(
+    send_plain_email.delay(
         subject=f'[BelivaY] Code de vérification — {label}',
         message=(
             f'Bonjour {user.first_name or user.username},\n\n'

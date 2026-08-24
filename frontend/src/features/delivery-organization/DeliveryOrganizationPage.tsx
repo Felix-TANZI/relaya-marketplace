@@ -1836,9 +1836,12 @@ export default function DeliveryOrganizationPage() {
         <section className="min-w-0 flex-1">
           <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
-                <h1 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h1>
+              <div className="flex items-center gap-3">
+                <img src="/belivay-logo-delivery-org.png" alt="BelivaY" className="h-9 w-auto object-contain lg:hidden" />
+                <div>
+                  <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
+                  <h1 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h1>
+                </div>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
                 <div className="relative hidden sm:block">

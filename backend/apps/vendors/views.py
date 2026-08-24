@@ -32,7 +32,7 @@ from .serializers import (
     ShopModificationRequestSerializer, ShopModificationDocumentSerializer,
     RequiredDocumentTypeSerializer, SubscriptionPlanSerializer,
 )
-from django.core.mail import send_mail
+from apps.common.tasks import send_plain_email
 from django.conf import settings as django_settings
 from .serializers import (
     VendorProfileSerializer, 
@@ -6042,7 +6042,7 @@ def vendor_mod_request_create(request):
  
         # Notification email au vendeur
         try:
-            send_mail(
+            send_plain_email.delay(
                 subject=f'[BelivaY] Demande de modification #{mod_request.id} reçue',
                 message=(
                     f'Bonjour {profile.business_name},\n\n'
@@ -6108,7 +6108,7 @@ def vendor_mod_request_upload_docs(request, request_id):
  
         # Notification email
         try:
-            send_mail(
+            send_plain_email.delay(
                 subject=f'[BelivaY] Documents ajoutés — Demande #{mod_request.id}',
                 message=(
                     f'Bonjour {profile.business_name},\n\n'
@@ -6615,7 +6615,7 @@ def vendor_trial_activate(request):
  
         # Notification email
         try:
-            send_mail(
+            send_plain_email.delay(
                 subject=f'[BelivaY] Essai gratuit {plan.name} activé !',
                 message=(
                     f'Bonjour {profile.business_name},\n\n'

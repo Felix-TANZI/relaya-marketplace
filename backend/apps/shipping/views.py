@@ -36,7 +36,7 @@ from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, Shipm
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
 from apps.accounts.models import TrustScoreProfile
-from apps.accounts.trust_score import calculate_trust_score, trust_score_payload
+from apps.accounts.trust_score import calculate_trust_score, get_trust_score_profile, trust_score_payload
 from apps.vendors.models import VendorLocation, VendorProfile
 from apps.orders.models import Dispute, DisputeMessage, Order
 
@@ -502,7 +502,7 @@ class CourierDashboardView(generics.GenericAPIView):
             courier_delivered = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.DELIVERED]
             courier_failed = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.FAILED]
             total_completed = len(courier_delivered) + len(courier_failed)
-            trust = calculate_trust_score(profile.user, TrustScoreProfile.Role.COURIER)
+            trust = get_trust_score_profile(profile.user, TrustScoreProfile.Role.COURIER)
             score = round(float(trust.score))
             leaderboard.append(
                 {

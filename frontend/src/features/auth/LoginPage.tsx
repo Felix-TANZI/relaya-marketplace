@@ -107,6 +107,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [secureMode, setSecureMode] = useState(isDedicatedPortal);
   const [loading, setLoading] = useState(false);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [twoFA, setTwoFA] = useState<{ userId: number; email: string } | null>(
     loginState?.googleTwoFA ?? null,
@@ -357,7 +358,7 @@ export default function LoginPage() {
                   )}
                 </button>
 
-                {portalRole === 'client' && (
+                {!googleUnavailable && (
                   <>
                     <div className="relative flex items-center py-1">
                       <div className="h-px flex-1 bg-white/45" />
@@ -371,6 +372,7 @@ export default function LoginPage() {
                       disabled={loading}
                       label="signin_with"
                       locale={String(i18n.language || 'fr').split('-')[0]}
+                      onUnavailable={() => setGoogleUnavailable(true)}
                     />
                   </>
                 )}

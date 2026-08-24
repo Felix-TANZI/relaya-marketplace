@@ -37,6 +37,34 @@ services:
       timeout: 3s
       retries: 20
 
+  # Teste le 22/08/2026 : a cette echelle (9 workers gunicorn synchrones, une
+  # seule instance), le brancher DEGRADE les performances (connexion neuve +
+  # authentification a chaque requete, pool trop petit sous charge) par
+  # rapport a une connexion directe et persistante vers Postgres. Il reste
+  # defini ici, pret a etre branche (POSTGRES_HOST=pgbouncer, PORT=6432,
+  # DB_CONN_MAX_AGE=0) le jour ou plusieurs instances/replicas du backend
+  # tournent en parallele et risquent d'epuiser max_connections a elles
+  # seules — pas avant.
+  pgbouncer:
+    image: bitnamilegacy/pgbouncer:1.24.1-debian-12-r10
+    container_name: relaya_pgbouncer
+    environment:
+      POSTGRESQL_HOST: postgres
+      POSTGRESQL_PORT: "5432"
+      POSTGRESQL_USERNAME: ${POSTGRES_USER}
+      POSTGRESQL_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRESQL_DATABASE: ${POSTGRES_DB}
+      PGBOUNCER_DATABASE: ${POSTGRES_DB}
+      PGBOUNCER_PORT: "6432"
+      PGBOUNCER_POOL_MODE: transaction
+      PGBOUNCER_MAX_CLIENT_CONN: "1000"
+      PGBOUNCER_DEFAULT_POOL_SIZE: "20"
+    ports:
+      - "6432:6432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   backend:
     build:
       context: ./backend
@@ -56,6 +84,24 @@ services:
     command: >
       sh -c "python -m pip install -r requirements.txt &&
              python manage.py runserver 0.0.0.0:8000"
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: relaya_celery_worker
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    command: >
+      sh -c "python -m pip install -r requirements.txt &&
+             celery -A relaya worker --loglevel=info"
 
   frontend-client:
     <<: *frontend-common

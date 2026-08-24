@@ -212,6 +212,26 @@ def _tier_change_allowed(current: str, target: str, score: float) -> bool:
     return score >= threshold if target in [TrustScoreProfile.Tier.CONFIRMED, TrustScoreProfile.Tier.GOLD] else score < threshold
 
 
+def get_trust_score_profile(user, role: str) -> TrustScoreProfile:
+    """
+    Lecture rapide, sans verrou ni recalcul, du score deja stocke.
+
+    A utiliser pour CLASSER ou FILTRER des candidats (ex. choisir un livreur
+    parmi plusieurs disponibles) — jamais pour afficher un score cense etre
+    a jour a la seconde pres. `calculate_trust_score` reste la fonction a
+    appeler pour recalculer reellement un score suite a un evenement qui le
+    concerne (livraison terminee, litige tranche, veto...).
+
+    Avant cette fonction, `choose_courier_for_order` appelait
+    `calculate_trust_score` — verrou + recalcul complet + ecriture SQL — une
+    fois PAR livreur candidat, a CHAQUE commande passee par n'importe quel
+    client. Sous charge, ces verrous sur les memes lignes de livreurs
+    populaires serialisaient les commandes entre elles.
+    """
+    profile, _ = TrustScoreProfile.objects.get_or_create(user=user, role=role)
+    return profile
+
+
 @transaction.atomic
 def calculate_trust_score(user, role: str) -> TrustScoreProfile:
     profile, _ = TrustScoreProfile.objects.select_for_update().get_or_create(user=user, role=role)

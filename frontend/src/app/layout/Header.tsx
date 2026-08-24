@@ -275,7 +275,7 @@ export default function Header() {
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-8 w-auto object-contain max-[380px]:h-7 sm:h-10"
+              className="h-10 w-auto object-contain max-[380px]:h-9 sm:h-11"
             />
           </Link>
 

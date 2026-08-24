@@ -3,7 +3,7 @@ import unicodedata
 from django.db.models import Count, Q
 
 from apps.accounts.models import CourierProfile, DeliveryOrganizationProfile, TrustScoreProfile
-from apps.accounts.trust_score import calculate_trust_score
+from apps.accounts.trust_score import get_trust_score_profile
 from apps.orders.models import Order
 from .models import Shipment, ShipmentEvent
 
@@ -101,7 +101,7 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
 
     value_eligible = []
     for courier in available:
-        trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
+        trust = get_trust_score_profile(courier.user, TrustScoreProfile.Role.COURIER)
         cap = trust.parcel_value_cap_xaf
         if cap is None and not courier.delivery_organization.transport_insurance_verified:
             cap = 250000

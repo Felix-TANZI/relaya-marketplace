@@ -40,3 +40,6 @@ pytest-django==4.11.1
 
 # Chiffrement des donnees sensibles (numeros Mobile Money)
 cryptography>=42.0,<47.0
+
+# Taches asynchrones (emails, etc.) hors du cycle requete/reponse
+celery>=5.3,<6.0

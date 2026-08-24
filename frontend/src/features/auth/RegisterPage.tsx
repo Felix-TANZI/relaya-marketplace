@@ -16,6 +16,7 @@ export default function RegisterPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -384,18 +385,23 @@ export default function RegisterPage() {
                 )}
               </button>
 
-              <div className="flex items-center gap-3 pt-1">
-                <div className="h-px flex-1 bg-white/40" />
-                <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">ou</span>
-                <div className="h-px flex-1 bg-white/40" />
-              </div>
+              {!googleUnavailable && (
+                <>
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="h-px flex-1 bg-white/40" />
+                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">ou</span>
+                    <div className="h-px flex-1 bg-white/40" />
+                  </div>
 
-              <GoogleAuthButton
-                onCredential={handleGoogleRegister}
-                disabled={loading}
-                label="signup_with"
-                locale={String(i18n.language || 'fr').split('-')[0]}
-              />
+                  <GoogleAuthButton
+                    onCredential={handleGoogleRegister}
+                    disabled={loading}
+                    label="signup_with"
+                    locale={String(i18n.language || 'fr').split('-')[0]}
+                    onUnavailable={() => setGoogleUnavailable(true)}
+                  />
+                </>
+              )}
             </form>
 
             {/* Security Features */}

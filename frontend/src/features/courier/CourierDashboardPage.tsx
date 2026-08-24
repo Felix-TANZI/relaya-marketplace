@@ -1,6 +1,8 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
+import { BackgroundGeolocation } from "@/lib/backgroundGeolocation";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
 import {
   AlertTriangle,
@@ -150,6 +152,24 @@ function statusTone(status: string) {
   }
 }
 
+function haversineDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const earthRadiusM = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatElapsedMinutes(sinceMs: number) {
+  const minutes = Math.floor((Date.now() - sinceMs) / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes === 1) return "il y a 1 min";
+  return `il y a ${minutes} min`;
+}
+
 function applyLocalAction(
   shipment: CourierShipment,
   action: CourierShipmentAction,
@@ -288,7 +308,13 @@ export default function CourierDashboardPage() {
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
   const [disputeFeedback, setDisputeFeedback] = useState("");
   const [trackingFeedback, setTrackingFeedback] = useState("");
+  const [gpsPermissionDenied, setGpsPermissionDenied] = useState(false);
+  const [lastLocationAt, setLastLocationAt] = useState<number | null>(null);
   const lastLocationPublishRef = useRef(0);
+  const lastKnownPositionRef = useRef<{ lat: number; lng: number; t: number } | null>(null);
+  const gpsRetryTimeoutRef = useRef<number | null>(null);
+  const gpsRetryDelayRef = useRef(10000);
+  const [gpsRetryNonce, setGpsRetryNonce] = useState(0);
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -410,44 +436,185 @@ export default function CourierDashboardPage() {
   useEffect(() => {
     if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
     if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
-    if (!("geolocation" in navigator)) {
-      setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
-      return;
+
+    const MAX_ACCURACY_M = 100;
+    const MAX_PLAUSIBLE_SPEED_MPS = 60; // ~216 km/h : au-dela, on suppose un saut GPS aberrant
+
+    let cancelled = false;
+    let webWatchId: number | null = null;
+    let nativeWatcherId: string | null = null;
+    gpsRetryDelayRef.current = 10000;
+    setGpsPermissionDenied(false);
+
+    const isPlausibleFix = (lat: number, lng: number, accuracy: number | null, timestamp: number) => {
+      if (accuracy != null && accuracy > MAX_ACCURACY_M) return false;
+      const previous = lastKnownPositionRef.current;
+      if (previous) {
+        const elapsedS = (timestamp - previous.t) / 1000;
+        if (elapsedS > 0) {
+          const distanceM = haversineDistanceMeters(previous.lat, previous.lng, lat, lng);
+          if (distanceM / elapsedS > MAX_PLAUSIBLE_SPEED_MPS) return false;
+        }
+      }
+      return true;
+    };
+
+    const publishFix = (fix: {
+      latitude: number;
+      longitude: number;
+      accuracy: number | null;
+      speed: number | null;
+      heading: number | null;
+      timestamp: number;
+    }) => {
+      const now = Date.now();
+      if (now - lastLocationPublishRef.current < 5000) return;
+      if (!isPlausibleFix(fix.latitude, fix.longitude, fix.accuracy, fix.timestamp)) return;
+      lastLocationPublishRef.current = now;
+      lastKnownPositionRef.current = { lat: fix.latitude, lng: fix.longitude, t: fix.timestamp };
+      gpsRetryDelayRef.current = 10000;
+
+      courierApi.publishLocation(selectedShipment.id, {
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy_m: fix.accuracy,
+        speed_mps: fix.speed,
+        heading_deg: fix.heading,
+        source: "DEVICE",
+        captured_at: new Date(fix.timestamp).toISOString(),
+      }).then((location) => {
+        setLastLocationAt(Date.now());
+        setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
+        setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
+          ? {
+              ...shipment,
+              latest_location: location,
+              location_history: [...shipment.location_history, location].slice(-100),
+            }
+          : shipment));
+      }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS. Nouvelle tentative en cours..."));
+    };
+
+    const scheduleWebRetry = () => {
+      if (cancelled) return;
+      const delay = gpsRetryDelayRef.current;
+      gpsRetryTimeoutRef.current = window.setTimeout(() => {
+        if (cancelled) return;
+        gpsRetryDelayRef.current = Math.min(delay * 2, 40000);
+        startWebWatch();
+      }, delay);
+    };
+
+    const startWebWatch = () => {
+      if (!("geolocation" in navigator)) {
+        setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
+        return;
+      }
+      webWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          publishFix({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            speed: position.coords.speed,
+            heading: position.coords.heading,
+            timestamp: position.timestamp,
+          });
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            setGpsPermissionDenied(true);
+            setTrackingFeedback("Autorisez la localisation dans le navigateur pour démarrer le suivi.");
+            return;
+          }
+          setTrackingFeedback("Position GPS momentanément indisponible. Nouvelle tentative dans quelques secondes...");
+          if (webWatchId != null) {
+            navigator.geolocation.clearWatch(webWatchId);
+            webWatchId = null;
+          }
+          scheduleWebRetry();
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+      );
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      BackgroundGeolocation.addWatcher(
+        {
+          backgroundTitle: "BelivaY Livreur",
+          backgroundMessage: "Le suivi de votre position reste actif pour cette course.",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 10,
+        },
+        (location, error) => {
+          if (cancelled) return;
+          if (error) {
+            if (error.code === "NOT_AUTHORIZED") {
+              setGpsPermissionDenied(true);
+              setTrackingFeedback("Autorisez la localisation en arrière-plan dans les réglages de l'application.");
+              return;
+            }
+            setTrackingFeedback("Position GPS momentanément indisponible.");
+            return;
+          }
+          if (!location) return;
+          publishFix({
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            speed: location.speed,
+            heading: location.bearing,
+            timestamp: location.time ?? Date.now(),
+          });
+        },
+      ).then((id) => {
+        if (cancelled) {
+          BackgroundGeolocation.removeWatcher({ id }).catch(() => {});
+          return;
+        }
+        nativeWatcherId = id;
+      }).catch(() => setTrackingFeedback("Impossible de démarrer le suivi GPS natif."));
+    } else {
+      startWebWatch();
     }
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const now = Date.now();
-        if (now - lastLocationPublishRef.current < 5000) return;
-        lastLocationPublishRef.current = now;
-        courierApi.publishLocation(selectedShipment.id, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy_m: position.coords.accuracy,
-          speed_mps: position.coords.speed,
-          heading_deg: position.coords.heading,
-          source: "DEVICE",
-          captured_at: new Date(position.timestamp).toISOString(),
-        }).then((location) => {
-          setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
-          setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
-            ? {
-                ...shipment,
-                latest_location: location,
-                location_history: [...shipment.location_history, location].slice(-100),
-              }
-            : shipment));
-        }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS."));
-      },
-      (error) => setTrackingFeedback(
-        error.code === error.PERMISSION_DENIED
-          ? "Autorisez la localisation dans le navigateur pour démarrer le suivi."
-          : "Position GPS momentanément indisponible.",
-      ),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
-    );
+    return () => {
+      cancelled = true;
+      if (gpsRetryTimeoutRef.current != null) window.clearTimeout(gpsRetryTimeoutRef.current);
+      if (webWatchId != null) navigator.geolocation.clearWatch(webWatchId);
+      if (nativeWatcherId != null) BackgroundGeolocation.removeWatcher({ id: nativeWatcherId }).catch(() => {});
+    };
+  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status, gpsRetryNonce]);
 
-    return () => navigator.geolocation.clearWatch(watchId);
+  useEffect(() => {
+    if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
+    if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
+    if (Capacitor.isNativePlatform() || !("wakeLock" in navigator)) return;
+
+    let cancelled = false;
+    let sentinel: { release: () => Promise<void> } | null = null;
+
+    const acquire = async () => {
+      try {
+        sentinel = await (navigator as unknown as { wakeLock: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock.request("screen");
+      } catch {
+        // Refus silencieux (batterie faible, onglet non visible, etc.)
+      }
+    };
+
+    acquire();
+
+    const reacquireOnVisible = () => {
+      if (document.visibilityState === "visible" && !cancelled) acquire();
+    };
+    document.addEventListener("visibilitychange", reacquireOnVisible);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", reacquireOnVisible);
+      sentinel?.release().catch(() => {});
+    };
   }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status]);
 
   useEffect(() => {
@@ -1516,11 +1683,35 @@ export default function CourierDashboardPage() {
               height={420}
             />
           </div>
+          {gpsPermissionDenied && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] font-semibold text-red-200">
+              <span>
+                {Capacitor.isNativePlatform()
+                  ? "Localisation refusée. Ouvrez les réglages de l'application pour l'autoriser (y compris en arrière-plan)."
+                  : "Localisation refusée par le navigateur. Autorisez-la dans les réglages du site, puis réessayez."}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setGpsPermissionDenied(false);
+                  setGpsRetryNonce((value) => value + 1);
+                }}
+                className="rounded-full border border-red-400/40 px-3 py-1 text-[11px] font-bold text-red-100 hover:bg-red-500/20"
+              >
+                J'ai autorisé, réessayer
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
             <span>{trackingFeedback || (mapShipment?.latest_location
               ? `Dernière position : ${new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR")}`
               : "Activez le GPS et le statut en ligne pour partager votre position.")}</span>
-            <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
+            <span className="flex items-center gap-3">
+              {lastLocationAt != null && (
+                <span className="text-white/60">{formatElapsedMinutes(lastLocationAt)}</span>
+              )}
+              <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
+            </span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
@@ -2217,11 +2408,11 @@ export default function CourierDashboardPage() {
 
       <header className={theme === "dark" ? "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4" : "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-200 bg-white px-3 shadow-[0_2px_22px_rgba(15,23,42,.10)] sm:gap-4 sm:px-4"}>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
+          <div className="flex h-10 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-11 sm:rounded-2xl sm:px-2">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-6 w-auto sm:h-7"
+              className="h-8 w-auto sm:h-9"
               style={{ filter: "brightness(0) saturate(100%) invert(63%) sepia(54%) saturate(673%) hue-rotate(104deg) brightness(93%) contrast(92%)" }}
             />
           </div>

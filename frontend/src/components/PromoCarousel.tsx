@@ -15,17 +15,16 @@ interface PromoCarouselProps {
   autoPlayMs?: number;
   /** Classes de hauteur du visuel — permet d'aligner le carrousel sur d'autres heros. */
   minHeightClass?: string;
+  /** Rayon des coins — « rounded-none » quand le carrousel remplit sa frame parente. */
+  roundedClass?: string;
 }
 
-<<<<<<< HEAD
-export default function PromoCarousel({ slides, autoPlayMs = 5000 }: PromoCarouselProps) {
-=======
 export default function PromoCarousel({
   slides,
   autoPlayMs = 5000,
   minHeightClass = "min-h-[180px]",
+  roundedClass = "rounded-2xl",
 }: PromoCarouselProps) {
->>>>>>> 378c713 (Update frontend)
   const [current, setCurrent] = useState(0);
   const total = slides.length;
 
@@ -41,7 +40,7 @@ export default function PromoCarousel({
   }, [next, autoPlayMs]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className={`relative overflow-hidden ${roundedClass}`}>
       {/* Track */}
       <div
         className="flex transition-transform duration-500 ease-out"
@@ -50,13 +49,8 @@ export default function PromoCarousel({
         {slides.map((slide, i) => (
           <div
             key={i}
-<<<<<<< HEAD
-            className="relative min-w-full cursor-pointer overflow-hidden sm:h-[300px]"
-            style={{ background: slide.bg, minHeight: 180 }}
-=======
             className={`relative min-w-full cursor-pointer overflow-hidden ${minHeightClass}`}
             style={{ background: slide.bg }}
->>>>>>> 378c713 (Update frontend)
             onClick={() => slide.action?.()}
           >
             {/* Overlay gradient */}

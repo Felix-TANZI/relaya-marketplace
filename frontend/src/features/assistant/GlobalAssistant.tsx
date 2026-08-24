@@ -137,6 +137,13 @@ export default function GlobalAssistant() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
+  /* Ouverture depuis l'extérieur — bouton « Chat IA » de la page À propos. */
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener("belivay-open-assistant", open);
+    return () => window.removeEventListener("belivay-open-assistant", open);
+  }, []);
+
   const statusLabel = useMemo(
     () => `Je suis avec toi sur ${viewportLabel}`,
     [viewportLabel],

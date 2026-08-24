@@ -2,6 +2,7 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { listMyPayments } from '@/services/api/payments';
 import { useToast } from '@/context/ToastContext';
+import TopAdBar from '@/components/home/TopAdBar';
 import Header from './Header';
 import Footer from './Footer';
 import ClientTutorial from '@/features/tutorial/ClientTutorial';
@@ -90,8 +91,10 @@ export default function AppLayout() {
        neutralise Syne (font-display) pour une police unique. */
     <div className="belivay-client min-h-screen flex flex-col overflow-x-hidden bg-bg-light dark:bg-bg-dark transition-colors">
       <ScrollToTopOnRouteChange />
+      <TopAdBar />
       <Header />
-      <main className="flex-1 overflow-x-hidden pt-[132px] pb-16 lg:pb-0">
+      {/* 132 px de header + 32 px de ruban d'annonces, tous deux en position fixe. */}
+      <main className="flex-1 overflow-x-hidden pt-[164px] pb-16 lg:pb-0">
         <Outlet />
       </main>
       <Footer />

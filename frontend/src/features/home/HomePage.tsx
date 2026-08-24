@@ -6,7 +6,6 @@ import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import FlashPanel from "@/components/home/FlashPanel";
 import FlashPromoBanner from "@/components/home/FlashPromoBanner";
 import SectionBanner from "@/components/home/SectionBanner";
-import TopAdBar from "@/components/home/TopAdBar";
 import WhyBelivaySection from "@/components/home/WhyBelivaySection";
 import CategorySidebar from "@/components/home/CategorySidebar";
 import ProductCard from "@/components/product/ProductCard";
@@ -161,8 +160,8 @@ export default function HomePage() {
       label: "CEMAC · CMR · Gabon · RCA · Tchad",
       title: "Achetez en toute confiance au Cameroun & Afrique centrale",
       subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
-      bg: "linear-gradient(108deg, #E86010 0%, #F47920 40%, #FF8C35 70%, #FFA040 100%)",
-      labelBg: "rgba(255,255,255,0.2)",
+      bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
+      labelBg: "rgba(244,121,32,0.9)",
       action: () => navigate("/categorie/all"),
     },
     { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
@@ -217,8 +216,6 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
-      <TopAdBar />
-
       <div className="mx-auto max-w-[1760px] px-1 pb-12 pt-3 sm:px-2 lg:px-3">
         <div className="flex items-stretch gap-2 xl:gap-3">
           <CategorySidebar
@@ -233,8 +230,15 @@ export default function HomePage() {
 
           <main ref={mainRef} className="min-w-0 flex-1 space-y-3 sm:space-y-4">
             <section className="overflow-hidden rounded-[24px] border border-[#f1d2bb] bg-white shadow-[0_16px_42px_rgba(244,121,32,.08)] sm:rounded-[30px] dark:border-gray-800 dark:bg-gray-900">
-              <div className="p-3 sm:p-4">
-                <PromoCarousel slides={slides} autoPlayMs={5000} minHeightClass={HERO_MIN_HEIGHT} />
+              {/* Le visuel touche les bords haut, gauche et droite de la frame ;
+                  seule la marge basse subsiste, pour ne pas coller à « Explorer ». */}
+              <div className="pb-3 sm:pb-4">
+                <PromoCarousel
+                  slides={slides}
+                  autoPlayMs={5000}
+                  minHeightClass={HERO_MIN_HEIGHT}
+                  roundedClass="rounded-none"
+                />
               </div>
 
               <div className="border-y border-gray-100 bg-white px-3 py-2.5 sm:px-4 sm:py-3 dark:border-gray-800 dark:bg-gray-900">
@@ -479,6 +483,7 @@ export default function HomePage() {
 
                 <SectionBanner
                   to="/premium"
+                  className="-mx-3 sm:-mx-4"
                   ariaLabel="BelivaY Premium — cashback 5 % et livraison prioritaire, s'inscrire"
                   title="BelivaY Premium"
                   badge="Sponso"
@@ -486,8 +491,8 @@ export default function HomePage() {
                   icon={Gem}
                   iconAnimation="animate-gem-sparkle"
                   iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.7)]"
-                  gradient="linear-gradient(102deg,#5B21B6 0%,#6D28D9 28%,#7C3AED 55%,#9061F9 78%,#A78BFA 100%)"
-                  shadow="0 12px 32px rgba(124,58,237,.24)"
+                  gradient="linear-gradient(100deg,#3B0F76 0%,#4C1D95 20%,#5B21B6 44%,#7C3AED 72%,#9F7AEA 100%)"
+                  shadow="0 14px 36px rgba(76,29,149,.38)"
                   watermark={["PREMIUM", "CASHBACK", "BELIVAY", "VIP", "PRIORITE", "MEMBRE"]}
                 />
 
@@ -501,6 +506,7 @@ export default function HomePage() {
 
                 <SectionBanner
                   to="/selection-premium"
+                  className="-mx-3 sm:-mx-4"
                   ariaLabel="Sélection Premium — les produits les mieux notés"
                   title="Sélection Premium"
                   badge="Curated"
@@ -508,8 +514,8 @@ export default function HomePage() {
                   icon={Star}
                   iconAnimation="animate-gem-sparkle"
                   iconClassName="text-amber-100 drop-shadow-[0_0_6px_rgba(253,230,138,.8)]"
-                  gradient="linear-gradient(102deg,#92400E 0%,#B45309 26%,#D97706 55%,#F59E0B 80%,#FBBF24 100%)"
-                  shadow="0 12px 32px rgba(217,119,6,.24)"
+                  gradient="linear-gradient(100deg,#5C2C06 0%,#7C3E08 18%,#A85B0A 44%,#D97706 72%,#F5A623 92%,#FBBF24 100%)"
+                  shadow="0 14px 36px rgba(124,45,18,.36)"
                   watermark={["SELECTION", "TOP NOTE", "BELIVAY", "CURATED", "5 ETOILES", "ELITE"]}
                 />
 

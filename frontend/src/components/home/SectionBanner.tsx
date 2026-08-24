@@ -23,6 +23,8 @@ interface SectionBannerProps {
   ariaLabel: string;
   /** Teinte de l'ombre portée, pour rester dans la couleur du bandeau. */
   shadow: string;
+  /** Marges externes — sert à faire déborder le bandeau du carton qui le contient. */
+  className?: string;
 }
 
 /**
@@ -42,12 +44,13 @@ export default function SectionBanner({
   watermark,
   ariaLabel,
   shadow,
+  className = "",
 }: SectionBannerProps) {
   return (
     <Link
       to={to}
       aria-label={ariaLabel}
-      className="group relative block overflow-hidden rounded-[22px] transition-transform duration-200 hover:-translate-y-0.5 sm:rounded-[28px]"
+      className={`group relative block overflow-hidden rounded-[10px] ring-1 ring-inset ring-white/20 transition-transform duration-200 hover:-translate-y-0.5 sm:rounded-[12px] ${className}`}
       style={{ background: gradient, boxShadow: shadow }}
     >
       {/* Inscriptions en filigrane */}
@@ -66,9 +69,9 @@ export default function SectionBanner({
         className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 animate-promo-sweep bg-gradient-to-r from-transparent via-white/25 to-transparent"
       />
 
-      <div className="relative z-10 flex items-center gap-3 px-3.5 py-3 sm:px-5 sm:py-3.5">
-        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-white/15 backdrop-blur-sm">
-          <Icon size={22} className={`${iconAnimation} ${iconClassName}`} fill="currentColor" />
+      <div className="relative z-10 flex items-center gap-3 px-3.5 py-2.5 sm:px-5 sm:py-3">
+        <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/15 backdrop-blur-sm">
+          <Icon size={21} className={`${iconAnimation} ${iconClassName}`} fill="currentColor" />
         </span>
 
         <div className="min-w-0">

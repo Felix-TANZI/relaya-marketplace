@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import {
   ArrowLeft,
   Package,
@@ -525,15 +526,16 @@ export default function ProductFormPage() {
       : 0;
 
   // ── Photos ────────────────────────────────────────────────────────────────
-  const addPhotos = (files: FileList | null) => {
+  const addPhotos = async (files: FileList | null) => {
     if (!files) return;
     const rem = 6 - images.length - tempImgs.length;
     const toAdd = Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
       .slice(0, rem);
+    const compressed = await ensureImagesUnderLimit(toAdd);
     setTempImgs((prev) => [
       ...prev,
-      ...toAdd.map((f) => ({ file: f, preview: URL.createObjectURL(f) })),
+      ...compressed.map((f) => ({ file: f, preview: URL.createObjectURL(f) })),
     ]);
   };
   const rmTemp = (i: number) =>
@@ -543,15 +545,16 @@ export default function ProductFormPage() {
       n.splice(i, 1);
       return n;
     });
-  const addProPhotos = (files: FileList | null) => {
+  const addProPhotos = async (files: FileList | null) => {
     if (!files) return;
     const rem = 6 - proImgs.length;
     const toAdd = Array.from(files)
       .filter((f) => f.type.startsWith("image/"))
       .slice(0, rem);
+    const compressed = await ensureImagesUnderLimit(toAdd);
     setProImgs((prev) => [
       ...prev,
-      ...toAdd.map((f) => ({ file: f, preview: URL.createObjectURL(f) })),
+      ...compressed.map((f) => ({ file: f, preview: URL.createObjectURL(f) })),
     ]);
   };
   const rmProTemp = (i: number) =>
@@ -633,9 +636,13 @@ export default function ProductFormPage() {
     if (showFicheFields) {
       if (!title.trim()) e.title = "Le titre est requis.";
       if (!parentCatId) e.parentCatId = "Veuillez sélectionner une catégorie.";
-      if (shortDesc.trim().length < 10)
+      if (!shortDesc.trim())
+        e.shortDesc = "La description courte est requise.";
+      else if (!isEdit && shortDesc.trim().length < 10)
         e.shortDesc = "Description courte requise (min 10 caractères).";
-      if (description.trim().length < 20)
+      if (!description.trim())
+        e.description = "La description complète est requise.";
+      else if (!isEdit && description.trim().length < 20)
         e.description = "Description complète requise (min 20 caractères).";
       for (const attr of attributes) {
         if (attr.is_required && !attrVals[attr.id]?.length)
@@ -1345,7 +1352,7 @@ export default function ProductFormPage() {
                           className="hidden"
                           accept="image/*"
                           multiple
-                          onChange={(e) => addProPhotos(e.target.files)}
+                          onChange={(e) => void addProPhotos(e.target.files)}
                         />
                         <button
                           type="button"
@@ -1453,7 +1460,7 @@ export default function ProductFormPage() {
                     className="hidden"
                     accept="image/*"
                     multiple
-                    onChange={(e) => addPhotos(e.target.files)}
+                    onChange={(e) => void addPhotos(e.target.files)}
                   />
                   <button
                     type="button"

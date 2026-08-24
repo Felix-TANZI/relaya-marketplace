@@ -581,15 +581,19 @@ class MasterProduct(SoftDeleteModel):
     @property
     def buy_box_offer(self):
         """
-        Offre par défaut (PROVISOIRE) : la moins chère parmi les offres
-        actives ET approuvées. L'algorithme équitable viendra en Semaine 9.
+        Offre mise en avant BelivaY.
+        On ne retient que les offres actives et approuvées, puis on applique
+        le scoring marketplace (prix, stock, avis, ventes, litiges, fiabilité).
         """
-        return (
+        qs = (
             self.offers
             .filter(is_active=True, moderation_status=ModerationStatus.APPROVED)
-            .order_by("price_xaf")
-            .first()
+            .select_related("vendor", "inventory")
         )
+        from apps.catalog.scoring import ranked_offers
+
+        ranked = ranked_offers(qs)
+        return ranked[0] if ranked else None
     
     @property
     def variants_count(self) -> int:
@@ -1516,6 +1520,14 @@ class ProductReview(models.Model):
         'orders.Order', on_delete=models.SET_NULL, null=True, blank=True,
         related_name='product_reviews',
     )
+    order_item = models.OneToOneField(
+        'orders.OrderItem',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='review',
+        help_text="Article de commande vérifiant l'achat réel du produit noté.",
+    )
     rating   = models.IntegerField(
         validators=[MinValueValidator(1), MaxValueValidator(5)],
         help_text="Note de 1 à 5 étoiles",
@@ -1530,10 +1542,20 @@ class ProductReview(models.Model):
     class Meta:
         db_table       = 'product_reviews'
         ordering       = ['-created_at']
-        unique_together = [['product', 'user']]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['order_item'],
+                condition=models.Q(order_item__isnull=False),
+                name='uniq_review_per_order_item',
+            ),
+        ]
         indexes        = [
             models.Index(fields=['product', '-created_at']),
             models.Index(fields=['product', 'is_approved']),
+            models.Index(
+                fields=['user', '-created_at'],
+                name='product_rev_user_id_3f1601_idx',
+            ),
         ]
 
     def __str__(self):

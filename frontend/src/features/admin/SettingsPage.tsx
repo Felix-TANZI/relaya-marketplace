@@ -180,6 +180,7 @@ export default function SettingsPage() {
     maintenance_mode:            false,
     maintenance_message:         '',
     max_offers_displayed:        7,
+    evidence_retention_days:     8,
   });
 
   // Frais de livraison par ville
@@ -204,6 +205,7 @@ export default function SettingsPage() {
         maintenance_mode:            data.maintenance_mode,
         maintenance_message:         data.maintenance_message,
         max_offers_displayed:        data.max_offers_displayed,
+        evidence_retention_days:     data.evidence_retention_days,
       });
       setFees(data.delivery_fees ?? {});
       setDirty(false);
@@ -461,6 +463,24 @@ export default function SettingsPage() {
                   max="30"
                   value={form.default_delivery_days}
                   onChange={e => set('default_delivery_days', Number(e.target.value))}
+                  style={inp}
+                  onFocus={e => (e.target.style.borderColor = T.red)}
+                  onBlur={e  => (e.target.style.borderColor = T.inputBorder)}
+                />
+              </div>
+            </Section>
+
+            <Section title="Litiges & preuves" icon={AlertTriangle} T={T}>
+              <div>
+                <Label hint="Une preuve de livraison (photo, scan) sans litige ouvert est supprimée après ce délai. Une preuve liée à un litige actif reste gelée quel que soit ce réglage. Modifier cette valeur recalcule aussi le délai des preuves déjà en attente de purge.">
+                  Conservation des preuves colis (jours)
+                </Label>
+                <input
+                  type="number"
+                  min="1"
+                  max="3650"
+                  value={form.evidence_retention_days}
+                  onChange={e => set('evidence_retention_days', Number(e.target.value))}
                   style={inp}
                   onFocus={e => (e.target.style.borderColor = T.red)}
                   onBlur={e  => (e.target.style.borderColor = T.inputBorder)}

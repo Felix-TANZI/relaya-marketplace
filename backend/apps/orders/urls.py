@@ -11,6 +11,9 @@ from .views import (
     CancelOrderView,
     OrderDisputeListCreateView,
     DisputeMessageCreateView,
+    DisputeEvidenceRequestListView,
+    DisputeEvidenceRequestRespondView,
+    MyPendingEvidenceRequestsView,
 )
 
 urlpatterns = [
@@ -22,4 +25,7 @@ urlpatterns = [
     path("<int:id>/confirm-receipt/", ConfirmReceiptView.as_view(), name="order-confirm-receipt"),
     path("<int:id>/disputes/", OrderDisputeListCreateView.as_view(), name="order-disputes"),
     path("disputes/<int:dispute_id>/messages/", DisputeMessageCreateView.as_view(), name="order-dispute-messages"),
+    path("disputes/<int:dispute_id>/evidence-requests/", DisputeEvidenceRequestListView.as_view(), name="dispute-evidence-requests"),
+    path("evidence-requests/<int:request_id>/respond/", DisputeEvidenceRequestRespondView.as_view(), name="dispute-evidence-request-respond"),
+    path("evidence-requests/pending/", MyPendingEvidenceRequestsView.as_view(), name="my-pending-evidence-requests"),
 ]

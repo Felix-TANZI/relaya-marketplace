@@ -1,6 +1,7 @@
 // frontend/src/services/api/http.ts
 // Helper HTTP avec refresh token automatique
 import { clearStoredAuthTokens, getStoredAccessToken, getStoredRefreshToken } from "@/lib/authTokens";
+import { notifyOfflineFallback, readOfflineCache, writeOfflineCache } from "@/lib/offlineCache";
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
@@ -8,6 +9,13 @@ const API_BASE_URL = (import.meta.env.VITE_API_URL ?? 'http://localhost:8000').r
 
 interface RequestConfig extends RequestInit {
   headers?: Record<string, string>;
+}
+
+class HttpResponseError extends Error {
+  constructor(message: string, readonly status: number) {
+    super(message);
+    this.name = "HttpResponseError";
+  }
 }
 
 function isTransientNetworkError(error: unknown) {
@@ -148,19 +156,21 @@ export async function http<T>(
         });
 
         if (!retryResponse.ok) {
-          throw new Error(await responseErrorMessage(retryResponse));
+          throw new HttpResponseError(await responseErrorMessage(retryResponse), retryResponse.status);
         }
 
         if (retryResponse.status === 204) {
           return undefined as T;
         }
 
-        return retryResponse.json();
+        const retryData = await retryResponse.json() as T;
+        if ((config.method || "GET").toUpperCase() === "GET") writeOfflineCache(url, retryData);
+        return retryData;
       }
     }
 
     if (!response.ok) {
-      throw new Error(await responseErrorMessage(response));
+      throw new HttpResponseError(await responseErrorMessage(response), response.status);
     }
 
     // Handle 204 No Content
@@ -168,9 +178,22 @@ export async function http<T>(
       return undefined as T;
     }
 
-    return response.json();
+    const data = await response.json() as T;
+    if ((config.method || "GET").toUpperCase() === "GET") writeOfflineCache(url, data);
+    return data;
   } catch (error) {
-    if (isTransientNetworkError(error)) {
+    const isGet = (config.method || "GET").toUpperCase() === "GET";
+    const canUseCache = isTransientNetworkError(error)
+      || !navigator.onLine
+      || (error instanceof HttpResponseError && error.status >= 500);
+    if (isGet && canUseCache) {
+      const cached = readOfflineCache<T>(url);
+      if (cached !== null) {
+        notifyOfflineFallback();
+        return cached;
+      }
+    }
+    if (isTransientNetworkError(error) || !navigator.onLine) {
       throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
     }
     throw error;

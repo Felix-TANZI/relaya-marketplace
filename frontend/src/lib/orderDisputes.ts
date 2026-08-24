@@ -1,8 +1,8 @@
 import type { Order } from "@/types/order";
 
 const STORAGE_KEY = "belivay_order_disputes";
-const DISPUTE_WINDOW_MS = 24 * 60 * 60 * 1000;
-const DISPUTABLE_STATUSES = ["DELIVERED", "BUYER_CONFIRMED"] as const;
+const DISPUTE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+const DISPUTABLE_STATUSES = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"] as const;
 
 export interface StoredDisputeMessage {
   id: string;
@@ -78,7 +78,7 @@ export function getDisputeEligibility(order: Order | null) {
       eligible: false,
       expiresAt,
       remainingMs,
-      message: "Le délai de 24h après réception est dépassé pour cette commande.",
+      message: "Le délai de 7 jours après réception est dépassé pour cette commande.",
     };
   }
 
@@ -92,8 +92,10 @@ export function getDisputeEligibility(order: Order | null) {
 
 export function formatRemainingDisputeTime(remainingMs: number) {
   const totalMinutes = Math.max(0, Math.floor(remainingMs / (60 * 1000)));
+  const days = Math.floor(totalMinutes / (24 * 60));
   const hours = Math.floor(totalMinutes / 60);
   const minutes = totalMinutes % 60;
+  if (days > 0) return `${days}j ${hours % 24}h`;
   return `${hours}h ${String(minutes).padStart(2, "0")} min`;
 }
 

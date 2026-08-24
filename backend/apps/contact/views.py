@@ -67,12 +67,12 @@ def contact_message_create(request):
         user_agent=request.META.get('HTTP_USER_AGENT', '')[:500]
     )
     
-    # Envoyer les emails (support + confirmation)
+    # Envoyer les emails (support + confirmation) en arriere-plan via Celery
     try:
-        send_contact_emails(contact_message)
+        send_contact_emails.delay(contact_message.id)
         email_sent = True
     except Exception as e:
-        print(f"Erreur envoi email: {e}")
+        print(f"Erreur mise en file de l'email: {e}")
         email_sent = False
     
     return Response(

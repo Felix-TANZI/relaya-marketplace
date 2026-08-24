@@ -18,12 +18,28 @@ django-cors-headers>=4.3,<5.0
 
 # JWT Authentication
 djangorestframework-simplejwt>=5.3,<6.0
+google-auth>=2.38,<3.0
+requests>=2.31,<3.0
 
 # Filtering
 django-filter>=24.0,<25.0
 
 # Image Processing
 Pillow>=10.0.0,<11.0
+django-storages[s3]>=1.14,<2.0
+boto3>=1.35,<2.0
 
 # Production Server
 gunicorn==21.2.0
+
+# Cache (Redis)
+redis>=5.0,<6.0
+
+# Development
+pytest-django==4.11.1
+
+# Chiffrement des donnees sensibles (numeros Mobile Money)
+cryptography>=42.0,<47.0
+
+# Taches asynchrones (emails, etc.) hors du cycle requete/reponse
+celery>=5.3,<6.0

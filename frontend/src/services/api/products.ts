@@ -60,11 +60,27 @@ export interface Product {
   master_slug?: string | null;
 }
 
+/**
+ * Nature des résultats renvoyés par la recherche tolérante du backend.
+ *   exact   — correspondance franche
+ *   loose   — une partie des mots seulement
+ *   fuzzy   — orthographe rattrapée
+ *   related — rien de correspondant, rayon voisin proposé
+ *   empty   — aucune piste
+ */
+export interface SearchMeta {
+  query: string;
+  mode: 'exact' | 'loose' | 'fuzzy' | 'related' | 'empty';
+  is_fallback: boolean;
+  suggested_category: { id: number; name: string; slug: string } | null;
+}
+
 export interface ProductListResponse {
   count: number;
   next: string | null;
   previous: string | null;
   results: Product[];
+  search_meta?: SearchMeta | null;
 }
 
 export interface CategoryListResponse {
@@ -153,6 +169,9 @@ export interface MasterListParams {
 
 export interface ProductReview {
   id: number;
+  order?: number | null;
+  order_item?: number | null;
+  order_item_title?: string | null;
   user_name: string;
   user_first_name?: string;
   rating: number;
@@ -214,4 +233,10 @@ export const productsApi = {
 
   getReviews: async (productId: number): Promise<ProductReview[]> =>
     api.get<ProductReview[]>(`/catalog/products/${productId}/reviews/`),
+
+  addReview: async (
+    productId: number,
+    data: { order_item: number; rating: number; title?: string; comment?: string }
+  ): Promise<ProductReview> =>
+    api.post<ProductReview>(`/catalog/products/${productId}/add_review/`, data),
 };

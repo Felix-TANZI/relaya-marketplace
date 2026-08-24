@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Package, Heart, UserCircle, Tag } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV_ITEMS = [
   { icon: Home, labelKey: "mobile_nav.home", to: "/" },
@@ -13,11 +14,13 @@ const NAV_ITEMS = [
 export default function MobileBottomNav() {
   const { t } = useTranslation();
   const location = useLocation();
+  const { user } = useAuth();
+  const navItems = user ? NAV_ITEMS : NAV_ITEMS.filter((item) => item.to !== "/profile");
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-gray-200 bg-white/95 backdrop-blur-lg dark:border-gray-800 dark:bg-gray-900/95 lg:hidden">
       <div className="flex items-center justify-around px-1 py-1">
-        {NAV_ITEMS.map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = item.to === "/" ? location.pathname === "/" : location.pathname.startsWith(item.to);
           return (

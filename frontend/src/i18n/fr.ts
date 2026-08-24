@@ -97,7 +97,7 @@
     slide_hero_subtitle: 'MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j',
     slide_women_label: 'Mode Femme',
     slide_women_title: 'Robes · Pagnes · Wax Premium',
-    slide_women_subtitle: '3 400 produits · Vendeurs certifiés BelivaY',
+    slide_women_subtitle: 'Sélection mode · Vendeurs certifiés BelivaY',
     slide_tech_label: 'Électronique',
     slide_tech_title: 'Smartphones & Accessoires',
     slide_tech_subtitle: 'Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or',
@@ -356,7 +356,7 @@
       return_question: 'Puis-je retourner un produit ?',
       return_answer: 'Oui, vous disposez de 10 jours pour retourner un produit non conforme.',
       payment_question: 'Quels modes de paiement acceptez-vous ?',
-      payment_answer: 'Nous acceptons Mobile Money (MTN, Orange), cartes bancaires et paiement à la livraison.',
+      payment_answer: 'Nous acceptons Mobile Money (MTN, Orange) et cartes bancaires.',
     },
     methods: {
       phone_title: 'Téléphone',
@@ -601,7 +601,7 @@
       },
       payment_methods: {
         question: 'Quels modes de paiement acceptez-vous ?',
-        answer: 'Nous acceptons MTN Money, Orange Money, cartes bancaires et paiement à la livraison.',
+        answer: 'Nous acceptons MTN Money, Orange Money et cartes bancaires.',
       },
       delivery_time: {
         question: 'Quel est le délai de livraison ?',
@@ -1139,7 +1139,14 @@
     nav_my_shop: 'Ma boutique',
     nav_certifications: 'Certifications',
     nav_plans: 'Plans & Tarifs',
-    nav_wallet: 'Portefeuille',
+    // « Portefeuille » suggere un solde disponible — exactement ce que le
+    // modele n'offre pas. BelivaY DOIT au partenaire, il ne detient pas un
+    // solde qu'il pourrait retirer quand il veut.
+    nav_wallet: 'Mon compte BelivaY',
+    nav_settlements: 'Mes règlements',
+    nav_pending_funds: 'Mes fonds en attente',
+    nav_escrow: 'Fonds en attente',
+    nav_adjustments: 'Mes ajustements',
     nav_settings: 'Paramètres',
     nav_shop: 'Ma boutique',
     nav_analytics_short: 'Analytiques',
@@ -1183,7 +1190,7 @@
     vendors_list:         'Tous les Vendeurs',
     vendors_map:          'Carte des Boutiques',
     vendors_kyc:          'KYC & Approbations',
-    vendors_withdrawals:  'Retraits',
+    vendors_withdrawals:  'Retraits (ancien système)',
     vendors_subscriptions:'Abonnements',
     vendors_certifications:'Certifications',
     vendors_modifications:'Modifications Boutique',
@@ -1209,6 +1216,21 @@
  
     // Finances
     section_finances:     'Finances',
+
+    // Module financier — encaissements, sequestres, versements
+    fin_center:           'Centre financier',
+    fin_analytics:        'Pilotage',
+    fin_payouts:          'Versements',
+    fin_refunds:          'Remboursements',
+    fin_escrow:           'Séquestres',
+    fin_settlements:      'Règlements',
+    fin_adjustments:      'Ajustements',
+    fin_intents:          'Paiements',
+    fin_reconciliation:   'Réconciliation',
+    fin_risk:             'Risque',
+    fin_payees:           'Bénéficiaires',
+    fin_scheduler:        'Ordonnanceur',
+
     finances:             'Finances & Commissions',
     account:              'Compte BelivaY',
     plans:                'Plans & Abonnements',

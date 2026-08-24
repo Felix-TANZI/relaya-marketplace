@@ -4,6 +4,7 @@
 
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { portalHomePath } from '@/config/portals';
 
 interface PublicRouteProps {
   children: React.ReactNode;
@@ -21,7 +22,7 @@ export default function PublicRoute({ children }: PublicRouteProps) {
   }
 
   if (isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to={portalHomePath} replace />;
   }
 
   return <>{children}</>;

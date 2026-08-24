@@ -19,6 +19,31 @@ services:
     networks:
       - relaya-network
 
+  # Teste le 22/08/2026 : a une seule instance backend (9 workers gunicorn
+  # synchrones), le brancher DEGRADE les performances par rapport a une
+  # connexion directe et persistante vers Postgres. Garde defini, pret a
+  # brancher (DATABASE_URL vers pgbouncer:6432, DB_CONN_MAX_AGE=0) le jour
+  # ou plusieurs replicas backend tournent en parallele et risquent
+  # d'epuiser max_connections a elles seules — pas avant.
+  pgbouncer:
+    image: bitnamilegacy/pgbouncer:1.24.1-debian-12-r10
+    environment:
+      - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_PORT=5432
+      - POSTGRESQL_USERNAME=${POSTGRES_USER}
+      - POSTGRESQL_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRESQL_DATABASE=${POSTGRES_DB}
+      - PGBOUNCER_DATABASE=${POSTGRES_DB}
+      - PGBOUNCER_PORT=6432
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_MAX_CLIENT_CONN=1000
+      - PGBOUNCER_DEFAULT_POOL_SIZE=20
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
   backend:
     build:
       context: ./backend
@@ -34,8 +59,51 @@ services:
       - SECRET_KEY=${DJANGO_SECRET_KEY}
       - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
       - REDIS_URL=redis://redis:6379/0
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WEB_CONCURRENCY=${WEB_CONCURRENCY:-9}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS}
+      - USE_R2_STORAGE=${USE_R2_STORAGE:-0}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME:-}
+      - AWS_S3_ENDPOINT_URL=${AWS_S3_ENDPOINT_URL:-}
+      - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME:-auto}
+      - AWS_S3_ADDRESSING_STYLE=${AWS_S3_ADDRESSING_STYLE:-path}
+      - AWS_QUERYSTRING_EXPIRE=${AWS_QUERYSTRING_EXPIRE:-3600}
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env.prod
+    volumes:
+      - media_volume:/app/mediafiles
+    environment:
+      - DJANGO_SETTINGS_MODULE=relaya.settings.base
+      - DEBUG=False
+      - SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS}
+      - USE_R2_STORAGE=${USE_R2_STORAGE:-0}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - AWS_STORAGE_BUCKET_NAME=${AWS_STORAGE_BUCKET_NAME:-}
+      - AWS_S3_ENDPOINT_URL=${AWS_S3_ENDPOINT_URL:-}
+      - AWS_S3_REGION_NAME=${AWS_S3_REGION_NAME:-auto}
+      - AWS_S3_ADDRESSING_STYLE=${AWS_S3_ADDRESSING_STYLE:-path}
+      - AWS_QUERYSTRING_EXPIRE=${AWS_QUERYSTRING_EXPIRE:-3600}
+    command: celery -A relaya worker --loglevel=info --concurrency=4
     depends_on:
       - postgres
       - redis

@@ -23,9 +23,12 @@ __pycache__/
 # Fichiers générés ou contenant des données utilisateur
 *.sqlite3
 db.sqlite3
-media/          # photos avatars, produits, bannières, documents vendeur
-mediafiles/     # alias utilisé en prod
-staticfiles/    # fichiers static collectés par collectstatic
+# photos avatars, produits, bannières, documents vendeur
+media/
+# alias utilisé en prod
+mediafiles/
+# fichiers static collectés par collectstatic
+staticfiles/
 
 
 #  Environnements virtuels Python
@@ -33,6 +36,10 @@ staticfiles/    # fichiers static collectés par collectstatic
 venv/
 env/
 ENV/
+
+# Modeles IA locaux (l'assistant utilise OpenRouter)
+model/
+*.gguf
 
 
 #  Node.js / Frontend
@@ -69,10 +76,17 @@ certbot/
 docker-compose.override.yml
 
 
+#  Documents & captures d'écran
+# Deplaces vers ~/Bureau/rapport-belivay, hors du depot
+docs/
+assets/
+
+
 #  Sauvegardes base de données
 *.sql
 *.dump
 *.bak
+backups/
 
 
 #  Fichiers temporaires──

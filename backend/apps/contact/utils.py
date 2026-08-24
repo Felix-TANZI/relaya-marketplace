@@ -1,19 +1,27 @@
 # backend/apps/contact/utils.py
 # Utilitaires pour l'envoi d'emails de contact
 
+from celery import shared_task
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.conf import settings
 from apps.orders.models import PlatformSettings
 
 
-def send_contact_emails(contact_message):
+@shared_task(bind=True, max_retries=3, default_retry_delay=30)
+def send_contact_emails(self, contact_message_id):
     """
-    Envoyer les emails de contact :
+    Envoyer les emails de contact (en arriere-plan, via Celery) :
     1. Email au support
     2. Email de confirmation au client
     """
-    
+    from .models import ContactMessage
+
+    try:
+        contact_message = ContactMessage.objects.get(id=contact_message_id)
+    except ContactMessage.DoesNotExist:
+        return
+
     # Récupérer l'email du support depuis les settings de la plateforme
     try:
         platform_settings = PlatformSettings.get_settings()

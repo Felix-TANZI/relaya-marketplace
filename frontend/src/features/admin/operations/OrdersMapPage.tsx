@@ -12,6 +12,7 @@ import {
   ArrowLeft, MapPin, Phone, User, ExternalLink,
 } from 'lucide-react';
 import { adminApi, type AdminOrder } from '@/services/api/admin';
+import { mapAttribution, mapTileUrl } from '@/config/maps';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 
@@ -309,8 +310,8 @@ export default function OrdersMapPage() {
             style={{ height: '100%', width: '100%' }}
             zoomControl={true}>
             <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>'
+              url={mapTileUrl}
+              attribution={mapAttribution}
             />
             {allPositions.length > 0 && <FitBounds positions={allPositions} />}
             {cityGroups.map(group => {

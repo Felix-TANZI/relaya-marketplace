@@ -4,19 +4,23 @@ import { Link, useNavigate } from 'react-router-dom';
 import { User, Lock, Mail, Eye, EyeOff, CheckCircle, ArrowRight } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
+import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import { PhoneInput } from '@/components/ui/PhoneInput';
 
 export default function RegisterPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, googleLogin } = useAuth();
   const { showToast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [passwordStrength, setPasswordStrength] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    phone: '',
     password: '',
     password2: '',
     first_name: '',
@@ -44,6 +48,7 @@ export default function RegisterPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.username.trim()) newErrors.username = 'Nom d\'utilisateur requis';
     if (!formData.email.includes('@')) newErrors.email = 'Email valide requis';
+    if (!/^\+2376\d{8}$/.test(formData.phone)) newErrors.phone = 'Numéro mobile camerounais valide requis';
     if (formData.password.length < 8) newErrors.password = 'Minimum 8 caractères';
     if (formData.password !== formData.password2) {
       newErrors.password2 = 'Les mots de passe ne correspondent pas';
@@ -63,7 +68,15 @@ export default function RegisterPage() {
       navigate('/');
     } catch (error) {
       console.error('Register error:', error);
-      showToast(t('auth.register_error'), 'error');
+      const message = error instanceof Error ? error.message : t('auth.register_error');
+      const normalized = message.toLowerCase();
+      if (normalized.includes('email')) setErrors((current) => ({ ...current, email: message }));
+      else if (normalized.includes('numero') || normalized.includes('téléphone') || normalized.includes('telephone')) {
+        setErrors((current) => ({ ...current, phone: message }));
+      } else if (normalized.includes("nom d'utilisateur") || normalized.includes('username')) {
+        setErrors((current) => ({ ...current, username: message }));
+      }
+      showToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -73,6 +86,26 @@ export default function RegisterPage() {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
     if (errors[name]) setErrors({ ...errors, [name]: '' });
+  };
+
+  const handleGoogleRegister = async (credential: string) => {
+    setLoading(true);
+    try {
+      const result = await googleLogin(credential);
+      if (result.twoFactorRequired) {
+        showToast(`Un code de verification a ete envoye a ${result.email}`, 'success');
+        navigate('/login', {
+          state: { googleTwoFA: { userId: result.userId, email: result.email } },
+        });
+        return;
+      }
+      showToast(t('auth.register_success'), 'success');
+      navigate('/');
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Inscription Google impossible.', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const securityFeatures = t('auth.security_features', { returnObjects: true }) as string[];
@@ -189,6 +222,19 @@ export default function RegisterPage() {
                 </div>
                 {errors.email && <p className="text-red-600 text-sm font-semibold">{errors.email}</p>}
               </div>
+
+              <PhoneInput
+                value={formData.phone}
+                onChange={(phone) => {
+                  setFormData((current) => ({ ...current, phone }));
+                  if (errors.phone) setErrors((current) => ({ ...current, phone: '' }));
+                }}
+                label="Téléphone"
+                error={errors.phone}
+                helperText="Utilisé pour la livraison et pour retrouver votre compte."
+                disabled={loading}
+                required
+              />
 
               {/* First & Last Name */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -338,6 +384,24 @@ export default function RegisterPage() {
                   </>
                 )}
               </button>
+
+              {!googleUnavailable && (
+                <>
+                  <div className="flex items-center gap-3 pt-1">
+                    <div className="h-px flex-1 bg-white/40" />
+                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">ou</span>
+                    <div className="h-px flex-1 bg-white/40" />
+                  </div>
+
+                  <GoogleAuthButton
+                    onCredential={handleGoogleRegister}
+                    disabled={loading}
+                    label="signup_with"
+                    locale={String(i18n.language || 'fr').split('-')[0]}
+                    onUnavailable={() => setGoogleUnavailable(true)}
+                  />
+                </>
+              )}
             </form>
 
             {/* Security Features */}

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BelivaY</string>
+    <string name="title_activity_main">BelivaY</string>
+    <string name="package_name">com.belivay.client</string>
+    <string name="custom_url_scheme">com.belivay.client</string>
+</resources>

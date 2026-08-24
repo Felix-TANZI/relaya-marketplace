@@ -15,12 +15,17 @@ import random
 import string
 from datetime import timedelta
 from django.utils import timezone
-from django.core.mail import send_mail
+from apps.common.tasks import send_plain_email
 from django.conf import settings as django_settings
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
 from .serializers import (
+    BelivayTokenObtainPairSerializer,
     CourierApplicationSerializer,
     CourierProfileSerializer,
+    PayoutAccountCreateSerializer,
+    PayoutAccountSerializer,
+    PayoutAccountVerifySerializer,
+    PhoneValidationSerializer,
     UserProfileSerializer,
     UserProfileUpdateSerializer,
     AvatarUploadSerializer,
@@ -31,14 +36,18 @@ from .serializers import (
 )
 from drf_spectacular.utils import extend_schema
 from django.contrib.auth.models import User
+from django.contrib.auth.models import update_last_login
+from django.db import transaction
 from django.shortcuts import get_object_or_404
+from django.utils.text import slugify
 from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
-from .serializers import UserSerializer, RegisterSerializer
-from .models import CourierProfile, DeliveryOrganizationProfile, RewardAccount, UserCart, UserProfile, UserFavorite, UserNotification
-from apps.orders.models import Dispute
-from apps.shipping.models import Shipment
+from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
+from .models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from apps.common.phone import normalize_cameroon_phone
+from apps.orders.models import Dispute, DisputeMessage
+from apps.shipping.models import Shipment, ShipmentEvent
 
 
 logger = logging.getLogger(__name__)
@@ -53,6 +62,114 @@ def get_or_create_profile(user):
 @api_view(["GET"])
 def health(request):
     return Response({"status": "ok", "service": "auth"})
+
+
+def _available_google_username(email, subject):
+    local_part = email.split("@", 1)[0]
+    base = slugify(local_part).replace("-", "_")[:120] or f"google_{subject[-12:]}"
+    candidate = base
+    suffix = 1
+    while User.objects.filter(username=candidate).exists():
+        suffix += 1
+        candidate = f"{base[:140]}_{suffix}"
+    return candidate
+
+
+@extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Google")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def google_login(request):
+    """Valide un Google ID token puis ouvre une session client BelivaY."""
+    credential = str(request.data.get("credential", "")).strip()
+    client_id = django_settings.GOOGLE_CLIENT_ID
+    if not client_id:
+        return Response(
+            {"detail": "La connexion Google n'est pas configuree sur le serveur."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if not credential:
+        return Response({"detail": "Jeton Google requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from google.auth import exceptions as google_exceptions
+        from google.auth.transport import requests as google_requests
+        from google.oauth2 import id_token
+
+        identity = id_token.verify_oauth2_token(
+            credential,
+            google_requests.Request(),
+            client_id,
+        )
+    except google_exceptions.TransportError as exc:
+        logger.warning("Google identity service unavailable: %s", exc)
+        return Response(
+            {"detail": "Google est temporairement indisponible. Reessayez dans un instant."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    except (ValueError, TypeError) as exc:
+        logger.info("Google login rejected: %s", exc)
+        return Response({"detail": "Jeton Google invalide ou expire."}, status=status.HTTP_401_UNAUTHORIZED)
+
+    email = str(identity.get("email", "")).strip().lower()
+    subject = str(identity.get("sub", "")).strip()
+    if not email or not subject or not identity.get("email_verified"):
+        return Response(
+            {"detail": "Google n'a pas confirme cette adresse email."},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    matches = User.objects.filter(email__iexact=email)
+    if matches.count() > 1:
+        return Response(
+            {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    created = False
+    with transaction.atomic():
+        user = matches.first()
+        if user is None:
+            user = User(
+                username=_available_google_username(email, subject),
+                email=email,
+                first_name=str(identity.get("given_name", ""))[:150],
+                last_name=str(identity.get("family_name", ""))[:150],
+            )
+            user.set_unusable_password()
+            user.save()
+            created = True
+
+    if not user.is_active:
+        return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
+
+    profile = get_or_create_profile(user)
+    if profile.two_factor_enabled:
+        try:
+            _create_and_send_otp(user, "2FA_LOGIN")
+        except Exception as exc:
+            logger.exception("Google login 2FA delivery failed")
+            return Response(
+                {"detail": f"Erreur envoi code 2FA : {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response({
+            "2fa_required": True,
+            "user_id": user.id,
+            "email": user.email,
+            "created": created,
+        })
+
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    refresh = RefreshToken.for_user(user)
+    response = Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "created": created,
+    })
+    _register_session_from_response(response, user, request)
+    update_last_login(None, user)
+    return response
 
 
 @extend_schema(tags=["Auth"], summary="Register new user", request=RegisterSerializer, responses={201: UserSerializer})
@@ -116,6 +233,75 @@ class RewardAccountsView(APIView):
         if role in RewardAccount.Role.values:
             accounts = accounts.filter(role=role)
         return Response(RewardAccountSerializer(accounts, many=True).data)
+
+
+@extend_schema(tags=["Auth"], summary="Trust Score métier du compte connecté")
+class CurrentTrustScoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from .trust_score import calculate_trust_score, trust_score_payload
+
+        requested_role = str(request.query_params.get("role", "")).upper()
+        available_roles = []
+        if hasattr(request.user, "vendor_profile"):
+            available_roles.append(TrustScoreProfile.Role.VENDOR)
+        if hasattr(request.user, "courier_profile"):
+            available_roles.append(TrustScoreProfile.Role.COURIER)
+        if hasattr(request.user, "relay_point_profile"):
+            available_roles.append(TrustScoreProfile.Role.RELAY_POINT)
+        role = requested_role or (available_roles[0] if available_roles else "")
+        if role not in available_roles:
+            return Response({"detail": "Aucun Trust Score opérationnel pour ce rôle."}, status=status.HTTP_404_NOT_FOUND)
+        profile = calculate_trust_score(request.user, role)
+        return Response({"role": role, **trust_score_payload(profile)})
+
+
+@extend_schema(tags=["Auth"], summary="Valider et identifier un numero camerounais")
+class PhoneValidationView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PhoneValidationSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(normalize_cameroon_phone(serializer.validated_data["phone"]))
+
+
+@extend_schema(tags=["Payments"], summary="Lister ou ajouter un numero de versement")
+class PayoutAccountListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        accounts = PayoutAccount.objects.filter(user=request.user)
+        return Response(PayoutAccountSerializer(accounts, many=True).data)
+
+    def post(self, request):
+        serializer = PayoutAccountCreateSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        account = serializer.save()
+        data = PayoutAccountSerializer(account).data
+        if django_settings.DEBUG:
+            data["dev_code"] = getattr(account, "dev_code", None)
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+@extend_schema(tags=["Payments"], summary="Verifier le code d'un numero de versement")
+class PayoutAccountVerifyView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PayoutAccountVerifySerializer
+
+    def post(self, request, pk):
+        account = get_object_or_404(PayoutAccount, id=pk, user=request.user)
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        if not account.check_verification_code(serializer.validated_data["code"]):
+            return Response(
+                {"code": "Code invalide ou expire."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        account.mark_verified()
+        return Response(PayoutAccountSerializer(account).data)
 
 
 @extend_schema(tags=["Auth"], summary="Bootstrap admin user")
@@ -563,31 +749,64 @@ def admin_create_user(request):
     first_name = request.data.get("first_name", "").strip()
     last_name = request.data.get("last_name", "").strip()
     phone = request.data.get("phone", "").strip()
+    existing_user_id = request.data.get("existing_user_id")
+    existing_identifier = request.data.get("existing_identifier", "").strip()
 
-    missing = [field for field in ["role", "username", "password"] if not (request.data.get(field) or "").strip()]
+    target_user = None
+    if existing_user_id:
+        target_user = get_object_or_404(User, id=existing_user_id, is_active=True)
+    elif existing_identifier:
+        identifier_query = Q(username__iexact=existing_identifier)
+        if "@" in existing_identifier:
+            identifier_query |= Q(email__iexact=existing_identifier)
+        target_user = User.objects.filter(identifier_query, is_active=True).first()
+        if not target_user:
+            return Response({"detail": "Utilisateur existant introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+    missing = ["role"] if not role else []
+    if not target_user:
+        missing.extend([field for field in ["username", "password"] if not (request.data.get(field) or "").strip()])
     if role in {"vendor", "courier", "delivery_org", "relay_point"} and not phone:
         missing.append("phone")
     if role == "courier" and not request.data.get("delivery_organization_id"):
         missing.append("delivery_organization_id")
     if missing:
         return Response({"detail": f"Champs requis: {', '.join(missing)}"}, status=status.HTTP_400_BAD_REQUEST)
-    if User.objects.filter(username=username).exists():
-        return Response({"detail": "Ce nom d'utilisateur existe deja."}, status=status.HTTP_400_BAD_REQUEST)
-
-    user = User.objects.create_user(
-        username=username,
-        email=email,
-        password=password,
-        first_name=first_name,
-        last_name=last_name,
-        is_active=True,
-    )
+    if target_user:
+        user = target_user
+        if email and email.lower() != (user.email or "").lower() and user_with_email_exists(email, exclude_user_id=user.id):
+            return Response({"email": "Cet email est deja utilise par un autre compte."}, status=status.HTTP_400_BAD_REQUEST)
+        if email:
+            user.email = email
+        if first_name:
+            user.first_name = first_name
+        if last_name:
+            user.last_name = last_name
+        if password:
+            user.set_password(password)
+        user.save()
+        username = user.username
+    else:
+        if User.objects.filter(username=username).exists():
+            return Response({"detail": "Ce nom d'utilisateur existe deja."}, status=status.HTTP_400_BAD_REQUEST)
+        if email and user_with_email_exists(email):
+            return Response({"email": "Cet email est deja utilise par un autre compte."}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            is_active=True,
+        )
 
     if role == "admin":
         user.is_staff = True
         user.is_superuser = bool(request.data.get("is_superuser", True))
         user.save(update_fields=["is_staff", "is_superuser"])
     elif role == "vendor":
+        if hasattr(user, "vendor_profile"):
+            return Response({"detail": "Cet utilisateur a deja un profil vendeur."}, status=status.HTTP_400_BAD_REQUEST)
         VendorProfile.objects.create(
             user=user,
             business_name=request.data.get("business_name", "").strip() or username,
@@ -614,6 +833,8 @@ def admin_create_user(request):
             is_active=True,
             status=DeliveryOrganizationProfile.Status.APPROVED,
         )
+        if hasattr(user, "courier_profile"):
+            return Response({"detail": "Cet utilisateur a deja un profil livreur."}, status=status.HTTP_400_BAD_REQUEST)
         CourierProfile.objects.create(
             user=user,
             delivery_organization=delivery_organization,
@@ -628,6 +849,8 @@ def admin_create_user(request):
             is_online=False,
         )
     elif role == "delivery_org":
+        if hasattr(user, "delivery_organization_profile"):
+            return Response({"detail": "Cet utilisateur a deja un profil organisation de livraison."}, status=status.HTTP_400_BAD_REQUEST)
         zones = request.data.get("zones", [])
         if isinstance(zones, str):
             zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
@@ -661,6 +884,8 @@ def admin_create_user(request):
             is_active=True,
         )
     elif role == "relay_point":
+        if hasattr(user, "relay_point_profile"):
+            return Response({"detail": "Cet utilisateur a deja un profil point relais."}, status=status.HTTP_400_BAD_REQUEST)
         zones = request.data.get("zones", [])
         if isinstance(zones, str):
             zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
@@ -746,14 +971,24 @@ def admin_list_relay_points(request):
 
 
 @extend_schema(tags=["Delivery organization"], summary="List couriers attached to current delivery organization")
-@api_view(["GET"])
+@api_view(["GET", "POST"])
 @permission_classes([IsAuthenticated])
 def delivery_organization_couriers(request):
     organization = getattr(request.user, "delivery_organization_profile", None)
     if not organization or not organization.is_active:
         return Response({"detail": "Organisation de livraison requise."}, status=status.HTTP_403_FORBIDDEN)
 
-    couriers = CourierProfile.objects.select_related("user").filter(
+    if request.method == "POST":
+        username = str(request.data.get("username", "")).strip()
+        if not username:
+            return Response({"username": ["L'identifiant du livreur est obligatoire."]}, status=status.HTTP_400_BAD_REQUEST)
+        courier = get_object_or_404(CourierProfile.objects.select_related("user"), user__username=username)
+        if courier.delivery_organization_id and courier.delivery_organization_id != organization.id:
+            return Response({"username": ["Ce livreur appartient déjà à une autre organisation."]}, status=status.HTTP_409_CONFLICT)
+        courier.delivery_organization = organization
+        courier.save(update_fields=["delivery_organization", "updated_at"])
+
+    couriers = CourierProfile.objects.select_related("user", "assigned_company_vehicle").filter(
         delivery_organization=organization,
         user__is_active=True,
     ).order_by("user__username")
@@ -771,6 +1006,14 @@ def delivery_organization_couriers(request):
             "is_active": courier.is_active,
             "is_approved": courier.is_approved,
             "is_online": courier.is_online,
+            "availability_status": courier.availability_status,
+            "availability_note": courier.availability_note,
+            "assigned_vehicle": {
+                "id": courier.assigned_company_vehicle.id,
+                "label": courier.assigned_company_vehicle.label,
+                "registration": courier.assigned_company_vehicle.registration,
+                "vehicle_type": courier.assigned_company_vehicle.vehicle_type,
+            } if hasattr(courier, "assigned_company_vehicle") else None,
             "created_at": courier.created_at.isoformat(),
         }
         for courier in couriers
@@ -791,6 +1034,20 @@ def _get_request_delivery_organization(user):
 def _mission_payload(shipment):
     courier = shipment.courier
     courier_user = courier.user if courier else None
+    locations = list(shipment.locations.order_by("-captured_at", "-id")[:100])
+
+    def location_payload(location):
+        return {
+            "id": location.id,
+            "latitude": float(location.latitude),
+            "longitude": float(location.longitude),
+            "accuracy_m": location.accuracy_m,
+            "speed_mps": location.speed_mps,
+            "heading_deg": location.heading_deg,
+            "source": location.source,
+            "captured_at": location.captured_at.isoformat(),
+        }
+
     return {
         "id": shipment.id,
         "order_id": shipment.order_id,
@@ -800,6 +1057,8 @@ def _mission_payload(shipment):
         "fulfillment_status": shipment.order.fulfillment_status,
         "city": shipment.order.city,
         "delivery_address": shipment.order.address,
+        "address_precision": shipment.order.address_precision or {},
+        "order_total_xaf": shipment.order.total_xaf,
         "relay_point": shipment.relay_point,
         "vendor_names": _shipment_vendor_names(shipment),
         "courier": {
@@ -812,6 +1071,8 @@ def _mission_payload(shipment):
         "created_at": shipment.created_at.isoformat(),
         "updated_at": shipment.updated_at.isoformat(),
         "last_event": _shipment_last_event(shipment),
+        "latest_location": location_payload(locations[0]) if locations else None,
+        "location_history": [location_payload(location) for location in reversed(locations)],
     }
 
 
@@ -859,6 +1120,7 @@ def _dispute_payload(dispute):
         "evidences_count": dispute.evidences.count(),
         "city": dispute.order.city,
         "delivery_address": dispute.order.address,
+        "address_precision": dispute.order.address_precision or {},
         "courier": {
             "id": shipment.courier.id,
             "username": shipment.courier.user.username,
@@ -884,7 +1146,7 @@ def _organization_active_shipments(organization):
             ],
         )
         .select_related("order", "courier", "courier__user")
-        .prefetch_related("events", "order__items__product__vendor__vendor_profile")
+        .prefetch_related("events", "locations", "order__items__product__vendor__vendor_profile")
         .order_by("-updated_at")
         .distinct()
     )
@@ -915,6 +1177,11 @@ def delivery_organization_summary(request):
     couriers = CourierProfile.objects.filter(delivery_organization=organization, user__is_active=True)
     active_shipments = _organization_active_shipments(organization)
     open_disputes = _organization_open_disputes(organization)
+    recent_since = timezone.now() - timedelta(days=30)
+    recent_shipments = Shipment.objects.filter(
+        courier__delivery_organization=organization,
+        updated_at__gte=recent_since,
+    )
     return Response({
         "organization_id": organization.id,
         "organization_name": organization.company_name,
@@ -924,6 +1191,9 @@ def delivery_organization_summary(request):
         "couriers_approved": couriers.filter(is_approved=True, is_active=True).count(),
         "couriers_online": couriers.filter(is_online=True, is_active=True).count(),
         "covered_zones": organization.zones or [],
+        "delivered_30d": recent_shipments.filter(status=Shipment.Status.DELIVERED).count(),
+        "failed_30d": recent_shipments.filter(status=Shipment.Status.FAILED).count(),
+        "tracked_locations_30d": recent_shipments.filter(locations__isnull=False).values("locations__id").distinct().count(),
     })
 
 
@@ -938,6 +1208,106 @@ def delivery_organization_active_missions(request):
     return Response([_mission_payload(shipment) for shipment in _organization_active_shipments(organization)])
 
 
+@extend_schema(tags=["Delivery organization"], summary="Unassigned missions available to current organization")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_mission_queue(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+    queue = (
+        Shipment.objects.filter(
+            courier__isnull=True,
+            status__in=[
+                Shipment.Status.CREATED,
+                Shipment.Status.WAITING_MANUAL_ASSIGNMENT,
+                Shipment.Status.VEHICLE_INCOMPATIBLE,
+                Shipment.Status.CAPACITY_BLOCKED,
+                Shipment.Status.VALUE_LIMIT_EXCEEDED,
+            ],
+            order__city__iexact=organization.city,
+        )
+        .select_related("order")
+        .prefetch_related("events", "locations", "order__items__product__vendor__vendor_profile")
+        .order_by("created_at")
+    )
+    return Response([_mission_payload(shipment) for shipment in queue])
+
+
+@extend_schema(tags=["Delivery organization"], summary="Assign a queued mission to an available courier")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+@transaction.atomic
+def delivery_organization_assign_mission(request, shipment_id):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+    shipment = get_object_or_404(Shipment.objects.select_for_update().select_related("order"), id=shipment_id, courier__isnull=True)
+    courier = get_object_or_404(
+        CourierProfile.objects.select_related("user"),
+        id=request.data.get("courier_id"),
+        delivery_organization=organization,
+        is_active=True,
+        is_approved=True,
+    )
+    if courier.availability_status != CourierProfile.AvailabilityStatus.AVAILABLE:
+        return Response({"courier_id": ["Ce livreur est absent, en congé ou suspendu."]}, status=status.HTTP_400_BAD_REQUEST)
+    vehicle = getattr(courier, "assigned_company_vehicle", None)
+    if not vehicle or not vehicle.is_active:
+        return Response({"courier_id": ["Aucun véhicule d'entreprise actif n'est affecté à ce livreur."]}, status=status.HTTP_400_BAD_REQUEST)
+    if shipment.required_vehicle_type and shipment.required_vehicle_type != vehicle.vehicle_type:
+        return Response({"courier_id": ["Le véhicule affecté est incompatible avec cette mission."]}, status=status.HTTP_400_BAD_REQUEST)
+    from .trust_score import calculate_trust_score, trust_score_payload
+
+    trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
+    value_cap = trust.parcel_value_cap_xaf
+    if value_cap is None and not organization.transport_insurance_verified:
+        value_cap = 250000
+    if value_cap is not None and shipment.order.total_xaf > value_cap:
+        trust_data = trust_score_payload(trust)
+        return Response(
+            {
+                "courier_id": [
+                    f"Mission refusée : colis de {shipment.order.total_xaf} FCFA, plafond {value_cap} FCFA pour le palier {trust.get_tier_display()}."
+                ],
+                "code": "VALUE_LIMIT_EXCEEDED",
+                "trust_score": trust_data,
+            },
+            status=status.HTTP_409_CONFLICT,
+        )
+    active_statuses = [Shipment.Status.ASSIGNED, Shipment.Status.PICKED_UP, Shipment.Status.IN_TRANSIT, Shipment.Status.OUT_FOR_DELIVERY]
+    if courier.shipments.filter(status__in=active_statuses).count() >= courier.max_active_shipments:
+        return Response({"courier_id": ["La capacité active de ce livreur est atteinte."]}, status=status.HTTP_400_BAD_REQUEST)
+    if Shipment.objects.filter(courier__delivery_organization=organization, status__in=active_statuses).count() >= organization.max_active_shipments:
+        return Response({"detail": "La capacité active de l'organisation est atteinte."}, status=status.HTTP_409_CONFLICT)
+
+    coverage_text = f"{shipment.order.city} {shipment.order.address}".casefold()
+    if organization.zones and not any(str(zone).casefold() in coverage_text for zone in organization.zones):
+        return Response({"detail": "La destination n'appartient pas aux zones déclarées par l'organisation."}, status=status.HTTP_400_BAD_REQUEST)
+
+    shipment.courier = courier
+    shipment.courier_name = courier.user.get_full_name().strip() or courier.user.username
+    shipment.courier_phone = courier.phone
+    shipment.status = Shipment.Status.ASSIGNED
+    shipment.assignment_issue_code = ""
+    shipment.assignment_issue_message = ""
+    shipment.save(update_fields=["courier", "courier_name", "courier_phone", "status", "assignment_issue_code", "assignment_issue_message", "updated_at"])
+    ShipmentEvent.objects.create(
+        shipment=shipment,
+        status=Shipment.Status.ASSIGNED,
+        message=f"Mission affectée par {organization.company_name} à {shipment.courier_name}",
+        location=shipment.order.city,
+    )
+    UserNotification.objects.create(
+        user=courier.user,
+        title=f"Nouvelle mission BVY-{shipment.order_id}-{shipment.id}",
+        message=f"Mission affectée pour {shipment.order.city} - {shipment.order.address}.",
+        notification_type=UserNotification.NotificationType.ORDER,
+        action_url="/courier",
+    )
+    return Response(_mission_payload(shipment))
+
+
 @extend_schema(tags=["Delivery organization"], summary="Open disputes linked to current delivery organization")
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
@@ -947,6 +1317,287 @@ def delivery_organization_open_disputes(request):
         return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
 
     return Response([_dispute_payload(dispute) for dispute in _organization_open_disputes(organization)])
+
+
+@extend_schema(tags=["Delivery organization"], summary="Update current organization operational profile")
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_profile(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+    if request.method == "PATCH":
+        update_fields = []
+        if "zones" in request.data:
+            zones = request.data.get("zones")
+            if not isinstance(zones, list):
+                return Response({"zones": ["Les zones doivent être une liste."]}, status=status.HTTP_400_BAD_REQUEST)
+            organization.zones = list(dict.fromkeys(str(zone).strip()[:80] for zone in zones if str(zone).strip()))[:100]
+            update_fields.append("zones")
+        if "address" in request.data:
+            organization.address = str(request.data.get("address", "")).strip()[:255]
+            update_fields.append("address")
+        if not update_fields:
+            return Response({"detail": "Aucun champ modifiable fourni."}, status=status.HTTP_400_BAD_REQUEST)
+        organization.save(update_fields=[*update_fields, "updated_at"])
+    return Response({
+        "id": organization.id,
+        "company_name": organization.company_name,
+        "zones": organization.zones,
+        "address": organization.address,
+        "updated_at": organization.updated_at.isoformat(),
+    })
+
+
+@extend_schema(tags=["Delivery organization"], summary="Update an attached courier availability")
+@api_view(["PATCH"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_update_courier(request, courier_id):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+    courier = get_object_or_404(CourierProfile, id=courier_id, delivery_organization=organization)
+    availability = request.data.get("availability_status")
+    if availability is not None:
+        valid = {choice for choice, _ in CourierProfile.AvailabilityStatus.choices}
+        if availability not in valid:
+            return Response({"availability_status": ["Statut de disponibilité invalide."]}, status=status.HTTP_400_BAD_REQUEST)
+        courier.availability_status = availability
+        if availability != CourierProfile.AvailabilityStatus.AVAILABLE:
+            courier.is_online = False
+    if "availability_note" in request.data:
+        courier.availability_note = str(request.data.get("availability_note", "")).strip()[:255]
+    courier.save(update_fields=["availability_status", "availability_note", "is_online", "updated_at"])
+    return Response({
+        "id": courier.id,
+        "availability_status": courier.availability_status,
+        "availability_note": courier.availability_note,
+        "is_online": courier.is_online,
+    })
+
+
+def _vehicle_payload(vehicle):
+    courier = vehicle.assigned_courier
+    return {
+        "id": vehicle.id,
+        "label": vehicle.label,
+        "registration": vehicle.registration,
+        "vehicle_type": vehicle.vehicle_type,
+        "is_active": vehicle.is_active,
+        "assigned_courier": {
+            "id": courier.id,
+            "full_name": courier.user.get_full_name().strip() or courier.user.username,
+        } if courier else None,
+        "updated_at": vehicle.updated_at.isoformat(),
+    }
+
+
+@extend_schema(tags=["Delivery organization"], summary="Manage organization-owned vehicles")
+@api_view(["GET", "POST", "PATCH"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_vehicles(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "POST":
+        label = str(request.data.get("label", "")).strip()
+        registration = str(request.data.get("registration", "")).strip().upper()
+        vehicle_type = str(request.data.get("vehicle_type", "")).upper()
+        valid_types = {choice for choice, _ in CourierProfile.VehicleType.choices}
+        if not label or not registration or vehicle_type not in valid_types:
+            return Response({"detail": "Libellé, immatriculation et type de véhicule valides sont requis."}, status=status.HTTP_400_BAD_REQUEST)
+        if DeliveryVehicle.objects.filter(organization=organization, registration=registration).exists():
+            return Response({"registration": ["Cette immatriculation existe déjà dans votre parc."]}, status=status.HTTP_400_BAD_REQUEST)
+        vehicle = DeliveryVehicle.objects.create(
+            organization=organization,
+            label=label[:120],
+            registration=registration[:40],
+            vehicle_type=vehicle_type,
+        )
+        return Response(_vehicle_payload(vehicle), status=status.HTTP_201_CREATED)
+
+    if request.method == "PATCH":
+        vehicle = get_object_or_404(DeliveryVehicle, id=request.data.get("vehicle_id"), organization=organization)
+        courier_id = request.data.get("courier_id")
+        if courier_id in [None, ""]:
+            vehicle.assigned_courier = None
+        else:
+            courier = get_object_or_404(
+                CourierProfile,
+                id=courier_id,
+                delivery_organization=organization,
+                is_active=True,
+                is_approved=True,
+            )
+            if courier.availability_status != CourierProfile.AvailabilityStatus.AVAILABLE:
+                return Response({"courier_id": ["Ce livreur n'est pas disponible."]}, status=status.HTTP_400_BAD_REQUEST)
+            vehicle.assigned_courier = courier
+            courier.vehicle_type = vehicle.vehicle_type
+            courier.save(update_fields=["vehicle_type", "updated_at"])
+        vehicle.save(update_fields=["assigned_courier", "updated_at"])
+        return Response(_vehicle_payload(vehicle))
+
+    vehicles = DeliveryVehicle.objects.filter(organization=organization).select_related("assigned_courier__user")
+    return Response([_vehicle_payload(vehicle) for vehicle in vehicles])
+
+
+@extend_schema(tags=["Delivery organization"], summary="Reply to a logistics dispute when authorized")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_dispute_reply(request, dispute_id):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+    dispute = get_object_or_404(_organization_open_disputes(organization), id=dispute_id)
+    if not dispute.courier_can_reply:
+        return Response({"detail": "BelivaY n'a pas encore autorisé la réponse logistique."}, status=status.HTTP_403_FORBIDDEN)
+    message_text = str(request.data.get("message", "")).strip()
+    if not message_text:
+        return Response({"message": ["Le message ne peut pas être vide."]}, status=status.HTTP_400_BAD_REQUEST)
+    message = DisputeMessage.objects.create(
+        dispute=dispute,
+        sender=request.user,
+        sender_role=DisputeMessage.SenderRole.LOGISTICS,
+        message=message_text,
+        is_internal=False,
+    )
+    dispute.updated_at = timezone.now()
+    dispute.save(update_fields=["updated_at"])
+    return Response({"id": message.id, "message": message.message, "created_at": message.created_at.isoformat()}, status=status.HTTP_201_CREATED)
+
+
+def _get_request_relay_point(user):
+    relay_point = getattr(user, "relay_point_profile", None)
+    if (
+        not relay_point
+        or not relay_point.is_active
+        or relay_point.status != RelayPointProfile.Status.APPROVED
+    ):
+        return None
+    return relay_point
+
+
+@extend_schema(tags=["Relay Point"], summary="Update current relay point capacity and opening hours")
+@api_view(["GET", "PATCH"])
+@permission_classes([IsAuthenticated])
+def relay_point_profile(request):
+    relay_point = _get_request_relay_point(request.user)
+    if not relay_point:
+        return Response({"detail": "Point relais approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "PATCH":
+        update_fields = []
+        if "storage_capacity" in request.data:
+            try:
+                capacity = int(request.data["storage_capacity"])
+            except (TypeError, ValueError):
+                return Response({"storage_capacity": ["La capacité doit être un nombre entier."]}, status=status.HTTP_400_BAD_REQUEST)
+            if capacity < 1 or capacity > 10000:
+                return Response({"storage_capacity": ["La capacité doit être comprise entre 1 et 10000."]}, status=status.HTTP_400_BAD_REQUEST)
+            relay_point.storage_capacity = capacity
+            update_fields.append("storage_capacity")
+
+        if "opening_hours" in request.data:
+            opening_hours = str(request.data["opening_hours"]).strip()
+            if not opening_hours:
+                return Response({"opening_hours": ["Les horaires ne peuvent pas être vides."]}, status=status.HTTP_400_BAD_REQUEST)
+            relay_point.opening_hours = opening_hours[:160]
+            update_fields.append("opening_hours")
+
+        if not update_fields:
+            return Response({"detail": "Aucun champ modifiable fourni."}, status=status.HTTP_400_BAD_REQUEST)
+        relay_point.save(update_fields=[*update_fields, "updated_at"])
+
+    return Response({
+        "id": relay_point.id,
+        "name": relay_point.name,
+        "storage_capacity": relay_point.storage_capacity,
+        "opening_hours": relay_point.opening_hours,
+        "status": relay_point.status,
+        "updated_at": relay_point.updated_at.isoformat(),
+    })
+
+
+@extend_schema(tags=["Relay Point"], summary="Open disputes linked to current relay point parcels")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def relay_point_open_disputes(request):
+    relay_point = _get_request_relay_point(request.user)
+    if not relay_point:
+        return Response({"detail": "Point relais approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
+
+    disputes = (
+        Dispute.objects.filter(
+            order__shipment__relay_parcel__relay_point=relay_point,
+            status__in=["OPEN", "IN_PROGRESS"],
+        )
+        .select_related("order", "opened_by", "order__shipment")
+        .prefetch_related("messages", "evidences")
+        .order_by("-updated_at")
+        .distinct()
+    )
+    return Response([_dispute_payload(dispute) for dispute in disputes])
+
+
+class ComplianceDocumentListCreateView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def _owner_role(self, user):
+        if _get_request_delivery_organization(user):
+            return ComplianceDocument.OwnerRole.DELIVERY_ORGANIZATION
+        if _get_request_relay_point(user):
+            return ComplianceDocument.OwnerRole.RELAY_POINT
+        return None
+
+    def _payload(self, document, request):
+        return {
+            "id": document.id,
+            "owner_role": document.owner_role,
+            "document_type": document.document_type,
+            "file_url": request.build_absolute_uri(document.file.url) if document.file else None,
+            "status": document.status,
+            "review_note": document.review_note,
+            "updated_at": document.updated_at.isoformat(),
+        }
+
+    def get(self, request):
+        owner_role = self._owner_role(request.user)
+        if not owner_role:
+            return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
+        documents = ComplianceDocument.objects.filter(user=request.user, owner_role=owner_role)
+        return Response([self._payload(document, request) for document in documents])
+
+    def post(self, request):
+        owner_role = self._owner_role(request.user)
+        if not owner_role:
+            return Response({"detail": "Compte partenaire approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
+        document_type = str(request.data.get("document_type", "")).strip().upper()
+        uploaded_file = request.FILES.get("file")
+        if not document_type or not uploaded_file:
+            return Response({"detail": "Le type de document et le fichier sont obligatoires."}, status=status.HTTP_400_BAD_REQUEST)
+        if uploaded_file.size > 10 * 1024 * 1024:
+            return Response({"file": ["Le fichier ne doit pas dépasser 10 Mo."]}, status=status.HTTP_400_BAD_REQUEST)
+        extension = os.path.splitext(uploaded_file.name)[1].lower()
+        if extension not in {".pdf", ".jpg", ".jpeg", ".png", ".webp"}:
+            return Response({"file": ["Formats acceptés : PDF, JPG, PNG ou WEBP."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        document, created = ComplianceDocument.objects.get_or_create(
+            user=request.user,
+            owner_role=owner_role,
+            document_type=document_type[:60],
+            defaults={"file": uploaded_file},
+        )
+        if not created:
+            old_file = document.file
+            document.file = uploaded_file
+            document.status = ComplianceDocument.Status.PENDING
+            document.review_note = ""
+            document.save(update_fields=["file", "status", "review_note", "updated_at"])
+            if old_file and old_file.name != document.file.name:
+                old_file.delete(save=False)
+        return Response(self._payload(document, request), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
 @extend_schema(tags=["Auth"], summary="Get current user profile")
@@ -1190,6 +1841,9 @@ def _create_and_send_otp(user, purpose: str) -> None:
     """Invalide les anciens codes, génère un nouveau et envoie l'email."""
     from .models import OTPCode
  
+    if not user.email:
+        raise ValueError("Aucune adresse email n'est associee a ce compte.")
+
     OTPCode.objects.filter(user=user, purpose=purpose, is_used=False).update(is_used=True)
     code = _generate_otp()
     OTPCode.objects.create(
@@ -1205,7 +1859,7 @@ def _create_and_send_otp(user, purpose: str) -> None:
     label = labels.get(purpose, 'Vérification')
     from_email = getattr(django_settings, 'DEFAULT_FROM_EMAIL', 'BelivaY <noreply@belivay.com>')
  
-    send_mail(
+    send_plain_email.delay(
         subject=f'[BelivaY] Code de vérification — {label}',
         message=(
             f'Bonjour {user.first_name or user.username},\n\n'
@@ -1231,6 +1885,7 @@ class TwoFactorTokenObtainPairView(_BaseLoginView):
     Si la 2FA est activée → envoie OTP + retourne 2fa_required=True.
     Sinon → comportement normal simplejwt + crée la UserSession.
     """
+    serializer_class = BelivayTokenObtainPairSerializer
  
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)

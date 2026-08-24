@@ -4,6 +4,7 @@
 
 import { api } from './client';
 import type { Order } from '@/types/order';
+import type { LocationPrecisionResult } from './location';
 
 export interface OrderItem {
   product_id: number;
@@ -19,6 +20,7 @@ export interface OrderCreateData {
   delivery_mode?: 'DELIVERY' | 'PICKUP';
   city: 'YAOUNDE' | 'DOUALA';
   address: string;
+  address_precision?: LocationPrecisionResult | Record<string, unknown>;
   customer_phone: string;
   customer_email?: string;
   note?: string;

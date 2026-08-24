@@ -199,7 +199,7 @@ docker exec -it relaya_backend python manage.py createsuperuser
 # 3. Accéder à l'application
 # Frontend : http://localhost:5173
 # Backend API : http://localhost:8000/api/docs/
-# Django Admin : http://localhost:8000/admin/
+# Django Admin : http://localhost:8000/django-admin/
 ```
 
 ### Démarrages Suivants

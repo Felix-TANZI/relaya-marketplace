@@ -10,7 +10,10 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.db.models import Q
 
-from .models import Order, Dispute, DisputeMessage, OrderHistory, PlatformSettings
+from .models import (
+    Order, OrderItem, Dispute, DisputeMessage, DisputeEvidenceRequest,
+    OrderHistory, PlatformSettings,
+)
 from .serializers import (
     OrderCreateSerializer,
     OrderDetailSerializer,
@@ -18,7 +21,9 @@ from .serializers import (
     DisputeCreateSerializer,
     DisputeMessageSerializer,
     DisputeMessageCreateSerializer,
+    DisputeEvidenceRequestSerializer,
 )
+from .evidence import create_evidence
 from apps.shipping.models import Shipment, ShipmentEvent
 from apps.shipping.serializers import ShipmentSerializer
 from apps.accounts.models import UserNotification
@@ -86,6 +91,41 @@ class OrderCreateView(generics.CreateAPIView):
 
         order = serializer.save()
 
+        # ── Lot 12 : éclatement du panier par vendeur (Option A) ──────────
+        # Une commande multi-vendeurs rend le litige et la libération de
+        # séquestre ambigus. On l'égrène en N commandes mono-vendeur, toutes
+        # couvertes par UNE seule intention de paiement.
+        #
+        # L'échec n'annule PAS la commande : elle reste créée et payable par
+        # l'ancien chemin. Mieux vaut une commande non éclatée qu'un panier
+        # perdu.
+        orders = [order]
+        payment_intent = None
+        try:
+            from apps.payments.bridge.checkout import checkout as _split_checkout
+
+            payer_msisdn = (
+                request.data.get("payer_msisdn")
+                or request.data.get("customer_phone")
+                or order.customer_phone
+            )
+            payer_operator = request.data.get("payer_operator", "")
+
+            orders, payment_intent = _split_checkout(
+                order,
+                payer_msisdn=payer_msisdn,
+                payer_operator=payer_operator,
+                idempotency_key=f"cart-{order.pk}",
+            )
+            order = orders[0]
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Éclatement du panier impossible pour la commande #%s. "
+                "La commande reste valide et payable par l'ancien chemin.",
+                order.pk,
+            )
+
         if request.user.is_authenticated:
             UserNotification.objects.create(
                 user=request.user,
@@ -96,7 +136,18 @@ class OrderCreateView(generics.CreateAPIView):
             )
 
         out = OrderDetailSerializer(order)
-        return Response(out.data, status=status.HTTP_201_CREATED)
+        donnees = dict(out.data)
+        if len(orders) > 1:
+            donnees["split_orders"] = [
+                OrderDetailSerializer(o).data for o in orders
+            ]
+        if payment_intent is not None:
+            donnees["payment_intent"] = {
+                "reference": payment_intent.reference,
+                "amount_xaf": payment_intent.amount_xaf,
+                "status": payment_intent.status,
+            }
+        return Response(donnees, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Orders"], summary="Détails commande")
@@ -138,6 +189,9 @@ class MyOrdersView(generics.ListAPIView):
             .distinct()
             .order_by("-created_at")
         )
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "request": self.request}
 
 
 @extend_schema(tags=["Orders"], summary="Annuler une commande client")
@@ -192,6 +246,21 @@ class CancelOrderView(APIView):
             action_url="/orders",
         )
 
+        # ── Lot 12 : annuler le séquestre correspondant ───────────────────
+        try:
+            from apps.payments.bridge import events_in
+            events_in.order_cancelled(
+                order_id=order.id,
+                reason="Annulée par le client.",
+                event_id=f"cancel-{order.id}",
+                emitter="apps.orders.CancelOrderView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement d'annulation non transmis pour #%s.", order.id,
+            )
+
         return Response(OrderDetailSerializer(order).data)
 
 
@@ -213,10 +282,20 @@ class ConfirmReceiptView(APIView):
             )
 
         old_status = order.fulfillment_status
-        if order.fulfillment_status == Order.FulfillmentStatus.DELIVERED:
-            order.buyer_confirm()
-
         shipment, _ = Shipment.objects.get_or_create(order=order)
+
+        if order.fulfillment_status == Order.FulfillmentStatus.DELIVERED:
+            submitted_code = str(request.data.get("code", "")).strip()
+            expected_code = shipment.ensure_receipt_confirmation_code()
+            if not submitted_code or submitted_code != expected_code:
+                return Response(
+                    {
+                        "detail": "Code de confirmation invalide. Demandez le code au livreur.",
+                        "code": "INVALID_CONFIRMATION_CODE",
+                    },
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            order.buyer_confirm()
         shipment.status = Shipment.Status.DELIVERED
         shipment.save(update_fields=['status', 'updated_at'])
         ShipmentEvent.objects.create(
@@ -243,6 +322,24 @@ class ConfirmReceiptView(APIView):
             action_url=f"/orders/{order.id}",
         )
 
+        # ── Lot 12 : informer le domaine financier ────────────────────────
+        # PRINCIPE P9 : le financier ne juge pas les faits métier. Il
+        # consomme cet événement APRÈS les contrôles effectués ci-dessus.
+        # `event_id` garantit l'idempotence : rejouer n'a aucun effet.
+        try:
+            from apps.payments.bridge import events_in
+            events_in.buyer_confirmed_receipt(
+                order_id=order.id,
+                event_id=f"receipt-{order.id}",
+                emitter="apps.orders.ConfirmReceiptView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement de confirmation non transmis pour #%s. "
+                "L'auto-confirmation prendra le relais.", order.id,
+            )
+
         return Response(OrderDetailSerializer(order).data)
 
 
@@ -254,7 +351,9 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
         return get_user_order_or_404(self.request, self.kwargs['id'])
 
     def get_queryset(self):
-        return Dispute.objects.filter(order=self.get_order()).prefetch_related('messages')
+        return Dispute.objects.filter(order=self.get_order()).prefetch_related(
+            'messages', 'evidences', 'evidence_requests__evidences',
+        )
 
     def get_serializer_class(self):
         if self.request.method == 'POST':
@@ -283,18 +382,48 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if Dispute.objects.filter(order=order, opened_by=request.user).exclude(status="CLOSED").exists():
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        files = request.FILES.getlist("files") or request.FILES.getlist("file")
+        reason = serializer.validated_data.get("reason")
+        if reason in {"DAMAGED", "WRONG_ITEM", "NOT_AS_DESCRIBED", "COUNTERFEIT"} and not files:
             return Response(
-                {"detail": "Un litige est deja ouvert pour cette commande."},
+                {"files": "Ajoutez au moins une photo ou un document pour ce motif."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        order_item = serializer.validated_data.get("order_item")
+        order_items_count = order.items.count()
+        if order_item and order_item.order_id != order.id:
+            return Response(
+                {"order_item": "Cet article n'appartient pas a cette commande."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if order_item is None and order_items_count == 1:
+            order_item = order.items.select_related("product", "product__vendor").first()
+        if order_item is None:
+            return Response(
+                {"order_item": "Choisissez l'article precis concerne par le litige."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if Dispute.objects.filter(
+            order=order,
+            order_item=order_item,
+            opened_by=request.user,
+        ).exclude(status="CLOSED").exists():
+            return Response(
+                {"detail": "Un litige est deja ouvert pour cet article."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        validated_data = dict(serializer.validated_data)
+        validated_data.pop("order_item", None)
         dispute = Dispute.objects.create(
             order=order,
+            order_item=order_item,
+            product=order_item.product,
+            vendor=order_item.product.vendor,
             opened_by=request.user,
-            **serializer.validated_data,
+            **validated_data,
         )
         DisputeMessage.objects.create(
             dispute=dispute,
@@ -303,6 +432,14 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             is_internal=False,
             sender_role="CLIENT",
         )
+        for upload in files:
+            create_evidence(
+                dispute=dispute,
+                user=request.user,
+                upload=upload,
+                uploader_role="CLIENT",
+                description="Preuve fournie à l'ouverture du litige",
+            )
         old_status = order.fulfillment_status
         order.open_dispute()
         OrderHistory.objects.create(
@@ -320,7 +457,27 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
             notification_type=UserNotification.NotificationType.SUPPORT,
             action_url=f"/orders/{order.id}",
         )
-        return Response(DisputeSerializer(dispute).data, status=status.HTTP_201_CREATED)
+
+        # ── Lot 12 : geler le séquestre de CETTE commande ─────────────────
+        # Un litige sur le colis 1 ne gèle ni le colis 2 du même vendeur,
+        # ni le transport, ni les autres bénéficiaires. C'est ce que la clé
+        # à quatre dimensions du séquestre rend possible.
+        try:
+            from apps.payments.bridge import events_in
+            events_in.dispute_opened(
+                order_id=dispute.order_id,
+                reason=dispute.reason or "Litige ouvert par l'acheteur.",
+                event_id=f"dispute-{dispute.id}",
+                emitter="apps.orders.OrderDisputeListCreateView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Événement de litige non transmis pour la commande #%s.",
+                dispute.order_id,
+            )
+
+        return Response(DisputeSerializer(dispute, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(tags=["Orders"], summary="Ajouter un message a un litige client")
@@ -341,7 +498,64 @@ class DisputeMessageCreateView(generics.CreateAPIView):
             sender=request.user,
             message=serializer.validated_data['message'],
             is_internal=False,
+            sender_role=DisputeMessage.SenderRole.CLIENT,
         )
         dispute.updated_at = timezone.now()
         dispute.save(update_fields=['updated_at'])
         return Response(DisputeMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+
+
+class DisputeEvidenceRequestListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DisputeEvidenceRequestSerializer
+
+    def get_queryset(self):
+        return DisputeEvidenceRequest.objects.filter(
+            dispute_id=self.kwargs["dispute_id"],
+            requested_from=self.request.user,
+        ).select_related("requested_from", "requested_by").prefetch_related("evidences")
+
+
+class MyPendingEvidenceRequestsView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = DisputeEvidenceRequestSerializer
+
+    def get_queryset(self):
+        return DisputeEvidenceRequest.objects.filter(
+            requested_from=self.request.user,
+            status=DisputeEvidenceRequest.Status.PENDING,
+        ).select_related("requested_from", "requested_by", "dispute").prefetch_related("evidences")
+
+
+class DisputeEvidenceRequestRespondView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        evidence_request = get_object_or_404(
+            DisputeEvidenceRequest.objects.select_related("dispute"),
+            id=request_id,
+            requested_from=request.user,
+        )
+        if evidence_request.status != DisputeEvidenceRequest.Status.PENDING:
+            return Response({"detail": "Cette demande de preuve n'est plus active."}, status=status.HTTP_400_BAD_REQUEST)
+        if evidence_request.due_at and timezone.now() > evidence_request.due_at:
+            evidence_request.status = DisputeEvidenceRequest.Status.EXPIRED
+            evidence_request.save(update_fields=["status", "updated_at"])
+            return Response({"detail": "Le délai de réponse est dépassé."}, status=status.HTTP_400_BAD_REQUEST)
+
+        files = request.FILES.getlist("files") or request.FILES.getlist("file")
+        if not files:
+            return Response({"files": "Ajoutez au moins une preuve."}, status=status.HTTP_400_BAD_REQUEST)
+        for upload in files:
+            create_evidence(
+                dispute=evidence_request.dispute,
+                user=request.user,
+                upload=upload,
+                uploader_role=evidence_request.recipient_role,
+                description=request.data.get("description", "Réponse à la demande de preuve"),
+                evidence_request=evidence_request,
+            )
+        evidence_request.status = DisputeEvidenceRequest.Status.SUBMITTED
+        evidence_request.responded_at = timezone.now()
+        evidence_request.save(update_fields=["status", "responded_at", "updated_at"])
+        return Response(DisputeEvidenceRequestSerializer(evidence_request, context={"request": request}).data)

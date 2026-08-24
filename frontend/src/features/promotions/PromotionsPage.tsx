@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
   Baby,
   Copy,
   Dumbbell,
@@ -11,19 +9,16 @@ import {
   Laptop,
   LayoutGrid,
   type LucideIcon,
-  Percent,
-  ShieldCheck,
   Shirt,
   ShoppingBag,
   ShoppingCart,
   Smartphone,
   Sparkles,
   Tag,
-  Truck,
 } from "lucide-react";
-import { useCart } from "@/context/CartContext";
 import { productsApi, type Category, type Product } from "@/services/api/products";
 import { getPromoProducts } from "@/data/v29Products";
+import CatalogProductCard from "@/components/product/CatalogProductCard";
 
 type PromoProduct = Product & {
   score: number;
@@ -36,14 +31,6 @@ const CATEGORY_BANNERS = [
   { slug: "electronique", eyebrow: "Tech Week", title: "Électronique", discount: "Jusqu'à -25%", bg: "from-[#0f172a] via-[#1d4ed8] to-[#60a5fa]" },
   { slug: "beaute", eyebrow: "Glow deals", title: "Beauté", discount: "Jusqu'à -30%", bg: "from-[#14532d] via-[#16a34a] to-[#86efac]" },
 ];
-
-function fmt(n: number) {
-  return new Intl.NumberFormat("fr-CM", {
-    style: "currency",
-    currency: "XAF",
-    maximumFractionDigits: 0,
-  }).format(n);
-}
 
 /** Icône équivalente pour un filtre catégorie (à partir du slug + libellé). */
 function catIcon(source: string): LucideIcon {
@@ -108,8 +95,6 @@ function buildScoredList(list: Product[]) {
 }
 
 export default function PromotionsPage() {
-  const navigate = useNavigate();
-  const { addItem } = useCart();
   const [allPromo, setAllPromo] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCat, setActiveCat] = useState("all");
@@ -200,23 +185,6 @@ export default function PromotionsPage() {
     { key: "all", label: "Tout voir" },
     ...categories.slice(0, 6).map((category) => ({ key: category.slug, label: category.name })),
   ];
-
-  const handleAddToCart = (event: React.MouseEvent, product: Product) => {
-    event.stopPropagation();
-    addItem({
-      id: product.id,
-      name: product.title,
-      price: product.price_final,
-      quantity: 1,
-      image: getProductImage(product),
-      isDemo: usingFallbackPromos,
-    });
-  };
-
-  const openProduct = (product: Product) => {
-    const mockSuffix = usingFallbackPromos ? "?mock=1" : "";
-    navigate(`/product/${product.id}${mockSuffix}`);
-  };
 
   const copyCode = async () => {
     await navigator.clipboard.writeText("BIENVENUE10");
@@ -386,114 +354,14 @@ export default function PromotionsPage() {
               </p>
             </div>
           ) : (
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:mt-6 sm:grid-cols-2 sm:gap-3 md:grid-cols-3 xl:grid-cols-4">
+            <div className="mt-4 grid grid-cols-2 gap-3 sm:mt-6 sm:grid-cols-3 sm:gap-4 xl:grid-cols-4">
               {displayed.map((product) => (
-                <PromoProductCard
-                  key={product.id}
-                  product={product}
-                  onAddToCart={handleAddToCart}
-                  onOpen={() => openProduct(product)}
-                />
+                <CatalogProductCard key={product.id} product={product} showPromo isMock={usingFallbackPromos} />
               ))}
             </div>
           )}
         </section>
       </div>
     </div>
-  );
-}
-
-function PromoProductCard({
-  product,
-  onAddToCart,
-  onOpen,
-}: {
-  product: PromoProduct;
-  onAddToCart: (event: React.MouseEvent, product: Product) => void;
-  onOpen: () => void;
-}) {
-  const image = getProductImage(product);
-  const stars = Math.round(product.rating_average ?? 0);
-
-  return (
-    <article
-      role="button"
-      tabIndex={0}
-      onClick={onOpen}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen();
-        }
-      }}
-      className="group overflow-hidden rounded-2xl border border-[#f0dfd2] bg-white shadow-[0_14px_32px_rgba(15,23,42,.05)] transition hover:translate-y-[-3px] hover:border-[#f47920] dark:border-gray-800 dark:bg-gray-900 sm:rounded-[26px]"
-    >
-      <div className="relative aspect-square overflow-hidden bg-[linear-gradient(135deg,#fff7f0,#f9fafb)] dark:bg-[linear-gradient(135deg,#1f2937,#111827)] sm:aspect-auto sm:h-[220px]">
-        {image ? (
-          <img
-            src={image}
-            alt={product.title}
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-[#f0c9ab] dark:text-gray-700">
-            <ShoppingBag size={40} strokeWidth={1.5} />
-          </div>
-        )}
-        <div className="absolute left-3 top-3 hidden rounded-full bg-white/90 px-3 py-1 text-[10px] font-extrabold text-[#c85e14] dark:bg-gray-900/85 dark:text-primary sm:block">
-          {product.category?.name ?? "Produit"}
-        </div>
-        <div className="absolute right-2 top-2 rounded-full bg-[#ef4444] px-2 py-0.5 text-[9px] font-extrabold text-white sm:right-3 sm:top-3 sm:px-3 sm:py-1 sm:text-[10px]">
-          -{product.active_campaign?.discount_percent ?? product.discount_percent ?? product.discount ?? 0}%
-        </div>
-      </div>
-
-      <div className="p-2 sm:p-4">
-        <div className="mb-1 hidden items-center gap-2 text-[10px] font-bold text-[#f47920] dark:text-primary sm:inline-flex">
-          <ShieldCheck size={12} />
-          {product.category?.name ?? "Produit"}
-        </div>
-        <h3 className="line-clamp-2 text-[11.5px] font-extrabold leading-tight text-[#111827] dark:text-white sm:min-h-[44px] sm:text-[15px] sm:leading-6">
-          {product.title}
-        </h3>
-        <div className="mt-1.5 flex flex-col leading-tight sm:mt-3 sm:flex-row sm:items-end sm:gap-2 sm:leading-normal">
-          <span className="text-[13px] font-black text-[#f47920] sm:text-[20px]">{fmt(product.price_final)}</span>
-          <span className="text-[10px] font-semibold text-[#9ca3af] line-through sm:pb-1 sm:text-[11px]">{fmt(product.compare_at_price ?? product.price_xaf)}</span>
-        </div>
-        <div className="mt-2 hidden items-center justify-between text-[11px] sm:flex">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2.5 py-1 font-bold text-[#166534] dark:bg-emerald-900/30 dark:text-emerald-300">
-            <Percent size={12} />
-            {product.active_campaign?.discount_percent ?? product.discount_percent ?? product.discount ?? 0}% off
-          </span>
-          <span className="inline-flex items-center gap-1 text-[#6b7280] dark:text-gray-400">
-            <Truck size={12} className="text-[#16a34a]" />
-            24-72h
-          </span>
-        </div>
-        <div className="mt-3 hidden items-center gap-2 text-[11px] text-[#6b7280] dark:text-gray-400 sm:flex">
-          <span className="text-[#fbbf24]">{`${"★".repeat(stars)}${"☆".repeat(5 - stars)}`}</span>
-          <span>({product.reviews_count ?? 0})</span>
-        </div>
-        <div className="mt-2 flex gap-2 sm:mt-4">
-          <button
-            type="button"
-            onClick={(event) => onAddToCart(event, product)}
-            className="flex-1 rounded-full bg-[#f47920] px-2 py-1.5 text-[11px] font-extrabold text-white transition hover:bg-[#c85e14] sm:px-4 sm:py-2.5 sm:text-[12px]"
-          >
-            Ajouter
-          </button>
-          <button
-            type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onOpen();
-            }}
-            className="hidden rounded-full border border-[#f0dfd2] px-3 py-2.5 text-[#111827] transition hover:border-[#f47920] hover:text-[#c85e14] dark:border-gray-700 dark:text-white sm:block"
-          >
-            <ArrowRight size={15} />
-          </button>
-        </div>
-      </div>
-    </article>
   );
 }

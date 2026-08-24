@@ -21,6 +21,8 @@ import { useTheme } from '@/context/ThemeContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/context/ToastContext';
 import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from '@/lib/phone';
+import { PayoutAccountVerificationCard } from '@/components/payments/PayoutAccountVerificationCard';
+import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 
 // ─── Thème ────────────────────────────────────────────────────────────────────
 const T = {
@@ -354,6 +356,7 @@ export default function SellerSettingsPage() {
   const [phone,     setPhone]     = useState('');
   const [bio,       setBio]       = useState('');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
 
   // Section 3 — Notifications
   const [newsletter, setNewsletter] = useState(true);
@@ -379,11 +382,6 @@ export default function SellerSettingsPage() {
   const [disablePwd,    setDisablePwd]    = useState('');
   const [showDisablePwd,setShowDisablePwd]= useState(false);
   const [disabling2FA,  setDisabling2FA]  = useState(false);
-
-  // Section 6 — Mobile Money
-  const [momoOp,     setMomoOp]     = useState('');
-  const [momoPhone,  setMomoPhone]  = useState('');
-  const [savingMomo, setSavingMomo] = useState(false);
 
   // Section 7 — Sessions
   const [sessions,       setSessions]       = useState<Session[]>([]);
@@ -421,8 +419,6 @@ export default function SellerSettingsPage() {
       setBio((profileData as AuthUser & { bio?: string }).bio || '');
       setNewsletter(profileData.newsletter_subscribed ?? true);
       setSmsNotif(profileData.sms_notifications       ?? true);
-      setMomoOp(vendorData.default_withdrawal_operator || '');
-      setMomoPhone(vendorData.default_withdrawal_phone || '');
     } catch (e) { console.error(e); showToastRef.current('Erreur de chargement', 'error'); }
     finally  { setLoading(false); }
   }, []); // Dépendances vides — load est stable pour toute la durée de vie du composant
@@ -446,11 +442,6 @@ export default function SellerSettingsPage() {
       showToast('Profil mis à jour', 'success');
     } catch { showToast('Erreur lors de la mise à jour', 'error'); }
     finally  { setSavingProfile(false); }
-  };
-
-  const handleAvatarUpload = async (file: File) => {
-    try { await authApi.uploadAvatar(file); showToast('Photo mise à jour', 'success'); await load(); }
-    catch { showToast('Erreur upload avatar', 'error'); }
   };
 
   const handleAvatarRemove = async () => {
@@ -516,26 +507,17 @@ export default function SellerSettingsPage() {
     if (!disablePwd) { showToast('Entrez votre mot de passe pour confirmer', 'error'); return; }
     try {
       setDisabling2FA(true);
+      await http('/api/auth/2fa/disable/', {
+        method: 'POST',
+        body: JSON.stringify({ password: disablePwd }),
+      });
       showToast('Double authentification désactivée', 'success');
       setDisablePwd('');
-      load();
-    } catch { showToast('Erreur', 'error'); }
+      await load();
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Impossible de désactiver la double authentification', 'error');
+    }
     finally  { setDisabling2FA(false); }
-  };
-
-  // ── Mobile Money ────────────────────────────────────────────────────────────
-  const handleSaveMomo = async () => {
-    try {
-      setSavingMomo(true);
-      const token = localStorage.getItem('access_token');
-      await http('/api/vendors/settings/', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ default_withdrawal_operator: momoOp, default_withdrawal_phone: momoPhone }),
-      });
-      showToast('Numéro Mobile Money enregistré', 'success');
-    } catch { showToast('Erreur lors de la mise à jour', 'error'); }
-    finally  { setSavingMomo(false); }
   };
 
   // ── Sessions ─────────────────────────────────────────────────────────────────
@@ -636,7 +618,7 @@ export default function SellerSettingsPage() {
               )}
             </div>
             <input type="file" ref={avatarRef} className="hidden" accept="image/*"
-              onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f); e.target.value = ''; }}/>
+              onChange={e => { const f = e.target.files?.[0]; if (f) setAvatarFile(f); e.target.value = ''; }}/>
             <button type="button" onClick={() => avatarRef.current?.click()}
               className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center text-white"
               style={{ background: T.orange, boxShadow: '0 2px 6px rgba(244,121,32,0.4)' }}>
@@ -1080,32 +1062,10 @@ export default function SellerSettingsPage() {
       <Section title={t('seller_settings.section_momo')} icon={<Smartphone size={15}/>} accent={T.green}>
         <div className="rounded-xl p-3 mb-4" style={{ background: T.greenL, border: `1px solid rgba(22,163,74,0.2)` }}>
           <p className="text-[12px]" style={{ color: T.green }}>
-            Pré-rempli automatiquement lors de vos demandes de retrait. Modifiable à chaque retrait si besoin.
+            Ce numéro sert aux reversements BelivaY. Il doit être vérifié par code avant tout encaissement.
           </p>
         </div>
-        <div className="mb-4">
-          <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>Opérateur préférentiel</p>
-          <div className="flex gap-3">
-            {([{ value: 'MTN_MOMO', label: 'MTN MoMo', color: '#FFC107' }, { value: 'ORANGE_MONEY', label: 'Orange Money', color: '#FF6600' }] as const).map(op => (
-              <button key={op.value} type="button" onClick={() => setMomoOp(op.value)}
-                className="flex items-center gap-2 flex-1 px-4 py-3 rounded-xl text-[13px] font-bold transition-all"
-                style={{ background: momoOp === op.value ? op.color + '15' : T.cream, border: `2px solid ${momoOp === op.value ? op.color : T.border}`, color: momoOp === op.value ? op.color : T.muted }}>
-                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ background: op.color }}/>
-                {op.label}
-                {momoOp === op.value && <Check size={13} className="ml-auto"/>}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="mb-5">
-          <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Numéro Mobile Money</label>
-          <PhoneFieldInline value={momoPhone} onChange={setMomoPhone} />
-        </div>
-        <button type="button" onClick={handleSaveMomo} disabled={savingMomo || !momoOp || !momoPhone}
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
-          style={{ background: T.green, boxShadow: '0 3px 10px rgba(22,163,74,0.3)' }}>
-          {savingMomo ? <><RefreshCw size={13} className="animate-spin"/>Enregistrement…</> : <><Save size={13}/>Enregistrer le numéro</>}
-        </button>
+        <PayoutAccountVerificationCard ownerRole="VENDOR" accent={T.green} />
       </Section>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -1243,6 +1203,19 @@ export default function SellerSettingsPage() {
           purpose={otpPurpose}
           onVerified={handleOTPVerified}
           onClose={() => setShowOTPModal(false)}
+        />
+      )}
+
+      {avatarFile && (
+        <AvatarCropDialog
+          file={avatarFile}
+          accent={T.orange}
+          onClose={() => setAvatarFile(null)}
+          onUploaded={async () => {
+            setAvatarFile(null);
+            showToast('Photo rognée, compressée et enregistrée', 'success');
+            await load();
+          }}
         />
       )}
 

@@ -16,14 +16,23 @@ import {
   Store,
   Send,
   Scale,
+  Star,
   Truck,
   Warehouse,
   UserCircle2,
   XCircle,
+  FileUp,
+  Paperclip,
+  QrCode,
+  KeyRound,
 } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
+import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
+import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
+import QrScanner from "@/components/QrScanner";
+import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
@@ -35,6 +44,23 @@ const DISPUTE_REASONS = [
   "Commande incomplète",
   "Suspicion de contrefaçon",
   "Autre motif",
+];
+
+const DISPUTE_REASON_CODES: Record<string, string> = {
+  "Produit non conforme à la description": "NOT_AS_DESCRIBED",
+  "Produit défectueux ou endommagé": "DAMAGED",
+  "Colis non reçu": "NOT_RECEIVED",
+  "Commande incomplète": "WRONG_ITEM",
+  "Suspicion de contrefaçon": "COUNTERFEIT",
+  "Autre motif": "OTHER",
+};
+
+const REVIEWABLE_STATUSES: FulfillmentStatus[] = [
+  "DELIVERED",
+  "BUYER_CONFIRMED",
+  "AUTO_CONFIRMED",
+  "RELEASED_TO_VENDOR",
+  "DISPUTED",
 ];
 
 export default function OrderDetailPage() {
@@ -50,12 +76,25 @@ export default function OrderDetailPage() {
   const [activeDisputeId, setActiveDisputeId] = useState<number | null>(null);
   const [showDisputeComposer, setShowDisputeComposer] = useState(false);
   const [disputeReason, setDisputeReason] = useState(DISPUTE_REASONS[0]);
+  const [disputeOrderItemId, setDisputeOrderItemId] = useState<number | null>(null);
   const [disputeDraft, setDisputeDraft] = useState("");
+  const [disputeFiles, setDisputeFiles] = useState<File[]>([]);
+  const [disputeSubmitting, setDisputeSubmitting] = useState(false);
+  const [disputeError, setDisputeError] = useState("");
+  const [requestFiles, setRequestFiles] = useState<Record<number, File[]>>({});
+  const [respondingRequestId, setRespondingRequestId] = useState<number | null>(null);
   const [disputeReply, setDisputeReply] = useState("");
   const [showCourierChat, setShowCourierChat] = useState(false);
   const [courierMessages, setCourierMessages] = useState<OrderChatMessage[]>([]);
   const [courierChatDraft, setCourierChatDraft] = useState("");
   const [chatSending, setChatSending] = useState(false);
+  const [reviewDrafts, setReviewDrafts] = useState<Record<number, { rating: number; title: string; comment: string }>>({});
+  const [reviewStatus, setReviewStatus] = useState<Record<number, "idle" | "saving" | "saved" | "error" | "exists">>({});
+  const [showConfirmReceipt, setShowConfirmReceipt] = useState(false);
+  const [showQrScanner, setShowQrScanner] = useState(false);
+  const [receiptCode, setReceiptCode] = useState("");
+  const [receiptError, setReceiptError] = useState("");
+  const [receiptSubmitting, setReceiptSubmitting] = useState(false);
   const disputeSectionRef = useRef<HTMLElement | null>(null);
   const courierChatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -142,6 +181,21 @@ export default function OrderDetailPage() {
     fetchOrder();
   }, [id, t]);
 
+  // Condition sortie de l'effet : en dependant du booleen plutot que de
+  // l'objet `tracking`, l'intervalle n'est pas recree a chaque sondage — il ne
+  // l'est que lorsque la course s'ouvre ou se ferme reellement.
+  const shouldPollTracking =
+    Boolean(tracking) && !["DELIVERED", "FAILED", "CANCELLED"].includes(tracking?.status ?? "");
+
+  useEffect(() => {
+    if (!id || !shouldPollTracking) return;
+    const orderId = Number(id);
+    const interval = window.setInterval(() => {
+      customerApi.getOrderTracking(orderId).then(setTracking).catch(() => undefined);
+    }, 5000);
+    return () => window.clearInterval(interval);
+  }, [id, shouldPollTracking]);
+
   useEffect(() => {
     if (!order) return;
     let cancelled = false;
@@ -183,7 +237,8 @@ export default function OrderDetailPage() {
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
   const activeDispute =
     disputes.find((dispute) => dispute.id === activeDisputeId) ?? disputes[0] ?? null;
-  const canSeeDisputeArea = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order?.fulfillment_status ?? "");
+  const canSeeDisputeArea = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR", "DISPUTED"].includes(order?.fulfillment_status ?? "");
+  const canReviewItems = REVIEWABLE_STATUSES.includes(order?.fulfillment_status ?? "PENDING");
 
   if (loading) {
     return (
@@ -230,6 +285,7 @@ export default function OrderDetailPage() {
               })
             : "ETA",
           label: event.message || event.status || t('order.detail.timeline.processing'),
+          completed: true,
         }))
         .filter((event) => Boolean(event.label))
     : [];
@@ -237,21 +293,45 @@ export default function OrderDetailPage() {
   const timelineSteps = trackingEvents.length
     ? trackingEvents
     : [
-        { time: "10:15", label: t('order.detail.timeline.received') },
-        { time: "14:30", label: t('order.detail.timeline.processing') },
-        { time: "14:45", label: t('order.detail.timeline.shipped') },
-        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta') },
+        { time: "10:15", label: t('order.detail.timeline.received'), completed: fulfillment.step >= 0 },
+        { time: "14:30", label: t('order.detail.timeline.processing'), completed: fulfillment.step >= 1 },
+        { time: "14:45", label: t('order.detail.timeline.shipped'), completed: fulfillment.step >= 2 },
+        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta'), completed: fulfillment.step >= 3 },
       ];
 
-  const handleConfirmReceipt = async () => {
+  const submitReceiptCode = async (code: string) => {
     if (!order) return;
+    const trimmed = code.trim();
+    if (trimmed.length !== 6) {
+      setReceiptError("Le code fait 6 chiffres. Demande-le à ton livreur.");
+      return;
+    }
+    setReceiptSubmitting(true);
+    setReceiptError("");
     try {
-      const updatedOrder = await customerApi.confirmReceipt(order.id);
+      const updatedOrder = await customerApi.confirmReceipt(order.id, trimmed);
       setOrder(updatedOrder);
       const shipment = await customerApi.getOrderTracking(order.id);
       setTracking(shipment);
-    } catch {
-      // silenced
+      setShowConfirmReceipt(false);
+      setShowQrScanner(false);
+      setReceiptCode("");
+    } catch (err) {
+      setReceiptError(
+        err instanceof Error ? err.message : "Code de confirmation invalide. Demande le code au livreur.",
+      );
+    } finally {
+      setReceiptSubmitting(false);
+    }
+  };
+
+  const handleQrScanned = (value: string) => {
+    const digitsOnly = value.replace(/\D/g, "").slice(-6);
+    setShowQrScanner(false);
+    if (digitsOnly.length === 6) {
+      void submitReceiptCode(digitsOnly);
+    } else {
+      setReceiptError("QR non reconnu comme code de confirmation BelivaY.");
     }
   };
 
@@ -261,6 +341,7 @@ export default function OrderDetailPage() {
       return;
     }
 
+    setDisputeOrderItemId(order.items[0]?.id ?? null);
     setShowDisputeComposer(true);
     window.setTimeout(() => {
       disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -268,20 +349,46 @@ export default function OrderDetailPage() {
   };
 
   const handleCreateDispute = async () => {
-    if (!disputeDraft.trim()) return;
+    if (!disputeDraft.trim() || !disputeOrderItemId || disputeSubmitting) return;
+    const reasonCode = DISPUTE_REASON_CODES[disputeReason] || "OTHER";
+    if (["DAMAGED", "WRONG_ITEM", "NOT_AS_DESCRIBED", "COUNTERFEIT"].includes(reasonCode) && disputeFiles.length === 0) {
+      setDisputeError("Ajoutez au moins une photo ou un document pour ce motif.");
+      return;
+    }
+    setDisputeSubmitting(true);
+    setDisputeError("");
     try {
       await customerApi.createOrderDispute(order.id, {
-        reason: "OTHER",
+        reason: reasonCode,
         description: disputeDraft.trim(),
+        order_item: disputeOrderItemId,
+        files: disputeFiles,
       });
       const data = await customerApi.getOrderDisputes(order.id);
       setDisputes(data);
       setActiveDisputeId(data[0]?.id ?? null);
-    } catch {
-      // silenced
+      setShowDisputeComposer(false);
+      setDisputeDraft("");
+      setDisputeFiles([]);
+    } catch (caught) {
+      setDisputeError(caught instanceof Error ? caught.message : "Impossible d'ouvrir le litige.");
+    } finally {
+      setDisputeSubmitting(false);
     }
-    setShowDisputeComposer(false);
-    setDisputeDraft("");
+  };
+
+  const handleEvidenceResponse = async (requestId: number) => {
+    const files = requestFiles[requestId] || [];
+    if (!files.length || respondingRequestId) return;
+    setRespondingRequestId(requestId);
+    try {
+      await customerApi.respondToEvidenceRequest(requestId, files, "Preuve complémentaire transmise par le client");
+      const data = await customerApi.getOrderDisputes(order.id);
+      setDisputes(data);
+      setRequestFiles((current) => ({ ...current, [requestId]: [] }));
+    } finally {
+      setRespondingRequestId(null);
+    }
   };
 
   const handleSendDisputeReply = async () => {
@@ -321,6 +428,52 @@ export default function OrderDetailPage() {
       setCourierMessages((prev) => prev.filter((item) => item.id !== optimisticMessage.id));
     } finally {
       setChatSending(false);
+    }
+  };
+
+  const updateReviewDraft = (
+    itemId: number,
+    patch: Partial<{ rating: number; title: string; comment: string }>
+  ) => {
+    setReviewDrafts((current) => ({
+      ...current,
+      [itemId]: {
+        rating: current[itemId]?.rating ?? 5,
+        title: current[itemId]?.title ?? "",
+        comment: current[itemId]?.comment ?? "",
+        ...patch,
+      },
+    }));
+    setReviewStatus((current) => ({ ...current, [itemId]: "idle" }));
+  };
+
+  const handleSubmitReview = async (item: Order["items"][number]) => {
+    const draft = reviewDrafts[item.id] ?? { rating: 5, title: "", comment: "" };
+    setReviewStatus((current) => ({ ...current, [item.id]: "saving" }));
+    try {
+      await productsApi.addReview(item.product, {
+        order_item: item.id,
+        rating: draft.rating,
+        title: draft.title.trim(),
+        comment: draft.comment.trim(),
+      });
+      setReviewStatus((current) => ({ ...current, [item.id]: "saved" }));
+    } catch (error) {
+      const message = error instanceof Error ? error.message.toLowerCase() : "";
+      setReviewStatus((current) => ({
+        ...current,
+        [item.id]: message.includes("existe deja") || message.includes("already") ? "exists" : "error",
+      }));
+    }
+  };
+
+  const reloadOrder = async () => {
+    if (!id) return;
+    try {
+      const data = await ordersApi.get(parseInt(id, 10));
+      setOrder(data);
+    } catch {
+      // silencieux — l'utilisateur reste sur les données déjà affichées
     }
   };
 
@@ -404,8 +557,16 @@ export default function OrderDetailPage() {
                     <TrackingMap
                       destinationAddress={order.address}
                       destinationCity={order.city}
+                      destinationPrecision={order.address_precision}
                       destinationLabel={`Adresse de livraison : ${order.address}`}
                       originLabel={tracking?.courier_name ? `Livreur : ${tracking.courier_name}` : "Position livreur"}
+                      currentLocation={tracking?.latest_location
+                        ? [Number(tracking.latest_location.latitude), Number(tracking.latest_location.longitude)]
+                        : undefined}
+                      locationHistory={(tracking?.location_history || []).map((location) => [
+                        Number(location.latitude),
+                        Number(location.longitude),
+                      ] as [number, number])}
                       height={280}
                       className="rounded-none border-0"
                     />
@@ -414,7 +575,9 @@ export default function OrderDetailPage() {
                         Ville: {order.city}
                       </span>
                       <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
-                        Zone suivie
+                        {tracking?.latest_location
+                          ? `GPS actualisé à ${new Date(tracking.latest_location.captured_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}`
+                          : "En attente de la position GPS du livreur"}
                       </span>
                     </div>
                     <div className="border-t border-orange-100 bg-white px-4 py-3 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
@@ -425,8 +588,8 @@ export default function OrderDetailPage() {
               </div>
 
               <div className="space-y-4">
-                {timelineSteps.map((step, index) => {
-                  const isActive = fulfillment.step >= index;
+                {timelineSteps.map((step) => {
+                  const isActive = step.completed;
 
                   return (
                     <div key={step.label} className="flex items-start gap-4">
@@ -505,7 +668,7 @@ export default function OrderDetailPage() {
                 )}
                 {order.fulfillment_status === "DELIVERED" && (
                   <button
-                    onClick={handleConfirmReceipt}
+                    onClick={() => { setShowConfirmReceipt(true); setReceiptError(""); }}
                     className="inline-flex items-center gap-2 rounded-2xl border border-green-200 bg-green-50 px-5 py-3 text-sm font-semibold text-green-700 transition-all hover:bg-green-100 dark:border-green-900/40 dark:bg-green-900/20 dark:text-green-300"
                   >
                     <CheckCircle size={18} />
@@ -513,6 +676,52 @@ export default function OrderDetailPage() {
                   </button>
                 )}
               </div>
+
+              {showConfirmReceipt && (
+                <div className="mt-4 rounded-2xl border border-green-200 bg-green-50/60 p-4 dark:border-green-900/40 dark:bg-green-900/10">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">Confirmer la réception</p>
+                  <p className="mt-1 text-xs leading-5 text-gray-600 dark:text-gray-300">
+                    Demande à ton livreur le code affiché sur son téléphone : scanne son QR ou saisis les 6 chiffres.
+                  </p>
+                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => setShowQrScanner(true)}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gray-900 px-4 py-2.5 text-sm font-bold text-white dark:bg-white dark:text-gray-900"
+                    >
+                      <QrCode size={16} /> Scanner le QR
+                    </button>
+                    <div className="flex flex-1 items-center gap-2">
+                      <KeyRound size={16} className="shrink-0 text-gray-400" />
+                      <input
+                        value={receiptCode}
+                        onChange={(event) => setReceiptCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        inputMode="numeric"
+                        placeholder="Code à 6 chiffres"
+                        maxLength={6}
+                        className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm font-bold tracking-widest outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      disabled={receiptCode.length !== 6 || receiptSubmitting}
+                      onClick={() => void submitReceiptCode(receiptCode)}
+                      className="rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {receiptSubmitting ? "..." : "Valider"}
+                    </button>
+                  </div>
+                  {receiptError && <p className="mt-2 text-xs font-semibold text-red-600">{receiptError}</p>}
+                </div>
+              )}
+
+              {showQrScanner && (
+                <QrScanner
+                  title="Scanner le code du livreur"
+                  onScan={handleQrScanned}
+                  onClose={() => setShowQrScanner(false)}
+                />
+              )}
 
               {showCourierChat && (
                 <div className="mt-5 rounded-[1.6rem] border border-orange-100 bg-[#fffaf5] p-4 dark:border-gray-800 dark:bg-gray-950">
@@ -581,24 +790,109 @@ export default function OrderDetailPage() {
                 {t('order.detail.items_title')}
               </h2>
               <div className="space-y-3">
-                {order.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-2xl bg-[#fcfbf8] px-4 py-4 dark:bg-gray-800"
-                  >
-                    <div>
-                      <p className="font-semibold text-gray-900 dark:text-white">
-                        {item.title_snapshot}
-                      </p>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {item.qty} × {item.price_xaf_snapshot.toLocaleString()} FCFA
-                      </p>
+                {order.items.map((item) => {
+                  const draft = reviewDrafts[item.id] ?? { rating: 5, title: "", comment: "" };
+                  const status = reviewStatus[item.id] ?? "idle";
+                  const reviewDisabled = status === "saving" || status === "saved" || status === "exists";
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="rounded-2xl bg-[#fcfbf8] px-4 py-4 dark:bg-gray-800"
+                    >
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {item.title_snapshot}
+                          </p>
+                          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            Article #{item.id} · {item.qty} × {item.price_xaf_snapshot.toLocaleString()} FCFA
+                          </p>
+                        </div>
+                        <p className="text-lg font-bold text-primary">
+                          {item.line_total_xaf.toLocaleString()} FCFA
+                        </p>
+                      </div>
+
+                      {canReviewItems ? (
+                        <div className="mt-4 rounded-[1.25rem] border border-orange-100 bg-white p-4 dark:border-gray-700 dark:bg-gray-900">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                              <p className="text-sm font-black text-gray-900 dark:text-white">
+                                Noter cet article
+                              </p>
+                              <p className="mt-1 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                La note est attribuée au produit et améliore le score du vendeur.
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((rating) => (
+                                <button
+                                  key={rating}
+                                  type="button"
+                                  disabled={reviewDisabled}
+                                  onClick={() => updateReviewDraft(item.id, { rating })}
+                                  className="rounded-lg p-1 text-amber-400 transition hover:bg-amber-50 disabled:opacity-60 dark:hover:bg-gray-800"
+                                  aria-label={`${rating} etoile${rating > 1 ? "s" : ""}`}
+                                >
+                                  <Star
+                                    size={20}
+                                    fill={rating <= draft.rating ? "currentColor" : "none"}
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="mt-3 grid gap-3 md:grid-cols-[0.8fr_1.2fr_auto]">
+                            <input
+                              value={draft.title}
+                              disabled={reviewDisabled}
+                              onChange={(event) => updateReviewDraft(item.id, { title: event.target.value })}
+                              className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950"
+                              placeholder="Titre de l'avis"
+                            />
+                            <input
+                              value={draft.comment}
+                              disabled={reviewDisabled}
+                              onChange={(event) => updateReviewDraft(item.id, { comment: event.target.value })}
+                              className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary disabled:opacity-60 dark:border-gray-700 dark:bg-gray-950"
+                              placeholder="Votre commentaire sur ce produit"
+                            />
+                            <button
+                              type="button"
+                              disabled={reviewDisabled}
+                              onClick={() => void handleSubmitReview(item)}
+                              className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {status === "saving" ? "Envoi..." : "Publier"}
+                            </button>
+                          </div>
+
+                          {status === "saved" && (
+                            <p className="mt-3 text-sm font-bold text-emerald-600 dark:text-emerald-300">
+                              Avis enregistré comme achat vérifié pour cet article.
+                            </p>
+                          )}
+                          {status === "exists" && (
+                            <p className="mt-3 text-sm font-bold text-amber-600 dark:text-amber-300">
+                              Cet article de commande a déjà reçu un avis.
+                            </p>
+                          )}
+                          {status === "error" && (
+                            <p className="mt-3 text-sm font-bold text-red-600 dark:text-red-300">
+                              Impossible d'enregistrer cet avis pour le moment.
+                            </p>
+                          )}
+                        </div>
+                      ) : (
+                        <div className="mt-4 rounded-[1.25rem] border border-dashed border-gray-200 bg-white/70 p-4 text-sm font-semibold text-gray-500 dark:border-gray-700 dark:bg-gray-900/60 dark:text-gray-400">
+                          Vous pourrez noter cet article après livraison ou confirmation de réception.
+                        </div>
+                      )}
                     </div>
-                    <p className="text-lg font-bold text-primary">
-                      {item.line_total_xaf.toLocaleString()} FCFA
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </section>
 
@@ -616,7 +910,7 @@ export default function OrderDetailPage() {
                     Chat de litige pour cette commande
                   </h2>
                   <p className="mt-2 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
-                    Le litige se declenche ici, depuis la commande recue. Vous avez 24h apres reception pour ouvrir la discussion de mediation.
+                    Le litige se déclenche ici, article par article, dans les 7 jours suivant la réception.
                   </p>
                 </div>
                 <div className={`rounded-full px-4 py-2 text-xs font-bold ${
@@ -646,6 +940,18 @@ export default function OrderDetailPage() {
                     </div>
 
                     <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Article concerné
+                    </label>
+                    <div className="mb-4 grid gap-2">
+                      {order.items.map((item) => (
+                        <button key={item.id} type="button" onClick={() => setDisputeOrderItemId(item.id)} className={`flex min-h-12 items-center justify-between rounded-lg border px-4 py-3 text-left text-sm ${disputeOrderItemId === item.id ? "border-primary bg-orange-50 dark:bg-primary/10" : "border-gray-200 dark:border-gray-700"}`}>
+                          <span className="line-clamp-2 font-bold text-gray-900 dark:text-white">{item.title_snapshot}</span>
+                          <span className="ml-3 shrink-0 text-xs text-gray-500">Qté {item.qty}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
                       Motif du litige
                     </label>
                     <select
@@ -668,6 +974,30 @@ export default function OrderDetailPage() {
                       placeholder="Décrivez précisément le problème constaté."
                     />
 
+                    <label className="mb-2 mt-4 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Preuves initiales
+                    </label>
+                    <label className="flex cursor-pointer items-center gap-3 rounded-2xl border border-dashed border-orange-300 bg-orange-50/60 px-4 py-4 text-sm font-bold text-orange-800 transition hover:bg-orange-50 dark:border-orange-800 dark:bg-primary/10 dark:text-orange-200">
+                      <FileUp size={20} />
+                      <span>Ajouter des photos, une vidéo ou un PDF</span>
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const selected = Array.from(event.target.files || []);
+                          void ensureImagesUnderLimit(selected).then(setDisputeFiles);
+                        }}
+                      />
+                    </label>
+                    {disputeFiles.length > 0 && (
+                      <div className="mt-2 space-y-1 text-xs font-semibold text-gray-600 dark:text-gray-300">
+                        {disputeFiles.map((file) => <p key={`${file.name}-${file.size}`}>• {file.name}</p>)}
+                      </div>
+                    )}
+                    {disputeError && <p className="mt-3 text-sm font-bold text-red-600">{disputeError}</p>}
+
                     <div className="mt-4 rounded-2xl bg-orange-50 px-4 py-3 text-sm font-semibold text-orange-800 dark:bg-primary/10 dark:text-orange-200">
                       L'équipe BelivaY examinera votre demande et pourra contacter le vendeur ou le livreur.
                     </div>
@@ -676,10 +1006,11 @@ export default function OrderDetailPage() {
                       <button
                         type="button"
                         onClick={() => void handleCreateDispute()}
-                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark"
+                        disabled={disputeSubmitting}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark disabled:opacity-60"
                       >
                         <AlertTriangle size={17} />
-                        Ouvrir le litige
+                        {disputeSubmitting ? "Envoi des preuves..." : "Ouvrir le litige"}
                       </button>
                       <button
                         type="button"
@@ -694,7 +1025,7 @@ export default function OrderDetailPage() {
               ) : null}
 
               {disputes.length > 0 ? (
-                <div className="mt-5 grid gap-4 xl:grid-cols-[290px_minmax(0,1fr)]">
+                <div className="mt-5 grid gap-4 2xl:grid-cols-[290px_minmax(0,1fr)]">
                   <div className="space-y-3">
                     {disputes.map((dispute) => (
                       <button
@@ -750,6 +1081,53 @@ export default function OrderDetailPage() {
                           ))}
                         </div>
 
+                        {activeDispute.evidence_requests?.length > 0 && (
+                          <div className="mt-4 space-y-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                            <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">Demandes de preuve</p>
+                            {activeDispute.evidence_requests.map((evidenceRequest) => (
+                              <div key={evidenceRequest.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
+                                <div className="flex items-start justify-between gap-3">
+                                  <div>
+                                    <p className="font-bold text-gray-900 dark:text-white">{evidenceRequest.instructions}</p>
+                                    <p className="mt-1 text-xs text-gray-600 dark:text-gray-300">
+                                      Demandé par {evidenceRequest.requested_by_name}
+                                      {evidenceRequest.due_at ? ` · avant le ${new Date(evidenceRequest.due_at).toLocaleString("fr-FR")}` : ""}
+                                    </p>
+                                  </div>
+                                  <span className={`rounded-full px-3 py-1 text-xs font-black ${evidenceRequest.status === "SUBMITTED" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-800"}`}>
+                                    {evidenceRequest.status === "SUBMITTED" ? "Reçue" : "En attente"}
+                                  </span>
+                                </div>
+                                {evidenceRequest.status === "PENDING" && (
+                                  <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                                    <label className="inline-flex min-h-11 flex-1 cursor-pointer items-center gap-2 rounded-xl border border-amber-300 bg-white px-3 text-sm font-bold text-gray-700 dark:bg-gray-900 dark:text-gray-200">
+                                      <Paperclip size={16} />
+                                      {(requestFiles[evidenceRequest.id] || []).length ? `${requestFiles[evidenceRequest.id].length} fichier(s)` : "Choisir les preuves"}
+                                      <input type="file" multiple accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4" className="sr-only" onChange={(event) => {
+                                        const selected = Array.from(event.target.files || []);
+                                        void ensureImagesUnderLimit(selected).then((compressed) => setRequestFiles((current) => ({ ...current, [evidenceRequest.id]: compressed })));
+                                      }} />
+                                    </label>
+                                    <button type="button" disabled={!(requestFiles[evidenceRequest.id] || []).length || respondingRequestId === evidenceRequest.id} onClick={() => void handleEvidenceResponse(evidenceRequest.id)} className="min-h-11 rounded-xl bg-gray-900 px-4 text-sm font-bold text-white disabled:opacity-50 dark:bg-white dark:text-gray-900">
+                                      Transmettre
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {activeDispute.evidences?.length > 0 && (
+                          <div className="mt-4 flex flex-wrap gap-2">
+                            {activeDispute.evidences.map((evidence) => (
+                              <a key={evidence.id} href={evidence.file_url || '#'} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-gray-100 px-3 py-2 text-xs font-bold text-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                                <Paperclip size={14} /> {evidence.evidence_type.toLowerCase()}
+                              </a>
+                            ))}
+                          </div>
+                        )}
+
                         <div className="mt-4 flex gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
                           <input
                             value={disputeReply}
@@ -780,6 +1158,8 @@ export default function OrderDetailPage() {
           </div>
 
           <div className="space-y-6">
+            <OrderPaymentPanel order={order} onPaid={reloadOrder} />
+
             <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 {t('order.detail.summary_title')}

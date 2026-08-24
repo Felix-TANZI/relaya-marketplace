@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Check, Heart, ShoppingBag, ShoppingCart } from "lucide-react";
+import { Check, Heart, ShoppingBag, ShoppingCart, Star, Truck } from "lucide-react";
 import type { Product } from "@/services/api/products";
 import { useCart } from "@/context/CartContext";
 import { toggleFavoriteProduct, isFavoriteProduct } from "@/lib/favorites";
@@ -87,7 +87,7 @@ export default function CatalogProductCard({
   };
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-lg dark:border-gray-800 dark:bg-gray-900">
+    <article className="group relative flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-[transform,box-shadow] duration-200 hover:-translate-y-1 hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
       <div className="relative aspect-square overflow-hidden bg-[#fff7ef] dark:bg-gray-800">
         <Link to={productUrl} className="block h-full w-full">
           {image ? (
@@ -95,7 +95,7 @@ export default function CatalogProductCard({
               src={image}
               alt={product.title}
               loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-[1.04]"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-primary/40">
@@ -145,17 +145,25 @@ export default function CatalogProductCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-2">
+      <div className="flex flex-1 flex-col p-3">
         <Link to={productUrl} className="block">
-          <h3 className="line-clamp-2 min-h-[28px] text-[11px] font-semibold leading-tight text-gray-800 transition-colors hover:text-primary dark:text-gray-100 sm:text-xs">
+          <h3 className="line-clamp-2 min-h-[38px] text-[13px] font-bold leading-[1.4] text-gray-800 transition-colors hover:text-primary dark:text-gray-100">
             {product.title}
           </h3>
         </Link>
-        <div className="mt-1 flex flex-wrap items-baseline gap-x-1.5">
-          <span className="text-[12px] font-black text-primary sm:text-[13px]">{fmt(finalPrice)}</span>
-          {compareAt && <span className="text-[9px] text-gray-400 line-through">{fmt(compareAt)}</span>}
+        <p className="mt-1 truncate text-xs text-gray-500">{product.category?.name ?? "Vendeur BelivaY"}</p>
+        <div className="mt-2 flex min-h-5 items-center gap-1 text-xs text-gray-500">
+          <Star size={13} className="fill-amber-400 text-amber-400" />
+          <span className="font-bold text-gray-700 dark:text-gray-200">{(product.rating_average ?? 0).toFixed(1)}</span>
+          <span>({product.reviews_count ?? 0})</span>
+          <span className="ml-auto inline-flex items-center gap-1"><Truck size={12} /> 24-72 h</span>
         </div>
+        <div className="mt-2 flex min-h-6 flex-wrap items-baseline gap-x-1.5">
+          <span className="text-base font-black tabular-nums text-primary">{fmt(finalPrice)}</span>
+          {compareAt && <span className="text-xs text-gray-400 line-through">{fmt(compareAt)}</span>}
+        </div>
+        <button type="button" onClick={handleAddToCart} disabled={!inStock} className="mt-3 hidden min-h-9 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3 text-[13px] font-bold text-white transition hover:bg-primary-dark disabled:bg-gray-300 sm:flex"><ShoppingCart size={15} />{added ? "Ajouté" : inStock ? "Ajouter au panier" : "Indisponible"}</button>
       </div>
-    </div>
+    </article>
   );
 }

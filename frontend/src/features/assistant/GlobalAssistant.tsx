@@ -160,6 +160,13 @@ export default function GlobalAssistant() {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [isOpen, isLoading, messages]);
 
+  /* Ouverture depuis l'extérieur — bouton « Chat IA » de la page À propos. */
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener("belivay-open-assistant", open);
+    return () => window.removeEventListener("belivay-open-assistant", open);
+  }, []);
+
   const statusLabel = useMemo(
     () => `Je suis avec toi sur ${viewportLabel}`,
     [viewportLabel],

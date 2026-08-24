@@ -18,7 +18,6 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  isHydrated: boolean;
   addItem: (item: CartItem) => void;
   removeItem: (id: number) => void;
   updateQuantity: (id: number, quantity: number) => void;
@@ -28,7 +27,6 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
-const GUEST_CART_KEY = "belivay_guest_cart_items";
 
 function normalizeCartItems(items: CartItem[]) {
   return items.map((item) => ({
@@ -39,78 +37,35 @@ function normalizeCartItems(items: CartItem[]) {
   }));
 }
 
-function loadGuestCart(): CartItem[] {
-  try {
-    const raw = localStorage.getItem(GUEST_CART_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? normalizeCartItems(parsed as CartItem[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveGuestCart(items: CartItem[]) {
-  if (items.length === 0) {
-    localStorage.removeItem(GUEST_CART_KEY);
-    return;
-  }
-  localStorage.setItem(GUEST_CART_KEY, JSON.stringify(normalizeCartItems(items)));
-}
-
-function mergeCartItems(serverItems: CartItem[], guestItems: CartItem[]) {
-  const byId = new Map<number, CartItem>();
-  [...serverItems, ...guestItems].forEach((item) => {
-    const existing = byId.get(item.id);
-    if (!existing) {
-      byId.set(item.id, { ...item });
-      return;
-    }
-    byId.set(item.id, {
-      ...existing,
-      ...item,
-      quantity: existing.quantity + item.quantity,
-    });
-  });
-  return Array.from(byId.values());
-}
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const [items, setItems] = useState<CartItem[]>(() => loadGuestCart());
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [items, setItems] = useState<CartItem[]>([]);
   const hydratedRef = useRef(false);
   const syncTimerRef = useRef<number | null>(null);
 
+  // Vidage du panier a la deconnexion : ajuste pendant le rendu plutot que dans un
+  // effet, pour eviter un rendu en cascade.
+  const [prevAuthenticated, setPrevAuthenticated] = useState(isAuthenticated);
+  if (prevAuthenticated !== isAuthenticated) {
+    setPrevAuthenticated(isAuthenticated);
+    if (!isAuthenticated) setItems([]);
+  }
+
   useEffect(() => {
     hydratedRef.current = false;
-    setIsHydrated(false);
-    if (!isAuthenticated) {
-      setItems(loadGuestCart());
-      hydratedRef.current = true;
-      setIsHydrated(true);
-      return;
-    }
+    if (!isAuthenticated) return;
 
     let cancelled = false;
     cartApi
       .get()
       .then((cart) => {
-        if (cancelled) return;
-        const serverItems = normalizeCartItems((cart.items ?? []) as CartItem[]);
-        const guestItems = loadGuestCart();
-        const mergedItems = mergeCartItems(serverItems, guestItems);
-        if (guestItems.length > 0) localStorage.removeItem(GUEST_CART_KEY);
-        setItems(mergedItems);
+        if (!cancelled) setItems(normalizeCartItems((cart.items ?? []) as CartItem[]));
       })
       .catch(() => {
-        if (!cancelled) setItems(loadGuestCart());
+        if (!cancelled) setItems([]);
       })
       .finally(() => {
-        if (!cancelled) {
-          hydratedRef.current = true;
-          setIsHydrated(true);
-        }
+        if (!cancelled) hydratedRef.current = true;
       });
 
     return () => {
@@ -119,13 +74,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!hydratedRef.current) return;
+    if (!isAuthenticated || !hydratedRef.current) return;
     if (syncTimerRef.current) window.clearTimeout(syncTimerRef.current);
-
-    if (!isAuthenticated) {
-      saveGuestCart(items);
-      return;
-    }
 
     syncTimerRef.current = window.setTimeout(() => {
       cartApi.save(items).catch(() => {
@@ -176,7 +126,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   return (
     <CartContext.Provider
-      value={{ items, isHydrated, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}
+      value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}
     >
       {children}
     </CartContext.Provider>

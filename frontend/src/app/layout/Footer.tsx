@@ -8,6 +8,7 @@ import {
   Mail,
   Phone,
   MapPin,
+  MessageCircle,
 } from 'lucide-react';
 
 export default function Footer() {
@@ -113,8 +114,8 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3 text-sm">
                 <Phone size={18} className="text-primary flex-shrink-0" />
-                <a href="tel:+237" className="text-gray-300 hover:text-primary transition-colors">
-                  +237 XXX XXX XXX
+                <a href="tel:+237689002812" className="text-gray-300 hover:text-primary transition-colors">
+                  +237 689 002 812
                 </a>
               </li>
               <li className="flex items-center gap-3 text-sm">
@@ -124,6 +125,17 @@ export default function Footer() {
                 </a>
               </li>
             </ul>
+
+            {/* Ouvre la discussion WhatsApp avec le numéro du support. */}
+            <a
+              href="https://wa.me/237689002812"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#22C55E] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(34,197,94,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#16A34A]"
+            >
+              <MessageCircle size={16} />
+              Contacter sur WhatsApp
+            </a>
           </div>
         </div>
 

@@ -19,6 +19,11 @@ import {
   LogOut,
   Filter,
   Mic,
+  House,
+  Tag,
+  Star,
+  Gem,
+  Info,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
@@ -32,6 +37,7 @@ import {
 import { getFavoriteProductIds } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
+import { productsApi } from "@/services/api/products";
 
 const SEARCH_FILTER_CATEGORIES = [
   "Accessoires",
@@ -77,6 +83,25 @@ export default function Header() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+
+  /* Remise maximale du catalogue, pour la pastille de l'onglet « Promos ». */
+  const [maxPromo, setMaxPromo] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+    productsApi
+      .list({ page_size: 60, is_active: true })
+      .then((response) => {
+        if (cancelled) return;
+        const best = (response.results ?? []).reduce(
+          (max, product) => Math.max(max, product.discount_percent ?? product.discount ?? 0),
+          0,
+        );
+        setMaxPromo(Math.round(best));
+      })
+      .catch(() => { /* la pastille reste masquée */ });
+    return () => { cancelled = true; };
+  }, []);
   const { items } = useCart();
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
@@ -258,15 +283,18 @@ export default function Header() {
   const displayName = getUserDisplayName(user);
   const userInitials = getUserInitials(user);
   const clientNavItems = [
-    { label: t("header_nav.home"), to: "/" },
-    { label: t("header_nav.orders"), to: "/orders" },
-    ...(user ? [{ label: "Mon compte", to: "/profile" }] : []),
-    { label: "Promotions", to: "/promotions" },
-    { label: t("header_nav.favorites"), to: "/wishlist" },
+    { label: t("header_nav.home"), to: "/", icon: House, tone: "text-primary" },
+    { label: "Promos", to: "/promotions", icon: Tag, tone: "text-primary", promo: true },
+    { label: t("header_nav.orders"), to: "/orders", icon: Package, tone: "text-primary" },
+    { label: t("header_nav.favorites"), to: "/wishlist", icon: Heart, tone: "text-red-500" },
+    { label: "Compte", to: "/profile", icon: User, tone: "text-gray-600 dark:text-gray-300" },
+    { label: "Sélection", to: "/selection-premium", icon: Star, tone: "text-amber-500" },
+    { label: "Abonnements", to: "/premium", icon: Gem, tone: "text-primary" },
+    { label: "À propos", to: "/about", icon: Info, tone: "text-blue-500" },
   ];
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <header className="fixed inset-x-0 top-8 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="container mx-auto px-2.5 sm:px-4">
         {/* Top Bar */}
         <div className="flex items-center justify-between gap-1.5 py-2.5 sm:gap-4 sm:py-4">
@@ -275,7 +303,7 @@ export default function Header() {
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-10 w-auto object-contain max-[380px]:h-9 sm:h-11"
+              className="h-8 w-auto object-contain max-[380px]:h-7 sm:h-10"
             />
           </Link>
 
@@ -283,9 +311,9 @@ export default function Header() {
           <div
             id="search"
             data-tutorial="header-search"
-            className="hidden lg:flex flex-1 mx-8 items-center"
+            className="hidden lg:flex flex-1 ml-5 mr-auto items-center"
             ref={desktopSearchRef}
-            style={{ maxWidth: "560px", position: "relative" }}
+            style={{ maxWidth: "620px", position: "relative" }}
           >
             <div
               className="search-bar-v29 flex w-full"
@@ -634,7 +662,7 @@ export default function Header() {
                     </Link>
 
                     <a
-                      href="https://wa.me/2370005568778"
+                      href="https://wa.me/237689002812"
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
@@ -651,7 +679,7 @@ export default function Header() {
 
                     <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
                       <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                        <div className="truncate">Contact: +237 000 556 87 78</div>
+                        <div className="truncate">Contact: +237 689 002 812</div>
                       </div>
                       <button
                         onClick={handleLogout}
@@ -786,16 +814,38 @@ export default function Header() {
           )}
         </div>
 
-        <nav className="hidden lg:flex items-center gap-1 border-t border-gray-100 py-3 dark:border-gray-800 overflow-x-auto scrollbar-hide">
-          {clientNavItems.map((item) => (
-            <Link
-              key={item.label}
-              to={item.to}
-              className="rounded-full px-4 py-2 text-sm font-medium text-text-light-secondary transition-all hover:bg-orange-50 hover:text-primary dark:text-text-dark-secondary dark:hover:bg-bg-dark-alt dark:hover:text-primary whitespace-nowrap"
-            >
-              {item.label}
-            </Link>
-          ))}
+        <nav className="scrollbar-hide hidden items-center gap-0.5 overflow-x-auto border-t border-gray-100 py-3 md:flex lg:gap-1 dark:border-gray-800">
+          {clientNavItems.map((item) => {
+            const Icon = item.icon;
+            const active =
+              item.to === "/"
+                ? location.pathname === "/"
+                : location.pathname.startsWith(item.to);
+
+            return (
+              <Link
+                key={item.label}
+                to={item.to}
+                className={`flex items-center gap-1.5 whitespace-nowrap border-b-2 px-3.5 pb-[6px] pt-2 text-sm font-medium leading-5 transition-colors duration-200 ${
+                  active
+                    ? "border-primary text-primary"
+                    : "border-transparent text-text-light-secondary hover:text-primary dark:text-text-dark-secondary"
+                }`}
+              >
+                <Icon
+                  size={14}
+                  className={`flex-shrink-0 ${item.tone}`}
+                  fill={item.label === "Sélection" || item.label === t("header_nav.favorites") ? "currentColor" : "none"}
+                />
+                {item.label}
+                {item.promo && maxPromo > 0 ? (
+                  <span className="ml-0.5 rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-black text-red-500 dark:bg-red-500/15 dark:text-red-300">
+                    −{maxPromo}%
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
         </nav>
       </div>
 
@@ -803,6 +853,35 @@ export default function Header() {
       {mobileMenuOpen && (
         <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-bg-dark">
           <nav className="container mx-auto px-4 py-4 space-y-2">
+            {/* Mêmes entrées que la barre de navigation, même ordre. */}
+            {clientNavItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.label}
+                  to={item.to}
+                  className="flex items-center gap-3 rounded-lg px-4 py-3 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  <Icon
+                    size={16}
+                    className={`flex-shrink-0 ${item.tone}`}
+                    fill={item.label === "Sélection" || item.label === t("header_nav.favorites") ? "currentColor" : "none"}
+                  />
+                  <span className="font-medium text-text-light dark:text-text-dark">
+                    {item.label}
+                  </span>
+                  {item.promo && maxPromo > 0 ? (
+                    <span className="ml-auto rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-black text-red-500 dark:bg-red-500/15 dark:text-red-300">
+                      −{maxPromo}%
+                    </span>
+                  ) : null}
+                </Link>
+              );
+            })}
+
+            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
+
             <Link
               to="/catalog"
               className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
@@ -810,15 +889,6 @@ export default function Header() {
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 {t("header.catalog")}
-              </span>
-            </Link>
-            <Link
-              to="/promotions"
-              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="font-medium text-text-light dark:text-text-dark">
-                Promotions
               </span>
             </Link>
 
@@ -831,33 +901,6 @@ export default function Header() {
                 >
                   <span className="font-medium text-text-light dark:text-text-dark">
                     Litiges ouverts
-                  </span>
-                </Link>
-                <Link
-                  to="/profile"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    Mon compte
-                  </span>
-                </Link>
-                <Link
-                  to="/orders"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    {t("header.orders")}
-                  </span>
-                </Link>
-                <Link
-                  to="/wishlist"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    Mes favoris
                   </span>
                 </Link>
                 <Link

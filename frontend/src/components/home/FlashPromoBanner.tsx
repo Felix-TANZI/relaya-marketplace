@@ -66,8 +66,8 @@ export default function FlashPromoBanner({ count, maxDiscount, endDates }: Flash
       icon={Flame}
       iconAnimation="animate-flame-flicker"
       iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.75)]"
-      gradient="linear-gradient(102deg,#EA580C 0%,#DC2626 32%,#E1400F 58%,#F97316 82%,#FB923C 100%)"
-      shadow="0 12px 32px rgba(220,38,38,.22)"
+      gradient="linear-gradient(100deg,#8F1212 0%,#B91C1C 18%,#DC2626 40%,#E2450C 62%,#F97316 86%,#FB923C 100%)"
+      shadow="0 14px 36px rgba(153,27,27,.38)"
       watermark={["PROMO", "FLASH", "BELIVAY", "DEAL", "SOLDES", "BON PLAN"]}
     />
   );

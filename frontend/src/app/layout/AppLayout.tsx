@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import PageLoader from '@/components/PageLoader';
 import { listMyPayments } from '@/services/api/payments';
 import { useToast } from '@/context/ToastContext';
+import TopAdBar from '@/components/home/TopAdBar';
 import Header from './Header';
 import Footer from './Footer';
 import ClientTutorial from '@/features/tutorial/ClientTutorial';
@@ -136,8 +137,10 @@ export default function AppLayout() {
       <a href="#main-content" className="fixed left-3 top-3 z-[9999] -translate-y-24 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition focus:translate-y-0">Aller au contenu principal</a>
       <ScrollToTopOnRouteChange />
       {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">Mode hors ligne : les données affichées proviennent du cache et peuvent ne plus être à jour.</div>}
+      {!hideChrome && !isCheckout && <TopAdBar />}
       {!hideChrome && !isCheckout && <Header />}
-      <main id="main-content" tabIndex={-1} className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[132px] pb-16 lg:pb-0'}`}>
+      {/* 132 px de header + 32 px de ruban d'annonces, tous deux en position fixe. */}
+      <main id="main-content" tabIndex={-1} className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[164px] pb-16 lg:pb-0'}`}>
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>

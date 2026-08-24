@@ -111,12 +111,74 @@ services:
     networks:
       - relaya-network
 
-  frontend:
+  # Un service frontend par portail — chacun sert son propre sous-domaine
+  # (voir nginx/nginx.conf) et embarque son propre VITE_PORTAL_ROLE, comme
+  # les 6 applications mobiles. VITE_API_URL="/api" (relatif) volontairement
+  # : chaque sous-domaine proxy sa propre route /api/ vers le meme backend
+  # (voir nginx.conf), donc les appels restent "same-origin" et on evite
+  # d'avoir a gerer CORS entre sous-domaines.
+  frontend-client:
     build:
       context: ./frontend
       dockerfile: Dockerfile.prod
       args:
-        VITE_API_URL: ${VITE_API_URL:-https://belivay.com}
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: client
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  frontend-seller:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: seller
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  frontend-courier:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: courier
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  frontend-admin:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: admin
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  frontend-relay-point:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: relay_point
+    restart: unless-stopped
+    networks:
+      - relaya-network
+
+  frontend-delivery-org:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        VITE_API_URL: /api
+        VITE_PORTAL_ROLE: delivery_organization
     restart: unless-stopped
     networks:
       - relaya-network
@@ -134,7 +196,12 @@ services:
       - ./certbot/www:/var/www/certbot:ro
     depends_on:
       - backend
-      - frontend
+      - frontend-client
+      - frontend-seller
+      - frontend-courier
+      - frontend-admin
+      - frontend-relay-point
+      - frontend-delivery-org
     restart: unless-stopped
     networks:
       - relaya-network

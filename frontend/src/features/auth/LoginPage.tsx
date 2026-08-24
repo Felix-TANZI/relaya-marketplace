@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { isDedicatedPortal, portalHomePath, portalRole, type PortalRole } from '@/config/portals';
+import { inferPortalRoleFromPath, isDedicatedPortal, portalHomePath, portalRole, type PortalRole } from '@/config/portals';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const portalCopy: Record<PortalRole, {
@@ -98,12 +98,17 @@ export default function LoginPage() {
   const location = useLocation();
   const { login, googleLogin, verify2FA } = useAuth();
   const { showToast } = useToast();
-  const copy = portalCopy[portalRole];
-  const PortalIcon = copy.icon;
   const loginState = location.state as {
     from?: string;
     googleTwoFA?: { userId: number; email: string };
   } | null;
+  // Le site web sert tous les portails depuis un seul build (portalRole y
+  // vaut toujours 'client') : on devine alors le portail vise depuis la
+  // page qui a redirige ici. Les apps mobiles dediees gardent leur
+  // portalRole fixe, deja correct.
+  const effectivePortalRole = isDedicatedPortal ? portalRole : inferPortalRoleFromPath(loginState?.from);
+  const copy = portalCopy[effectivePortalRole];
+  const PortalIcon = copy.icon;
   const [showPassword, setShowPassword] = useState(false);
   const [secureMode, setSecureMode] = useState(isDedicatedPortal);
   const [loading, setLoading] = useState(false);

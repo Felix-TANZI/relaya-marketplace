@@ -225,26 +225,29 @@ export default function TrackingMap({
     () => customerLocation ? "" : buildGeocodeQuery(destinationAddress, destinationCity),
     [customerLocation, destinationAddress, destinationCity],
   );
-  const [geocodedDestination, setGeocodedDestination] = useState<[number, number] | null>(null);
+  // Le resultat du geocodage est memorise avec la requete dont il provient : il est
+  // donc ignore des que la requete change, sans reinitialisation d'etat dans l'effet.
+  const [geocoded, setGeocoded] = useState<{ query: string; coords: [number, number] | null }>({
+    query: "",
+    coords: null,
+  });
 
   useEffect(() => {
-    if (!geocodeQuery) {
-      setGeocodedDestination(null);
-      return;
-    }
+    if (!geocodeQuery) return;
 
     const controller = new AbortController();
     geocodeAddress(geocodeQuery, controller.signal)
       .then((coords) => {
-        if (!controller.signal.aborted) setGeocodedDestination(coords);
+        if (!controller.signal.aborted) setGeocoded({ query: geocodeQuery, coords });
       })
       .catch(() => {
-        if (!controller.signal.aborted) setGeocodedDestination(null);
+        if (!controller.signal.aborted) setGeocoded({ query: geocodeQuery, coords: null });
       });
 
     return () => controller.abort();
   }, [geocodeQuery]);
 
+  const geocodedDestination = geocoded.query === geocodeQuery ? geocoded.coords : null;
   const destination = geocodedDestination || fallbackDestination;
 
   // Delivery truck: midway between origin and destination

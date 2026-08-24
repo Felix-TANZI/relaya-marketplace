@@ -42,7 +42,6 @@ export default function RelayPointsMapPage() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     http<RelayPoint[]>("/api/auth/admin/relay-points/")
       .then((items) => {
         if (alive) {

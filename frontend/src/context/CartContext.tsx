@@ -43,12 +43,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const hydratedRef = useRef(false);
   const syncTimerRef = useRef<number | null>(null);
 
+  // Vidage du panier a la deconnexion : ajuste pendant le rendu plutot que dans un
+  // effet, pour eviter un rendu en cascade.
+  const [prevAuthenticated, setPrevAuthenticated] = useState(isAuthenticated);
+  if (prevAuthenticated !== isAuthenticated) {
+    setPrevAuthenticated(isAuthenticated);
+    if (!isAuthenticated) setItems([]);
+  }
+
   useEffect(() => {
     hydratedRef.current = false;
-    if (!isAuthenticated) {
-      setItems([]);
-      return;
-    }
+    if (!isAuthenticated) return;
 
     let cancelled = false;
     cartApi

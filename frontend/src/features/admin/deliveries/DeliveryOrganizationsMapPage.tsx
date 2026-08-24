@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Building2, CheckCircle2, MapPin, Phone, RefreshCw, Route, Search, Truck, Users } from "lucide-react";
+import { Building2, CheckCircle2, Phone, RefreshCw, Route, Search, Truck, Users } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
 
@@ -37,7 +37,6 @@ export default function DeliveryOrganizationsMapPage() {
 
   useEffect(() => {
     let alive = true;
-    setLoading(true);
     http<DeliveryOrganization[]>("/api/auth/admin/delivery-organizations/")
       .then((items) => {
         if (alive) {

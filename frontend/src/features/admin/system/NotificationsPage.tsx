@@ -69,8 +69,6 @@ export default function NotificationsPage() {
   const [showCDropdown,   setShowCDropdown]   = useState(false);
   const [loadingPickers,  setLoadingPickers]  = useState(false);
 
-  const cfg = AUDIENCE_CFG.find(a => a.key === audience)!;
-
   useEffect(() => {
     if (audience === 'specific_vendor' && vendors.length === 0) {
       setLoadingPickers(true);

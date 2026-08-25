@@ -99,8 +99,12 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'customer_email',
             'customer_phone',
             'city',
+            'region',
+            'district',
             'address',
             'address_precision',
+            'delivery_latitude',
+            'delivery_longitude',
             'note',
             'delivery_mode',
             'payment_status',
@@ -143,6 +147,20 @@ class OrderCreateSerializer(serializers.Serializer):
     city = serializers.ChoiceField(
         choices=['YAOUNDE', 'DOUALA'],
         help_text="Ville de livraison"
+    )
+    district = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_blank=True,
+        help_text="Quartier de livraison"
+    )
+    delivery_latitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        help_text="Latitude GPS donnee par le client (bouton 'Ma position')"
+    )
+    delivery_longitude = serializers.DecimalField(
+        max_digits=9, decimal_places=6, required=False, allow_null=True,
+        help_text="Longitude GPS donnee par le client (bouton 'Ma position')"
     )
     address = serializers.CharField(
         max_length=255,
@@ -295,7 +313,10 @@ class OrderCreateSerializer(serializers.Serializer):
         note = validated_data.get('note', '').strip()
         if delivery_mode == 'PICKUP':
             note = f"[PICKUP] {note}".strip()
-        
+
+        # La region se deduit de la ville (une seule region par ville geree pour l'instant).
+        region = {'YAOUNDE': 'Centre', 'DOUALA': 'Littoral'}.get(validated_data['city'], '')
+
         # Créer la commande avec l'ancien format de status
         order = Order.objects.create(
             user=user,
@@ -303,8 +324,12 @@ class OrderCreateSerializer(serializers.Serializer):
             customer_phone=validated_data['customer_phone'],
             delivery_method=delivery_mode,
             city=validated_data['city'],
+            region=region,
+            district=validated_data.get('district', '').strip(),
             address=address,
             address_precision=address_precision,
+            delivery_latitude=validated_data.get('delivery_latitude'),
+            delivery_longitude=validated_data.get('delivery_longitude'),
             note=note,
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,

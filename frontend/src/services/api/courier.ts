@@ -37,6 +37,9 @@ export type CourierShipment = {
   customer_name: string;
   customer_phone: string;
   delivery_address: string;
+  delivery_district?: string;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
   delivery_location_precision?: Partial<LocationPrecisionResult>;
   receipt_confirmation_code?: string | null;
   city: string;

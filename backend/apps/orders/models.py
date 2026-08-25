@@ -101,12 +101,23 @@ class Order(TimeStampedModel):
         verbose_name="Mode de livraison",
     )
     city    = models.CharField(max_length=50)
+    region  = models.CharField(max_length=50, blank=True, verbose_name="Région")
+    district = models.CharField(max_length=100, blank=True, verbose_name="Quartier")
     address = models.CharField(max_length=255)
     address_precision = models.JSONField(
         blank=True,
         default=dict,
         verbose_name="Analyse de précision adresse",
         help_text="Adresse structurée pour aider le livreur: quartier, repères, score et instruction.",
+    )
+    delivery_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Latitude de livraison",
+        help_text="Position GPS donnée par le client au checkout, en complément de l'adresse.",
+    )
+    delivery_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Longitude de livraison",
     )
     note    = models.TextField(blank=True, null=True)
 

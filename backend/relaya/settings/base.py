@@ -198,6 +198,12 @@ CORS_ALLOWED_ORIGINS = [
         "http://127.0.0.1:5178",
         "http://localhost:5179",
         "http://127.0.0.1:5179",
+        # Origine des 6 apps mobiles Capacitor (Android : scheme https, host
+        # localhost ; iOS : scheme capacitor). Sans ça, aucune requete API ne
+        # part depuis les apps natives, bloquee par CORS avant meme d'atteindre
+        # le serveur.
+        "https://localhost",
+        "capacitor://localhost",
     ]
     if origin
 ]

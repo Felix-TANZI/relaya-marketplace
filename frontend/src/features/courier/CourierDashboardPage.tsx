@@ -1477,10 +1477,22 @@ export default function CourierDashboardPage() {
                 Details de commande
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <InfoPill icon={MapPin}>Adresse: {selectedShipment.delivery_address}</InfoPill>
-                <InfoPill icon={Store}>Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
-                <InfoPill icon={Truck}>Statut: {statusLabel(selectedShipment.status)}</InfoPill>
+                <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Adresse: {selectedShipment.delivery_address}</InfoPill>
+                {selectedShipment.delivery_district ? (
+                  <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Quartier: {selectedShipment.delivery_district}</InfoPill>
+                ) : null}
+                <InfoPill icon={Store} tone="border-gray-200 bg-gray-50 text-gray-700">Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
+                <InfoPill icon={Truck} tone="border-gray-200 bg-gray-50 text-gray-700">Statut: {statusLabel(selectedShipment.status)}</InfoPill>
               </div>
+              {selectedShipment.delivery_latitude != null && selectedShipment.delivery_longitude != null ? (
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${selectedShipment.delivery_latitude}&mlon=${selectedShipment.delivery_longitude}#map=17/${selectedShipment.delivery_latitude}/${selectedShipment.delivery_longitude}`}
+                  target="_blank" rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-emerald-500/10 px-4 py-2.5 text-[12.5px] font-bold text-emerald-300 hover:bg-emerald-500/15"
+                >
+                  <Navigation size={14} /> Position GPS exacte du client — ouvrir sur la carte
+                </a>
+              ) : null}
             </div>
 
             <div className="mt-5 rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">

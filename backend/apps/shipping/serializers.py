@@ -76,6 +76,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
     customer_name = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     delivery_address = serializers.SerializerMethodField()
+    delivery_district = serializers.SerializerMethodField()
+    delivery_latitude = serializers.SerializerMethodField()
+    delivery_longitude = serializers.SerializerMethodField()
     delivery_location_precision = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     order_total_xaf = serializers.SerializerMethodField()
@@ -100,6 +103,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "customer_name",
             "customer_phone",
             "delivery_address",
+            "delivery_district",
+            "delivery_latitude",
+            "delivery_longitude",
             "delivery_location_precision",
             "city",
             "order_total_xaf",
@@ -145,6 +151,15 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     def get_delivery_address(self, obj):
         return obj.order.address
+
+    def get_delivery_district(self, obj):
+        return obj.order.district
+
+    def get_delivery_latitude(self, obj):
+        return obj.order.delivery_latitude
+
+    def get_delivery_longitude(self, obj):
+        return obj.order.delivery_longitude
 
     def get_delivery_location_precision(self, obj):
         return obj.order.address_precision or {}

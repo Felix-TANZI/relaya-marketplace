@@ -118,7 +118,7 @@ export default function WhyBelivaySection() {
 
       {/* ═══════════════ Bandeau BelivaY · Marketplace CEMAC ═══════════════ */}
       <div
-        className="relative mt-3 overflow-hidden rounded-[18px] border border-[#f7e2c9] p-3.5 sm:mt-4 sm:rounded-[22px] sm:p-4"
+        className="relative mt-5 overflow-hidden rounded-[18px] border border-[#f7e2c9] p-3.5 sm:mt-6 sm:rounded-[22px] sm:p-4"
         style={{ background: "linear-gradient(118deg,#FFF3E4 0%,#FFE7CE 52%,#FFF7EC 100%)" }}
       >
         <span
@@ -130,51 +130,51 @@ export default function WhyBelivaySection() {
           className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 animate-promo-sweep bg-gradient-to-r from-transparent via-white/50 to-transparent"
         />
 
-        <div className="relative z-10 flex flex-wrap items-center gap-3 sm:gap-4">
-          {/* Identité */}
-          <div className="flex min-w-0 flex-1 items-center gap-3">
-            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-[0_6px_16px_rgba(244,121,32,.18)]">
-              <ShoppingCart size={22} />
-            </span>
+        {/* Identité — toujours pleine largeur : le texte doit pouvoir
+            s'enrouler normalement, jamais se retrouver ecrase sur une
+            largeur proche de zero par les chiffres/raccourcis a cote. */}
+        <div className="relative z-10 flex items-center gap-3">
+          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-[0_6px_16px_rgba(244,121,32,.18)]">
+            <ShoppingCart size={22} />
+          </span>
 
-            <div className="min-w-0">
-              <p className="text-[14.5px] font-black leading-tight text-gray-900 sm:text-[16px]">
-                BelivaY · Marketplace CEMAC
-              </p>
-              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] font-semibold text-gray-500">
-                <span className="rounded bg-primary/15 px-1 py-px text-[8.5px] font-black uppercase tracking-[0.1em] text-[#C85E14]">
-                  CM
-                </span>
-                Made in Cameroon
-                <span className="text-gray-300">·</span>
-                <Globe size={11} className="text-primary" />
-                {CEMAC_COUNTRIES}
-              </p>
-            </div>
+          <div className="min-w-0">
+            <p className="text-[14.5px] font-black leading-tight text-gray-900 sm:text-[16px]">
+              BelivaY · Marketplace CEMAC
+            </p>
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-[11px] font-semibold text-gray-500">
+              <span className="rounded bg-primary/15 px-1 py-px text-[8.5px] font-black uppercase tracking-[0.1em] text-[#C85E14]">
+                CM
+              </span>
+              Made in Cameroon
+              <span className="text-gray-300">·</span>
+              <Globe size={11} className="text-primary" />
+              {CEMAC_COUNTRIES}
+            </p>
           </div>
+        </div>
 
-          {/* Chiffres */}
-          <div className="flex flex-wrap items-center gap-2">
-            {marketplaceStats.map((stat) => (
-              <article
-                key={stat.label}
-                className="rounded-[12px] bg-white px-3 py-2 text-center shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                <p className="flex items-center justify-center gap-0.5 text-[13px] font-black leading-none text-[#C85E14]">
-                  {stat.value}
-                  {stat.star ? (
-                    <Star size={10} className="text-amber-500" fill="currentColor" />
-                  ) : null}
-                </p>
-                <p className="mt-1 text-[8.5px] font-black uppercase tracking-[0.12em] text-gray-400">
-                  {stat.label}
-                </p>
-              </article>
-            ))}
-          </div>
+        {/* Chiffres + raccourcis — sur une deuxieme ligne, en dessous de
+            l'identite, pour ne jamais se disputer la largeur avec elle. */}
+        <div className="relative z-10 mt-3 flex flex-wrap items-center gap-2 sm:gap-3">
+          {marketplaceStats.map((stat) => (
+            <article
+              key={stat.label}
+              className="rounded-[12px] bg-white px-3 py-2 text-center shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-transform duration-200 hover:-translate-y-0.5"
+            >
+              <p className="flex items-center justify-center gap-0.5 text-[13px] font-black leading-none text-[#C85E14]">
+                {stat.value}
+                {stat.star ? (
+                  <Star size={10} className="text-amber-500" fill="currentColor" />
+                ) : null}
+              </p>
+              <p className="mt-1 text-[8.5px] font-black uppercase tracking-[0.12em] text-gray-400">
+                {stat.label}
+              </p>
+            </article>
+          ))}
 
-          {/* Raccourcis */}
-          <div className="flex max-w-[280px] flex-wrap justify-end gap-2 sm:ml-auto">
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
             {MARKETPLACE_LINKS.map((link) => {
               const Icon = link.icon;
               return (

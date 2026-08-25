@@ -53,10 +53,34 @@ export default function CheckoutPage() {
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
     phone: user?.phone || getDefaultPaymentMethod()?.phone || "",
+    district: "",
     address: "",
     city: "Yaoundé" as "Yaoundé" | "Douala",
     pickupCenterId: "yaounde-mokolo",
+    deliveryLatitude: null as number | null,
+    deliveryLongitude: null as number | null,
   });
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+
+  const handleUseGps = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus("not_found");
+      return;
+    }
+    setGpsStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData((p) => ({
+          ...p,
+          deliveryLatitude: pos.coords.latitude,
+          deliveryLongitude: pos.coords.longitude,
+        }));
+        setGpsStatus("found");
+      },
+      () => setGpsStatus("not_found"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
 
   // `items.length` n'est pas lu par la fabrique : c'est volontairement une cle
   // de recalcul, pour relire la selection stockee quand le panier change — il
@@ -72,7 +96,7 @@ export default function CheckoutPage() {
   const fmt = (n: number) => `${n.toLocaleString(locale)} FCFA`;
 
   const infoDone = Boolean(formData.firstName.trim() && formData.phone.trim());
-  const placeDone = isPickup ? Boolean(center) : Boolean(formData.address.trim());
+  const placeDone = isPickup ? Boolean(center) : Boolean(formData.address.trim() && formData.district.trim());
 
   useEffect(() => {
     setAddressPrecision(null);
@@ -122,11 +146,14 @@ export default function CheckoutPage() {
       const order = await ordersApi.create({
         delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
         city: formData.city === 'Douala' ? 'DOUALA' : 'YAOUNDE',
+        district: isPickup ? undefined : formData.district,
         address: isPickup ? `${center.name} - ${center.address}` : formData.address,
         customer_phone: formData.phone,
         customer_email: '',
         note: isPickup ? `CLICK_AND_COLLECT - ${center.name} - ${center.address} - ${center.hours}` : '',
         address_precision: isPickup ? undefined : addressPrecision ?? undefined,
+        delivery_latitude: isPickup ? undefined : formData.deliveryLatitude,
+        delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id, qty: item.quantity, title: item.name,
           price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
@@ -288,14 +315,39 @@ export default function CheckoutPage() {
                     ))}
                   </div>
                 ) : (
-                  <div className="pf-field">
-                    <label className="pf-label">{t('checkout.address')}</label>
-                    <input className="pf-input" type="text" required value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      onBlur={() => void analyzeDeliveryAddress()}
-                      placeholder={t('checkout.address_placeholder')} />
-                    <div className="pf-muted-sm" style={{ marginTop: 6 }}>{t('checkout.address_helper')}</div>
-                  </div>
+                  <>
+                    <div className="pf-field" style={{ marginBottom: 16 }}>
+                      <label className="pf-label">Quartier</label>
+                      <input className="pf-input" type="text" required value={formData.district}
+                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                        placeholder="Ex: Bastos" />
+                    </div>
+
+                    <button type="button" onClick={handleUseGps} disabled={gpsStatus === "loading"}
+                      className="pf-btn-block" style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        marginBottom: 16, padding: "10px 14px", borderRadius: 12,
+                        background: "var(--pf-s3)", border: "1px solid var(--pf-border)",
+                        fontWeight: 700, fontSize: 13, cursor: "pointer",
+                      }}>
+                      {gpsStatus === "found" ? <Check size={14} /> : <Lock size={14} style={{ opacity: 0 }} />}
+                      {gpsStatus === "found" ? "Position enregistrée" : gpsStatus === "loading" ? "Localisation en cours…" : "Utiliser ma position GPS"}
+                    </button>
+                    {gpsStatus === "not_found" && (
+                      <div className="pf-muted-sm" style={{ marginTop: -8, marginBottom: 16, color: "#dc2626" }}>
+                        Position indisponible — autorisez la géolocalisation ou décrivez précisément votre adresse ci-dessous.
+                      </div>
+                    )}
+
+                    <div className="pf-field">
+                      <label className="pf-label">{t('checkout.address')}</label>
+                      <input className="pf-input" type="text" required value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        onBlur={() => void analyzeDeliveryAddress()}
+                        placeholder={t('checkout.address_placeholder')} />
+                      <div className="pf-muted-sm" style={{ marginTop: 6 }}>{t('checkout.address_helper')}</div>
+                    </div>
+                  </>
                 )}
                 {!isPickup && addressAnalyzing && (
                   <div className="rounded-lg border border-orange-100 bg-orange-50 p-4 text-sm font-semibold text-orange-800 dark:border-orange-900 dark:bg-orange-950/20 dark:text-orange-200" style={{ marginTop: 12 }}>

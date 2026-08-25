@@ -72,6 +72,11 @@ export default function Footer() {
                   Mes favoris
                 </Link>
               </li>
+              <li>
+                <Link to="/become-seller" className="text-gray-300 hover:text-primary transition-colors text-sm">
+                  Devenir Vendeur
+                </Link>
+              </li>
             </ul>
           </div>
 

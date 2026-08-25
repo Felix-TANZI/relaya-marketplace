@@ -24,6 +24,7 @@ import {
   Star,
   Gem,
   Info,
+  Store,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
@@ -648,6 +649,20 @@ export default function Header() {
                     </Link>
 
                     <Link
+                      to="/become-seller"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      <Store
+                        size={18}
+                        className="text-text-light-secondary dark:text-text-dark-secondary"
+                      />
+                      <span className="text-text-light dark:text-text-dark">
+                        Devenir Vendeur
+                      </span>
+                    </Link>
+
+                    <Link
                       to="/help"
                       className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
                       onClick={() => setUserMenuOpen(false)}
@@ -694,6 +709,11 @@ export default function Header() {
               </div>
             ) : (
               <div className="hidden lg:flex items-center gap-2">
+                <Link to="/become-seller">
+                  <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
+                    Vendre sur BelivaY
+                  </button>
+                </Link>
                 <Link to="/login">
                   <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
                     {t("header.login")}
@@ -889,6 +909,17 @@ export default function Header() {
             >
               <span className="font-medium text-text-light dark:text-text-dark">
                 {t("header.catalog")}
+              </span>
+            </Link>
+
+            <Link
+              to="/become-seller"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              <Store size={16} className="flex-shrink-0 text-text-light-secondary dark:text-text-dark-secondary" />
+              <span className="font-medium text-text-light dark:text-text-dark">
+                Devenir Vendeur
               </span>
             </Link>
 

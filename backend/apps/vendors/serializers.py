@@ -1728,7 +1728,7 @@ class VendorLocationSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'address', 'phone', 'email',
             'representative_name', 'representative_phone',
-            'latitude', 'longitude', 'is_active', 'created_at',
+            'latitude', 'longitude', 'is_active', 'is_main', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
  

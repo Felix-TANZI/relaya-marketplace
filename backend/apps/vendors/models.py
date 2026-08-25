@@ -358,16 +358,30 @@ class VendorLocation(models.Model):
         help_text="Ex: 11.502 (Yaoundé)"
     )
     is_active            = models.BooleanField(default=True)
+    is_main              = models.BooleanField(
+        default=False,
+        verbose_name="Centre principal",
+        help_text="Un seul emplacement principal par vendeur — les autres sont secondaires.",
+    )
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ['-is_main', 'name']
         verbose_name = "Emplacement de boutique"
         verbose_name_plural = "Emplacements de boutique"
 
     def __str__(self):
         return f"{self.vendor.business_name} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and not self.is_main and not VendorLocation.objects.filter(vendor=self.vendor, is_main=True).exists():
+            # Premier emplacement du vendeur : devient principal par defaut.
+            self.is_main = True
+        super().save(*args, **kwargs)
+        if self.is_main:
+            VendorLocation.objects.filter(vendor=self.vendor, is_main=True).exclude(pk=self.pk).update(is_main=False)
 
 
 # ─── NOTE INTERNE VENDEUR / COMMANDE ─────────────────────────────────────────

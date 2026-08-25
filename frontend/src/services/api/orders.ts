@@ -19,8 +19,11 @@ export interface OrderCreateData {
   delivery_method?: 'DELIVERY' | 'PICKUP';
   delivery_mode?: 'DELIVERY' | 'PICKUP';
   city: 'YAOUNDE' | 'DOUALA';
+  district?: string;
   address: string;
   address_precision?: LocationPrecisionResult | Record<string, unknown>;
+  delivery_latitude?: number | null;
+  delivery_longitude?: number | null;
   customer_phone: string;
   customer_email?: string;
   note?: string;

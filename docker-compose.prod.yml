@@ -124,6 +124,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: client
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -135,6 +136,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: seller
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -146,6 +148,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: courier
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -157,6 +160,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: admin
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -168,6 +172,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: relay_point
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -179,6 +184,7 @@ services:
       args:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: delivery_organization
+        VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
     restart: unless-stopped
     networks:
       - relaya-network

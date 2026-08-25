@@ -4,8 +4,10 @@ WORKDIR /app
 
 ARG VITE_API_URL
 ARG VITE_PORTAL_ROLE=client
+ARG VITE_GOOGLE_CLIENT_ID
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_PORTAL_ROLE=$VITE_PORTAL_ROLE
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 
 COPY package*.json ./
 # --legacy-peer-deps : @codetrix-studio/capacitor-google-auth (utilise pour

@@ -9,6 +9,7 @@ import ClientTutorial from '@/features/tutorial/ClientTutorial';
 import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import BackToTop from '@/components/BackToTop';
+import useFixedHeaderHeight from '@/hooks/useFixedHeaderHeight';
 
 function ScrollToTopOnRouteChange() {
   const { pathname, search } = useLocation();
@@ -41,6 +42,7 @@ function ScrollToTopOnRouteChange() {
 
 export default function AppLayout() {
   const { showToast } = useToast();
+  useFixedHeaderHeight();
   // `null` tant qu'aucun sondage n'a eu lieu : le premier passage sert de
   // reference et ne notifie rien, sinon toutes les transactions existantes
   // declencheraient un toast au chargement de l'app.
@@ -93,8 +95,16 @@ export default function AppLayout() {
       <ScrollToTopOnRouteChange />
       <TopAdBar />
       <Header />
-      {/* 132 px de header + 32 px de ruban d'annonces, tous deux en position fixe. */}
-      <main className="flex-1 overflow-x-hidden pt-[164px] pb-16 lg:pb-0">
+      {/*
+        Le ruban d'annonces et le header sont tous deux en position fixe : la
+        hauteur à compenser change donc à chaque palier responsive (barre de
+        recherche mobile, rangée de navigation ≥ md…). Elle est mesurée au lieu
+        d'être codée en dur — voir useFixedHeaderHeight — ce qui évitait, en
+        mobile, une bande vide d'une trentaine de pixels sous le header.
+      */}
+      <main
+        className="flex-1 overflow-x-hidden pt-[var(--belivay-header-h,164px)] pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0"
+      >
         <Outlet />
       </main>
       <Footer />

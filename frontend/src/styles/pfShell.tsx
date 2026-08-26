@@ -242,6 +242,96 @@ const PF_CSS = `
   .pf-anim{opacity:1!important}
 }
 
+/* ─── Espace client en mobile ───────────────────────────────────────────────
+   Sous 1024px la colonne de navigation en verre laisse place a un en-tete
+   d'identite compact et a un rail de sections defilant horizontalement. */
+.pf-mhead{display:none}
+@media(max-width:1023px){
+  .pf-mhead{display:flex;flex-direction:column;gap:10px}
+  .pf-ident{display:none}
+  .pf-navcard{display:none}
+  .pf-grid{margin-top:12px;gap:12px}
+}
+.pf-mid{position:relative;overflow:hidden;display:flex;align-items:center;gap:12px;border-radius:20px;padding:14px 15px;background:linear-gradient(120deg,#f9a04d,#f4610f 62%,#e26a10);box-shadow:0 14px 34px rgba(244,97,15,.34)}
+.pf-mid::after{content:"";position:absolute;top:-46px;right:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.3),transparent 68%);pointer-events:none}
+.pf-mid-av{position:relative;z-index:1;width:46px;height:46px;flex-shrink:0;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.25);box-shadow:0 0 0 2px rgba(255,255,255,.75);color:#fff;font-weight:800;font-size:16px}
+.pf-mid-av img{width:100%;height:100%;object-fit:cover}
+.pf-mid-txt{position:relative;z-index:1;min-width:0;flex:1}
+.pf-mid-n{font-size:16px;font-weight:800;letter-spacing:-.01em;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-mid-s{margin-top:2px;font-size:12px;font-weight:500;color:rgba(255,255,255,.88);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pf-mid-tier{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;color:#fff;background:rgba(255,255,255,.24);border:1px solid rgba(255,255,255,.4)}
+.pf-mprog{display:flex;align-items:center;gap:10px;width:100%;border-radius:16px;padding:11px 14px;background:var(--pf-glass);border:1px solid var(--pf-glass-border);box-shadow:var(--pf-shadow);font-family:inherit;cursor:pointer;text-align:left;transition:.18s}
+.pf-mprog:hover{border-color:var(--pf-aring)}
+.pf-mprog-l{display:inline-flex;align-items:center;gap:5px;flex-shrink:0;font-size:11.5px;font-weight:800;color:var(--pf-text2)}
+.pf-mprog-b{flex:1;min-width:0;height:7px;border-radius:999px;background:var(--pf-s3);overflow:hidden}
+.pf-mprog-b>i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--pf-accent2),var(--pf-accent));transition:width 1s cubic-bezier(.22,.61,.36,1)}
+.pf-mprog-v{flex-shrink:0;font-size:11.5px;font-weight:800;color:var(--pf-accent)}
+.pf-mtiles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pf-mtile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;border-radius:16px;padding:12px 4px;border:1.5px solid transparent;background:var(--pf-glass);box-shadow:var(--pf-shadow);cursor:pointer;font-family:inherit;font-size:11px;font-weight:700;color:var(--pf-text2);transition:.18s}
+.pf-mtile:hover{transform:translateY(-2px)}
+.pf-mtile.on{border-color:var(--pf-accent);background:var(--pf-asoft);color:var(--pf-accent)}
+.pf-mtile-ic{position:relative;display:inline-flex;align-items:center;justify-content:center;color:var(--pf-accent)}
+.pf-mtile-b{position:absolute;top:-7px;right:-9px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:#fff;background:#e11d48;box-shadow:0 2px 6px rgba(225,29,72,.45)}
+.pf-rail{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;border-radius:18px;padding:7px;background:var(--pf-glass);border:1px solid var(--pf-glass-border);box-shadow:var(--pf-shadow)}
+.pf-rail::-webkit-scrollbar{display:none}
+.pf-rail-btn{display:inline-flex;align-items:center;gap:7px;flex-shrink:0;border:none;border-radius:999px;padding:9px 16px;font-family:inherit;font-size:12.5px;font-weight:700;color:var(--pf-text2);background:var(--pf-s3);cursor:pointer;white-space:nowrap;transition:.18s}
+.pf-rail-btn:hover{color:var(--pf-accent)}
+.pf-rail-btn.on{color:#fff;background:linear-gradient(135deg,var(--pf-accent2),var(--pf-accent));box-shadow:0 7px 18px rgba(244,97,15,.34)}
+.pf-rail-b{min-width:16px;height:16px;padding:0 4px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:800;color:#fff;background:var(--pf-accent)}
+.pf-rail-btn.on .pf-rail-b{background:rgba(255,255,255,.3)}
+
+/* ─── Compte BelivaY : solde, depots, abonnement ─────────────────────────── */
+.pf-wal-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:860px){.pf-wal-grid{grid-template-columns:1fr}}
+.pf-wal{border-radius:16px;padding:16px;border:1px solid var(--pf-border)}
+.pf-wal.o{background:rgba(244,97,15,.07);border-color:rgba(244,97,15,.22)}
+.pf-wal.g{background:rgba(16,185,129,.09);border-color:rgba(16,185,129,.24)}
+.pf-wal.y{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.26)}
+.pf-wal-ic{display:inline-flex;width:34px;height:34px;border-radius:11px;align-items:center;justify-content:center;margin-bottom:12px}
+.pf-wal.o .pf-wal-ic{background:rgba(244,97,15,.16);color:#f4610f}
+.pf-wal.g .pf-wal-ic{background:rgba(16,185,129,.18);color:#059669}
+.pf-wal.y .pf-wal-ic{background:rgba(245,158,11,.2);color:#d97706}
+.pf-wal-amt{font-size:23px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.pf-wal.o .pf-wal-amt{color:#f4610f}
+.pf-wal.g .pf-wal-amt{color:#059669}
+.pf-wal.y .pf-wal-amt{color:#d97706}
+.pf-wal-l{margin-top:6px;font-size:13px;font-weight:700;color:var(--pf-text)}
+.pf-wal-s{margin-top:2px;font-size:11.5px;color:var(--pf-muted)}
+.pf-op-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+@media(max-width:520px){.pf-op-grid{grid-template-columns:1fr}}
+.pf-op{display:flex;flex-direction:column;align-items:center;gap:7px;border-radius:16px;padding:14px 10px;border:1.5px solid var(--pf-bstrong);background:var(--pf-glass);cursor:pointer;font-family:inherit;transition:.18s}
+.pf-op:hover{border-color:var(--pf-accent)}
+.pf-op.on{border-color:var(--pf-accent);background:var(--pf-asoft);box-shadow:0 8px 20px rgba(244,97,15,.18)}
+.pf-op-dot{width:26px;height:26px;border-radius:50%}
+.pf-op-dot.orange{background:radial-gradient(circle at 34% 30%,#ffb066,#f4610f)}
+.pf-op-dot.mtn{background:radial-gradient(circle at 34% 30%,#ffe27a,#f2c31c)}
+.pf-op-n{font-size:13px;font-weight:800;color:var(--pf-text)}
+.pf-op-s{font-size:11px;color:var(--pf-muted)}
+.pf-recv{display:flex;align-items:center;justify-content:space-between;gap:10px;border-radius:12px;padding:11px 13px;background:var(--pf-asoft);border:1px solid var(--pf-aring)}
+.pf-recv-n{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:800;color:var(--pf-text)}
+.pf-estimate{border-radius:12px;padding:10px 13px;border:1.5px solid var(--pf-aring);background:var(--pf-asoft);font-size:15px;font-weight:800;color:var(--pf-accent)}
+.pf-plan-current{position:relative;overflow:hidden;border-radius:16px;padding:18px;color:#fff;background:linear-gradient(125deg,#6d28d9,#8b5cf6 70%,#a855f7);box-shadow:0 14px 34px rgba(109,40,217,.35)}
+.pf-plan-current::after{content:"";position:absolute;top:-40px;right:-30px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.28),transparent 70%)}
+.pf-plan-k{position:relative;z-index:1;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;opacity:.85}
+.pf-plan-name{position:relative;z-index:1;margin-top:4px;font-size:26px;font-weight:800;letter-spacing:-.03em}
+.pf-plan-sub{position:relative;z-index:1;margin-top:4px;font-size:12.5px;opacity:.9}
+.pf-plan-grid{display:grid;grid-template-columns:1fr;gap:12px;margin-top:12px}
+@media(min-width:760px){.pf-plan-grid{grid-template-columns:repeat(2,1fr)}}
+.pf-plan{display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:16px;padding:18px 16px;border:1.5px solid rgba(244,97,15,.35);background:rgba(244,97,15,.07);text-align:center}
+.pf-plan.violet{border-color:rgba(139,92,246,.4);background:rgba(139,92,246,.09)}
+.pf-plan-t{font-size:15px;font-weight:800;color:var(--pf-text)}
+.pf-plan-p{font-size:19px;font-weight:800;color:var(--pf-accent)}
+.pf-plan.violet .pf-plan-p{color:#7c3aed}
+.pf-plan-p span{font-size:12px;font-weight:600;color:var(--pf-muted)}
+.pf-plan-perks{margin:10px 0 14px;padding:0;list-style:none;display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--pf-text2);text-align:left;width:100%}
+.pf-plan-perks li{display:flex;gap:7px;align-items:flex-start}
+.pf-plan-cta{width:100%;border:none;border-radius:11px;padding:10px 14px;font-family:inherit;font-size:13px;font-weight:800;color:var(--pf-text);background:transparent;cursor:pointer;transition:.18s}
+.pf-plan-cta:hover{color:var(--pf-accent)}
+.pf-plan.violet .pf-plan-cta{color:#fff;background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 8px 20px rgba(109,40,217,.35)}
+.pf-plan-cta:disabled{opacity:.55;cursor:not-allowed}
+.pf-dep-line{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--pf-border)}
+.pf-dep-line:first-of-type{border-top:none}
+
 /* ─── Document A4 (reçu / facture) ─── */
 /* A4 exact : 210×297 mm à 96 dpi = 794×1123 px. Cachée a l'ecran, sort a l'impression. */
 .pf-a4{width:794px;height:1123px;background:#fff;color:#1a1420;border-radius:6px;overflow:hidden;

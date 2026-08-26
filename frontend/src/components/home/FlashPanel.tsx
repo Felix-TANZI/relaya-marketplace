@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
   LifeBuoy,
@@ -236,6 +237,14 @@ export default function FlashPanel({
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Offres rapides</p>
               <h3 className="text-[16px] font-extrabold tracking-tight text-gray-900 dark:text-white">Flash Deals</h3>
             </div>
+
+            <Link
+              to="/flash-deals"
+              className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#fff0e6] px-3 py-1.5 text-[11px] font-bold text-primary transition hover:bg-[#ffe1cb] dark:bg-primary/10 dark:hover:bg-primary/20"
+            >
+              Tout voir
+              <ArrowRight size={12} />
+            </Link>
           </div>
 
           <div className="mb-4 rounded-[22px] bg-[linear-gradient(135deg,#111827,#2b3446)] p-3 shadow-inner">

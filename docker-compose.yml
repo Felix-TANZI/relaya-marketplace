@@ -58,6 +58,11 @@ services:
       - "5174:5173"
     volumes:
       - ./frontend:/app
+      # Volume anonyme : isole les node_modules du conteneur (binaires Linux) du
+      # dossier monté depuis l'hôte. Sans lui, le « npm install » ci-dessous écrit
+      # dans ./frontend/node_modules et casse les outils locaux (vite, vitest) sur
+      # une machine Windows ou macOS, à chaque démarrage du conteneur.
+      - /app/node_modules
     command: >
       sh -c "npm install &&
              npm run dev -- --host 0.0.0.0 --port 5173"

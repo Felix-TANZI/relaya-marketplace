@@ -45,6 +45,7 @@ import AboutPage              from '@/features/about/AboutPage';
 import BecomeSellerPage       from '@/features/vendors/BecomeSellerPage';
 import NotFoundPage           from '@/features/system/NotFoundPage';
 import PromotionsPage         from '@/features/promotions/PromotionsPage';
+import FlashDealsPage         from '@/features/flash/FlashDealsPage';
 import DriverApp              from '@/features/driver/DriverApp';
 import FicheDetailPage        from '@/features/catalog/FicheDetailPage';
 import RelayPointPage         from '@/features/relay/RelayPointPage';
@@ -183,6 +184,7 @@ export const router = createBrowserRouter([
       { path: 'cart',            element: <CartPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
+      { path: 'flash-deals',     element: <FlashDealsPage /> },
       { path: 'premium',         element: <PremiumPage /> },
       { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },

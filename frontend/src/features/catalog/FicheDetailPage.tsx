@@ -4,6 +4,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { recordProductView } from '@/lib/recentlyViewed';
 import {
   Bell, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Clock, Heart, Link2, Lock,
   MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag,
@@ -283,6 +284,12 @@ export default function FicheDetailPage() {
     };
     run();
     return () => { cancelled = true; };
+  }, [slug]);
+
+  /* Historique local : alimente la frame « Recemment consultes » de l'accueil. */
+  useEffect(() => {
+    const productId = Number(slug);
+    if (Number.isFinite(productId) && productId > 0) recordProductView(productId);
   }, [slug]);
 
   useEffect(() => {

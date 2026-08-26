@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
@@ -12,6 +13,11 @@ interface HomeSectionProps {
   products: Product[];
   rows?: 1 | 2 | 3;
   onSeeMore?: () => void;
+  /** Destination du bouton de tete de frame, quand il pointe vers une page. */
+  seeMoreTo?: string;
+  seeMoreLabel?: string;
+  /** Fait respirer la pastille — utilise pour « Nouveau ». */
+  animateBadge?: boolean;
   isMockProducts?: boolean;
 }
 
@@ -23,6 +29,9 @@ export default function HomeSection({
   products,
   rows = 1,
   onSeeMore,
+  seeMoreTo,
+  seeMoreLabel = "Voir plus",
+  animateBadge = false,
   isMockProducts = false,
 }: HomeSectionProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -67,7 +76,9 @@ export default function HomeSection({
       : "flex";
 
   return (
-    <div className="mb-3 overflow-hidden rounded-xl border border-gray-100 bg-white p-3 shadow-[0_1px_4px_rgba(0,0,0,.03)] dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
+    // Pas de cadre propre : la frame qui accueille HomeSection porte déjà bordure,
+    // fond et marge intérieure. En empiler un second creusait un vide inutile.
+    <div>
       {/* Header */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -75,19 +86,30 @@ export default function HomeSection({
           {Icon && <Icon size={15} className="text-primary" />}
           <h3 className="text-[13px] font-extrabold text-gray-900 dark:text-white">{title}</h3>
           {badge && (
-            <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badgeColor}`}>
+            <span
+              className={`rounded-full px-2 py-0.5 text-[9px] font-bold ${badgeColor} ${
+                animateBadge ? "animate-badge-breathe" : ""
+              }`}
+            >
               {badge}
             </span>
           )}
         </div>
-        {onSeeMore && (
+        {seeMoreTo ? (
+          <Link
+            to={seeMoreTo}
+            className="inline-flex min-h-[30px] flex-shrink-0 items-center rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-[11px] font-bold text-orange-700 transition-all hover:border-primary hover:bg-primary hover:text-white dark:border-primary/20 dark:bg-primary/10 dark:text-primary"
+          >
+            {seeMoreLabel} →
+          </Link>
+        ) : onSeeMore ? (
           <button
             onClick={onSeeMore}
-            className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-orange-700 transition-all hover:bg-primary hover:text-white hover:border-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary"
+            className="flex-shrink-0 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-orange-700 transition-all hover:bg-primary hover:text-white hover:border-primary dark:border-primary/20 dark:bg-primary/10 dark:text-primary"
           >
-            Voir plus →
+            {seeMoreLabel} →
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Scroll track */}

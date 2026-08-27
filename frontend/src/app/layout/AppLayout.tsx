@@ -11,6 +11,7 @@ import GlobalAssistant from '@/features/assistant/GlobalAssistant';
 import MobileBottomNav from '@/components/MobileBottomNav';
 import BackToTop from '@/components/BackToTop';
 import { isDedicatedPortal } from '@/config/portals';
+import useFixedHeaderHeight from '@/hooks/useFixedHeaderHeight';
 
 function ScrollToTopOnRouteChange() {
   const { pathname, search } = useLocation();
@@ -43,6 +44,7 @@ function ScrollToTopOnRouteChange() {
 
 export default function AppLayout() {
   const { showToast } = useToast();
+  useFixedHeaderHeight();
   const { pathname } = useLocation();
   const isAuthPage = ['/login', '/register', '/forgot-password'].some((path) => pathname.startsWith(path));
   const hideChrome = isAuthPage && isDedicatedPortal;
@@ -139,8 +141,18 @@ export default function AppLayout() {
       {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">Mode hors ligne : les données affichées proviennent du cache et peuvent ne plus être à jour.</div>}
       {!hideChrome && !isCheckout && <TopAdBar />}
       {!hideChrome && !isCheckout && <Header />}
-      {/* 132 px de header + 32 px de ruban d'annonces, tous deux en position fixe. */}
-      <main id="main-content" tabIndex={-1} className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[164px] pb-16 lg:pb-0'}`}>
+      {/*
+        Le ruban d'annonces et le header sont tous deux en position fixe : la
+        hauteur à compenser change donc à chaque palier responsive (barre de
+        recherche mobile, rangée de navigation ≥ md…). Elle est mesurée au lieu
+        d'être codée en dur — voir useFixedHeaderHeight — ce qui évitait, en
+        mobile, une bande vide d'une trentaine de pixels sous le header.
+      */}
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[var(--belivay-header-h,164px)] pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}`}
+      >
         <Suspense fallback={<PageLoader />}>
           <Outlet />
         </Suspense>

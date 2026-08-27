@@ -35,6 +35,12 @@ import {
   ShoppingCart,
   Sparkles,
   HelpCircle,
+  ArrowDownToLine,
+  Clock,
+  Gem,
+  RefreshCw,
+  RotateCcw,
+  Settings,
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";
 import { api } from "@/services/api/client";
@@ -61,6 +67,29 @@ import PhoneInput from './PhoneInput';
 import { useTranslation } from "react-i18next";
 import SessionsCard from './SessionsCard';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
+import {
+  addSupportMessage,
+  formatSupportTime,
+  getSupportConversations,
+  markSupportConversationRead,
+  SUPPORT_UPDATED_EVENT,
+  type SupportConversation as StoredSupportConversation,
+} from "@/lib/supportInbox";
+import {
+  ACCOUNT_UPDATED_EVENT,
+  BELIVAY_PLANS,
+  BELIVAY_RECEIVERS,
+  MIN_DEPOSIT_XAF,
+  PROVIDER_LABELS,
+  createBelivayDeposit,
+  formatXaf,
+  getBelivayAccount,
+  payBelivaySubscription,
+  refreshBelivayAccount,
+  type BelivayAccount,
+  type BelivayProvider,
+} from "@/lib/belivayAccount";
+import { detectOperator, formatNational, isValidNationalNumber, toNationalNumber } from "@/lib/phone";
 
 type FontSize = "small" | "normal" | "large";
 type PanelId =
@@ -73,7 +102,24 @@ type PanelId =
   | "parrain"
   | "messages"
   | "vendeur"
-  | "securite";
+  | "securite"
+  | "compte-belivay"
+  | "reglages";
+
+const PANEL_IDS: PanelId[] = [
+  "dashboard",
+  "profil",
+  "adresses",
+  "paiements",
+  "historique-paiements",
+  "fidelite",
+  "parrain",
+  "messages",
+  "vendeur",
+  "securite",
+  "compte-belivay",
+  "reglages",
+];
 type MessageTab = "all" | "support" | "litige";
 
 type AddressItem = {
@@ -123,32 +169,23 @@ type RewardAccount = {
   }>;
 };
 
-const INITIAL_SUPPORT_CONVERSATIONS: Conversation[] = [
-  {
-    id: "support-1",
-    name: "Support BelivaY",
-    preview: "Votre demande a été prise en charge.",
-    time: "Aujourd'hui",
-    unread: 2,
+/** Fils du support, format partagé (lib/supportInbox) → format d'affichage. */
+function toConversations(stored: StoredSupportConversation[]): Conversation[] {
+  return stored.map((conversation) => ({
+    id: conversation.id,
+    name: conversation.name,
+    preview: conversation.preview,
+    time: formatSupportTime(conversation.updatedAt),
+    unread: conversation.unread,
     type: "support",
-    messages: [
-      { id: "m1", author: "Support", text: "Bonjour, nous avons bien reçu votre demande.", time: "09:12" },
-      { id: "m2", author: "Vous", text: "Merci, je voulais vérifier le statut de mon remboursement.", time: "09:18" },
-      { id: "m3", author: "Support", text: "Le dossier est en cours de traitement, retour sous 24h.", time: "09:20" },
-    ],
-  },
-  {
-    id: "support-2",
-    name: "Support abonnement",
-    preview: "Votre dépôt Mobile Money a été validé.",
-    time: "Hier",
-    unread: 0,
-    type: "support",
-    messages: [
-      { id: "m7", author: "Support", text: "Votre dépôt a bien été validé sur votre compte.", time: "Hier" },
-    ],
-  },
-];
+    messages: conversation.messages.map((message) => ({
+      id: message.id,
+      author: message.author,
+      text: message.text,
+      time: formatSupportTime(message.createdAt),
+    })),
+  }));
+}
 
 const fontSizeClassMap: Record<FontSize, string> = {
   small: "text-[14px]",
@@ -207,9 +244,15 @@ export default function ProfilePage() {
   const [fontSize, setFontSize] = useState<FontSize>("normal");
   const [daltonianMode, setDaltonianMode] = useState(false);
   const [messageTab, setMessageTab] = useState<MessageTab>("all");
-  const [selectedConversationId, setSelectedConversationId] = useState(INITIAL_SUPPORT_CONVERSATIONS[0].id);
+  const [selectedConversationId, setSelectedConversationId] = useState("");
   const [chatDraft, setChatDraft] = useState("");
-  const [supportConversations, setSupportConversations] = useState(INITIAL_SUPPORT_CONVERSATIONS);
+  const [supportConversations, setSupportConversations] = useState<Conversation[]>(() =>
+    toConversations(getSupportConversations()),
+  );
+  const [account, setAccount] = useState<BelivayAccount>(() => getBelivayAccount());
+  const [depositProvider, setDepositProvider] = useState<BelivayProvider>("ORANGE_MONEY");
+  const [depositPhone, setDepositPhone] = useState("");
+  const [depositAmount, setDepositAmount] = useState("");
   const [disputes, setDisputes] = useState<StoredOrderDispute[]>(() => getStoredOrderDisputes());
   const [vendorProfile, setVendorProfile] = useState<VendorProfile | null>(null);
   const [rewardAccounts, setRewardAccounts] = useState<RewardAccount[]>([]);
@@ -303,7 +346,8 @@ export default function ProfilePage() {
   }, [user]);
 
   useEffect(() => {
-    const panel = (searchParams.get("panel") as PanelId) || "dashboard";
+    const requested = searchParams.get("panel") as PanelId | null;
+    const panel = requested && PANEL_IDS.includes(requested) ? requested : "dashboard";
     const tab = (searchParams.get("tab") as MessageTab) || "all";
     setActivePanel(panel);
     setMessageTab(tab === "support" || tab === "litige" || tab === "all" ? tab : "all");
@@ -314,6 +358,32 @@ export default function ProfilePage() {
     window.addEventListener("belivay-disputes-updated", syncDisputes);
     return () => window.removeEventListener("belivay-disputes-updated", syncDisputes);
   }, []);
+
+  useEffect(() => {
+    const syncSupport = () => setSupportConversations(toConversations(getSupportConversations()));
+    window.addEventListener(SUPPORT_UPDATED_EVENT, syncSupport);
+    window.addEventListener("storage", syncSupport);
+    return () => {
+      window.removeEventListener(SUPPORT_UPDATED_EVENT, syncSupport);
+      window.removeEventListener("storage", syncSupport);
+    };
+  }, []);
+
+  useEffect(() => {
+    const syncAccount = () => setAccount(getBelivayAccount());
+    window.addEventListener(ACCOUNT_UPDATED_EVENT, syncAccount);
+    window.addEventListener("storage", syncAccount);
+    return () => {
+      window.removeEventListener(ACCOUNT_UPDATED_EVENT, syncAccount);
+      window.removeEventListener("storage", syncAccount);
+    };
+  }, []);
+
+  /* Ouvrir un fil le marque comme lu — la pastille du header suit aussitôt. */
+  useEffect(() => {
+    if (activePanel !== "messages" || !selectedConversationId) return;
+    markSupportConversationRead(selectedConversationId);
+  }, [activePanel, selectedConversationId]);
 
   const displayName = useMemo(() => getUserDisplayName(user), [user]);
   const userInitials = useMemo(() => getUserInitials(user), [user]);
@@ -375,8 +445,16 @@ export default function ProfilePage() {
     normalizedAddresses.find((address) => address.default)?.line.split("·").pop()?.trim() ||
     normalizedAddresses[0]?.line.split("·").pop()?.trim() ||
     "Cameroun";
-  const TIER_THRESHOLDS = [0, 500, 1500, 3000];
-  const nextTierThreshold = TIER_THRESHOLDS.find((threshold) => threshold > fidelityPoints) ?? 3000;
+  const TIER_LADDER = [
+    { name: "Bronze", threshold: 0 },
+    { name: "Argent", threshold: 500 },
+    { name: "Or", threshold: 1500 },
+    { name: "Platinum", threshold: 3000 },
+  ];
+  const TIER_THRESHOLDS = TIER_LADDER.map((tier) => tier.threshold);
+  const nextTier = TIER_LADDER.find((tier) => tier.threshold > fidelityPoints) ?? null;
+  const nextTierLabel = nextTier ? nextTier.name : "Niveau max";
+  const nextTierThreshold = nextTier ? nextTier.threshold : 3000;
   const prevTierThreshold = [...TIER_THRESHOLDS].reverse().find((threshold) => threshold <= fidelityPoints) ?? 0;
   const tierProgress =
     nextTierThreshold > prevTierThreshold
@@ -512,29 +590,73 @@ export default function ProfilePage() {
       addDisputeMessage(selectedConversation.id, chatDraft.trim());
       setDisputes(getStoredOrderDisputes());
     } else {
-      setSupportConversations((current) =>
-        current.map((conversation) =>
-          conversation.id === selectedConversation.id
-            ? {
-                ...conversation,
-                preview: chatDraft.trim(),
-                time: "À l'instant",
-                messages: [
-                  ...conversation.messages,
-                  {
-                    id: `${conversation.id}-${Date.now()}`,
-                    author: "Vous",
-                    text: chatDraft.trim(),
-                    time: "Maintenant",
-                  },
-                ],
-              }
-            : conversation,
-        ),
-      );
+      addSupportMessage(selectedConversation.id, chatDraft.trim());
     }
 
     setChatDraft("");
+  };
+
+  const handleRefreshAccount = () => {
+    setAccount(refreshBelivayAccount());
+    showToast("Compte BelivaY actualisé.", "success");
+  };
+
+  const handleDeposit = () => {
+    const national = toNationalNumber(depositPhone);
+    if (!isValidNationalNumber(national)) {
+      showToast("Numéro Mobile Money invalide.", "error");
+      return;
+    }
+
+    /* Le numéro doit appartenir à l'opérateur choisi, sinon le transfert
+       n'arrivera jamais sur le compte BelivaY sélectionné. */
+    const operator = detectOperator(national)?.name;
+    const expected = depositProvider === "ORANGE_MONEY" ? "Orange" : "MTN";
+    if (operator && operator !== expected) {
+      showToast(`Ce numéro est ${operator}, pas ${expected}.`, "error");
+      return;
+    }
+
+    const amount = Number(depositAmount.replace(/\s/g, ""));
+    if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_XAF) {
+      showToast(`Le dépôt minimum est de ${formatXaf(MIN_DEPOSIT_XAF)}.`, "error");
+      return;
+    }
+
+    try {
+      const deposit = createBelivayDeposit({
+        provider: depositProvider,
+        senderPhone: national,
+        amountXaf: amount,
+      });
+      setAccount(getBelivayAccount());
+      setDepositAmount("");
+      showToast(`Dépôt enregistré · réf. ${deposit.reference}`, {
+        description: "Crédité sur votre solde sous 24–72h après validation de l'opérateur.",
+        type: "success",
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Dépôt impossible.", "error");
+    }
+  };
+
+  const handleResetDeposit = () => {
+    setDepositPhone("");
+    setDepositAmount("");
+    setDepositProvider("ORANGE_MONEY");
+  };
+
+  const handlePayPlan = (planId: "ESSENTIEL" | "PREMIUM") => {
+    try {
+      const charge = payBelivaySubscription(planId);
+      setAccount(getBelivayAccount());
+      showToast("Abonnement réglé depuis votre Compte BelivaY.", {
+        description: `Valable jusqu'au ${new Date(charge.periodEnd).toLocaleDateString("fr-FR")}.`,
+        type: "success",
+      });
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : "Paiement impossible.", "error");
+    }
   };
 
   const handleSellerField = (
@@ -815,6 +937,15 @@ export default function ProfilePage() {
             <button type="button" className="pf-quick-tile" onClick={() => navigate("/help")}>
               <span className="pf-quick-ic a"><HelpCircle size={18} /></span>
               Centre d'aide
+            </button>
+            <button type="button" className="pf-quick-tile" onClick={() => openPanel("compte-belivay")}>
+              <span className="pf-quick-ic o"><Wallet size={18} /></span>
+              Compte BelivaY
+              <span className="pf-muted-sm">{formatXaf(account.availableXaf)}</span>
+            </button>
+            <button type="button" className="pf-quick-tile" onClick={() => openPanel("reglages")}>
+              <span className="pf-quick-ic b"><Settings size={18} /></span>
+              Réglages
             </button>
           </div>
         </div>
@@ -1374,6 +1505,407 @@ export default function ProfilePage() {
     </section>
   );
 
+  const renderCompteBelivay = () => {
+    const parsedAmount = Number(depositAmount.replace(/\s/g, ""));
+    const validAmount = Number.isFinite(parsedAmount) && parsedAmount > 0 ? parsedAmount : 0;
+    const currentPlan = BELIVAY_PLANS.find((plan) => plan.id === account.plan);
+    const nationalPhone = toNationalNumber(depositPhone);
+    const phoneOperator = detectOperator(nationalPhone)?.name;
+
+    return (
+      <div className="pf-stack">
+        <section className="pf-glass-panel pf-anim">
+          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
+            <div>
+              <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                <Building2 size={19} style={{ color: "var(--pf-accent)" }} />
+                Mon Compte BelivaY
+              </div>
+              <div className="pf-panel-sub">Solde · Dépôts · Payer mon abonnement</div>
+            </div>
+            <button type="button" className="pf-btn-ghost" onClick={handleRefreshAccount}>
+              <RefreshCw size={13} />Actualiser
+            </button>
+          </div>
+
+          <div className="pf-wal-grid">
+            <div className="pf-wal o">
+              <span className="pf-wal-ic"><Wallet size={17} /></span>
+              <div className="pf-wal-amt">{formatXaf(account.availableXaf)}</div>
+              <div className="pf-wal-l">Solde disponible</div>
+              <div className="pf-wal-s">Utilisable pour abonnement</div>
+            </div>
+            <div className="pf-wal g">
+              <span className="pf-wal-ic"><CreditCard size={17} /></span>
+              <div className="pf-wal-amt">{formatXaf(account.totalDepositedXaf)}</div>
+              <div className="pf-wal-l">Total déposé</div>
+              <div className="pf-wal-s">
+                {account.depositCount} dépôt{account.depositCount > 1 ? "s" : ""}
+              </div>
+            </div>
+            <div className="pf-wal y">
+              <span className="pf-wal-ic"><Clock size={17} /></span>
+              <div className="pf-wal-amt">{formatXaf(account.pendingXaf)}</div>
+              <div className="pf-wal-l">En attente</div>
+              <div className="pf-wal-s">Crédit sous 24–72h</div>
+            </div>
+          </div>
+
+          <div className="pf-info-note">
+            <span className="pf-info-ic"><Sparkles size={16} /></span>
+            <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--pf-text2)" }}>
+              <strong style={{ color: "var(--pf-text)" }}>À quoi sert mon Compte BelivaY ?</strong>{" "}
+              Déposez des fonds pour <strong style={{ color: "var(--pf-text)" }}>régler votre abonnement Premium</strong>{" "}
+              directement sur la plateforme, sans avoir à ressaisir vos coordonnées à chaque fois.
+            </div>
+          </div>
+        </section>
+
+        <section className="pf-glass-panel pf-anim">
+          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
+            <div>
+              <div className="pf-panel-title">Déposer des fonds</div>
+              <div className="pf-panel-sub">Dépôt minimum {formatXaf(MIN_DEPOSIT_XAF)}</div>
+            </div>
+          </div>
+
+          <div className="pf-op-grid">
+            {(["ORANGE_MONEY", "MTN_MOMO"] as BelivayProvider[]).map((provider) => (
+              <button
+                key={provider}
+                type="button"
+                aria-pressed={depositProvider === provider}
+                className={`pf-op${depositProvider === provider ? " on" : ""}`}
+                onClick={() => setDepositProvider(provider)}
+              >
+                <span className={`pf-op-dot ${provider === "ORANGE_MONEY" ? "orange" : "mtn"}`} />
+                <span className="pf-op-n">{PROVIDER_LABELS[provider]}</span>
+                <span className="pf-op-s">Envoyer vers BelivaY</span>
+              </button>
+            ))}
+          </div>
+
+          <div className="pf-field" style={{ marginTop: 16 }}>
+            <label className="pf-label" htmlFor="belivay-deposit-phone">
+              Votre numéro {PROVIDER_LABELS[depositProvider]} (expéditeur)
+            </label>
+            <div className={`pf-phone${nationalPhone && !isValidNationalNumber(nationalPhone) ? " invalid" : ""}`}>
+              <span className="pf-phone-country">🇨🇲 +237</span>
+              <input
+                id="belivay-deposit-phone"
+                className="pf-phone-input"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                placeholder="690 000 000"
+                value={formatNational(nationalPhone)}
+                onChange={(event) => setDepositPhone(toNationalNumber(event.target.value))}
+              />
+            </div>
+            <div className="pf-muted-sm" style={{ marginTop: 6 }}>
+              {phoneOperator
+                ? `Opérateur détecté : ${phoneOperator}`
+                : "Format : 690 000 000 (Orange) ou 680 000 000 (MTN)"}
+            </div>
+          </div>
+
+          <div className="pf-field" style={{ marginTop: 14 }}>
+            <span className="pf-label">Numéro BelivaY destinataire</span>
+            <div className="pf-recv">
+              <span className="pf-recv-n">
+                <span
+                  className={`pf-op-dot ${depositProvider === "ORANGE_MONEY" ? "orange" : "mtn"}`}
+                  style={{ width: 16, height: 16 }}
+                />
+                {BELIVAY_RECEIVERS[depositProvider]}
+              </span>
+              <span className="pf-muted-sm">Compte officiel BelivaY</span>
+            </div>
+          </div>
+
+          <div className="pf-form-grid" style={{ marginTop: 14 }}>
+            <div className="pf-field">
+              <label className="pf-label" htmlFor="belivay-deposit-amount">Montant (FCFA)</label>
+              <input
+                id="belivay-deposit-amount"
+                className="pf-input"
+                inputMode="numeric"
+                placeholder="Ex : 10 000"
+                value={depositAmount}
+                onChange={(event) => setDepositAmount(event.target.value.replace(/[^\d\s]/g, ""))}
+              />
+            </div>
+            <div className="pf-field">
+              <span className="pf-label">Nouveau solde estimé</span>
+              <div className="pf-estimate">
+                {validAmount ? formatXaf(account.availableXaf + validAmount) : "— FCFA"}
+              </div>
+            </div>
+          </div>
+
+          <div className="pf-form-actions">
+            <button type="button" className="pf-btn-accent" onClick={handleDeposit}>
+              <ArrowDownToLine size={14} />Confirmer le dépôt
+            </button>
+            <button type="button" className="pf-btn-ghost" onClick={handleResetDeposit}>
+              <RotateCcw size={13} />Réinitialiser
+            </button>
+          </div>
+        </section>
+
+        {account.deposits.length > 0 ? (
+          <section className="pf-glass-panel pf-anim">
+            <div className="pf-card-title pf-mb">Historique des dépôts</div>
+            {account.deposits.slice(0, 8).map((deposit) => (
+              <div key={deposit.id} className="pf-dep-line">
+                <span className="pf-order-ic">
+                  {deposit.status === "CREDITED" ? <Check size={16} /> : <Clock size={16} />}
+                </span>
+                <div className="pf-order-mid">
+                  <div className="pf-order-id">
+                    {PROVIDER_LABELS[deposit.provider]} · {deposit.reference}
+                  </div>
+                  <div className="pf-muted-sm">
+                    {new Date(deposit.createdAt).toLocaleDateString("fr-FR", {
+                      day: "2-digit",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                    {" · "}
+                    {deposit.status === "CREDITED" ? "Crédité" : "En attente de validation"}
+                  </div>
+                </div>
+                <div className="pf-order-total">{formatXaf(deposit.amountXaf)}</div>
+              </div>
+            ))}
+          </section>
+        ) : null}
+
+        <section className="pf-glass-panel pf-anim">
+          <div className="pf-panel-head" style={{ marginBottom: 14 }}>
+            <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
+              <Gem size={18} style={{ color: "var(--pf-accent)" }} />
+              Payer mon abonnement Premium
+            </div>
+          </div>
+
+          <div className="pf-plan-current">
+            <div className="pf-plan-k">Plan actuel</div>
+            <div className="pf-plan-name">{currentPlan ? currentPlan.name : "Gratuit"}</div>
+            <div className="pf-plan-sub">
+              {currentPlan && account.planExpiresAt
+                ? `Actif jusqu'au ${new Date(account.planExpiresAt).toLocaleDateString("fr-FR")}`
+                : "Passez Premium pour accéder aux avantages exclusifs"}
+            </div>
+          </div>
+
+          <div className="pf-plan-grid">
+            {BELIVAY_PLANS.map((plan) => {
+              const isCurrent = account.plan === plan.id;
+              const affordable = account.availableXaf >= plan.priceXaf;
+              return (
+                <div key={plan.id} className={`pf-plan${plan.id === "PREMIUM" ? " violet" : ""}`}>
+                  {plan.id === "PREMIUM" ? (
+                    <Gem size={20} style={{ color: "#7c3aed" }} />
+                  ) : (
+                    <Star size={20} style={{ color: "var(--pf-accent)" }} />
+                  )}
+                  <div className="pf-plan-t">{plan.name}</div>
+                  <div className="pf-plan-p">
+                    {plan.priceXaf.toLocaleString("fr-FR")} FCFA<span>/mois</span>
+                  </div>
+                  <ul className="pf-plan-perks">
+                    {plan.perks.map((perk) => (
+                      <li key={perk}>
+                        <Check size={13} style={{ flexShrink: 0, marginTop: 2, color: "var(--pf-accent)" }} />
+                        {perk}
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    type="button"
+                    className="pf-plan-cta"
+                    disabled={!affordable}
+                    onClick={() => handlePayPlan(plan.id)}
+                    title={affordable ? undefined : "Solde insuffisant : faites un dépôt d'abord."}
+                  >
+                    {isCurrent ? "Renouveler →" : "Payer →"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="pf-muted-sm" style={{ marginTop: 12, textAlign: "center" }}>
+            Les fonds de votre Compte BelivaY seront utilisés pour le paiement.
+          </div>
+        </section>
+      </div>
+    );
+  };
+
+  const renderReglages = () => (
+    <div className="pf-stack">
+      <section className="pf-glass-panel pf-anim">
+        <div className="pf-panel-head" style={{ marginBottom: 6 }}>
+          <div>
+            <div className="pf-panel-title">Réglages</div>
+            <div className="pf-panel-sub">Apparence, langue et notifications</div>
+          </div>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Apparence</div>
+            <div className="pf-muted-sm">Thème clair ou sombre</div>
+          </div>
+          <button type="button" className="pf-btn-ghost" onClick={toggleTheme}>
+            {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
+            {theme === "dark" ? "Sombre" : "Clair"}
+          </button>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Langue</div>
+            <div className="pf-muted-sm">Interface de l'application</div>
+          </div>
+          <div className="pf-lang">
+            <button
+              type="button"
+              className={`pf-lang-btn${(i18n.language || "fr").startsWith("fr") ? " on" : ""}`}
+              onClick={() => i18n.changeLanguage("fr")}
+            >
+              🇫🇷 FR
+            </button>
+            <button
+              type="button"
+              className={`pf-lang-btn${(i18n.language || "").startsWith("en") ? " on" : ""}`}
+              onClick={() => i18n.changeLanguage("en")}
+            >
+              🇬🇧 EN
+            </button>
+          </div>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Taille du texte</div>
+            <div className="pf-muted-sm">Confort de lecture</div>
+          </div>
+          <div style={{ display: "inline-flex", gap: 4 }}>
+            {(["small", "normal", "large"] as const).map((size) => (
+              <button
+                key={size}
+                type="button"
+                onClick={() => setFontSize(size)}
+                className="pf-btn-ghost"
+                style={{
+                  padding: "4px 10px",
+                  ...(fontSize === size
+                    ? { background: "var(--pf-accent)", color: "#fff", borderColor: "var(--pf-accent)" }
+                    : {}),
+                }}
+              >
+                {size === "small" ? "A-" : size === "normal" ? "A" : "A+"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Mode daltonien</div>
+            <div className="pf-muted-sm">Contraste renforcé, saturation réduite</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={daltonianMode}
+            aria-label="Mode daltonien"
+            className={`pf-switch${daltonianMode ? " on" : ""}`}
+            onClick={() => setDaltonianMode((value) => !value)}
+          >
+            <span />
+          </button>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Newsletter</div>
+            <div className="pf-muted-sm">Offres par email</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={pfNewsletter}
+            aria-label="Newsletter"
+            className={`pf-switch${pfNewsletter ? " on" : ""}`}
+            onClick={() => setPfNewsletter((value) => !value)}
+          >
+            <span />
+          </button>
+        </div>
+
+        <div className="pf-toggle-row">
+          <div>
+            <div className="pf-toggle-t">Notifications SMS</div>
+            <div className="pf-muted-sm">Suivi de commande par SMS</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={pfSms}
+            aria-label="Notifications SMS"
+            className={`pf-switch${pfSms ? " on" : ""}`}
+            onClick={() => setPfSms((value) => !value)}
+          >
+            <span />
+          </button>
+        </div>
+
+        <div className="pf-form-actions">
+          <button type="button" className="pf-btn-accent" onClick={handleSaveProfile} disabled={pfSaving}>
+            <Check size={14} />{pfSaving ? "Enregistrement…" : "Enregistrer les préférences"}
+          </button>
+        </div>
+      </section>
+
+      <section className="pf-glass-panel pf-anim pf-supportrow">
+        <button type="button" className="pf-support-item" onClick={() => openPanel("securite")}>
+          <span className="pf-support-ic accent"><Shield size={18} /></span>
+          <span className="pf-support-txt">
+            <span className="pf-support-t">Sécurité & mot de passe</span>
+            <span className="pf-muted-sm">2FA, sessions actives</span>
+          </span>
+          <ArrowRight size={16} className="pf-muted" />
+        </button>
+        <button type="button" className="pf-support-item" onClick={() => navigate("/notifications")}>
+          <span className="pf-support-ic"><Bell size={18} /></span>
+          <span className="pf-support-txt">
+            <span className="pf-support-t">Centre de notifications</span>
+            <span className="pf-muted-sm">Historique des alertes</span>
+          </span>
+          <ArrowRight size={16} className="pf-muted" />
+        </button>
+        <button type="button" className="pf-support-item" onClick={() => navigate("/help")}>
+          <span className="pf-support-ic"><HelpCircle size={18} /></span>
+          <span className="pf-support-txt">
+            <span className="pf-support-t">Centre d'aide</span>
+            <span className="pf-muted-sm">FAQ et contact</span>
+          </span>
+          <ArrowRight size={16} className="pf-muted" />
+        </button>
+        <button type="button" className="pf-support-item" onClick={() => { logout(); navigate("/"); }}>
+          <span className="pf-support-ic"><LogOut size={18} /></span>
+          <span className="pf-support-txt">
+            <span className="pf-support-t" style={{ color: "#dc2626" }}>Déconnexion</span>
+            <span className="pf-muted-sm">Fermer la session sur cet appareil</span>
+          </span>
+        </button>
+      </section>
+    </div>
+  );
+
   const renderPanel = () => {
     switch (activePanel) {
       case "profil":
@@ -1394,6 +1926,10 @@ export default function ProfilePage() {
         return renderVendeur();
       case "securite":
         return renderSecurite();
+      case "compte-belivay":
+        return renderCompteBelivay();
+      case "reglages":
+        return renderReglages();
       default:
         return renderDashboard();
     }
@@ -1425,6 +1961,73 @@ export default function ProfilePage() {
     { key: "historique-paiements", label: "Historique des paiements", icon: Wallet, panel: "historique-paiements" },
     { key: "parrain", label: "Parrainage", icon: Gift, panel: "parrain" },
     { key: "securite", label: "Sécurité", icon: Shield, panel: "securite" },
+    { key: "compte-belivay", label: "Compte BelivaY", icon: Building2, panel: "compte-belivay" },
+    { key: "reglages", label: "Réglages", icon: Settings, panel: "reglages" },
+  ];
+
+  /*
+    Rail mobile : la même arborescence que la colonne de gauche, mise à plat
+    dans un ruban défilant. « Accueil » ramène sur la vue d'ensemble.
+  */
+  const railNav: Array<{
+    key: string;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    panel: PanelId;
+    badge?: number;
+  }> = [
+    { key: "dashboard", label: "Accueil", icon: Home, panel: "dashboard" },
+    { key: "profil", label: "Profil", icon: User, panel: "profil" },
+    { key: "adresses", label: "Adresses", icon: MapPin, panel: "adresses" },
+    { key: "paiements", label: "Paiement", icon: CreditCard, panel: "paiements" },
+    { key: "fidelite", label: "Fidélité", icon: Award, panel: "fidelite" },
+    { key: "parrain", label: "Parrainage", icon: Gift, panel: "parrain" },
+    { key: "messages", label: "Messages", icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
+    { key: "securite", label: "Sécurité", icon: Shield, panel: "securite" },
+    { key: "compte-belivay", label: "Compte BelivaY", icon: Building2, panel: "compte-belivay" },
+    { key: "reglages", label: "Réglages", icon: Settings, panel: "reglages" },
+  ];
+
+  /* Les quatre tuiles de raccourci sous l'identité, en mobile. */
+  const mobileTiles: Array<{
+    key: string;
+    label: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    badge?: number;
+    active: boolean;
+    onSelect: () => void;
+  }> = [
+    {
+      key: "orders",
+      label: "Commandes",
+      icon: Package,
+      badge: orderCount || undefined,
+      active: false,
+      onSelect: () => navigate("/orders"),
+    },
+    {
+      key: "favorites",
+      label: "Favoris",
+      icon: Heart,
+      badge: favoritesCount || undefined,
+      active: false,
+      onSelect: () => navigate("/wishlist"),
+    },
+    {
+      key: "messages",
+      label: "Messages",
+      icon: MessageSquare,
+      badge: unreadMessages || undefined,
+      active: activePanel === "messages",
+      onSelect: () => openPanel("messages"),
+    },
+    {
+      key: "wallet",
+      label: "Wallet",
+      icon: Wallet,
+      active: activePanel === "compte-belivay",
+      onSelect: () => openPanel("compte-belivay"),
+    },
   ];
 
   return (
@@ -1456,6 +2059,80 @@ export default function ProfilePage() {
             <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>
               <Pencil size={13} />Modifier
             </button>
+          </div>
+        </div>
+
+        {/*
+          En-tête mobile : identité, progression de fidélité, tuiles de
+          raccourci et rail de sections. Il remplace, sous 1024px, la carte
+          d'identité et la colonne de navigation (masquées en CSS).
+        */}
+        <div className="pf-mhead">
+          <div className="pf-mid">
+            <div className="pf-mid-av">
+              {avatar ? <img src={avatar} alt={displayName} /> : userInitials || "U"}
+            </div>
+            <div className="pf-mid-txt">
+              <div className="pf-mid-n">{displayName}</div>
+              <div className="pf-mid-s">• {defaultCity}</div>
+            </div>
+            <span className="pf-mid-tier">
+              <Medal size={14} />
+              {fidelityTier}
+            </span>
+          </div>
+
+          <button
+            type="button"
+            className="pf-mprog"
+            onClick={() => openPanel("fidelite")}
+            aria-label="Voir le programme de fidélité"
+          >
+            <span className="pf-mprog-l">
+              → {nextTierLabel} <Medal size={12} />
+            </span>
+            <span className="pf-mprog-b">
+              <i style={{ width: `${tierProgress}%` }} />
+            </span>
+            <span className="pf-mprog-v">{fidelityPoints.toLocaleString("fr-FR")} pts</span>
+          </button>
+
+          <div className="pf-mtiles">
+            {mobileTiles.map((tile) => {
+              const Icon = tile.icon;
+              return (
+                <button
+                  key={tile.key}
+                  type="button"
+                  className={`pf-mtile${tile.active ? " on" : ""}`}
+                  onClick={tile.onSelect}
+                >
+                  <span className="pf-mtile-ic">
+                    <Icon size={19} />
+                    {tile.badge ? <span className="pf-mtile-b">{tile.badge}</span> : null}
+                  </span>
+                  {tile.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="pf-rail">
+            {railNav.map((item) => {
+              const Icon = item.icon;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={`pf-rail-btn${activePanel === item.panel ? " on" : ""}`}
+                  onClick={() => openPanel(item.panel)}
+                >
+                  <Icon size={15} />
+                  {item.label}
+                  {item.badge ? <span className="pf-rail-b">{item.badge}</span> : null}
+                </button>
+              );
+            })}
           </div>
         </div>
 

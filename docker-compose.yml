@@ -7,6 +7,11 @@ x-frontend-common: &frontend-common
     - .env
   volumes:
     - ./frontend:/app
+    # Volume anonyme : isole les node_modules du conteneur (binaires Linux) du
+    # dossier monté depuis l'hôte. Sans lui, le « npm install » écrit dans
+    # ./frontend/node_modules et casse les outils locaux (vite, vitest) sur
+    # une machine Windows ou macOS, à chaque démarrage du conteneur.
+    - /app/node_modules
 
 services:
   postgres:

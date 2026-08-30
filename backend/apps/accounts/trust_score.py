@@ -9,7 +9,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.orders.models import Dispute, Order, OrderHistory
-from apps.shipping.models import RelayParcel, Shipment, ShipmentEvidence
+from apps.shipping.models import RelayParcel, RelayPointReview, Shipment, ShipmentEvidence
 
 from .models import CourierProfile, RelayPointProfile, TrustScoreProfile
 
@@ -178,10 +178,14 @@ def _relay_observations(user) -> dict[str, list[Observation]]:
         ).exists()
         security.append(Observation(100 if has_proof else 40, parcel.updated_at))
     disputes = list(Dispute.objects.filter(order__shipment__relay_parcel__relay_point=relay).distinct())
+    satisfaction = [
+        Observation(review.rating * 20, review.created_at)
+        for review in RelayPointReview.objects.filter(relay_point=relay)
+    ]
     return {
         "punctuality": punctuality,
         "security": security,
-        "satisfaction": [],
+        "satisfaction": satisfaction,
         "disputes": _dispute_observations([parcel.shipment for parcel in handled], disputes),
         "seniority": [_seniority_observation(user)],
     }

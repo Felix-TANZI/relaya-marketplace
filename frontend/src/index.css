@@ -251,3 +251,96 @@
 .belivay-client textarea {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
+
+/* Etoiles des avis acheteurs : une lumiere balaie l'icone en continu. */
+@keyframes belivay-star-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.belivay-star-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    #f59e0b 0%,
+    #f59e0b 38%,
+    #fffbeb 48%,
+    #ffffff 52%,
+    #fbbf24 62%,
+    #f59e0b 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: belivay-star-shimmer 3.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .belivay-star-shimmer {
+    animation: none;
+    color: #f59e0b;
+    background-image: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRIMITIVES MOBILES
+   `viewport-fit=cover` (index.html) est ce qui donne une valeur non nulle aux
+   env(safe-area-inset-*) : sans lui, toutes les regles ci-dessous valent 0 et
+   les barres fixes passent sous l'encoche / la barre gestuelle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.safe-pt   { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-pb   { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-pl   { padding-left:   env(safe-area-inset-left,   0px); }
+.safe-pr   { padding-right:  env(safe-area-inset-right,  0px); }
+.safe-px   { padding-left:   env(safe-area-inset-left,   0px);
+             padding-right:  env(safe-area-inset-right,  0px); }
+.safe-mb   { margin-bottom:  env(safe-area-inset-bottom, 0px); }
+
+/* Hauteur de la barre d'onglets mobile + marge gestuelle : le contenu
+   scrollable s'en sert pour ne jamais finir masque par la barre. */
+:root { --mobile-tabbar-h: 4.25rem; }
+
+.pb-tabbar { padding-bottom: calc(var(--mobile-tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+
+/* Cible tactile minimale recommandee (44x44 iOS / 48dp Android). */
+.tap-target { min-height: 2.75rem; min-width: 2.75rem; }
+
+/* Scroll horizontal des rubans (filtres, chips) sans barre visible. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Aimante chaque carte d'un carrousel tactile, comme une app native. */
+.snap-x-mandatory { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.snap-start-always { scroll-snap-align: start; scroll-snap-stop: always; }
+
+/* Empeche le rebond de la page derriere une bottom sheet ouverte. */
+.overscroll-none-y { overscroll-behavior-y: contain; }
+
+/* iOS zoome des qu'un champ fait moins de 16px : on plancher a 16px sur
+   les petits ecrans uniquement, pour ne pas grossir le design desktop. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Bottom sheet : montee depuis le bas, retour amorti facon iOS. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-sheet-up { animation: sheet-up .32s cubic-bezier(.32, .72, 0, 1) both; }
+.animate-fade-in  { animation: fade-in .2s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-up,
+  .animate-fade-in { animation-duration: .01ms; }
+}

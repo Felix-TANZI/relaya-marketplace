@@ -609,3 +609,49 @@ class OTPCode(models.Model):
     def is_valid(self) -> bool:
         from django.utils import timezone
         return not self.is_used and self.expires_at > timezone.now()
+
+
+class RelayTrainingCompletion(models.Model):
+    """
+    Module de formation valide par un point relais.
+
+    Le tronc obligatoire conditionne l'activation du statut de partenaire : la
+    validation doit donc survivre au navigateur, d'ou un enregistrement serveur
+    plutot qu'un stockage local.
+    """
+
+    class Module(models.TextChoices):
+        RECEPTION = "reception", "Reception & garde des colis"
+        CNI = "cni", "Verification CNI & cross-check ANTIC"
+        STOCKAGE = "stockage", "Securite du stockage"
+        LITIGE = "litige", "Gerer un litige & le mediateur"
+        RELATION = "relation", "Relation acheteur & avis"
+        PIDGIN = "pidgin", "Service en Pidgin"
+
+    #: Modules du tronc obligatoire, requis pour activer le statut partenaire.
+    CORE_MODULES = (Module.RECEPTION, Module.CNI, Module.STOCKAGE)
+
+    #: Avantages credites a chaque module valide.
+    POINTS_PER_MODULE = 30
+
+    relay_point = models.ForeignKey(
+        RelayPointProfile,
+        on_delete=models.CASCADE,
+        related_name="training_completions",
+    )
+    module_key = models.CharField(max_length=30, choices=Module.choices)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-completed_at"]
+        verbose_name = "Module de formation valide"
+        verbose_name_plural = "Modules de formation valides"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["relay_point", "module_key"],
+                name="unique_training_module_per_relay_point",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.relay_point.name} - {self.module_key}"

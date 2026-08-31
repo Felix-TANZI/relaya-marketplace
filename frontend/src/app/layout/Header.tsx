@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import MobileCategoryDrawer from "@/components/home/MobileCategoryDrawer";
 import {
   Bell,
   CircleHelp,
@@ -9,7 +10,6 @@ import {
   ShoppingCart,
   User,
   Menu,
-  X,
   Sun,
   Moon,
   Globe,
@@ -25,6 +25,14 @@ import {
   Gem,
   Info,
   Store,
+  Award,
+  ChevronRight,
+  CreditCard,
+  MapPin,
+  MessageSquare,
+  Settings,
+  Shield,
+  Wallet,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useCart } from "@/context/CartContext";
@@ -39,6 +47,23 @@ import { getFavoriteProductIds } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
 import { productsApi } from "@/services/api/products";
+import { ordersApi } from "@/services/api/orders";
+import { getUnreadSupportCount, SUPPORT_UPDATED_EVENT } from "@/lib/supportInbox";
+import {
+  ACCOUNT_UPDATED_EVENT,
+  formatXaf,
+  getBelivayAccount,
+} from "@/lib/belivayAccount";
+
+/** Statuts d'une commande encore en cours de traitement ou d'acheminement. */
+const CLOSED_ORDER_STATUSES = [
+  "DELIVERED",
+  "BUYER_CONFIRMED",
+  "AUTO_CONFIRMED",
+  "RELEASED_TO_VENDOR",
+  "CANCELLED",
+  "REFUNDED",
+];
 
 const SEARCH_FILTER_CATEGORIES = [
   "Accessoires",
@@ -114,6 +139,9 @@ export default function Header() {
     const stored = localStorage.getItem("belivay_notif_count");
     return stored ? parseInt(stored, 10) : 1;
   });
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+  const [walletBalance, setWalletBalance] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [lastSyncedSearch, setLastSyncedSearch] = useState<string | null>(null);
   const [searchFilterOpen, setSearchFilterOpen] = useState(false);
@@ -176,6 +204,45 @@ export default function Header() {
       );
     };
   }, []);
+
+  /* Messages non lus et solde du Compte BelivaY — les deux pastilles du menu
+     profil. Les stores émettent un événement, le header n'a rien à sonder. */
+  useEffect(() => {
+    const sync = () => {
+      setUnreadMessages(getUnreadSupportCount());
+      setWalletBalance(getBelivayAccount().availableXaf);
+    };
+
+    sync();
+    window.addEventListener(SUPPORT_UPDATED_EVENT, sync);
+    window.addEventListener(ACCOUNT_UPDATED_EVENT, sync);
+    window.addEventListener("storage", sync);
+
+    return () => {
+      window.removeEventListener(SUPPORT_UPDATED_EVENT, sync);
+      window.removeEventListener(ACCOUNT_UPDATED_EVENT, sync);
+      window.removeEventListener("storage", sync);
+    };
+  }, []);
+
+  /* Le nombre de commandes en cours n'est chargé qu'à l'ouverture du menu :
+     inutile d'appeler l'API sur chaque page pour une pastille repliée. */
+  useEffect(() => {
+    if (!userMenuOpen || !hasValidAccessToken()) return;
+    let cancelled = false;
+
+    ordersApi
+      .getMyOrders()
+      .then((orders) => {
+        if (cancelled) return;
+        setActiveOrdersCount(
+          orders.filter((order) => !CLOSED_ORDER_STATUSES.includes(order.fulfillment_status)).length,
+        );
+      })
+      .catch(() => { /* la pastille reste masquée */ });
+
+    return () => { cancelled = true; };
+  }, [userMenuOpen]);
 
   // Sync the search box with the URL during render (avoids a setState effect).
   if (location.search !== lastSyncedSearch) {
@@ -294,11 +361,118 @@ export default function Header() {
     { label: "À propos", to: "/about", icon: Info, tone: "text-blue-500" },
   ];
 
+  /*
+    Menu profil — toutes les entrées de l'espace client, groupées. Chacune
+    pointe vers sa page réelle ; les panneaux du compte passent par le
+    paramètre `panel` de /profile, que ProfilePage lit au montage.
+  */
+  type UserMenuEntry = {
+    label: string;
+    to: string;
+    icon: typeof User;
+    /** Pastille arrondie à droite (compteur, statut). */
+    badge?: string;
+    /** Libellé discret à droite, sans pastille. */
+    note?: string;
+    external?: boolean;
+    tone?: "default" | "accent";
+  };
+
+  const userMenuSections: { title?: string; items: UserMenuEntry[] }[] = [
+    {
+      items: [
+        { label: "Mon Compte", to: "/profile", icon: User },
+        {
+          label: "Mes Commandes",
+          to: "/orders",
+          icon: Package,
+          badge: activeOrdersCount > 0 ? `${activeOrdersCount} en cours` : undefined,
+        },
+        {
+          label: "Mes Favoris",
+          to: "/wishlist",
+          icon: Heart,
+          badge: favoritesCount > 0 ? String(favoritesCount) : undefined,
+        },
+        {
+          label: "Messages",
+          to: "/profile?panel=messages",
+          icon: MessageSquare,
+          badge: unreadMessages > 0 ? String(unreadMessages) : undefined,
+        },
+        {
+          label: "Mon Compte BelivaY",
+          to: "/profile?panel=compte-belivay",
+          icon: Wallet,
+          note: walletBalance > 0 ? formatXaf(walletBalance) : "Wallet",
+          tone: "accent",
+        },
+      ],
+    },
+    {
+      title: "Mon activité",
+      items: [
+        {
+          label: "Notifications",
+          to: "/notifications",
+          icon: Bell,
+          badge: notifCount > 0 ? String(notifCount) : undefined,
+        },
+        {
+          label: "Fidélité",
+          to: "/profile?panel=fidelite",
+          icon: Award,
+          note: `${(user?.loyalty_points ?? 0).toLocaleString("fr-FR")} pts`,
+        },
+        { label: "Parrainage", to: "/profile?panel=parrain", icon: Gift },
+        { label: "Ventes flash", to: "/flash-deals", icon: Tag },
+      ],
+    },
+    {
+      title: "Paramètres du compte",
+      items: [
+        { label: "Mes adresses", to: "/profile?panel=adresses", icon: MapPin },
+        { label: "Moyens de paiement", to: "/profile?panel=paiements", icon: CreditCard },
+        { label: "Sécurité", to: "/profile?panel=securite", icon: Shield },
+        { label: "Réglages", to: "/profile?panel=reglages", icon: Settings },
+      ],
+    },
+    {
+      title: "Plus",
+      items: [
+        { label: "Abonnement BelivaY+", to: "/premium", icon: Gem, tone: "accent" },
+        {
+          label: user?.is_vendor ? "Espace vendeur" : "Devenir vendeur",
+          to: user?.is_vendor ? "/seller/dashboard" : "/profile?panel=vendeur",
+          icon: Store,
+        },
+        { label: "Centre d'aide", to: "/help", icon: CircleHelp },
+        {
+          label: "Support WhatsApp",
+          to: "https://wa.me/237689002812",
+          icon: MessageSquare,
+          external: true,
+        },
+      ],
+    },
+  ];
+
   return (
     <header className="fixed inset-x-0 top-8 z-50 bg-white dark:bg-bg-dark border-b border-gray-200 dark:border-gray-800 shadow-sm">
       <div className="container mx-auto px-2.5 sm:px-4">
         {/* Top Bar */}
         <div className="flex items-center justify-between gap-1.5 py-2.5 sm:gap-4 sm:py-4">
+          {/* Menu des categories — a gauche du logo, mobile et tablette uniquement */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Ouvrir les categories"
+            aria-expanded={mobileMenuOpen}
+            className="-ml-1 flex-shrink-0 rounded-lg p-1.5 text-text-light transition-all hover:bg-bg-light dark:text-text-dark dark:hover:bg-bg-dark-alt lg:hidden"
+          >
+            <Menu size={24} />
+          </button>
+
           {/* Logo */}
           <Link to="/" className="flex items-center flex-shrink-0" aria-label="Accueil BelivaY">
             <img
@@ -462,7 +636,7 @@ export default function Header() {
           </div>
 
           {/* Right Actions */}
-          <div className="ml-auto flex min-w-0 items-center justify-end gap-1 sm:gap-3 lg:gap-4">
+          <div className="ml-auto flex min-w-0 items-center justify-end gap-1.5 sm:gap-3 lg:gap-4">
             {/* Language Toggle */}
             <button
               onClick={toggleLanguage}
@@ -489,6 +663,26 @@ export default function Header() {
               )}
             </button>
 
+            {/* Notifications — toujours présente : sans session, la cloche mène à la
+                connexion plutôt que de disparaître et de déséquilibrer le header. */}
+            <Link
+              to={user ? "/notifications" : "/login"}
+              aria-label={user ? "Notifications" : "Se connecter pour voir les notifications"}
+              onClick={() => {
+                if (!user) return;
+                setNotifCount(0);
+                localStorage.setItem("belivay_notif_count", "0");
+              }}
+              className="relative rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
+            >
+              <Bell size={20} className="text-text-light dark:text-text-dark sm:h-[22px] sm:w-[22px]" />
+              {user && notifCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                  {notifCount > 9 ? "9+" : notifCount}
+                </span>
+              )}
+            </Link>
+
             {/* Cart */}
             <Link
               to="/cart"
@@ -505,22 +699,6 @@ export default function Header() {
                 </span>
               )}
             </Link>
-
-            {/* Notifications */}
-            {user && (
-              <Link
-                to="/notifications"
-                onClick={() => { setNotifCount(0); localStorage.setItem("belivay_notif_count", "0"); }}
-                className="relative rounded-lg p-1 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt sm:p-2"
-              >
-                <Bell size={20} className="text-text-light dark:text-text-dark sm:h-[22px] sm:w-[22px]" />
-                {notifCount > 0 && (
-                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                    {notifCount > 9 ? "9+" : notifCount}
-                  </span>
-                )}
-              </Link>
-            )}
 
             {/* Wishlist - desktop only */}
             <Link
@@ -573,15 +751,21 @@ export default function Header() {
                   />
                 </button>
 
-                {/* Dropdown Menu */}
+                {/* Menu profil — tout l'espace client, groupé et cliquable */}
                 {userMenuOpen && (
-                  <div
-                    ref={userMenuRef}
-                    className="absolute right-0 top-full mt-2 w-64 bg-white dark:bg-bg-dark-alt rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
-                  >
-                    <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-primary/10 via-orange-50 to-white dark:from-primary/10 dark:via-gray-800 dark:to-gray-800">
-                      <div className="flex items-center gap-3">
-                        <div className="h-14 w-14 overflow-hidden rounded-full bg-primary flex items-center justify-center shadow-sm">
+                  <div className="absolute right-0 top-full z-50 mt-2 w-[300px] overflow-hidden rounded-2xl border border-[#f3d9c6] bg-white shadow-[0_24px_60px_rgba(15,23,42,.22)] dark:border-gray-700 dark:bg-bg-dark-alt">
+                    {/* En-tête d'identité, posé sur le dégradé de marque. */}
+                    <div className="relative overflow-hidden bg-gradient-to-br from-[#f9a04d] via-[#f47920] to-[#e26a10] px-4 py-4">
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute -right-7 -top-9 h-28 w-28 rotate-12 rounded-3xl border-2 border-white/20"
+                      />
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute -bottom-12 right-12 h-24 w-24 rotate-45 rounded-3xl border-2 border-white/15"
+                      />
+                      <div className="relative flex items-center gap-3">
+                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-white/25 ring-2 ring-white/70">
                           {profileAvatar ? (
                             <img
                               src={profileAvatar}
@@ -589,158 +773,137 @@ export default function Header() {
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <span className="text-base font-bold text-white">{userInitials}</span>
+                            <span className="text-base font-black text-white">{userInitials}</span>
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                            {t("header_nav.connected_as")}
-                          </p>
-                          <p className="font-semibold text-text-light dark:text-text-dark truncate">
+                          <p className="truncate text-[15px] font-black leading-tight text-white">
                             {displayName}
                           </p>
-                          <p className="text-xs text-text-light-secondary dark:text-text-dark-secondary truncate">
-                            {user.email}
-                          </p>
+                          <p className="truncate text-[11.5px] font-medium text-white/85">{user.email}</p>
                         </div>
                       </div>
                     </div>
 
-                    <Link
-                      to="/profile"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <User
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        {t("header.profile")}
-                      </span>
-                    </Link>
+                    <div className="max-h-[58vh] overflow-y-auto overscroll-contain">
+                      {userMenuSections.map((section, sectionIndex) => (
+                        <div
+                          key={section.title ?? `menu-section-${sectionIndex}`}
+                          className={
+                            sectionIndex > 0
+                              ? "border-t-[6px] border-[#f6f7f9] dark:border-gray-900/70"
+                              : "pt-1"
+                          }
+                        >
+                          {section.title ? (
+                            <div className="px-4 pb-1 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-gray-400">
+                              {section.title}
+                            </div>
+                          ) : null}
 
-                    <Link
-                      to="/orders"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Package
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        {t("header.orders")}
-                      </span>
-                    </Link>
+                          {section.items.map((item) => {
+                            const Icon = item.icon;
+                            const rowClass =
+                              "flex w-full items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-[#fff7ef] dark:hover:bg-gray-800";
+                            const content = (
+                              <>
+                                <Icon
+                                  size={18}
+                                  className={
+                                    item.tone === "accent"
+                                      ? "flex-shrink-0 text-primary"
+                                      : "flex-shrink-0 text-gray-500 dark:text-gray-400"
+                                  }
+                                />
+                                <span className="flex-1 truncate text-[13.5px] font-semibold text-gray-800 dark:text-gray-100">
+                                  {item.label}
+                                </span>
+                                {item.badge ? (
+                                  <span className="flex-shrink-0 rounded-full bg-[#fff1e3] px-2.5 py-1 text-[10.5px] font-black text-[#c85e14] dark:bg-primary/20 dark:text-orange-200">
+                                    {item.badge}
+                                  </span>
+                                ) : item.note ? (
+                                  <span className="flex-shrink-0 text-[11.5px] font-black text-primary">
+                                    {item.note}
+                                  </span>
+                                ) : (
+                                  <ChevronRight
+                                    size={15}
+                                    className="flex-shrink-0 text-gray-300 dark:text-gray-600"
+                                  />
+                                )}
+                              </>
+                            );
 
-                    <Link
-                      to="/wishlist"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Heart
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        {t("header.wishlist")}
-                      </span>
-                    </Link>
-
-                    <Link
-                      to="/become-seller"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Store
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        Devenir Vendeur
-                      </span>
-                    </Link>
-
-                    <Link
-                      to="/help"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <CircleHelp
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        Centre d'aide
-                      </span>
-                    </Link>
-
-                    <a
-                      href="https://wa.me/237689002812"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Gift
-                        size={18}
-                        className="text-text-light-secondary dark:text-text-dark-secondary"
-                      />
-                      <span className="text-text-light dark:text-text-dark">
-                        Support WhatsApp
-                      </span>
-                    </a>
-
-                    <div className="border-t border-gray-200 dark:border-gray-700 mt-2 pt-2">
-                      <div className="px-4 pb-3 text-xs text-text-light-secondary dark:text-text-dark-secondary">
-                        <div className="truncate">Contact: +237 689 002 812</div>
-                      </div>
-                      <button
-                        onClick={handleLogout}
-                        className="flex items-center gap-3 px-4 py-3 w-full hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-600"
-                      >
-                        <LogOut size={18} />
-                        <span>{t("header.logout")}</span>
-                      </button>
+                            return item.external ? (
+                              <a
+                                key={item.label}
+                                href={item.to}
+                                target="_blank"
+                                rel="noreferrer"
+                                className={rowClass}
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                {content}
+                              </a>
+                            ) : (
+                              <Link
+                                key={item.label}
+                                to={item.to}
+                                className={rowClass}
+                                onClick={() => setUserMenuOpen(false)}
+                              >
+                                {content}
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      ))}
                     </div>
+
+                    <button
+                      onClick={handleLogout}
+                      className="flex w-full items-center gap-3 border-t border-gray-100 px-4 py-3 text-[13.5px] font-bold text-red-600 transition-colors hover:bg-red-50 dark:border-gray-800 dark:hover:bg-red-900/20"
+                    >
+                      <LogOut size={18} />
+                      {t("header.logout")}
+                    </button>
                   </div>
                 )}
               </div>
             ) : (
-              <div className="hidden lg:flex items-center gap-2">
-                <Link to="/become-seller">
-                  <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
-                    Vendre sur BelivaY
-                  </button>
+              <>
+                {/* Sans session : la pastille ronde tient la place de l'avatar en bout
+                    de header sur mobile, là où les boutons Connexion/Inscription ne
+                    tiennent pas. Elle mène à la connexion. */}
+                <Link
+                  to="/login"
+                  aria-label={t("header.login")}
+                  className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary ring-2 ring-primary/15 transition-all hover:bg-primary/20 lg:hidden"
+                >
+                  <User size={17} />
                 </Link>
-                <Link to="/login">
-                  <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
-                    {t("header.login")}
-                  </button>
-                </Link>
-                <Link to="/register">
-                  <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-all">
-                    {t("header.signup")}
-                  </button>
-                </Link>
-              </div>
+
+                <div className="hidden lg:flex items-center gap-2">
+                  <Link to="/become-seller">
+                    <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
+                      Vendre sur BelivaY
+                    </button>
+                  </Link>
+                  <Link to="/login">
+                    <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
+                      {t("header.login")}
+                    </button>
+                  </Link>
+                  <Link to="/register">
+                    <button className="px-4 py-2 bg-primary hover:bg-primary-dark text-white font-medium rounded-lg transition-all">
+                      {t("header.signup")}
+                    </button>
+                  </Link>
+                </div>
+              </>
             )}
 
-            {/* Mobile Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="rounded-lg p-1.5 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt lg:hidden sm:p-2"
-            >
-              {mobileMenuOpen ? (
-                <X size={24} className="text-text-light dark:text-text-dark" />
-              ) : (
-                <Menu
-                  size={24}
-                  className="text-text-light dark:text-text-dark"
-                />
-              )}
-            </button>
           </div>
         </div>
 
@@ -869,142 +1032,24 @@ export default function Header() {
         </nav>
       </div>
 
-      {/* Mobile Menu */}
-      {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-bg-dark">
-          <nav className="container mx-auto px-4 py-4 space-y-2">
-            {/* Mêmes entrées que la barre de navigation, même ordre. */}
-            {clientNavItems.map((item) => {
-              const Icon = item.icon;
-              return (
-                <Link
-                  key={item.label}
-                  to={item.to}
-                  className="flex items-center gap-3 rounded-lg px-4 py-3 transition-all hover:bg-bg-light dark:hover:bg-bg-dark-alt"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <Icon
-                    size={16}
-                    className={`flex-shrink-0 ${item.tone}`}
-                    fill={item.label === "Sélection" || item.label === t("header_nav.favorites") ? "currentColor" : "none"}
-                  />
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    {item.label}
-                  </span>
-                  {item.promo && maxPromo > 0 ? (
-                    <span className="ml-auto rounded-full bg-red-50 px-1.5 py-0.5 text-[10px] font-black text-red-500 dark:bg-red-500/15 dark:text-red-300">
-                      −{maxPromo}%
-                    </span>
-                  ) : null}
-                </Link>
-              );
-            })}
-
-            <div className="my-1 border-t border-gray-100 dark:border-gray-800" />
-
-            <Link
-              to="/catalog"
-              className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <span className="font-medium text-text-light dark:text-text-dark">
-                {t("header.catalog")}
-              </span>
-            </Link>
-
-            <Link
-              to="/become-seller"
-              className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              <Store size={16} className="flex-shrink-0 text-text-light-secondary dark:text-text-dark-secondary" />
-              <span className="font-medium text-text-light dark:text-text-dark">
-                Devenir Vendeur
-              </span>
-            </Link>
-
-            {user ? (
-              <>
-                <Link
-                  to="/profile?tab=disputes"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    Litiges ouverts
-                  </span>
-                </Link>
-                <Link
-                  to="/help"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    Centre d'aide
-                  </span>
-                </Link>
-                <button
-                  onClick={() => {
-                    handleLogout();
-                    setMobileMenuOpen(false);
-                  }}
-                  className="w-full text-left px-4 py-3 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-all text-red-600 font-medium"
-                >
-                  {t("header.logout")}
-                </button>
-              </>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="block px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  <span className="font-medium text-text-light dark:text-text-dark">
-                    {t("header.login")}
-                  </span>
-                </Link>
-                <Link
-                  to="/register"
-                  className="block px-4 py-3 bg-primary text-white font-medium rounded-lg text-center"
-                  onClick={() => setMobileMenuOpen(false)}
-                >
-                  {t("header.signup")}
-                </Link>
-              </>
-            )}
-
-            <button
-              onClick={() => {
-                toggleTheme();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all flex items-center gap-3"
-            >
-              {theme === "dark" ? (
-                <Sun size={16} className="text-primary" />
-              ) : (
-                <Moon size={16} className="text-text-light-secondary" />
-              )}
-              <span className="font-medium text-text-light dark:text-text-dark">
-                {theme === "dark" ? "Mode clair" : "Mode sombre"}
-              </span>
-            </button>
-
-            <button
-              onClick={() => {
-                toggleLanguage();
-                setMobileMenuOpen(false);
-              }}
-              className="w-full text-left px-4 py-3 rounded-lg hover:bg-bg-light dark:hover:bg-bg-dark-alt transition-all"
-            >
-              <span className="font-medium text-text-light dark:text-text-dark">
-                {i18n.language === "fr" ? "🇬🇧 English" : "🇫🇷 Français"}
-              </span>
-            </button>
-          </nav>
-        </div>
-      )}
+      {/* Tiroir des categories — ouvert par l'icone de menu, a gauche du header.
+          Devenir Vendeur y est ajoute explicitement : c'est le seul point
+          d'entree visible pour un visiteur mobile non connecte (la pastille
+          de connexion ne mene qu'au login, et le menu de compte riche
+          n'existe que pour un utilisateur deja authentifie). */}
+      <MobileCategoryDrawer
+        open={mobileMenuOpen}
+        onClose={() => setMobileMenuOpen(false)}
+        extraLinks={[
+          { label: "Promotions", to: "/promotions" },
+          { label: "Selection Premium", to: "/selection-premium" },
+          { label: "Abonnements BelivaY", to: "/premium" },
+          { label: "Mes commandes", to: "/orders" },
+          { label: "Devenir Vendeur", to: "/become-seller" },
+          { label: "A propos", to: "/about" },
+          { label: "Aide", to: "/help" },
+        ]}
+      />
     </header>
   );
 }

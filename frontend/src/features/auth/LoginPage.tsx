@@ -58,7 +58,7 @@ const portalCopy: Record<PortalRole, {
     accentDark: '#166534',
     soft: 'rgba(22,163,74,.14)',
     icon: Truck,
-    logo: '/belivay-logo-mark.png',
+    logo: '/belivay-logo-mark-courier.png',
   },
   admin: {
     label: 'Console interne',
@@ -378,6 +378,7 @@ export default function LoginPage() {
                       label="signin_with"
                       locale={String(i18n.language || 'fr').split('-')[0]}
                       onUnavailable={() => setGoogleUnavailable(true)}
+                      onError={(message) => showToast(message, 'error')}
                     />
                   </>
                 )}

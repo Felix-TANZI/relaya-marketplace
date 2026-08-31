@@ -20,7 +20,7 @@ const MESSAGES: { icon: LucideIcon; text: string }[] = [
  */
 export default function TopAdBar() {
   return (
-    <div className="fixed inset-x-0 top-0 z-[60] h-8 overflow-hidden bg-[#0b1220] dark:bg-black">
+    <div data-fixed-top-bar className="fixed inset-x-0 top-0 z-[60] h-8 overflow-hidden bg-[#0b1220] dark:bg-black">
       {/* Estompage des deux bords, pour que les messages n'apparaissent pas net. */}
       <div
         aria-hidden

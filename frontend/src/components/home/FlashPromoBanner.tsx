@@ -59,7 +59,7 @@ export default function FlashPromoBanner({ count, maxDiscount, endDates }: Flash
       title={`${count} promo${count > 1 ? "s" : ""} jusqu'à −${maxDiscount}%`}
       subtitle={
         <span className="flex items-center gap-1.5 text-amber-100">
-          <Clock size={12} />
+          <Clock size={14} />
           Fin dans <span className="tabular-nums tracking-wide">{remaining}</span>
         </span>
       }

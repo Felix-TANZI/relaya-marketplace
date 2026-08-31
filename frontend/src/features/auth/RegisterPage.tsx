@@ -399,6 +399,7 @@ export default function RegisterPage() {
                     label="signup_with"
                     locale={String(i18n.language || 'fr').split('-')[0]}
                     onUnavailable={() => setGoogleUnavailable(true)}
+                    onError={(message) => showToast(message, 'error')}
                   />
                 </>
               )}

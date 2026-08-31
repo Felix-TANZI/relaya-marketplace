@@ -33,6 +33,8 @@ interface GoogleAuthButtonProps {
   label?: 'signin_with' | 'signup_with' | 'continue_with';
   locale?: string;
   onUnavailable?: (message: string) => void;
+  /** Echec ponctuel et retentable (contrairement a onUnavailable, qui masque le bouton). */
+  onError?: (message: string) => void;
 }
 
 const LABEL_TEXT: Record<NonNullable<GoogleAuthButtonProps['label']>, string> = {
@@ -52,10 +54,11 @@ function GoogleGlyph() {
   );
 }
 
-function NativeGoogleButton({ onCredential, disabled, label }: {
+function NativeGoogleButton({ onCredential, disabled, label, onError }: {
   onCredential: (credential: string) => Promise<void>;
   disabled: boolean;
   label: NonNullable<GoogleAuthButtonProps['label']>;
+  onError?: (message: string) => void;
 }) {
   const [pending, setPending] = useState(false);
 
@@ -67,9 +70,21 @@ function NativeGoogleButton({ onCredential, disabled, label }: {
       const idToken = user?.authentication?.idToken;
       if (idToken) {
         await onCredential(idToken);
+      } else {
+        // signIn() a reussi (compte choisi) mais sans idToken exploitable :
+        // typiquement un client OAuth Android mal configure (package name /
+        // empreinte SHA-1 non enregistres cote Google Cloud Console).
+        console.error('GoogleAuth.signIn() a reussi mais sans idToken', user);
+        onError?.('Connexion Google impossible (configuration invalide). Reessayez ou utilisez un autre mode de connexion.');
       }
-    } catch {
-      // L'utilisateur a annule ou Google Play Services est indisponible : rien a faire ici.
+    } catch (error) {
+      // Annulation utilisateur : ne pas afficher d'erreur, cas normal.
+      const message = error instanceof Error ? error.message : String(error);
+      const cancelled = /cancel/i.test(message);
+      if (!cancelled) {
+        console.error('GoogleAuth.signIn() a echoue', error);
+        onError?.('Connexion Google indisponible pour le moment. Reessayez ou utilisez un autre mode de connexion.');
+      }
     } finally {
       setPending(false);
     }
@@ -94,6 +109,7 @@ export default function GoogleAuthButton({
   label = 'continue_with',
   locale = 'fr',
   onUnavailable,
+  onError,
 }: GoogleAuthButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const callbackRef = useRef(onCredential);
@@ -165,7 +181,7 @@ export default function GoogleAuthButton({
   }, [isNative, clientId, label, locale]);
 
   if (isNative) {
-    return <NativeGoogleButton onCredential={onCredential} disabled={disabled} label={label} />;
+    return <NativeGoogleButton onCredential={onCredential} disabled={disabled} label={label} onError={onError} />;
   }
 
   return (

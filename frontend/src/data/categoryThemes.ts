@@ -262,7 +262,7 @@ export const CATEGORY_THEMES: CategoryTheme[] = THEME_SEEDS.map((seed) => ({
  * Hauteur commune au hero des pages catégorie et au carrousel de l'accueil.
  * Définie ici pour que les deux surfaces ne puissent pas diverger.
  */
-export const HERO_MIN_HEIGHT = "min-h-[300px] sm:min-h-[360px]";
+export const HERO_MIN_HEIGHT = "min-h-[196px] sm:min-h-[300px]";
 
 const THEMES_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
 

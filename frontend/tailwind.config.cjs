@@ -162,6 +162,16 @@ module.exports = {
           '60%':      { transform: 'scale(0.98) rotate(5deg)',   opacity: '0.94' },
         },
         // Bandeau d'annonces : défilement continu du ruban dupliqué.
+        // Tiroir des categories mobile : glissement depuis la gauche.
+        'drawer-in': {
+          from: { transform: 'translateX(-100%)' },
+          to:   { transform: 'translateX(0)' },
+        },
+        // Pastille Nouveau : respiration lente, elle grandit et retrecit.
+        'badge-breathe': {
+          '0%, 100%': { transform: 'scale(1)' },
+          '50%':      { transform: 'scale(1.13)' },
+        },
         'marquee': {
           from: { transform: 'translateX(0)' },
           to:   { transform: 'translateX(-50%)' },
@@ -176,6 +186,8 @@ module.exports = {
         'flame-flicker': 'flame-flicker 1.4s ease-in-out infinite',
         'gem-sparkle':   'gem-sparkle 2.6s ease-in-out infinite',
         'marquee':       'marquee 32s linear infinite',
+        'drawer-in':     'drawer-in 0.24s cubic-bezier(.4,0,.2,1) both',
+        'badge-breathe': 'badge-breathe 1.8s ease-in-out infinite',
       },
     },
   },

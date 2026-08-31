@@ -1,0 +1,6 @@
+## Copiez ce fichier en "key.properties" (sans .example) dans ce meme dossier.
+## key.properties est dans .gitignore : ne sera jamais commit.
+storeFile=../../../keystores/belivay-client-upload.keystore
+storePassword=REMPLACER_PAR_LE_KEYSTORE_PASSWORD_DU_FICHIER_keystores/belivay-client-upload.txt
+keyAlias=belivay-client-upload
+keyPassword=REMPLACER_PAR_LE_MEME_MOT_DE_PASSE_QUE_storePassword

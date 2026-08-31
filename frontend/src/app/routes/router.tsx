@@ -48,6 +48,7 @@ const AboutPage = lazy(() => import('@/features/about/AboutPage'));
 const BecomeSellerPage = lazy(() => import('@/features/vendors/BecomeSellerPage'));
 const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
 const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
+const FlashDealsPage = lazy(() => import('@/features/flash/FlashDealsPage'));
 const DriverApp = lazy(() => import('@/features/driver/DriverApp'));
 const FicheDetailPage = lazy(() => import('@/features/catalog/FicheDetailPage'));
 const RelayPointPage = lazy(() => import('@/features/relay/RelayPointPage'));
@@ -188,6 +189,7 @@ export const router = createBrowserRouter([
       { path: 'wishlist',        element: <WishlistPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
+      { path: 'flash-deals',     element: <FlashDealsPage /> },
       { path: 'premium',         element: <PremiumPage /> },
       { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },

@@ -67,7 +67,7 @@ function RoiCalculator({ plans }: { plans: PlanData[] }) {
     <div className="rounded-2xl p-5 space-y-4"
       style={{ background: `linear-gradient(135deg,${T.text},#2A1C0E)`, color: T.white }}>
       <div>
-        <p className="font-black text-[16px]" style={{ fontFamily: 'Poppins,sans-serif' }}>
+        <p className="font-black text-[16px]" style={{  }}>
           Calculez votre économie avec le Plan Pro
         </p>
         <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
@@ -140,7 +140,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
       <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden" style={{ background: T.white }}>
         <div className="flex items-center justify-between px-5 py-4"
           style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[15px]" style={{ color: T.text }}>
             Souscrire — {plan.name}
           </p>
           <button type="button" onClick={onClose}
@@ -158,7 +158,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
                 {cycle === 'ANNUAL' ? `Annuel (${plan.plan_duration_days * 12} jours)` : `Mensuel (${plan.plan_duration_days} jours)`}
               </p>
             </div>
-            <p className="font-black text-[20px]" style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-black text-[20px]" style={{ color: T.orange }}>
               {fmtXAF(amount)}
             </p>
           </div>
@@ -253,7 +253,7 @@ function TrialModal({ plan, onClose, onSuccess }: {
       <div className="w-full sm:max-w-md rounded-t-3xl sm:rounded-3xl overflow-hidden" style={{ background: T.white }}>
         <div className="flex items-center justify-between px-5 py-4"
           style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[15px]" style={{ color: T.text }}>
             Essai gratuit — {plan.name}
           </p>
           <button type="button" onClick={onClose}
@@ -268,7 +268,7 @@ function TrialModal({ plan, onClose, onSuccess }: {
               style={{ background: isViolet ? T.violetL : T.orangeL }}>
               <Clock size={28} style={{ color: isViolet ? T.violet : T.orange }}/>
             </div>
-            <p className="font-black text-[24px]" style={{ color: isViolet ? T.violet : T.orange, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-black text-[24px]" style={{ color: isViolet ? T.violet : T.orange }}>
               {plan.trial_days} jours gratuits
             </p>
             <p className="text-[13px] mt-1" style={{ color: T.muted }}>
@@ -336,14 +336,14 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
       <div className="p-5 space-y-4 flex-1">
         <div className="flex items-start justify-between">
           <div>
-            <p className="font-black text-[16px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{plan.name}</p>
+            <p className="font-black text-[16px]" style={{ color: T.text }}>{plan.name}</p>
             <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>{plan.description}</p>
           </div>
           <div className="text-right">
             {price === 0
-              ? <p className="font-black text-[20px]" style={{ color: T.green, fontFamily: 'Poppins,sans-serif' }}>Gratuit</p>
+              ? <p className="font-black text-[20px]" style={{ color: T.green }}>Gratuit</p>
               : <>
-                  <p className="font-black text-[20px]" style={{ color: isViolet?T.violet:T.orange, fontFamily: 'Poppins,sans-serif' }}>
+                  <p className="font-black text-[20px]" style={{ color: isViolet?T.violet:T.orange }}>
                     {fmtXAF(price)}
                   </p>
                   <p className="text-[10.5px]" style={{ color: T.mutedL }}>
@@ -362,7 +362,7 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
             <div key={i} className="rounded-xl p-2.5 text-center"
               style={{ background: isCurrent ? T.greenL : plan.is_popular ? T.orangeL : isViolet ? T.violetL : T.creamAlt }}>
               <p className="font-bold text-[11px] mb-0.5" style={{ color: T.muted }}>{row.label}</p>
-              <p className="font-black text-[15px]" style={{ color: row.color, fontFamily: 'Poppins,sans-serif' }}>{row.value}</p>
+              <p className="font-black text-[15px]" style={{ color: row.color }}>{row.value}</p>
             </div>
           ))}
         </div>
@@ -487,7 +487,7 @@ export default function SellerPlansPage() {
       {/* EN-TÊTE */}
       <div>
         <h1 className="flex items-center gap-2 font-black text-[22px]"
-          style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          style={{ color: T.text }}>
           <CreditCard size={20} style={{ color: T.orange }}/> Plans & Abonnements
         </h1>
         <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
@@ -556,7 +556,7 @@ export default function SellerPlansPage() {
         <div className="rounded-2xl overflow-hidden"
           style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Historique de vos abonnements
             </p>
           </div>
@@ -597,7 +597,7 @@ export default function SellerPlansPage() {
       {/* FAQ */}
       <div className="rounded-2xl overflow-hidden" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>Questions fréquentes</p>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>Questions fréquentes</p>
         </div>
         <div className="px-5">{FAQ.map((item, i) => <FaqItem key={i} q={item.q} a={item.a}/>)}</div>
       </div>

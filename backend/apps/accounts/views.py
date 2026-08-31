@@ -44,7 +44,7 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
-from .models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
 from apps.common.phone import normalize_cameroon_phone
 from apps.orders.models import Dispute, DisputeMessage
 from apps.shipping.models import Shipment, ShipmentEvent
@@ -2204,3 +2204,45 @@ def verify_2fa_login(request):
     update_last_login(None, user)
  
     return Response({'access': str(access), 'refresh': str(refresh)})
+
+
+def _training_state(relay_point):
+    """Etat du parcours de formation, recalcule a chaque lecture."""
+    completed = list(
+        RelayTrainingCompletion.objects
+        .filter(relay_point=relay_point)
+        .values_list("module_key", flat=True)
+    )
+    core = [module.value for module in RelayTrainingCompletion.CORE_MODULES]
+    total = len(RelayTrainingCompletion.Module.choices)
+    return {
+        "completed": completed,
+        "completed_count": len(completed),
+        "total_modules": total,
+        "core_completed": len([key for key in completed if key in core]),
+        "core_total": len(core),
+        "points": len(completed) * RelayTrainingCompletion.POINTS_PER_MODULE,
+        "points_per_module": RelayTrainingCompletion.POINTS_PER_MODULE,
+        "core_modules": core,
+    }
+
+
+@extend_schema(tags=["Relay Point"], summary="Parcours de formation du point relais")
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def relay_point_training(request):
+    """GET renvoie l'etat du parcours ; POST valide un module (idempotent)."""
+    relay_point = _get_request_relay_point(request.user)
+    if not relay_point:
+        return Response({"detail": "Point relais approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "POST":
+        module_key = (request.data.get("module_key") or "").strip()
+        if module_key not in RelayTrainingCompletion.Module.values:
+            return Response(
+                {"module_key": "Module de formation inconnu."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        RelayTrainingCompletion.objects.get_or_create(relay_point=relay_point, module_key=module_key)
+
+    return Response(_training_state(relay_point))

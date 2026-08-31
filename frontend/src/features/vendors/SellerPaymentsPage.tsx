@@ -273,7 +273,7 @@ export default function SellerPaymentsPage() {
               <div className="flex items-center justify-between rounded-2xl"
                 style={{ padding: 15, background: T.greenL, border: `1px solid ${T.greenB}` }}>
                 <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>Vous recevrez</span>
-                <span className="font-black" style={{ fontSize: 21, color: T.green, letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+                <span className="font-black" style={{ fontSize: 21, color: T.green, letterSpacing: '-.02em' }}>
                   {nf(summary.projection_monthly_xaf)}
                 </span>
               </div>

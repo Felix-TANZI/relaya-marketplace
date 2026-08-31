@@ -288,7 +288,7 @@ export default function SellerProductsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Package size={20} style={{ color: T.orange }}/> Mes Produits
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
@@ -329,7 +329,7 @@ export default function SellerProductsPage() {
             <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: k.bg }}>
               <span style={{ color: k.color }}>{k.ico}</span>
             </div>
-            <p className="font-black text-[22px] leading-none" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{k.val}</p>
+            <p className="font-black text-[22px] leading-none" style={{ color: T.text }}>{k.val}</p>
             <div>
               <p className="text-[12px] font-semibold" style={{ color: T.text }}>{k.label}</p>
               <p className="text-[11px]" style={{ color: T.mutedL }}>{k.sub}</p>
@@ -467,7 +467,7 @@ export default function SellerProductsPage() {
       {filtered.length === 0 ? (
         <div className="rounded-2xl py-16 text-center" style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <Package size={44} className="mx-auto mb-4" style={{ color: T.mutedL }}/>
-          <p className="font-bold text-[16px] mb-1" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[16px] mb-1" style={{ color: T.text }}>
             {products.length === 0 ? 'Aucun produit' : 'Aucun résultat'}
           </p>
           <p className="text-[13px] mb-5" style={{ color: T.muted }}>
@@ -531,7 +531,7 @@ export default function SellerProductsPage() {
                 <div className="flex-1 min-w-0 space-y-1.5">
                   {/* Titre + badge statut */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                    <p className="font-bold text-[14px]" style={{ color: T.text }}>
                       {p.title}
                     </p>
                     {p.is_active
@@ -568,7 +568,7 @@ export default function SellerProductsPage() {
                 {/* Prix + actions */}
                 <div className="flex flex-col items-end gap-3 flex-shrink-0">
                   <div className="text-right">
-                    <p className="font-black text-[17px]" style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>
+                    <p className="font-black text-[17px]" style={{ color: T.orange }}>
                       {p.price_xaf.toLocaleString('fr-FR')} FCFA
                     </p>
                     {cmpAt && (

@@ -27,6 +27,7 @@ from .views import (
     delivery_organization_dispute_reply,
     relay_point_profile,
     relay_point_open_disputes,
+    relay_point_training,
     ComplianceDocumentListCreateView,
     RegisterView,
     RewardAccountsView,
@@ -105,6 +106,7 @@ urlpatterns = [
     path("delivery-organization/disputes/<int:dispute_id>/reply/", delivery_organization_dispute_reply, name="delivery-organization-dispute-reply"),
     path("relay-point/profile/", relay_point_profile, name="relay-point-profile"),
     path("relay-point/disputes/open/", relay_point_open_disputes, name="relay-point-open-disputes"),
+    path("relay-point/training/", relay_point_training, name="relay-point-training"),
     path("compliance-documents/", ComplianceDocumentListCreateView.as_view(), name="compliance-documents"),
 
     # ── Sessions / Appareils ──────────────────────────────────────────────────

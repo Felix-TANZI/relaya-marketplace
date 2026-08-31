@@ -248,3 +248,69 @@ class CourierSOSAlert(models.Model):
 
     def __str__(self):
         return f"SOS #{self.id} - {self.courier.user.username} - {self.status}"
+
+
+class RelayPointReview(models.Model):
+    """
+    Avis public laisse par un acheteur apres son retrait au point relais.
+
+    Anonymat V5 : le gerant ne voit jamais l'identite complete de l'acheteur,
+    seulement ses initiales. L'avis est rattache au colis retire, ce qui garantit
+    qu'il provient d'un retrait reel et non d'un compte quelconque.
+    """
+
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile",
+        on_delete=models.CASCADE,
+        related_name="reviews",
+    )
+    author = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="relay_point_reviews",
+    )
+    relay_parcel = models.OneToOneField(
+        "shipping.RelayParcel",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="review",
+        help_text="Retrait qui autorise cet avis. Un colis ne peut etre note qu'une fois.",
+    )
+    rating = models.PositiveSmallIntegerField(help_text="Note de 1 a 5 etoiles.")
+    comment = models.TextField(blank=True, default="")
+    thanked_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date a laquelle le gerant a remercie l'acheteur.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Avis point relais"
+        verbose_name_plural = "Avis points relais"
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(rating__gte=1) & models.Q(rating__lte=5),
+                name="relay_review_rating_between_1_and_5",
+            ),
+        ]
+        indexes = [models.Index(fields=["relay_point", "-created_at"])]
+
+    def __str__(self):
+        return f"Avis {self.rating}/5 - {self.relay_point.name}"
+
+    @property
+    def author_initials(self) -> str:
+        """« Owen Pierre » devient « O. P. » ; a defaut, l'initiale du compte."""
+        if not self.author:
+            return "•. •."
+        parts = [self.author.first_name.strip(), self.author.last_name.strip()]
+        initiales = [f"{part[0].upper()}." for part in parts if part]
+        if not initiales:
+            initiales = [f"{(self.author.username or '?')[0].upper()}."]
+        return " ".join(initiales)

@@ -276,7 +276,7 @@ export default function SellerWalletPage() {
             <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.4)' }}>
               Bientôt disponible
             </p>
-            <p className="font-black mt-1.5" style={{ fontSize: 22, color: T.amber, letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+            <p className="font-black mt-1.5" style={{ fontSize: 22, color: T.amber, letterSpacing: '-.02em' }}>
               {nf(upcoming)} <span style={{ fontSize: 11, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
             </p>
             <Link to="/seller/pending-funds">
@@ -412,7 +412,7 @@ export default function SellerWalletPage() {
                       onChange={e => setAmount(e.target.value)}
                       placeholder={`Min. ${nf(minAmount)}`}
                       className="flex-1 outline-none font-black"
-                      style={{ padding: 14, fontSize: 22, letterSpacing: '-.02em', color: T.text, background: 'transparent', minWidth: 0, fontFamily: 'Syne,Poppins,sans-serif' }} />
+                      style={{ padding: 14, fontSize: 22, letterSpacing: '-.02em', color: T.text, background: 'transparent', minWidth: 0 }} />
                     <span className="flex items-center font-bold flex-shrink-0"
                       style={{ padding: '0 15px', background: T.cream, borderLeft: `1px solid ${T.border}`, fontSize: 12.5, color: T.muted }}>
                       FCFA
@@ -464,7 +464,7 @@ export default function SellerWalletPage() {
                   <div className="flex items-center justify-between"
                     style={{ padding: '16px 15px', background: T.greenL, borderTop: `1px solid ${T.greenB}` }}>
                     <span className="font-bold" style={{ fontSize: 11.5, color: T.green }}>Vous recevrez</span>
-                    <span className="font-black" style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+                    <span className="font-black" style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em' }}>
                       {amountNum >= minAmount ? `${nf(net)} FCFA` : '—'}
                     </span>
                   </div>

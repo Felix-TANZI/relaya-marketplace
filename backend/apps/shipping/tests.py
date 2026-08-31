@@ -167,6 +167,29 @@ class ShipmentTrackingTests(APITestCase):
         self.assertEqual(parcel.status, RelayParcel.Status.PICKED_UP)
         self.assertEqual(ShipmentEvent.objects.filter(shipment=self.shipment).count(), 0)
 
+    def test_relay_receives_an_expected_parcel_announced_in_advance(self):
+        """Cas nominal : l'arrivee est annoncee au relais avant que le livreur se presente."""
+        parcel = RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.EXPECTED,
+        )
+        serializer = RelayParcelReceiveSerializer(
+            data={"shipment_id": self.shipment.id, "slot_code": "A-07", "proof_note": "3 photos + double signature"},
+            context={"relay_point": self.relay_point},
+        )
+        serializer.is_valid(raise_exception=True)
+        stored = serializer.save()
+
+        self.assertEqual(stored.pk, parcel.pk)
+        self.assertEqual(stored.status, RelayParcel.Status.STORED)
+        self.assertEqual(stored.slot_code, "A-07")
+        self.assertEqual(stored.proof_note, "3 photos + double signature")
+        self.assertTrue(stored.pickup_code)
+        self.assertIsNotNone(stored.received_at)
+        self.assertEqual(RelayParcel.objects.filter(shipment=self.shipment).count(), 1)
+        self.assertEqual(ShipmentEvent.objects.filter(shipment=self.shipment).count(), 1)
+
     def test_relay_manager_updates_capacity_and_hours(self):
         self.client.force_authenticate(self.relay_user)
 

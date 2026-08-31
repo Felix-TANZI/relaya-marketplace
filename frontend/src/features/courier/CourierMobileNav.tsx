@@ -54,7 +54,7 @@ export default function CourierMobileNav({
   return (
     <nav
       aria-label="Espace livreur"
-      className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f]/95 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur lg:hidden"
+      className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f] shadow-[0_-8px_30px_rgba(0,0,0,.35)] lg:hidden"
     >
       <div className="flex h-[58px] items-center px-2">
         {PRIMARY.map(({ id, icon: Icon }) => {

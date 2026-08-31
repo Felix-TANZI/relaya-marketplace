@@ -72,6 +72,10 @@ export interface VendorProfile {
   city: string;
   id_document: string;
   status: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  // Vitrine publique et certification, exposees par VendorProfileSerializer.
+  shop_slug: string;
+  certification_tier: "BRONZE" | "SILVER" | "GOLD" | "DIAMOND";
+  total_points: number;
   created_at: string;
   updated_at: string;
   approved_at: string | null;

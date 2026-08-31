@@ -55,7 +55,7 @@ export default function RelayMobileNav({
   return (
     <nav
       aria-label={navLabel}
-      className="safe-pb fixed inset-x-0 bottom-0 z-40 border-t border-slate-200/80 bg-white/85 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/85 lg:hidden"
+      className="safe-pb fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white shadow-[0_-4px_20px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900 lg:hidden"
     >
       <div className="mx-auto flex max-w-2xl items-stretch justify-around px-1">
         {PRIMARY.map(({ id, icon: Icon }) => {

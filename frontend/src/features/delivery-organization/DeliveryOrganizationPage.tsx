@@ -1759,7 +1759,7 @@ export default function DeliveryOrganizationPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-950 dark:bg-slate-950 dark:text-white">
+    <main className="belivay-portal min-h-screen bg-[#f4f7fb] text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="flex">
         <DeliverySidebar
           activeTab={tab}

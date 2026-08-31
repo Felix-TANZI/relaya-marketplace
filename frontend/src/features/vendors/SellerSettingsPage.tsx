@@ -179,7 +179,7 @@ function Section({ title, icon, children, accent }: {
           style={{ background: `${a}20` }}>
           <span style={{ color: a }}>{icon}</span>
         </div>
-        <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+        <p className="font-bold text-[14px]" style={{ color: T.text }}>
           {title}
         </p>
       </div>
@@ -273,7 +273,7 @@ function OTPModal({ email, purpose, onVerified, onClose }: {
           style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2">
             <Mail size={15} style={{ color: T.orange }}/>
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Vérification par email
             </p>
           </div>
@@ -590,7 +590,7 @@ export default function SellerSettingsPage() {
       {/* ── EN-TÊTE ────────────────────────────────────────────────────────── */}
       <div>
         <h1 className="flex items-center gap-2 font-black text-[22px]"
-          style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          style={{ color: T.text }}>
           <Settings size={20} style={{ color: T.orange }}/>
           {t('seller_settings.page_title')}
         </h1>
@@ -614,7 +614,7 @@ export default function SellerSettingsPage() {
                   onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}/>
               ) : (
                 <span className="font-black text-[24px]"
-                  style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>{initials}</span>
+                  style={{ color: T.orange }}>{initials}</span>
               )}
             </div>
             <input type="file" ref={avatarRef} className="hidden" accept="image/*"

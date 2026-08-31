@@ -261,7 +261,7 @@ export default function SellerAdjustmentsPage() {
             <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.4)' }}>
               CA brut du mois
             </p>
-            <p className="font-black mt-1.5" style={{ fontSize: 24, color: '#fff', letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+            <p className="font-black mt-1.5" style={{ fontSize: 24, color: '#fff', letterSpacing: '-.02em' }}>
               {nf(totals.gross)} <span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
             </p>
           </div>

@@ -236,19 +236,22 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Typographie a une seule police.
+
+   La regle globale `h1..h6 { font-family: Syne }` donne aux titres un dessin
+   different du reste de l'interface. Dans les espaces metier on veut au
+   contraire une seule voix : les titres reprennent le Plus Jakarta Sans du
+   corps de texte.
+
+   `.belivay-client` couvre la boutique acheteur ; `.belivay-portal` les quatre
+   portails partenaires (point relais, organisation de livraison, livreur,
+   vendeur). L'espace admin garde Syne, applique en style inline.
+   ═══════════════════════════════════════════════════════════════════════════ */
 .belivay-client,
-.belivay-client h1,
-.belivay-client h2,
-.belivay-client h3,
-.belivay-client h4,
-.belivay-client h5,
-.belivay-client h6,
-.belivay-client .font-display,
-.belivay-client .font-vendor-display,
-.belivay-client button,
-.belivay-client input,
-.belivay-client select,
-.belivay-client textarea {
+.belivay-portal,
+.belivay-client :is(h1, h2, h3, h4, h5, h6, .font-display, .font-vendor-display, button, input, select, textarea),
+.belivay-portal :is(h1, h2, h3, h4, h5, h6, .font-display, .font-vendor-display, button, input, select, textarea) {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
 }
 

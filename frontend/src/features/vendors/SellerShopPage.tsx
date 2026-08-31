@@ -126,7 +126,7 @@ function createLocationIcon(initial: string, size: 'normal' | 'large' = 'normal'
           border: 3px solid #ffffff;
           display: flex; align-items: center; justify-content: center;
           color: white; font-weight: 900; font-size: ${fs}px;
-          font-family: Poppins, sans-serif; line-height: 1;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif; line-height: 1;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
         ">${letter}</div>
         <div style="
@@ -264,7 +264,7 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
           <Globe size={15} style={{ color: T.orange }}/>
         </div>
         <div>
-          <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>
             Emplacements sur la carte
           </p>
           <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -388,7 +388,7 @@ function ModRequestModal({
         style={{ background: T.white }}>
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4"
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[15px]" style={{ color: T.text }}>
             <Lock size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
             Demander une modification
           </p>
@@ -621,7 +621,7 @@ function LocationModal({
               <MapPin size={16} style={{ color: T.orange }}/>
             </div>
             <div>
-              <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-black text-[15px]" style={{ color: T.text }}>
                 {initial?.id ? 'Modifier l\'emplacement' : 'Ajouter un emplacement'}
               </p>
               <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -992,7 +992,7 @@ export default function SellerShopPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Store size={20} style={{ color: T.orange }}/> Ma Boutique
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>Configuration et présentation</p>
@@ -1070,7 +1070,7 @@ export default function SellerShopPage() {
           </button>
         </div>
         <div className="flex-1">
-          <p className="font-black text-[18px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[18px]" style={{ color: T.text }}>
             {shop?.business_name || 'Ma Boutique'}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1107,7 +1107,7 @@ export default function SellerShopPage() {
               style={{ background: 'rgba(28,18,9,0.06)' }}>
               <Lock size={14} style={{ color: T.muted }}/>
             </div>
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Informations officielles
             </p>
           </div>
@@ -1147,7 +1147,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <Phone size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 Contact & disponibilité
               </p>
             </div>
@@ -1172,7 +1172,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <QrCode size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 QR Code BelivaY
               </p>
             </div>
@@ -1229,7 +1229,7 @@ export default function SellerShopPage() {
                 <MapPin size={14} style={{ color: T.orange }}/>
               </div>
               <div>
-                <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="font-bold text-[14px]" style={{ color: T.text }}>
                   Nos emplacements
                 </p>
                 <p className="text-[11.5px]" style={{ color: T.muted }}>
@@ -1250,14 +1250,14 @@ export default function SellerShopPage() {
                     background: `linear-gradient(135deg, ${T.orange}, #D4640E)`,
                     boxShadow: '0 3px 10px rgba(244,121,32,0.3)',
                   }}>
-                  <span className="font-black text-[16px] text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
+                  <span className="font-black text-[16px] text-white" style={{  }}>
                     {(loc.name || '?').charAt(0).toUpperCase()}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   {/* Nom */}
-                  <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                  <p className="font-bold text-[14px]" style={{ color: T.text }}>
                     {loc.name}
                   </p>
 
@@ -1335,7 +1335,7 @@ export default function SellerShopPage() {
             <MapPin size={14} style={{ color: T.orange }}/>
           </div>
           <div className="flex-1">
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Emplacements physiques
             </p>
             <p className="text-[11.5px]" style={{ color: T.mutedL }}>

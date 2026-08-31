@@ -196,7 +196,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
           <div>
-            <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-black text-[15px]" style={{ color: T.text }}>
               <Gavel size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
               Litige #{dispute.id} — {dispute.order_ref}
             </p>
@@ -483,7 +483,7 @@ export default function SellerDisputesPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Gavel size={20} style={{ color: T.orange }}/> Litiges reçus
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
@@ -533,7 +533,7 @@ export default function SellerDisputesPage() {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: kpi.bg }}>
               <span style={{ color: kpi.color }}>{kpi.ico}</span>
             </div>
-            <p className="font-black text-[18px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{kpi.val}</p>
+            <p className="font-black text-[18px]" style={{ color: T.text }}>{kpi.val}</p>
             <p className="text-[11px]" style={{ color: T.muted }}>{kpi.label}</p>
           </div>
         ))}
@@ -571,7 +571,7 @@ export default function SellerDisputesPage() {
       {filtered.length === 0 ? (
         <div className="rounded-2xl py-16 text-center" style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <p className="text-4xl mb-3">{disputes.length===0?'🕊️':'✅'}</p>
-          <p className="font-bold text-[16px] mb-1" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[16px] mb-1" style={{ color: T.text }}>
             {disputes.length===0 ? 'Aucun litige reçu' : 'Aucun litige dans ce filtre'}
           </p>
           <p className="text-[13px]" style={{ color: T.muted }}>
@@ -610,7 +610,7 @@ export default function SellerDisputesPage() {
                       <p className="text-[12px] mt-0.5 line-clamp-2" style={{ color: T.muted }}>{d.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-black text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{fmtXAF(d.vendor_escrow_amount)}</p>
+                      <p className="font-black text-[14px]" style={{ color: T.text }}>{fmtXAF(d.vendor_escrow_amount)}</p>
                       <p className="text-[10.5px]" style={{ color: T.mutedL }}>En escrow</p>
                     </div>
                   </div>
@@ -639,7 +639,7 @@ export default function SellerDisputesPage() {
       {/* DROITS & OBLIGATIONS */}
       <div className="rounded-2xl p-5" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-2 font-bold text-[14px] mb-4"
-          style={{ color: '#991B1B', fontFamily: 'Poppins,sans-serif' }}>
+          style={{ color: '#991B1B' }}>
           <BookOpen size={15}/> Vos droits & obligations en cas de litige
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -143,7 +143,7 @@ function SHead({ icon, title, to }: { icon: React.ReactNode; title: string; to?:
           style={{ background: C.orangeL, color: C.orange }}>
           {icon}
         </div>
-        <span className="font-bold text-[14px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+        <span className="font-bold text-[14px]" style={{ color: C.text }}>
           {title}
         </span>
       </div>
@@ -165,9 +165,9 @@ function Bone({ w = 'w-full', h = 'h-4', r = 'rounded-xl' }: { w?: string; h?: s
 }
 function SkeletonPage() {
   return (
-    <div className="space-y-5">
+    <div className="space-y-2 sm:space-y-5">
       <Bone h="h-[200px]" r="rounded-3xl" />
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[0,1,2,3].map(i => <Bone key={i} h="h-32" r="rounded-2xl" />)}
       </div>
       <Bone h="h-14" r="rounded-2xl" />
@@ -273,7 +273,7 @@ function PlanSim({ totalRevenue }: { totalRevenue: number }) {
               border: sel === p.id ? `1.5px solid ${p.color}50` : `1px solid ${C.border}`,
             }}>
             <p className="text-[11.5px] font-extrabold"
-              style={{ color: sel === p.id ? p.color : C.muted, fontFamily: 'Poppins,sans-serif' }}>
+              style={{ color: sel === p.id ? p.color : C.muted }}>
               {p.name}
             </p>
             <p className="text-[9.5px] mt-0.5" style={{ color: C.mutedL }}>
@@ -290,7 +290,7 @@ function PlanSim({ totalRevenue }: { totalRevenue: number }) {
         ].map(s => (
           <div key={s.l} className="rounded-xl p-3 text-center" style={{ background: C.cream }}>
             <p className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: C.mutedL }}>{s.l}</p>
-            <p className="text-[13.5px] font-extrabold" style={{ color: s.color, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="text-[13.5px] font-extrabold" style={{ color: s.color }}>
               {s.v}
             </p>
           </div>
@@ -400,7 +400,7 @@ export default function SellerDashboardPage() {
         <Clock size={28} style={{ color: C.orange }} />
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>
           Demande en cours d'examen
         </h2>
         <p className="text-sm max-w-xs leading-relaxed" style={{ color: C.muted }}>
@@ -421,7 +421,7 @@ export default function SellerDashboardPage() {
         <XCircle size={28} style={{ color: C.red }} />
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>Demande refusée</h2>
+        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>Demande refusée</h2>
         <p className="text-sm max-w-xs" style={{ color: C.muted }}>
           La candidature pour <strong style={{ color: C.text }}>{profile.business_name}</strong> n'a pas été retenue.
         </p>
@@ -440,7 +440,7 @@ export default function SellerDashboardPage() {
         <AlertCircle size={28} style={{ color: C.amber }} />
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>Boutique suspendue</h2>
+        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>Boutique suspendue</h2>
         <p className="text-sm max-w-xs" style={{ color: C.muted }}>
           <strong style={{ color: C.text }}>{profile.business_name}</strong> est temporairement suspendue.
         </p>
@@ -494,7 +494,7 @@ export default function SellerDashboardPage() {
   ];
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-2 sm:space-y-5">
 
       {/* 
           HERO — CA MENSUEL + GREETING
@@ -509,88 +509,88 @@ export default function SellerDashboardPage() {
         <div className="absolute top-0 right-0 w-[300px] h-[300px] rounded-full pointer-events-none"
           style={{ background: 'radial-gradient(circle,rgba(244,121,32,0.18) 0%,transparent 70%)', transform: 'translate(30%,-30%)' }} />
 
-        <div className="relative px-6 sm:px-8 py-7">
+        <div className="relative px-5 py-6 sm:px-8 sm:py-7">
           {/* Date + badge plan */}
-          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-            <p className="text-[12px] font-medium capitalize" style={{ color: 'rgba(255,255,255,0.45)' }}>{today}</p>
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full"
+          <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+            <p className="text-[11.5px] font-medium capitalize sm:text-[12px]" style={{ color: 'rgba(255,255,255,0.45)' }}>{today}</p>
+            <div className="flex flex-shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full sm:px-3"
               style={{ background: 'rgba(244,121,32,0.2)', border: '1px solid rgba(244,121,32,0.3)' }}>
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.orange }} />
-              <span className="text-[10.5px] font-bold" style={{ color: C.orange }}>Plan Gratuit</span>
+              <span className="text-[10px] font-bold sm:text-[10.5px]" style={{ color: C.orange }}>Plan Gratuit</span>
             </div>
           </div>
 
           {/* Greeting */}
-          <h1 className="text-[26px] sm:text-[30px] font-black text-white mb-5"
-            style={{ fontFamily: 'Poppins,sans-serif', letterSpacing: '-0.5px' }}>
+          <h1 className="text-[21px] font-black text-white leading-tight mb-4 sm:text-[30px] sm:mb-5"
+            style={{ letterSpacing: '-0.5px' }}>
             Bonjour, {firstName}
           </h1>
 
-          {/* Métriques principales */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* CA mensuel — métrique principale */}
-            <div className="sm:col-span-1">
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.12em] mb-1"
-                style={{ color: 'rgba(244,121,32,0.7)' }}>
-                CA mensuel
+          {/* CA mensuel — la metrique que le vendeur vient chercher en premier.
+              `items-baseline` colle « FCFA » au chiffre : en `ml-1` sur un bloc
+              de 44px, l'unite basculait a la ligne des que le montant depassait
+              trois chiffres. */}
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1 sm:text-[10.5px]"
+              style={{ color: 'rgba(244,121,32,0.7)' }}>
+              CA mensuel
+            </p>
+            <p className="flex flex-wrap items-baseline gap-x-1.5 text-[34px] font-black leading-none text-white sm:text-[52px]">
+              {fmtXAF(monthlyRev)}
+              <span className="text-[16px] font-bold sm:text-[22px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                FCFA
+              </span>
+            </p>
+            {s?.revenue_trend !== null && s?.revenue_trend !== undefined && (
+              <span className="inline-flex items-center gap-1 mt-2 text-[11px] font-bold rounded-full px-2.5 py-1"
+                style={{
+                  background: s.revenue_trend >= 0 ? 'rgba(22,163,74,0.18)' : 'rgba(220,38,38,0.18)',
+                  color: s.revenue_trend >= 0 ? '#4ADE80' : '#F87171',
+                }}>
+                {s.revenue_trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
+                {Math.abs(s.revenue_trend)}% vs mois préc.
+              </span>
+            )}
+          </div>
+
+          {/* Commandes et clients uniques : deux tuiles cote a cote. Empilees
+              ou etirees par `justify-between`, les deux chiffres se retrouvaient
+              aux extremites de l'ecran, sans lien visuel entre eux. */}
+          <div className="grid grid-cols-2 gap-2.5 mt-4 sm:mt-5 sm:gap-3">
+            <div className="rounded-2xl px-3.5 py-3"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <p className="text-[9.5px] font-bold uppercase tracking-widest mb-1 sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                Commandes
               </p>
-              <p className="text-[44px] sm:text-[52px] font-black leading-none text-white"
-                style={{ fontFamily: 'Poppins,sans-serif' }}>
-                {fmtXAF(monthlyRev)}
-                <span className="text-[22px] font-bold ml-1" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                  FCFA
-                </span>
-              </p>
-              {s?.revenue_trend !== null && s?.revenue_trend !== undefined && (
-                <span className={`inline-flex items-center gap-1 mt-2 text-[11px] font-bold rounded-full px-2.5 py-1 ${s.revenue_trend >= 0 ? '' : ''}`}
-                  style={{
-                    background: s.revenue_trend >= 0 ? 'rgba(22,163,74,0.18)' : 'rgba(220,38,38,0.18)',
-                    color: s.revenue_trend >= 0 ? '#4ADE80' : '#F87171',
-                  }}>
-                  {s.revenue_trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-                  {Math.abs(s.revenue_trend)}% vs mois préc.
+              <p className="text-[24px] font-black leading-none text-white sm:text-[26px]">{monthlyOrds}</p>
+              {pendingOrds > 0 && (
+                <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
+                  style={{ background: C.amberL, color: C.amber }}>
+                  {pendingOrds} en attente
                 </span>
               )}
             </div>
-
-            {/* Divider */}
-            <div className="hidden sm:block w-px self-stretch" style={{ background: 'rgba(255,255,255,0.08)' }} />
-
-            {/* Stats secondaires */}
-            <div className="sm:col-span-1 flex sm:flex-col gap-4 sm:gap-3 justify-between sm:justify-center">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  Commandes
-                </p>
-                <p className="text-[26px] font-black text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
-                  {monthlyOrds}
-                  {pendingOrds > 0 && (
-                    <span className="text-[11px] font-bold ml-2 px-2 py-0.5 rounded-full" style={{ background: C.amberL, color: C.amber }}>
-                      {pendingOrds} en attente
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                  Clients uniques
-                </p>
-                <p className="text-[26px] font-black text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
-                  {uniqueCust > 0 ? uniqueCust : '—'}
-                </p>
-              </div>
+            <div className="rounded-2xl px-3.5 py-3"
+              style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
+              <p className="text-[9.5px] font-bold uppercase tracking-widest mb-1 sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
+                Clients uniques
+              </p>
+              <p className="text-[24px] font-black leading-none text-white sm:text-[26px]">
+                {uniqueCust > 0 ? uniqueCust : '—'}
+              </p>
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex gap-2.5 mt-6 flex-wrap">
+          {/* Actions : les deux boutons remplissent la largeur au lieu de se
+              renvoyer a la ligne, comme les actions principales d'une app. */}
+          <div className="flex gap-2.5 mt-4 sm:mt-6">
             <Link to="/seller/products/new"
-              className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-white text-[13px] transition-all hover:-translate-y-px"
+              className="flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-white text-[13px] transition-all active:scale-[.97] sm:flex-none sm:px-5 sm:py-2.5 sm:hover:-translate-y-px"
               style={{ background: C.orange, boxShadow: `0 4px 18px rgba(244,121,32,0.5)` }}>
               <Plus size={16} />Ajouter un produit
             </Link>
             <button onClick={() => loadData(true)} disabled={refreshing}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-2xl font-semibold text-[13px] transition-all"
+              className="flex flex-shrink-0 items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-[13px] transition-all active:scale-[.97] sm:py-2.5"
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
               Actualiser
@@ -598,14 +598,16 @@ export default function SellerDashboardPage() {
           </div>
         </div>
 
-        {/* Barre plan info */}
-        <div className="px-6 sm:px-8 py-3 flex items-center gap-3 flex-wrap"
+        {/* Barre plan info : les deux blocs restent sur une seule ligne meme sur
+            un ecran de 360px — `min-w-0` + `truncate` sur le recapitulatif, le
+            lien Pro ne passe jamais a la ligne. */}
+        <div className="px-5 sm:px-8 py-2.5 sm:py-3 flex items-center gap-3"
           style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
-          <span className="text-[11px] font-medium" style={{ color: 'rgba(255,255,255,0.4)' }}>
+          <span className="min-w-0 flex-1 truncate text-[10.5px] font-medium sm:text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
             {totalProds} produit{totalProds > 1 ? 's' : ''} · 20% commission · 0 boost
           </span>
           <Link to="/seller/plans"
-            className="ml-auto flex items-center gap-1 text-[11.5px] font-bold hover:underline"
+            className="flex flex-shrink-0 items-center gap-1 text-[11px] font-bold hover:underline sm:text-[11.5px]"
             style={{ color: C.orange }}>
             Passer au Pro <ArrowUpRight size={11} />
           </Link>
@@ -647,7 +649,7 @@ export default function SellerDashboardPage() {
           <div className="absolute -right-6 -top-6 w-24 h-24 rounded-full bg-white/5 pointer-events-none" />
           <Sparkles size={20} className="text-purple-300 flex-shrink-0 relative" />
           <div className="flex-1 min-w-0 relative">
-            <p className="text-[13.5px] font-bold text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
+            <p className="text-[13.5px] font-bold text-white" style={{  }}>
               Débloquez le Plan Pro · 7 jours gratuits
             </p>
             <p className="text-[11px] mt-0.5" style={{ color: 'rgba(196,181,253,0.65)' }}>
@@ -667,7 +669,7 @@ export default function SellerDashboardPage() {
       )}
 
       {/*  4 KPI CARDS  */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
           {
             label: 'CA mensuel',
@@ -701,14 +703,14 @@ export default function SellerDashboardPage() {
             accentBg: C.amberL,
           },
         ].map((kpi, i) => (
-          <Card key={i} className="p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default relative overflow-hidden group">
+          <Card key={i} className="p-3.5 sm:p-5 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 cursor-default relative overflow-hidden group">
             {/* Top accent bar */}
             <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-opacity opacity-0 group-hover:opacity-100"
               style={{ background: kpi.accentColor }} />
 
             {/* Valeur */}
             <p className="text-[28px] font-black leading-none tracking-tight mb-1.5"
-              style={{ fontFamily: 'Poppins,sans-serif', color: C.text }}>
+              style={{ color: C.text }}>
               {kpi.value}
             </p>
 
@@ -787,14 +789,14 @@ export default function SellerDashboardPage() {
       </div>
 
       {/*  BENTO — OBJECTIF + ACTIONS  */}
-      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-2 sm:gap-4">
 
         {/* Objectif avec anneau */}
-        <Card className="sm:col-span-2 p-5">
+        <Card className="sm:col-span-2 p-3.5 sm:p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Target size={14} style={{ color: C.orange }} />
-              <span className="font-bold text-[13.5px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+              <span className="font-bold text-[13.5px]" style={{ color: C.text }}>
                 Objectif mensuel
               </span>
             </div>
@@ -823,7 +825,7 @@ export default function SellerDashboardPage() {
             <div className="relative flex-shrink-0">
               <Ring pct={goalPct} />
               <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-[18px] font-black" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+                <span className="text-[18px] font-black" style={{ color: C.text }}>
                   {goalPct}%
                 </span>
               </div>
@@ -876,7 +878,7 @@ export default function SellerDashboardPage() {
                   <div className="w-1.5 h-1.5 rounded-full" style={{ background: stat.ok ? C.green : C.amber }} />
                   <p className="text-[11px] font-medium" style={{ color: C.muted }}>{stat.label}</p>
                 </div>
-                <p className="text-[20px] font-black" style={{ color: stat.ok ? C.green : C.amber, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="text-[20px] font-black" style={{ color: stat.ok ? C.green : C.amber }}>
                   {stat.value}
                 </p>
               </Card>
@@ -886,14 +888,14 @@ export default function SellerDashboardPage() {
       </div>
 
       {/*  GRAPHIQUE VENTES  */}
-      <Card className="p-5">
+      <Card className="p-3.5 sm:p-5">
         <div className="flex items-center justify-between mb-5 flex-wrap gap-2">
           <div>
             <div className="flex items-center gap-2 mb-0.5">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.orangeL }}>
                 <BarChart2 size={15} style={{ color: C.orange }} />
               </div>
-              <p className="font-bold text-[14.5px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
                 Revenus
               </p>
             </div>
@@ -953,13 +955,13 @@ export default function SellerDashboardPage() {
       </Card>
 
       {/*  HEATMAP  */}
-      <Card className="p-5">
+      <Card className="p-3.5 sm:p-5">
         <div className="flex items-center gap-2.5 mb-5">
           <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.orangeL }}>
             <Flame size={15} style={{ color: C.orange }} />
           </div>
           <div>
-            <p className="font-bold text-[14.5px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
               Heatmap ventes
             </p>
             <p className="text-[10.5px]" style={{ color: C.mutedL }}>Activité sur les 30 derniers jours</p>
@@ -1003,7 +1005,7 @@ export default function SellerDashboardPage() {
       </Card>
 
       {/*  ALERTES STOCK + PERFORMANCE  */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
         {/* Alertes stock */}
         <Card className="overflow-hidden">
           <SHead icon={<TriangleAlert size={14} />} title="Alertes stock" to="/seller/products" />
@@ -1056,7 +1058,7 @@ export default function SellerDashboardPage() {
                     <p className="text-[10.5px]" style={{ color: C.muted }}>{row.sub}</p>
                   </div>
                 </div>
-                <p className="text-[15px] font-extrabold" style={{ color: row.ok ? C.green : C.amber, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="text-[15px] font-extrabold" style={{ color: row.ok ? C.green : C.amber }}>
                   {row.value}
                 </p>
               </div>
@@ -1066,7 +1068,7 @@ export default function SellerDashboardPage() {
       </div>
 
       {/*  COMMANDES + TOP PRODUITS  */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
 
         {/* Commandes récentes */}
         <Card className="overflow-hidden">
@@ -1092,7 +1094,7 @@ export default function SellerDashboardPage() {
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <Pill label={badge.label} color={badge.color} bg={badge.bg} />
-                  <p className="text-[13px] font-extrabold" style={{ color: C.orange, fontFamily: 'Poppins,sans-serif' }}>
+                  <p className="text-[13px] font-extrabold" style={{ color: C.orange }}>
                     {fmtXAF(vTotal)} FCFA
                   </p>
                 </div>
@@ -1130,7 +1132,7 @@ export default function SellerDashboardPage() {
                     <span className="text-[9.5px] flex-shrink-0" style={{ color: C.mutedL }}>{p.sales_count} ventes</span>
                   </div>
                 </div>
-                <p className="text-[13px] font-extrabold flex-shrink-0" style={{ color: C.orange, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="text-[13px] font-extrabold flex-shrink-0" style={{ color: C.orange }}>
                   {fmtXAF(p.revenue)} FCFA
                 </p>
               </div>
@@ -1146,7 +1148,7 @@ export default function SellerDashboardPage() {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.orangeL }}>
               <Package size={14} style={{ color: C.orange }} />
             </div>
-            <span className="font-bold text-[14.5px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+            <span className="font-bold text-[14.5px]" style={{ color: C.text }}>
               Mes produits
             </span>
             <span className="text-[10px] font-black text-white rounded-full px-2 py-0.5"
@@ -1253,18 +1255,18 @@ export default function SellerDashboardPage() {
 
       {/*  NOTE BOUTIQUE  */}
       {shopRating !== null && reviewCount > 0 && (
-        <Card className="p-5">
+        <Card className="p-3.5 sm:p-5">
           <div className="flex items-center gap-2.5 mb-4">
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: C.amberL }}>
               <Star size={14} style={{ color: C.amber }} />
             </div>
-            <p className="font-bold text-[14.5px]" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
               Avis clients
             </p>
           </div>
           <div className="flex items-center gap-5">
             <div>
-              <p className="text-[48px] font-black leading-none" style={{ color: C.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="text-[48px] font-black leading-none" style={{ color: C.text }}>
                 {shopRating.toFixed(1)}
               </p>
               <div className="flex gap-0.5 mt-1">

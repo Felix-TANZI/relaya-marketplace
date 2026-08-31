@@ -2226,7 +2226,7 @@ export default function CourierDashboardPage() {
       : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100";
 
   return (
-    <div className={theme === "dark" ? "min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "min-h-screen bg-[#F4F7F5] text-slate-950"}>
+    <div className={theme === "dark" ? "belivay-portal min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "belivay-portal min-h-screen bg-[#F4F7F5] text-slate-950"}>
       <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"

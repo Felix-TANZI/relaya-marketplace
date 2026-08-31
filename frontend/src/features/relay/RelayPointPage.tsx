@@ -1158,7 +1158,7 @@ export default function RelayPointPage() {
   }[tab];
 
   return (
-    <main className="min-h-screen bg-[#f6f7fb] font-sans text-slate-950 dark:bg-slate-950 dark:text-white">
+    <main className="belivay-portal min-h-screen bg-[#f6f7fb] font-sans text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="flex">
         <RelaySidebar
           activeTab={tab}

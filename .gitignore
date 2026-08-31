@@ -8,6 +8,13 @@
 frontend/.env
 frontend/.env.*
 
+# Keystores de signature Android (CRITIQUE) — perdre l'upload key bloque les
+# mises a jour de l'app publiee sur le Play Store.
+*.keystore
+*.jks
+key.properties
+/keystores/
+
 
 #  Python
 __pycache__/

@@ -32,7 +32,6 @@ import {
   MessageSquare,
   Settings,
   Shield,
-  Truck,
   Wallet,
 } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -869,13 +868,6 @@ export default function Header() {
                       <LogOut size={18} />
                       {t("header.logout")}
                     </button>
-
-                    <div className="border-t border-[#f6e6d8] bg-[#fffaf4] px-3 py-2.5 dark:border-gray-800 dark:bg-gray-900/60">
-                      <div className="flex items-center gap-2 rounded-xl bg-[#fff1e3] px-3 py-2 text-[11.5px] font-bold text-[#a24d0a] dark:bg-primary/15 dark:text-orange-200">
-                        <Truck size={14} className="flex-shrink-0" />
-                        Livraison offerte dès 30 000 FCFA
-                      </div>
-                    </div>
                   </div>
                 )}
               </div>

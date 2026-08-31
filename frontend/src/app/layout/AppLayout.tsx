@@ -47,7 +47,12 @@ export default function AppLayout() {
   useFixedHeaderHeight();
   const { pathname } = useLocation();
   const isAuthPage = ['/login', '/register', '/forgot-password'].some((path) => pathname.startsWith(path));
-  const hideChrome = isAuthPage && isDedicatedPortal;
+  // Sur un portail dedie, `/` ne sert qu'a rediriger vers l'espace propre au
+  // role (ex: /courier) — cette redirection passe par cet AppLayout avant de
+  // s'y resoudre. Sans ce cas, le chrome marketplace (header, bandeau pub)
+  // apparaissait une frame avant le login, le temps que la redirection se
+  // termine.
+  const hideChrome = isDedicatedPortal && (isAuthPage || pathname === '/');
   const isCheckout = pathname.startsWith('/checkout');
   const [online, setOnline] = useState(() => navigator.onLine);
   const [usingOfflineCache, setUsingOfflineCache] = useState(false);

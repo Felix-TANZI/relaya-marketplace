@@ -70,7 +70,10 @@ class VendorProfileSerializer(serializers.ModelSerializer):
             'business_name', 'business_description',
             'phone', 'address', 'city', 'shop_slug',
             'id_document', 'status',
-            'certification_tier',
+            # `total_points` accompagne `certification_tier` : la feuille compte
+            # du portail affiche le palier ET le score qui y mene, sinon le
+            # vendeur voit son niveau sans savoir ou il en est.
+            'certification_tier', 'total_points',
             'plan_code', 'plan_name',
             'total_products', 'active_products',
             'total_revenue', 'total_orders',

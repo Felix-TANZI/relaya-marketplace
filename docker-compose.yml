@@ -114,6 +114,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: client
       VITE_DEV_PORT: 5173
+      VITE_HMR_CLIENT_PORT: 5174
     ports:
       - "5174:5173"
     command: >
@@ -125,6 +126,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: admin
       VITE_DEV_PORT: 5176
+      VITE_HMR_CLIENT_PORT: 5175
     ports:
       - "5175:5176"
     command: >
@@ -136,6 +138,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: seller
       VITE_DEV_PORT: 5174
+      VITE_HMR_CLIENT_PORT: 5176
     ports:
       - "5176:5174"
     command: >
@@ -147,6 +150,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: courier
       VITE_DEV_PORT: 5175
+      VITE_HMR_CLIENT_PORT: 5177
     ports:
       - "5177:5175"
     command: >
@@ -158,6 +162,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: delivery_organization
       VITE_DEV_PORT: 5177
+      VITE_HMR_CLIENT_PORT: 5178
     ports:
       - "5178:5177"
     command: >
@@ -169,6 +174,7 @@ services:
     environment:
       VITE_PORTAL_ROLE: relay_point
       VITE_DEV_PORT: 5178
+      VITE_HMR_CLIENT_PORT: 5179
     ports:
       - "5179:5178"
     command: >

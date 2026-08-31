@@ -23,6 +23,7 @@ from .serializers import (
     RelayParcelReceiveSerializer,
     RelayParcelReturnSerializer,
     RelayParcelSerializer,
+    RelayPointReviewSerializer,
     ShipmentMessageCreateSerializer,
     ShipmentMessageSerializer,
     ShipmentSerializer,
@@ -32,7 +33,15 @@ from .serializers import (
     ShipmentLocationCreateSerializer,
     ShipmentLocationSerializer,
 )
-from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, ShipmentLocation, ShipmentMessage
+from .models import (
+    CourierSOSAlert,
+    RelayParcel,
+    RelayPointReview,
+    Shipment,
+    ShipmentEvent,
+    ShipmentLocation,
+    ShipmentMessage,
+)
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
 from apps.accounts.models import TrustScoreProfile
@@ -1033,3 +1042,51 @@ class CourierClaimShipmentView(generics.GenericAPIView):
         )
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Relay Point"], summary="Avis acheteurs du point relais")
+class RelayPointReviewListView(APIView):
+    """Liste des avis + synthese (moyenne et repartition par nombre d'etoiles)."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayPointReviewSerializer
+
+    def get(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        reviews = (
+            RelayPointReview.objects
+            .filter(relay_point=relay_point)
+            .select_related("author", "relay_parcel", "relay_parcel__shipment")
+        )
+        notes = list(reviews.values_list("rating", flat=True))
+        total = len(notes)
+        # La repartition est toujours renvoyee sur les 5 niveaux, meme a zero :
+        # le graphique du portail n'a pas a combler les trous lui-meme.
+        distribution = {str(niveau): notes.count(niveau) for niveau in range(1, 6)}
+        average = round(sum(notes) / total, 1) if total else 0.0
+        return Response({
+            "summary": {
+                "average": average,
+                "count": total,
+                "distribution": distribution,
+            },
+            "results": RelayPointReviewSerializer(reviews, many=True).data,
+        })
+
+
+@extend_schema(tags=["Relay Point"], summary="Remercier l'acheteur pour son avis")
+class RelayPointReviewThankView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayPointReviewSerializer
+
+    def post(self, request, pk):
+        relay_point = _get_active_relay_point(request.user)
+        review = get_object_or_404(
+            RelayPointReview.objects.select_related("author", "relay_parcel", "relay_parcel__shipment"),
+            pk=pk,
+            relay_point=relay_point,
+        )
+        if review.thanked_at is None:
+            review.thanked_at = timezone.now()
+            review.save(update_fields=["thanked_at", "updated_at"])
+        return Response(RelayPointReviewSerializer(review).data)

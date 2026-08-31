@@ -144,7 +144,7 @@ export function PageHead({ kicker, kickerColor, title, subtitle, actions }: {
         <p className="font-black uppercase" style={{ fontSize: 10, letterSpacing: '.2em', color: kickerColor ?? T.orange }}>
           {kicker}
         </p>
-        <h1 className="font-black mt-1" style={{ fontSize: 25, color: T.text, letterSpacing: '-.025em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+        <h1 className="font-black mt-1" style={{ fontSize: 25, color: T.text, letterSpacing: '-.025em' }}>
           {title}
         </h1>
         <p className="mt-1" style={{ fontSize: 12.5, color: T.muted }}>{subtitle}</p>
@@ -209,7 +209,7 @@ export function HeroAmount({ kicker, value, note }: { kicker: string; value: str
       <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.2em', color: 'rgba(255,255,255,.45)' }}>
         {kicker}
       </p>
-      <p className="font-black mt-2" style={{ fontSize: 40, color: '#fff', letterSpacing: '-.035em', lineHeight: 1, fontFamily: 'Syne,Poppins,sans-serif' }}>
+      <p className="font-black mt-2" style={{ fontSize: 40, color: '#fff', letterSpacing: '-.035em', lineHeight: 1 }}>
         {value} <span style={{ fontSize: 15, color: 'rgba(255,255,255,.5)' }}>FCFA</span>
       </p>
       {note ? <p className="mt-3" style={{ fontSize: 11.5, color: 'rgba(255,255,255,.55)' }}>{note}</p> : null}

@@ -154,7 +154,7 @@ function Section({
         </div>
         <p
           className="font-bold text-[14px]"
-          style={{ color: T.text, fontFamily: "Poppins,sans-serif" }}
+          style={{ color: T.text }}
         >
           {title}
         </p>
@@ -890,7 +890,7 @@ export default function ProductFormPage() {
         <div>
           <h1
             className="font-black text-[20px]"
-            style={{ color: T.text, fontFamily: "Poppins,sans-serif" }}
+            style={{ color: T.text }}
           >
             {isEdit ? "Modifier le produit" : "Nouveau produit"}
           </h1>

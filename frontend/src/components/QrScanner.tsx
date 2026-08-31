@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import jsQR from "jsqr";
+import { useRef } from "react";
 import { Camera, X } from "lucide-react";
+import { useQrCamera } from "@/lib/useQrCamera";
 
 type Props = {
   onScan: (value: string) => void;
@@ -13,67 +13,14 @@ type Props = {
  * puis decode chaque frame video via jsQR. Aucun service externe requis.
  */
 export default function QrScanner({ onScan, onClose, title = "Scanner le QR" }: Props) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const frameRef = useRef<number | null>(null);
-  const [error, setError] = useState("");
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function start() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
-        });
-        if (cancelled) {
-          stream.getTracks().forEach((track) => track.stop());
-          return;
-        }
-        streamRef.current = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          await videoRef.current.play();
-        }
-        tick();
-      } catch {
-        setError("Impossible d'accéder à la caméra. Vérifie les autorisations du navigateur.");
-      }
-    }
-
-    function tick() {
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-      if (!video || !canvas || video.readyState !== video.HAVE_ENOUGH_DATA) {
-        frameRef.current = requestAnimationFrame(tick);
-        return;
-      }
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      const context = canvas.getContext("2d");
-      if (!context) {
-        frameRef.current = requestAnimationFrame(tick);
-        return;
-      }
-      context.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-      const result = jsQR(imageData.data, imageData.width, imageData.height);
-      if (result?.data) {
-        onScan(result.data);
-        return;
-      }
-      frameRef.current = requestAnimationFrame(tick);
-    }
-
-    void start();
-    return () => {
-      cancelled = true;
-      if (frameRef.current) cancelAnimationFrame(frameRef.current);
-      streamRef.current?.getTracks().forEach((track) => track.stop());
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const handled = useRef(false);
+  const { videoRef, canvasRef, error } = useQrCamera({
+    onDecode: (value) => {
+      if (handled.current) return;
+      handled.current = true;
+      onScan(value);
+    },
+  });
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/70 p-4" role="dialog" aria-modal="true">

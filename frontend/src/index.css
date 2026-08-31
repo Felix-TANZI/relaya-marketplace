@@ -11,6 +11,15 @@
     --belivay-surface: #ffffff;
     --belivay-page: #f3f4f6;
     --belivay-text: #1f2937;
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --radius-control: 12px;
+    --radius-card: 16px;
+    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(15, 23, 42, 0.04);
   }
 
   * {
@@ -26,6 +35,23 @@
     @apply bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark antialiased;
     background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  button, a, input, select, textarea {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+    outline: 2px solid var(--belivay-orange);
+    outline-offset: 2px;
+  }
+
+  input:-webkit-autofill,
+  input:-webkit-autofill:hover,
+  input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--belivay-text);
+    -webkit-box-shadow: 0 0 0 1000px #fff inset;
+    transition: background-color 9999s ease-out 0s;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -210,18 +236,114 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Typographie a une seule police.
+
+   La regle globale `h1..h6 { font-family: Syne }` donne aux titres un dessin
+   different du reste de l'interface. Dans les espaces metier on veut au
+   contraire une seule voix : les titres reprennent le Plus Jakarta Sans du
+   corps de texte.
+
+   `.belivay-client` couvre la boutique acheteur ; `.belivay-portal` les quatre
+   portails partenaires (point relais, organisation de livraison, livreur,
+   vendeur). L'espace admin garde Syne, applique en style inline.
+   ═══════════════════════════════════════════════════════════════════════════ */
 .belivay-client,
-.belivay-client h1,
-.belivay-client h2,
-.belivay-client h3,
-.belivay-client h4,
-.belivay-client h5,
-.belivay-client h6,
-.belivay-client .font-display,
-.belivay-client .font-vendor-display,
-.belivay-client button,
-.belivay-client input,
-.belivay-client select,
-.belivay-client textarea {
+.belivay-portal,
+.belivay-client :is(h1, h2, h3, h4, h5, h6, .font-display, .font-vendor-display, button, input, select, textarea),
+.belivay-portal :is(h1, h2, h3, h4, h5, h6, .font-display, .font-vendor-display, button, input, select, textarea) {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Etoiles des avis acheteurs : une lumiere balaie l'icone en continu. */
+@keyframes belivay-star-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.belivay-star-shimmer {
+  background-image: linear-gradient(
+    100deg,
+    #f59e0b 0%,
+    #f59e0b 38%,
+    #fffbeb 48%,
+    #ffffff 52%,
+    #fbbf24 62%,
+    #f59e0b 100%
+  );
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: belivay-star-shimmer 3.2s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .belivay-star-shimmer {
+    animation: none;
+    color: #f59e0b;
+    background-image: none;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PRIMITIVES MOBILES
+   `viewport-fit=cover` (index.html) est ce qui donne une valeur non nulle aux
+   env(safe-area-inset-*) : sans lui, toutes les regles ci-dessous valent 0 et
+   les barres fixes passent sous l'encoche / la barre gestuelle.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.safe-pt   { padding-top:    env(safe-area-inset-top,    0px); }
+.safe-pb   { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-pl   { padding-left:   env(safe-area-inset-left,   0px); }
+.safe-pr   { padding-right:  env(safe-area-inset-right,  0px); }
+.safe-px   { padding-left:   env(safe-area-inset-left,   0px);
+             padding-right:  env(safe-area-inset-right,  0px); }
+.safe-mb   { margin-bottom:  env(safe-area-inset-bottom, 0px); }
+
+/* Hauteur de la barre d'onglets mobile + marge gestuelle : le contenu
+   scrollable s'en sert pour ne jamais finir masque par la barre. */
+:root { --mobile-tabbar-h: 4.25rem; }
+
+.pb-tabbar { padding-bottom: calc(var(--mobile-tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+
+/* Cible tactile minimale recommandee (44x44 iOS / 48dp Android). */
+.tap-target { min-height: 2.75rem; min-width: 2.75rem; }
+
+/* Scroll horizontal des rubans (filtres, chips) sans barre visible. */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Aimante chaque carte d'un carrousel tactile, comme une app native. */
+.snap-x-mandatory { scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.snap-start-always { scroll-snap-align: start; scroll-snap-stop: always; }
+
+/* Empeche le rebond de la page derriere une bottom sheet ouverte. */
+.overscroll-none-y { overscroll-behavior-y: contain; }
+
+/* iOS zoome des qu'un champ fait moins de 16px : on plancher a 16px sur
+   les petits ecrans uniquement, pour ne pas grossir le design desktop. */
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
+}
+
+/* Bottom sheet : montee depuis le bas, retour amorti facon iOS. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-sheet-up { animation: sheet-up .32s cubic-bezier(.32, .72, 0, 1) both; }
+.animate-fade-in  { animation: fade-in .2s ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-sheet-up,
+  .animate-fade-in { animation-duration: .01ms; }
 }

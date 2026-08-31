@@ -13,6 +13,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
+import { assistantApi } from "@/services/api/assistant";
 import { productsApi, type Product } from "@/services/api/products";
 
 type ChatRole = "assistant" | "user";
@@ -26,6 +27,7 @@ interface ChatMessage {
     onClick: () => void;
   }[];
   products?: Product[];
+  meta?: string;
 }
 
 const QUICK_ACTIONS = [
@@ -88,6 +90,21 @@ function getContextualPrompts(pathname: string) {
   return QUICK_ACTIONS;
 }
 
+function hasProductIntent(prompt: string) {
+  return (
+    prompt.includes("moins cher") ||
+    prompt.includes("pas cher") ||
+    prompt.includes("abordable") ||
+    prompt.includes("promo") ||
+    prompt.includes("promotion") ||
+    prompt.includes("produit") ||
+    prompt.includes("prix") ||
+    prompt.includes("meilleur") ||
+    prompt.includes("telephone") ||
+    prompt.includes("ordinateur")
+  );
+}
+
 export default function GlobalAssistant() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -97,6 +114,7 @@ export default function GlobalAssistant() {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const contextualPrompts = useMemo(
     () => getContextualPrompts(location.pathname),
     [location.pathname],
@@ -137,6 +155,11 @@ export default function GlobalAssistant() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
+  }, [isOpen, isLoading, messages]);
+
   const statusLabel = useMemo(
     () => `Je suis avec toi sur ${viewportLabel}`,
     [viewportLabel],
@@ -145,6 +168,57 @@ export default function GlobalAssistant() {
 
   const pushAssistantMessage = (nextMessage: ChatMessage) => {
     setMessages((current) => [...current, nextMessage]);
+  };
+
+  const buildFollowUpActions = (followUp?: string[]) =>
+    (followUp ?? []).slice(0, 3).map((label) => ({
+      label,
+      onClick: () => {
+        void handleAsk(label);
+      },
+    }));
+
+  const askRemoteAssistant = async (rawPrompt: string, prompt: string) => {
+    let contextualProducts: Product[] = [];
+
+    if (hasProductIntent(prompt)) {
+      const response = await productsApi.list({
+        page_size: 8,
+        is_active: true,
+        search: rawPrompt.trim().length >= 2 ? rawPrompt.trim() : undefined,
+      });
+      contextualProducts = response.results ?? [];
+    }
+
+    const response = await assistantApi.ask({
+      message: rawPrompt,
+      products: contextualProducts,
+      path: location.pathname,
+      routeLabel: viewportLabel,
+      portalRole: import.meta.env.VITE_PORTAL_ROLE || "client",
+      history: [
+        ...messages.slice(-7).map((chatMessage) => ({
+          role: chatMessage.role,
+          content: chatMessage.content,
+        })),
+        { role: "user", content: rawPrompt },
+      ],
+    });
+
+    const suggestedProducts = (response.suggestions ?? [])
+      .map((suggestion) =>
+        contextualProducts.find((product) => product.id === suggestion.productId),
+      )
+      .filter(Boolean) as Product[];
+
+    pushAssistantMessage({
+      id: `assistant-${Date.now()}`,
+      role: "assistant",
+      content: response.answer || "Je suis la. Reformule en precisant l'etape BelivaY qui te bloque.",
+      products: suggestedProducts,
+      actions: buildFollowUpActions(response.followUp),
+      meta: response.model ? `${response.source ?? "assistant"} · ${response.model}` : undefined,
+    });
   };
 
   const handleLocalHelp = async (rawPrompt: string) => {
@@ -177,6 +251,13 @@ export default function GlobalAssistant() {
           { label: "Voir les catégories", onClick: () => navigate("/categories") },
         ],
       });
+      return;
+    }
+
+    // Le paiement doit être traité avant la livraison : une question comme
+    // "payer à la livraison" contient les deux intentions.
+    if (prompt.includes("paiement") || prompt.includes("checkout") || prompt.includes("payer") || prompt.includes("momo") || prompt.includes("orange money") || prompt.includes("espece")) {
+      await askRemoteAssistant(rawPrompt, prompt);
       return;
     }
 
@@ -244,20 +325,6 @@ export default function GlobalAssistant() {
         actions: [
           { label: "Centre d'aide", onClick: () => navigate("/help") },
           { label: "Nous contacter", onClick: () => navigate("/contact") },
-        ],
-      });
-      return;
-    }
-
-    // ── Paiement ──
-    if (prompt.includes("paiement") || prompt.includes("checkout") || prompt.includes("payer") || prompt.includes("momo") || prompt.includes("orange money")) {
-      pushAssistantMessage({
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: "Pour payer, pars du panier. BelivaY te guidera ensuite vers les informations de livraison et le paiement Mobile Money.",
-        actions: [
-          { label: "Mon panier", onClick: () => navigate("/cart") },
-          { label: "Passer commande", onClick: () => navigate("/checkout") },
         ],
       });
       return;
@@ -369,28 +436,8 @@ export default function GlobalAssistant() {
     }
 
     // ── Produits / Prix ──
-    if (prompt.includes("moins cher") || prompt.includes("pas cher") || prompt.includes("abordable") || prompt.includes("promo") || prompt.includes("produit") || prompt.includes("prix")) {
-      const response = await productsApi.list({
-        page_size: 3,
-        ordering: "price_xaf",
-        search: rawPrompt.trim().length >= 2 ? rawPrompt.trim() : undefined,
-      });
-      const cheapestProducts = [...(response.results ?? [])]
-        .sort((left, right) => left.price_final - right.price_final)
-        .slice(0, 3);
-
-      pushAssistantMessage({
-        id: `assistant-${Date.now()}`,
-        role: "assistant",
-        content: cheapestProducts.length > 0
-          ? "J’ai trouvé quelques options abordables. Regarde celles-ci, et ouvre celle qui te parle le plus."
-          : "Je n’ai rien de solide avec ces mots. Essaie un nom plus précis, ou pars du catalogue pour explorer.",
-        products: cheapestProducts,
-        actions: [
-          { label: "Rechercher", onClick: () => navigate("/search") },
-          { label: "Catalogue", onClick: () => navigate("/catalog") },
-        ],
-      });
+    if (hasProductIntent(prompt)) {
+      await askRemoteAssistant(rawPrompt, prompt);
       return;
     }
 
@@ -404,21 +451,7 @@ export default function GlobalAssistant() {
       return;
     }
 
-    // ── Fallback - more helpful ──
-    pushAssistantMessage({
-      id: `assistant-${Date.now()}`,
-      role: "assistant",
-      content: "Je ne veux pas te répondre à côté. Je peux déjà t’aider sur ces actions, ou reformule en une phrase simple et je m’adapte.",
-      actions: [
-        { label: "Chercher un produit", onClick: () => navigate("/search") },
-        { label: "Aller à l'accueil", onClick: () => navigate("/") },
-        { label: "Mes commandes", onClick: () => navigate("/orders") },
-        { label: "Mon panier", onClick: () => navigate("/cart") },
-        { label: "Catégories", onClick: () => navigate("/categories") },
-        { label: "Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
-        { label: "Aide & Contact", onClick: () => navigate("/help") },
-      ],
-    });
+    await askRemoteAssistant(rawPrompt, prompt);
   };
 
   const handleAsk = async (rawPrompt: string) => {
@@ -484,7 +517,7 @@ export default function GlobalAssistant() {
       </div>
 
       {isOpen && (
-        <section className={`fixed bottom-36 right-4 ${assistantLayer} w-[min(400px,calc(100vw-2rem))] max-h-[min(480px,calc(100vh-10rem))] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 lg:z-[80] flex flex-col`}>
+        <section className={`fixed bottom-36 right-4 ${assistantLayer} flex h-[min(620px,calc(100dvh-10rem))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 lg:z-[80] lg:h-[min(680px,calc(100dvh-8rem))]`}>
           <header className="border-b border-slate-200 bg-[linear-gradient(180deg,#fff,rgba(248,250,252,0.92))] px-5 py-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
@@ -531,10 +564,7 @@ export default function GlobalAssistant() {
                         <button
                           key={product.id}
                           type="button"
-                          onClick={() => {
-                            navigate(`/product/${product.id}`);
-                            setIsOpen(false);
-                          }}
+                          onClick={() => navigate(`/product/${product.id}`)}
                           className="flex w-full items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-left transition-all hover:border-primary hover:bg-white dark:border-slate-800 dark:bg-slate-950 dark:hover:bg-slate-900"
                         >
                           <div className="min-w-0">
@@ -557,16 +587,19 @@ export default function GlobalAssistant() {
                         <button
                           key={action.label}
                           type="button"
-                          onClick={() => {
-                            action.onClick();
-                            setIsOpen(false);
-                          }}
+                          onClick={() => action.onClick()}
                           className="rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition-all hover:border-primary hover:text-primary dark:border-slate-700 dark:bg-slate-950 dark:text-slate-200"
                         >
                           {action.label}
                         </button>
                       ))}
                     </div>
+                  )}
+
+                  {chatMessage.meta && chatMessage.role === "assistant" && (
+                    <p className="mt-3 border-t border-slate-100 pt-2 text-[11px] font-medium text-slate-400 dark:border-slate-800">
+                      {chatMessage.meta}
+                    </p>
                   )}
                 </div>
               </article>
@@ -580,6 +613,7 @@ export default function GlobalAssistant() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} aria-hidden="true" />
           </div>
 
           <div className="flex-shrink-0 border-t border-gray-200 bg-white px-4 py-3 dark:border-gray-800 dark:bg-gray-950">
@@ -603,19 +637,30 @@ export default function GlobalAssistant() {
                 event.preventDefault();
                 void handleAsk(message);
               }}
-              className="rounded-[24px] border border-slate-200 bg-slate-50 p-2 dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-2xl border border-slate-200 bg-white p-2.5 shadow-sm transition focus-within:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:focus-within:border-slate-600"
             >
+              <label
+                htmlFor="belivay-assistant-message"
+                className="mb-1.5 block px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300"
+              >
+                Votre message
+              </label>
               <div className="flex items-end gap-2">
-                <div className="flex flex-1 items-start gap-2 rounded-[18px] bg-white px-3 py-2 dark:bg-slate-950">
+                <div className="flex min-w-0 flex-1 items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
                   <MessageSquareText
                     size={18}
-                    className="mt-1 shrink-0 text-slate-400"
+                    className="mt-1.5 shrink-0 text-primary"
                   />
                   <textarea
+                    id="belivay-assistant-message"
                     ref={textareaRef}
-                    rows={1}
+                    rows={2}
                     value={message}
-                    onChange={(event) => setMessage(event.target.value)}
+                    onChange={(event) => {
+                      setMessage(event.target.value);
+                      event.currentTarget.style.height = "auto";
+                      event.currentTarget.style.height = `${Math.min(event.currentTarget.scrollHeight, 112)}px`;
+                    }}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !event.shiftKey) {
                         event.preventDefault();
@@ -625,14 +670,14 @@ export default function GlobalAssistant() {
                       }
                     }}
                     placeholder="Dis-moi ce que tu veux faire…"
-                    className="min-h-[36px] max-h-[80px] w-full resize-none bg-transparent text-sm text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
+                    className="min-h-[52px] max-h-28 w-full resize-none overflow-y-auto border-0 bg-transparent py-1 text-[15px] font-medium leading-6 text-slate-950 caret-primary outline-none ring-0 placeholder:font-normal placeholder:text-slate-500 focus:border-0 focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-slate-400"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading || !message.trim()}
-                  className="flex h-11 w-11 items-center justify-center rounded-full bg-primary text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-55"
+                  className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-md transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:disabled:bg-slate-700"
                   aria-label="Envoyer le message"
                 >
                   <SendHorizonal size={17} />

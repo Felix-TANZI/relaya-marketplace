@@ -26,6 +26,7 @@ import {
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
   LayoutGrid, UserPlus, Layers, Palette, FolderTree, Building2, Warehouse,
+  Send, Undo2, Lock, Receipt, SlidersHorizontal, ShieldAlert, Clock,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +77,16 @@ const SECTIONS: NavSection[] = [
       { key: 'vendors_list',          path: '/admin/vendors',               icon: Store, end: true },
       { key: 'vendors_map',           path: '/admin/vendors/map',           icon: MapPin },
       { key: 'vendors_kyc',           path: '/admin/vendors/kyc',           icon: FileCheck },
+      // ─────────────────────────────────────────────────────────────────
+      // ANCIEN SYSTEME DE RETRAIT — neutralise cote backend.
+      //
+      // L'approbation repond desormais 409 : les versements passent par
+      // /admin/finance/payouts, avec double approbation et ecriture au
+      // registre. Cet ecran ne fait plus rien.
+      //
+      // Conserve pour consultation de l'historique. A retirer quand la
+      // transition sera close.
+      // ─────────────────────────────────────────────────────────────────
       { key: 'vendors_withdrawals',   path: '/admin/vendors/withdrawals',   icon: ArrowDownToLine },
       { key: 'vendors_subscriptions', path: '/admin/vendors/subscriptions', icon: CreditCard },
       { key: 'vendors_certifications',path: '/admin/vendors/certifications',icon: Award },
@@ -118,9 +129,27 @@ const SECTIONS: NavSection[] = [
   {
     key: 'section_finances',
     items: [
-      { key: 'finances', path: '/admin/finances', icon: DollarSign },
-      { key: 'account',  path: '/admin/account',  icon: Landmark },
-      { key: 'plans',    path: '/admin/plans',     icon: CreditCard },
+      // ── Module financier ──────────────────────────────────────────────
+      // `end: true` sur le centre est INDISPENSABLE : sans lui, l'entree
+      // resterait surlignee sur les douze autres, qui commencent toutes
+      // par /admin/finance.
+      { key: 'fin_center',         path: '/admin/finance',                icon: Landmark, end: true },
+      { key: 'fin_analytics',      path: '/admin/finance/analytics',      icon: TrendingUp },
+      { key: 'fin_payouts',        path: '/admin/finance/payouts',        icon: Send },
+      { key: 'fin_refunds',        path: '/admin/finance/refunds',        icon: Undo2 },
+      { key: 'fin_escrow',         path: '/admin/finance/escrow',         icon: Lock },
+      { key: 'fin_settlements',    path: '/admin/finance/settlements',    icon: Receipt },
+      { key: 'fin_adjustments',    path: '/admin/finance/adjustments',    icon: SlidersHorizontal },
+      { key: 'fin_intents',        path: '/admin/finance/intents',        icon: CreditCard },
+      { key: 'fin_reconciliation', path: '/admin/finance/reconciliation', icon: Scale },
+      { key: 'fin_risk',           path: '/admin/finance/risk',           icon: ShieldAlert },
+      { key: 'fin_payees',         path: '/admin/finance/payees',         icon: Users },
+      { key: 'fin_scheduler',      path: '/admin/finance/scheduler',      icon: Clock },
+
+      // ── Ecrans existants ──────────────────────────────────────────────
+      { key: 'finances',    path: '/admin/finances',    icon: DollarSign },
+      { key: 'account',     path: '/admin/account',     icon: Landmark },
+      { key: 'plans',       path: '/admin/plans',       icon: CreditCard },
       { key: 'commissions', path: '/admin/commissions', icon: Package },
     ],
   },
@@ -155,7 +184,7 @@ const SECTIONS: NavSection[] = [
 
 const DEFAULT_OPEN = new Set([
   'section_overview', 'section_clients', 'section_vendors',
-  'section_operations', 'section_system',
+  'section_operations', 'section_finances', 'section_system',
 ]);
 const LS_KEY = 'belivay_admin_sidebar_open';
 

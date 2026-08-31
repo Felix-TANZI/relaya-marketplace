@@ -23,16 +23,29 @@ from .serializers import (
     RelayParcelReceiveSerializer,
     RelayParcelReturnSerializer,
     RelayParcelSerializer,
+    RelayPointReviewSerializer,
     ShipmentMessageCreateSerializer,
     ShipmentMessageSerializer,
     ShipmentSerializer,
     ShipmentCreateSerializer,
     ShipmentEventSerializer,
     ShipmentEventCreateSerializer,
+    ShipmentLocationCreateSerializer,
+    ShipmentLocationSerializer,
 )
-from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
+from .models import (
+    CourierSOSAlert,
+    RelayParcel,
+    RelayPointReview,
+    Shipment,
+    ShipmentEvent,
+    ShipmentLocation,
+    ShipmentMessage,
+)
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
+from apps.accounts.models import TrustScoreProfile
+from apps.accounts.trust_score import calculate_trust_score, trust_score_payload
 from apps.vendors.models import VendorLocation, VendorProfile
 from apps.orders.models import Dispute, DisputeMessage, Order
 
@@ -216,9 +229,23 @@ class ShipmentTrackView(generics.GenericAPIView):
             return Response({"detail": "order_id is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            shipment = Shipment.objects.get(order_id=order_id)
+            shipment = Shipment.objects.select_related(
+                "order",
+                "courier__user",
+                "courier__delivery_organization__user",
+            ).get(order_id=order_id)
         except Shipment.DoesNotExist:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
+
+        relay_parcel = getattr(shipment, "relay_parcel", None)
+        allowed_user_ids = {
+            shipment.order.user_id,
+            getattr(getattr(shipment, "courier", None), "user_id", None),
+            getattr(getattr(getattr(shipment, "courier", None), "delivery_organization", None), "user_id", None),
+            getattr(getattr(relay_parcel, "relay_point", None), "user_id", None),
+        }
+        if not request.user.is_staff and request.user.id not in allowed_user_ids:
+            raise PermissionDenied("Vous ne pouvez pas consulter le suivi de cette commande.")
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
 
@@ -276,6 +303,46 @@ class CourierShipmentActionView(generics.GenericAPIView):
         serializer.is_valid(raise_exception=True)
         shipment = serializer.save()
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Shipping"],
+    summary="Publier la position GPS du livreur pour une mission",
+    request=ShipmentLocationCreateSerializer,
+    responses={201: ShipmentLocationSerializer},
+)
+class CourierShipmentLocationView(generics.GenericAPIView):
+    serializer_class = ShipmentLocationCreateSerializer
+    permission_classes = [IsAuthenticated]
+
+    active_statuses = {
+        Shipment.Status.ASSIGNED,
+        Shipment.Status.PICKED_UP,
+        Shipment.Status.IN_TRANSIT,
+        Shipment.Status.OUT_FOR_DELIVERY,
+    }
+
+    def post(self, request, id):
+        courier = getattr(request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+
+        shipment = get_object_or_404(Shipment, id=id, courier=courier)
+        if shipment.status not in self.active_statuses:
+            return Response(
+                {"detail": "Le tracking GPS est réservé aux missions actives."},
+                status=status.HTTP_409_CONFLICT,
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        location = serializer.save(shipment=shipment, courier=courier)
+
+        if not courier.gps_permission_granted:
+            courier.gps_permission_granted = True
+            courier.save(update_fields=["gps_permission_granted", "updated_at"])
+
+        return Response(ShipmentLocationSerializer(location).data, status=status.HTTP_201_CREATED)
 
 
 def _get_active_courier(user):
@@ -427,6 +494,7 @@ class CourierDashboardView(generics.GenericAPIView):
 
         completed_count = len(delivered_shipments) + len(failed_shipments)
         performance_percent = round((len(delivered_shipments) / completed_count) * 100) if completed_count else 100
+        courier_trust = calculate_trust_score(courier.user, TrustScoreProfile.Role.COURIER)
 
         distance_km = round(
             sum(_estimate_shipment_distance_km(shipment) for shipment in [*today_delivered, *active_shipments]),
@@ -443,12 +511,13 @@ class CourierDashboardView(generics.GenericAPIView):
             courier_delivered = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.DELIVERED]
             courier_failed = [shipment for shipment in courier_shipments if shipment.status == Shipment.Status.FAILED]
             total_completed = len(courier_delivered) + len(courier_failed)
-            score = round((len(courier_delivered) / total_completed) * 100) if total_completed else 0
+            trust = calculate_trust_score(profile.user, TrustScoreProfile.Role.COURIER)
+            score = round(float(trust.score))
             leaderboard.append(
                 {
                     "name": profile.user.get_full_name().strip() or profile.user.username,
                     "score": f"{score}%",
-                    "badge": _leaderboard_badge(score),
+                    "badge": trust.get_tier_display(),
                     "tone": _leaderboard_tone(score),
                     "_sort_score": score,
                     "_sort_volume": len(courier_delivered),
@@ -520,6 +589,7 @@ class CourierDashboardView(generics.GenericAPIView):
             "distance_km": distance_km,
             "average_delivery_minutes": average_delivery_minutes,
             "performance_percent": performance_percent,
+            "trust_score": trust_score_payload(courier_trust),
             "recommended_departure": recommended_departure_dt.strftime("%H:%M"),
             "traffic_label": _traffic_label(now),
             "weather_label": _weather_label(now),
@@ -972,3 +1042,51 @@ class CourierClaimShipmentView(generics.GenericAPIView):
         )
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(tags=["Relay Point"], summary="Avis acheteurs du point relais")
+class RelayPointReviewListView(APIView):
+    """Liste des avis + synthese (moyenne et repartition par nombre d'etoiles)."""
+
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayPointReviewSerializer
+
+    def get(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        reviews = (
+            RelayPointReview.objects
+            .filter(relay_point=relay_point)
+            .select_related("author", "relay_parcel", "relay_parcel__shipment")
+        )
+        notes = list(reviews.values_list("rating", flat=True))
+        total = len(notes)
+        # La repartition est toujours renvoyee sur les 5 niveaux, meme a zero :
+        # le graphique du portail n'a pas a combler les trous lui-meme.
+        distribution = {str(niveau): notes.count(niveau) for niveau in range(1, 6)}
+        average = round(sum(notes) / total, 1) if total else 0.0
+        return Response({
+            "summary": {
+                "average": average,
+                "count": total,
+                "distribution": distribution,
+            },
+            "results": RelayPointReviewSerializer(reviews, many=True).data,
+        })
+
+
+@extend_schema(tags=["Relay Point"], summary="Remercier l'acheteur pour son avis")
+class RelayPointReviewThankView(APIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = RelayPointReviewSerializer
+
+    def post(self, request, pk):
+        relay_point = _get_active_relay_point(request.user)
+        review = get_object_or_404(
+            RelayPointReview.objects.select_related("author", "relay_parcel", "relay_parcel__shipment"),
+            pk=pk,
+            relay_point=relay_point,
+        )
+        if review.thanked_at is None:
+            review.thanked_at = timezone.now()
+            review.save(update_fields=["thanked_at", "updated_at"])
+        return Response(RelayPointReviewSerializer(review).data)

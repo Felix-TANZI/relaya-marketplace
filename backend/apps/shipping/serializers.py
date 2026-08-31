@@ -1,10 +1,29 @@
+from datetime import timedelta
+
 from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 from apps.orders.models import Dispute, Order
-from apps.accounts.models import UserNotification
-from .models import CourierSOSAlert, RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
+from apps.accounts.models import CourierProfile, UserNotification
+from .models import (
+    CourierSOSAlert,
+    RelayParcel,
+    RelayPointReview,
+    Shipment,
+    ShipmentEvent,
+    ShipmentLocation,
+    ShipmentMessage,
+)
+
+# Shipment.parcel_size est un champ libre cote livraison : on traduit les
+# valeurs connues et on retombe sur un libelle neutre pour les autres.
+PARCEL_SIZE_LABELS = {
+    "SMALL": "Petit colis",
+    "STANDARD": "Colis standard",
+    "LARGE": "Gros colis",
+    "BULKY": "Encombrant",
+}
 
 
 class ShipmentEventSerializer(serializers.ModelSerializer):
@@ -13,12 +32,68 @@ class ShipmentEventSerializer(serializers.ModelSerializer):
         fields = ["id", "status", "message", "location", "created_at"]
 
 
+class ShipmentLocationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShipmentLocation
+        fields = [
+            "id",
+            "latitude",
+            "longitude",
+            "accuracy_m",
+            "speed_mps",
+            "heading_deg",
+            "source",
+            "captured_at",
+        ]
+
+
+class ShipmentLocationCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ShipmentLocation
+        fields = ["latitude", "longitude", "accuracy_m", "speed_mps", "heading_deg", "source", "captured_at"]
+        extra_kwargs = {
+            "source": {"required": False},
+            "captured_at": {"required": False},
+        }
+
+    def validate_latitude(self, value):
+        if value < -90 or value > 90:
+            raise serializers.ValidationError("La latitude doit être comprise entre -90 et 90.")
+        return value
+
+    def validate_longitude(self, value):
+        if value < -180 or value > 180:
+            raise serializers.ValidationError("La longitude doit être comprise entre -180 et 180.")
+        return value
+
+    def validate_accuracy_m(self, value):
+        if value is not None and (value < 0 or value > 5000):
+            raise serializers.ValidationError("La précision GPS doit être comprise entre 0 et 5000 mètres.")
+        return value
+
+    def validate_speed_mps(self, value):
+        if value is not None and (value < 0 or value > 100):
+            raise serializers.ValidationError("La vitesse GPS doit être comprise entre 0 et 100 m/s.")
+        return value
+
+    def validate_heading_deg(self, value):
+        if value is not None and (value < 0 or value > 360):
+            raise serializers.ValidationError("Le cap GPS doit être compris entre 0 et 360 degrés.")
+        return value
+
+    def validate_captured_at(self, value):
+        if value > timezone.now() + timedelta(minutes=5):
+            raise serializers.ValidationError("La date GPS ne peut pas être dans le futur.")
+        return value
+
+
 class ShipmentSerializer(serializers.ModelSerializer):
     events = ShipmentEventSerializer(many=True, read_only=True)
     courier = serializers.SerializerMethodField()
     customer_name = serializers.SerializerMethodField()
     customer_phone = serializers.SerializerMethodField()
     delivery_address = serializers.SerializerMethodField()
+    delivery_location_precision = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
     order_total_xaf = serializers.SerializerMethodField()
     courier_payout_xaf = serializers.SerializerMethodField()
@@ -26,6 +101,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
     vendor_names = serializers.SerializerMethodField()
     assignment = serializers.SerializerMethodField()
     relay_parcel = serializers.SerializerMethodField()
+    latest_location = serializers.SerializerMethodField()
+    location_history = serializers.SerializerMethodField()
+    receipt_confirmation_code = serializers.SerializerMethodField()
 
     class Meta:
         model = Shipment
@@ -39,6 +117,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "customer_name",
             "customer_phone",
             "delivery_address",
+            "delivery_location_precision",
             "city",
             "order_total_xaf",
             "courier_payout_xaf",
@@ -49,6 +128,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "parcel_size",
             "assignment",
             "relay_parcel",
+            "latest_location",
+            "location_history",
+            "receipt_confirmation_code",
             "created_at",
             "updated_at",
             "events",
@@ -80,6 +162,9 @@ class ShipmentSerializer(serializers.ModelSerializer):
 
     def get_delivery_address(self, obj):
         return obj.order.address
+
+    def get_delivery_location_precision(self, obj):
+        return obj.order.address_precision or {}
 
     def get_city(self, obj):
         return obj.order.city
@@ -120,6 +205,7 @@ class ShipmentSerializer(serializers.ModelSerializer):
                 Shipment.Status.ZONE_UNCOVERED,
                 Shipment.Status.CAPACITY_BLOCKED,
                 Shipment.Status.VEHICLE_INCOMPATIBLE,
+                Shipment.Status.VALUE_LIMIT_EXCEEDED,
             ],
         }
 
@@ -128,6 +214,31 @@ class ShipmentSerializer(serializers.ModelSerializer):
         if not parcel:
             return None
         return RelayParcelSerializer(parcel).data
+
+    def _tracking_locations(self, obj):
+        cache = getattr(obj, "_tracking_locations_cache", None)
+        if cache is None:
+            cache = list(obj.locations.order_by("-captured_at", "-id")[:100])
+            obj._tracking_locations_cache = cache
+        return cache
+
+    def get_latest_location(self, obj):
+        locations = self._tracking_locations(obj)
+        return ShipmentLocationSerializer(locations[0]).data if locations else None
+
+    def get_location_history(self, obj):
+        locations = list(reversed(self._tracking_locations(obj)))
+        return ShipmentLocationSerializer(locations, many=True).data
+
+    def get_receipt_confirmation_code(self, obj):
+        # Le code de remise ne doit jamais fuiter vers le client : seul le
+        # livreur assigne peut le consulter pour le presenter physiquement.
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return None
+        if obj.courier and obj.courier.user_id == request.user.id:
+            return obj.ensure_receipt_confirmation_code()
+        return None
 
 
 class ShipmentCreateSerializer(serializers.Serializer):
@@ -217,6 +328,26 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     customer_phone = serializers.CharField(source="shipment.order.customer_phone", read_only=True)
     delivery_address = serializers.CharField(source="shipment.order.address", read_only=True)
     city = serializers.CharField(source="shipment.order.city", read_only=True)
+    parcel_size = serializers.CharField(source="shipment.parcel_size", read_only=True)
+    parcel_size_label = serializers.SerializerMethodField()
+    courier_ref = serializers.SerializerMethodField()
+    courier_vehicle_label = serializers.SerializerMethodField()
+
+    # Le point relais ne doit jamais voir le vendeur ni l'identite du livreur :
+    # il manipule une reference anonymisee stable, suffisante pour la double
+    # signature et la tracabilite du transfert de responsabilite.
+    def get_parcel_size_label(self, obj):
+        return PARCEL_SIZE_LABELS.get(getattr(obj.shipment, "parcel_size", "") or "", "Taille non renseignee")
+
+    def get_courier_ref(self, obj):
+        courier_id = getattr(obj.shipment, "courier_id", None)
+        return f"BV-L-{courier_id:03d}" if courier_id else ""
+
+    def get_courier_vehicle_label(self, obj):
+        courier = getattr(obj.shipment, "courier", None)
+        if not courier:
+            return ""
+        return dict(CourierProfile.VehicleType.choices).get(courier.vehicle_type, courier.vehicle_type or "")
 
     class Meta:
         model = RelayParcel
@@ -233,6 +364,10 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             "customer_phone",
             "delivery_address",
             "city",
+            "parcel_size",
+            "parcel_size_label",
+            "courier_ref",
+            "courier_vehicle_label",
             "received_at",
             "picked_up_at",
             "returned_at",
@@ -261,6 +396,19 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         else:
             shipment = get_object_or_404(shipment_qs, order_id=self.validated_data["order_id"])
 
+        # Le colis peut deja exister a l'etat EXPECTED : c'est le cas nominal,
+        # l'arrivee a ete annoncee au relais avant que le livreur se presente.
+        existing_parcel = RelayParcel.objects.filter(shipment=shipment).first()
+        if existing_parcel:
+            if existing_parcel.relay_point_id != relay_point.id:
+                raise serializers.ValidationError({"shipment_id": "Ce colis est rattache a un autre point relais."})
+            if existing_parcel.status in [RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]:
+                return existing_parcel
+            if existing_parcel.status != RelayParcel.Status.EXPECTED:
+                raise serializers.ValidationError(
+                    {"shipment_id": "Ce colis a deja ete retire ou retourne et ne peut plus etre receptionne."}
+                )
+
         active_count = RelayParcel.objects.filter(
             relay_point=relay_point,
             status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
@@ -271,10 +419,7 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
 
         import secrets
 
-        parcel, _ = RelayParcel.objects.get_or_create(
-            shipment=shipment,
-            defaults={"relay_point": relay_point},
-        )
+        parcel = existing_parcel or RelayParcel(shipment=shipment, relay_point=relay_point)
         parcel.relay_point = relay_point
         parcel.status = RelayParcel.Status.STORED
         parcel.slot_code = self.validated_data.get("slot_code") or parcel.slot_code or f"SL-{relay_point.id}-{shipment.id}"
@@ -309,6 +454,10 @@ class RelayParcelPickupSerializer(serializers.Serializer):
             id=self.validated_data["parcel_id"],
             relay_point=relay_point,
         )
+        if parcel.status not in [RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]:
+            raise serializers.ValidationError(
+                {"parcel_id": "Seul un colis stocke dans ce point relais peut etre remis."}
+            )
         if parcel.pickup_code and parcel.pickup_code != self.validated_data["pickup_code"]:
             raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect."})
         parcel.status = RelayParcel.Status.PICKED_UP
@@ -484,6 +633,7 @@ class CourierDashboardSerializer(serializers.Serializer):
     distance_km = serializers.FloatField()
     average_delivery_minutes = serializers.IntegerField()
     performance_percent = serializers.IntegerField()
+    trust_score = serializers.DictField()
     recommended_departure = serializers.CharField()
     traffic_label = serializers.CharField()
     weather_label = serializers.CharField()
@@ -656,3 +806,19 @@ class CourierSOSCreateSerializer(serializers.Serializer):
     location = serializers.CharField(required=False, allow_blank=True, default="")
     latitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
     longitude = serializers.DecimalField(max_digits=9, decimal_places=6, required=False, allow_null=True)
+
+
+class RelayPointReviewSerializer(serializers.ModelSerializer):
+    """L'acheteur n'est expose que par ses initiales (anonymat V5 ch.1)."""
+
+    author_initials = serializers.CharField(read_only=True)
+    parcel_ref = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RelayPointReview
+        fields = ["id", "rating", "comment", "author_initials", "parcel_ref", "thanked_at", "created_at"]
+        read_only_fields = fields
+
+    def get_parcel_ref(self, obj):
+        parcel = obj.relay_parcel
+        return f"BV-{parcel.shipment.order_id}" if parcel else ""

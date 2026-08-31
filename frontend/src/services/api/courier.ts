@@ -1,4 +1,5 @@
 import { http } from "@/services/api/http";
+import type { LocationPrecisionResult } from "@/services/api/location";
 
 export type CourierShipmentEvent = {
   id: number;
@@ -6,6 +7,17 @@ export type CourierShipmentEvent = {
   message: string;
   location: string;
   created_at: string;
+};
+
+export type CourierShipmentLocation = {
+  id: number;
+  latitude: string;
+  longitude: string;
+  accuracy_m: number | null;
+  speed_mps: number | null;
+  heading_deg: number | null;
+  source: "DEVICE" | "SIMULATION";
+  captured_at: string;
 };
 
 export type CourierShipment = {
@@ -25,6 +37,8 @@ export type CourierShipment = {
   customer_name: string;
   customer_phone: string;
   delivery_address: string;
+  delivery_location_precision?: Partial<LocationPrecisionResult>;
+  receipt_confirmation_code?: string | null;
   city: string;
   order_total_xaf: number;
   courier_payout_xaf?: number;
@@ -34,6 +48,8 @@ export type CourierShipment = {
   created_at: string;
   updated_at: string;
   events: CourierShipmentEvent[];
+  latest_location: CourierShipmentLocation | null;
+  location_history: CourierShipmentLocation[];
 };
 
 export type CourierShipmentAction =
@@ -140,6 +156,16 @@ export type CourierDashboard = {
   distance_km: number;
   average_delivery_minutes: number;
   performance_percent: number;
+  trust_score: {
+    score: number;
+    tier: "NEW" | "CONFIRMED" | "GOLD";
+    tier_display: string;
+    parcel_value_cap_xaf: number | null;
+    requires_insurance: boolean;
+    veto_active: boolean;
+    breakdown: Record<string, { score: number; weight: number; samples: number }>;
+    sample_size: number;
+  };
   recommended_departure: string;
   traffic_label: string;
   weather_label: string;
@@ -278,6 +304,24 @@ export const courierApi = {
     payload: { action: CourierShipmentAction; message?: string; location?: string },
   ): Promise<CourierShipment> => {
     return http<CourierShipment>(`/api/shipping/my-shipments/${id}/action/`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  publishLocation: async (
+    id: number,
+    payload: {
+      latitude: number;
+      longitude: number;
+      accuracy_m?: number | null;
+      speed_mps?: number | null;
+      heading_deg?: number | null;
+      source?: "DEVICE" | "SIMULATION";
+      captured_at?: string;
+    },
+  ): Promise<CourierShipmentLocation> => {
+    return http<CourierShipmentLocation>(`/api/shipping/my-shipments/${id}/location/`, {
       method: "POST",
       body: JSON.stringify(payload),
     });

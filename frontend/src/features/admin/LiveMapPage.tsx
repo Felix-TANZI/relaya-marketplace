@@ -13,6 +13,7 @@ import 'leaflet/dist/leaflet.css';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
+import { mapAttribution, mapTileUrl } from '@/config/maps';
 
 // ─── Fix icônes Leaflet (Vite) ────────────────────────────────────────────────
 interface LeafletIconDefault extends L.Icon.Default { _getIconUrl?: unknown; }
@@ -365,10 +366,9 @@ export default function LiveMapPage() {
             </div>
           ) : (
             <MapContainer center={[5.5, 12.0]} zoom={6} style={{ height: 580, width: '100%' }} zoomControl={true}>
-              {/* Tuiles CartoDB Positron — élégantes, professionnelles */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+                attribution={mapAttribution}
+                url={mapTileUrl}
               />
 
               {allPositions.length > 0 && <AutoFit positions={allPositions} />}

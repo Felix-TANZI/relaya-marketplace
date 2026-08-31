@@ -6,6 +6,7 @@ import { MapPin, RefreshCw, Bike, Wifi, Users, Map } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 import { http } from '@/services/api/http';
+import { offsetPosition, OpenStreetMap, resolveCameroonPosition, type OpenStreetMapMarker } from '@/components/maps/OpenStreetMap';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES
@@ -24,24 +25,6 @@ interface CourierZone {
   is_active:   boolean;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Positions pseudo-géo des villes camerounaises sur un canvas 100x100
-// ─────────────────────────────────────────────────────────────────────────────
-
-const CITY_POSITIONS: Record<string, { x: number; y: number }> = {
-  'Yaoundé':    { x: 52, y: 58 },
-  'Douala':     { x: 35, y: 60 },
-  'Bafoussam':  { x: 40, y: 50 },
-  'Bamenda':    { x: 34, y: 40 },
-  'Garoua':     { x: 60, y: 28 },
-  'Maroua':     { x: 68, y: 18 },
-  'Ngaoundéré': { x: 62, y: 38 },
-  'Bertoua':    { x: 68, y: 58 },
-  'Ebolowa':    { x: 50, y: 72 },
-  'Kribi':      { x: 44, y: 74 },
-  'Limbé':      { x: 30, y: 63 },
-};
-
 const authH = () => ({
   'Content-Type': 'application/json',
   Authorization:  `Bearer ${localStorage.getItem('access_token') ?? ''}`,
@@ -59,7 +42,6 @@ export default function DeliveriesZonesPage() {
 
   const [couriers, setCouriers] = useState<CourierZone[]>([]);
   const [loading,  setLoading]  = useState(true);
-  const [hovered,  setHovered]  = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -91,14 +73,28 @@ export default function DeliveriesZonesPage() {
   });
   const sortedZones = Object.entries(allZones).sort((a, b) => b[1] - a[1]);
 
-  // Markers pour la carte
-  const markers = couriers
-    .filter(c => CITY_POSITIONS[c.city])
-    .map(c => ({
-      courier: c,
-      x: CITY_POSITIONS[c.city].x + (Math.sin(c.id * 2.3) * 3),
-      y: CITY_POSITIONS[c.city].y + (Math.cos(c.id * 1.7) * 3),
-    }));
+  const markers: OpenStreetMapMarker[] = couriers.map((courier) => {
+    const position = offsetPosition(resolveCameroonPosition(courier.city, courier.zones?.join(" ")), courier.id, 0.018);
+    const color = courier.is_online ? '#10B981' : T.red;
+    return {
+      id: courier.id,
+      position,
+      title: courier.full_name || courier.username,
+      subtitle: `${courier.city || 'Ville a definir'} · ${courier.vehicle_type}`,
+      color,
+      iconHtml: `<span style="font-size:12px;font-weight:900">${(courier.full_name[0] || courier.username[0] || 'L').toUpperCase()}</span>`,
+      popup: (
+        <div className="min-w-[220px]">
+          <div className="text-sm font-black text-slate-950">@{courier.username}</div>
+          <div className="mt-1 text-xs font-semibold text-slate-600">{courier.phone}</div>
+          <div className="mt-2 text-xs text-slate-600">{courier.zones?.slice(0, 4).join(', ') || courier.city || 'Zone a definir'}</div>
+          <div className="mt-2 inline-flex rounded-full px-2 py-1 text-xs font-black" style={{ background: `${color}18`, color }}>
+            {courier.is_online ? 'En ligne' : 'Hors ligne'}
+          </div>
+        </div>
+      ),
+    };
+  });
 
   return (
     <div className="space-y-5">
@@ -167,51 +163,7 @@ export default function DeliveriesZonesPage() {
               <div style={{ width: 34, height: 34, borderRadius: '50%', border: `3px solid ${T.border}`, borderTopColor: T.red, animation: 'spin 0.8s linear infinite' }} />
             </div>
           ) : (
-            <div className="relative" style={{ height: 460, overflow: 'hidden' }}>
-              {/* Fond carte stylisé */}
-              <div style={{ position: 'absolute', inset: 24, borderRadius: 28, background: 'linear-gradient(135deg,#E0F2FE,#DCFCE7 52%,#FEF3C7)', opacity: 0.85 }} />
-              <div style={{ position: 'absolute', inset: 36, border: '1.5px solid rgba(255,255,255,0.7)', borderRadius: 26 }} />
-              {/* Contours intérieurs */}
-              <div style={{ position: 'absolute', left: '26%', top: '14%', width: '48%', height: '64%', borderRadius: '48%', border: '2px solid rgba(255,255,255,0.75)', background: 'rgba(255,255,255,0.18)' }} />
-              <div style={{ position: 'absolute', bottom: '16%', left: '15%', width: '60%', height: '36%', borderRadius: '45%', border: '1px solid rgba(255,255,255,0.65)', background: 'rgba(255,255,255,0.08)' }} />
-
-              {/* Noms des villes */}
-              {cities.map(city => {
-                const pos = CITY_POSITIONS[city];
-                if (!pos) return null;
-                const cityCouriers = byCity[city] ?? [];
-                const hasOnline = cityCouriers.some(c => c.is_online);
-                return (
-                  <div key={city}
-                    style={{ position: 'absolute', left: `${pos.x}%`, top: `${pos.y - 8}%`, transform: 'translate(-50%, -100%)', background: hasOnline ? '#10B981' : T.red, color: '#fff', fontSize: 9, fontWeight: 700, padding: '2px 6px', borderRadius: 4, whiteSpace: 'nowrap', boxShadow: '0 2px 6px rgba(0,0,0,0.2)' }}>
-                    {city} ({cityCouriers.length})
-                  </div>
-                );
-              })}
-
-              {/* Marqueurs livreurs */}
-              {markers.map(({ courier, x, y }) => (
-                <button key={courier.id} type="button"
-                  onMouseEnter={() => setHovered(courier.username)}
-                  onMouseLeave={() => setHovered(null)}
-                  style={{ position: 'absolute', left: `${x}%`, top: `${y}%`, transform: 'translate(-50%, -50%)', cursor: 'pointer', zIndex: hovered === courier.username ? 20 : 10 }}>
-                  {/* Pulse */}
-                  <span style={{ position: 'absolute', inset: 0, width: 36, height: 36, borderRadius: '50%', background: courier.is_online ? 'rgba(16,185,129,0.35)' : 'rgba(220,38,38,0.25)', animation: 'liveRipple 2s ease-out infinite', transform: 'translate(-12%, -12%)' }} />
-                  {/* Icône */}
-                  <span style={{ position: 'relative', display: 'flex', width: 32, height: 32, alignItems: 'center', justifyContent: 'center', borderRadius: '50%', background: courier.is_online ? '#10B981' : T.red, color: '#fff', boxShadow: '0 3px 10px rgba(0,0,0,0.25)', border: '2px solid #fff', fontSize: 11, fontWeight: 800 }}>
-                    {(courier.full_name[0] || courier.username[0] || 'L').toUpperCase()}
-                  </span>
-                  {/* Tooltip */}
-                  {hovered === courier.username && (
-                    <div style={{ position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.88)', color: '#fff', padding: '8px 10px', borderRadius: 10, whiteSpace: 'nowrap', fontSize: 11.5, zIndex: 30, boxShadow: '0 4px 16px rgba(0,0,0,0.3)', backdropFilter: 'blur(4px)' }}>
-                      <p style={{ fontWeight: 700, marginBottom: 2 }}>@{courier.username}</p>
-                      <p style={{ opacity: 0.75 }}>{courier.phone}</p>
-                      <p style={{ opacity: 0.75, marginTop: 2 }}>{courier.zones?.slice(0, 3).join(', ')}{(courier.zones?.length ?? 0) > 3 ? '…' : ''}</p>
-                    </div>
-                  )}
-                </button>
-              ))}
-            </div>
+            <OpenStreetMap markers={markers} height={460} className="rounded-none" />
           )}
         </div>
 

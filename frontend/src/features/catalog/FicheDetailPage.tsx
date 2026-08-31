@@ -28,7 +28,7 @@ const REASSURANCE = [
 
 function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <section className={`bg-white dark:bg-gray-800 rounded-2xl border border-gray-200/80 dark:border-gray-700 shadow-sm ${className}`}>
+    <section className={`rounded-lg border border-gray-200/80 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800 ${className}`}>
       {children}
     </section>
   );
@@ -545,6 +545,11 @@ export default function FicheDetailPage() {
 
       {reviewModalOffer && (
         <ReviewsModal offer={reviewModalOffer} reviews={reviewsByOffer[reviewModalOffer.id] ?? []} onClose={() => setReviewModalOffer(null)} />
+      )}
+      {buyBox && buyBox.stock_quantity > 0 && (
+        <div className="fixed inset-x-0 bottom-16 z-40 border-t border-orange-100 bg-white/95 px-3 py-2 shadow-[0_-10px_30px_rgba(15,23,42,.12)] backdrop-blur dark:border-gray-800 dark:bg-gray-900/95 lg:hidden">
+          <div className="mx-auto flex max-w-lg items-center gap-3"><div className="min-w-0 flex-1"><p className="truncate text-xs font-semibold text-gray-500">Meilleure offre</p><p className="font-black tabular-nums text-gray-900 dark:text-white">{fmtXAF(buyBox.price_final)}</p></div><button onClick={() => addOffer(buyBox, qty)} className="min-h-11 rounded-lg bg-primary px-5 text-sm font-bold text-white"><ShoppingCart size={16} className="mr-2 inline" />Ajouter</button></div>
+        </div>
       )}
     </div>
   );

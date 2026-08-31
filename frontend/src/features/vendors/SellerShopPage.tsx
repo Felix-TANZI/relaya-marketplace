@@ -22,6 +22,8 @@ import 'leaflet/dist/leaflet.css';
 import { vendorsApi } from '@/services/api/vendors';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
+import { geocodingApiUrl, mapAttribution, mapTileUrl } from '@/config/maps';
+import { ensureImageUnderLimit, ensureImagesUnderLimit } from '@/lib/imageCompression';
 import * as QRCode from 'qrcode';
 
 // ─── Fix icônes Leaflet (Vite / Webpack) ─────────────────────────────────────
@@ -124,7 +126,7 @@ function createLocationIcon(initial: string, size: 'normal' | 'large' = 'normal'
           border: 3px solid #ffffff;
           display: flex; align-items: center; justify-content: center;
           color: white; font-weight: 900; font-size: ${fs}px;
-          font-family: Poppins, sans-serif; line-height: 1;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif; line-height: 1;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
         ">${letter}</div>
         <div style="
@@ -214,14 +216,13 @@ const DraggableMarker = memo(function DraggableMarker({
 });
 
 // ─── SERVICES GÉOCODAGE (Nominatim / OpenStreetMap) ──────────────────────────
-// Gratuit, pas de clé API. User-Agent obligatoire selon les conditions d'utilisation.
-
-const NOMINATIM_HEADERS = { 'User-Agent': 'BelivaY/1.0 (contact@belivay.com)' };
+// Gratuit pour les tests légers. En production, remplacer VITE_GEOCODING_API_URL
+// par un service maîtrisé ou un prestataire.
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
-    const res  = await fetch(url, { headers: NOMINATIM_HEADERS });
+    const url = `${geocodingApiUrl}/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
+    const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
     const data = await res.json() as { lat: string; lon: string }[];
     if (data.length > 0) return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
     return null;
@@ -230,8 +231,8 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
-    const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`;
-    const res  = await fetch(url, { headers: NOMINATIM_HEADERS });
+    const url = `${geocodingApiUrl}/reverse?lat=${lat}&lon=${lng}&format=json`;
+    const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
     const data = await res.json() as { display_name?: string };
     return data.display_name || null;
   } catch { return null; }
@@ -263,7 +264,7 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
           <Globe size={15} style={{ color: T.orange }}/>
         </div>
         <div>
-          <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>
             Emplacements sur la carte
           </p>
           <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -280,8 +281,8 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
         scrollWheelZoom={false}
       >
         <TileLayer
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+          url={mapTileUrl}
+          attribution={mapAttribution}
         />
         <FitBoundsController positions={positions}/>
         {validLocs.map((loc, i) => (
@@ -387,7 +388,7 @@ function ModRequestModal({
         style={{ background: T.white }}>
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4"
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[15px]" style={{ color: T.text }}>
             <Lock size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
             Demander une modification
           </p>
@@ -467,7 +468,10 @@ function ModRequestModal({
               <div>
                 <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>Pièces jointes (optionnel)</p>
                 <input type="file" ref={fileRef} className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png"
-                  onChange={e => { if (e.target.files) setFiles(Array.from(e.target.files)); }}/>
+                  onChange={e => {
+                    const selected = Array.from(e.target.files || []);
+                    if (selected.length) void ensureImagesUnderLimit(selected).then(setFiles);
+                  }}/>
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12.5px] font-semibold"
                   style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
@@ -617,7 +621,7 @@ function LocationModal({
               <MapPin size={16} style={{ color: T.orange }}/>
             </div>
             <div>
-              <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-black text-[15px]" style={{ color: T.text }}>
                 {initial?.id ? 'Modifier l\'emplacement' : 'Ajouter un emplacement'}
               </p>
               <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -758,8 +762,8 @@ function LocationModal({
                 scrollWheelZoom
               >
                 <TileLayer
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url={mapTileUrl}
+                  attribution={mapAttribution}
                 />
                 <MapClickHandler onMapClick={handleMapClick}/>
                 <RecenterMap position={mapPosition}/>
@@ -889,7 +893,8 @@ export default function SellerShopPage() {
 
   const handlePhoto = async (file: File) => {
     try {
-      const res = await vendorsApi.uploadShopPhoto(file);
+      const compressedFile = await ensureImageUnderLimit(file);
+      const res = await vendorsApi.uploadShopPhoto(compressedFile);
       setShop(p => p ? { ...p, photo_url: res.photo_url } : p);
       showToast('Photo mise à jour', 'success');
     } catch { showToast('Erreur upload photo', 'error'); }
@@ -897,7 +902,8 @@ export default function SellerShopPage() {
 
   const handleBanner = async (file: File) => {
     try {
-      const res = await vendorsApi.uploadShopBanner(file);
+      const compressedFile = await ensureImageUnderLimit(file);
+      const res = await vendorsApi.uploadShopBanner(compressedFile);
       setShop(p => p ? { ...p, banner_url: res.banner_url } : p);
       showToast('Bannière mise à jour', 'success');
     } catch { showToast('Erreur upload bannière', 'error'); }
@@ -986,7 +992,7 @@ export default function SellerShopPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Store size={20} style={{ color: T.orange }}/> Ma Boutique
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>Configuration et présentation</p>
@@ -1064,7 +1070,7 @@ export default function SellerShopPage() {
           </button>
         </div>
         <div className="flex-1">
-          <p className="font-black text-[18px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[18px]" style={{ color: T.text }}>
             {shop?.business_name || 'Ma Boutique'}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1101,7 +1107,7 @@ export default function SellerShopPage() {
               style={{ background: 'rgba(28,18,9,0.06)' }}>
               <Lock size={14} style={{ color: T.muted }}/>
             </div>
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Informations officielles
             </p>
           </div>
@@ -1141,7 +1147,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <Phone size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 Contact & disponibilité
               </p>
             </div>
@@ -1166,7 +1172,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <QrCode size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 QR Code BelivaY
               </p>
             </div>
@@ -1223,7 +1229,7 @@ export default function SellerShopPage() {
                 <MapPin size={14} style={{ color: T.orange }}/>
               </div>
               <div>
-                <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="font-bold text-[14px]" style={{ color: T.text }}>
                   Nos emplacements
                 </p>
                 <p className="text-[11.5px]" style={{ color: T.muted }}>
@@ -1244,14 +1250,14 @@ export default function SellerShopPage() {
                     background: `linear-gradient(135deg, ${T.orange}, #D4640E)`,
                     boxShadow: '0 3px 10px rgba(244,121,32,0.3)',
                   }}>
-                  <span className="font-black text-[16px] text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
+                  <span className="font-black text-[16px] text-white" style={{  }}>
                     {(loc.name || '?').charAt(0).toUpperCase()}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
                   {/* Nom */}
-                  <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                  <p className="font-bold text-[14px]" style={{ color: T.text }}>
                     {loc.name}
                   </p>
 
@@ -1329,7 +1335,7 @@ export default function SellerShopPage() {
             <MapPin size={14} style={{ color: T.orange }}/>
           </div>
           <div className="flex-1">
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Emplacements physiques
             </p>
             <p className="text-[11.5px]" style={{ color: T.mutedL }}>

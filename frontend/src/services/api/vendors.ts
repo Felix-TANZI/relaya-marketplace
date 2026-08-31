@@ -39,7 +39,10 @@ export type EscrowStatus =
   | "RELEASE_PENDING"
   | "RELEASED"
   | "REFUNDED"
-  | "PARTIAL_REFUNDED";
+  | "PARTIAL_REFUNDED"
+  // Produit par le modèle Django via fulfillment_status : une commande en
+  // litige gèle les fonds, l'espace vendeur doit pouvoir l'afficher.
+  | "DISPUTED";
 
 /**
  * Transitions autorisées pour le vendeur — source de vérité frontend.
@@ -69,9 +72,16 @@ export interface VendorProfile {
   city: string;
   id_document: string;
   status: "PENDING" | "APPROVED" | "REJECTED" | "SUSPENDED";
+  // Vitrine publique et certification, exposees par VendorProfileSerializer.
+  shop_slug: string;
+  certification_tier: "BRONZE" | "SILVER" | "GOLD" | "DIAMOND";
+  total_points: number;
   created_at: string;
   updated_at: string;
   approved_at: string | null;
+  // Mobile Money de versement, exposé par VendorProfileSerializer.
+  default_withdrawal_operator?: "MTN_MOMO" | "ORANGE_MONEY" | "";
+  default_withdrawal_phone?: string;
 }
 
 export interface VendorApplication {
@@ -309,6 +319,11 @@ export interface VendorPaymentSummary {
 
   // Retrait en cours (null si aucun)
   pending_withdrawal: PendingWithdrawal | null;
+
+  // Numéro de versement par défaut. Optionnels : si le sérialiseur ne les
+  // expose pas encore, la page retombe sur getProfile().
+  default_withdrawal_operator?: "MTN_MOMO" | "ORANGE_MONEY" | "";
+  default_withdrawal_phone?: string;
 }
 
 export type WithdrawalOperator = "ORANGE_MONEY" | "MTN_MOMO";
@@ -366,6 +381,15 @@ export interface VendorDisputeEvidence {
   created_at: string;
 }
 
+export interface VendorEvidenceRequest {
+  id: number;
+  recipient_role: string;
+  instructions: string;
+  due_at: string | null;
+  status: 'PENDING' | 'SUBMITTED' | 'CANCELLED' | 'EXPIRED';
+  created_at: string;
+}
+
 export interface VendorDisputeListItem {
   id: number;
   order: number;
@@ -385,6 +409,8 @@ export interface VendorDisputeListItem {
   hours_remaining: number; // Heures restantes (0 si dépassé)
   assigned_admin_name: string | null;
   unread_messages: number;
+  /** Montant arbitré par BelivaY. Null tant qu'aucune décision n'est rendue. */
+  refund_amount_xaf: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -398,6 +424,7 @@ export interface VendorDisputeDetail extends VendorDisputeListItem {
   vendor_replied_at: string | null;
   messages: VendorDisputeMessage[];
   evidences: VendorDisputeEvidence[];
+  evidence_requests: VendorEvidenceRequest[];
   resolved_at: string | null;
 }
 
@@ -846,6 +873,29 @@ export const vendorsApi = {
     );
   },
 
+  /**
+   * Enregistre le Mobile Money de versement par défaut.
+   *
+   * Cible `/api/vendors/settings/` et non `/profile/` : la vue `vendor_profile`
+   * est en `@api_view(['GET'])` et renverrait 405. C'est `vendor_update_settings`
+   * qui porte la whitelist ['default_withdrawal_operator',
+   * 'default_withdrawal_phone'] — voir views.py:6515.
+   */
+  savePaymentPreferences: async (data: {
+    default_withdrawal_operator: "MTN_MOMO" | "ORANGE_MONEY";
+    default_withdrawal_phone: string;
+  }): Promise<VendorProfile> => {
+    const token = localStorage.getItem("access_token");
+    return http<VendorProfile>("/api/vendors/settings/", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
   // ── Produits — actions enrichies ─────────────────────────────────────────
 
   /**
@@ -1066,12 +1116,14 @@ export const vendorsApi = {
    */
   uploadDisputeEvidence: async (
     disputeId: number,
+    requestId: number,
     file: File,
     description?: string,
   ): Promise<VendorDisputeEvidence> => {
     const token = localStorage.getItem("access_token");
     const form = new FormData();
     form.append("file", file);
+    form.append("request_id", String(requestId));
     if (description) form.append("description", description);
     return http<VendorDisputeEvidence>(
       `/api/vendors/disputes/${disputeId}/evidences/`,

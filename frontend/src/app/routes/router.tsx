@@ -6,6 +6,7 @@
 //   AdminLayout  → /admin/* (AdminRoute = ProtectedRoute + is_staff check)
 
 import { createBrowserRouter, Navigate } from 'react-router-dom';
+import { isDedicatedPortal, portalHomePath } from '@/config/portals';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LAYOUTS
@@ -27,6 +28,9 @@ import RoleRoute      from '@/components/auth/RoleRoute';
 import HomePage               from '@/features/home/HomePage';
 import CatalogPage            from '@/features/catalog/CatalogPage';
 import CategoriesPage         from '@/features/categories/CategoriesPage';
+import CategoryThemePage      from '@/features/categories/CategoryThemePage';
+import PremiumPage             from '@/features/premium/PremiumPage';
+import SelectionPremiumPage    from '@/features/premium/SelectionPremiumPage';
 import CartPage               from '@/features/cart/CartPage';
 import CheckoutPage           from '@/features/checkout/CheckoutPage';
 import CheckoutConfirmPage    from '@/features/checkout/CheckoutConfirmPage';
@@ -61,7 +65,6 @@ import SellerProductsPage       from '@/features/vendors/SellerProductsPage';
 import ProductFormPage          from '@/features/vendors/ProductFormPage';
 import SellerOrdersPage         from '@/features/vendors/SellerOrdersPage';
 import SellerOrderDetailPage    from '@/features/vendors/SellerOrderDetailPage';
-import SellerPaymentsPage       from '@/features/vendors/SellerPaymentsPage';
 import SellerDisputesPage       from '@/features/vendors/SellerDisputesPage';
 import SellerShopPage           from '@/features/vendors/SellerShopPage';
 import SellerAnalyticsPage      from '@/features/vendors/SellerAnalyticsPage';
@@ -69,7 +72,22 @@ import SellerBoostPage          from '@/features/vendors/SellerBoostPage';
 import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
 import SellerPlansPage          from '@/features/vendors/SellerPlansPage';
 import SellerSettingsPage       from '@/features/vendors/SellerSettingsPage';
-import SellerWalletPage         from '@/features/vendors/SellerWalletPage';
+import SellerPaymentsPage        from '@/features/vendors/SellerPaymentsPage';
+import SellerWalletPage          from '@/features/vendors/SellerWalletPage';
+import SellerSettlementsPage     from '@/features/vendors/SellerSettlementsPage';
+import SellerPendingFundsPage    from '@/features/vendors/SellerPendingFundsPage';
+import SellerAdjustmentsPage     from '@/features/vendors/SellerAdjustmentsPage';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTES FINANCIÈRES PARTENAIRES
+// ─────────────────────────────────────────────────────────────────────────────
+import {
+  buyerPaymentRoutes,
+  sellerPaymentRoutes,
+  deliveryPaymentRoutes,
+  relayPaymentRoutes,
+  adminFinanceRoutes,
+} from './payments.routes';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — PARTAGÉ
@@ -148,6 +166,14 @@ import {
   Zap, Bot, Shield, HeadphonesIcon,
 } from 'lucide-react';
 
+// Le portail dedie se decide au chargement du module — `isDedicatedPortal` et
+// `portalHomePath` sont des constantes de `@/config/portals`. L'element est
+// donc calcule ici plutot que dans un composant : un fichier de routes qui
+// declare un composant casse le Fast Refresh (react-refresh/only-export-components).
+const portalIndexElement = isDedicatedPortal
+  ? <Navigate to={portalHomePath} replace />
+  : <HomePage />;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
@@ -161,15 +187,19 @@ export const router = createBrowserRouter([
     path: '/',
     element: <AppLayout />,
     children: [
-      { index: true, element: <HomePage /> },
+      { index: true, element: portalIndexElement },
 
       // Public
       { path: 'catalog',         element: <CatalogPage /> },
       { path: 'categories',      element: <CategoriesPage /> },
+      { path: 'categorie/:slug', element: <CategoryThemePage /> },
       { path: 'product/:slug', element: <FicheDetailPage /> },
       { path: 'cart',            element: <CartPage /> },
+      { path: 'wishlist',        element: <WishlistPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
+      { path: 'premium',         element: <PremiumPage /> },
+      { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },
       { path: 'help',            element: <HelpPage /> },
       { path: 'about',           element: <AboutPage /> },
@@ -184,9 +214,9 @@ export const router = createBrowserRouter([
       { path: 'checkout/confirm', element: <ProtectedRoute><CheckoutConfirmPage /></ProtectedRoute> },
       { path: 'orders',           element: <ProtectedRoute><OrdersHistoryPage /></ProtectedRoute> },
       { path: 'orders/:id',       element: <ProtectedRoute><OrderDetailPage /></ProtectedRoute> },
-      { path: 'wishlist',         element: <ProtectedRoute><WishlistPage /></ProtectedRoute> },
       { path: 'notifications',    element: <ProtectedRoute><NotificationsPage /></ProtectedRoute> },
       { path: 'profile',          element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
+      ...buyerPaymentRoutes,
 
       // Fallback
       { path: '*', element: <NotFoundPage /> },
@@ -207,7 +237,6 @@ export const router = createBrowserRouter([
       { path: 'products/:id/edit', element: <ProductFormPage /> },
       { path: 'orders',            element: <SellerOrdersPage /> },
       { path: 'orders/:id',        element: <SellerOrderDetailPage /> },
-      { path: 'payments',          element: <SellerPaymentsPage /> },
       { path: 'disputes',          element: <SellerDisputesPage /> },
       { path: 'shop',              element: <SellerShopPage /> },
       { path: 'analytics',         element: <SellerAnalyticsPage /> },
@@ -215,7 +244,17 @@ export const router = createBrowserRouter([
       { path: 'certifications',    element: <SellerCertificationsPage /> },
       { path: 'plans',             element: <SellerPlansPage /> },
       { path: 'settings',          element: <SellerSettingsPage /> },
-      { path: 'wallet',            element: <SellerWalletPage /> },
+
+      // Pages financières vendeur. Declarees AVANT `sellerPaymentRoutes` :
+      // ce jeu generique expose aussi `wallet`, `payments` et `adjustments`,
+      // et React Router retient la premiere correspondance.
+      { path: 'wallet',        element: <SellerWalletPage /> },
+      { path: 'payments',      element: <SellerPaymentsPage /> },
+      { path: 'settlements',   element: <SellerSettlementsPage /> },
+      { path: 'pending-funds', element: <SellerPendingFundsPage /> },
+      { path: 'adjustments',   element: <SellerAdjustmentsPage /> },
+
+      ...sellerPaymentRoutes,
     ],
   },
 
@@ -231,10 +270,16 @@ export const router = createBrowserRouter([
   {
     path: '/relay-point',
     element: <ProtectedRoute><RoleRoute role="relay_point"><RelayPointPage /></RoleRoute></ProtectedRoute>,
+    children: [
+      ...relayPaymentRoutes,
+    ],
   },
   {
     path: '/delivery-organization',
     element: <ProtectedRoute><RoleRoute role="delivery_organization"><DeliveryOrganizationPage /></RoleRoute></ProtectedRoute>,
+    children: [
+      ...deliveryPaymentRoutes,
+    ],
   },
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -313,6 +358,7 @@ export const router = createBrowserRouter([
       { path: 'account',  element: <AccountPage /> },
       { path: 'plans',    element: <PlansPage /> },
       { path: 'commissions', element: <CommissionsPage /> },
+      ...adminFinanceRoutes,
 
       // ── GROWTH (SOON) ───────────────────────────────────────────────────
       { path: 'analytics', element: <AdminStub title="Analytics & Tendances"    description="Bientôt disponible." icon={TrendingUp} /> },

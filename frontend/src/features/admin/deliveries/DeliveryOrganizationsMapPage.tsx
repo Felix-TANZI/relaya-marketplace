@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Building2, CheckCircle2, MapPin, Phone, RefreshCw, Route, Search, Truck, Users } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
+import { offsetPosition, OpenStreetMap, resolveCameroonPosition, type OpenStreetMapMarker } from "@/components/maps/OpenStreetMap";
 
 interface DeliveryOrganization {
   id: number;
@@ -14,13 +15,6 @@ interface DeliveryOrganization {
   contract_reference: string;
   status: "PENDING" | "APPROVED" | "SUSPENDED";
 }
-
-const mapPositions = [
-  { top: "34%", left: "58%" },
-  { top: "64%", left: "38%" },
-  { top: "48%", left: "48%" },
-  { top: "72%", left: "57%" },
-];
 
 function statusLabel(status: DeliveryOrganization["status"]) {
   if (status === "APPROVED") return "Approuvee";
@@ -74,6 +68,28 @@ export default function DeliveryOrganizationsMapPage() {
   const selected = filtered.find((org) => org.id === selectedId) ?? filtered[0] ?? null;
   const approvedCount = organizations.filter((org) => org.status === "APPROVED").length;
   const zonesCount = new Set(organizations.flatMap((org) => org.zones)).size;
+  const markers: OpenStreetMapMarker[] = filtered.map((org, index) => {
+    const position = offsetPosition(resolveCameroonPosition(org.address, org.city, org.zones.join(" ")), org.id || index);
+    const active = selected?.id === org.id;
+    return {
+      id: org.id,
+      position,
+      title: org.company_name,
+      subtitle: org.address || org.city,
+      color: active ? "#0891b2" : "#06b6d4",
+      iconHtml: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 21h18M6 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16" stroke="white" stroke-width="2" stroke-linecap="round"/><path d="M9 8h1M14 8h1M9 12h1M14 12h1M9 16h1M14 16h1" stroke="white" stroke-width="2" stroke-linecap="round"/></svg>`,
+      popup: (
+        <button type="button" onClick={() => setSelectedId(org.id)} className="block min-w-[220px] text-left">
+          <div className="text-sm font-black text-slate-950">{org.company_name}</div>
+          <div className="mt-1 text-xs font-semibold text-slate-600">{org.address || org.city}</div>
+          <div className="mt-2 flex items-center justify-between gap-3 text-xs">
+            <span className="font-bold text-cyan-700">{org.contract_reference || "Contrat a definir"}</span>
+            <span className="rounded-full bg-cyan-50 px-2 py-1 font-black text-cyan-700">{statusLabel(org.status)}</span>
+          </div>
+        </button>
+      ),
+    };
+  });
 
   return (
     <div className="space-y-5">
@@ -138,35 +154,7 @@ export default function DeliveryOrganizationsMapPage() {
             </span>
           </div>
 
-          <div className="relative min-h-[520px] overflow-hidden bg-[#e9f8fb]">
-            <div className="absolute inset-0 opacity-70 [background-image:linear-gradient(rgba(8,116,144,.11)_1px,transparent_1px),linear-gradient(90deg,rgba(8,116,144,.11)_1px,transparent_1px)] [background-size:42px_42px]" />
-            <div className="absolute left-[9%] top-[18%] h-[66%] w-[78%] rounded-[45%] border-[18px] border-cyan-200/70" />
-            <div className="absolute left-[21%] top-[28%] h-[44%] w-[56%] rotate-[-12deg] rounded-[45%] border-[12px] border-emerald-200/70" />
-            <div className="absolute left-[8%] top-[57%] h-4 w-[88%] -rotate-6 rounded-full bg-slate-300/70" />
-            <div className="absolute left-[18%] top-[35%] h-3 w-[74%] rotate-12 rounded-full bg-slate-300/70" />
-
-            {filtered.map((org, index) => {
-              const position = mapPositions[index % mapPositions.length];
-              const active = selected?.id === org.id;
-              return (
-                <button
-                  key={org.id}
-                  type="button"
-                  onClick={() => setSelectedId(org.id)}
-                  className="absolute -translate-x-1/2 -translate-y-1/2 rounded-full transition"
-                  style={{ top: position.top, left: position.left }}
-                  title={org.company_name}
-                >
-                  <span className={`flex h-12 w-12 items-center justify-center rounded-full border-4 shadow-lg ${active ? "border-cyan-800 bg-cyan-700 text-white" : "border-white bg-white text-cyan-700"}`}>
-                    <Building2 size={22} />
-                  </span>
-                  <span className="absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-slate-950 px-2 py-1 text-[11px] font-bold text-white shadow">
-                    {org.city || org.company_name}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+          <OpenStreetMap markers={markers} height={520} className="rounded-none" />
         </div>
 
         <aside className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>

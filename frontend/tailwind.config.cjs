@@ -129,6 +129,20 @@ module.exports = {
 
       // Keyframes pour animations vendeur
       keyframes: {
+        // Menu lateral point relais : la pastille active respire doucement.
+        'nav-float': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%':      { transform: 'translateY(-1.5px)' },
+        },
+        'nav-glow': {
+          '0%, 100%': { opacity: '0.35', transform: 'scale(0.96)' },
+          '50%':      { opacity: '0.7',  transform: 'scale(1.04)' },
+        },
+        // Viseur QR du point relais : la ligne de scan balaie le cadre.
+        'qr-scan': {
+          '0%, 100%': { top: '12%', opacity: '0.35' },
+          '50%':      { top: '84%', opacity: '1' },
+        },
         'card-slide-in': {
           from: { opacity: '0', transform: 'translateY(12px)' },
           to:   { opacity: '1', transform: 'none' },
@@ -145,12 +159,40 @@ module.exports = {
           '0%, 100%': { opacity: '0.6', transform: 'scale(1)' },
           '50%':      { opacity: '1',   transform: 'scale(1.2)' },
         },
+        // Bandeau promotions : reflet qui balaie la frame, flamme qui vacille.
+        'promo-sweep': {
+          '0%':        { transform: 'translateX(-120%) skewX(-18deg)' },
+          '60%, 100%': { transform: 'translateX(320%) skewX(-18deg)' },
+        },
+        'flame-flicker': {
+          '0%, 100%': { transform: 'scale(1) rotate(-2deg)',    opacity: '0.92' },
+          '35%':      { transform: 'scale(1.14) rotate(3deg)',  opacity: '1' },
+          '65%':      { transform: 'scale(0.97) rotate(-4deg)', opacity: '0.96' },
+        },
+        // Diamant Premium et étoile Sélection : scintillement lent.
+        'gem-sparkle': {
+          '0%, 100%': { transform: 'scale(1) rotate(0deg)',      opacity: '0.9' },
+          '30%':      { transform: 'scale(1.12) rotate(-6deg)',  opacity: '1' },
+          '60%':      { transform: 'scale(0.98) rotate(5deg)',   opacity: '0.94' },
+        },
+        // Bandeau d'annonces : défilement continu du ruban dupliqué.
+        'marquee': {
+          from: { transform: 'translateX(0)' },
+          to:   { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
+        'nav-float':     'nav-float 3.4s ease-in-out infinite',
+        'nav-glow':      'nav-glow 3s ease-in-out infinite',
+        'qr-scan':       'qr-scan 2.4s ease-in-out infinite',
         'card-slide-in': 'card-slide-in 0.4s cubic-bezier(.4,0,.2,1) both',
         'page-in':       'page-in 0.3s cubic-bezier(.4,0,.2,1)',
         'badge-pulse':   'badge-pulse 3s ease-in-out infinite',
         'sparkle':       'sparkle 2s ease-in-out infinite',
+        'promo-sweep':   'promo-sweep 4.5s ease-in-out infinite',
+        'flame-flicker': 'flame-flicker 1.4s ease-in-out infinite',
+        'gem-sparkle':   'gem-sparkle 2.6s ease-in-out infinite',
+        'marquee':       'marquee 32s linear infinite',
       },
     },
   },

@@ -3,10 +3,18 @@
 
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.auth.hashers import check_password, make_password
+from django.utils import timezone
 from apps.catalog.models import Product
 
 
 class CourierProfile(models.Model):
+    class AvailabilityStatus(models.TextChoices):
+        AVAILABLE = "AVAILABLE", "Disponible"
+        ABSENT = "ABSENT", "Absent"
+        LEAVE = "LEAVE", "En congé"
+        SUSPENDED = "SUSPENDED", "Suspendu"
+
     class VehicleType(models.TextChoices):
         MOTORBIKE = "MOTORBIKE", "Moto"
         CAR       = "CAR", "Voiture"
@@ -38,6 +46,12 @@ class CourierProfile(models.Model):
     is_active = models.BooleanField(default=True)
     is_approved = models.BooleanField(default=False)
     is_online = models.BooleanField(default=False)
+    availability_status = models.CharField(
+        max_length=20,
+        choices=AvailabilityStatus.choices,
+        default=AvailabilityStatus.AVAILABLE,
+    )
+    availability_note = models.CharField(max_length=255, blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -73,6 +87,10 @@ class DeliveryOrganizationProfile(models.Model):
     contract_reference = models.CharField(max_length=120, blank=True, default="")
     allowed_vehicle_types = models.JSONField(default=list, blank=True)
     max_active_shipments = models.PositiveIntegerField(default=50)
+    transport_insurance_verified = models.BooleanField(
+        default=False,
+        help_text="Obligatoire pour confier sans plafond un colis à un livreur de palier Or.",
+    )
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,6 +103,64 @@ class DeliveryOrganizationProfile(models.Model):
 
     def __str__(self):
         return self.company_name
+
+
+class DeliveryVehicle(models.Model):
+    """Vehicle owned by a delivery organization and temporarily assigned to a courier."""
+
+    organization = models.ForeignKey(
+        DeliveryOrganizationProfile,
+        on_delete=models.CASCADE,
+        related_name="vehicles",
+    )
+    label = models.CharField(max_length=120)
+    registration = models.CharField(max_length=40)
+    vehicle_type = models.CharField(max_length=20, choices=CourierProfile.VehicleType.choices)
+    assigned_courier = models.OneToOneField(
+        CourierProfile,
+        on_delete=models.SET_NULL,
+        related_name="assigned_company_vehicle",
+        null=True,
+        blank=True,
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["label"]
+        constraints = [
+            models.UniqueConstraint(fields=["organization", "registration"], name="unique_org_vehicle_registration"),
+        ]
+
+    def __str__(self):
+        return f"{self.label} ({self.registration})"
+
+
+class ComplianceDocument(models.Model):
+    class OwnerRole(models.TextChoices):
+        DELIVERY_ORGANIZATION = "DELIVERY_ORGANIZATION", "Organisation livraison"
+        RELAY_POINT = "RELAY_POINT", "Point relais"
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "En cours de vérification"
+        APPROVED = "APPROVED", "Validé"
+        REJECTED = "REJECTED", "Rejeté"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="compliance_documents")
+    owner_role = models.CharField(max_length=30, choices=OwnerRole.choices)
+    document_type = models.CharField(max_length=60)
+    file = models.FileField(upload_to="compliance/%Y/%m/")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
+    review_note = models.CharField(max_length=255, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+        constraints = [
+            models.UniqueConstraint(fields=["user", "owner_role", "document_type"], name="unique_role_compliance_document"),
+        ]
 
 
 class RelayPointProfile(models.Model):
@@ -360,6 +436,125 @@ class RewardTransaction(models.Model):
         return f"{self.account} · {self.delta:+d}"
 
 
+class TrustScoreProfile(models.Model):
+    """Score de confiance métier, indépendant des points de récompense."""
+
+    class Role(models.TextChoices):
+        VENDOR = "VENDOR", "Vendeur"
+        COURIER = "COURIER", "Livreur"
+        RELAY_POINT = "RELAY_POINT", "Point relais"
+
+    class Tier(models.TextChoices):
+        NEW = "NEW", "Nouveau"
+        CONFIRMED = "CONFIRMED", "Confirmé"
+        GOLD = "GOLD", "Or"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="trust_score_profiles")
+    role = models.CharField(max_length=20, choices=Role.choices)
+    score = models.DecimalField(max_digits=5, decimal_places=2, default=70)
+    tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.NEW)
+    candidate_tier = models.CharField(max_length=20, choices=Tier.choices, blank=True, default="")
+    candidate_since = models.DateTimeField(null=True, blank=True)
+    veto_active = models.BooleanField(default=False)
+    veto_reason = models.CharField(max_length=255, blank=True, default="")
+    breakdown = models.JSONField(default=dict, blank=True)
+    sample_size = models.PositiveIntegerField(default=0)
+    calculated_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["user", "role"], name="unique_trust_score_user_role"),
+        ]
+        ordering = ["role", "-score"]
+
+    @property
+    def parcel_value_cap_xaf(self):
+        if self.tier == self.Tier.GOLD:
+            return None
+        if self.tier == self.Tier.CONFIRMED:
+            return 250000
+        return 75000
+
+    def __str__(self):
+        return f"{self.user.username} · {self.role} · {self.score}"
+
+
+class PayoutAccount(models.Model):
+    """
+    Numero Mobile Money utilise pour les versements BelivaY.
+
+    Un vendeur, livreur, point relais ou organisation doit prouver qu'il controle
+    le numero avant que BelivaY puisse l'utiliser pour envoyer l'argent.
+    """
+
+    class OwnerRole(models.TextChoices):
+        VENDOR = "VENDOR", "Vendeur"
+        COURIER = "COURIER", "Livreur"
+        DELIVERY_ORGANIZATION = "DELIVERY_ORGANIZATION", "Organisation livraison"
+        RELAY_POINT = "RELAY_POINT", "Point relais"
+
+    class Status(models.TextChoices):
+        PENDING_VERIFICATION = "PENDING_VERIFICATION", "Verification requise"
+        VERIFIED = "VERIFIED", "Verifie"
+        DISABLED = "DISABLED", "Desactive"
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="payout_accounts")
+    owner_role = models.CharField(max_length=30, choices=OwnerRole.choices)
+    label = models.CharField(max_length=120, blank=True, default="")
+    phone_e164 = models.CharField(max_length=20)
+    national_number = models.CharField(max_length=12)
+    operator = models.CharField(max_length=20)
+    status = models.CharField(max_length=30, choices=Status.choices, default=Status.PENDING_VERIFICATION)
+    is_primary = models.BooleanField(default=False)
+    verification_code_hash = models.CharField(max_length=160, blank=True, default="")
+    verification_expires_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
+    last_sent_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-is_primary", "-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "owner_role", "phone_e164"],
+                name="uniq_payout_account_phone_per_role",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=["user", "owner_role", "status"],
+                name="accounts_pa_user_id_1906da_idx",
+            ),
+        ]
+        verbose_name = "Compte de versement"
+        verbose_name_plural = "Comptes de versement"
+
+    def __str__(self):
+        return f"{self.user.username} · {self.owner_role} · {self.phone_e164}"
+
+    def set_verification_code(self, code: str, minutes: int = 10):
+        self.verification_code_hash = make_password(code)
+        self.verification_expires_at = timezone.now() + timezone.timedelta(minutes=minutes)
+        self.last_sent_at = timezone.now()
+
+    def check_verification_code(self, code: str) -> bool:
+        if not self.verification_code_hash or not self.verification_expires_at:
+            return False
+        if self.verification_expires_at < timezone.now():
+            return False
+        return check_password(code, self.verification_code_hash)
+
+    def mark_verified(self):
+        self.status = self.Status.VERIFIED
+        self.verified_at = timezone.now()
+        self.verification_code_hash = ""
+        self.verification_expires_at = None
+        self.save(update_fields=["status", "verified_at", "verification_code_hash", "verification_expires_at", "updated_at"])
+
+
 class UserSession(models.Model):
     """
     Session active par appareil, créée/mise à jour par SessionTrackingMiddleware.
@@ -414,3 +609,49 @@ class OTPCode(models.Model):
     def is_valid(self) -> bool:
         from django.utils import timezone
         return not self.is_used and self.expires_at > timezone.now()
+
+
+class RelayTrainingCompletion(models.Model):
+    """
+    Module de formation valide par un point relais.
+
+    Le tronc obligatoire conditionne l'activation du statut de partenaire : la
+    validation doit donc survivre au navigateur, d'ou un enregistrement serveur
+    plutot qu'un stockage local.
+    """
+
+    class Module(models.TextChoices):
+        RECEPTION = "reception", "Reception & garde des colis"
+        CNI = "cni", "Verification CNI & cross-check ANTIC"
+        STOCKAGE = "stockage", "Securite du stockage"
+        LITIGE = "litige", "Gerer un litige & le mediateur"
+        RELATION = "relation", "Relation acheteur & avis"
+        PIDGIN = "pidgin", "Service en Pidgin"
+
+    #: Modules du tronc obligatoire, requis pour activer le statut partenaire.
+    CORE_MODULES = (Module.RECEPTION, Module.CNI, Module.STOCKAGE)
+
+    #: Avantages credites a chaque module valide.
+    POINTS_PER_MODULE = 30
+
+    relay_point = models.ForeignKey(
+        RelayPointProfile,
+        on_delete=models.CASCADE,
+        related_name="training_completions",
+    )
+    module_key = models.CharField(max_length=30, choices=Module.choices)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-completed_at"]
+        verbose_name = "Module de formation valide"
+        verbose_name_plural = "Modules de formation valides"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["relay_point", "module_key"],
+                name="unique_training_module_per_relay_point",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.relay_point.name} - {self.module_key}"

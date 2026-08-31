@@ -558,6 +558,24 @@ export interface DisputeEvidence {
   file_url: string | null;
   description: string;
   created_at: string;
+  request?: number | null;
+  evidence_type?: 'PHOTO' | 'VIDEO' | 'DOCUMENT' | 'OTHER';
+  uploader_role?: string;
+}
+
+export interface DisputeEvidenceRequest {
+  id: number;
+  recipient_role: 'CLIENT' | 'VENDOR' | 'COURIER' | 'LOGISTICS' | 'RELAY_POINT';
+  requested_from: number;
+  requested_from_name: string;
+  requested_by_name: string;
+  evidence_types: string[];
+  instructions: string;
+  due_at: string | null;
+  status: 'PENDING' | 'SUBMITTED' | 'CANCELLED' | 'EXPIRED';
+  responded_at: string | null;
+  created_at: string;
+  evidences: DisputeEvidence[];
 }
 
 export interface AdminDispute {
@@ -628,6 +646,7 @@ export interface AdminDisputeDetail {
   courier_can_reply: boolean;
   messages: DisputeMessage[];
   evidences: DisputeEvidence[];
+  evidence_requests: DisputeEvidenceRequest[];
   created_at: string;
   updated_at: string;
 }
@@ -692,6 +711,7 @@ export interface PlatformSettings {
   updated_by: number | null;
   updated_by_name: string;
   max_offers_displayed: number;
+  evidence_retention_days: number;
 }
 
 export interface PlatformSettingsUpdate {
@@ -706,6 +726,7 @@ export interface PlatformSettingsUpdate {
   maintenance_mode?: boolean;
   maintenance_message?: string;
   max_offers_displayed?: number;
+  evidence_retention_days?: number;
 }
 
 export interface ProductCondition {
@@ -1668,6 +1689,19 @@ export const adminApi = {
         method: "POST",
         headers: authHeader(),
         body: JSON.stringify({ role, allow }),
+      },
+    ),
+
+  requestDisputeEvidence: async (
+    disputeId: number,
+    data: { recipient_role: string; evidence_types: string[]; instructions: string; due_at?: string },
+  ): Promise<AdminDisputeDetail> =>
+    http<AdminDisputeDetail>(
+      `/api/vendors/admin/disputes/${disputeId}/request-evidence/`,
+      {
+        method: "POST",
+        headers: authHeader(),
+        body: JSON.stringify(data),
       },
     ),
 

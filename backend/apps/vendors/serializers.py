@@ -17,6 +17,7 @@
 import hashlib
 from rest_framework import serializers
 from apps.orders.models import Order, OrderItem
+from apps.orders.serializers import DisputeEvidenceRequestSerializer
 from apps.shipping.models import Shipment
 from .models import (
     VendorProfile, VendorOrderNote, WithdrawalRequest,
@@ -69,10 +70,17 @@ class VendorProfileSerializer(serializers.ModelSerializer):
             'business_name', 'business_description',
             'phone', 'address', 'city', 'shop_slug',
             'id_document', 'status',
-            'certification_tier',
+            # `total_points` accompagne `certification_tier` : la feuille compte
+            # du portail affiche le palier ET le score qui y mene, sinon le
+            # vendeur voit son niveau sans savoir ou il en est.
+            'certification_tier', 'total_points',
             'plan_code', 'plan_name',
             'total_products', 'active_products',
             'total_revenue', 'total_orders',
+            # Mobile Money de versement. Sans ces deux champs, l'espace vendeur
+            # ne peut ni pre-remplir le numero enregistre, ni confirmer sa mise
+            # a jour : `vendor_update_settings` renvoie ce meme serializer.
+            'default_withdrawal_operator', 'default_withdrawal_phone',
             'created_at', 'updated_at', 'approved_at',
         ]
  
@@ -1027,6 +1035,7 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
     resolved_by_name = serializers.CharField(source='resolved_by.username', read_only=True, default=None)
     messages         = DisputeMessageSerializer(many=True, read_only=True)
     evidences        = DisputeEvidenceSerializer(many=True, read_only=True)
+    evidence_requests = DisputeEvidenceRequestSerializer(many=True, read_only=True)
 
     class Meta:
         from apps.orders.models import Dispute
@@ -1037,7 +1046,7 @@ class AdminDisputeDetailSerializer(serializers.ModelSerializer):
             'resolution', 'resolution_note', 'resolved_by', 'resolved_by_name', 'resolved_at',
             'refund_amount_xaf',
             'vendor_can_reply', 'courier_can_reply',
-            'messages', 'evidences',
+            'messages', 'evidences', 'evidence_requests',
             'created_at', 'updated_at',
         ]
 
@@ -1348,6 +1357,7 @@ class PlatformSettingsSerializer(serializers.ModelSerializer):
             'escrow_auto_confirm_h',
             'escrow_release_h',
             'litige_window_days',
+            'evidence_retention_days',
             'minimum_order_amount_xaf',
             'default_delivery_days',
             'mtn_momo_enabled',
@@ -1578,6 +1588,9 @@ class VendorDisputeListSerializer(serializers.ModelSerializer):
             'vendor_reply_type', 'vendor_reply_display',
             'vendor_deadline_iso', 'hours_remaining',
             'assigned_admin_name', 'unread_messages',
+            # Montant arbitre, necessaire pour chiffrer les remboursements
+            # partiels dans « Mes ajustements » sans ouvrir chaque litige.
+            'refund_amount_xaf',
             'created_at', 'updated_at',
         ]
         read_only_fields = fields
@@ -1643,12 +1656,16 @@ class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
     """
     messages  = serializers.SerializerMethodField()
     evidences = VendorDisputeEvidenceSerializer(many=True, read_only=True)
+    evidence_requests = serializers.SerializerMethodField()
 
     class Meta(VendorDisputeListSerializer.Meta):
+        # `refund_amount_xaf` a remonte dans le serializer LISTE : l'espace
+        # vendeur en a besoin pour chiffrer les remboursements partiels sans
+        # ouvrir chaque litige. Le laisser ici le declarerait deux fois.
         fields = VendorDisputeListSerializer.Meta.fields + [
-            'resolution', 'resolution_note', 'refund_amount_xaf',
+            'resolution', 'resolution_note',
             'vendor_reply_text', 'vendor_proposed_amount', 'vendor_replied_at',
-            'messages', 'evidences',
+            'messages', 'evidences', 'evidence_requests',
             'resolved_at',
         ]
 
@@ -1664,6 +1681,13 @@ class VendorDisputeDetailSerializer(VendorDisputeListSerializer):
         return VendorDisputeMessageSerializer(
             qs, many=True, context=self.context,
         ).data
+
+    def get_evidence_requests(self, obj):
+        vendor = self.context.get('vendor')
+        if not vendor:
+            return []
+        requests = obj.evidence_requests.filter(requested_from=vendor)
+        return DisputeEvidenceRequestSerializer(requests, many=True, context=self.context).data
 
 
 class VendorDisputeReplySerializer(serializers.Serializer):

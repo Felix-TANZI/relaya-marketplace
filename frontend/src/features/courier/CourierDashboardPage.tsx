@@ -1,6 +1,7 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
 import {
   AlertTriangle,
   ArrowRight,
@@ -8,6 +9,7 @@ import {
   Bell,
   Bike,
   BookOpen,
+  Camera,
   CheckCircle2,
   ChevronRight,
   Clock3,
@@ -16,7 +18,6 @@ import {
   LoaderCircle,
   LockKeyhole,
   LogOut,
-  Map,
   MapPin,
   Navigation,
   Package,
@@ -29,7 +30,7 @@ import {
   Send,
   Sun,
   Moon,
-  MoreHorizontal,
+  Menu as MenuIcon,
   Store,
   Truck,
   User,
@@ -50,21 +51,31 @@ import {
   type CourierSettings,
 } from "@/services/api/courier";
 import { customerApi, type OrderChatMessage } from "@/services/api/customer";
+import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
+import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
+import * as QRCode from "qrcode";
 
-type CourierTab =
-  | "dashboard"
-  | "tournee"
-  | "courses"
-  | "scanner"
-  | "map"
-  | "reseau"
-  | "profil"
-  | "formation"
-  | "notifications"
-  | "incidents"
-  | "litiges"
-  | "preuves"
-  | "parametres";
+import {
+  COURIER_TABS,
+  TAB_LABELS,
+  type CourierTab,
+} from './courierNav';
+import CourierSidebar from './CourierSidebar';
+import CourierDrawer from './CourierDrawer';
+import CourierMobileNav, { COURIER_TABBAR_IDS } from './CourierMobileNav';
+import CourierProfileSheet from './CourierProfileSheet';
+
+/** Mentions legales du pied de menu, communes a la colonne et au tiroir. */
+const COURIER_FOOTER = [
+  "BelivaY Livreur v1.0 — Juillet 2026",
+  "Partenaire Independant · ANTIC · OHADA",
+  "Anonymat V5 ch.1",
+];
+
+function getInitialCourierTab(): CourierTab {
+  const requested = new URLSearchParams(window.location.search).get("tab") as CourierTab | null;
+  return requested && COURIER_TABS.includes(requested) ? requested : "dashboard";
+}
 
 const VEHICLE_LABELS: Record<string, string> = {
   MOTORBIKE: "Moto",
@@ -72,22 +83,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   BIKE: "Velo",
   TRICYCLE: "Tricycle",
   VAN: "Camionnette",
-};
-
-const TAB_LABELS: Record<CourierTab, string> = {
-  dashboard: "Vue d'ensemble",
-  tournee: "Ma Tournee",
-  courses: "Courses",
-  scanner: "Scanner QR",
-  map: "Carte & Navigation",
-  reseau: "Boutiques & Points Relais",
-  profil: "Mon Profil",
-  formation: "Formation",
-  notifications: "Notifications",
-  incidents: "Incidents",
-  litiges: "Litiges",
-  preuves: "Preuves & Relais",
-  parametres: "Parametres",
 };
 
 function statusLabel(status: string) {
@@ -197,11 +192,17 @@ function MetricCard({
   return (
     <article className={`relative overflow-hidden rounded-[24px] border p-4 shadow-[0_18px_38px_rgba(0,0,0,.22)] ${tone}`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,rgba(255,255,255,.12),transparent_65%)]" />
-      <div className="relative mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/40 text-slate-700 dark:bg-black/10 dark:text-white">
-        <Icon size={19} />
+      {/* Libelle et icone sur la meme ligne : a deux cartes par rangee, une
+          pastille posee au-dessus du texte mangeait la moitie de la carte. */}
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="min-w-0 text-[10px] font-bold uppercase leading-tight tracking-[0.12em] text-slate-600 dark:text-white/65 sm:text-[11px] sm:tracking-[0.16em]">
+          {label}
+        </div>
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white/40 text-slate-700 dark:bg-black/10 dark:text-white sm:h-11 sm:w-11 sm:rounded-2xl">
+          <Icon className="h-4 w-4 sm:h-[19px] sm:w-[19px]" />
+        </div>
       </div>
-      <div className="relative text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-white/65">{label}</div>
-      <div className="relative mt-2 text-[24px] font-extrabold text-slate-950 dark:text-white">{value}</div>
+      <div className="relative mt-2 text-[22px] font-extrabold leading-none text-slate-950 dark:text-white sm:mt-3 sm:text-[24px]">{value}</div>
     </article>
   );
 }
@@ -228,10 +229,11 @@ export default function CourierDashboardPage() {
   const { i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
-  const [tab, setTab] = useState<CourierTab>("dashboard");
+  const [tab, setTab] = useState<CourierTab>(getInitialCourierTab);
   const [booting, setBooting] = useState(true);
   const [progress, setProgress] = useState(8);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [application, setApplication] = useState<CourierApplicationResponse | null>(null);
   const [dashboard, setDashboard] = useState<CourierDashboard | null>(null);
   const [network, setNetwork] = useState<CourierNetwork | null>(null);
@@ -247,18 +249,22 @@ export default function CourierDashboardPage() {
   const [scanCode, setScanCode] = useState("");
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
+  const [receiptQrDataUrl, setReceiptQrDataUrl] = useState("");
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionFeedback, setActionFeedback] = useState("");
   const [contactLoading, setContactLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState<string | null>(null);
   const [settingsFeedback, setSettingsFeedback] = useState("");
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
   const clientChatEndRef = useRef<HTMLDivElement | null>(null);
   const [disputePermissionStatus, setDisputePermissionStatus] = useState<Record<number, "locked" | "requested" | "granted">>({});
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
   const [disputeFeedback, setDisputeFeedback] = useState("");
+  const [trackingFeedback, setTrackingFeedback] = useState("");
+  const lastLocationPublishRef = useRef(0);
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -376,6 +382,49 @@ export default function CourierDashboardPage() {
       event.status === "ASSIGNED" && ["ACCEPT", "ACCEPTED", "Acceptee", "Accept"].includes(event.message),
     ),
   );
+
+  useEffect(() => {
+    if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
+    if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
+    if (!("geolocation" in navigator)) {
+      setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
+      return;
+    }
+
+    const watchId = navigator.geolocation.watchPosition(
+      (position) => {
+        const now = Date.now();
+        if (now - lastLocationPublishRef.current < 5000) return;
+        lastLocationPublishRef.current = now;
+        courierApi.publishLocation(selectedShipment.id, {
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+          accuracy_m: position.coords.accuracy,
+          speed_mps: position.coords.speed,
+          heading_deg: position.coords.heading,
+          source: "DEVICE",
+          captured_at: new Date(position.timestamp).toISOString(),
+        }).then((location) => {
+          setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
+          setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
+            ? {
+                ...shipment,
+                latest_location: location,
+                location_history: [...shipment.location_history, location].slice(-100),
+              }
+            : shipment));
+        }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS."));
+      },
+      (error) => setTrackingFeedback(
+        error.code === error.PERMISSION_DENIED
+          ? "Autorisez la localisation dans le navigateur pour démarrer le suivi."
+          : "Position GPS momentanément indisponible.",
+      ),
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+    );
+
+    return () => navigator.geolocation.clearWatch(watchId);
+  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status]);
 
   useEffect(() => {
     if (!selectedShipment) {
@@ -540,23 +589,6 @@ export default function CourierDashboardPage() {
     }
   };
 
-  const menu = [
-    { id: "dashboard", label: "Vue d'ensemble", icon: Gauge },
-    { id: "tournee", label: "Ma Tournee", icon: Route },
-    { id: "courses", label: "Courses", icon: Package },
-    { id: "scanner", label: "Scanner QR", icon: ScanLine },
-    { id: "map", label: "Carte & Navigation", icon: Map },
-    { id: "reseau", label: "Boutiques & Points Relais", icon: Store },
-    { id: "profil", label: "Mon Profil", icon: User },
-    { id: "formation", label: "Formation", icon: BookOpen },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "incidents", label: "Incidents", icon: AlertTriangle },
-    { id: "litiges", label: "Litiges", icon: ShieldCheck },
-    { id: "preuves", label: "Preuves & Relais", icon: FileBadge2 },
-    { id: "parametres", label: "Parametres", icon: Settings2 },
-  ] as const;
-  const mobileTabs = menu.slice(0, 4);
-  const mobileMoreTabs = menu.slice(4);
 
   const quickStats = [
     {
@@ -589,6 +621,11 @@ export default function CourierDashboardPage() {
 
   const liveHeaderStats = [
     {
+      label: "Trust Score",
+      value: dashboard ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}` : "—",
+      tone: dashboard?.trust_score.veto_active ? "text-red-300" : "text-emerald-300",
+    },
+    {
       label: "Temps en ligne",
       value: `${Math.floor((dashboard?.online_minutes ?? 0) / 60)}h ${String((dashboard?.online_minutes ?? 0) % 60).padStart(2, "0")}`,
       tone: "text-emerald-300",
@@ -601,7 +638,66 @@ export default function CourierDashboardPage() {
 
   const unreadNotifications = notifications.filter((item) => !item.is_read).length;
 
+  /**
+   * Carte d'identite du livreur, partagee par la colonne de bureau, le tiroir
+   * mobile et la feuille compte : une seule source, donc aucune derive entre
+   * les trois surfaces.
+   */
+  const courierIdentity = {
+    name: `${user?.first_name || "Livreur"} ${user?.last_name || ""}`.trim(),
+    city: currentCourierCity,
+    vehicle: VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle,
+    status: courierProfile
+      ? currentIsOnline
+        ? "Disponible"
+        : "Hors ligne"
+      : "Demande a finaliser",
+    online: currentIsOnline,
+    avatarUrl: user?.avatar_url || undefined,
+  };
+
+  /**
+   * Alertes portees par le menu, dans l'ordre ou un livreur les traite :
+   * courses actives, litiges ouverts, notifications non lues.
+   */
+  const navBadges = useMemo<Partial<Record<CourierTab, number>>>(
+    () => ({
+      courses: activeShipments.length,
+      litiges: disputes.length,
+      notifications: unreadNotifications,
+    }),
+    [activeShipments.length, disputes.length, unreadNotifications],
+  );
+
+  /**
+   * Alertes des destinations absentes de la barre du bas. Elles remontent sur
+   * l'icone de menu du bandeau : sans ce report, un litige ouvert resterait
+   * invisible sur telephone tant que le tiroir n'est pas ouvert. Les
+   * notifications en sont exclues, la cloche du bandeau les affiche deja.
+   */
+  const hiddenBadgeTotal = useMemo(
+    () =>
+      Object.entries(navBadges).reduce(
+        (total, [id, count]) =>
+          COURIER_TABBAR_IDS.includes(id as CourierTab) || id === "notifications" ? total : total + (count || 0),
+        0,
+      ),
+    [navBadges],
+  );
+
   const mapShipment = selectedShipment ?? activeShipments[0] ?? shipments[0] ?? null;
+  const receiptCode = mapShipment?.receipt_confirmation_code || "";
+
+  useEffect(() => {
+    if (!receiptCode) {
+      setReceiptQrDataUrl("");
+      return;
+    }
+    QRCode.toDataURL(receiptCode, { width: 220, margin: 1 })
+      .then(setReceiptQrDataUrl)
+      .catch(() => setReceiptQrDataUrl(""));
+  }, [receiptCode]);
+
   const nextTourStop = activeShipments[0] ?? tourShipments[0] ?? null;
   const estimatedTourMinutes =
     activeShipments.length > 0
@@ -734,7 +830,48 @@ export default function CourierDashboardPage() {
 
   const renderDashboard = () => (
     <>
-      <section className="grid gap-4 md:grid-cols-4">
+      {/* Briefing du jour en tete : c'est la premiere chose qu'un livreur
+          veut lire en ouvrant l'app — son statut terrain et son depart
+          conseille — avant meme ses compteurs. */}
+      <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
+              <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                {currentIsOnline ? "Disponible" : "Hors ligne"}
+              </InfoPill>
+            </div>
+            <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Depart conseille</span>
+                <strong>{dashboard?.recommended_departure ?? "—"}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Trafic</span>
+                <strong>{dashboard?.traffic_label ?? "—"}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Meteo</span>
+                <strong>{dashboard?.weather_label ?? "—"}</strong>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
+            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
+            <div className="space-y-3">
+              {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
+                <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
+                  <CheckCircle2 size={16} className="text-emerald-300" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </SectionShell>
+
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {[
           { ...quickStats[0], value: dashboard?.active_shipments ?? quickStats[0].value },
           { ...quickStats[1], value: dashboard?.delivered_shipments ?? quickStats[1].value },
@@ -745,7 +882,7 @@ export default function CourierDashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
         {liveHeaderStats.map((item) => (
           <article
             key={item.label}
@@ -757,45 +894,25 @@ export default function CourierDashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
-                <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                  {currentIsOnline ? "Disponible" : "Hors ligne"}
-                </InfoPill>
-              </div>
-              <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Depart conseille</span>
-                  <strong>{dashboard?.recommended_departure ?? "—"}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Trafic</span>
-                  <strong>{dashboard?.traffic_label ?? "—"}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Meteo</span>
-                  <strong>{dashboard?.weather_label ?? "—"}</strong>
-                </div>
+      {dashboard?.trust_score && (
+        <section className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">Plafond de mission</div>
+              <div className="mt-1 font-extrabold text-slate-950 dark:text-white">
+                {dashboard.trust_score.parcel_value_cap_xaf === null
+                  ? "Déplafonné avec assurance transport"
+                  : `${dashboard.trust_score.parcel_value_cap_xaf.toLocaleString("fr-FR")} FCFA par colis`}
               </div>
             </div>
-            <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
-              <div className="space-y-3">
-                {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
-                    <CheckCircle2 size={16} className="text-emerald-300" />
-                    {item}
-                  </div>
-                ))}
-              </div>
+            <div className="rounded-xl border border-emerald-500/20 bg-white/70 px-4 py-2 font-bold dark:bg-black/10">
+              {dashboard.trust_score.sample_size} observations analysées
             </div>
           </div>
-        </SectionShell>
+        </section>
+      )}
 
+      <section className="grid gap-5">
         <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-green-300">
           <div className="space-y-3">
             {leaderboard.length ? (
@@ -832,7 +949,15 @@ export default function CourierDashboardPage() {
               <TrackingMap
                 destinationAddress={mapShipment?.delivery_address}
                 destinationCity={mapShipment?.city}
+                destinationPrecision={mapShipment?.delivery_location_precision}
                 destinationLabel="Destination client"
+                currentLocation={mapShipment?.latest_location
+                  ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
+                  : undefined}
+                locationHistory={(mapShipment?.location_history || []).map((location) => [
+                  Number(location.latitude),
+                  Number(location.longitude),
+                ] as [number, number])}
                 className="rounded-[22px] border-none"
                 height={300}
               />
@@ -1287,6 +1412,23 @@ export default function CourierDashboardPage() {
   );
 
   const renderScanner = () => (
+    <div className="space-y-5">
+    {receiptCode && (
+      <SectionShell kicker="A presenter au client" title="Code de confirmation de reception" accent="text-emerald-300">
+        <div className="flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-[#0d1520] p-6 text-center sm:flex-row sm:text-left">
+          {receiptQrDataUrl ? (
+            <img src={receiptQrDataUrl} alt="QR de confirmation" className="h-[140px] w-[140px] rounded-2xl bg-white p-2" />
+          ) : null}
+          <div>
+            <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-300">Commande #{mapShipment?.order}</div>
+            <div className="mt-2 text-3xl font-black tracking-[0.3em] text-white">{receiptCode}</div>
+            <p className="mt-2 text-[12px] leading-5 text-[#8B949E]">
+              Montre ce QR ou ce code au client a la remise : il doit le scanner ou le saisir pour confirmer la reception.
+            </p>
+          </div>
+        </div>
+      </SectionShell>
+    )}
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker="Verification colis" title="Scanner QR">
         <div className="rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,.18),_transparent_55%),#0d1520] p-6">
@@ -1359,6 +1501,7 @@ export default function CourierDashboardPage() {
         </div>
       </SectionShell>
     </section>
+    </div>
   );
 
   const renderMap = () => (
@@ -1369,10 +1512,24 @@ export default function CourierDashboardPage() {
             <TrackingMap
               destinationAddress={mapShipment?.delivery_address}
               destinationCity={mapShipment?.city}
+              destinationPrecision={mapShipment?.delivery_location_precision}
               destinationLabel="Destination client"
+              currentLocation={mapShipment?.latest_location
+                ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
+                : undefined}
+              locationHistory={(mapShipment?.location_history || []).map((location) => [
+                Number(location.latitude),
+                Number(location.longitude),
+              ] as [number, number])}
               className="rounded-[22px] border-none"
               height={420}
             />
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
+            <span>{trackingFeedback || (mapShipment?.latest_location
+              ? `Dernière position : ${new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR")}`
+              : "Activez le GPS et le statut en ligne pour partager votre position.")}</span>
+            <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
@@ -1515,6 +1672,32 @@ export default function CourierDashboardPage() {
   const renderProfil = () => (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
       <SectionShell kicker="Identite" title="Mon Profil">
+        <div className="mb-5 flex flex-col gap-4 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4 sm:flex-row sm:items-center">
+          <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-[#07130f] text-2xl font-black text-emerald-300">
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="Photo du livreur" className="h-full w-full object-cover" />
+            ) : (
+              (user?.first_name?.[0] || user?.username?.[0] || "L").toUpperCase()
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-extrabold text-white">Photo de profil</div>
+            <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">Rognez votre photo avant l'envoi. Elle sera compressée en WebP pour limiter l'espace utilisé.</p>
+          </div>
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-black text-[#022c22] transition hover:bg-emerald-400">
+            <Camera size={16} />
+            Modifier
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="sr-only"
+              onChange={(event) => {
+                setAvatarFile(event.target.files?.[0] || null);
+                event.currentTarget.value = "";
+              }}
+            />
+          </label>
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           {[
             { label: "Telephone", value: courierProfile?.phone || user?.phone || "—", icon: Phone },
@@ -1985,6 +2168,12 @@ export default function CourierDashboardPage() {
           {settingsFeedback ? <div className="text-[13px] font-semibold text-emerald-300">{settingsFeedback}</div> : null}
         </div>
       </SectionShell>
+
+      <div className="xl:col-span-2">
+        <SectionShell kicker="Versements BelivaY" title="Compte Mobile Money livreur" accent="text-emerald-300">
+          <PayoutAccountVerificationCard ownerRole="COURIER" accent="#10B981" surfaceClassName="border-white/10 bg-white/[0.04] text-white dark:bg-white/[0.04]" />
+        </SectionShell>
+      </div>
     </section>
   );
 
@@ -2026,8 +2215,18 @@ export default function CourierDashboardPage() {
     navigate("/login");
   };
 
+  /**
+   * Boutons ronds du bandeau. Le fond du header passe au blanc en theme clair :
+   * sans cette bascule, `text-white bg-white/10` rendait la cloche, le theme et
+   * la langue invisibles — blanc sur blanc.
+   */
+  const headerButton =
+    theme === "dark"
+      ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
+      : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100";
+
   return (
-    <div className={theme === "dark" ? "min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "min-h-screen bg-[#F4F7F5] text-slate-950"}>
+    <div className={theme === "dark" ? "belivay-portal min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "belivay-portal min-h-screen bg-[#F4F7F5] text-slate-950"}>
       <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"
@@ -2037,6 +2236,30 @@ export default function CourierDashboardPage() {
 
       <header className={theme === "dark" ? "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4" : "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-200 bg-white px-3 shadow-[0_2px_22px_rgba(15,23,42,.10)] sm:gap-4 sm:px-4"}>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {/* Le tiroir s'ouvrant depuis la gauche, son bouton d'appel reste de
+              ce cote : le geste et l'animation vont dans le meme sens. */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Ouvrir le menu"
+            aria-haspopup="dialog"
+            aria-expanded={drawerOpen}
+            className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition active:scale-90 lg:hidden ${
+              theme === "dark" ? "text-white hover:bg-white/10" : "text-emerald-800 hover:bg-emerald-50"
+            }`}
+          >
+            <MenuIcon size={21} strokeWidth={2.2} />
+            {/* Le menu porte seul les alertes des destinations hors barre du
+                bas : un point suffit a dire « il y a quelque chose la-dedans »
+                sans encombrer l'icone d'un compteur. */}
+            {hiddenBadgeTotal > 0 ? (
+              <span
+                aria-hidden
+                className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#05261c]"
+              />
+            ) : null}
+          </button>
+
           <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
             <img
               src="/belivay-logo.png"
@@ -2051,16 +2274,60 @@ export default function CourierDashboardPage() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
-          className="ml-auto flex h-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 px-2.5 text-[10px] font-black tracking-[0.12em] text-white transition hover:bg-white/15 md:hidden"
-          aria-label="Changer de langue"
-        >
-          {i18n.language.startsWith("fr") ? "FR" : "EN"}
-        </button>
+        {/* ── Reglages telephone/tablette ────────────────────────────────────
+            Notifications, theme, langue et compte, dans le meme ordre que les
+            autres portails BelivaY. Le bouton menu vit a l'extreme gauche du
+            bandeau, du cote d'ou sort le tiroir. */}
+        <div className="ml-auto flex items-center gap-1 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setTab("notifications")}
+            aria-label="Notifications"
+            className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
+          >
+            <Bell size={16} />
+            {unreadNotifications > 0 ? (
+              <span className="absolute right-[-2px] top-[-2px] flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-black leading-none text-[#022c22]">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            ) : null}
+          </button>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Changer de theme"
+            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
+            className={`flex h-9 flex-shrink-0 items-center justify-center rounded-full border px-2.5 text-[10px] font-black tracking-[0.12em] transition active:scale-90 ${headerButton}`}
+            aria-label="Changer de langue"
+          >
+            {i18n.language.startsWith("fr") ? "FR" : "EN"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setProfileSheetOpen(true)}
+            aria-label="Mon compte"
+            aria-haspopup="dialog"
+            aria-expanded={profileSheetOpen}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-[11px] font-black text-white ring-1 ring-emerald-300/40 transition active:scale-90"
+          >
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (user?.first_name?.[0] || user?.username?.[0] || "L").toUpperCase()
+            )}
+          </button>
+        </div>
+
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
             {currentIsOnline ? "Disponible" : "Hors ligne"}
           </div>
@@ -2186,41 +2453,14 @@ export default function CourierDashboardPage() {
         </div>
       ) : null}
 
-      <aside className="fixed bottom-0 left-0 top-[59px] hidden w-[232px] border-r border-emerald-500/8 bg-[#0A1020] lg:block">
-        <div className="m-4 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-lg font-extrabold text-white">
-            {user?.first_name?.[0] || user?.username?.[0] || "L"}
-          </div>
-          <div className="font-bold text-white">
-            {user?.first_name || "Livreur"} {user?.last_name || ""}
-          </div>
-          <div className="mt-1 text-[12px] text-emerald-300">
-            {courierProfile ? `${currentCourierCity} · ${VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}` : "Demande a finaliser"}
-          </div>
-        </div>
-
-        <nav className="px-3 pb-8">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            const active = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`mb-1 flex w-full items-center gap-3 rounded-[12px] px-4 py-3 text-left text-[13px] font-semibold transition ${
-                  active
-                    ? "border-l-[3px] border-emerald-300 bg-emerald-500/10 text-emerald-300"
-                    : "text-[#8B949E] hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <Icon size={16} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+      <CourierSidebar
+        activeTab={tab}
+        onSelect={setTab}
+        onLogout={handleLogout}
+        badges={navBadges}
+        courier={courierIdentity}
+        footer={COURIER_FOOTER}
+      />
 
       <main className="px-4 pb-24 pt-[84px] lg:ml-[232px] lg:pb-12 lg:px-6">
         {booting ? (
@@ -2235,38 +2475,45 @@ export default function CourierDashboardPage() {
           </div>
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-5">
-            <section className="overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-6 shadow-[0_20px_56px_rgba(0,0,0,.32)]">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300">
+            <EvidenceRequestInbox accent="#10B981" />
+            {/* Bandeau de contexte. Sur telephone il se resserre — coins et
+                marges reduits, titre plus court, trois faits en une seule
+                rangee — pour ne pas repousser le contenu du jour sous la ligne
+                de flottaison. Rien n'est retire : tout reste lisible, en plus
+                dense. */}
+            <section className="overflow-hidden rounded-[22px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-4 shadow-[0_20px_56px_rgba(0,0,0,.32)] sm:rounded-[28px] sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+                <div className="min-w-0">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:text-[11px] sm:tracking-[0.16em]">
                     <ShieldCheck size={13} />
                     Acteur livreur
                   </div>
-                  <h1 className="text-[30px] font-extrabold tracking-tight text-white">
+                  <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[30px]">
                     {TAB_LABELS[tab]}
                   </h1>
-                  <p className="mt-2 max-w-[760px] text-[14px] leading-7 text-[#8B949E]">
+                  <p className="mt-2 max-w-[760px] text-[12.5px] leading-6 text-[#8B949E] sm:text-[14px] sm:leading-7">
                     Cette interface reprend les vues utiles du modele BelivaY Livreur: operations, preuves,
                     communication supervisee, navigation et suivi metier du livreur.
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Ville</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">{currentCourierCity}</div>
-                  </div>
-                  <div className="rounded-[20px] border border-green-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Vehicule</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-green-300">
-                      {VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}
+                {/* Trois faits courts (une ville, un vehicule, un etat) : en
+                    rangee de trois des le telephone, ils tiennent sur une ligne
+                    au lieu d'ajouter trois blocs a faire defiler. */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:flex-shrink-0">
+                  {([
+                    ["Ville", currentCourierCity, "text-emerald-300", "border-emerald-500/10"],
+                    ["Vehicule", VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle, "text-green-300", "border-green-500/10"],
+                    ["Statut", currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending", "text-emerald-300", "border-emerald-500/10"],
+                  ] as Array<[string, string, string, string]>).map(([label, value, tone, border]) => (
+                    <div key={label} className={`rounded-[16px] border bg-white/5 p-3 sm:rounded-[20px] sm:p-4 ${border}`}>
+                      <div className="text-[9px] uppercase leading-tight tracking-[0.1em] text-[#8B949E] sm:text-[11px] sm:tracking-[0.16em]">
+                        {label}
+                      </div>
+                      <div className={`mt-1.5 break-words text-[14px] font-extrabold leading-tight sm:mt-2 sm:text-[22px] ${tone}`}>
+                        {value}
+                      </div>
                     </div>
-                  </div>
-                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Statut</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">
-                      {currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending"}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -2276,55 +2523,83 @@ export default function CourierDashboardPage() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f]/95 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur lg:hidden">
-        <div className="flex h-[58px] items-center px-2">
-          {mobileTabs.map((item) => {
-            const Icon = item.icon;
-            const active = tab === item.id;
-            return (
-              <button key={item.id} type="button" onClick={() => { setTab(item.id); setMoreOpen(false); }} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-emerald-500 text-[#022c22]" : "text-[#8B949E]"}`}>
-                  <Icon size={17} />
-                </span>
-                <span className={`max-w-full truncate text-[8px] font-bold ${active ? "text-emerald-300" : "text-[#8B949E]"}`}>{item.label}</span>
-              </button>
-            );
-          })}
-          <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8B949E]">
-              <MoreHorizontal size={17} />
-            </span>
-            <span className="text-[8px] font-bold text-[#8B949E]">Plus</span>
-          </button>
-        </div>
-        <div className="h-[env(safe-area-inset-bottom)]" />
-      </nav>
+      {/* Barre du bas : uniquement les quatre raccourcis du travail
+          quotidien. Le reste du menu s'ouvre par l'icone du bandeau — une
+          seule liste de destinations, donc un seul endroit ou le livreur
+          apprend a chercher. */}
+      <CourierMobileNav activeTab={tab} onSelect={setTab} badges={navBadges} />
 
-      <div
-        onClick={() => setMoreOpen(false)}
-        className={`fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm transition lg:hidden ${moreOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      <CourierDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeTab={tab}
+        onSelect={(next) => {
+          setDrawerOpen(false);
+          setTab(next);
+        }}
+        onLogout={handleLogout}
+        badges={navBadges}
+        courier={courierIdentity}
+        footer={COURIER_FOOTER}
       />
-      <div className={`fixed inset-x-0 bottom-0 z-[1301] max-h-[72vh] overflow-y-auto rounded-t-[24px] border-t border-emerald-500/15 bg-[#0A1020] pb-[calc(18px+env(safe-area-inset-bottom))] shadow-[0_-18px_60px_rgba(0,0,0,.45)] transition-transform lg:hidden ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
-        <div className="mx-auto my-3 h-1 w-9 rounded-full bg-white/15" />
-        {mobileMoreTabs.map((item) => {
-          const Icon = item.icon;
-          const active = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => { setTab(item.id); setMoreOpen(false); }}
-              className={`flex w-full items-center gap-3 px-5 py-3 text-left ${active ? "text-emerald-300" : "text-white/75"}`}
-            >
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? "bg-emerald-500/20" : "bg-white/5"}`}>
-                <Icon size={18} />
-              </span>
-              <span className="flex-1 text-[13px] font-bold">{item.label}</span>
-              <ChevronRight size={14} className="text-white/35" />
-            </button>
-          );
-        })}
-      </div>
+
+      {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
+          le tiroir de navigation vient de gauche, les deux gestes restent donc
+          distincts meme quand les deux panneaux ont ete appris. */}
+      <CourierProfileSheet
+        open={profileSheetOpen}
+        onClose={() => setProfileSheetOpen(false)}
+        locale={i18n.language.startsWith('en') ? 'en' : 'fr'}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onChangeLanguage={(next) => void updateCourierSettings('language', { preferred_language: next })}
+        courier={{
+          name: courierIdentity.name,
+          username: user?.username || "",
+          email: user?.email || "",
+          city: courierIdentity.city,
+          vehicle: courierIdentity.vehicle,
+          zones: currentCourierZones,
+          accountStatus: isApprovedCourier ? "Approuve" : "En validation",
+          online: currentIsOnline,
+          trustScore: dashboard
+            ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}`
+            : null,
+          // Le certificat n'existe qu'une fois le dossier approuve : avant, le
+          // QR renverrait vers une fiche livreur qui n'est pas encore publique.
+          courierRef:
+            isApprovedCourier && courierProfile?.id
+              ? `BV-LIV-${String(courierProfile.id).padStart(4, "0")}`
+              : "",
+          memberSince: courierProfile?.created_at || null,
+        }}
+        avatarUrl={user?.avatar_url || undefined}
+        onAvatarFile={setAvatarFile}
+        gpsGranted={currentGpsGranted}
+        cameraGranted={currentCameraGranted}
+        onToggleGps={() => void updateCourierSettings('gps', { gps_permission_granted: !currentGpsGranted })}
+        onToggleCamera={() => void updateCourierSettings('camera', { camera_permission_granted: !currentCameraGranted })}
+        savingLabel={settingsSaving}
+        onLogout={handleLogout}
+        onNavigate={(next) => {
+          setProfileSheetOpen(false);
+          setTab(next);
+        }}
+        onFeedback={setSettingsFeedback}
+        footer={COURIER_FOOTER}
+      />
+      {avatarFile ? (
+        <AvatarCropDialog
+          file={avatarFile}
+          accent="#10B981"
+          onClose={() => setAvatarFile(null)}
+          onUploaded={(updatedUser) => {
+            setUser(updatedUser);
+            setAvatarFile(null);
+            setSettingsFeedback("Photo de profil mise à jour.");
+          }}
+        />
+      ) : null}
     </div>
   );
 }

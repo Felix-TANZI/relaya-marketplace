@@ -11,6 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-key")
 DEBUG = False
 ALLOWED_HOSTS = ["*"]
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 INSTALLED_APPS = [
     # Django
@@ -20,6 +21,9 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Enregistre les lookups `__unaccent` et `__trigram_*` utilisés par la
+    # recherche tolérante du catalogue (apps/catalog/search.py).
+    "django.contrib.postgres",
 
     # Third-party
     "rest_framework",
@@ -110,6 +114,15 @@ DATABASES = {
     "default": build_database_config(),
 }
 
+REDIS_HOST = os.getenv("REDIS_HOST", "redis").strip()
+REDIS_PORT = os.getenv("REDIS_PORT", "6379").strip()
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": f"redis://{REDIS_HOST}:{REDIS_PORT}/1",
+    },
+}
+
 LANGUAGE_CODE = "fr"
 TIME_ZONE = "Africa/Douala"
 USE_I18N = True
@@ -119,6 +132,39 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = os.getenv('MEDIA_ROOT', str(BASE_DIR / 'mediafiles'))
+
+R2_STORAGE_ENABLED = os.getenv("USE_R2_STORAGE", "0").strip().lower() in {
+    "1", "true", "yes", "on",
+}
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID", "").strip()
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY", "").strip()
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME", "").strip()
+AWS_S3_ENDPOINT_URL = os.getenv("AWS_S3_ENDPOINT_URL", "").strip().rstrip("/")
+AWS_S3_REGION_NAME = os.getenv("AWS_S3_REGION_NAME", "auto").strip()
+AWS_S3_ADDRESSING_STYLE = os.getenv("AWS_S3_ADDRESSING_STYLE", "path").strip()
+AWS_DEFAULT_ACL = None
+AWS_QUERYSTRING_AUTH = True
+AWS_QUERYSTRING_EXPIRE = int(os.getenv("AWS_QUERYSTRING_EXPIRE", "3600"))
+AWS_S3_FILE_OVERWRITE = False
+AWS_S3_SIGNATURE_VERSION = "s3v4"
+
+R2_STORAGE_ENABLED = R2_STORAGE_ENABLED and all(
+    [
+        AWS_ACCESS_KEY_ID,
+        AWS_SECRET_ACCESS_KEY,
+        AWS_STORAGE_BUCKET_NAME,
+        AWS_S3_ENDPOINT_URL,
+    ]
+)
+
+STORAGES = {
+    "default": {
+        "BACKEND": "apps.common.storage.R2FallbackStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # CORS
@@ -131,6 +177,16 @@ CORS_ALLOWED_ORIGINS = [
         "http://127.0.0.1:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5174",
+        "http://localhost:5175",
+        "http://127.0.0.1:5175",
+        "http://localhost:5176",
+        "http://127.0.0.1:5176",
+        "http://localhost:5177",
+        "http://127.0.0.1:5177",
+        "http://localhost:5178",
+        "http://127.0.0.1:5178",
+        "http://localhost:5179",
+        "http://127.0.0.1:5179",
     ]
     if origin
 ]
@@ -159,6 +215,7 @@ REST_FRAMEWORK = {
         "anon": "300/min",    # généreux : ne gêne pas la navigation
         "user": "2000/min",   # généreux pour les utilisateurs connectés
         "login": "5/min",     # strict : anti-brute-force sur /auth/login
+        "payments_webhook": "120/min", # strict : anti-spam sur les webhooks de paiement
     },
 }
 
@@ -249,20 +306,41 @@ EMAIL_BACKEND = os.getenv(
 EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", 587))
 EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True") == "True"
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
-EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "BelivaY <noreply@belivay.com>")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER") or os.getenv("SMTP_GMAIL_EMAIL", "")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD") or os.getenv("SMTP_GMAIL_APP_PASSWORD", "")
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    f"BelivaY <{EMAIL_HOST_USER}>" if EMAIL_HOST_USER else "BelivaY <noreply@belivay.com>",
+)
 
 # Email pour le support (depuis PlatformSettings par défaut)
 SUPPORT_EMAIL = "support@belivay.com"
 
 # AI / OpenRouter
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
-OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "openrouter/free")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "").strip()
+OPENROUTER_MODEL = os.getenv("OPENROUTER_MODEL", "google/gemma-4-26b-a4b-it:free").strip()
 OPENROUTER_SITE_URL = os.getenv("OPENROUTER_SITE_URL", "http://localhost:5174")
 OPENROUTER_APP_NAME = os.getenv("OPENROUTER_APP_NAME", "Belivay Catalog Assistant")
+OPENROUTER_MAX_TOKENS = int(os.getenv("OPENROUTER_MAX_TOKENS", 700))
+OPENROUTER_TEMPERATURE = float(os.getenv("OPENROUTER_TEMPERATURE", 0.25))
+OPENROUTER_TIMEOUT_SECONDS = int(os.getenv("OPENROUTER_TIMEOUT_SECONDS", 30))
 
 SUPPORT_EMAIL = "support@belivay.com"
+
+# ── PAIEMENTS — chiffrement des donnees sensibles ────────────────────────────
+# La cle vit UNIQUEMENT en variable d'environnement. Jamais en base,
+# jamais lisible depuis l'administration.
+PAYMENTS_ENCRYPTION_KEY = os.getenv("PAYMENTS_ENCRYPTION_KEY", "")
+# Deuxieme cle acceptee en lecture pendant une rotation.
+PAYMENTS_ENCRYPTION_KEY_OLD = os.getenv("PAYMENTS_ENCRYPTION_KEY_OLD", "")
+PAYMENTS_FINGERPRINT_SALT = os.getenv("PAYMENTS_FINGERPRINT_SALT", "belivay-momo")
+
+# ── CAMPAY — secrets en environnement UNIQUEMENT ─────────────────────────────
+# Jamais en base, jamais lisibles depuis l'administration.
+CAMPAY_TOKEN = os.getenv("CAMPAY_TOKEN", "")
+CAMPAY_TOKEN_SANDBOX = os.getenv("CAMPAY_TOKEN_SANDBOX", "")
+CAMPAY_TOKEN_LIVE = os.getenv("CAMPAY_TOKEN_LIVE", "")
+CAMPAY_WEBHOOK_KEY = os.getenv("CAMPAY_WEBHOOK_KEY", "")
 
 
 # ========================================

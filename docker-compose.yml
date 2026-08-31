@@ -1,3 +1,13 @@
+x-frontend-common: &frontend-common
+  image: relaya-marketplace-frontend
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  env_file:
+    - .env
+  volumes:
+    - ./frontend:/app
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -47,20 +57,77 @@ services:
       sh -c "python -m pip install -r requirements.txt &&
              python manage.py runserver 0.0.0.0:8000"
 
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    container_name: relaya_frontend
-    env_file:
-      - .env
+  frontend-client:
+    <<: *frontend-common
+    container_name: relaya_frontend_client
+    environment:
+      VITE_PORTAL_ROLE: client
+      VITE_DEV_PORT: 5173
+      VITE_HMR_CLIENT_PORT: 5174
     ports:
       - "5174:5173"
-    volumes:
-      - ./frontend:/app
     command: >
-      sh -c "npm install &&
-             npm run dev -- --host 0.0.0.0 --port 5173"
+      sh -c "npm run dev:client"
+
+  frontend-admin:
+    <<: *frontend-common
+    container_name: relaya_frontend_admin
+    environment:
+      VITE_PORTAL_ROLE: admin
+      VITE_DEV_PORT: 5176
+      VITE_HMR_CLIENT_PORT: 5175
+    ports:
+      - "5175:5176"
+    command: >
+      sh -c "npm run dev:admin"
+
+  frontend-seller:
+    <<: *frontend-common
+    container_name: relaya_frontend_seller
+    environment:
+      VITE_PORTAL_ROLE: seller
+      VITE_DEV_PORT: 5174
+      VITE_HMR_CLIENT_PORT: 5176
+    ports:
+      - "5176:5174"
+    command: >
+      sh -c "npm run dev:seller"
+
+  frontend-courier:
+    <<: *frontend-common
+    container_name: relaya_frontend_courier
+    environment:
+      VITE_PORTAL_ROLE: courier
+      VITE_DEV_PORT: 5175
+      VITE_HMR_CLIENT_PORT: 5177
+    ports:
+      - "5177:5175"
+    command: >
+      sh -c "npm run dev:courier"
+
+  frontend-delivery-organization:
+    <<: *frontend-common
+    container_name: relaya_frontend_delivery_organization
+    environment:
+      VITE_PORTAL_ROLE: delivery_organization
+      VITE_DEV_PORT: 5177
+      VITE_HMR_CLIENT_PORT: 5178
+    ports:
+      - "5178:5177"
+    command: >
+      sh -c "npm run dev:delivery-org"
+
+  frontend-relay-point:
+    <<: *frontend-common
+    container_name: relaya_frontend_relay_point
+    environment:
+      VITE_PORTAL_ROLE: relay_point
+      VITE_DEV_PORT: 5178
+      VITE_HMR_CLIENT_PORT: 5179
+    ports:
+      - "5179:5178"
+    command: >
+      sh -c "npm run dev:relay-point"
 
 volumes:
   relaya_pgdata:

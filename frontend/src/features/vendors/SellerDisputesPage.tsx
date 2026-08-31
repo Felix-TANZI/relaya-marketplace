@@ -17,6 +17,7 @@ import {
   type VendorReplyType,
 } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
+import { ensureImageUnderLimit } from '@/lib/imageCompression';
 import { fmtXAF, fmtDate } from './orderUtils';
 
 // ─── TOKENS ──────────────────────────────────────────────────────────────────
@@ -142,6 +143,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
   const [chatMsg,    setChatMsg]    = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
   const [uploading,  setUploading]  = useState(false);
+  const pendingEvidenceRequest = dispute.evidence_requests?.find(request => request.status === 'PENDING');
   const chatEndRef  = useRef<HTMLDivElement>(null);
   const fileRefForm = useRef<HTMLInputElement>(null);
   const fileRefChat = useRef<HTMLInputElement>(null);
@@ -173,9 +175,14 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
   };
 
   const handleUpload = async (file: File, desc?: string) => {
+    if (!pendingEvidenceRequest) {
+      showToast("Aucune demande de preuve n'est en attente.", 'error');
+      return;
+    }
     try {
       setUploading(true);
-      await vendorsApi.uploadDisputeEvidence(dispute.id, file, desc);
+      const compressedFile = await ensureImageUnderLimit(file);
+      await vendorsApi.uploadDisputeEvidence(dispute.id, pendingEvidenceRequest.id, compressedFile, desc);
       showToast('Pièce jointe ajoutée.','success'); onRefresh();
     } catch { showToast("Erreur lors de l'upload.",'error'); }
     finally { setUploading(false); }
@@ -189,7 +196,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
         <div className="sticky top-0 z-10 flex items-center justify-between px-5 py-4"
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
           <div>
-            <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-black text-[15px]" style={{ color: T.text }}>
               <Gavel size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
               Litige #{dispute.id} — {dispute.order_ref}
             </p>
@@ -285,7 +292,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                     <p className="text-[10.5px] mt-0.5 text-right" style={{ color: T.mutedL }}>{replyText.length}/5000</p>
                   </div>
                 )}
-                {!dispute.vendor_replied && (
+                {!dispute.vendor_replied && pendingEvidenceRequest && (
                   <>
                     <input type="file" ref={fileRefForm} className="hidden" accept="image/*,.pdf"
                       onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f,'Preuve formulaire'); e.target.value=''; }}/>
@@ -293,8 +300,9 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
                       {uploading ? <RefreshCw size={12} className="animate-spin"/> : <Paperclip size={12}/>}
-                      Ajouter une preuve
+                      Répondre à la demande de preuve
                     </button>
+                    <p className="text-[11.5px]" style={{ color: T.muted }}>{pendingEvidenceRequest.instructions}</p>
                   </>
                 )}
                 {dispute.evidences.length > 0 && (
@@ -376,12 +384,14 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                       className="flex-1 rounded-xl px-3 py-2 text-[13px] outline-none resize-none"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}/>
                     <div className="flex flex-col gap-1.5">
-                      <input type="file" ref={fileRefChat} className="hidden" accept="image/*,.pdf"
-                        onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f,'Pièce jointe chat'); e.target.value=''; }}/>
-                      <button type="button" onClick={() => fileRefChat.current?.click()} disabled={uploading}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
-                        {uploading ? <RefreshCw size={13} className="animate-spin" style={{color:T.muted}}/> : <Paperclip size={13} style={{color:T.muted}}/>}
-                      </button>
+                      {pendingEvidenceRequest && <>
+                        <input type="file" ref={fileRefChat} className="hidden" accept="image/*,.pdf"
+                          onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f,'Pièce jointe chat'); e.target.value=''; }}/>
+                        <button type="button" title="Répondre à la demande de preuve" onClick={() => fileRefChat.current?.click()} disabled={uploading}
+                          className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
+                          {uploading ? <RefreshCw size={13} className="animate-spin" style={{color:T.muted}}/> : <Paperclip size={13} style={{color:T.muted}}/>}
+                        </button>
+                      </>}
                       <button type="button" onClick={handleSend} disabled={!chatMsg.trim()||sendingMsg}
                         className="w-9 h-9 rounded-xl flex items-center justify-center text-white disabled:opacity-50"
                         style={{ background: T.orange }}>
@@ -473,7 +483,7 @@ export default function SellerDisputesPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Gavel size={20} style={{ color: T.orange }}/> Litiges reçus
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
@@ -523,7 +533,7 @@ export default function SellerDisputesPage() {
             <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: kpi.bg }}>
               <span style={{ color: kpi.color }}>{kpi.ico}</span>
             </div>
-            <p className="font-black text-[18px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{kpi.val}</p>
+            <p className="font-black text-[18px]" style={{ color: T.text }}>{kpi.val}</p>
             <p className="text-[11px]" style={{ color: T.muted }}>{kpi.label}</p>
           </div>
         ))}
@@ -561,7 +571,7 @@ export default function SellerDisputesPage() {
       {filtered.length === 0 ? (
         <div className="rounded-2xl py-16 text-center" style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <p className="text-4xl mb-3">{disputes.length===0?'🕊️':'✅'}</p>
-          <p className="font-bold text-[16px] mb-1" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[16px] mb-1" style={{ color: T.text }}>
             {disputes.length===0 ? 'Aucun litige reçu' : 'Aucun litige dans ce filtre'}
           </p>
           <p className="text-[13px]" style={{ color: T.muted }}>
@@ -600,7 +610,7 @@ export default function SellerDisputesPage() {
                       <p className="text-[12px] mt-0.5 line-clamp-2" style={{ color: T.muted }}>{d.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
-                      <p className="font-black text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>{fmtXAF(d.vendor_escrow_amount)}</p>
+                      <p className="font-black text-[14px]" style={{ color: T.text }}>{fmtXAF(d.vendor_escrow_amount)}</p>
                       <p className="text-[10.5px]" style={{ color: T.mutedL }}>En escrow</p>
                     </div>
                   </div>
@@ -629,7 +639,7 @@ export default function SellerDisputesPage() {
       {/* DROITS & OBLIGATIONS */}
       <div className="rounded-2xl p-5" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-2 font-bold text-[14px] mb-4"
-          style={{ color: '#991B1B', fontFamily: 'Poppins,sans-serif' }}>
+          style={{ color: '#991B1B' }}>
           <BookOpen size={15}/> Vos droits & obligations en cas de litige
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

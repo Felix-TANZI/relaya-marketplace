@@ -50,7 +50,7 @@ function TierCard({ tier, isCurrent }: { tier: CertificationTierInfo; isCurrent:
         <div className="flex items-center gap-2">
           <span className="text-2xl">{TIER_ICONS[tier.code]}</span>
           <div>
-            <p className="font-black text-[15px]" style={{ color: colors.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-black text-[15px]" style={{ color: colors.text }}>
               {tier.label}
             </p>
             <p className="text-[11px]" style={{ color: T.muted }}>
@@ -112,7 +112,7 @@ export default function SellerCertificationsPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Award size={20} style={{ color: T.orange }}/> Certifications BelivaY
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
@@ -133,7 +133,7 @@ export default function SellerCertificationsPage() {
           <div className="flex items-center gap-3">
             <span className="text-4xl">{TIER_ICONS[data.current_tier]}</span>
             <div>
-              <p className="font-black text-[22px]" style={{ color: tierColors.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-black text-[22px]" style={{ color: tierColors.text }}>
                 {data.current_tier_label}
               </p>
               <p className="text-[13px]" style={{ color: T.muted }}>
@@ -175,7 +175,7 @@ export default function SellerCertificationsPage() {
       <div className="rounded-2xl overflow-hidden"
         style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>
             Détail de vos points
           </p>
         </div>
@@ -197,7 +197,7 @@ export default function SellerCertificationsPage() {
 
       {/* GRILLE DES TIERS */}
       <div>
-        <h2 className="font-bold text-[15px] mb-4" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+        <h2 className="font-bold text-[15px] mb-4" style={{ color: T.text }}>
           Niveaux de certification
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -211,7 +211,7 @@ export default function SellerCertificationsPage() {
       <div className="rounded-2xl overflow-hidden"
         style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.orangeL, borderBottom: `1px solid ${T.orangeB}` }}>
-          <p className="font-bold text-[14px]" style={{ color: T.orange, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[14px]" style={{ color: T.orange }}>
             Comment gagner des points ?
           </p>
         </div>

@@ -1,0 +1,1 @@
+# Tests du domaine pur — aucune base de donnees, aucun Django.

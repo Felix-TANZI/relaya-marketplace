@@ -8,6 +8,7 @@ import {
   PackagePlus,
   QrCode,
   ScanLine,
+  ShieldAlert,
   Truck,
   X,
 } from "lucide-react";
@@ -33,6 +34,20 @@ interface ReceiveInput {
   slotCode: string;
   proofNote: string;
 }
+
+export interface RefuseInput {
+  shipmentId: number;
+  reason: string;
+  note: string;
+  photo: File;
+}
+
+const REFUSAL_REASONS: Array<[string, string]> = [
+  ["SEAL_BROKEN", "Scellé rompu ou absent"],
+  ["PACKAGE_DAMAGED", "Colis visiblement endommagé"],
+  ["WRONG_PARCEL", "Colis ne correspondant pas à l'annonce"],
+  ["OTHER", "Autre motif"],
+];
 
 /** Les 11 etapes affichees au gerant, dans l'ordre exact du workflow V5. */
 const RECEPTION_STEPS: Array<[string, string]> = [
@@ -258,6 +273,119 @@ function ScanDialog({
   );
 }
 
+/** Refus motive au controle — Addendum Decisions v1.0 §9 : scelle rompu, colis endommage... */
+function RefusalDialog({
+  missionId,
+  busy,
+  onCancel,
+  onConfirm,
+}: {
+  missionId: number;
+  busy: boolean;
+  onCancel: () => void;
+  onConfirm: (input: { reason: string; note: string; photo: File }) => void;
+}) {
+  const [reason, setReason] = useState(REFUSAL_REASONS[0][0]);
+  const [note, setNote] = useState("");
+  const [photo, setPhoto] = useState<{ file: File; url: string } | null>(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => () => { if (photo) URL.revokeObjectURL(photo.url); }, [photo]);
+
+  const addPhoto = async (file: File | null) => {
+    if (!file) return;
+    setError("");
+    try {
+      const optimized = await ensureImageUnderLimit(file);
+      if (photo) URL.revokeObjectURL(photo.url);
+      setPhoto({ file: optimized, url: URL.createObjectURL(optimized) });
+    } catch {
+      setError("Cette image n'a pas pu être préparée. Reprenez la photo.");
+    }
+  };
+
+  return (
+    <ReceptionModal label="Refuser le colis" onClose={onCancel} size="sm">
+      <ModalHeader icon={ShieldAlert} title="Refuser ce colis" subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
+
+      <label className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+        Motif du refus
+        <select
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-950 outline-none transition focus:border-red-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+        >
+          {REFUSAL_REASONS.map(([key, label]) => (
+            <option key={key} value={key}>{label}</option>
+          ))}
+        </select>
+      </label>
+
+      <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+        Précisions (optionnel)
+        <textarea
+          value={note}
+          onChange={(event) => setNote(event.target.value)}
+          rows={3}
+          className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-950 outline-none transition focus:border-red-500 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+        />
+      </label>
+
+      <p className="mt-5 flex items-center gap-2 text-sm font-black text-slate-950 dark:text-white">
+        <Camera size={16} /> Photo du colis refusé <span className="text-red-600">(obligatoire)</span>
+      </p>
+      {photo ? (
+        <div className="relative mt-2 h-40 overflow-hidden rounded-2xl border-2 border-red-300 dark:border-red-800">
+          <img src={photo.url} alt="Colis refusé" className="h-full w-full object-cover" />
+          <button
+            type="button"
+            onClick={() => setPhoto(null)}
+            aria-label="Retirer la photo"
+            className="absolute right-1.5 top-1.5 rounded-full bg-white/90 p-1 text-red-600 shadow-sm transition hover:bg-white"
+          >
+            <X size={14} />
+          </button>
+        </div>
+      ) : (
+        <label className="mt-2 flex h-40 cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-300 bg-white text-red-700 transition hover:border-red-400 hover:bg-red-50/60 dark:border-slate-700 dark:bg-slate-950 dark:text-red-300">
+          <Camera size={22} />
+          <span className="text-xs font-black text-slate-600 dark:text-slate-300">Prendre la photo</span>
+          <input
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="sr-only"
+            onChange={(event) => {
+              void addPhoto(event.target.files?.[0] || null);
+              event.currentTarget.value = "";
+            }}
+          />
+        </label>
+      )}
+      {error ? <p className="mt-2 text-xs font-semibold text-red-600">{error}</p> : null}
+
+      <div className="mt-5 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={busy}
+          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          disabled={!photo || busy}
+          onClick={() => photo && onConfirm({ reason, note: note.trim(), photo: photo.file })}
+          className="inline-flex items-center gap-2 rounded-2xl bg-red-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <ShieldAlert size={16} /> {busy ? "Envoi..." : "Confirmer le refus"}
+        </button>
+      </div>
+    </ReceptionModal>
+  );
+}
+
 /** Etapes 3 a 7 : details anonymises, 3 photos preuve et double signature. */
 function ReceptionDialog({
   arrival,
@@ -267,6 +395,7 @@ function ReceptionDialog({
   busy,
   onCancel,
   onValidate,
+  onOpenRefusal,
 }: {
   arrival: RelayArrival | null;
   missionId: number;
@@ -274,6 +403,7 @@ function ReceptionDialog({
   onSlotChange: (value: string) => void;
   busy: boolean;
   onCancel: () => void;
+  onOpenRefusal: () => void;
   onValidate: (photos: PhotoMap, signatures: { manager: string | null; courier: string | null }) => void;
 }) {
   const [photos, setPhotos] = useState<PhotoMap>({});
@@ -330,6 +460,15 @@ function ReceptionDialog({
           {arrival?.courierRef ? <> · Livreur <strong>{arrival.courierRef}</strong></> : null} · 1 colis
         </p>
       </div>
+
+      <button
+        type="button"
+        onClick={onOpenRefusal}
+        disabled={busy}
+        className="mt-3 inline-flex items-center gap-1.5 text-xs font-black text-red-600 transition hover:text-red-700 disabled:opacity-50"
+      >
+        <ShieldAlert size={14} /> Scellé rompu ou colis endommagé ? Refuser au contrôle
+      </button>
 
       <div className="mt-4 rounded-2xl bg-slate-50 p-4 dark:bg-slate-800/60">
         <dl className="space-y-2.5 text-sm">
@@ -445,6 +584,7 @@ export default function RelayReception({
   suggestedSlot,
   managerName,
   onReceive,
+  onRefuse,
 }: {
   arrivals: RelayArrival[];
   loading: boolean;
@@ -452,11 +592,13 @@ export default function RelayReception({
   suggestedSlot: string;
   managerName: string;
   onReceive: (input: ReceiveInput) => Promise<boolean>;
+  onRefuse: (input: RefuseInput) => Promise<boolean>;
 }) {
   const [scanOpen, setScanOpen] = useState(false);
   const [selected, setSelected] = useState<RelayArrival | null>(null);
   const [missionId, setMissionId] = useState<number | null>(null);
   const [slot, setSlot] = useState(suggestedSlot);
+  const [refusalOpen, setRefusalOpen] = useState(false);
 
   const openScan = (arrival: RelayArrival | null) => {
     setSelected(arrival);
@@ -477,6 +619,7 @@ export default function RelayReception({
   const closeReception = () => {
     setMissionId(null);
     setSelected(null);
+    setRefusalOpen(false);
   };
 
   const validate = async (photos: PhotoMap, signatures: { manager: string | null; courier: string | null }) => {
@@ -491,6 +634,15 @@ export default function RelayReception({
 
     const success = await onReceive({ shipmentId: missionId, slotCode: slot.trim(), proofNote });
     if (success) closeReception();
+  };
+
+  const confirmRefusal = async (input: { reason: string; note: string; photo: File }) => {
+    if (!missionId) return;
+    const success = await onRefuse({ shipmentId: missionId, ...input });
+    if (success) {
+      setRefusalOpen(false);
+      closeReception();
+    }
   };
 
   const arrivalCount = arrivals.length;
@@ -609,7 +761,7 @@ export default function RelayReception({
         <ScanDialog presetLabel={selectedLabel} onCancel={() => setScanOpen(false)} onConfirm={confirmScan} />
       ) : null}
 
-      {missionId ? (
+      {missionId && !refusalOpen ? (
         <ReceptionDialog
           arrival={selected}
           missionId={missionId}
@@ -618,6 +770,16 @@ export default function RelayReception({
           busy={busy}
           onCancel={closeReception}
           onValidate={(photos, signatures) => void validate(photos, signatures)}
+          onOpenRefusal={() => setRefusalOpen(true)}
+        />
+      ) : null}
+
+      {missionId && refusalOpen ? (
+        <RefusalDialog
+          missionId={missionId}
+          busy={busy}
+          onCancel={() => setRefusalOpen(false)}
+          onConfirm={(input) => void confirmRefusal(input)}
         />
       ) : null}
     </div>

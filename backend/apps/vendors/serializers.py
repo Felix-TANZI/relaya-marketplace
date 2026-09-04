@@ -136,6 +136,15 @@ class VendorApplicationSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if VendorProfile.objects.filter(user=self.context['request'].user).exists():
             raise serializers.ValidationError("Vous avez déjà une demande vendeur.")
+
+        # Bannissement niveau 4 (V5.5 §8) : une CNI ou un numéro Mobile Money
+        # bloqué ne doit pas pouvoir revenir sous un nouveau compte.
+        from apps.accounts.models import PartnerBlacklist
+
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, data.get('id_document', '')):
+            raise serializers.ValidationError("Cette pièce d'identité ne peut pas être utilisée pour créer un compte partenaire.")
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, data.get('phone', '')):
+            raise serializers.ValidationError("Ce numéro Mobile Money ne peut pas être utilisé pour créer un compte partenaire.")
         return data
 
     def create(self, validated_data):
@@ -278,7 +287,8 @@ class VendorOrderSerializer(serializers.ModelSerializer):
         ).data
 
     def get_shipment(self, obj):
-        shipment = getattr(obj, 'shipment', None)
+        vendor = self.context.get('vendor')
+        shipment = obj.shipments.filter(vendor=vendor).first() if vendor else None
         if not shipment:
             return None
 
@@ -348,6 +358,10 @@ class VendorOrderSerializer(serializers.ModelSerializer):
             'relay_point': shipment.relay_point or '',
             'distance_km': estimate_shipment_distance_km(shipment),
             'timeline': timeline,
+            # Code de remise (§8.2) : le vendeur le communique au livreur au
+            # ramassage. Genere a la demande (l'assignation d'un livreur
+            # suffit a le reveler au vendeur).
+            'pickup_confirmation_code': shipment.ensure_pickup_confirmation_code() if shipment.courier_id else '',
             'created_at': shipment.created_at,
             'updated_at': shipment.updated_at,
         }
@@ -410,6 +424,25 @@ class UpdateFulfillmentStatusSerializer(serializers.Serializer):
         old_status = instance.fulfillment_status
 
         instance.fulfillment_status = new_status
+
+        # Bon de préparation (proposition validée) : 4h ouvrées entre l'accusé
+        # de réception vendeur et "prêt pour enlèvement". Le compteur démarre
+        # ici, jamais à la création de la commande.
+        if new_status == Order.FulfillmentStatus.VENDOR_ACKNOWLEDGED:
+            from django.utils import timezone as _tz
+
+            from apps.vendors.business_hours import add_business_hours
+            from apps.vendors.models import VendorProfile as _VendorProfile
+
+            vendor_user = self.context.get('vendor')
+            vendor_profile = (
+                _VendorProfile.objects.filter(user=vendor_user).first() if vendor_user else None
+            )
+            closed_days = vendor_profile.closed_days if vendor_profile else []
+            instance.prep_deadline = add_business_hours(_tz.now(), 4, closed_days)
+            instance.prep_reminder_sent_at = None
+            instance.prep_admin_alert_sent_at = None
+            instance.prep_reassignment_flagged_at = None
 
         # Annulation d'une commande payée → remboursement escrow
         if new_status == Order.FulfillmentStatus.CANCELLED and instance.is_paid:

@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, Lock, MapPin, Package, Store, Truck, X, XCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft, Lock, MapPin, Package, ShieldCheck, Store, Truck, X, XCircle } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
 import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
@@ -50,6 +50,46 @@ const PAYMENT_LABELS: Record<PaymentStatus, { label: string; tone: "ok" | "wait"
   REFUNDED: { label: "Remboursé", tone: "mut" },
 };
 
+// Flux de retention a l'annulation — Addendum Decisions v1.0 §5.1
+type CancelReasonCode = "CHEAPER_ELSEWHERE" | "CHANGED_MIND" | "TOO_SLOW" | "ORDER_MISTAKE" | "PAYMENT_ISSUE" | "OTHER";
+type CancelStep = "reason" | "alternative" | "confirm";
+
+const CANCEL_REASONS: { key: CancelReasonCode; label: string }[] = [
+  { key: "CHEAPER_ELSEWHERE", label: "Trouvé moins cher ailleurs" },
+  { key: "CHANGED_MIND", label: "Changement d'avis" },
+  { key: "TOO_SLOW", label: "Délai trop long" },
+  { key: "ORDER_MISTAKE", label: "Erreur de commande" },
+  { key: "PAYMENT_ISSUE", label: "Problème de paiement" },
+  { key: "OTHER", label: "Autre raison" },
+];
+
+const CANCEL_ALTERNATIVES: Record<CancelReasonCode, { title: string; body: string; cta?: string } | null> = {
+  CHEAPER_ELSEWHERE: {
+    title: "Votre argent est protégé",
+    body: "Le paiement reste bloqué en séquestre et n'est jamais versé au vendeur avant que vous ayez confirmé la réception. Rien ne presse à annuler pour ce motif.",
+  },
+  CHANGED_MIND: {
+    title: "Votre argent est protégé",
+    body: "Le montant reste sous séquestre jusqu'à confirmation de réception : vous ne risquez rien à laisser la commande suivre son cours si vous hésitez encore.",
+  },
+  TOO_SLOW: {
+    title: "Vérifiez le délai réel",
+    body: "Consultez le suivi détaillé pour voir l'heure estimée d'arrivée actuelle. Vous pouvez aussi basculer vers un retrait en point relais, souvent plus rapide.",
+    cta: "Voir le suivi détaillé",
+  },
+  ORDER_MISTAKE: {
+    title: "Une erreur sur la commande ?",
+    body: "Contactez le support avant d'annuler : une correction (adresse, article, quantité) est souvent possible sans perdre votre place dans le circuit de préparation.",
+    cta: "Contacter le support",
+  },
+  PAYMENT_ISSUE: {
+    title: "Un souci de paiement ?",
+    body: "Le support peut vérifier votre transaction et régulariser sans qu'il soit nécessaire d'annuler la commande.",
+    cta: "Contacter le support",
+  },
+  OTHER: null,
+};
+
 export default function OrdersHistoryPage() {
   const { t, i18n } = useTranslation();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -58,6 +98,8 @@ export default function OrdersHistoryPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("all");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [cancelCandidate, setCancelCandidate] = useState<Order | null>(null);
+  const [cancelStep, setCancelStep] = useState<CancelStep>("reason");
+  const [cancelReason, setCancelReason] = useState<CancelReasonCode>("OTHER");
   const [cancelFeedback, setCancelFeedback] = useState("");
   const [payTarget, setPayTarget] = useState<Order | null>(null);
 
@@ -108,19 +150,25 @@ export default function OrdersHistoryPage() {
   const escrowTotal = orders.filter((o) => o.payment_status === "PAID" && !DELIVERED.includes(o.fulfillment_status))
     .reduce((s, o) => s + o.total_xaf, 0);
 
-  const canCancel = (o: Order) => ![...DELIVERED, ...CLOSED].includes(o.fulfillment_status);
+  // Annulation gratuite uniquement tant qu'aucun colis n'a ete ramasse —
+  // Addendum Decisions v1.0 §5.1. Au-dela, ca passe par le parcours de retour.
+  const NOT_YET_PICKED_UP: FulfillmentStatus[] = ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PENDING"];
+  const canCancel = (o: Order) => NOT_YET_PICKED_UP.includes(o.fulfillment_status);
 
   const confirmCancel = async () => {
     if (!cancelCandidate) return;
     const order = cancelCandidate;
     setCancelCandidate(null);
     try {
-      const cancelled = await ordersApi.cancel(order.id);
+      const cancelled = await ordersApi.cancel(order.id, cancelReason);
       setOrders((cur) => cur.map((i) => (i.id === order.id ? cancelled : i)));
-      setCancelFeedback(`Commande #${order.id} annulée.`);
+      setCancelFeedback(`Commande #${order.id} annulée. Remboursement intégral en cours.`);
       window.dispatchEvent(new Event("belivay-new-notification"));
     } catch {
       setCancelFeedback("Impossible d'annuler cette commande pour le moment.");
+    } finally {
+      setCancelStep("reason");
+      setCancelReason("OTHER");
     }
   };
 
@@ -340,7 +388,7 @@ export default function OrdersHistoryPage() {
                           </div>
                           <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
                             {canCancel(order) && (
-                              <button className="pf-btn-danger" onClick={() => setCancelCandidate(order)}>Annuler</button>
+                              <button className="pf-btn-danger" onClick={() => { setCancelStep("reason"); setCancelReason("OTHER"); setCancelCandidate(order); }}>Annuler</button>
                             )}
                             {unpaid && (
                               <button className="pf-btn-accent" onClick={() => setPayTarget(order)}>
@@ -362,7 +410,7 @@ export default function OrdersHistoryPage() {
         </div>
       </div>
 
-      {/* Modale d'annulation */}
+      {/* Modale d'annulation — flux en 3 etapes (Addendum Decisions v1.0 §5.1) */}
       {cancelCandidate && (
         <div className="pf-root">
           <div className="pf-backdrop">
@@ -373,18 +421,75 @@ export default function OrdersHistoryPage() {
                   <div className="pf-k" style={{ color: "#d92d20" }}>Annulation</div>
                   <div className="pf-panel-title" style={{ fontSize: 19, marginTop: 3 }}>Commande #{cancelCandidate.id}</div>
                   <p className="pf-panel-sub">
-                    Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison.
+                    {cancelStep === "reason" && "Pourquoi souhaitez-vous annuler cette commande ?"}
+                    {cancelStep === "alternative" && "Avant de confirmer, voici une piste qui pourrait vous éviter d'annuler."}
+                    {cancelStep === "confirm" && "Cette commande passera dans la rubrique annulée. Les articles ne seront plus traités pour la livraison."}
                   </p>
                 </div>
               </div>
 
-              <div className="pf-card" style={{ marginTop: 16 }}>
-                <div className="pf-support-t">{cancelCandidate.items[0]?.title_snapshot ?? "Commande"}</div>
-                <div className="pf-total-row" style={{ marginTop: 6 }}><b>{fmt(cancelCandidate.total_xaf)}</b></div>
-              </div>
+              {cancelStep === "reason" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+                  {CANCEL_REASONS.map((r) => (
+                    <button key={r.key} type="button" className="pf-addr" style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
+                      onClick={() => {
+                        setCancelReason(r.key);
+                        setCancelStep(CANCEL_ALTERNATIVES[r.key] ? "alternative" : "confirm");
+                      }}>
+                      <div className="pf-addr-label">{r.label}</div>
+                    </button>
+                  ))}
+                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 6 }} onClick={() => setCancelCandidate(null)}>Garder la commande</button>
+                </div>
+              )}
 
-              <button className="pf-btn-ghost pf-btn-block" onClick={() => setCancelCandidate(null)}>Garder la commande</button>
-              <button className="pf-btn-danger pf-btn-block" onClick={() => void confirmCancel()}>Annuler la commande</button>
+              {cancelStep === "alternative" && cancelReason && CANCEL_ALTERNATIVES[cancelReason] && (
+                <div style={{ marginTop: 14 }}>
+                  <div className="pf-card" style={{ display: "flex", gap: 12 }}>
+                    <span className="pf-notif-ic" style={{ background: "rgba(16,185,129,.12)", color: "#10b981", flexShrink: 0 }}><ShieldCheck size={18} /></span>
+                    <div>
+                      <div className="pf-support-t">{CANCEL_ALTERNATIVES[cancelReason]!.title}</div>
+                      <p className="pf-panel-sub" style={{ marginTop: 4 }}>{CANCEL_ALTERNATIVES[cancelReason]!.body}</p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 14 }}>
+                    {CANCEL_ALTERNATIVES[cancelReason]!.cta && (
+                      <Link to={`/orders/${cancelCandidate.id}`}>
+                        <button className="pf-btn-accent pf-btn-block" onClick={() => setCancelCandidate(null)}>
+                          {CANCEL_ALTERNATIVES[cancelReason]!.cta}
+                        </button>
+                      </Link>
+                    )}
+                    <button className="pf-btn-ghost pf-btn-block" onClick={() => setCancelCandidate(null)}>Garder la commande</button>
+                    <button className="pf-btn-danger pf-btn-block" onClick={() => setCancelStep("confirm")}>Continuer l'annulation</button>
+                    <button type="button" onClick={() => setCancelStep("reason")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center", background: "none", border: "none", color: "var(--pf-muted)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 4 }}>
+                      <ArrowLeft size={13} />Changer de motif
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {cancelStep === "confirm" && (
+                <>
+                  <div className="pf-card" style={{ marginTop: 16 }}>
+                    <div className="pf-support-t">{cancelCandidate.items[0]?.title_snapshot ?? "Commande"}</div>
+                    <div className="pf-total-row" style={{ marginTop: 6 }}><b>{fmt(cancelCandidate.total_xaf)}</b></div>
+                  </div>
+                  <p className="pf-panel-sub" style={{ marginTop: 10 }}>
+                    L'annulation est définitive. Remboursement intégral vers votre moyen de paiement d'origine.
+                  </p>
+                  <button className="pf-btn-ghost pf-btn-block" style={{ marginTop: 8 }} onClick={() => setCancelCandidate(null)}>Garder la commande</button>
+                  <button className="pf-btn-danger pf-btn-block" onClick={() => void confirmCancel()}>Confirmer l'annulation</button>
+                  {CANCEL_ALTERNATIVES[cancelReason] && (
+                    <button type="button" onClick={() => setCancelStep("alternative")}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "center", background: "none", border: "none", color: "var(--pf-muted)", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 4, marginTop: 4, width: "100%" }}>
+                      <ArrowLeft size={13} />Retour
+                    </button>
+                  )}
+                </>
+              )}
             </div>
           </div>
         </div>

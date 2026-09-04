@@ -3,7 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Capacitor } from "@capacitor/core";
 import { BackgroundGeolocation } from "@/lib/backgroundGeolocation";
+import { enqueueEvidence, syncPendingEvidence } from "@/lib/evidenceQueue";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import {
   AlertTriangle,
   ArrowRight,
@@ -97,6 +99,8 @@ function statusLabel(status: string) {
       return "En livraison";
     case "DELIVERED":
       return "Livree";
+    case "INCIDENT":
+      return "Incident signale";
     case "FAILED":
       return "Echec";
     default:
@@ -114,6 +118,8 @@ function statusTone(status: string) {
       return "border-orange-500/30 bg-orange-500/10 text-orange-300";
     case "DELIVERED":
       return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+    case "INCIDENT":
+      return "border-red-500/30 bg-red-500/10 text-red-300";
     case "FAILED":
       return "border-red-500/30 bg-red-500/10 text-red-300";
     default:
@@ -154,11 +160,13 @@ function applyLocalAction(
           ? "OUT_FOR_DELIVERY"
           : action === "DELIVERED"
             ? "DELIVERED"
-            : action === "FAILED"
-              ? "FAILED"
-              : action === "DECLINE"
-                ? "CREATED"
-                : shipment.status;
+            : action === "INCIDENT"
+              ? "INCIDENT"
+              : action === "FAILED"
+                ? "FAILED"
+                : action === "DECLINE"
+                  ? "CREATED"
+                  : shipment.status;
 
   return {
     ...shipment,
@@ -266,6 +274,9 @@ export default function CourierDashboardPage() {
   const [availableShipmentsFromAPI, setAvailableShipmentsFromAPI] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [pickupCodeDraft, setPickupCodeDraft] = useState("");
+  const [capturedEvidence, setCapturedEvidence] = useState<Record<string, boolean>>({});
+  const [pendingEvidenceCount, setPendingEvidenceCount] = useState(0);
   const [scanCode, setScanCode] = useState("");
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
@@ -625,13 +636,16 @@ export default function CourierDashboardPage() {
     setActionFeedback("");
 
     try {
+      const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
       const updated = await courierApi.actOnShipment(selectedShipment.id, {
         action,
-        message: action === "NOTE" ? noteDraft.trim() : undefined,
+        message,
         location: selectedShipment.city,
+        pickup_code: action === "PICKED_UP" ? pickupCodeDraft.trim() : undefined,
       });
       setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
-      if (action === "NOTE") setNoteDraft("");
+      if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
+      if (action === "PICKED_UP") setPickupCodeDraft("");
       setActionFeedback(
         action === "ACCEPT"
           ? "Mission acceptee et synchronisee."
@@ -641,23 +655,52 @@ export default function CourierDashboardPage() {
               ? "Course marquee en livraison."
               : action === "DELIVERED"
                 ? "Colis remis au client et livraison certifiee."
-                : action === "NOTE"
-                  ? "Note enregistree sur la mission."
-                  : "Action synchronisee.",
+                : action === "INCIDENT"
+                  ? "Incident signale au client immediatement."
+                  : action === "NOTE"
+                    ? "Note enregistree sur la mission."
+                    : "Action synchronisee.",
       );
     } catch {
+      const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
       setShipments((current) =>
         current.map((shipment) =>
           shipment.id === selectedShipment.id
-            ? applyLocalAction(shipment, action, action === "NOTE" ? noteDraft.trim() : undefined, selectedShipment.city)
+            ? applyLocalAction(shipment, action, message, selectedShipment.city)
             : shipment,
         ),
       );
-      if (action === "NOTE") setNoteDraft("");
+      if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
       setActionFeedback("Action appliquee localement. La synchronisation backend sera a reverifier.");
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // Capture obligatoire, transmission best-effort (regle verrouillee) : la
+  // photo est mise en file localement des la prise, la synchro reseau se
+  // fait en tache de fond sans jamais bloquer la course.
+  useEffect(() => {
+    const sync = () => { void syncPendingEvidence().then(({ remaining }) => setPendingEvidenceCount(remaining)); };
+    sync();
+    window.addEventListener("online", sync);
+    const interval = window.setInterval(sync, 30000);
+    return () => { window.removeEventListener("online", sync); window.clearInterval(interval); };
+  }, []);
+
+  const handleCapturePhoto = async (
+    shipmentId: number,
+    stage: "COURIER_PICKUP_VENDOR" | "CUSTOMER_DELIVERY",
+    file: File,
+  ) => {
+    await enqueueEvidence({
+      endpoint: `/api/shipping/my-shipments/${shipmentId}/evidence/`,
+      fields: { stage },
+      blob: file,
+      fileName: file.name || "preuve.jpg",
+    });
+    setCapturedEvidence((current) => ({ ...current, [`${shipmentId}:${stage}`]: true }));
+    void syncPendingEvidence().then(({ remaining }) => setPendingEvidenceCount(remaining));
   };
 
   const handleClaimShipment = async (id: number) => {
@@ -997,6 +1040,7 @@ export default function CourierDashboardPage() {
 
   const renderDashboard = () => (
     <>
+      {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="COURIER" />}
       {/* Briefing du jour en tete : c'est la premiere chose qu'un livreur
           veut lire en ouvrant l'app — son statut terrain et son depart
           conseille — avant meme ses compteurs. */}
@@ -1423,15 +1467,41 @@ export default function CourierDashboardPage() {
                 </div>
               ) : null}
               {(selectedShipment.status === "PICKED_UP" || selectedShipment.status === "ASSIGNED") && (
-                <button
-                  type="button"
-                  onClick={() => handleShipmentAction("PICKED_UP")}
-                  disabled={Boolean(actionLoading)}
-                  className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
-                  {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
-                </button>
+                <>
+                  {!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] && (
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
+                      <Camera size={14} /> Photo colis (obligatoire)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleCapturePhoto(selectedShipment.id, "COURIER_PICKUP_VENDOR", file);
+                        }}
+                      />
+                    </label>
+                  )}
+                  <input
+                    value={pickupCodeDraft}
+                    onChange={(event) => setPickupCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric"
+                    placeholder="Code de remise (vendeur)"
+                    maxLength={6}
+                    className="w-[168px] rounded-full border border-amber-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-300/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleShipmentAction("PICKED_UP")}
+                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] || pickupCodeDraft.length !== 6}
+                    title={!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] ? "Prenez d'abord une photo du colis" : pickupCodeDraft.length !== 6 ? "Demandez le code de remise au vendeur" : undefined}
+                    className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
+                    {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
+                  </button>
+                </>
               )}
               {selectedShipment.status === "PICKED_UP" && (
                 <button
@@ -1446,10 +1516,26 @@ export default function CourierDashboardPage() {
               )}
               {selectedShipment.status === "OUT_FOR_DELIVERY" && (
                 <>
+                  {!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] && (
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
+                      <Camera size={14} /> Photo remise (obligatoire)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleCapturePhoto(selectedShipment.id, "CUSTOMER_DELIVERY", file);
+                        }}
+                      />
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("DELIVERED")}
-                    disabled={Boolean(actionLoading)}
+                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`]}
+                    title={!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] ? "Prenez d'abord une photo de la remise" : undefined}
                     className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "DELIVERED" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
@@ -1480,6 +1566,11 @@ export default function CourierDashboardPage() {
                 {actionFeedback}
               </div>
             ) : null}
+            {pendingEvidenceCount > 0 && (
+              <div className="mt-3 flex items-center gap-2 rounded-[14px] border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-[12px] font-bold text-amber-300">
+                <Camera size={13} /> {pendingEvidenceCount} photo{pendingEvidenceCount > 1 ? "s" : ""} en attente de synchro
+              </div>
+            )}
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
@@ -1493,6 +1584,15 @@ export default function CourierDashboardPage() {
                 <InfoPill icon={Store} tone="border-gray-200 bg-gray-50 text-gray-700">Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
                 <InfoPill icon={Truck} tone="border-gray-200 bg-gray-50 text-gray-700">Statut: {statusLabel(selectedShipment.status)}</InfoPill>
               </div>
+              {selectedShipment.authorized_pickup_name ? (
+                <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-[13px] font-bold text-amber-200">
+                  Tiers autorisé au retrait : {selectedShipment.authorized_pickup_name}
+                  {selectedShipment.authorized_pickup_phone ? ` · ${selectedShipment.authorized_pickup_phone}` : ""}
+                  <span className="mt-1 block text-[11px] font-semibold text-amber-200/70">
+                    Vérifiez l'identité de cette personne avant de remettre le colis si ce n'est pas le client.
+                  </span>
+                </div>
+              ) : null}
               {selectedShipment.delivery_latitude != null && selectedShipment.delivery_longitude != null ? (
                 <a
                   href={`https://www.openstreetmap.org/?mlat=${selectedShipment.delivery_latitude}&mlon=${selectedShipment.delivery_longitude}#map=17/${selectedShipment.delivery_latitude}/${selectedShipment.delivery_longitude}`}
@@ -1577,6 +1677,16 @@ export default function CourierDashboardPage() {
                 >
                   {actionLoading === "NOTE" ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                   {actionLoading === "NOTE" ? "Enregistrement..." : "Enregistrer"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShipmentAction("INCIDENT")}
+                  disabled={Boolean(actionLoading) || !noteDraft.trim()}
+                  title="Decrivez l'incident dans le champ ci-dessus avant de le signaler"
+                  className="inline-flex items-center justify-center gap-2 rounded-[14px] border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoading === "INCIDENT" ? <LoaderCircle size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
+                  {actionLoading === "INCIDENT" ? "Signalement..." : "Signaler un incident"}
                 </button>
               </div>
             </div>

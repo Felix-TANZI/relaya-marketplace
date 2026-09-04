@@ -266,7 +266,7 @@ class Command(BaseCommand):
 
     def _dispute(self, relay, buyer):
         """Un litige ouvert sur un colis encore en stock."""
-        Dispute.objects.filter(order__user=buyer, order__shipment__relay_parcel__relay_point=relay).delete()
+        Dispute.objects.filter(order__user=buyer, order__shipments__relay_parcel__relay_point=relay).delete()
         parcel = (
             RelayParcel.objects
             .filter(relay_point=relay, status=RelayParcel.Status.STORED)

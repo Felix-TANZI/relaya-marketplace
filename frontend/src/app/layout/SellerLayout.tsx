@@ -7,7 +7,7 @@ import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-do
 import PageLoader from '@/components/PageLoader';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
-  FileText, Lock, CircleCheckBig,
+  FileText, Lock, CircleCheckBig, RotateCcw,
   Plus, TrendingUp, Zap, Store, Award, CreditCard, Wallet,
   Settings, Sun, Moon, Bell, X, Menu,
   ChevronRight, Sparkles, ExternalLink,
@@ -58,6 +58,7 @@ function buildNav(t: TFn): NavSection[] {
         { label: t('seller_layout.nav_dashboard'), path: '/seller/dashboard', icon: LayoutDashboard },
         { label: t('seller_layout.nav_orders'),    path: '/seller/orders',    icon: ShoppingBag, badge: true },
         { label: t('seller_layout.nav_disputes'),  path: '/seller/disputes',  icon: Scale },
+        { label: t('seller_layout.nav_returns'),   path: '/seller/returns',   icon: RotateCcw },
       ],
     },
     {

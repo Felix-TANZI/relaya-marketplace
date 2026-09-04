@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import PermissionDenied
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
+from django.http import Http404
 from apps.orders.models import Dispute, Order
 from apps.accounts.models import CourierProfile, UserNotification
 from .models import (
@@ -12,6 +13,7 @@ from .models import (
     RelayPointReview,
     Shipment,
     ShipmentEvent,
+    ShipmentEvidence,
     ShipmentLocation,
     ShipmentMessage,
 )
@@ -30,6 +32,29 @@ class ShipmentEventSerializer(serializers.ModelSerializer):
     class Meta:
         model = ShipmentEvent
         fields = ["id", "status", "message", "location", "created_at"]
+
+
+class ShipmentEvidenceSerializer(serializers.ModelSerializer):
+    stage_label = serializers.CharField(source='get_stage_display', read_only=True)
+    uploaded_by_name = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ShipmentEvidence
+        fields = [
+            "id", "stage", "stage_label", "actor_role",
+            "uploaded_by_name", "file_url", "description", "created_at",
+        ]
+        read_only_fields = fields
+
+    def get_uploaded_by_name(self, obj):
+        return obj.uploaded_by.get_full_name() or obj.uploaded_by.username
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if not obj.file:
+            return None
+        return request.build_absolute_uri(obj.file.url) if request else obj.file.url
 
 
 class ShipmentLocationSerializer(serializers.ModelSerializer):
@@ -98,6 +123,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
     delivery_longitude = serializers.SerializerMethodField()
     delivery_location_precision = serializers.SerializerMethodField()
     city = serializers.SerializerMethodField()
+    authorized_pickup_name = serializers.CharField(source="order.authorized_pickup_name", read_only=True)
+    authorized_pickup_phone = serializers.CharField(source="order.authorized_pickup_phone", read_only=True)
     order_total_xaf = serializers.SerializerMethodField()
     courier_payout_xaf = serializers.SerializerMethodField()
     fulfillment_status = serializers.SerializerMethodField()
@@ -107,6 +134,23 @@ class ShipmentSerializer(serializers.ModelSerializer):
     latest_location = serializers.SerializerMethodField()
     location_history = serializers.SerializerMethodField()
     receipt_confirmation_code = serializers.SerializerMethodField()
+    delivery_evidences = serializers.SerializerMethodField()
+    estimated_availability_at = serializers.SerializerMethodField()
+
+    def get_estimated_availability_at(self, obj):
+        return obj.estimated_availability_at()
+
+    def get_delivery_evidences(self, obj):
+        # Cote acheteur, seules les preuves de REMISE (a domicile ou au
+        # guichet relais) sont pertinentes — les etapes d'enlevement vendeur
+        # / reception relais ne le concernent pas directement. "Preuves de
+        # remise consultables (photo, signature, horodatage)".
+        qs = obj.evidences.filter(stage__in=[
+            ShipmentEvidence.Stage.CUSTOMER_DELIVERY,
+            ShipmentEvidence.Stage.RELAY_RELEASED,
+            ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
+        ])
+        return ShipmentEvidenceSerializer(qs, many=True, context=self.context).data
 
     class Meta:
         model = Shipment
@@ -125,6 +169,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "delivery_longitude",
             "delivery_location_precision",
             "city",
+            "authorized_pickup_name",
+            "authorized_pickup_phone",
             "order_total_xaf",
             "courier_payout_xaf",
             "fulfillment_status",
@@ -137,6 +183,8 @@ class ShipmentSerializer(serializers.ModelSerializer):
             "latest_location",
             "location_history",
             "receipt_confirmation_code",
+            "delivery_evidences",
+            "estimated_availability_at",
             "created_at",
             "updated_at",
             "events",
@@ -343,6 +391,8 @@ class RelayParcelSerializer(serializers.ModelSerializer):
     customer_phone = serializers.CharField(source="shipment.order.customer_phone", read_only=True)
     delivery_address = serializers.CharField(source="shipment.order.address", read_only=True)
     city = serializers.CharField(source="shipment.order.city", read_only=True)
+    authorized_pickup_name = serializers.CharField(source="shipment.order.authorized_pickup_name", read_only=True)
+    authorized_pickup_phone = serializers.CharField(source="shipment.order.authorized_pickup_phone", read_only=True)
     parcel_size = serializers.CharField(source="shipment.parcel_size", read_only=True)
     parcel_size_label = serializers.SerializerMethodField()
     courier_ref = serializers.SerializerMethodField()
@@ -364,6 +414,13 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             return ""
         return dict(CourierProfile.VehicleType.choices).get(courier.vehicle_type, courier.vehicle_type or "")
 
+    garde_free_until = serializers.DateTimeField(read_only=True)
+    garde_deadline = serializers.DateTimeField(read_only=True)
+    garde_fee_due_xaf = serializers.SerializerMethodField()
+
+    def get_garde_fee_due_xaf(self, obj):
+        return obj.garde_fee_due()
+
     class Meta:
         model = RelayParcel
         fields = [
@@ -379,6 +436,8 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             "customer_phone",
             "delivery_address",
             "city",
+            "authorized_pickup_name",
+            "authorized_pickup_phone",
             "parcel_size",
             "parcel_size_label",
             "courier_ref",
@@ -386,6 +445,12 @@ class RelayParcelSerializer(serializers.ModelSerializer):
             "received_at",
             "picked_up_at",
             "returned_at",
+            "garde_extended",
+            "garde_free_until",
+            "garde_deadline",
+            "garde_fee_due_xaf",
+            "picked_up_by_name",
+            "picked_up_by_id_reference",
             "created_at",
             "updated_at",
         ]
@@ -409,7 +474,17 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         if self.validated_data.get("shipment_id"):
             shipment = get_object_or_404(shipment_qs, id=self.validated_data["shipment_id"])
         else:
-            shipment = get_object_or_404(shipment_qs, order_id=self.validated_data["order_id"])
+            # Une commande peut avoir plusieurs colis (un par vendeur) : sans
+            # shipment_id precis, on ne peut receptionner que si un seul colis
+            # existe pour cette commande.
+            candidates = list(shipment_qs.filter(order_id=self.validated_data["order_id"]))
+            if not candidates:
+                raise Http404()
+            if len(candidates) > 1:
+                raise serializers.ValidationError(
+                    {"shipment_id": "Cette commande a plusieurs colis — precisez shipment_id."}
+                )
+            shipment = candidates[0]
 
         # Le colis peut deja exister a l'etat EXPECTED : c'est le cas nominal,
         # l'arrivee a ete annoncee au relais avant que le livreur se presente.
@@ -438,10 +513,28 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
         parcel.relay_point = relay_point
         parcel.status = RelayParcel.Status.STORED
         parcel.slot_code = self.validated_data.get("slot_code") or parcel.slot_code or f"SL-{relay_point.id}-{shipment.id}"
-        parcel.pickup_code = parcel.pickup_code or secrets.token_hex(3).upper()
         parcel.proof_note = self.validated_data.get("proof_note", "")
         parcel.received_at = timezone.now()
         parcel.save()
+
+        # Regle en dur #3 : le code de retrait ne part qu'a l'arrivee REELLE
+        # du (dernier) colis au relais. Sur une commande multi-colis, un seul
+        # code est partage (§8.3) — genere seulement quand plus aucun colis
+        # frere n'est en attente.
+        siblings = list(RelayParcel.objects.filter(shipment__order=shipment.order))
+        still_pending = [p for p in siblings if p.id != parcel.id and p.status == RelayParcel.Status.EXPECTED]
+        if not still_pending:
+            code = next((p.pickup_code for p in siblings if p.pickup_code), "") or secrets.token_hex(3).upper()
+            RelayParcel.objects.filter(id__in=[p.id for p in siblings]).exclude(pickup_code=code).update(pickup_code=code)
+            parcel.refresh_from_db(fields=["pickup_code"])
+            if shipment.order.user_id:
+                UserNotification.objects.create(
+                    user=shipment.order.user,
+                    title=f"Colis prêt au retrait · commande #{shipment.order_id}",
+                    message=f"Votre commande est arrivée au point relais {relay_point.name}. Code de retrait : {code}.",
+                    notification_type=UserNotification.NotificationType.ORDER,
+                    action_url=f"/orders/{shipment.order_id}",
+                )
 
         shipment.relay_point = relay_point.name
         shipment.status = Shipment.Status.IN_TRANSIT
@@ -458,39 +551,66 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
 
 
 class RelayParcelPickupSerializer(serializers.Serializer):
-    parcel_id = serializers.IntegerField()
+    """
+    Remise au guichet. §8.3 : sur une commande a plusieurs colis, un seul
+    code de retrait est partage — le saisir remet TOUS les colis de ce
+    compte encore en stock a ce relais en une seule action, jamais un par un.
+    """
+
+    parcel_id = serializers.IntegerField(required=False)
     pickup_code = serializers.CharField()
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+    picked_up_by_name = serializers.CharField(required=False, allow_blank=True, default="")
+    picked_up_by_id_reference = serializers.CharField(required=False, allow_blank=True, default="")
 
     def save(self, **kwargs):
         relay_point = self.context["relay_point"]
-        parcel = get_object_or_404(
-            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point"),
-            id=self.validated_data["parcel_id"],
-            relay_point=relay_point,
-        )
-        if parcel.status not in [RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED]:
-            raise serializers.ValidationError(
-                {"parcel_id": "Seul un colis stocke dans ce point relais peut etre remis."}
+        code = self.validated_data["pickup_code"]
+        parcels = list(
+            RelayParcel.objects.select_related("shipment", "shipment__order", "relay_point")
+            .filter(
+                relay_point=relay_point,
+                pickup_code=code,
+                status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
             )
-        if parcel.pickup_code and parcel.pickup_code != self.validated_data["pickup_code"]:
-            raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect."})
-        parcel.status = RelayParcel.Status.PICKED_UP
-        parcel.proof_note = self.validated_data.get("proof_note", parcel.proof_note)
-        parcel.picked_up_at = timezone.now()
-        parcel.save()
-
-        shipment = parcel.shipment
-        shipment.status = Shipment.Status.DELIVERED
-        shipment.save(update_fields=["status", "updated_at"])
-        shipment.order.mark_delivered()
-        ShipmentEvent.objects.create(
-            shipment=shipment,
-            status=Shipment.Status.DELIVERED,
-            message=f"Colis retire au point relais {relay_point.name}",
-            location=relay_point.name,
         )
-        return parcel
+        if not parcels:
+            raise serializers.ValidationError({"pickup_code": "Code de retrait incorrect ou colis deja retire."})
+
+        # Retrait par un tiers : si l'acheteur a designe une personne
+        # autorisee, le relais doit loguer sa piece d'identite avant de
+        # valider la remise (Addendum Decisions v1.0, Parcours acheteur).
+        id_reference = self.validated_data.get("picked_up_by_id_reference", "")
+        if any(p.shipment.order.authorized_pickup_name for p in parcels) and not id_reference:
+            raise serializers.ValidationError({
+                "picked_up_by_id_reference": "Cette commande est retiree par un tiers autorise : renseignez sa piece d'identite avant de valider.",
+            })
+
+        proof_note = self.validated_data.get("proof_note", "")
+        picked_up_by_name = self.validated_data.get("picked_up_by_name", "")
+        now = timezone.now()
+        for parcel in parcels:
+            parcel.status = RelayParcel.Status.PICKED_UP
+            parcel.proof_note = proof_note or parcel.proof_note
+            parcel.picked_up_at = now
+            parcel.picked_up_by_name = picked_up_by_name
+            parcel.picked_up_by_id_reference = id_reference
+            parcel.save()
+
+            shipment = parcel.shipment
+            shipment.status = Shipment.Status.DELIVERED
+            shipment.save(update_fields=["status", "updated_at"])
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                status=Shipment.Status.DELIVERED,
+                message=f"Colis retire au point relais {relay_point.name}",
+                location=relay_point.name,
+            )
+        # Un seul appel par commande (tous les colis partagent la meme
+        # commande quand ils partagent un code) — mark_delivered() est
+        # idempotent sur le statut de la commande.
+        parcels[0].shipment.order.mark_delivered()
+        return parcels[0]
 
 
 class RelayParcelReturnSerializer(serializers.Serializer):
@@ -558,12 +678,21 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             "PICKED_UP",
             "OUT_FOR_DELIVERY",
             "DELIVERED",
+            "INCIDENT",
             "FAILED",
             "NOTE",
         ]
     )
     message = serializers.CharField(required=False, allow_blank=True, default="")
     location = serializers.CharField(required=False, allow_blank=True, default="")
+    pickup_code = serializers.CharField(required=False, allow_blank=True, default="")
+
+    def validate(self, attrs):
+        if attrs.get("action") == "INCIDENT" and not attrs.get("message", "").strip():
+            raise serializers.ValidationError(
+                {"message": "Décrivez l'incident rencontré avant de le signaler au client."}
+            )
+        return attrs
 
     def save(self, **kwargs):
         shipment = self.context["shipment"]
@@ -583,6 +712,7 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             shipment.status = Shipment.Status.ASSIGNED
             shipment.accepted_at = timezone.now()
             shipment.penalty_notified_at = None
+            shipment.ensure_pickup_confirmation_code()
             order.assign_driver()
         elif action == "DECLINE":
             shipment.status = Shipment.Status.CREATED
@@ -592,6 +722,15 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             shipment.accepted_at = None
             order.mark_ready_for_pickup()
         elif action == "PICKED_UP":
+            # Code de remise (§8.2, vendeur -> livreur) : controle C1 de
+            # conformite au ramassage. Le vendeur lit le code affiche dans
+            # son espace ; le livreur le saisit ici pour valider le transfert.
+            expected = shipment.ensure_pickup_confirmation_code()
+            submitted = (self.validated_data.get("pickup_code") or "").strip()
+            if submitted != expected:
+                raise serializers.ValidationError(
+                    {"pickup_code": "Code de remise incorrect — demandez-le au vendeur."}
+                )
             shipment.status = Shipment.Status.PICKED_UP
             order.mark_picked_up()
         elif action == "OUT_FOR_DELIVERY":
@@ -600,6 +739,8 @@ class CourierShipmentActionSerializer(serializers.Serializer):
         elif action == "DELIVERED":
             shipment.status = Shipment.Status.DELIVERED
             order.mark_delivered()
+        elif action == "INCIDENT":
+            shipment.status = Shipment.Status.INCIDENT
         elif action == "FAILED":
             shipment.status = Shipment.Status.FAILED
 
@@ -611,6 +752,15 @@ class CourierShipmentActionSerializer(serializers.Serializer):
             message=message or action.replace("_", " ").title(),
             location=location,
         )
+
+        if action == "INCIDENT" and order.user_id:
+            UserNotification.objects.create(
+                user=order.user,
+                title=f"Incident signalé · commande #{order.id}",
+                message=message,
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url=f"/orders/{order.id}",
+            )
 
         return shipment
 

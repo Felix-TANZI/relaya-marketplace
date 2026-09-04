@@ -79,6 +79,24 @@ class VendorProfile(models.Model):
     city                 = models.CharField(max_length=100)
     id_document          = models.CharField(max_length=255, blank=True)
 
+    # Zone de tarification (BelivaY_Regles_Systeme_DEV v2.0 §3) — sert a
+    # comparer "meme zone / zone differente" entre vendeurs d'une meme
+    # commande. Optionnel : sans zone assignee, un vendeur est toujours
+    # traite comme "zone differente" par la grille de prix (pas de zone
+    # gratuite par defaut).
+    zone = models.ForeignKey(
+        "shipping.Zone", on_delete=models.SET_NULL, null=True, blank=True, related_name="vendors",
+        verbose_name="Zone de tarification",
+    )
+
+    # Heures ouvrées verrouillées 8h-18h, Lun-Sam pour tous (decision produit :
+    # pas d'horaires individuels au lancement, ca rendrait le triage automatique
+    # du bon de preparation intestable). Seul le jour de fermeture varie.
+    closed_days = models.JSONField(
+        default=list, blank=True,
+        help_text="Jours de fermeture hebdomadaire du vendeur (0=lundi ... 6=dimanche). Dimanche est toujours ferme, pas besoin de l'ajouter.",
+    )
+
     # ── Boutique publique ────────────────────────────────────────────────────
     shop_slug         = models.SlugField(max_length=120, unique=True, blank=True)
     banner_image      = models.ImageField(upload_to='vendors/banners/%Y/%m/', null=True, blank=True)

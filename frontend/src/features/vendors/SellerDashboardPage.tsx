@@ -4,6 +4,8 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
+import AppDownloadBanner from '@/components/AppDownloadBanner';
 import {
   Package, ShoppingBag, TrendingUp, Plus, Edit2,
   Trash2, Eye, Clock, XCircle, AlertCircle, RefreshCw,
@@ -613,6 +615,8 @@ export default function SellerDashboardPage() {
           </Link>
         </div>
       </div>
+
+      {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="VENDOR" />}
 
       {/*  MILESTONES  */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">

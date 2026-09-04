@@ -55,7 +55,8 @@ from .serializers import (
 )
 from apps.catalog.models import Product, ProductImage
 from apps.catalog.serializers import ProductImageSerializer, ProductSerializer, ProductCreateUpdateSerializer
-from apps.orders.models import Order, OrderItem, DisputeEvidenceRequest, DisputeMessage
+from apps.orders.models import Order, OrderItem, DisputeEvidenceRequest, DisputeMessage, Return
+from apps.orders.serializers import ReturnSerializer
 from apps.orders.evidence import create_evidence, resolve_dispute_actor
 from apps.accounts.models import UserNotification
 
@@ -614,8 +615,7 @@ def vendor_orders(request):
  
         orders = (
             Order.objects.filter(items__product__vendor=request.user)
-            .select_related('shipment')
-            .prefetch_related('shipment__events')
+            .prefetch_related('shipments__events')
             .distinct()
             .order_by('-created_at')
         )
@@ -670,7 +670,7 @@ def vendor_order_detail(request, order_id):
         order = Order.objects.filter(
             id=order_id,
             items__product__vendor=request.user
-        ).select_related('shipment').prefetch_related('shipment__events').distinct().first()
+        ).prefetch_related('shipments__events').distinct().first()
         
         if not order:
             return Response(
@@ -1206,7 +1206,7 @@ def update_fulfillment_status(request, order_id):
         serializer = UpdateFulfillmentStatusSerializer(
             order,
             data=request.data,
-            context={'order': order},
+            context={'order': order, 'vendor': request.user},
         )
  
         if serializer.is_valid():
@@ -1870,8 +1870,103 @@ def vendor_dispute_reply(request, dispute_id):
             {'detail': 'Profil vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND,
         )
- 
- 
+
+
+@extend_schema(tags=["Vendors"], summary="Lister les retours concernant mes produits")
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def vendor_return_list(request):
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        returns = Return.objects.filter(vendor=request.user).select_related(
+            'order', 'order_item', 'dropoff_relay_point',
+        ).order_by('-created_at')
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            returns = returns.filter(status=status_filter)
+        return Response(ReturnSerializer(returns, many=True, context={'request': request}).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+
+@extend_schema(
+    tags=["Vendors"],
+    summary="Approuver ou rejeter une demande de retour",
+    description=(
+        "Le vendeur reconnait (ou conteste) le motif du retour. L'approbation ne "
+        "declenche PAS le remboursement — elle ouvre seulement l'etape logistique "
+        "(depot/ramassage). Le remboursement n'intervient qu'apres reception "
+        "physique et inspection (voir admin_finalize_return)."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def vendor_return_review(request, return_id):
+    try:
+        vendor_profile = VendorProfile.objects.get(user=request.user)
+        if not vendor_profile.is_active_vendor:
+            return Response(
+                {'detail': "Votre compte vendeur n'est pas encore approuvé."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        try:
+            return_obj = Return.objects.get(id=return_id, vendor=request.user)
+        except Return.DoesNotExist:
+            return Response({'detail': 'Retour introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if return_obj.status != Return.Status.REQUESTED:
+            return Response(
+                {'detail': 'Ce retour a deja ete traite.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        decision = (request.data.get('decision') or '').upper()
+        if decision not in ('APPROVED', 'REJECTED'):
+            return Response({'decision': "Choisissez 'APPROVED' ou 'REJECTED'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return_obj.status = Return.Status.APPROVED if decision == 'APPROVED' else Return.Status.REJECTED
+        return_obj.reviewed_by = request.user
+        return_obj.reviewed_at = timezone.now()
+        return_obj.review_note = request.data.get('note', '')
+        return_obj.save(update_fields=['status', 'reviewed_by', 'reviewed_at', 'review_note', 'updated_at'])
+
+        if decision == 'REJECTED':
+            try:
+                from apps.payments.bridge import events_in
+                events_in.return_completed(
+                    order_id=return_obj.order_id,
+                    outcome='REJECTED',
+                    event_id=f"return-{return_obj.id}-completed",
+                    emitter="apps.vendors.vendor_return_review",
+                )
+            except Exception:
+                import logging
+                logging.getLogger("apps.vendors").exception(
+                    "Evenement de retour (rejet vendeur) non transmis pour la commande #%s.",
+                    return_obj.order_id,
+                )
+
+        UserNotification.objects.create(
+            user=return_obj.requested_by,
+            title=f"Retour {'approuve' if decision == 'APPROVED' else 'refuse'} · commande #{return_obj.order_id}",
+            message=return_obj.review_note or (
+                "Deposez le colis au point relais indique."
+                if decision == 'APPROVED' else "Le vendeur conteste ce retour."
+            ),
+            notification_type=UserNotification.NotificationType.ORDER,
+            action_url=f"/orders/{return_obj.order_id}",
+        )
+
+        return Response(ReturnSerializer(return_obj, context={'request': request}).data)
+    except VendorProfile.DoesNotExist:
+        return Response({'detail': 'Profil vendeur introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+
 @extend_schema(
     tags=["Vendors"],
     summary="Vendor send message in dispute",
@@ -5189,8 +5284,8 @@ def admin_request_dispute_evidence(request, dispute_id):
     from apps.vendors.serializers import AdminDisputeDetailSerializer
 
     dispute = get_object_or_404(
-        Dispute.objects.select_related(
-            'opened_by', 'vendor', 'order__shipment__courier__delivery_organization',
+        Dispute.objects.select_related('opened_by', 'vendor').prefetch_related(
+            'order__shipments__courier__delivery_organization',
         ),
         id=dispute_id,
     )
@@ -5356,14 +5451,23 @@ def admin_resolve_dispute(request, dispute_id):
         )
     
     resolution = request.data.get('resolution')
-    resolution_note = request.data.get('resolution_note', '')
+    resolution_note = (request.data.get('resolution_note') or '').strip()
     refund_amount = request.data.get('refund_amount_xaf')
-    
+
     if not resolution:
         return Response(
             {'detail': 'La résolution est requise.'},
             status=status.HTTP_400_BAD_REQUEST
     )
+
+    # Arbitrage motivé : un motif trop court n'est pas un arbitrage, c'est un
+    # clic. 40 caractères est le minimum pour forcer une vraie justification.
+    MIN_RESOLUTION_NOTE_LENGTH = 40
+    if len(resolution_note) < MIN_RESOLUTION_NOTE_LENGTH:
+        return Response(
+            {'resolution_note': f'La justification doit faire au moins {MIN_RESOLUTION_NOTE_LENGTH} caractères.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     try:
         refund_amount = int(refund_amount) if refund_amount not in (None, '') else None
@@ -5408,7 +5512,12 @@ def admin_resolve_dispute(request, dispute_id):
             message=f"Litige résolu : {dispute.get_resolution_display()}. {resolution_note}",
             is_internal=False
         )
-    
+
+        # Trust Score V5.5 — hard filter : une contrefaçon confirmée gèle le
+        # vendeur (veto), quel que soit le reste de son historique.
+        from apps.accounts.trust_score import apply_veto_for_catastrophic_dispute
+        apply_veto_for_catastrophic_dispute(dispute)
+
     serializer = AdminDisputeDetailSerializer(dispute, context={'request': request})
     return Response(serializer.data)
 
@@ -5455,7 +5564,125 @@ def admin_dispute_stats(request):
     return Response(stats)
 
 
-#  ADMINISTRATION - PARAMÈTRES SYSTÈME 
+@extend_schema(tags=["Admin"], summary="Lister tous les retours (admin)")
+@api_view(['GET'])
+@permission_classes([IsAdminUser])
+def admin_list_returns(request):
+    returns = Return.objects.select_related(
+        'order', 'order_item', 'vendor', 'requested_by', 'dropoff_relay_point',
+    ).order_by('-created_at')
+    status_filter = request.query_params.get('status')
+    if status_filter:
+        returns = returns.filter(status=status_filter)
+    return Response(ReturnSerializer(returns, many=True, context={'request': request}).data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Constater la reception physique d'un retour (admin)",
+    description=(
+        "Fallback admin pour le ramassage livreur (colis encombrants) — le depot "
+        "en point relais passe normalement par l'action equivalente cote point "
+        "relais (apps.shipping)."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_return_mark_received(request, return_id):
+    try:
+        return_obj = Return.objects.get(id=return_id)
+    except Return.DoesNotExist:
+        return Response({'detail': 'Retour introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if return_obj.status not in (Return.Status.APPROVED, Return.Status.AWAITING_DROPOFF):
+        return Response(
+            {'detail': 'Ce retour doit etre approuve avant de constater sa reception.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    return_obj.status = Return.Status.RECEIVED
+    return_obj.received_at = timezone.now()
+    return_obj.received_by = request.user
+    return_obj.save(update_fields=['status', 'received_at', 'received_by', 'updated_at'])
+    return Response(ReturnSerializer(return_obj, context={'request': request}).data)
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Finaliser un retour apres inspection (admin) — declenche le remboursement",
+    description=(
+        "Regle verrouillee : le remboursement ne se declenche JAMAIS avant "
+        "reception physique + inspection du colis retourne. inspection_passed=True "
+        "cree une demande de remboursement (en attente d'approbation tierce, "
+        "meme circuit que pour un litige) ; False degele le sequestre sans "
+        "remboursement."
+    ),
+)
+@api_view(['POST'])
+@permission_classes([IsAdminUser])
+def admin_finalize_return(request, return_id):
+    try:
+        return_obj = Return.objects.get(id=return_id)
+    except Return.DoesNotExist:
+        return Response({'detail': 'Retour introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+
+    if return_obj.status != Return.Status.RECEIVED:
+        return Response(
+            {'detail': 'La reception physique du colis doit etre constatee avant de finaliser.'},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    inspection_passed = request.data.get('inspection_passed')
+    if inspection_passed is None:
+        return Response({'inspection_passed': 'Ce champ est requis.'}, status=status.HTTP_400_BAD_REQUEST)
+    inspection_passed = bool(inspection_passed) if not isinstance(inspection_passed, str) else inspection_passed.lower() in ('true', '1', 'yes')
+
+    refund_amount = request.data.get('refund_amount_xaf')
+    try:
+        refund_amount = int(refund_amount) if refund_amount not in (None, '') else None
+    except (TypeError, ValueError):
+        return Response({'refund_amount_xaf': 'Doit etre un nombre entier.'}, status=status.HTTP_400_BAD_REQUEST)
+
+    with transaction.atomic():
+        return_obj.inspection_passed = inspection_passed
+        return_obj.inspection_note = request.data.get('note', '')
+        return_obj.refund_amount_xaf = refund_amount
+        return_obj.status = Return.Status.REFUNDED if inspection_passed else Return.Status.CLOSED_NO_REFUND
+        return_obj.save(update_fields=[
+            'inspection_passed', 'inspection_note', 'refund_amount_xaf', 'status', 'updated_at',
+        ])
+
+        try:
+            from apps.payments.bridge import events_in
+            events_in.return_completed(
+                order_id=return_obj.order_id,
+                outcome='PARTIAL' if (inspection_passed and refund_amount) else ('REFUND' if inspection_passed else 'REJECTED'),
+                refund_amount_xaf=refund_amount or 0,
+                event_id=f"return-{return_obj.id}-completed",
+                emitter="apps.vendors.admin_finalize_return",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.vendors").exception(
+                "Evenement de retour (finalisation) non transmis pour la commande #%s.",
+                return_obj.order_id,
+            )
+
+    UserNotification.objects.create(
+        user=return_obj.requested_by,
+        title=f"Retour {'rembourse' if inspection_passed else 'cloture sans remboursement'} · commande #{return_obj.order_id}",
+        message=return_obj.inspection_note or (
+            "Votre remboursement est en cours de traitement." if inspection_passed
+            else "L'inspection du colis retourne n'a pas confirme le motif du retour."
+        ),
+        notification_type=UserNotification.NotificationType.PAYMENT,
+        action_url=f"/orders/{return_obj.order_id}",
+    )
+
+    return Response(ReturnSerializer(return_obj, context={'request': request}).data)
+
+
+#  ADMINISTRATION - PARAMÈTRES SYSTÈME
 
 @extend_schema(
     tags=["Admin"],

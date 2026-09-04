@@ -27,6 +27,9 @@ export interface OrderCreateData {
   customer_phone: string;
   customer_email?: string;
   note?: string;
+  relay_point_id?: number;
+  authorized_pickup_name?: string;
+  authorized_pickup_phone?: string;
   cart_items: OrderItem[];
 }
 
@@ -64,7 +67,11 @@ export const ordersApi = {
   /**
    * Annuler une commande
    */
-  cancel: async (id: number): Promise<Order> => {
-    return api.post<Order>(`/orders/${id}/cancel/`, {});
+  cancel: async (id: number, reason?: string): Promise<Order> => {
+    return api.post<Order>(`/orders/${id}/cancel/`, { reason: reason || "OTHER" });
+  },
+
+  extendRelayGarde: async (id: number): Promise<{ garde_deadline: string; garde_extended: boolean }> => {
+    return api.post(`/orders/${id}/extend-relay-garde/`);
   },
 };

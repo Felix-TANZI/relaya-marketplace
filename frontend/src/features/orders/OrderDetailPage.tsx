@@ -26,9 +26,10 @@ import {
   QrCode,
   KeyRound,
 } from "lucide-react";
+import * as QRCode from "qrcode";
 import { ordersApi } from "@/services/api/orders";
 import { productsApi } from "@/services/api/products";
-import { customerApi, type Dispute, type Shipment, type OrderChatMessage } from "@/services/api/customer";
+import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import QrScanner from "@/components/QrScanner";
@@ -36,6 +37,7 @@ import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
+import { useToast } from "@/context/ToastContext";
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -43,6 +45,7 @@ const DISPUTE_REASONS = [
   "Colis non reçu",
   "Commande incomplète",
   "Suspicion de contrefaçon",
+  "Paiement non reconnu",
   "Autre motif",
 ];
 
@@ -52,8 +55,56 @@ const DISPUTE_REASON_CODES: Record<string, string> = {
   "Colis non reçu": "NOT_RECEIVED",
   "Commande incomplète": "WRONG_ITEM",
   "Suspicion de contrefaçon": "COUNTERFEIT",
+  "Paiement non reconnu": "PAYMENT_NOT_RECOGNIZED",
   "Autre motif": "OTHER",
 };
+
+// Litige guide par motif — Addendum Decisions v1.0 §4 : nombre de preuves photo
+// exigees selon le motif, pour eviter les litiges non instruits faute de preuves.
+const DISPUTE_PHOTO_REQUIREMENTS: Record<string, { min: number; hint: string }> = {
+  DAMAGED: { min: 2, hint: "Ajoutez au moins 2 photos du produit endommagé (vue d'ensemble + détail du défaut)." },
+  NOT_AS_DESCRIBED: { min: 2, hint: "Ajoutez au moins 2 photos : le produit reçu, à comparer avec la fiche produit." },
+  WRONG_ITEM: { min: 1, hint: "Ajoutez au moins 1 photo du colis reçu avec la liste des articles manquants ou erronés." },
+  COUNTERFEIT: { min: 2, hint: "Ajoutez au moins 2 photos permettant de comparer le produit reçu à l'original (marquages, finitions, emballage)." },
+  NOT_RECEIVED: { min: 0, hint: "Aucune photo requise — le suivi de livraison fait foi pour ce motif." },
+  PAYMENT_NOT_RECOGNIZED: { min: 0, hint: "Aucune photo requise pour ce motif." },
+  OTHER: { min: 0, hint: "" },
+};
+
+const RETURN_REASONS = [
+  "Article endommagé",
+  "Non conforme à la description",
+  "Mauvais article reçu",
+  "Suspicion de contrefaçon",
+  "Autre",
+];
+
+const RETURN_REASON_CODES: Record<string, string> = {
+  "Article endommagé": "DAMAGED",
+  "Non conforme à la description": "NOT_AS_DESCRIBED",
+  "Mauvais article reçu": "WRONG_ITEM",
+  "Suspicion de contrefaçon": "COUNTERFEIT",
+  "Autre": "OTHER",
+};
+
+const RETURN_STATUS_LABELS: Record<OrderReturn["status"], string> = {
+  REQUESTED: "Demande envoyée au vendeur",
+  APPROVED: "Approuvé — déposez le colis",
+  REJECTED: "Refusé par le vendeur",
+  AWAITING_DROPOFF: "En attente de dépôt",
+  RECEIVED: "Colis reçu — inspection en cours",
+  REFUNDED: "Remboursé",
+  CLOSED_NO_REFUND: "Clôturé sans remboursement",
+};
+
+type DisputeTriageChoice = "DELAY" | "RETURN" | "QUESTION" | "PAYMENT" | "NOT_RECEIVED" | "OTHER";
+
+// Triage obligatoire avant ouverture — Addendum Decisions v1.0 §4.1 : "Jamais
+// reçu" doit rester grise tant que le colis n'est pas au moins en remise.
+const REMISE_STARTED_STATUSES: FulfillmentStatus[] = [
+  "OUT_FOR_DELIVERY", "SHIPPED", "READY_FOR_PICKUP",
+  "DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR", "DISPUTED",
+];
 
 const REVIEWABLE_STATUSES: FulfillmentStatus[] = [
   "DELIVERED",
@@ -66,6 +117,7 @@ const REVIEWABLE_STATUSES: FulfillmentStatus[] = [
 export default function OrderDetailPage() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { showToast } = useToast();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
@@ -74,6 +126,7 @@ export default function OrderDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
   const [activeDisputeId, setActiveDisputeId] = useState<number | null>(null);
+  const [showDisputeTriage, setShowDisputeTriage] = useState(false);
   const [showDisputeComposer, setShowDisputeComposer] = useState(false);
   const [disputeReason, setDisputeReason] = useState(DISPUTE_REASONS[0]);
   const [disputeOrderItemId, setDisputeOrderItemId] = useState<number | null>(null);
@@ -84,12 +137,23 @@ export default function OrderDetailPage() {
   const [requestFiles, setRequestFiles] = useState<Record<number, File[]>>({});
   const [respondingRequestId, setRespondingRequestId] = useState<number | null>(null);
   const [disputeReply, setDisputeReply] = useState("");
+  const [disputeReplyFiles, setDisputeReplyFiles] = useState<File[]>([]);
+  const [returns, setReturns] = useState<OrderReturn[]>([]);
+  const [showReturnComposer, setShowReturnComposer] = useState(false);
+  const [returnReason, setReturnReason] = useState(RETURN_REASONS[0]);
+  const [returnOrderItemId, setReturnOrderItemId] = useState<number | null>(null);
+  const [returnDescription, setReturnDescription] = useState("");
+  const [returnSubmitting, setReturnSubmitting] = useState(false);
+  const [returnError, setReturnError] = useState("");
   const [showCourierChat, setShowCourierChat] = useState(false);
   const [courierMessages, setCourierMessages] = useState<OrderChatMessage[]>([]);
   const [courierChatDraft, setCourierChatDraft] = useState("");
   const [chatSending, setChatSending] = useState(false);
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { rating: number; title: string; comment: string }>>({});
   const [reviewStatus, setReviewStatus] = useState<Record<number, "idle" | "saving" | "saved" | "error" | "exists">>({});
+  const [pickupQrDataUrl, setPickupQrDataUrl] = useState<string | null>(null);
+  const [extendingGarde, setExtendingGarde] = useState(false);
+  const [gardeExtendError, setGardeExtendError] = useState<string | null>(null);
   const [showConfirmReceipt, setShowConfirmReceipt] = useState(false);
   const [showQrScanner, setShowQrScanner] = useState(false);
   const [receiptCode, setReceiptCode] = useState("");
@@ -216,6 +280,15 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
+    let cancelled = false;
+    customerApi.getOrderReturns(order.id)
+      .then((data) => { if (!cancelled) setReturns(data); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [order]);
+
+  useEffect(() => {
+    if (!order) return;
 
     let cancelled = false;
     const fetchMessages = () => {
@@ -233,6 +306,19 @@ export default function OrderDetailPage() {
     if (!showCourierChat) return;
     courierChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [courierMessages, showCourierChat]);
+
+  useEffect(() => {
+    const pickupCode = tracking?.relay_parcel?.pickup_code;
+    if (!pickupCode) {
+      setPickupQrDataUrl(null);
+      return;
+    }
+    let cancelled = false;
+    QRCode.toDataURL(pickupCode, { margin: 1, width: 220 })
+      .then((url) => { if (!cancelled) setPickupQrDataUrl(url); })
+      .catch(() => { if (!cancelled) setPickupQrDataUrl(null); });
+    return () => { cancelled = true; };
+  }, [tracking?.relay_parcel?.pickup_code]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
   const activeDispute =
@@ -325,6 +411,21 @@ export default function OrderDetailPage() {
     }
   };
 
+  const handleExtendGarde = async () => {
+    if (!order) return;
+    setExtendingGarde(true);
+    setGardeExtendError(null);
+    try {
+      await ordersApi.extendRelayGarde(order.id);
+      const shipment = await customerApi.getOrderTracking(order.id);
+      setTracking(shipment);
+    } catch (err) {
+      setGardeExtendError(err instanceof Error ? err.message : "Impossible de prolonger la garde pour le moment.");
+    } finally {
+      setExtendingGarde(false);
+    }
+  };
+
   const handleQrScanned = (value: string) => {
     const digitsOnly = value.replace(/\D/g, "").slice(-6);
     setShowQrScanner(false);
@@ -342,17 +443,86 @@ export default function OrderDetailPage() {
     }
 
     setDisputeOrderItemId(order.items[0]?.id ?? null);
-    setShowDisputeComposer(true);
+    setShowDisputeTriage(true);
     window.setTimeout(() => {
       disputeSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 30);
   };
 
+  const openDisputeComposerWithReason = (reason: string) => {
+    setDisputeReason(reason);
+    setShowDisputeTriage(false);
+    setShowDisputeComposer(true);
+  };
+
+  const handleTriageChoice = (choice: DisputeTriageChoice) => {
+    switch (choice) {
+      case "DELAY":
+        setShowDisputeTriage(false);
+        setShowCourierChat(true);
+        showToast(
+          "Suivez la livraison ci-dessus ou écrivez directement au livreur. Si le problème persiste, vous pourrez ouvrir un litige.",
+          "success",
+        );
+        break;
+      case "QUESTION":
+        setShowDisputeTriage(false);
+        setShowCourierChat(true);
+        showToast("Posez votre question directement au livreur dans le chat ci-dessus.", "success");
+        break;
+      case "RETURN":
+        setReturnOrderItemId(order.items[0]?.id ?? null);
+        setShowDisputeTriage(false);
+        setShowReturnComposer(true);
+        break;
+      case "PAYMENT":
+        openDisputeComposerWithReason("Paiement non reconnu");
+        break;
+      case "NOT_RECEIVED": {
+        if (!REMISE_STARTED_STATUSES.includes(order.fulfillment_status)) break;
+        if ((tracking?.delivery_evidences?.length ?? 0) > 0) {
+          showToast(
+            "Une preuve de remise (photo du livreur) existe pour cette commande. Vous pouvez tout de même ouvrir le litige : elle sera examinée en priorité par l'arbitrage.",
+            "info",
+          );
+        }
+        openDisputeComposerWithReason("Colis non reçu");
+        break;
+      }
+      case "OTHER":
+      default:
+        openDisputeComposerWithReason(DISPUTE_REASONS[0]);
+        break;
+    }
+  };
+
+  const handleCreateReturn = async () => {
+    if (!returnOrderItemId || returnSubmitting) return;
+    const reasonCode = RETURN_REASON_CODES[returnReason] || "OTHER";
+    setReturnSubmitting(true);
+    setReturnError("");
+    try {
+      const created = await customerApi.createOrderReturn(order.id, {
+        reason: reasonCode,
+        description: returnDescription.trim(),
+        order_item: returnOrderItemId,
+      });
+      setReturns((current) => [created, ...current]);
+      setShowReturnComposer(false);
+      setReturnDescription("");
+    } catch (caught) {
+      setReturnError(caught instanceof Error ? caught.message : "Impossible d'ouvrir la demande de retour.");
+    } finally {
+      setReturnSubmitting(false);
+    }
+  };
+
   const handleCreateDispute = async () => {
     if (!disputeDraft.trim() || !disputeOrderItemId || disputeSubmitting) return;
     const reasonCode = DISPUTE_REASON_CODES[disputeReason] || "OTHER";
-    if (["DAMAGED", "WRONG_ITEM", "NOT_AS_DESCRIBED", "COUNTERFEIT"].includes(reasonCode) && disputeFiles.length === 0) {
-      setDisputeError("Ajoutez au moins une photo ou un document pour ce motif.");
+    const photoRequirement = DISPUTE_PHOTO_REQUIREMENTS[reasonCode] ?? { min: 0, hint: "" };
+    if (disputeFiles.length < photoRequirement.min) {
+      setDisputeError(photoRequirement.hint || `Ajoutez au moins ${photoRequirement.min} photo(s) pour ce motif.`);
       return;
     }
     setDisputeSubmitting(true);
@@ -392,15 +562,18 @@ export default function OrderDetailPage() {
   };
 
   const handleSendDisputeReply = async () => {
-    if (!activeDispute || !disputeReply.trim()) return;
+    if (!activeDispute || (!disputeReply.trim() && disputeReplyFiles.length === 0)) return;
     const text = disputeReply.trim();
+    const files = disputeReplyFiles;
     setDisputeReply("");
+    setDisputeReplyFiles([]);
     try {
-      await customerApi.addDisputeMessage(activeDispute.id, text);
+      await customerApi.addDisputeMessage(activeDispute.id, text, files);
       const data = await customerApi.getOrderDisputes(order.id);
       setDisputes(data);
     } catch {
       setDisputeReply(text);
+      setDisputeReplyFiles(files);
     }
   };
 
@@ -536,6 +709,19 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
+              {tracking?.status === "INCIDENT" && (
+                <div className="mb-5 flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 dark:border-red-900/40 dark:bg-red-950/20">
+                  <AlertTriangle className="mt-0.5 shrink-0 text-red-600" size={20} />
+                  <div>
+                    <p className="text-sm font-bold text-red-800 dark:text-red-300">Incident signalé sur votre livraison</p>
+                    <p className="mt-1 text-sm leading-5 text-red-700 dark:text-red-300/90">
+                      {tracking.events?.[tracking.events.length - 1]?.message ||
+                        "Le livreur a signalé un problème. Notre équipe BelivaY a été notifiée et va vous recontacter."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
               <div className="mb-6 overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
                 {order.delivery_mode === "PICKUP" ? (
                   <div className="flex h-56 flex-col justify-between bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900">
@@ -624,6 +810,17 @@ export default function OrderDetailPage() {
                   <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
                     Scan, horodatage et traces de livraison sont conserves par BelivaY pour proteger le client.
                   </p>
+                  {tracking?.delivery_evidences && tracking.delivery_evidences.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      {tracking.delivery_evidences.map((evidence) => (
+                        <a key={evidence.id} href={evidence.file_url || '#'} target="_blank" rel="noreferrer" className="block h-16 w-16 overflow-hidden rounded-lg border border-emerald-200 dark:border-emerald-800">
+                          {evidence.file_url ? (
+                            <img src={evidence.file_url} alt={evidence.stage_label} className="h-full w-full object-cover" />
+                          ) : null}
+                        </a>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="rounded-2xl border border-sky-100 bg-sky-50 p-4 dark:border-sky-900/30 dark:bg-sky-950/20">
                   <div className="flex items-center gap-2 text-xs font-black uppercase tracking-[0.14em] text-sky-700 dark:text-sky-300">
@@ -631,9 +828,11 @@ export default function OrderDetailPage() {
                     Point relais
                   </div>
                   <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
-                    {tracking?.relay_point
-                      ? `Relais prevu: ${tracking.relay_point}.`
-                      : "Si un relais est choisi, son code de retrait apparaitra ici apres depot."}
+                    {tracking?.relay_parcel
+                      ? `Relais: ${tracking.relay_parcel.relay_point_name}.`
+                      : tracking?.relay_point
+                        ? `Relais prevu: ${tracking.relay_point}.`
+                        : "Si un relais est choisi, son code de retrait apparaitra ici apres depot."}
                   </p>
                 </div>
                 <div className="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/30 dark:bg-amber-950/20">
@@ -646,6 +845,68 @@ export default function OrderDetailPage() {
                   </p>
                 </div>
               </div>
+
+              {tracking?.relay_parcel?.pickup_code && (
+                <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-[#fff8f0] p-5 dark:border-primary/30 dark:bg-primary/5 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">Code de retrait</p>
+                    <p className="mt-1 text-3xl font-black tracking-[0.2em] text-gray-900 dark:text-white">
+                      {tracking.relay_parcel.pickup_code}
+                    </p>
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                      Présentez ce code (ou le QR) au point relais <strong>{tracking.relay_parcel.relay_point_name}</strong> pour récupérer votre colis.
+                    </p>
+                  </div>
+                  {pickupQrDataUrl && (
+                    <img src={pickupQrDataUrl} alt="QR code de retrait" className="h-28 w-28 rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700" />
+                  )}
+                </div>
+              )}
+
+              {tracking?.relay_parcel?.pickup_code && tracking.relay_parcel.garde_deadline && (() => {
+                const parcel = tracking.relay_parcel;
+                const now = new Date();
+                const freeUntil = parcel.garde_free_until ? new Date(parcel.garde_free_until) : null;
+                const deadline = new Date(parcel.garde_deadline!);
+                const stillFree = freeUntil ? now < freeUntil : true;
+                const msLeft = deadline.getTime() - now.getTime();
+                const daysLeft = Math.max(0, Math.ceil(msLeft / (24 * 3600 * 1000)));
+                const overdue = msLeft <= 0;
+                return (
+                  <div className={`mt-4 rounded-2xl border p-5 ${overdue ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-900/20" : "border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-900/20"}`}>
+                    <p className={`text-xs font-black uppercase tracking-[0.16em] ${overdue ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}`}>
+                      Garde au point relais
+                    </p>
+                    {overdue ? (
+                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        Le délai de garde est dépassé. Votre colis va être retourné au vendeur ; un remboursement partiel (frais de livraison et de garde déduits) vous sera versé.
+                      </p>
+                    ) : stillFree ? (
+                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        Garde gratuite pendant {daysLeft} jour{daysLeft > 1 ? "s" : ""} encore. Passé ce délai, {tracking.relay_parcel.garde_fee_due_xaf > 0 ? "des frais de 200 FCFA/jour s'appliqueront." : "des frais de 200 FCFA/jour s'appliquent."}
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                        Frais de garde en cours : <strong>{parcel.garde_fee_due_xaf.toLocaleString("fr-FR")} FCFA</strong>. Il vous reste {daysLeft} jour{daysLeft > 1 ? "s" : ""} avant le retour au vendeur.
+                      </p>
+                    )}
+                    {!overdue && !parcel.garde_extended && !stillFree && (
+                      <button
+                        type="button"
+                        onClick={() => void handleExtendGarde()}
+                        disabled={extendingGarde}
+                        className="mt-3 inline-flex items-center gap-2 rounded-xl bg-amber-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {extendingGarde ? "Prolongation..." : "Prolonger la garde de 4 jours"}
+                      </button>
+                    )}
+                    {parcel.garde_extended && !overdue && (
+                      <p className="mt-2 text-xs font-semibold text-gray-500 dark:text-gray-400">Prolongation déjà utilisée pour ce colis.</p>
+                    )}
+                    {gardeExtendError && <p className="mt-2 text-xs font-semibold text-red-600">{gardeExtendError}</p>}
+                  </div>
+                );
+              })()}
 
               <div className="mt-6 flex flex-wrap gap-3">
                 <button
@@ -924,6 +1185,90 @@ export default function OrderDetailPage() {
                 </div>
               </div>
 
+              {showDisputeTriage && !activeDispute ? (
+                <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+                  <div className="w-full max-w-lg rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
+                    <h3 className="text-xl font-black text-gray-900 dark:text-white">Quel est le problème ?</h3>
+                    <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                      On vous oriente directement vers la bonne solution.
+                    </p>
+                    <div className="mt-4 grid gap-3">
+                      <button
+                        type="button"
+                        onClick={() => handleTriageChoice("DELAY")}
+                        className="flex items-center gap-3 rounded-2xl border border-gray-200 p-4 text-left text-sm font-bold text-gray-900 transition hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                      >
+                        <Clock3 size={20} className="shrink-0 text-primary" />
+                        <span>Ma livraison est en retard<br /><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">→ Suivi en direct et chat avec le livreur</span></span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTriageChoice("RETURN")}
+                        className="flex items-center gap-3 rounded-2xl border border-gray-200 p-4 text-left text-sm font-bold text-gray-900 transition hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                      >
+                        <Package size={20} className="shrink-0 text-primary" />
+                        <span>Je veux renvoyer ce produit<br /><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">→ Ouvre un dossier de retour avec BelivaY</span></span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTriageChoice("QUESTION")}
+                        className="flex items-center gap-3 rounded-2xl border border-gray-200 p-4 text-left text-sm font-bold text-gray-900 transition hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                      >
+                        <MessageCircleMore size={20} className="shrink-0 text-primary" />
+                        <span>J'ai juste une question<br /><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">→ Chat direct avec le livreur</span></span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleTriageChoice("PAYMENT")}
+                        className="flex items-center gap-3 rounded-2xl border border-gray-200 p-4 text-left text-sm font-bold text-gray-900 transition hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                      >
+                        <CreditCard size={20} className="shrink-0 text-primary" />
+                        <span>Mon paiement n'est pas reconnu<br /><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">→ Signalement prioritaire à BelivaY</span></span>
+                      </button>
+                      {(() => {
+                        const remiseStarted = REMISE_STARTED_STATUSES.includes(order.fulfillment_status);
+                        return (
+                          <button
+                            type="button"
+                            disabled={!remiseStarted}
+                            onClick={() => handleTriageChoice("NOT_RECEIVED")}
+                            className={`flex items-center gap-3 rounded-2xl border p-4 text-left text-sm font-bold transition ${
+                              remiseStarted
+                                ? "border-gray-200 text-gray-900 hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                                : "cursor-not-allowed border-gray-100 text-gray-400 dark:border-gray-800 dark:text-gray-600"
+                            }`}
+                          >
+                            <Package size={20} className={`shrink-0 ${remiseStarted ? "text-primary" : "text-gray-300 dark:text-gray-700"}`} />
+                            <span>
+                              Je n'ai jamais reçu mon colis
+                              <br />
+                              <span className="text-xs font-semibold text-gray-500 dark:text-gray-400">
+                                {remiseStarted ? "→ Vérifié contre le suivi de livraison" : "→ Disponible une fois le colis en cours de remise"}
+                              </span>
+                            </span>
+                          </button>
+                        );
+                      })()}
+                      <button
+                        type="button"
+                        onClick={() => handleTriageChoice("OTHER")}
+                        className="flex items-center gap-3 rounded-2xl border border-gray-200 p-4 text-left text-sm font-bold text-gray-900 transition hover:border-primary hover:bg-orange-50 dark:border-gray-700 dark:text-white dark:hover:bg-primary/10"
+                      >
+                        <AlertTriangle size={20} className="shrink-0 text-primary" />
+                        <span>Autre problème (produit défectueux, contrefait...)<br /><span className="text-xs font-semibold text-gray-500 dark:text-gray-400">→ Ouvrir un litige détaillé</span></span>
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowDisputeTriage(false)}
+                      className="mt-4 w-full rounded-2xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               {showDisputeComposer && !activeDispute ? (
                 <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
                   <div className="w-full max-w-xl rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
@@ -963,6 +1308,12 @@ export default function OrderDetailPage() {
                         <option key={reason} value={reason}>{reason}</option>
                       ))}
                     </select>
+                    {(() => {
+                      const req = DISPUTE_PHOTO_REQUIREMENTS[DISPUTE_REASON_CODES[disputeReason] || "OTHER"];
+                      return req?.hint ? (
+                        <p className="mt-2 text-xs font-semibold text-amber-700 dark:text-amber-300">{req.hint}</p>
+                      ) : null;
+                    })()}
 
                     <label className="mb-2 mt-4 block text-sm font-bold text-gray-800 dark:text-gray-200">
                       Description
@@ -1024,6 +1375,112 @@ export default function OrderDetailPage() {
                 </div>
               ) : null}
 
+              {showReturnComposer ? (
+                <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-4">
+                  <div className="w-full max-w-xl rounded-t-[2rem] bg-white p-5 shadow-2xl dark:bg-gray-900 sm:rounded-[2rem] sm:p-6">
+                    <div className="mb-5 flex items-start gap-4">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20">
+                        <Package size={24} />
+                      </div>
+                      <div>
+                        <h3 className="text-2xl font-black text-gray-900 dark:text-white">Demander un retour</h3>
+                        <p className="mt-1 text-sm font-semibold text-gray-500 dark:text-gray-400">
+                          Commande #{order.id} · Si votre retour est validé, le renvoi est gratuit pour vous.
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Article concerné
+                    </label>
+                    <div className="mb-4 grid gap-2">
+                      {order.items.map((item) => (
+                        <button key={item.id} type="button" onClick={() => setReturnOrderItemId(item.id)} className={`flex min-h-12 items-center justify-between rounded-lg border px-4 py-3 text-left text-sm ${returnOrderItemId === item.id ? "border-primary bg-orange-50 dark:bg-primary/10" : "border-gray-200 dark:border-gray-700"}`}>
+                          <span className="line-clamp-2 font-bold text-gray-900 dark:text-white">{item.title_snapshot}</span>
+                          <span className="ml-3 shrink-0 text-xs text-gray-500">Qté {item.qty}</span>
+                        </button>
+                      ))}
+                    </div>
+
+                    <label className="mb-2 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Motif du retour
+                    </label>
+                    <select
+                      value={returnReason}
+                      onChange={(event) => setReturnReason(event.target.value)}
+                      className="w-full rounded-2xl border-2 border-orange-200 bg-white px-4 py-3 text-sm font-semibold text-gray-900 outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950 dark:text-white"
+                    >
+                      {RETURN_REASONS.map((reason) => (
+                        <option key={reason} value={reason}>{reason}</option>
+                      ))}
+                    </select>
+
+                    <label className="mb-2 mt-4 block text-sm font-bold text-gray-800 dark:text-gray-200">
+                      Description
+                    </label>
+                    <textarea
+                      value={returnDescription}
+                      onChange={(event) => setReturnDescription(event.target.value)}
+                      className="min-h-[110px] w-full rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-950"
+                      placeholder="Décrivez le problème avec cet article."
+                    />
+
+                    <div className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-200">
+                      Le vendeur examine votre demande. Une fois approuvée, déposez le colis au point relais indiqué — le remboursement intervient après réception et inspection.
+                    </div>
+                    {returnError && <p className="mt-3 text-sm font-bold text-red-600">{returnError}</p>}
+
+                    <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                      <button
+                        type="button"
+                        onClick={() => void handleCreateReturn()}
+                        disabled={returnSubmitting || !returnOrderItemId}
+                        className="inline-flex items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white transition hover:bg-primary-dark disabled:opacity-60"
+                      >
+                        <Package size={17} />
+                        {returnSubmitting ? "Envoi..." : "Envoyer la demande"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowReturnComposer(false)}
+                        className="inline-flex items-center justify-center rounded-2xl border border-gray-200 px-5 py-3 text-sm font-bold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+
+              {returns.length > 0 && (
+                <div className="mt-5 space-y-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-gray-500">Mes retours</p>
+                  {returns.map((ret) => (
+                    <div key={ret.id} className="rounded-2xl border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-950">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="font-bold text-gray-900 dark:text-white">{ret.order_item_title}</p>
+                        <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-black text-primary dark:bg-primary/10">
+                          {RETURN_STATUS_LABELS[ret.status]}
+                        </span>
+                      </div>
+                      {ret.status === "APPROVED" && (
+                        <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
+                          {ret.dropoff_relay_point
+                            ? `Déposez le colis au point relais ${ret.relay_point_name}.`
+                            : "Déposez le colis au point relais le plus proche."}
+                        </p>
+                      )}
+                      {ret.review_note && <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">{ret.review_note}</p>}
+                      {ret.status === "REFUNDED" && (
+                        <p className="mt-2 text-sm font-bold text-emerald-600 dark:text-emerald-300">
+                          Remboursement de {(ret.refund_amount_xaf ?? 0).toLocaleString("fr-FR")} FCFA en cours de traitement.
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {disputes.length > 0 ? (
                 <div className="mt-5 grid gap-4 2xl:grid-cols-[290px_minmax(0,1fr)]">
                   <div className="space-y-3">
@@ -1077,6 +1534,21 @@ export default function OrderDetailPage() {
                                 {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
                               </div>
                               {message.message}
+                              {message.evidences?.length > 0 && (
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  {message.evidences.map((evidence) => (
+                                    <a
+                                      key={evidence.id}
+                                      href={evidence.file_url || '#'}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 rounded-lg bg-black/5 px-2 py-1 text-xs font-bold text-gray-700 dark:bg-white/10 dark:text-gray-200"
+                                    >
+                                      <Paperclip size={12} /> {evidence.evidence_type.toLowerCase()}
+                                    </a>
+                                  ))}
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -1128,17 +1600,43 @@ export default function OrderDetailPage() {
                           </div>
                         )}
 
+                        {disputeReplyFiles.length > 0 && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            {disputeReplyFiles.map((file) => (
+                              <span key={`${file.name}-${file.size}`} className="inline-flex items-center gap-1 rounded-lg bg-gray-100 px-2 py-1 text-xs font-bold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                                <Paperclip size={12} /> {file.name}
+                              </span>
+                            ))}
+                          </div>
+                        )}
                         <div className="mt-4 flex gap-3 border-t border-gray-200 pt-4 dark:border-gray-800">
+                          <label className="inline-flex h-12 w-12 flex-shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-gray-200 bg-white text-gray-500 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
+                            <Paperclip size={16} />
+                            <input
+                              type="file"
+                              multiple
+                              accept="image/jpeg,image/png,image/webp,application/pdf,video/mp4"
+                              className="sr-only"
+                              onChange={(event) => {
+                                const selected = Array.from(event.target.files || []);
+                                void ensureImagesUnderLimit(selected).then(setDisputeReplyFiles);
+                              }}
+                            />
+                          </label>
                           <input
                             value={disputeReply}
                             onChange={(event) => setDisputeReply(event.target.value)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") void handleSendDisputeReply();
+                            }}
                             className="flex-1 rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none ring-0 dark:border-gray-700 dark:bg-gray-900"
                             placeholder="Repondre au litige..."
                           />
                           <button
                             type="button"
                             onClick={() => void handleSendDisputeReply()}
-                            className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark"
+                            disabled={!disputeReply.trim() && disputeReplyFiles.length === 0}
+                            className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-50"
                             aria-label="Envoyer la reponse"
                           >
                             <Send size={16} />

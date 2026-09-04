@@ -10,7 +10,7 @@ import unicodedata
 from decimal import Decimal, ROUND_HALF_UP
 from .models import (
     Order, OrderItem, Dispute, DisputeMessage,
-    DisputeEvidence, DisputeEvidenceRequest,
+    DisputeEvidence, DisputeEvidenceRequest, Return,
 )
 from apps.catalog.models import Category, Product, ProductMedia
 
@@ -62,6 +62,59 @@ def _weighted_commission_rate(order_items_data, settings):
     return (weighted / Decimal(total)).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
+def _compute_delivery_price(order_items_data, delivery_mode, destination_zone):
+    """
+    Grille de prix reelle (BelivaY_Regles_Systeme_DEV v2.0 §3.1), calculee
+    cote serveur et figee au paiement (regle en dur #4) — remplace l'ancien
+    forfait plat par ville.
+
+    Base : 500F (retrait relais) / 1000F (livraison domicile) — couvre 1
+    ramassage. +500F par vendeur supplementaire dans la MEME zone que les
+    precedents, +1000F par vendeur supplementaire dans une zone DIFFERENTE.
+    + majoration si la destination est en zone Vague 3.
+    """
+    seen_vendor_ids = set()
+    vendors_in_order = []
+    for item in order_items_data:
+        vendor = item['product'].vendor
+        vid = vendor.id if vendor else None
+        if vid in seen_vendor_ids:
+            continue
+        seen_vendor_ids.add(vid)
+        vendors_in_order.append(vendor)
+
+    if not vendors_in_order:
+        return 0
+
+    base = 500 if delivery_mode == 'PICKUP' else 1000
+    total = base
+
+    def _vendor_zone_id(vendor):
+        if not vendor:
+            return None
+        profile = getattr(vendor, "vendor_profile", None)
+        return profile.zone_id if profile else None
+
+    seen_zone_ids = set()
+    first_zone_id = _vendor_zone_id(vendors_in_order[0])
+    if first_zone_id:
+        seen_zone_ids.add(first_zone_id)
+
+    for vendor in vendors_in_order[1:]:
+        zone_id = _vendor_zone_id(vendor)
+        if zone_id and zone_id in seen_zone_ids:
+            total += 500
+        else:
+            total += 1000
+            if zone_id:
+                seen_zone_ids.add(zone_id)
+
+    if destination_zone is not None and destination_zone.tier == destination_zone.Tier.VAGUE_3:
+        total += destination_zone.surcharge_xaf
+
+    return total
+
+
 class OrderItemSerializer(serializers.ModelSerializer):
     """Serializer pour les articles d'une commande"""
     
@@ -86,11 +139,12 @@ class OrderDetailSerializer(serializers.ModelSerializer):
     """
     items = OrderItemSerializer(many=True, read_only=True)
     delivery_mode = serializers.CharField(source='delivery_method', read_only=True)
-    
+    relay_point_name = serializers.CharField(source='relay_point.name', read_only=True, default=None)
+
     # Champs en lecture seule calculés
     is_paid = serializers.ReadOnlyField()
     can_be_fulfilled = serializers.ReadOnlyField()
-    
+
     class Meta:
         model = Order
         fields = [
@@ -106,6 +160,10 @@ class OrderDetailSerializer(serializers.ModelSerializer):
             'delivery_latitude',
             'delivery_longitude',
             'note',
+            'authorized_pickup_name',
+            'authorized_pickup_phone',
+            'relay_point',
+            'relay_point_name',
             'delivery_mode',
             'payment_status',
             'fulfillment_status',
@@ -185,6 +243,23 @@ class OrderCreateSerializer(serializers.Serializer):
         required=False,
         allow_blank=True,
         help_text="Note pour la livraison (optionnel)"
+    )
+    relay_point_id = serializers.IntegerField(
+        required=False,
+        allow_null=True,
+        help_text="Point relais choisi par l'acheteur (retrait via reseau de points relais partenaires)",
+    )
+    authorized_pickup_name = serializers.CharField(
+        max_length=120,
+        required=False,
+        allow_blank=True,
+        help_text="Nom d'un tiers autorisé à retirer le colis à la place du client (optionnel)",
+    )
+    authorized_pickup_phone = serializers.CharField(
+        max_length=32,
+        required=False,
+        allow_blank=True,
+        help_text="Téléphone du tiers autorisé au retrait (optionnel)",
     )
 
     def validate_cart_items(self, value):
@@ -291,10 +366,14 @@ class OrderCreateSerializer(serializers.Serializer):
         
         delivery_mode = validated_data.get('delivery_mode', 'DELIVERY')
 
-        # Calculer les frais de livraison
+        # Calculer les frais de livraison — grille reelle §3.1, jamais un
+        # forfait plat par ville (regle en dur #4 : calcul cote serveur,
+        # fige au paiement).
         settings = PlatformSettings.get_settings()
-        delivery_fees = settings.delivery_fees or {}
-        delivery_fee = 0 if delivery_mode == 'PICKUP' else delivery_fees.get(validated_data['city'], 2000)
+        from apps.shipping.models import Zone as _Zone
+
+        destination_zone = _Zone.match(validated_data['city'], validated_data.get('district', ''))
+        delivery_fee = _compute_delivery_price(order_items_data, delivery_mode, destination_zone)
         commission_rate_snapshot = _weighted_commission_rate(order_items_data, settings)
 
         address = validated_data.get('address', '').strip()
@@ -303,8 +382,32 @@ class OrderCreateSerializer(serializers.Serializer):
                 'address': "L'adresse est obligatoire pour une livraison."
             })
 
-        if delivery_mode == 'PICKUP':
-            address = address or f"Retrait en boutique - {validated_data['city']}"
+        relay_point_obj = None
+        relay_point_id = validated_data.get('relay_point_id')
+        if delivery_mode == 'PICKUP' and relay_point_id:
+            from apps.accounts.models import RelayPointProfile
+            from apps.shipping.models import RelayParcel as _RelayParcel
+
+            try:
+                relay_point_obj = RelayPointProfile.objects.get(
+                    id=relay_point_id, is_active=True, status=RelayPointProfile.Status.APPROVED,
+                )
+            except RelayPointProfile.DoesNotExist:
+                raise serializers.ValidationError({'relay_point_id': "Ce point relais n'est plus disponible."})
+
+            occupancy = _RelayParcel.objects.filter(
+                relay_point=relay_point_obj,
+                status__in=[_RelayParcel.Status.EXPECTED, _RelayParcel.Status.RECEIVED, _RelayParcel.Status.STORED],
+            ).count()
+            if relay_point_obj.storage_capacity and occupancy >= relay_point_obj.storage_capacity:
+                raise serializers.ValidationError({
+                    'relay_point_id': "Ce point relais vient d'atteindre sa capacité — choisissez-en un autre.",
+                })
+
+            address = f"{relay_point_obj.name} - {relay_point_obj.address}"
+
+        if delivery_mode == 'PICKUP' and not address:
+            address = f"Retrait en boutique - {validated_data['city']}"
 
         address_precision = validated_data.get('address_precision') or {}
         if not isinstance(address_precision, dict):
@@ -323,14 +426,18 @@ class OrderCreateSerializer(serializers.Serializer):
             customer_email=validated_data.get('customer_email', ''),
             customer_phone=validated_data['customer_phone'],
             delivery_method=delivery_mode,
+            relay_point=relay_point_obj,
             city=validated_data['city'],
             region=region,
             district=validated_data.get('district', '').strip(),
+            zone=destination_zone,
             address=address,
             address_precision=address_precision,
             delivery_latitude=validated_data.get('delivery_latitude'),
             delivery_longitude=validated_data.get('delivery_longitude'),
             note=note,
+            authorized_pickup_name=validated_data.get('authorized_pickup_name', '').strip(),
+            authorized_pickup_phone=validated_data.get('authorized_pickup_phone', '').strip(),
             subtotal_xaf=subtotal,
             delivery_fee_xaf=delivery_fee,
             total_xaf=subtotal + delivery_fee,
@@ -380,13 +487,35 @@ class OrderCreateSerializer(serializers.Serializer):
                 action_url="/seller/orders",
             )
 
-        shipment = Shipment.objects.create(order=order, status=Shipment.Status.CREATED)
-        ShipmentEvent.objects.create(
-            shipment=shipment,
-            status=Shipment.Status.CREATED,
-            message="Commande recuee et en attente de prise en charge",
-            location=order.city,
-        )
+        # Un colis par vendeur ET par commande (regle mere, Regles_Systeme_DEV
+        # v2.0 §1/§10.1) : un Shipment par vendeur present dans la commande,
+        # jamais un Shipment partage entre plusieurs vendeurs.
+        created_shipments = []
+        for vendor_user in vendor_users:
+            shipment = Shipment.objects.create(
+                order=order, vendor=vendor_user, status=Shipment.Status.CREATED,
+            )
+            created_shipments.append(shipment)
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                status=Shipment.Status.CREATED,
+                message="Commande recuee et en attente de prise en charge",
+                location=order.city,
+            )
+
+            if relay_point_obj is not None:
+                from apps.shipping.models import RelayParcel as _RelayParcel
+
+                shipment.relay_point = relay_point_obj.name
+                shipment.save(update_fields=["relay_point", "updated_at"])
+                _RelayParcel.objects.create(
+                    shipment=shipment,
+                    relay_point=relay_point_obj,
+                    status=_RelayParcel.Status.EXPECTED,
+                    # pickup_code intentionnellement vide : regle en dur #3,
+                    # le code de retrait ne part qu'a l'arrivee reelle du
+                    # (dernier) colis au relais — voir RelayParcelReceiveSerializer.
+                )
 
         # ─────────────────────────────────────────────────────────────────
         # LE COURT-CIRCUIT DE PAIEMENT EST DESACTIVE
@@ -431,8 +560,21 @@ class OrderCreateSerializer(serializers.Serializer):
                 new_value=Order.EscrowStatus.RELEASED,
             )
 
-        if delivery_mode == 'DELIVERY':
-            from apps.shipping.assignment import assign_shipment_or_mark_blocked
+        # Regle fondatrice (Regles_Systeme_DEV v2.0 §5) : un colis a destination
+        # d'un relais part toujours en groupe, jamais individuellement des sa
+        # creation. Si la zone est couverte, on laisse le colis en attente pour
+        # le composeur de tournees (apps.shipping.tournees, execute
+        # periodiquement) ; sinon — zone non couverte ou gros colis (cas 3,
+        # jamais publie sur la bourse) — on retombe sur l'affectation
+        # individuelle immediate, comme avant.
+        from apps.shipping.assignment import assign_shipment_or_mark_blocked
+        from apps.shipping.tournees import OVERSIZED_PARCEL_SIZES
+
+        for shipment in created_shipments:
+            zone_covered = order.zone_id is not None
+            oversized = shipment.parcel_size in OVERSIZED_PARCEL_SIZES
+            if zone_covered and not oversized:
+                continue  # attend le composeur de tournees
 
             before_courier_id = shipment.courier_id
             assign_shipment_or_mark_blocked(shipment)
@@ -444,20 +586,26 @@ class OrderCreateSerializer(serializers.Serializer):
                     notification_type=UserNotification.NotificationType.ORDER,
                     action_url="/courier",
                 )
-        
+
         return order
 
 
 class DisputeMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
+    evidences = serializers.SerializerMethodField()
 
     class Meta:
         model = DisputeMessage
-        fields = ['id', 'sender', 'sender_name', 'message', 'is_internal', 'created_at']
+        fields = ['id', 'sender', 'sender_name', 'message', 'is_internal', 'created_at', 'evidences']
         read_only_fields = fields
 
     def get_sender_name(self, obj):
         return obj.sender.get_full_name() or obj.sender.username
+
+    def get_evidences(self, obj):
+        return DisputeEvidenceSerializer(
+            obj.evidences.all(), many=True, context=self.context,
+        ).data
 
 
 class DisputeEvidenceSerializer(serializers.ModelSerializer):
@@ -558,3 +706,56 @@ class DisputeMessageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = DisputeMessage
         fields = ['message']
+
+
+class ReturnSerializer(serializers.ModelSerializer):
+    order_item_title = serializers.CharField(source='order_item.title_snapshot', read_only=True)
+    vendor_username = serializers.CharField(source='vendor.username', read_only=True)
+    requested_by_name = serializers.SerializerMethodField()
+    relay_point_name = serializers.CharField(source='dropoff_relay_point.name', read_only=True, default='')
+    is_free_for_buyer = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Return
+        fields = [
+            'id', 'order', 'order_item', 'order_item_title',
+            'requested_by', 'requested_by_name', 'vendor', 'vendor_username',
+            'reason', 'description', 'status',
+            'transport_mode', 'dropoff_relay_point', 'relay_point_name',
+            'reviewed_at', 'review_note',
+            'received_at', 'inspection_passed', 'inspection_note',
+            'refund_amount_xaf', 'is_free_for_buyer',
+            'created_at', 'updated_at',
+        ]
+        read_only_fields = [
+            'id', 'order', 'requested_by', 'vendor', 'status',
+            'reviewed_at', 'review_note',
+            'received_at', 'inspection_passed', 'inspection_note',
+            'refund_amount_xaf', 'created_at', 'updated_at',
+        ]
+
+    def get_requested_by_name(self, obj):
+        return obj.requested_by.get_full_name() or obj.requested_by.username
+
+    def get_is_free_for_buyer(self, obj):
+        # Regle verrouillee (lancement) : tout retour accepte est un retour
+        # pour faute produit — le renvoi n'est jamais facture a l'acheteur.
+        # Le "retour pour convenance" payant est une phase future, non construite.
+        return True
+
+
+class ReturnCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Return
+        fields = ['order_item', 'reason', 'description', 'transport_mode']
+
+
+class ReturnReviewSerializer(serializers.Serializer):
+    decision = serializers.ChoiceField(choices=['APPROVED', 'REJECTED'])
+    note = serializers.CharField(required=False, allow_blank=True, default='')
+
+
+class ReturnFinalizeSerializer(serializers.Serializer):
+    inspection_passed = serializers.BooleanField()
+    refund_amount_xaf = serializers.IntegerField(required=False, allow_null=True, default=None)
+    note = serializers.CharField(required=False, allow_blank=True, default='')

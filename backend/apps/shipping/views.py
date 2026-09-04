@@ -1,12 +1,12 @@
 from rest_framework import generics, status
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Sum
 from datetime import timedelta
 import unicodedata
 
@@ -32,6 +32,7 @@ from .serializers import (
     ShipmentEventCreateSerializer,
     ShipmentLocationCreateSerializer,
     ShipmentLocationSerializer,
+    ShipmentEvidenceSerializer,
 )
 from .models import (
     CourierSOSAlert,
@@ -41,13 +42,18 @@ from .models import (
     ShipmentEvent,
     ShipmentLocation,
     ShipmentMessage,
+    Tournee,
 )
 from apps.accounts.models import CourierProfile
 from apps.accounts.models import UserNotification
 from apps.accounts.models import TrustScoreProfile
+from apps.accounts.models import RelayPointProfile
 from apps.accounts.trust_score import calculate_trust_score, get_trust_score_profile, trust_score_payload
 from apps.vendors.models import VendorLocation, VendorProfile
-from apps.orders.models import Dispute, DisputeMessage, Order
+from apps.orders.models import Dispute, DisputeMessage, Order, Return
+from apps.orders.serializers import ReturnSerializer
+from .evidence import create_shipment_evidence
+from .models import ShipmentEvidence
 
 
 def _get_active_relay_point(user):
@@ -55,6 +61,16 @@ def _get_active_relay_point(user):
     if not relay_point or not relay_point.is_active or relay_point.status != relay_point.Status.APPROVED:
         raise PermissionDenied("Relay point account is not active or approved")
     return relay_point
+
+
+def _haversine_km(lat1, lng1, lat2, lng2):
+    from math import radians, sin, cos, sqrt, atan2
+    r = 6371.0
+    phi1, phi2 = radians(float(lat1)), radians(float(lat2))
+    dphi = radians(float(lat2) - float(lat1))
+    dlambda = radians(float(lng2) - float(lng1))
+    a = sin(dphi / 2) ** 2 + cos(phi1) * cos(phi2) * sin(dlambda / 2) ** 2
+    return 2 * r * atan2(sqrt(a), sqrt(1 - a))
 
 
 def _city_variants(value):
@@ -161,6 +177,81 @@ class ShipmentEventCreateView(generics.CreateAPIView):
         return Response(ShipmentEventSerializer(event).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Shipping"],
+    summary="Points relais proches avec de la place (routage acheteur)",
+    description=(
+        "Classe les points relais actifs par proximite. Regle verrouillee : "
+        "l'acheteur est route vers le plus proche AVEC de la place ; si le plus "
+        "proche est plein, on redescend la liste jusqu'a trouver de la place. "
+        "Le frontend doit expliquer a l'acheteur quand ce n'est pas le 1er de "
+        "la liste qui est retenu."
+    ),
+    parameters=[
+        OpenApiParameter(name="city", required=False, type=str),
+        OpenApiParameter(name="lat", required=False, type=float),
+        OpenApiParameter(name="lng", required=False, type=float),
+    ],
+)
+class RelayPointNearbyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        city = (request.query_params.get("city") or "").strip()
+        lat = request.query_params.get("lat")
+        lng = request.query_params.get("lng")
+
+        qs = RelayPointProfile.objects.filter(
+            is_active=True, status=RelayPointProfile.Status.APPROVED,
+        )
+        if city:
+            qs = qs.filter(city__in=_city_variants(city) or [city])
+
+        occupancy_by_relay = dict(
+            RelayParcel.objects.filter(
+                relay_point__in=qs,
+                status__in=[RelayParcel.Status.EXPECTED, RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+            ).values("relay_point").annotate(count=Count("id")).values_list("relay_point", "count")
+        )
+
+        try:
+            buyer_lat = float(lat) if lat is not None else None
+            buyer_lng = float(lng) if lng is not None else None
+        except (TypeError, ValueError):
+            buyer_lat = buyer_lng = None
+
+        results = []
+        for relay in qs:
+            occupancy = occupancy_by_relay.get(relay.id, 0)
+            capacity = relay.storage_capacity or 0
+            has_space = capacity == 0 or occupancy < capacity
+            distance_km = None
+            if buyer_lat is not None and buyer_lng is not None and relay.latitude is not None and relay.longitude is not None:
+                distance_km = round(_haversine_km(buyer_lat, buyer_lng, relay.latitude, relay.longitude), 2)
+            results.append({
+                "id": relay.id,
+                "name": relay.name,
+                "address": relay.address,
+                "city": relay.city,
+                "opening_hours": relay.opening_hours,
+                "storage_capacity": capacity,
+                "occupancy": occupancy,
+                "has_space": has_space,
+                "distance_km": distance_km,
+            })
+
+        # Tri : par distance si on l'a, sinon par nom (ordre stable, arbitraire
+        # mais deterministe) — la disponibilite n'entre PAS dans le tri : on
+        # doit voir clairement que le plus proche est plein avant de
+        # descendre a l'option suivante (transparence de la regle metier).
+        if buyer_lat is not None and buyer_lng is not None:
+            results.sort(key=lambda r: (r["distance_km"] is None, r["distance_km"] or 0))
+        else:
+            results.sort(key=lambda r: r["name"])
+
+        return Response(results)
+
+
 @extend_schema(tags=["Relay Point"], summary="Colis du point relais connecte")
 class RelayPointParcelListView(generics.ListAPIView):
     serializer_class = RelayParcelSerializer
@@ -188,6 +279,113 @@ class RelayPointParcelReceiveView(APIView):
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Refuser un colis au controle (scelle rompu, colis endommage...)",
+    description=(
+        "Reception par lot — controle du scelle : le point relais peut refuser un "
+        "colis a l'arrivee du livreur au lieu de l'accepter en stock. Le refus est "
+        "motive (raison + photo obligatoire), place le colis en incident et laisse "
+        "la logistique BelivaY reprendre la main — Addendum Decisions v1.0 §9."
+    ),
+)
+class RelayPointParcelRefuseView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    REASON_CHOICES = {
+        "SEAL_BROKEN": "Scellé rompu ou absent",
+        "PACKAGE_DAMAGED": "Colis visiblement endommagé",
+        "WRONG_PARCEL": "Colis ne correspondant pas à l'annonce",
+        "OTHER": "Autre motif",
+    }
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        shipment_id = request.data.get("shipment_id")
+        order_id = request.data.get("order_id")
+        if not shipment_id and not order_id:
+            return Response({"shipment_id": "shipment_id ou order_id est obligatoire."}, status=status.HTTP_400_BAD_REQUEST)
+
+        shipment_qs = Shipment.objects.select_related("order")
+        if shipment_id:
+            shipment = get_object_or_404(shipment_qs, id=shipment_id)
+        else:
+            candidates = list(shipment_qs.filter(order_id=order_id))
+            if not candidates:
+                return Response({"shipment_id": "Colis introuvable."}, status=status.HTTP_404_NOT_FOUND)
+            if len(candidates) > 1:
+                return Response(
+                    {"shipment_id": "Cette commande a plusieurs colis — precisez shipment_id."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            shipment = candidates[0]
+
+        reason = request.data.get("reason")
+        if reason not in self.REASON_CHOICES:
+            return Response(
+                {"reason": f"Choisissez parmi : {', '.join(self.REASON_CHOICES)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"file": "Une photo du colis refusé est obligatoire."}, status=status.HTTP_400_BAD_REQUEST)
+
+        note = request.data.get("note", "")
+        reason_label = self.REASON_CHOICES[reason]
+
+        existing_parcel = RelayParcel.objects.filter(shipment=shipment).first()
+        if existing_parcel:
+            existing_parcel.status = RelayParcel.Status.REFUSED
+            existing_parcel.proof_note = f"{reason_label}. {note}".strip()
+            existing_parcel.save(update_fields=["status", "proof_note", "updated_at"])
+        else:
+            RelayParcel.objects.create(
+                shipment=shipment,
+                relay_point=relay_point,
+                status=RelayParcel.Status.REFUSED,
+                proof_note=f"{reason_label}. {note}".strip(),
+            )
+
+        shipment.status = Shipment.Status.INCIDENT
+        shipment.save(update_fields=["status", "updated_at"])
+        incident_message = f"Refusé au contrôle du point relais {relay_point.name} — {reason_label}." + (f" {note}" if note else "")
+        ShipmentEvent.objects.create(
+            shipment=shipment,
+            status=Shipment.Status.INCIDENT,
+            message=incident_message,
+            location=relay_point.name,
+        )
+        # État incident visible + notification immédiate (Reste à construire,
+        # portail acheteur) — le livreur en a déjà une équivalente pour son
+        # propre INCIDENT (CourierShipmentActionSerializer) ; ce chemin-ci
+        # (refus au relais) ne doit pas laisser l'acheteur sans alerte.
+        if shipment.order.user_id:
+            UserNotification.objects.create(
+                user=shipment.order.user,
+                title=f"Incident signalé · commande #{shipment.order_id}",
+                message=incident_message,
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url=f"/orders/{shipment.order_id}",
+            )
+        evidence = create_shipment_evidence(
+            shipment=shipment,
+            user=request.user,
+            actor_role="RELAY_POINT",
+            stage=ShipmentEvidence.Stage.RELAY_REFUSED,
+            upload=upload,
+            description=f"{reason_label}. {note}".strip(),
+        )
+        return Response(
+            {
+                "shipment_id": shipment.id,
+                "status": shipment.status,
+                "reason": reason,
+                "evidence": ShipmentEvidenceSerializer(evidence, context={"request": request}).data,
+            },
+            status=status.HTTP_201_CREATED,
+        )
+
+
 @extend_schema(tags=["Relay Point"], summary="Confirmer le retrait client au point relais")
 class RelayPointParcelPickupView(APIView):
     permission_classes = [IsAuthenticated]
@@ -201,6 +399,55 @@ class RelayPointParcelPickupView(APIView):
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Point relais : deposer une preuve (reception colis / remise client)",
+    description=(
+        "Point de garde strict (regle verrouillee) : contrairement au livreur en "
+        "terrain, le point relais est un lieu fixe presume toujours connecte — "
+        "cet upload doit reussir avant de considerer l'etape terminee, pas de "
+        "synchro differee tolerée ici."
+    ),
+)
+class RelayPointParcelEvidenceUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    ALLOWED_STAGES = {
+        ShipmentEvidence.Stage.RELAY_RECEIVED,
+        ShipmentEvidence.Stage.RELAY_RELEASED,
+        ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
+    }
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        parcel_id = request.data.get("parcel_id")
+        parcel = get_object_or_404(
+            RelayParcel.objects.select_related("shipment"), id=parcel_id, relay_point=relay_point,
+        )
+        stage = request.data.get("stage")
+        if stage not in self.ALLOWED_STAGES:
+            return Response(
+                {"stage": f"Choisissez parmi : {', '.join(self.ALLOWED_STAGES)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"file": "Ce champ est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        evidence = create_shipment_evidence(
+            shipment=parcel.shipment,
+            user=request.user,
+            actor_role="RELAY_POINT",
+            stage=stage,
+            upload=upload,
+            description=request.data.get("description", ""),
+        )
+        return Response(
+            ShipmentEvidenceSerializer(evidence, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
 @extend_schema(tags=["Relay Point"], summary="Retourner un colis depuis le point relais")
 class RelayPointParcelReturnView(APIView):
     permission_classes = [IsAuthenticated]
@@ -212,6 +459,55 @@ class RelayPointParcelReturnView(APIView):
         serializer.is_valid(raise_exception=True)
         parcel = serializer.save()
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Shipping"],
+    summary="Constater le depot d'un retour acheteur au point relais",
+    description=(
+        "Depot en point relais = mode de transport par defaut pour un retour "
+        "acheteur (voir apps.orders.models.Return). Le relais qui receptionne "
+        "s'affecte au retour s'il n'etait pas deja fixe."
+    ),
+)
+class RelayPointReturnReceiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        return_id = request.data.get("return_id")
+        order_id = request.data.get("order_id")
+        if not return_id and not order_id:
+            return Response({"return_id": "return_id ou order_id est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        lookup = {"id": return_id} if return_id else {"order_id": order_id}
+        return_obj = get_object_or_404(
+            Return.objects.filter(status__in=[Return.Status.APPROVED, Return.Status.AWAITING_DROPOFF]),
+            **lookup,
+        )
+        if return_obj.transport_mode != Return.TransportMode.RELAY_DROPOFF:
+            return Response(
+                {"detail": "Ce retour n'est pas configure pour un depot en point relais."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return_obj.dropoff_relay_point = return_obj.dropoff_relay_point or relay_point
+        return_obj.status = Return.Status.RECEIVED
+        return_obj.received_at = timezone.now()
+        return_obj.received_by = request.user
+        return_obj.save(update_fields=[
+            "dropoff_relay_point", "status", "received_at", "received_by", "updated_at",
+        ])
+
+        UserNotification.objects.create(
+            user=return_obj.requested_by,
+            title=f"Retour depose · commande #{return_obj.order_id}",
+            message=f"Votre colis a ete recu au point relais {relay_point.name}. Il part vers inspection.",
+            notification_type=UserNotification.NotificationType.ORDER,
+            action_url=f"/orders/{return_obj.order_id}",
+        )
+
+        return Response(ReturnSerializer(return_obj, context={"request": request}).data, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -307,6 +603,54 @@ class CourierShipmentActionView(generics.GenericAPIView):
 
 @extend_schema(
     tags=["Shipping"],
+    summary="Livreur : deposer une preuve (enlevement vendeur / remise client)",
+    description=(
+        "Capture obligatoire, transmission best-effort (regle verrouillee) : le "
+        "livreur peut prendre la photo hors-ligne et l'envoyer plus tard — cet "
+        "endpoint accepte l'upload chaque fois qu'il arrive, il n'y a pas de "
+        "fenetre de synchro cote serveur."
+    ),
+)
+class CourierShipmentEvidenceUploadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    ALLOWED_STAGES = {
+        ShipmentEvidence.Stage.COURIER_PICKUP_VENDOR,
+        ShipmentEvidence.Stage.CUSTOMER_DELIVERY,
+    }
+
+    def post(self, request, id):
+        courier = getattr(request.user, "courier_profile", None)
+        if not courier or not courier.is_approved or not courier.is_active:
+            raise PermissionDenied("Courier account is not approved")
+
+        shipment = get_object_or_404(Shipment, id=id, courier=courier)
+        stage = request.data.get("stage")
+        if stage not in self.ALLOWED_STAGES:
+            return Response(
+                {"stage": f"Choisissez parmi : {', '.join(self.ALLOWED_STAGES)}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        upload = request.FILES.get("file")
+        if not upload:
+            return Response({"file": "Ce champ est requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+        evidence = create_shipment_evidence(
+            shipment=shipment,
+            user=request.user,
+            actor_role="COURIER",
+            stage=stage,
+            upload=upload,
+            description=request.data.get("description", ""),
+        )
+        return Response(
+            ShipmentEvidenceSerializer(evidence, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(
+    tags=["Shipping"],
     summary="Publier la position GPS du livreur pour une mission",
     request=ShipmentLocationCreateSerializer,
     responses={201: ShipmentLocationSerializer},
@@ -379,8 +723,37 @@ def _resolve_scan_target(code: str, courier) -> Shipment:
     raise PermissionDenied("Unsupported scan code format")
 
 
+# Repli tant que la ligne DistributionRule "dist-transport-carrier" n'est
+# pas encore approuvee (voir apps.payments.management.commands
+# .request_locked_financial_config) — meme valeur provisoire, pour que
+# l'affichage ne change pas le jour ou la gouvernance prend le relais.
+_TRANSPORT_CARRIER_SHARE_FALLBACK = 0.70
+
+
 def _courier_payout_xaf(shipment: Shipment) -> int:
-    return round((shipment.order.total_xaf or 0) * 0.08)
+    """
+    Part du livreur/entreprise de livraison sur CE colis — feres de transport
+    de la commande divisees entre ses colis, puis part transporteur du
+    composant TRANSPORT (DistributionRule si approuvee, sinon repli).
+
+    Remplace l'ancien calcul "8% du total de la commande", qui n'avait aucun
+    lien avec les frais de transport reels et grossissait avec la valeur des
+    articles plutot qu'avec l'effort de livraison.
+    """
+    from apps.payments.config.models import DistributionRule
+
+    order = shipment.order
+    colis_count = order.shipments.count() or 1
+    transport_share = (order.delivery_fee_xaf or 0) / colis_count
+
+    rule = (
+        DistributionRule.current()
+        .filter(component=DistributionRule.Component.TRANSPORT, payee_type=DistributionRule.PayeeType.DELIVERY_COMPANY)
+        .order_by("-priority")
+        .first()
+    )
+    carrier_ratio = float(rule.value) / 100 if rule else _TRANSPORT_CARRIER_SHARE_FALLBACK
+    return round(transport_share * carrier_ratio)
 
 
 def _estimate_shipment_distance_km(shipment: Shipment) -> float:
@@ -689,7 +1062,7 @@ class CourierDisputeListView(generics.ListAPIView):
         _release_overdue_accepted_shipments()
         courier = _get_active_courier(self.request.user)
         return (
-            Dispute.objects.filter(order__shipment__courier=courier)
+            Dispute.objects.filter(order__shipments__courier=courier)
             .select_related("order", "opened_by")
             .order_by("-updated_at")
             .distinct()
@@ -703,7 +1076,7 @@ class CourierDisputeReplyPermissionRequestView(APIView):
     def post(self, request, dispute_id):
         courier = _get_active_courier(request.user)
         dispute = get_object_or_404(
-            Dispute.objects.filter(order__shipment__courier=courier),
+            Dispute.objects.filter(order__shipments__courier=courier),
             id=dispute_id,
         )
         UserNotification.objects.create(
@@ -723,7 +1096,7 @@ class CourierDisputeMessageCreateView(APIView):
     def post(self, request, dispute_id):
         courier = _get_active_courier(request.user)
         dispute = get_object_or_404(
-            Dispute.objects.filter(order__shipment__courier=courier),
+            Dispute.objects.filter(order__shipments__courier=courier),
             id=dispute_id,
         )
         if dispute.status in ["RESOLVED", "CLOSED"]:
@@ -764,11 +1137,15 @@ class ClientOrderMessagesView(generics.GenericAPIView):
         order_id = self.kwargs["order_id"]
         user = self.request.user
 
-        # 1. Accès client : l'utilisateur est propriétaire de la commande
-        order_qs = Order.objects.filter(id=order_id, user=user).select_related("shipment__courier__user", "shipment__order")
+        # 1. Accès client : l'utilisateur est propriétaire de la commande.
+        # Une commande peut avoir plusieurs colis (un par vendeur) : on
+        # privilegie celui qui a deja un livreur assigne (le plus pertinent
+        # pour "parler a mon livreur"), sinon le premier.
+        order_qs = Order.objects.filter(id=order_id, user=user).prefetch_related("shipments__courier__user")
         order = order_qs.first()
         if order:
-            shipment = getattr(order, "shipment", None)
+            shipments = list(order.shipments.all())
+            shipment = next((s for s in shipments if s.courier_id), None) or (shipments[0] if shipments else None)
             if not shipment:
                 from rest_framework.exceptions import NotFound
                 raise NotFound("Aucune livraison pour cette commande.")
@@ -1090,3 +1467,79 @@ class RelayPointReviewThankView(APIView):
             review.thanked_at = timezone.now()
             review.save(update_fields=["thanked_at", "updated_at"])
         return Response(RelayPointReviewSerializer(review).data)
+
+
+# Console de supervision admin — version minimale (proposition validée) :
+# "deux listes suffisent — colis en retard, tournées non prises. Un tableau,
+# pas un tableau de bord." + compteur de subvention par zone (sorties
+# forcées, règle n°11 : toute sortie forcée est journalisée).
+LATE_TRACKED_STATUSES = [
+    Shipment.Status.CREATED,
+    Shipment.Status.WAITING_MANUAL_ASSIGNMENT,
+    Shipment.Status.ASSIGNED,
+    Shipment.Status.PICKED_UP,
+    Shipment.Status.IN_TRANSIT,
+    Shipment.Status.OUT_FOR_DELIVERY,
+]
+
+
+@extend_schema(
+    tags=["Admin"],
+    summary="Console de supervision minimale : colis en retard, tournées non prises, subvention par zone",
+)
+class AdminSupervisionDashboardView(APIView):
+    permission_classes = [IsAdminUser]
+
+    def get(self, request):
+        now = timezone.now()
+
+        shipments = (
+            Shipment.objects.filter(status__in=LATE_TRACKED_STATUSES)
+            .select_related("order", "order__zone")
+        )
+        late_shipments = []
+        for shipment in shipments:
+            eta = shipment.estimated_availability_at()
+            if eta and eta < now:
+                late_shipments.append({
+                    "shipment_id": shipment.id,
+                    "order_id": shipment.order_id,
+                    "status": shipment.status,
+                    "zone": shipment.order.zone.name if shipment.order.zone_id else None,
+                    "city": shipment.order.city,
+                    "estimated_availability_at": eta,
+                    "hours_late": round((now - eta).total_seconds() / 3600, 1),
+                })
+        late_shipments.sort(key=lambda item: item["hours_late"], reverse=True)
+
+        unclaimed_tournees = (
+            Tournee.objects.filter(status=Tournee.Status.PUBLISHED)
+            .select_related("zone")
+            .order_by("composed_at")
+        )
+        unclaimed_payload = [
+            {
+                "id": t.id,
+                "zone": t.zone.name,
+                "city": t.zone.city,
+                "colis_count": t.colis_count,
+                "composed_at": t.composed_at,
+                "waiting_hours": round((now - t.composed_at).total_seconds() / 3600, 1),
+            }
+            for t in unclaimed_tournees
+        ]
+
+        subsidy_by_zone = list(
+            Tournee.objects.filter(is_forced_exit=True)
+            .values("zone_id", "zone__name", "zone__city")
+            .annotate(forced_exits=Count("id"), colis_perdus=Sum("colis_count"))
+            .order_by("-forced_exits")
+        )
+
+        return Response({
+            "late_shipments": late_shipments,
+            "late_shipments_count": len(late_shipments),
+            "unclaimed_tournees": unclaimed_payload,
+            "unclaimed_tournees_count": len(unclaimed_payload),
+            "subsidy_by_zone": subsidy_by_zone,
+        })

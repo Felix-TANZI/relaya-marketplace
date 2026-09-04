@@ -25,9 +25,9 @@ class EscrowPolicySpec:
     name: str
     payee_type: Optional[PayeeType] = None
     component: Optional[EconomicComponent] = None
-    auto_confirm_hours: int = 48
-    release_delay_hours: int = 24
-    dispute_window_days: int = 7
+    auto_confirm_hours: int = 96
+    release_delay_hours: int = 72
+    dispute_window_days: int = 4
     vendor_reply_hours: int = 72
     release_trigger: Optional[ReleaseTrigger] = None
     priority: int = 0

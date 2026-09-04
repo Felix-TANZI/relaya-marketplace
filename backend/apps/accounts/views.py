@@ -19,6 +19,7 @@ from apps.common.tasks import send_plain_email
 from django.conf import settings as django_settings
 from rest_framework_simplejwt.views import TokenObtainPairView as _BaseLoginView
 from .serializers import (
+    AppReleaseSerializer,
     BelivayTokenObtainPairSerializer,
     CourierApplicationSerializer,
     CourierProfileSerializer,
@@ -34,7 +35,7 @@ from .serializers import (
     RewardAccountSerializer,
     UserCartSerializer,
 )
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.contrib.auth.models import User
 from django.contrib.auth.models import update_last_login
 from django.db import transaction
@@ -44,7 +45,7 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
-from .models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import AppRelease, ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
 from apps.common.phone import normalize_cameroon_phone
 from apps.orders.models import Dispute, DisputeMessage
 from apps.shipping.models import Shipment, ShipmentEvent
@@ -800,6 +801,15 @@ def admin_create_user(request):
             is_active=True,
         )
 
+    is_new_user = target_user is None
+
+    def blocked_identifier_response(message):
+        # Un rejet (ex. identifiant banni) ne doit jamais laisser un compte
+        # Django orphelin sans profil derriere lui.
+        if is_new_user:
+            user.delete()
+        return Response({"detail": message}, status=status.HTTP_400_BAD_REQUEST)
+
     if role == "admin":
         user.is_staff = True
         user.is_superuser = bool(request.data.get("is_superuser", True))
@@ -807,6 +817,13 @@ def admin_create_user(request):
     elif role == "vendor":
         if hasattr(user, "vendor_profile"):
             return Response({"detail": "Cet utilisateur a deja un profil vendeur."}, status=status.HTTP_400_BAD_REQUEST)
+        id_document = request.data.get("id_document", "").strip()
+        # Bannissement niveau 4 (V5.5 §8) : meme cree par un admin, un compte
+        # ne doit pas pouvoir reprendre une CNI ou un numero Mobile Money bloque.
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, id_document):
+            return blocked_identifier_response("Cette piece d'identite est bloquee sur la plateforme.")
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, phone):
+            return blocked_identifier_response("Ce numero Mobile Money est bloque sur la plateforme.")
         VendorProfile.objects.create(
             user=user,
             business_name=request.data.get("business_name", "").strip() or username,
@@ -814,7 +831,7 @@ def admin_create_user(request):
             phone=phone,
             address=request.data.get("address", "").strip() or request.data.get("city", "").strip() or "Adresse a completer",
             city=request.data.get("city", "").strip() or "Douala",
-            id_document=request.data.get("id_document", "").strip(),
+            id_document=id_document,
             status=request.data.get("vendor_status", "APPROVED"),
             approved_at=timezone.now(),
         )
@@ -835,6 +852,11 @@ def admin_create_user(request):
         )
         if hasattr(user, "courier_profile"):
             return Response({"detail": "Cet utilisateur a deja un profil livreur."}, status=status.HTTP_400_BAD_REQUEST)
+        id_card = request.data.get("id_card", "").strip() or "A completer"
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, id_card):
+            return blocked_identifier_response("Cette piece d'identite est bloquee sur la plateforme.")
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, phone):
+            return blocked_identifier_response("Ce numero Mobile Money est bloque sur la plateforme.")
         CourierProfile.objects.create(
             user=user,
             delivery_organization=delivery_organization,
@@ -843,7 +865,7 @@ def admin_create_user(request):
             zones=zones,
             vehicle_type=request.data.get("vehicle_type", CourierProfile.VehicleType.MOTORBIKE),
             max_active_shipments=max(max_active_shipments, 1),
-            id_card=request.data.get("id_card", "").strip() or "A completer",
+            id_card=id_card,
             is_active=True,
             is_approved=bool(request.data.get("is_approved", True)),
             is_online=False,
@@ -851,6 +873,8 @@ def admin_create_user(request):
     elif role == "delivery_org":
         if hasattr(user, "delivery_organization_profile"):
             return Response({"detail": "Cet utilisateur a deja un profil organisation de livraison."}, status=status.HTTP_400_BAD_REQUEST)
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, phone):
+            return blocked_identifier_response("Ce numero Mobile Money est bloque sur la plateforme.")
         zones = request.data.get("zones", [])
         if isinstance(zones, str):
             zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
@@ -886,6 +910,8 @@ def admin_create_user(request):
     elif role == "relay_point":
         if hasattr(user, "relay_point_profile"):
             return Response({"detail": "Cet utilisateur a deja un profil point relais."}, status=status.HTTP_400_BAD_REQUEST)
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, phone):
+            return blocked_identifier_response("Ce numero Mobile Money est bloque sur la plateforme.")
         zones = request.data.get("zones", [])
         if isinstance(zones, str):
             zones = [zone.strip() for zone in zones.split(",") if zone.strip()]
@@ -1100,7 +1126,11 @@ def _shipment_last_event(shipment):
 
 
 def _dispute_payload(dispute):
-    shipment = getattr(dispute.order, "shipment", None)
+    # Un colis par vendeur : le shipment pertinent pour CE litige est celui
+    # du vendeur concerne, pas un shipment quelconque de la commande.
+    shipment = dispute.order.shipments.filter(vendor_id=dispute.vendor_id).first() if dispute.vendor_id else None
+    if shipment is None:
+        shipment = dispute.order.shipments.first()
     return {
         "id": dispute.id,
         "ref": f"LIT-{dispute.id:05d}",
@@ -1155,12 +1185,12 @@ def _organization_active_shipments(organization):
 def _organization_open_disputes(organization):
     return (
         Dispute.objects.filter(
-            order__shipment__courier__delivery_organization=organization,
-            order__shipment__courier__user__is_active=True,
+            order__shipments__courier__delivery_organization=organization,
+            order__shipments__courier__user__is_active=True,
             status__in=["OPEN", "IN_PROGRESS"],
         )
-        .select_related("order", "opened_by", "order__shipment__courier__user")
-        .prefetch_related("messages", "evidences")
+        .select_related("order", "opened_by")
+        .prefetch_related("messages", "evidences", "order__shipments__courier__user")
         .order_by("-updated_at")
         .distinct()
     )
@@ -1306,6 +1336,49 @@ def delivery_organization_assign_mission(request, shipment_id):
         action_url="/courier",
     )
     return Response(_mission_payload(shipment))
+
+
+def _bourse_tournee_payload(tournee):
+    return {
+        "id": tournee.id,
+        "zone": tournee.zone.name,
+        "city": tournee.zone.city,
+        "slot_date": tournee.slot_date,
+        "period": tournee.period,
+        "colis_count": tournee.colis_count,
+        "is_forced_exit": tournee.is_forced_exit,
+        "composed_at": tournee.composed_at,
+    }
+
+
+@extend_schema(tags=["Delivery organization"], summary="Paquets publiés sur la bourse aux courses (V1.1)")
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_bourse(request):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    from apps.shipping.tournees import bourse_tournees_for_organization
+
+    tournees = bourse_tournees_for_organization(organization).order_by("composed_at")
+    return Response([_bourse_tournee_payload(t) for t in tournees])
+
+
+@extend_schema(tags=["Delivery organization"], summary="Revendiquer un paquet de la bourse (premier arrivé premier servi)")
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def delivery_organization_claim_tournee(request, tournee_id):
+    organization = _get_request_delivery_organization(request.user)
+    if not organization:
+        return Response({"detail": "Organisation de livraison approuvée requise."}, status=status.HTTP_403_FORBIDDEN)
+
+    from apps.shipping.tournees import claim_tournee_for_organization
+
+    tournee, error = claim_tournee_for_organization(tournee_id, organization)
+    if error:
+        return Response({"detail": error}, status=status.HTTP_409_CONFLICT)
+    return Response(_bourse_tournee_payload(tournee))
 
 
 @extend_schema(tags=["Delivery organization"], summary="Open disputes linked to current delivery organization")
@@ -1529,11 +1602,11 @@ def relay_point_open_disputes(request):
 
     disputes = (
         Dispute.objects.filter(
-            order__shipment__relay_parcel__relay_point=relay_point,
+            order__shipments__relay_parcel__relay_point=relay_point,
             status__in=["OPEN", "IN_PROGRESS"],
         )
-        .select_related("order", "opened_by", "order__shipment")
-        .prefetch_related("messages", "evidences")
+        .select_related("order", "opened_by")
+        .prefetch_related("messages", "evidences", "order__shipments")
         .order_by("-updated_at")
         .distinct()
     )
@@ -2246,3 +2319,27 @@ def relay_point_training(request):
         RelayTrainingCompletion.objects.get_or_create(relay_point=relay_point, module_key=module_key)
 
     return Response(_training_state(relay_point))
+
+
+@extend_schema(
+    tags=["Accounts"],
+    summary="Derniere version disponible d'une appli partenaire",
+    parameters=[OpenApiParameter(name="portal", required=True, type=str, location=OpenApiParameter.QUERY)],
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def app_release_latest(request):
+    """
+    Distribution hors Play Store (vendeur/livreur/organisation/point relais) :
+    le portail web interroge cet endpoint pour afficher le lien de
+    telechargement de l'appli et sa version courante.
+    """
+    portal = (request.query_params.get("portal") or "").strip().upper()
+    if portal not in AppRelease.Portal.values:
+        return Response({"detail": "Portail invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    release = AppRelease.objects.filter(portal=portal).first()
+    if not release:
+        return Response({"detail": "Aucune version publiee pour ce portail."}, status=status.HTTP_404_NOT_FOUND)
+
+    return Response(AppReleaseSerializer(release).data)

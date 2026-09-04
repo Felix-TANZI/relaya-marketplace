@@ -6,7 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { recordProductView } from '@/lib/recentlyViewed';
 import {
-  Bell, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Clock, Heart, Link2, Lock,
+  Bell, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Clock, Heart, HelpCircle, Link2, Lock,
   MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag,
   ShoppingCart, Star, Trophy, Truck, X, Zap,
 } from 'lucide-react';
@@ -509,6 +509,29 @@ export default function FicheDetailPage() {
                 </ul>
               </div>
             </Panel>
+
+            {/* FAQ produit — compense l'absence de messagerie directe avec le vendeur */}
+            {buyBox?.faq && buyBox.faq.length > 0 && (
+              <Panel className="p-5">
+                <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-gray-900 dark:text-white">
+                  <HelpCircle size={16} className="text-gray-400" />
+                  Questions fréquentes
+                </h2>
+                <div className="mt-3 flex flex-col gap-2">
+                  {buyBox.faq.map((entry, index) => (
+                    <details key={index} className="group rounded-xl border border-gray-200 px-4 py-3 dark:border-gray-700">
+                      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 text-[13px] font-bold text-gray-800 dark:text-gray-100">
+                        {entry.question}
+                        <ChevronDown size={15} className="flex-shrink-0 text-gray-400 transition-transform group-open:rotate-180" />
+                      </summary>
+                      <p className="mt-2 whitespace-pre-line text-[12.5px] leading-relaxed text-gray-600 dark:text-gray-300">
+                        {entry.answer}
+                      </p>
+                    </details>
+                  ))}
+                </div>
+              </Panel>
+            )}
           </div>
 
           {/* ═══════════════ COLONNE DROITE ═══════════════ */}

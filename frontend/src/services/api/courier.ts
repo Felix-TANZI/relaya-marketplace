@@ -42,6 +42,8 @@ export type CourierShipment = {
   delivery_longitude?: number | null;
   delivery_location_precision?: Partial<LocationPrecisionResult>;
   receipt_confirmation_code?: string | null;
+  authorized_pickup_name?: string;
+  authorized_pickup_phone?: string;
   city: string;
   order_total_xaf: number;
   courier_payout_xaf?: number;
@@ -61,6 +63,7 @@ export type CourierShipmentAction =
   | "PICKED_UP"
   | "OUT_FOR_DELIVERY"
   | "DELIVERED"
+  | "INCIDENT"
   | "FAILED"
   | "NOTE";
 
@@ -304,7 +307,7 @@ export const courierApi = {
 
   actOnShipment: async (
     id: number,
-    payload: { action: CourierShipmentAction; message?: string; location?: string },
+    payload: { action: CourierShipmentAction; message?: string; location?: string; pickup_code?: string },
   ): Promise<CourierShipment> => {
     return http<CourierShipment>(`/api/shipping/my-shipments/${id}/action/`, {
       method: "POST",

@@ -1,5 +1,6 @@
 from django.urls import path
 from .views import (
+    AdminSupervisionDashboardView,
     ClientOrderMessagesView,
     CourierDisputeMessageCreateView,
     CourierDisputeListView,
@@ -13,7 +14,12 @@ from .views import (
     RelayPointParcelListView,
     RelayPointParcelPickupView,
     RelayPointParcelReceiveView,
+    RelayPointParcelRefuseView,
     RelayPointParcelReturnView,
+    RelayPointParcelEvidenceUploadView,
+    RelayPointReturnReceiveView,
+    RelayPointNearbyView,
+    CourierShipmentEvidenceUploadView,
     RelayPointReviewListView,
     RelayPointReviewThankView,
     CourierMyShipmentsView,
@@ -29,12 +35,17 @@ from .views import (
 
 urlpatterns = [
     path("orders/<int:order_id>/messages/", ClientOrderMessagesView.as_view(), name="shipping-client-messages"),
+    path("admin/supervision/", AdminSupervisionDashboardView.as_view(), name="shipping-admin-supervision"),
     path("create/", ShipmentCreateView.as_view(), name="shipping-create"),
     path("events/", ShipmentEventCreateView.as_view(), name="shipping-events"),
+    path("relay-points/nearby/", RelayPointNearbyView.as_view(), name="shipping-relay-points-nearby"),
     path("relay-point/parcels/", RelayPointParcelListView.as_view(), name="shipping-relay-parcels"),
     path("relay-point/receive/", RelayPointParcelReceiveView.as_view(), name="shipping-relay-receive"),
+    path("relay-point/refuse/", RelayPointParcelRefuseView.as_view(), name="shipping-relay-refuse"),
     path("relay-point/pickup/", RelayPointParcelPickupView.as_view(), name="shipping-relay-pickup"),
     path("relay-point/return/", RelayPointParcelReturnView.as_view(), name="shipping-relay-return"),
+    path("relay-point/evidence/", RelayPointParcelEvidenceUploadView.as_view(), name="shipping-relay-evidence"),
+    path("relay-point/returns/receive/", RelayPointReturnReceiveView.as_view(), name="shipping-relay-return-receive"),
     path("relay-point/reviews/", RelayPointReviewListView.as_view(), name="shipping-relay-reviews"),
     path("relay-point/reviews/<int:pk>/thank/", RelayPointReviewThankView.as_view(), name="shipping-relay-review-thank"),
     path("track/", ShipmentTrackView.as_view(), name="shipping-track"),
@@ -51,6 +62,7 @@ urlpatterns = [
     path("my-shipments/<int:id>/messages/", CourierShipmentMessageListCreateView.as_view(), name="shipping-my-shipments-messages"),
     path("my-shipments/<int:id>/action/", CourierShipmentActionView.as_view(), name="shipping-my-shipments-action"),
     path("my-shipments/<int:id>/location/", CourierShipmentLocationView.as_view(), name="shipping-my-shipments-location"),
+    path("my-shipments/<int:id>/evidence/", CourierShipmentEvidenceUploadView.as_view(), name="shipping-my-shipments-evidence"),
     path("available/", CourierAvailableShipmentsView.as_view(), name="shipping-available"),
     path("available/<int:id>/claim/", CourierClaimShipmentView.as_view(), name="shipping-claim"),
 ]

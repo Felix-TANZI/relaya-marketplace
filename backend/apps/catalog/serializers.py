@@ -317,6 +317,7 @@ class ProductSerializer(serializers.ModelSerializer):
             'slug',
             'description',
             'short_description',
+            'faq',
             'price_xaf',
             'compare_at_price',
             'promo_end_date',
@@ -452,7 +453,7 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = [
-            'id', 'title', 'description', 'short_description',
+            'id', 'title', 'description', 'short_description', 'faq',
             'price_xaf', 'compare_at_price', 'promo_end_date',
             'category', 'is_active', 'master',
             'variant',
@@ -460,6 +461,20 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
             'created_at', 'updated_at',
         ]
         read_only_fields = ['id', 'created_at', 'updated_at']
+
+    def validate_faq(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("La FAQ doit être une liste de questions/réponses.")
+        cleaned = []
+        for entry in value:
+            if not isinstance(entry, dict):
+                raise serializers.ValidationError("Chaque entrée de FAQ doit être un objet {question, answer}.")
+            question = str(entry.get("question", "")).strip()
+            answer = str(entry.get("answer", "")).strip()
+            if not question or not answer:
+                raise serializers.ValidationError("Chaque entrée de FAQ doit avoir une question et une réponse.")
+            cleaned.append({"question": question[:300], "answer": answer[:2000]})
+        return cleaned
 
     def create(self, validated_data):
         from .models import Inventory, MasterProduct as _MP
@@ -547,6 +562,7 @@ class OfferSerializer(serializers.ModelSerializer):
             'discount_percent', 'is_on_promotion',
             'condition', 'seller_note', 'stock_quantity', 'is_active',
             'real_image', 'offer_score', 'offer_score_breakdown',
+            'short_description', 'faq',
         ]
 
     def get_stock_quantity(self, obj):

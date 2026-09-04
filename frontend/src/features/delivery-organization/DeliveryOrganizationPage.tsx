@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import {
   AlertTriangle,
   BarChart3,
@@ -148,6 +150,17 @@ interface OrganizationMission {
     captured_at: string;
   }>;
   last_event?: { status: string; message: string; location: string; created_at: string } | null;
+}
+
+interface BourseTournee {
+  id: number;
+  zone: string;
+  city: string;
+  slot_date: string;
+  period: "MORNING" | "AFTERNOON";
+  colis_count: number;
+  is_forced_exit: boolean;
+  composed_at: string;
 }
 
 interface OrganizationDispute {
@@ -600,6 +613,7 @@ export default function DeliveryOrganizationPage() {
   const [summary, setSummary] = useState<OrganizationSummary | null>(null);
   const [missions, setMissions] = useState<OrganizationMission[]>([]);
   const [missionQueue, setMissionQueue] = useState<OrganizationMission[]>([]);
+  const [bourseTournees, setBourseTournees] = useState<BourseTournee[]>([]);
   const [disputes, setDisputes] = useState<OrganizationDispute[]>([]);
   const [vehicles, setVehicles] = useState<OrganizationVehicle[]>([]);
   const [vehicleLabelInput, setVehicleLabelInput] = useState("");
@@ -812,6 +826,26 @@ export default function DeliveryOrganizationPage() {
       setOrganizationMessage({ tone: "success", text: locale === "en" ? "Mission assigned to the courier." : "Mission affectée au livreur." });
     } catch (error) {
       setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+    } finally {
+      setActionBusy(false);
+    }
+  };
+  const claimTournee = async (tourneeId: number) => {
+    setActionBusy(true);
+    setOrganizationMessage(null);
+    try {
+      await http(`/api/auth/delivery-organization/bourse/${tourneeId}/claim/`, { method: "POST" });
+      const [activeItems, bourseItems, summaryData] = await Promise.all([
+        http<OrganizationMission[]>("/api/auth/delivery-organization/missions/active/"),
+        http<BourseTournee[]>("/api/auth/delivery-organization/bourse/"),
+        http<OrganizationSummary>("/api/auth/delivery-organization/summary/"),
+      ]);
+      setMissions(activeItems); setBourseTournees(bourseItems); setSummary(summaryData);
+      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Package claimed — assigned to an available courier." : "Paquet revendiqué — affecté à un livreur disponible." });
+    } catch (error) {
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      // Un autre transporteur a peut-être déjà revendiqué ce paquet : on rafraîchit la liste.
+      http<BourseTournee[]>("/api/auth/delivery-organization/bourse/").then(setBourseTournees).catch(() => undefined);
     } finally {
       setActionBusy(false);
     }
@@ -1108,6 +1142,30 @@ export default function DeliveryOrganizationPage() {
 
   const renderMissions = () => (
     <div className="space-y-5">
+    <Panel kicker={locale === "en" ? "Freight exchange (V1.1)" : "Bourse aux courses (V1.1)"} title={locale === "en" ? "Published packages — first come, first served" : "Paquets publiés — premier arrivé, premier servi"}>
+      {bourseTournees.length === 0 ? (
+        <EmptyState>{locale === "en" ? "No package published right now." : "Aucun paquet publié pour le moment."}</EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {bourseTournees.map((tournee) => (
+            <div key={tournee.id} className="grid gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30 md:grid-cols-[1fr_1fr_auto] md:items-center">
+              <div>
+                <strong className="text-cyan-950 dark:text-cyan-100">{tournee.zone} · {tournee.city}</strong>
+                <p className="mt-1 text-xs text-cyan-900/70 dark:text-cyan-200/70">
+                  {tournee.colis_count} {locale === "en" ? "packages" : "colis"} · {tournee.period === "MORNING" ? (locale === "en" ? "Morning slot" : "Créneau matin") : (locale === "en" ? "Afternoon slot" : "Créneau après-midi")}
+                </p>
+              </div>
+              <div className="text-sm font-semibold text-cyan-900 dark:text-cyan-100">
+                {new Date(tournee.slot_date).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}
+              </div>
+              <button type="button" onClick={() => void claimTournee(tournee.id)} disabled={actionBusy} className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">
+                {locale === "en" ? "Claim" : "Revendiquer"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
     <Panel kicker={locale === "en" ? "Dispatch queue" : "File d'affectation"} title={locale === "en" ? "Missions waiting for a courier" : "Missions en attente d'un livreur"}>
       {missionQueue.length === 0 ? <EmptyState>{locale === "en" ? "No compatible mission is waiting." : "Aucune mission compatible en attente."}</EmptyState> : <div className="space-y-3">{missionQueue.map((mission) => (
         <div key={mission.id} className="grid gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30 md:grid-cols-[1fr_1.3fr_1fr_auto] md:items-center">
@@ -1244,6 +1302,7 @@ export default function DeliveryOrganizationPage() {
     if (tab === "dashboard") {
       return (
         <div className="space-y-5">
+          {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="DELIVERY_ORG" />}
           {/* Deux cartes par rangee des le telephone : empilees une par une, ces
               quatre reperes poussaient le dispatch sous la ligne de flottaison.
               En 2x2 le responsable les embrasse d'un seul regard. */}
@@ -1750,6 +1809,9 @@ export default function DeliveryOrganizationPage() {
           if (alive) setOperationsLoading(false);
         });
     void loadOperations();
+    http<BourseTournee[]>("/api/auth/delivery-organization/bourse/")
+      .then((items) => { if (alive) setBourseTournees(items); })
+      .catch(() => { if (alive) setBourseTournees([]); });
     const operationsInterval = window.setInterval(loadOperations, 5000);
 
     return () => {

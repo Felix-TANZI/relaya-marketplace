@@ -425,6 +425,20 @@ export default function SellerOrderDetailPage() {
               </div>
             </div>
 
+            {order.shipment.pickup_confirmation_code && (
+              <div className="mt-4 rounded-2xl" style={{ padding: '14px 16px', background: '#FEF3C7', border: '1px solid #FDE68A' }}>
+                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: '#92400E' }}>
+                  Code de remise — à donner au livreur
+                </p>
+                <p className="font-black mt-1.5" style={{ fontSize: 24, letterSpacing: '.15em', color: '#78350F' }}>
+                  {order.shipment.pickup_confirmation_code}
+                </p>
+                <p style={{ fontSize: 11, color: '#92400E', marginTop: 4 }}>
+                  Lisez ce code au livreur au moment du ramassage. Il en a besoin pour valider la prise en charge.
+                </p>
+              </div>
+            )}
+
             <div className="mt-5">
               {(order.shipment.timeline ?? []).map((e, i, arr) => {
                 const isLast = i === arr.length - 1;

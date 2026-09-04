@@ -8,12 +8,14 @@ from .views import (
     MyOrdersView,
     OrderTrackingView,
     ConfirmReceiptView,
+    ExtendRelayGardeView,
     CancelOrderView,
     OrderDisputeListCreateView,
     DisputeMessageCreateView,
     DisputeEvidenceRequestListView,
     DisputeEvidenceRequestRespondView,
     MyPendingEvidenceRequestsView,
+    OrderReturnListCreateView,
 )
 
 urlpatterns = [
@@ -23,7 +25,9 @@ urlpatterns = [
     path("<int:id>/tracking/", OrderTrackingView.as_view(), name="order-tracking"),
     path("<int:id>/cancel/", CancelOrderView.as_view(), name="order-cancel"),
     path("<int:id>/confirm-receipt/", ConfirmReceiptView.as_view(), name="order-confirm-receipt"),
+    path("<int:id>/extend-relay-garde/", ExtendRelayGardeView.as_view(), name="order-extend-relay-garde"),
     path("<int:id>/disputes/", OrderDisputeListCreateView.as_view(), name="order-disputes"),
+    path("<int:id>/returns/", OrderReturnListCreateView.as_view(), name="order-returns"),
     path("disputes/<int:dispute_id>/messages/", DisputeMessageCreateView.as_view(), name="order-dispute-messages"),
     path("disputes/<int:dispute_id>/evidence-requests/", DisputeEvidenceRequestListView.as_view(), name="dispute-evidence-requests"),
     path("evidence-requests/<int:request_id>/respond/", DisputeEvidenceRequestRespondView.as_view(), name="dispute-evidence-request-respond"),

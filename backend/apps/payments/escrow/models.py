@@ -257,6 +257,8 @@ class EscrowEvent(models.Model):
         RELAY_HANDOVER_SCANNED = "RELAY_HANDOVER_SCANNED", "Remise scannee"
         DISPUTE_OPENED = "DISPUTE_OPENED", "Litige ouvert"
         DISPUTE_RESOLVED = "DISPUTE_RESOLVED", "Litige resolu"
+        RETURN_INITIATED = "RETURN_INITIATED", "Retour initie"
+        RETURN_COMPLETED = "RETURN_COMPLETED", "Retour finalise"
         ORDER_CANCELLED = "ORDER_CANCELLED", "Commande annulee"
         ADMIN_OVERRIDE = "ADMIN_OVERRIDE", "Intervention administrative"
 

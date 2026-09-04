@@ -23,7 +23,33 @@ def validate_evidence_file(upload):
         raise ValidationError({"files": "Chaque preuve doit peser au maximum 15 Mo."})
 
 
-def create_evidence(*, dispute, user, upload, uploader_role, description="", evidence_request=None):
+# Retention differenciee par moyen de paiement (proposition validee) : 60
+# jours suffit pour Mobile Money, mais un chargeback carte peut etre conteste
+# jusqu'a 120 jours — on retient donc les preuves plus longtemps pour ce
+# moyen de paiement. "CARD" n'existe pas encore dans PaymentTransaction.Provider
+# (seuls MTN_MOMO/ORANGE_MONEY sont construits) : ce readiness ne change rien
+# tant que le paiement par carte n'est pas livre, et prend le relais des que
+# ce provider existera sous ce nom.
+CARD_PAYMENT_PROVIDERS = {"CARD"}
+CARD_EVIDENCE_RETENTION_DAYS = 180
+
+
+def _evidence_retention_deadline(dispute):
+    from django.utils import timezone as _timezone
+
+    from .models import PlatformSettings
+
+    days = PlatformSettings.get_settings().dispute_evidence_retention_days
+    paid_by = (
+        dispute.order.payments.filter(status="SUCCESS").values_list("provider", flat=True).first()
+        if dispute.order_id else None
+    )
+    if paid_by in CARD_PAYMENT_PROVIDERS:
+        days = CARD_EVIDENCE_RETENTION_DAYS
+    return _timezone.now() + _timezone.timedelta(days=days)
+
+
+def create_evidence(*, dispute, user, upload, uploader_role, description="", evidence_request=None, message=None):
     validate_evidence_file(upload)
     digest = hashlib.sha256()
     for chunk in upload.chunks():
@@ -32,6 +58,7 @@ def create_evidence(*, dispute, user, upload, uploader_role, description="", evi
     return DisputeEvidence.objects.create(
         dispute=dispute,
         request=evidence_request,
+        message=message,
         uploaded_by=user,
         file=upload,
         evidence_type=ALLOWED_EVIDENCE_TYPES[upload.content_type.lower()],
@@ -40,6 +67,7 @@ def create_evidence(*, dispute, user, upload, uploader_role, description="", evi
         size_bytes=upload.size,
         sha256=digest.hexdigest(),
         description=(description or "")[:255],
+        retain_until=_evidence_retention_deadline(dispute),
     )
 
 
@@ -50,7 +78,11 @@ def resolve_dispute_actor(dispute, role):
     if role == DisputeEvidenceRequest.RecipientRole.VENDOR:
         return dispute.vendor
 
-    shipment = getattr(dispute.order, "shipment", None)
+    # Un colis par vendeur : le shipment pertinent est celui du vendeur
+    # concerne par ce litige, pas un shipment quelconque de la commande.
+    shipment = dispute.order.shipments.filter(vendor_id=dispute.vendor_id).first() if dispute.vendor_id else None
+    if shipment is None:
+        shipment = dispute.order.shipments.first()
     if not shipment:
         return None
     if role == DisputeEvidenceRequest.RecipientRole.COURIER:

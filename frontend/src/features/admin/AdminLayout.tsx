@@ -22,12 +22,12 @@ import { AdminBadgesContext, useAdminAttentionBadges } from '@/hooks/useAdminAtt
 import {
   LayoutDashboard, Users, Radio, Store, MapPin, FileCheck,
   ArrowDownToLine, CreditCard, Award, FilePenLine, Truck,
-  ShoppingCart, Map, Scale, Package, Tag, Star, BarChart3,
+  ShoppingCart, Map, Scale, Package, Tag, Star, BarChart3, RotateCcw,
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
   LayoutGrid, UserPlus, Layers, Palette, FolderTree, Building2, Warehouse,
-  Send, Undo2, Lock, Receipt, SlidersHorizontal, ShieldAlert, Clock,
+  Send, Undo2, Lock, Receipt, SlidersHorizontal, ShieldAlert, Clock, Gauge,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,6 +121,8 @@ const SECTIONS: NavSection[] = [
       { key: 'orders',     path: '/admin/orders',               icon: ShoppingCart, end: true },
       { key: 'orders_map', path: '/admin/orders/map',           icon: Map },
       { key: 'disputes',   path: '/admin/disputes',             icon: Scale, end: true },
+      { key: 'returns',    path: '/admin/returns',              icon: RotateCcw, end: true },
+      { key: 'supervision', path: '/admin/supervision',         icon: Gauge, end: true },
       { key: 'catalogue',  path: '/admin/catalogue',            icon: Package, end: true },
       { key: 'categories', path: '/admin/catalogue/categories', icon: Tag },
       { key: 'reviews',    path: '/admin/catalogue/reviews',    icon: Star },

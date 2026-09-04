@@ -10,6 +10,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from apps.catalog.models import Product
 from apps.catalog.serializers import ProductSerializer
 from .models import (
+    AppRelease,
     CourierProfile,
     DeliveryOrganizationProfile,
     PayoutAccount,
@@ -329,6 +330,17 @@ class CourierApplicationSerializer(serializers.Serializer):
     )
     vehicle_type = serializers.ChoiceField(choices=CourierProfile.VehicleType.choices)
     id_card = serializers.CharField(max_length=120)
+
+    def validate(self, data):
+        # Bannissement niveau 4 (V5.5 §8) : une CNI ou un numéro Mobile
+        # Money bloqué ne doit pas pouvoir revenir sous un nouveau compte.
+        from .models import PartnerBlacklist
+
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.CNI, data.get('id_card', '')):
+            raise serializers.ValidationError("Cette pièce d'identité ne peut pas être utilisée pour créer un compte partenaire.")
+        if PartnerBlacklist.is_blacklisted(PartnerBlacklist.IdentifierType.MOMO, data.get('phone', '')):
+            raise serializers.ValidationError("Ce numéro Mobile Money ne peut pas être utilisé pour créer un compte partenaire.")
+        return data
 
     def create(self, validated_data):
         user = self.context["request"].user
@@ -748,3 +760,12 @@ class RewardAccountSerializer(serializers.ModelSerializer):
 
     def get_show_monetary_value(self, obj):
         return obj.role != RewardAccount.Role.COURIER
+
+
+class AppReleaseSerializer(serializers.ModelSerializer):
+    portal_display = serializers.CharField(source="get_portal_display", read_only=True)
+
+    class Meta:
+        model = AppRelease
+        fields = ["portal", "portal_display", "version", "apk_url", "release_notes", "updated_at"]
+        read_only_fields = fields

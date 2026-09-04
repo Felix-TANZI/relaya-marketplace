@@ -3,6 +3,7 @@
 // Types alignés sur le cycle de vie complet du backend.
 
 import { http } from "./http";
+import type { OrderReturn } from "./customer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // TYPES — CYCLE DE VIE
@@ -109,6 +110,11 @@ export interface ProductImage {
   created_at: string;
 }
 
+export interface ProductFaqEntry {
+  question: string;
+  answer: string;
+}
+
 export interface VendorProduct {
   id: number;
   title: string;
@@ -125,6 +131,7 @@ export interface VendorProduct {
   brand_fk?: number | null;
   seller_note?: string;
   stock_threshold?: number | null;
+  faq?: ProductFaqEntry[];
 }
 
 export interface VendorPromotionCampaignPayload {
@@ -187,6 +194,7 @@ export interface VendorShipmentTracking {
   relay_point: string;
   distance_km: number;
   timeline: VendorShipmentTimelineEvent[];
+  pickup_confirmation_code: string;
   created_at: string;
   updated_at: string;
 }
@@ -1296,6 +1304,31 @@ export const vendorsApi = {
     await http<void>(`/api/vendors/masters/${masterId}/images/${imageId}/`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  // ── Retours vendeur ──────────────────────────────────────────────────────
+
+  /** Liste des demandes de retour sur les produits du vendeur. */
+  getReturns: async (statusFilter?: string): Promise<OrderReturn[]> => {
+    const token = localStorage.getItem("access_token");
+    const qs = statusFilter ? `?status=${statusFilter}` : "";
+    return http<OrderReturn[]>(`/api/vendors/returns/${qs}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+
+  /** Approuve ou rejette une demande de retour. */
+  reviewReturn: async (
+    returnId: number,
+    decision: "APPROVED" | "REJECTED",
+    note?: string,
+  ): Promise<OrderReturn> => {
+    const token = localStorage.getItem("access_token");
+    return http<OrderReturn>(`/api/vendors/returns/${returnId}/review/`, {
+      method: "POST",
+      body: JSON.stringify({ decision, note: note || "" }),
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
     });
   },
 

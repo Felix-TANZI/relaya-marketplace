@@ -7,11 +7,13 @@ from django.urls import reverse
 from rest_framework import serializers, status
 from rest_framework.test import APITestCase
 
-from apps.accounts.models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile
+from apps.accounts.models import ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, RelayPointProfile, UserNotification
 from apps.orders.models import Dispute, Order
 
-from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentEvidence, ShipmentLocation
-from .serializers import RelayParcelReceiveSerializer
+from .assignment import choose_courier_for_order
+from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentEvidence, ShipmentLocation, Tournee, Zone
+from .serializers import RelayParcelPickupSerializer, RelayParcelReceiveSerializer, ShipmentSerializer
+from .tournees import bourse_tournees_for_organization, claim_tournee_for_organization, compose_tournees_for_zone
 
 
 class ShipmentTrackingTests(APITestCase):
@@ -189,6 +191,110 @@ class ShipmentTrackingTests(APITestCase):
         self.assertIsNotNone(stored.received_at)
         self.assertEqual(RelayParcel.objects.filter(shipment=self.shipment).count(), 1)
         self.assertEqual(ShipmentEvent.objects.filter(shipment=self.shipment).count(), 1)
+
+    def test_pickup_by_authorized_third_party_requires_id_reference(self):
+        self.order.authorized_pickup_name = "Jean Kamga"
+        self.order.authorized_pickup_phone = "+237691112233"
+        self.order.save(update_fields=["authorized_pickup_name", "authorized_pickup_phone"])
+        RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.STORED,
+            pickup_code="TIERS1",
+        )
+
+        missing = RelayParcelPickupSerializer(
+            data={"pickup_code": "TIERS1"},
+            context={"relay_point": self.relay_point},
+        )
+        missing.is_valid(raise_exception=True)
+        with self.assertRaisesMessage(serializers.ValidationError, "piece d'identite"):
+            missing.save()
+
+        logged = RelayParcelPickupSerializer(
+            data={
+                "pickup_code": "TIERS1",
+                "picked_up_by_name": "Jean Kamga",
+                "picked_up_by_id_reference": "CNI 1234567890",
+            },
+            context={"relay_point": self.relay_point},
+        )
+        logged.is_valid(raise_exception=True)
+        parcel = logged.save()
+
+        self.assertEqual(parcel.status, RelayParcel.Status.PICKED_UP)
+        self.assertEqual(parcel.picked_up_by_name, "Jean Kamga")
+        self.assertEqual(parcel.picked_up_by_id_reference, "CNI 1234567890")
+
+    def test_relay_refuses_parcel_with_broken_seal_and_logs_evidence(self):
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(
+            reverse("shipping-relay-refuse"),
+            {
+                "shipment_id": self.shipment.id,
+                "reason": "SEAL_BROKEN",
+                "note": "Adhésif de sécurité découpé.",
+                "file": SimpleUploadedFile("seal.png", b"broken-seal", content_type="image/png"),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.shipment.status, Shipment.Status.INCIDENT)
+        parcel = RelayParcel.objects.get(shipment=self.shipment)
+        self.assertEqual(parcel.status, RelayParcel.Status.REFUSED)
+        self.assertIn("Scellé rompu", parcel.proof_note)
+        self.assertTrue(ShipmentEvidence.objects.filter(shipment=self.shipment, stage=ShipmentEvidence.Stage.RELAY_REFUSED).exists())
+        self.assertTrue(ShipmentEvent.objects.filter(shipment=self.shipment, status=Shipment.Status.INCIDENT).exists())
+        self.assertTrue(
+            UserNotification.objects.filter(
+                user=self.shipment.order.user, title__icontains="Incident signalé",
+            ).exists()
+        )
+
+    def test_relay_can_upload_a_pickup_signature_and_buyer_sees_it(self):
+        parcel = RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.STORED,
+            pickup_code="SIGN01",
+        )
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(
+            reverse("shipping-relay-evidence"),
+            {
+                "parcel_id": parcel.id,
+                "stage": "RELAY_RELEASED_SIGNATURE",
+                "file": SimpleUploadedFile("signature.png", b"signature-bytes", content_type="image/png"),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED, response.data)
+        self.assertTrue(
+            ShipmentEvidence.objects.filter(
+                shipment=self.shipment, stage=ShipmentEvidence.Stage.RELAY_RELEASED_SIGNATURE,
+            ).exists()
+        )
+
+        serialized = ShipmentSerializer(self.shipment, context={"request": None}).data
+        self.assertEqual(len(serialized["delivery_evidences"]), 1)
+
+    def test_relay_refusal_requires_a_photo(self):
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(
+            reverse("shipping-relay-refuse"),
+            {"shipment_id": self.shipment.id, "reason": "SEAL_BROKEN"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.shipment.refresh_from_db()
+        self.assertNotEqual(self.shipment.status, Shipment.Status.INCIDENT)
 
     def test_relay_manager_updates_capacity_and_hours(self):
         self.client.force_authenticate(self.relay_user)
@@ -372,3 +478,356 @@ class ShipmentTrackingTests(APITestCase):
         self.assertTrue(bool(evidence.file))
         self.assertTrue(evidence.litigation_hold)
         self.assertIsNone(evidence.purged_at)
+
+
+class TourneeCompositionTests(APITestCase):
+    """
+    Composeur de tournées (Regles_Systeme_DEV v2.0 §5, règle fondatrice +
+    règle verrouillée n°10) : les colis d'une zone partent toujours en
+    groupe, jamais un par un, sauf sortie forcée après deux créneaux.
+    """
+
+    def setUp(self):
+        self.client_user = User.objects.create_user("tournee_client", password="Client2026")
+        self.zone = Zone.objects.create(name="Zone Tournée", city="Yaounde", tier=Zone.Tier.STANDARD)
+
+        self.org_user = User.objects.create_user("tournee_org", password="Org2026")
+        self.organization = DeliveryOrganizationProfile.objects.create(
+            user=self.org_user,
+            company_name="BelivaY Tournée Logistics",
+            phone="+237690100001",
+            city="Yaounde",
+            zones=["Zone Tournée"],
+            status=DeliveryOrganizationProfile.Status.APPROVED,
+            transport_insurance_verified=True,
+        )
+        self.courier_user = User.objects.create_user("tournee_courier", password="Courier2026")
+        self.courier = CourierProfile.objects.create(
+            user=self.courier_user,
+            delivery_organization=self.organization,
+            phone="+237690100002",
+            city="Yaounde",
+            zones=["Zone Tournée"],
+            id_card="TOURNEE-CNI-001",
+            is_active=True,
+            is_approved=True,
+            is_online=True,
+        )
+
+    def _make_shipment(self, *, vendor_suffix, parcel_size="STANDARD", created_at=None):
+        vendor_user = User.objects.create_user(f"tournee_vendor_{vendor_suffix}", password="Vendor2026")
+        order = Order.objects.create(
+            user=self.client_user,
+            customer_phone="+237690100003",
+            city="Yaounde",
+            address="Mvan",
+            zone=self.zone,
+            total_xaf=10000,
+        )
+        shipment = Shipment.objects.create(
+            order=order, vendor=vendor_user, status=Shipment.Status.CREATED, parcel_size=parcel_size,
+        )
+        if created_at is not None:
+            Shipment.objects.filter(pk=shipment.pk).update(created_at=created_at)
+            shipment.refresh_from_db()
+        return shipment
+
+    def test_zone_below_threshold_and_within_first_slot_waits(self):
+        self._make_shipment(vendor_suffix=1)
+        self._make_shipment(vendor_suffix=2)
+
+        tournee = compose_tournees_for_zone(self.zone)
+
+        self.assertIsNone(tournee)
+        self.assertEqual(Shipment.objects.filter(status=Shipment.Status.CREATED, courier__isnull=True).count(), 2)
+
+    def test_zone_reaching_threshold_composes_a_grouped_tournee(self):
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+
+        tournee = compose_tournees_for_zone(self.zone)
+
+        self.assertIsNotNone(tournee)
+        self.assertEqual(tournee.status, Tournee.Status.DEPARTED)
+        self.assertFalse(tournee.is_forced_exit)
+        self.assertEqual(tournee.colis_count, 4)
+        for shipment in shipments:
+            shipment.refresh_from_db()
+            self.assertEqual(shipment.tournee_id, tournee.id)
+            self.assertEqual(shipment.courier_id, self.courier.id)
+            self.assertEqual(shipment.status, Shipment.Status.ASSIGNED)
+        stop_orders = sorted(s.stop_order for s in Shipment.objects.filter(tournee=tournee))
+        self.assertEqual(stop_orders, [0, 1, 2, 3])
+
+    def test_oversized_parcel_never_grouped_into_a_tournee(self):
+        normal = [self._make_shipment(vendor_suffix=i) for i in range(3)]
+        oversized = self._make_shipment(vendor_suffix="large", parcel_size="LARGE")
+
+        tournee = compose_tournees_for_zone(self.zone)
+
+        self.assertIsNone(tournee)  # seulement 3 colis eligibles, sous le seuil
+        oversized.refresh_from_db()
+        self.assertIsNone(oversized.tournee)
+        self.assertEqual(oversized.status, Shipment.Status.CREATED)
+
+    def test_forced_exit_after_two_slots_waited(self):
+        old_shipment = self._make_shipment(
+            vendor_suffix="old", created_at=timezone.now() - timedelta(hours=30),
+        )
+
+        tournee = compose_tournees_for_zone(self.zone)
+
+        self.assertIsNotNone(tournee)
+        self.assertTrue(tournee.is_forced_exit)
+        old_shipment.refresh_from_db()
+        self.assertEqual(old_shipment.tournee_id, tournee.id)
+        self.assertEqual(old_shipment.courier_id, self.courier.id)
+
+
+class BourseAuxCoursesTests(APITestCase):
+    """
+    Bourse aux courses V1.1 : "premier arrivé premier servi" pour les
+    paquets qu'aucun livreur ne peut prendre individuellement au moment de
+    la composition.
+    """
+
+    def setUp(self):
+        self.client_user = User.objects.create_user("bourse_client", password="Client2026")
+        # Zone sans aucune entreprise de livraison a la composition : le
+        # composeur ne peut assigner personne -> publication sur la bourse.
+        self.zone = Zone.objects.create(name="Zone Bourse", city="Douala", tier=Zone.Tier.STANDARD)
+
+    def _make_shipment(self, *, vendor_suffix):
+        vendor_user = User.objects.create_user(f"bourse_vendor_{vendor_suffix}", password="Vendor2026")
+        order = Order.objects.create(
+            user=self.client_user, customer_phone="+237690500001", city="Douala",
+            address="Akwa", zone=self.zone, total_xaf=10000,
+        )
+        return Shipment.objects.create(order=order, vendor=vendor_user, status=Shipment.Status.CREATED)
+
+    def _make_organization(self, username, *, city="Douala", zones=None):
+        org_user = User.objects.create_user(username, password="Org2026")
+        return DeliveryOrganizationProfile.objects.create(
+            user=org_user, company_name=f"Livraison {username}", phone="+237690500002",
+            city=city, zones=zones or [], status=DeliveryOrganizationProfile.Status.APPROVED,
+            transport_insurance_verified=True,
+        )
+
+    def _make_courier(self, username, organization):
+        user = User.objects.create_user(username, password="Courier2026")
+        return CourierProfile.objects.create(
+            user=user, delivery_organization=organization, phone="+237690500003",
+            city=organization.city, zones=[self.zone.name], id_card=f"CNI-{username}",
+            is_active=True, is_approved=True, is_online=True,
+        )
+
+    def test_threshold_reached_with_no_courier_publishes_to_bourse(self):
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+
+        tournee = compose_tournees_for_zone(self.zone)
+
+        self.assertIsNotNone(tournee)
+        self.assertEqual(tournee.status, Tournee.Status.PUBLISHED)
+        self.assertIsNone(tournee.courier)
+        self.assertEqual(tournee.colis_count, 4)
+        for shipment in shipments:
+            shipment.refresh_from_db()
+            self.assertEqual(shipment.tournee_id, tournee.id)
+            self.assertEqual(shipment.status, Shipment.Status.CREATED)  # pas assigne individuellement
+            self.assertIsNone(shipment.courier)
+
+    def test_claim_assigns_a_courier_and_departs_the_tournee(self):
+        shipments = [self._make_shipment(vendor_suffix=i) for i in range(4)]
+        tournee = compose_tournees_for_zone(self.zone)
+
+        organization = self._make_organization("bourse_org_1")
+        courier = self._make_courier("bourse_courier_1", organization)
+
+        claimed, error = claim_tournee_for_organization(tournee.id, organization)
+
+        self.assertIsNone(error)
+        self.assertEqual(claimed.status, Tournee.Status.DEPARTED)
+        self.assertEqual(claimed.claimed_by_organization_id, organization.id)
+        self.assertIsNotNone(claimed.claimed_at)
+        for shipment in shipments:
+            shipment.refresh_from_db()
+            self.assertEqual(shipment.courier_id, courier.id)
+            self.assertEqual(shipment.status, Shipment.Status.ASSIGNED)
+
+    def test_second_organization_cannot_claim_an_already_claimed_tournee(self):
+        self._make_shipment(vendor_suffix=1)
+        for i in range(2, 5):
+            self._make_shipment(vendor_suffix=i)
+        tournee = compose_tournees_for_zone(self.zone)
+
+        org_a = self._make_organization("bourse_org_a")
+        self._make_courier("bourse_courier_a", org_a)
+        org_b = self._make_organization("bourse_org_b")
+        self._make_courier("bourse_courier_b", org_b)
+
+        first, first_error = claim_tournee_for_organization(tournee.id, org_a)
+        second, second_error = claim_tournee_for_organization(tournee.id, org_b)
+
+        self.assertIsNone(first_error)
+        self.assertIsNone(second)
+        self.assertIsNotNone(second_error)
+
+    def test_organization_without_courier_cannot_claim(self):
+        for i in range(4):
+            self._make_shipment(vendor_suffix=i)
+        tournee = compose_tournees_for_zone(self.zone)
+
+        organization = self._make_organization("bourse_org_empty")  # aucun livreur
+
+        claimed, error = claim_tournee_for_organization(tournee.id, organization)
+
+        self.assertIsNone(claimed)
+        self.assertIsNotNone(error)
+        tournee.refresh_from_db()
+        self.assertEqual(tournee.status, Tournee.Status.PUBLISHED)  # reste disponible
+
+    def test_bourse_listing_only_shows_published_tournees_covering_the_organization(self):
+        for i in range(4):
+            self._make_shipment(vendor_suffix=i)
+        tournee = compose_tournees_for_zone(self.zone)
+
+        matching_org = self._make_organization("bourse_org_match", city="Douala")
+        other_city_org = self._make_organization("bourse_org_other", city="Yaounde")
+
+        self.assertIn(tournee, list(bourse_tournees_for_organization(matching_org)))
+        self.assertNotIn(tournee, list(bourse_tournees_for_organization(other_city_org)))
+
+
+class AdminSupervisionDashboardTests(APITestCase):
+    """Console de supervision minimale : deux listes + subvention par zone."""
+
+    def setUp(self):
+        self.admin = User.objects.create_superuser("supervision_admin", "supervision_admin@test.local", "pass")
+        self.buyer = User.objects.create_user("supervision_buyer", password="pass")
+        self.zone = Zone.objects.create(name="Zone Supervision", city="Yaounde", tier=Zone.Tier.STANDARD)
+        self.url = reverse("shipping-admin-supervision")
+
+    def _make_order_and_shipment(self, *, created_at, status=Shipment.Status.CREATED):
+        vendor_user = User.objects.create_user(f"supervision_vendor_{Order.objects.count()}", password="pass")
+        order = Order.objects.create(
+            user=self.buyer, customer_phone="+237690600001", city="Yaounde",
+            address="Mvan", zone=self.zone, total_xaf=8000,
+        )
+        Order.objects.filter(pk=order.pk).update(created_at=created_at)
+        order.refresh_from_db()
+        shipment = Shipment.objects.create(order=order, vendor=vendor_user, status=status)
+        Shipment.objects.filter(pk=shipment.pk).update(created_at=created_at)
+        shipment.refresh_from_db()
+        return order, shipment
+
+    def test_requires_admin(self):
+        self.client.force_authenticate(self.buyer)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_lists_late_shipment_not_yet_delivered(self):
+        # Zone STANDARD -> SLA 24h ouvrées : un colis créé il y a 3 jours et
+        # toujours pas livré est en retard.
+        self._make_order_and_shipment(created_at=timezone.now() - timedelta(days=3))
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["late_shipments_count"], 1)
+        self.assertGreater(response.data["late_shipments"][0]["hours_late"], 0)
+
+    def test_does_not_list_a_shipment_still_within_sla(self):
+        self._make_order_and_shipment(created_at=timezone.now())
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["late_shipments_count"], 0)
+
+    def test_lists_unclaimed_published_tournee(self):
+        Tournee.objects.create(
+            zone=self.zone, slot_date=timezone.now().date(), period=Tournee.Period.MORNING,
+            status=Tournee.Status.PUBLISHED, colis_count=4,
+        )
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["unclaimed_tournees_count"], 1)
+        self.assertEqual(response.data["unclaimed_tournees"][0]["colis_count"], 4)
+
+    def test_counts_forced_exits_as_subsidy_per_zone(self):
+        Tournee.objects.create(
+            zone=self.zone, slot_date=timezone.now().date(), period=Tournee.Period.MORNING,
+            status=Tournee.Status.COMPLETED, colis_count=1, is_forced_exit=True,
+        )
+        Tournee.objects.create(
+            zone=self.zone, slot_date=timezone.now().date(), period=Tournee.Period.AFTERNOON,
+            status=Tournee.Status.DEPARTED, colis_count=2, is_forced_exit=True,
+        )
+        Tournee.objects.create(
+            zone=self.zone, slot_date=timezone.now().date(), period=Tournee.Period.MORNING,
+            status=Tournee.Status.DEPARTED, colis_count=4, is_forced_exit=False,
+        )
+
+        self.client.force_authenticate(self.admin)
+        response = self.client.get(self.url)
+
+        subsidy = response.data["subsidy_by_zone"]
+        self.assertEqual(len(subsidy), 1)
+        self.assertEqual(subsidy[0]["forced_exits"], 2)
+        self.assertEqual(subsidy[0]["colis_perdus"], 3)
+
+
+class SanctionThrottlingDispatchTests(APITestCase):
+    """
+    Sanction niveau 2 (V5.5 §8, throttling) : "visibilité/dispatch réduits",
+    jamais une exclusion. Un livreur sanctionné doit rester sélectionnable,
+    mais seulement en dernier recours face à un livreur non sanctionné.
+    """
+
+    def setUp(self):
+        from apps.accounts.trust_score import apply_sanction
+
+        self.apply_sanction = apply_sanction
+        self.client_user = User.objects.create_user("throttle_client", password="Client2026")
+        self.zone = Zone.objects.create(name="Zone Throttle", city="Yaounde", tier=Zone.Tier.STANDARD)
+        org_user = User.objects.create_user("throttle_org", password="Org2026")
+        self.organization = DeliveryOrganizationProfile.objects.create(
+            user=org_user, company_name="Throttle Logistics", phone="+237690600001",
+            city="Yaounde", zones=["Zone Throttle"],
+            status=DeliveryOrganizationProfile.Status.APPROVED, transport_insurance_verified=True,
+        )
+
+    def _courier(self, suffix):
+        user = User.objects.create_user(f"throttle_courier_{suffix}", password="Courier2026")
+        return CourierProfile.objects.create(
+            user=user, delivery_organization=self.organization, phone=f"+23769060{suffix}",
+            city="Yaounde", zones=["Zone Throttle"], id_card=f"THROTTLE-CNI-{suffix}",
+            is_active=True, is_approved=True, is_online=True,
+        )
+
+    def test_throttled_courier_is_picked_last_not_excluded(self):
+        from apps.accounts.models import TrustScoreProfile
+        from apps.accounts.trust_score import get_trust_score_profile
+
+        sanctioned = self._courier("1")
+        free = self._courier("2")
+        profile = get_trust_score_profile(sanctioned.user, TrustScoreProfile.Role.COURIER)
+        self.apply_sanction(profile, TrustScoreProfile.SanctionLevel.THROTTLING, "Retards répétés — throttling.")
+
+        order = Order.objects.create(
+            user=self.client_user, customer_phone="+237690600099", city="Yaounde",
+            address="Bastos", zone=self.zone, total_xaf=10000,
+        )
+        courier, issue_code, _ = choose_courier_for_order(order)
+
+        self.assertEqual(courier.id, free.id)
+        self.assertEqual(issue_code, "")
+
+        # Le livreur sanctionné reste éligible s'il est le seul disponible —
+        # le throttling réduit la priorité, il n'exclut jamais.
+        free.is_online = False
+        free.save(update_fields=["is_online"])
+        courier, issue_code, _ = choose_courier_for_order(order)
+        self.assertEqual(courier.id, sanctioned.id)

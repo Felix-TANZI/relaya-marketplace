@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import type { LocationPrecisionResult } from "@/services/api/location";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import {
@@ -41,7 +43,8 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { http } from "@/services/api/http";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
-import RelayReception, { type RelayArrival } from "./RelayReception";
+import SignaturePad from "@/components/ui/SignaturePad";
+import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
 import RelayFinances from "./RelayFinances";
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
@@ -72,6 +75,8 @@ interface RelayParcel {
   customer_phone: string;
   delivery_address: string;
   city: string;
+  authorized_pickup_name?: string;
+  authorized_pickup_phone?: string;
   parcel_size: string;
   parcel_size_label: string;
   courier_ref: string;
@@ -224,6 +229,15 @@ const training = [
   ["Gestion litige & médiateur", "Recommandé", "Escalade J+7, retour vendeur ou arbitrage BelivaY."],
 ];
 
+function dataUrlToBlob(dataUrl: string): Blob {
+  const [header, base64] = dataUrl.split(",");
+  const mime = header.match(/data:(.*);base64/)?.[1] || "image/png";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mime });
+}
+
 function anonymizedBuyerRef(parcel: RelayParcel) {
   const seed = `${parcel.order_id || parcel.id}`.padStart(4, "0").slice(-4);
   return `BV-ACH-${seed}`;
@@ -265,6 +279,10 @@ export default function RelayPointPage() {
     setTabState(next);
   }, []);
   const [pickupCode, setPickupCode] = useState("");
+  const [pickupPhoto, setPickupPhoto] = useState<File | null>(null);
+  const [pickupIdReference, setPickupIdReference] = useState("");
+  const [pickupSignature, setPickupSignature] = useState<string | null>(null);
+  const [returnOrderNumber, setReturnOrderNumber] = useState("");
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -498,6 +516,28 @@ export default function RelayPointPage() {
     }
   };
 
+  /** Refus motive au controle — Addendum Decisions v1.0 §9 : scelle rompu, colis endommage. */
+  const refuseScannedParcel = async ({ shipmentId, reason, note, photo }: RefuseInput): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      const form = new FormData();
+      form.append("shipment_id", String(shipmentId));
+      form.append("reason", reason);
+      form.append("note", note);
+      form.append("file", photo, photo.name || "refus.jpg");
+      await http("/api/shipping/relay-point/refuse/", { method: "POST", body: form });
+      setOperationMessage({ tone: "success", text: "Colis refusé et signalé — la logistique BelivaY reprend la main." });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
   const pickupParcel = async () => {
     const parcel = relayParcels.find(
       (item) => ["RECEIVED", "STORED"].includes(item.status) && item.pickup_code.toUpperCase() === pickupCode.toUpperCase(),
@@ -506,16 +546,77 @@ export default function RelayPointPage() {
       setOperationMessage({ tone: "error", text: "Aucun colis en stock ne correspond à ce code de retrait." });
       return;
     }
+    if (parcel.authorized_pickup_name) {
+      const confirmed = window.confirm(
+        `Ce client a autorisé ${parcel.authorized_pickup_name}${parcel.authorized_pickup_phone ? ` (${parcel.authorized_pickup_phone})` : ""} à retirer ce colis à sa place.\n\nVérifiez l'identité de la personne présente au guichet avant de continuer.`,
+      );
+      if (!confirmed) return;
+      if (!pickupIdReference.trim()) {
+        setOperationMessage({ tone: "error", text: "Retrait par un tiers : renseignez sa pièce d'identité (type + numéro) avant de valider." });
+        return;
+      }
+    }
+    if (!pickupPhoto) {
+      setOperationMessage({ tone: "error", text: "Prenez une photo de la remise avant de valider (point de garde strict, synchro immédiate requise)." });
+      return;
+    }
+    if (!pickupSignature) {
+      setOperationMessage({ tone: "error", text: "Faites signer le client avant de valider (contrôle au retrait : code + pièce d'identité + photo + signature)." });
+      return;
+    }
     setOperationBusy(true);
     setOperationMessage(null);
     try {
+      // Point de garde strict (regle verrouillee) : le point relais est
+      // presume toujours connecte, la preuve doit reussir AVANT de
+      // considerer la remise terminee — pas de file d'attente ici.
+      const evidenceForm = new FormData();
+      evidenceForm.append("parcel_id", String(parcel.id));
+      evidenceForm.append("stage", "RELAY_RELEASED");
+      evidenceForm.append("file", pickupPhoto, pickupPhoto.name || "remise.jpg");
+      await http("/api/shipping/relay-point/evidence/", { method: "POST", body: evidenceForm });
+
+      const signatureForm = new FormData();
+      signatureForm.append("parcel_id", String(parcel.id));
+      signatureForm.append("stage", "RELAY_RELEASED_SIGNATURE");
+      signatureForm.append("file", dataUrlToBlob(pickupSignature), "signature.png");
+      await http("/api/shipping/relay-point/evidence/", { method: "POST", body: signatureForm });
+
       await http<RelayParcel>("/api/shipping/relay-point/pickup/", {
         method: "POST",
-        body: JSON.stringify({ parcel_id: parcel.id, pickup_code: pickupCode.toUpperCase(), proof_note: "Remise confirmée au guichet" }),
+        body: JSON.stringify({
+          parcel_id: parcel.id,
+          pickup_code: pickupCode.toUpperCase(),
+          proof_note: "Remise confirmée au guichet",
+          picked_up_by_name: parcel.authorized_pickup_name || "",
+          picked_up_by_id_reference: pickupIdReference.trim(),
+        }),
       });
       setOperationMessage({ tone: "success", text: `Retrait de la commande BV-${parcel.order_id} confirmé.` });
       setPickupCode("");
+      setPickupPhoto(null);
+      setPickupIdReference("");
+      setPickupSignature(null);
       await refreshRelayData();
+    } catch (error) {
+      showOperationError(error);
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  const receiveReturn = async () => {
+    const orderId = returnOrderNumber.trim();
+    if (!orderId) return;
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      await http("/api/shipping/relay-point/returns/receive/", {
+        method: "POST",
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      setOperationMessage({ tone: "success", text: `Retour de la commande #${orderId} confirmé — direction inspection.` });
+      setReturnOrderNumber("");
     } catch (error) {
       showOperationError(error);
     } finally {
@@ -577,6 +678,7 @@ export default function RelayPointPage() {
 
   const renderDashboard = () => (
     <div className="space-y-5">
+      {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="RELAY_POINT" />}
       {/* Deux cartes par rangee des le telephone : empilees une par une, ces
           quatre reperes poussaient les arrivees du jour sous la ligne de
           flottaison. En 2x2 le gerant les embrasse d'un seul regard. */}
@@ -710,6 +812,7 @@ export default function RelayPointPage() {
       suggestedSlot={suggestedSlot}
       managerName={relayProfile.manager}
       onReceive={receiveScannedParcel}
+      onRefuse={refuseScannedParcel}
     />
   );
 
@@ -804,8 +907,65 @@ export default function RelayPointPage() {
             className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center text-3xl font-black tracking-[0.35em] outline-none focus:border-blue-500"
             placeholder="000000"
           />
-          <button type="button" onClick={pickupParcel} disabled={operationBusy || pickupCode.length !== 6} className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
+          <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-600">
+            <Camera size={16} />
+            {pickupPhoto ? "Photo prête" : "Photo de la remise (obligatoire)"}
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="sr-only"
+              onChange={(event) => setPickupPhoto(event.target.files?.[0] || null)}
+            />
+          </label>
+          {(() => {
+            const matched = relayParcels.find(
+              (item) => ["RECEIVED", "STORED"].includes(item.status) && item.pickup_code.toUpperCase() === pickupCode.toUpperCase(),
+            );
+            if (!matched?.authorized_pickup_name) return null;
+            return (
+              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
+                <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
+                  Retrait par un tiers — {matched.authorized_pickup_name}
+                </p>
+                <label className="mt-2 block text-xs font-bold text-slate-600">Pièce d'identité présentée (type + numéro)</label>
+                <input
+                  value={pickupIdReference}
+                  onChange={(event) => setPickupIdReference(event.target.value)}
+                  placeholder="Ex : CNI n° 1234567890"
+                  className="mt-1 w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-amber-500"
+                />
+              </div>
+            );
+          })()}
+          <div className="mt-4">
+            <SignaturePad
+              label="Signature du client"
+              hint="Contrôle au retrait : code + pièce d'identité + photo + signature"
+              onChange={setPickupSignature}
+              disabled={operationBusy}
+            />
+          </div>
+          <button
+            type="button"
+            onClick={pickupParcel}
+            disabled={operationBusy || pickupCode.length !== 6 || !pickupPhoto || !pickupSignature}
+            className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45"
+          >
             {operationBusy ? "Vérification..." : "Vérifier et remettre"}
+          </button>
+        </div>
+        <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
+          <label className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Dépôt d'un retour acheteur</label>
+          <p className="mt-1 text-xs text-emerald-800/80">Un client vient déposer un colis retourné (retour approuvé par le vendeur).</p>
+          <input
+            value={returnOrderNumber}
+            onChange={(event) => setReturnOrderNumber(event.target.value.replace(/\D/g, ""))}
+            className="mt-3 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-center text-lg font-black tracking-wide outline-none focus:border-emerald-500"
+            placeholder="Numéro de commande (ex: 128)"
+          />
+          <button type="button" onClick={receiveReturn} disabled={operationBusy || !returnOrderNumber.trim()} className="mt-3 w-full rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
+            {operationBusy ? "Vérification..." : "Confirmer le dépôt"}
           </button>
         </div>
       </Panel>

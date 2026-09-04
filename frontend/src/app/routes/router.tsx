@@ -67,6 +67,7 @@ const ProductFormPage = lazy(() => import('@/features/vendors/ProductFormPage'))
 const SellerOrdersPage = lazy(() => import('@/features/vendors/SellerOrdersPage'));
 const SellerOrderDetailPage = lazy(() => import('@/features/vendors/SellerOrderDetailPage'));
 const SellerDisputesPage = lazy(() => import('@/features/vendors/SellerDisputesPage'));
+const SellerReturnsPage = lazy(() => import('@/features/vendors/SellerReturnsPage'));
 const SellerShopPage = lazy(() => import('@/features/vendors/SellerShopPage'));
 const SellerAnalyticsPage = lazy(() => import('@/features/vendors/SellerAnalyticsPage'));
 const SellerBoostPage = lazy(() => import('@/features/vendors/SellerBoostPage'));
@@ -121,6 +122,8 @@ const CustomersLoyaltyPage = lazy(() => import('@/features/admin/customers/Custo
 const OrdersListPage = lazy(() => import('@/features/admin/operations/OrdersListPage'));
 const AdminOrderDetailPage = lazy(() => import('@/features/admin/operations/OrderDetailPage'));
 const DisputesListPage = lazy(() => import('@/features/admin/operations/DisputesListPage'));
+const ReturnsListPage = lazy(() => import('@/features/admin/operations/ReturnsListPage'));
+const SupervisionPage = lazy(() => import('@/features/admin/operations/SupervisionPage'));
 const AdminDisputeDetailPage = lazy(() => import('@/features/admin/operations/DisputeDetailPage'));
 const DeliveriesListPage = lazy(() => import('@/features/admin/deliveries/DeliveriesListPage'));
 const DeliveriesZonesPage = lazy(() => import('@/features/admin/deliveries/DeliveriesZonesPage'));
@@ -230,6 +233,7 @@ export const router = createBrowserRouter([
       { path: 'orders',            element: <SellerOrdersPage /> },
       { path: 'orders/:id',        element: <SellerOrderDetailPage /> },
       { path: 'disputes',          element: <SellerDisputesPage /> },
+      { path: 'returns',           element: <SellerReturnsPage /> },
       { path: 'shop',              element: <SellerShopPage /> },
       { path: 'analytics',         element: <SellerAnalyticsPage /> },
       { path: 'boost',             element: <SellerBoostPage /> },
@@ -340,6 +344,8 @@ export const router = createBrowserRouter([
       { path: 'orders/map',           element: <OrdersMapPage /> },
       { path: 'disputes',             element: <DisputesListPage /> },
       { path: 'disputes/:id',         element: <AdminDisputeDetailPage /> },
+      { path: 'returns',              element: <ReturnsListPage /> },
+      { path: 'supervision',          element: <SupervisionPage /> },
       { path: 'catalogue',            element: <CataloguePage /> },
       { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
       { path: 'catalogue/reviews',    element: <ReviewsPage /> },

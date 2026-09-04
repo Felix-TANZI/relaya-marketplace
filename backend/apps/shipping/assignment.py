@@ -100,6 +100,7 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
         return None, "CAPACITY_BLOCKED", "Tous les livreurs couvrant cette zone ont atteint leur capacite active."
 
     value_eligible = []
+    throttled_ids = set()
     for courier in available:
         trust = get_trust_score_profile(courier.user, TrustScoreProfile.Role.COURIER)
         cap = trust.parcel_value_cap_xaf
@@ -107,6 +108,8 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
             cap = 250000
         if cap is None or order.total_xaf <= cap:
             value_eligible.append(courier)
+        if trust.is_throttled:
+            throttled_ids.add(courier.id)
     if not value_eligible:
         return (
             None,
@@ -114,7 +117,9 @@ def choose_courier_for_order(order: Order, required_vehicle_type=""):
             "La valeur du colis depasse le plafond Trust Score des livreurs disponibles.",
         )
 
-    value_eligible.sort(key=lambda item: (item.active_shipments_count, item.updated_at))
+    # Sanction niveau 2 (throttling, V5.5 §8) : dispatch reduit — le livreur
+    # sanctionne ne passe qu'en dernier recours, jamais exclu totalement.
+    value_eligible.sort(key=lambda item: (item.id in throttled_ids, item.active_shipments_count, item.updated_at))
     return value_eligible[0], "", ""
 
 

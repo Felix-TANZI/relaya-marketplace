@@ -318,27 +318,31 @@ def detect_self_dealing(order) -> list[tuple[str, int]]:
     acheteur qui se paie lui-même via un compte vendeur/livreur/relais
     complice. Retourne [(role, user_id), ...] des complices détectés.
     """
-    from apps.payments.models import PaymentTransaction
+    # Les empreintes remplacent les numeros en clair : comparer suffit a
+    # detecter une collusion, sans jamais manipuler le numero lui-meme.
+    from apps.payments.bridge import queries
 
-    payer_numbers = {
-        number for number in PaymentTransaction.objects.filter(
-            order=order, status=PaymentTransaction.Status.SUCCESS,
-        ).values_list("payer_phone", flat=True) if number
-    }
+    payer_numbers = queries.payer_fingerprints_for_order(order.pk)
     if not payer_numbers:
         return []
 
     involved = []
     for item in order.items.select_related("product__vendor__vendor_profile"):
         vendor_profile = getattr(item.product.vendor, "vendor_profile", None)
-        if vendor_profile and vendor_profile.phone in payer_numbers:
+        if vendor_profile and queries.fingerprint_of(
+            vendor_profile.phone
+        ) in payer_numbers:
             involved.append((TrustScoreProfile.Role.VENDOR, item.product.vendor_id))
 
     for shipment in order.shipments.select_related("courier__user").prefetch_related("relay_parcel__relay_point"):
-        if shipment.courier_id and shipment.courier.phone in payer_numbers:
+        if shipment.courier_id and queries.fingerprint_of(
+            shipment.courier.phone
+        ) in payer_numbers:
             involved.append((TrustScoreProfile.Role.COURIER, shipment.courier.user_id))
         relay_parcel = getattr(shipment, "relay_parcel", None)
-        if relay_parcel and relay_parcel.relay_point.phone in payer_numbers:
+        if relay_parcel and queries.fingerprint_of(
+            relay_parcel.relay_point.phone
+        ) in payer_numbers:
             involved.append((TrustScoreProfile.Role.RELAY_POINT, relay_parcel.relay_point.user_id))
 
     return list(dict.fromkeys(involved))
@@ -367,35 +371,21 @@ def scan_shared_momo_across_buyers(min_accounts: int = 3) -> list[SanctionRecord
     (niveau 1) — un numéro de famille/boutique partagé reste possible
     légitimement, ce n'est pas une preuve de fraude à lui seul.
     """
-    from django.db.models import Count
-
-    from apps.payments.models import PaymentTransaction
-
-    shared_numbers = (
-        PaymentTransaction.objects.filter(status=PaymentTransaction.Status.SUCCESS)
-        .exclude(payer_phone="")
-        .values("payer_phone")
-        .annotate(distinct_buyers=Count("order__user", distinct=True))
-        .filter(distinct_buyers__gte=min_accounts)
-    )
+    from apps.payments.bridge import queries
 
     flagged = []
-    for row in shared_numbers:
-        phone = row["payer_phone"]
-        buyer_ids = (
-            PaymentTransaction.objects.filter(payer_phone=phone, status=PaymentTransaction.Status.SUCCESS)
-            .values_list("order__user", flat=True).distinct()
-        )
-        for user_id in buyer_ids:
-            if user_id is None:
-                continue
-            profile, _ = TrustScoreProfile.objects.get_or_create(user_id=user_id, role=TrustScoreProfile.Role.BUYER)
-            marker = f"partagé entre {row['distinct_buyers']} comptes"
-            if profile.sanctions.filter(reason__icontains=phone).exists():
+    for ligne in queries.shared_payer_numbers(min_accounts):
+        for user_id in ligne["buyer_ids"]:
+            profile, _ = TrustScoreProfile.objects.get_or_create(
+                user_id=user_id, role=TrustScoreProfile.Role.BUYER,
+            )
+            empreinte = ligne["fingerprint"]
+            marker = f"partagé entre {ligne['count']} comptes"
+            if profile.sanctions.filter(reason__icontains=empreinte).exists():
                 continue
             flagged.append(apply_sanction(
                 profile, TrustScoreProfile.SanctionLevel.WARNING,
-                f"Numéro Mobile Money {phone} {marker} acheteur distincts.",
+                f"Numéro Mobile Money {empreinte} {marker} acheteur distincts.",
             ))
     return flagged
 

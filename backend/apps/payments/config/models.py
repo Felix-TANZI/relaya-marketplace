@@ -1062,3 +1062,10 @@ class ConfigChangeRequest(models.Model):
             "Une demande de changement de configuration ne se supprime jamais : "
             "elle constitue une piece du journal d'audit."
         )
+
+
+# Les tarifs de livraison et indemnites vivent dans un fichier separe,
+# mais Django doit les decouvrir ici.
+from .delivery_pricing import (  # noqa: E402,F401
+    CourierIndemnityRule, DeliveryPricingRule,
+)

@@ -86,33 +86,24 @@ def _compute_delivery_price(order_items_data, delivery_mode, destination_zone):
     if not vendors_in_order:
         return 0
 
-    base = 500 if delivery_mode == 'PICKUP' else 1000
-    total = base
+    # ─────────────────────────────────────────────────────────────────────
+    # LE BAREME VIENT DU MODULE FINANCIER
+    #
+    # Les montants vivaient ici en dur : 500 pour un retrait, 1000 pour une
+    # livraison, plus les supplements par vendeur. Un changement tarifaire
+    # exigeait un developpeur, et personne ne pouvait verifier ce qui etait
+    # applique.
+    #
+    # Ils sont desormais portes par DeliveryPricingRule, editable depuis
+    # l'administration.
+    # ─────────────────────────────────────────────────────────────────────
+    from apps.payments.bridge import queries
 
-    def _vendor_zone_id(vendor):
-        if not vendor:
-            return None
-        profile = getattr(vendor, "vendor_profile", None)
-        return profile.zone_id if profile else None
-
-    seen_zone_ids = set()
-    first_zone_id = _vendor_zone_id(vendors_in_order[0])
-    if first_zone_id:
-        seen_zone_ids.add(first_zone_id)
-
-    for vendor in vendors_in_order[1:]:
-        zone_id = _vendor_zone_id(vendor)
-        if zone_id and zone_id in seen_zone_ids:
-            total += 500
-        else:
-            total += 1000
-            if zone_id:
-                seen_zone_ids.add(zone_id)
-
-    if destination_zone is not None and destination_zone.tier == destination_zone.Tier.VAGUE_3:
-        total += destination_zone.surcharge_xaf
-
-    return total
+    return queries.delivery_fee_xaf(
+        delivery_mode=delivery_mode,
+        vendors=vendors_in_order,
+        destination_zone=destination_zone,
+    )
 
 
 class OrderItemSerializer(serializers.ModelSerializer):

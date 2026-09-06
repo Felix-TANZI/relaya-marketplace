@@ -229,7 +229,8 @@ def _select_rules(
     return sorted(selected, key=lambda r: (-r.priority, r.rule_version_id))
 
 
-def _is_resolvable(rule: DistributionRuleSpec, payee_codes: dict) -> bool:
+def _is_resolvable(rule: DistributionRuleSpec, payee_codes: dict,
+                   component_input=None) -> bool:
     """
     Le beneficiaire de cette regle est-il connu pour cette transaction ?
 
@@ -245,6 +246,12 @@ def _is_resolvable(rule: DistributionRuleSpec, payee_codes: dict) -> bool:
     ─────────────────────────────────────────────────────────────────────────
     """
     if rule.payee_type == PayeeType.PLATFORM:
+        return True
+    # Un composant qui designe son beneficiaire est toujours resolvable,
+    # meme si la table globale ne connait pas ce type.
+    if component_input is not None and getattr(
+        component_input, "payee_code", None
+    ):
         return True
     return payee_codes.get(rule.payee_type) is not None
 
@@ -262,6 +269,20 @@ def _resolve_payee_code(
     """
     if rule.payee_type == PayeeType.PLATFORM:
         return "PLATFORM"
+
+    # ─────────────────────────────────────────────────────────────────────
+    # LE COMPOSANT PRIME SUR LA TABLE GLOBALE
+    #
+    # `payee_codes` ne mappe qu'UN beneficiaire par type. Sur un panier a
+    # deux vendeurs, le second ecrasait le premier — et tout le paiement
+    # partait au dernier vendeur rencontre.
+    #
+    # `ComponentInput.payee_code` existe pour ce cas : quand un composant
+    # designe SON beneficiaire, il fait foi.
+    # ─────────────────────────────────────────────────────────────────────
+    if component_input.payee_code:
+        return component_input.payee_code
+
     code = payee_codes.get(rule.payee_type)
     if code is None:
         raise DistributionError(
@@ -321,7 +342,7 @@ def build_distribution_plan(
         # L'ecart est TRACE, jamais silencieux : un montant qui change de
         # destinataire doit rester explicable.
         # ─────────────────────────────────────────────────────────────────
-        resolvables = [r for r in applicable if _is_resolvable(r, payee_codes)]
+        resolvables = [r for r in applicable if _is_resolvable(r, payee_codes, comp)]
         for regle in applicable:
             if regle in resolvables:
                 continue

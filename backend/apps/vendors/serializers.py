@@ -1244,20 +1244,11 @@ class AdminOrderDetailSerializer(serializers.ModelSerializer):
         return items_data
 
     def get_payment_transactions(self, obj):
-        from apps.payments.models import PaymentTransaction
-        txs = PaymentTransaction.objects.filter(order=obj).order_by('-created_at')
-        return [
-            {
-                'id':           str(tx.id),
-                'provider':     tx.provider,
-                'status':       tx.status,
-                'amount_xaf':   tx.amount_xaf,
-                'payer_phone':  tx.payer_phone,
-                'external_ref': tx.external_ref,
-                'created_at':   tx.created_at,
-            }
-            for tx in txs
-        ]
+        # Le numero n'est plus expose en clair : un vendeur n'a pas besoin
+        # du numero complet de son acheteur.
+        from apps.payments.bridge import queries
+
+        return queries.payments_of_order(obj.pk)
 
     def get_courier_info(self, obj):
         shipment = getattr(obj, 'shipment', None)

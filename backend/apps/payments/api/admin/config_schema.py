@@ -150,6 +150,21 @@ AIDES: dict[str, str] = {
     # ── Le nom, commun a tous les modeles ────────────────────────────────
     "name": "Le nom affiché dans les écrans. Purement descriptif.",
 
+    # ── Frais de livraison ───────────────────────────────────────────────
+    "delivery_mode": "Le mode de livraison auquel ce barème s'applique. "
+                     "Chaque mode a son propre barème.",
+    "base_xaf": "Frais de base, couvrant le premier vendeur du panier.",
+    "extra_vendor_same_zone_xaf": "Supplément par vendeur supplémentaire "
+                                  "dans la même zone : un arrêt de plus sur "
+                                  "le même trajet.",
+    "extra_vendor_other_zone_xaf": "Supplément par vendeur dans une autre "
+                                   "zone : un détour, donc plus cher.",
+    "apply_zone_surcharge": "Ajoute la majoration portée par la zone de "
+                            "destination quand elle est éloignée.",
+
+    # ── Indemnites livreur ───────────────────────────────────────────────
+    "kind": "La situation qui ouvre droit à cette indemnité.",
+
     # ── Filtres — communs a plusieurs modeles ────────────────────────────
     # Un filtre vide s'applique a TOUT. C'est le piege classique : croire
     # qu'une regle est restreinte alors qu'elle est generale.
@@ -302,7 +317,18 @@ def describe_model(modele) -> list[dict]:
             # `blank` decrit la saisie ; `null` la base. C'est `blank` qui
             # dit si un formulaire peut laisser vide.
             "required": not getattr(champ, "blank", False),
-            "help": AIDES.get(champ.name, ""),
+            # ─────────────────────────────────────────────────────────
+            # LE MODELE SERT DE REPLI
+            #
+            # Un champ ajoute a un modele porte souvent deja son
+            # `help_text`. L'ignorer obligerait a le recopier ici, et un
+            # oubli laisserait le champ NU dans le formulaire.
+            #
+            # La table AIDES reste prioritaire : elle explique la
+            # CONSEQUENCE, la ou un help_text decrit souvent l'usage.
+            # ─────────────────────────────────────────────────────────
+            "help": AIDES.get(champ.name)
+            or str(getattr(champ, "help_text", "") or ""),
             # Un reglage sensible merite une confirmation supplementaire.
             "sensitive": champ.name in SENSIBLES,
         })

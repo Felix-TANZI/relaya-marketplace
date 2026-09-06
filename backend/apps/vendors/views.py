@@ -4656,8 +4656,6 @@ def admin_list_orders(request):
     # Recherche multi-critères
     search = request.query_params.get('search')
     if search:
-        from apps.payments.models import PaymentTransaction
-        
         # Recherche par ID commande
         if search.isdigit():
             orders = orders.filter(id=int(search))

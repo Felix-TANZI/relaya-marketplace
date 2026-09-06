@@ -305,7 +305,8 @@ class PayoutAccountVerifyView(APIView):
 
         # Le numero doit atteindre le module financier. Sans ce report, un
         # partenaire verifiait son numero et restait bloque au versement.
-        # L'echec est ABSORBE : il a fait sa part.
+        # L'echec est ABSORBE : il a fait sa part, sa verification reste
+        # valide.
         from apps.payments.bridge.payout_accounts import sync_verified_account
 
         sync_verified_account(account)

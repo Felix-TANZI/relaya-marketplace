@@ -148,6 +148,7 @@ const SECTIONS: NavSection[] = [
       { key: 'fin_risk',           path: '/admin/finance/risk',           icon: ShieldAlert },
       { key: 'fin_payees',         path: '/admin/finance/payees',         icon: Users },
       { key: 'fin_scheduler',      path: '/admin/finance/scheduler',      icon: Clock },
+      { key: 'fin_configuration',  path: '/admin/finance/configuration',  icon: SlidersHorizontal },
 
       // ── Ecrans existants ──────────────────────────────────────────────
       { key: 'finances',    path: '/admin/finances',    icon: DollarSign },

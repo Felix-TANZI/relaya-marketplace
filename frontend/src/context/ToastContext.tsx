@@ -110,7 +110,10 @@ const MAX_TOASTS = 4;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  // Injecter les keyframes une fois apres le premier rendu
+  // Injecter les keyframes une fois apres le premier rendu.
+  // L'insertion d'un <style> dans le <head> est un effet de bord : elle n'a
+  // pas sa place pendant le rendu. `ensureKeyframes` porte deja son propre
+  // garde-fou (`keyframesInjected`), l'appel est donc idempotent.
   useEffect(() => {
     ensureKeyframes();
   }, []);

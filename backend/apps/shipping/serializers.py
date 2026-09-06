@@ -462,6 +462,20 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
     order_id = serializers.IntegerField(required=False)
     slot_code = serializers.CharField(required=False, allow_blank=True, default="")
     proof_note = serializers.CharField(required=False, allow_blank=True, default="")
+    # ─────────────────────────────────────────────────────────────────────
+    # LA CATEGORIE N'EST PAS CHOISIE PAR LE GERANT
+    #
+    # Elle est deduite du contenu de la commande. Accepter une valeur
+    # envoyee par le client permettrait a un point relais de surclasser
+    # ses colis pour etre mieux paye — le verrou de l'interface ne suffit
+    # pas, un appel direct le contournerait.
+    #
+    # Le champ reste declare pour que d'anciens clients ne recoivent pas
+    # d'erreur, mais sa valeur est IGNOREE.
+    # ─────────────────────────────────────────────────────────────────────
+    parcel_size = serializers.CharField(
+        required=False, allow_blank=True, default="", write_only=True,
+    )
 
     def validate(self, attrs):
         if not attrs.get("shipment_id") and not attrs.get("order_id"):
@@ -508,6 +522,15 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
             raise serializers.ValidationError({"capacity": "Capacite point relais atteinte."})
 
         import secrets
+
+        # La categorie vient du SERVEUR, jamais du client.
+        from apps.shipping.parcel_sizing import suggest_for_shipment
+
+        deduction = suggest_for_shipment(shipment)
+        taille = deduction.get("parcel_size") or ""
+        if taille and taille != shipment.parcel_size:
+            shipment.parcel_size = taille
+            shipment.save(update_fields=["parcel_size"])
 
         parcel = existing_parcel or RelayParcel(shipment=shipment, relay_point=relay_point)
         parcel.relay_point = relay_point

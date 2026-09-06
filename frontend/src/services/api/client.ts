@@ -1,6 +1,5 @@
 // frontend/src/services/api/client.ts
 // Client API pour interagir avec le backend Relaya Marketplace
-import { notifyOfflineFallback, readOfflineCache, writeOfflineCache } from "@/lib/offlineCache";
 
 // Configuration du client API
 const API_BASE_URL = (import.meta.env.VITE_API_URL || "http://localhost:8000")
@@ -27,13 +26,6 @@ interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | boolean>;
 }
 
-class ApiResponseError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message);
-    this.name = "ApiResponseError";
-  }
-}
-
 function isTransientNetworkError(error: unknown) {
   return error instanceof TypeError && /failed to fetch|network/i.test(error.message);
 }
@@ -49,6 +41,41 @@ function friendlyHttpError(status: number) {
   if (status >= 500) return "Le service rencontre un problème. Réessayez dans un instant.";
   return "Impossible de terminer cette action pour le moment.";
 }
+
+/**
+ * Extrait le message d'erreur envoye par le serveur.
+ *
+ * DRF renvoie `{"detail": "..."}` pour une erreur metier, et
+ * `{"champ": ["..."]}` pour une erreur de validation. On traite les deux,
+ * et on retombe sur un message generique seulement si le corps est vide ou
+ * illisible.
+ */
+async function serverErrorMessage(response: Response): Promise<string> {
+  const repli = friendlyHttpError(response.status);
+  const brut = await response.text().catch(() => "");
+  if (!brut) return repli;
+
+  try {
+    const donnees = JSON.parse(brut) as unknown;
+    if (donnees && typeof donnees === "object") {
+      const enregistrement = donnees as Record<string, unknown>;
+
+      if (typeof enregistrement.detail === "string") {
+        return enregistrement.detail;
+      }
+      // Erreur de validation : on prend le premier champ en faute.
+      const premiere = Object.values(enregistrement)[0];
+      if (typeof premiere === "string") return premiere;
+      if (Array.isArray(premiere) && typeof premiere[0] === "string") {
+        return premiere[0];
+      }
+    }
+  } catch {
+    // Reponse non JSON — page d'erreur du serveur, par exemple.
+  }
+  return repli;
+}
+
 
 async function fetchWithNetworkRetry(input: RequestInfo | URL, init?: RequestInit) {
   const delays = [450, 1200];
@@ -132,6 +159,12 @@ try {
     ...fetchOptions,
     headers,
   });
+} catch (error) {
+  if (isTransientNetworkError(error)) {
+    throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
+  }
+  throw error;
+}
 
   if (response.status === 401 && localStorage.getItem('refresh_token')) {
     const newToken = await refreshAccessToken();
@@ -151,40 +184,21 @@ try {
     }
   }
 
-    if (!response.ok) {
-      const rawBody = await response.text().catch(() => "");
-      let backendDetail = "";
-      if (rawBody) {
-        try {
-          const parsed = JSON.parse(rawBody) as { detail?: unknown };
-          if (typeof parsed.detail === "string") backendDetail = parsed.detail;
-        } catch {
-          // Corps non-JSON (ex: page d'erreur HTML) : on garde le message generique.
-        }
-      }
-      throw new ApiResponseError(backendDetail || friendlyHttpError(response.status), response.status);
-    }
-
-    const data = await response.json() as T;
-    if ((fetchOptions.method || "GET").toUpperCase() === "GET") writeOfflineCache(url, data);
-    return data;
-  } catch (error) {
-    const isGet = (fetchOptions.method || "GET").toUpperCase() === "GET";
-    const canUseCache = isTransientNetworkError(error)
-      || !navigator.onLine
-      || (error instanceof ApiResponseError && error.status >= 500);
-    if (isGet && canUseCache) {
-      const cached = readOfflineCache<T>(url);
-      if (cached !== null) {
-        notifyOfflineFallback();
-        return cached;
-      }
-    }
-    if (isTransientNetworkError(error) || !navigator.onLine) {
-      throw new Error("Connexion interrompue. Vérifiez votre réseau puis réessayez.");
-    }
-    throw error;
+  if (!response.ok) {
+    // ─────────────────────────────────────────────────────────────────────
+    // LE MESSAGE DU SERVEUR EST LU, PAS JETE
+    //
+    // Le corps etait recupere puis IGNORE, et l'appelant recevait un
+    // message generique. « Impossible de terminer cette action » a la
+    // place de « Montant 19 inferieur au minimum de versement 1000 ».
+    //
+    // Le backend ecrit ces phrases pour etre lues par un humain : les
+    // masquer oblige a rechercher chaque erreur en ligne de commande.
+    // ─────────────────────────────────────────────────────────────────────
+    throw new Error(await serverErrorMessage(response));
   }
+
+  return response.json();
 }
 
 export const api = {
@@ -195,7 +209,7 @@ export const api = {
     apiFetch<T>(endpoint, {
       ...options,
       method: "POST",
-      body: data instanceof FormData ? data : JSON.stringify(data),
+      body: JSON.stringify(data),
     }),
   
   put: <T>(endpoint: string, data?: unknown, options?: FetchOptions) =>

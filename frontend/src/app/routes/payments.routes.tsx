@@ -22,6 +22,8 @@ import {
   FinanceDashboardPage, IntentDetailPage, IntentsPage, PayeesPage,
   PayoutDetailPage, PayoutsPage, ReconciliationPage, RiskPage, SchedulerPage,
 } from '@/features/payments/admin';
+import FinanceConfigEditPage from '@/features/admin/FinanceConfigEditPage';
+import FinanceConfigPage from '@/features/admin/FinanceConfigPage';
 import {
   PaymentCheckoutPage, PaymentDetailPage, PaymentHistoryPage, RefundsPage,
 } from '@/features/payments/buyer';
@@ -135,6 +137,12 @@ const ECRANS: Array<{ path: string; element: React.ReactNode }> = [
   { path: 'finance/risk', element: <RiskPage /> },
   { path: 'finance/payees', element: <PayeesPage /> },
   { path: 'finance/scheduler', element: <SchedulerPage /> },
+  // La configuration financiere : huit reglages, sans passer par Django.
+  { path: 'finance/configuration', element: <FinanceConfigPage /> },
+  // Une page par reglage : une grille tarifaire a quatre categories ne se
+  // lit pas dans un panneau deplie sous une liste.
+  { path: 'finance/configuration/:section', element: <FinanceConfigEditPage /> },
+  { path: 'finance/configuration/:section/:configKey', element: <FinanceConfigEditPage /> },
 ];
 
 export const adminFinanceRoutes: RouteObject[] = ECRANS.map((ecran) => ({

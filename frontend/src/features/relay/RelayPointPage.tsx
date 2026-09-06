@@ -42,10 +42,11 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { http } from "@/services/api/http";
+import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
+import RelayFinancePanel from "./RelayFinancePanel";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import SignaturePad from "@/components/ui/SignaturePad";
 import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
-import RelayFinances from "./RelayFinances";
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
 import RelayTraining from "./RelayTraining";
@@ -1019,7 +1020,14 @@ export default function RelayPointPage() {
     </Panel>
   );
 
-  const renderFinances = () => <RelayFinances onError={showOperationError} />;
+  const renderFinances = () => (
+    <>
+      <RelayFinancePanel onOpenKyc={() => setTab("kyc")} />
+      <div className="mt-4">
+        <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" />
+      </div>
+    </>
+  );
 
   const renderCapacite = () => (
     <Panel kicker="Capacite & horaires" title="Disponibilite du point relais">

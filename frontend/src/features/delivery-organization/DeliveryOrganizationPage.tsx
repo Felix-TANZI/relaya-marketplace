@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import {
   AlertTriangle,
   BarChart3,
   Building2,
-  Camera,
   CheckCircle2,
   ClipboardCheck,
   Clock3,
@@ -18,12 +19,12 @@ import {
   Languages,
   LogOut,
   Map,
+  Menu as MenuIcon,
   MessageSquareText,
   Moon,
   PackageSearch,
   Route,
   Search,
-  Settings,
   ShieldCheck,
   Sun,
   Truck,
@@ -41,37 +42,18 @@ import TrackingMap from "@/components/TrackingMap";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import type { LocationPrecisionResult } from "@/services/api/location";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
-
-type OrgTab =
-  | "dashboard"
-  | "contract"
-  | "fleet"
-  | "missions"
-  | "parcels"
-  | "zones"
-  | "pricing"
-  | "proofs"
-  | "disputes"
-  | "performance"
-  | "payments"
-  | "messages"
-  | "settings";
-
-const ORG_TABS: OrgTab[] = [
-  "dashboard",
-  "contract",
-  "fleet",
-  "missions",
-  "parcels",
-  "zones",
-  "pricing",
-  "proofs",
-  "disputes",
-  "performance",
-  "payments",
-  "messages",
-  "settings",
-];
+import {
+  ORG_NAV_ITEMS,
+  ORG_TABS,
+  type OrgTab,
+} from "./deliveryNav";
+import DeliverySidebar from "./DeliverySidebar";
+import DeliveryDrawer from "./DeliveryDrawer";
+import DeliveryMobileNav, { DELIVERY_TABBAR_IDS } from "./DeliveryMobileNav";
+import DeliveryProfileSheet, {
+  DeliverySettingsContent,
+  type DeliverySettingsProps,
+} from "./DeliveryProfileSheet";
 
 function getInitialOrgTab(): OrgTab {
   const requested = new URLSearchParams(window.location.search).get("tab") as OrgTab | null;
@@ -171,6 +153,17 @@ interface OrganizationMission {
   last_event?: { status: string; message: string; location: string; created_at: string } | null;
 }
 
+interface BourseTournee {
+  id: number;
+  zone: string;
+  city: string;
+  slot_date: string;
+  period: "MORNING" | "AFTERNOON";
+  colis_count: number;
+  is_forced_exit: boolean;
+  composed_at: string;
+}
+
 interface OrganizationDispute {
   id: number;
   ref: string;
@@ -196,22 +189,6 @@ interface OrganizationDispute {
   updated_at: string;
 }
 
-const tabs: Array<{ id: OrgTab; icon: IconComponent; groupKey: "pilotage" | "company" | "operations" | "quality" | "finance" | "support" }> = [
-  { id: "dashboard", icon: Gauge, groupKey: "pilotage" },
-  { id: "contract", icon: FileCheck2, groupKey: "company" },
-  { id: "fleet", icon: Users, groupKey: "company" },
-  { id: "missions", icon: Truck, groupKey: "operations" },
-  { id: "parcels", icon: PackageSearch, groupKey: "operations" },
-  { id: "zones", icon: Map, groupKey: "operations" },
-  { id: "pricing", icon: Route, groupKey: "operations" },
-  { id: "proofs", icon: ClipboardCheck, groupKey: "quality" },
-  { id: "disputes", icon: AlertTriangle, groupKey: "quality" },
-  { id: "performance", icon: BarChart3, groupKey: "quality" },
-  { id: "payments", icon: WalletCards, groupKey: "finance" },
-  { id: "messages", icon: MessageSquareText, groupKey: "support" },
-  { id: "settings", icon: Settings, groupKey: "support" },
-];
-
 const copy = {
   fr: {
     shell: {
@@ -227,6 +204,11 @@ const copy = {
       customerProfile: "Compte utilisateur",
       close: "Fermer",
     },
+    footer: [
+      "BelivaY Organisation Livraison v1.0 — Juillet 2026",
+      "Partenaire Indépendant · ANTIC · OHADA",
+      "Anonymat V5 ch.1",
+    ],
     groups: {
       pilotage: "Pilotage",
       company: "Entreprise",
@@ -265,6 +247,11 @@ const copy = {
       customerProfile: "User account",
       close: "Close",
     },
+    footer: [
+      "BelivaY Delivery Organization v1.0 — July 2026",
+      "Independent partner · ANTIC · OHADA",
+      "Anonymity V5 ch.1",
+    ],
     groups: {
       pilotage: "Control",
       company: "Company",
@@ -505,13 +492,6 @@ const capabilitiesEn: Record<OrgTab, { title: string; description: string; metho
   },
 };
 
-function groupTabs() {
-  return tabs.reduce<Record<string, typeof tabs>>((acc, item) => {
-    acc[item.groupKey] = [...(acc[item.groupKey] ?? []), item];
-    return acc;
-  }, {});
-}
-
 function formatCoverageZone(zone: string, city: string) {
   const trimmedZone = zone.trim();
   const normalizedCity = city.trim().toUpperCase();
@@ -615,13 +595,15 @@ export default function DeliveryOrganizationPage() {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [tab, setTab] = useState<OrgTab>(getInitialOrgTab);
-  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "");
   const [couriers, setCouriers] = useState<OrganizationCourier[]>([]);
   const [summary, setSummary] = useState<OrganizationSummary | null>(null);
   const [missions, setMissions] = useState<OrganizationMission[]>([]);
   const [missionQueue, setMissionQueue] = useState<OrganizationMission[]>([]);
+  const [bourseTournees, setBourseTournees] = useState<BourseTournee[]>([]);
   const [disputes, setDisputes] = useState<OrganizationDispute[]>([]);
   const [vehicles, setVehicles] = useState<OrganizationVehicle[]>([]);
   const [vehicleLabelInput, setVehicleLabelInput] = useState("");
@@ -639,7 +621,6 @@ export default function DeliveryOrganizationPage() {
   const [missionAssignments, setMissionAssignments] = useState<Record<number, string>>({});
   const [couriersLoading, setCouriersLoading] = useState(true);
   const [operationsLoading, setOperationsLoading] = useState(true);
-  const menu = useMemo(() => groupTabs(), []);
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
   const ui = copy[locale];
   const capabilities = locale === "en" ? capabilitiesEn : capabilitiesFr;
@@ -662,10 +643,13 @@ export default function DeliveryOrganizationPage() {
   };
 
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
+  const changeLanguage = (next: "fr" | "en") => void i18n.changeLanguage(next);
   const handleLogout = () => {
     logout();
     navigate("/login");
   };
+  const showOrganizationError = (message: string) => setOrganizationMessage({ tone: "error", text: message });
+  const showOrganizationSuccess = (message: string) => setOrganizationMessage({ tone: "success", text: message });
   const refreshFleet = async () => {
     const [courierItems, vehicleItems] = await Promise.all([
       http<OrganizationCourier[]>("/api/auth/delivery-organization/couriers/"),
@@ -836,7 +820,27 @@ export default function DeliveryOrganizationPage() {
       setActionBusy(false);
     }
   };
-  const tabIcon = tabs.find((item) => item.id === tab)?.icon ?? Gauge;
+  const claimTournee = async (tourneeId: number) => {
+    setActionBusy(true);
+    setOrganizationMessage(null);
+    try {
+      await http(`/api/auth/delivery-organization/bourse/${tourneeId}/claim/`, { method: "POST" });
+      const [activeItems, bourseItems, summaryData] = await Promise.all([
+        http<OrganizationMission[]>("/api/auth/delivery-organization/missions/active/"),
+        http<BourseTournee[]>("/api/auth/delivery-organization/bourse/"),
+        http<OrganizationSummary>("/api/auth/delivery-organization/summary/"),
+      ]);
+      setMissions(activeItems); setBourseTournees(bourseItems); setSummary(summaryData);
+      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Package claimed — assigned to an available courier." : "Paquet revendiqué — affecté à un livreur disponible." });
+    } catch (error) {
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      // Un autre transporteur a peut-être déjà revendiqué ce paquet : on rafraîchit la liste.
+      http<BourseTournee[]>("/api/auth/delivery-organization/bourse/").then(setBourseTournees).catch(() => undefined);
+    } finally {
+      setActionBusy(false);
+    }
+  };
+  const tabIcon = ORG_NAV_ITEMS.find((item) => item.id === tab)?.icon ?? Gauge;
   const ActiveIcon = tabIcon;
   const displayZones = normalizeCoverageZones(organization.zones, organization.city);
   const coveredZones = displayZones.length ? displayZones : [locale === "en" ? "No covered zone declared" : "Aucune zone couverte déclarée"];
@@ -844,6 +848,34 @@ export default function DeliveryOrganizationPage() {
   const onlineCouriers = summary?.couriers_online ?? couriers.filter((courier) => courier.is_online).length;
   const activeMissionsCount = summary?.active_missions ?? missions.length;
   const openDisputesCount = summary?.open_disputes ?? disputes.length;
+
+  /**
+   * Alertes portees par le menu, dans l'ordre ou un dispatcher les traite :
+   * missions a affecter, livreurs en attente d'approbation, litiges ouverts.
+   */
+  const navBadges = useMemo<Partial<Record<OrgTab, number>>>(
+    () => ({
+      missions: missionQueue.length,
+      fleet: couriers.filter((courier) => !courier.is_approved).length,
+      disputes: openDisputesCount,
+    }),
+    [couriers, missionQueue.length, openDisputesCount],
+  );
+
+  /**
+   * Alertes des destinations absentes de la barre du bas. Elles remontent sur
+   * l'icone de menu du bandeau : sans ce report, un litige ouvert resterait
+   * invisible sur telephone tant que le tiroir n'est pas ouvert.
+   */
+  const hiddenBadgeTotal = useMemo(
+    () =>
+      Object.entries(navBadges).reduce(
+        (total, [id, count]) => (DELIVERY_TABBAR_IDS.includes(id as OrgTab) ? total : total + (count || 0)),
+        0,
+      ),
+    [navBadges],
+  );
+
   const assignedMissions = missions.filter((mission) => mission.status === "ASSIGNED").length;
   const pickedUpMissions = missions.filter((mission) => ["PICKED_UP", "IN_TRANSIT"].includes(mission.status)).length;
   const outForDeliveryMissions = missions.filter((mission) => mission.status === "OUT_FOR_DELIVERY").length;
@@ -859,6 +891,42 @@ export default function DeliveryOrganizationPage() {
       ? locale === "en" ? "Ready" : "Opérationnelle"
       : locale === "en" ? "Configuring" : "En configuration";
   const operationalTone = isOrgSuspended ? "red" : operationalStatus === "Opérationnelle" || operationalStatus === "Ready" ? "emerald" : "amber";
+
+  /**
+   * Reglages partages par la feuille ouverte depuis l'avatar et par l'onglet
+   * « Parametres » : un seul objet, donc aucune derive possible entre les deux
+   * points d'entree.
+   */
+  const settingsProps: DeliverySettingsProps = {
+    locale,
+    theme,
+    onToggleTheme: toggleTheme,
+    onChangeLanguage: changeLanguage,
+    organization: {
+      name: organization.name,
+      manager: organization.manager,
+      city: organization.city,
+      address: organization.address,
+      phone: organization.phone,
+      contract: organization.contract,
+      status: operationalStatus,
+      memberSince: orgProfile?.created_at || null,
+      zones: displayZones,
+      fleetSummary: `${approvedCouriers}/${couriers.length}`,
+    },
+    username: user?.username || organization.manager,
+    email: user?.email || "",
+    avatarUrl: avatarUrl || undefined,
+    onAvatarFile: setAvatarFile,
+    onLogout: handleLogout,
+    onNavigate: (next) => {
+      setProfileSheetOpen(false);
+      setTab(next);
+    },
+    onError: showOrganizationError,
+    onSuccess: showOrganizationSuccess,
+    footer: ui.footer,
+  };
   const activationSteps = [
     [locale === "en" ? "BelivaY validation" : "Validation BelivaY", isOrgApproved, organization.status],
     [locale === "en" ? "Contract reference" : "Référence contrat", hasContract, organization.contract],
@@ -890,32 +958,6 @@ export default function DeliveryOrganizationPage() {
     </div>
   );
 
-  const renderMobileBrief = () => (
-    <section className="mb-3 rounded-2xl border border-cyan-100 bg-white p-3 shadow-sm dark:border-cyan-900/50 dark:bg-slate-900 lg:hidden">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
-          <ActiveIcon size={20} />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-[10px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-300">{ui.shell.brand}</p>
-          <h2 className="truncate text-lg font-black leading-tight text-slate-950 dark:text-white">{ui.tabs[tab]}</h2>
-        </div>
-        <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
-      </div>
-      <div className="mt-3 flex gap-2 overflow-x-auto pb-1 text-xs font-black">
-        <span className="flex-shrink-0 rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-cyan-700 dark:border-cyan-900 dark:bg-cyan-950 dark:text-cyan-200">
-          {approvedCouriers}/{couriers.length} livreurs
-        </span>
-        <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-          {activeMissionsCount} missions
-        </span>
-        <span className="flex-shrink-0 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-          {displayZones.length} zones
-        </span>
-      </div>
-    </section>
-  );
-
   const WorkCard = ({ title, value, body, icon: Icon }: { title: string; value: string; body: string; icon: IconComponent }) => (
     <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
       <div className="flex items-start justify-between gap-3">
@@ -923,24 +965,14 @@ export default function DeliveryOrganizationPage() {
           <p className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{title}</p>
           <div className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{value}</div>
         </div>
-        <div className="hidden h-11 w-11 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200 sm:flex">
-          <Icon size={20} />
+        {/* Pastille reduite sur telephone : a deux cartes par rangee, la
+            version 44px poussait la valeur sur deux lignes. */}
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200 sm:h-11 sm:w-11 sm:rounded-2xl">
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
       <p className="mt-3 hidden text-sm leading-6 text-slate-600 dark:text-slate-300 sm:block">{body}</p>
     </article>
-  );
-
-  const renderBrandBlock = () => (
-    <div className="mb-5 rounded-[22px] border border-cyan-100/15 bg-[linear-gradient(145deg,rgba(103,232,249,.18),rgba(255,255,255,.04))] p-4 shadow-[0_18px_40px_rgba(8,51,68,.35)]">
-      <div className="flex min-h-16 items-center justify-center">
-        <img src="/belivay-logo-delivery-org.png" alt="BelivaY" className="h-14 w-full object-contain drop-shadow-[0_10px_24px_rgba(103,232,249,.18)]" />
-      </div>
-      <div className="mt-3 flex items-center justify-between gap-3 px-1">
-        <span className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-100/65">{ui.shell.brand}</span>
-        <span className="rounded-full bg-cyan-100/15 px-2 py-1 text-[10px] font-black text-cyan-50">{operationalStatus}</span>
-      </div>
-    </div>
   );
 
   const renderSectionIntro = () => (
@@ -1099,6 +1131,30 @@ export default function DeliveryOrganizationPage() {
 
   const renderMissions = () => (
     <div className="space-y-5">
+    <Panel kicker={locale === "en" ? "Freight exchange (V1.1)" : "Bourse aux courses (V1.1)"} title={locale === "en" ? "Published packages — first come, first served" : "Paquets publiés — premier arrivé, premier servi"}>
+      {bourseTournees.length === 0 ? (
+        <EmptyState>{locale === "en" ? "No package published right now." : "Aucun paquet publié pour le moment."}</EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {bourseTournees.map((tournee) => (
+            <div key={tournee.id} className="grid gap-3 rounded-2xl border border-cyan-200 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30 md:grid-cols-[1fr_1fr_auto] md:items-center">
+              <div>
+                <strong className="text-cyan-950 dark:text-cyan-100">{tournee.zone} · {tournee.city}</strong>
+                <p className="mt-1 text-xs text-cyan-900/70 dark:text-cyan-200/70">
+                  {tournee.colis_count} {locale === "en" ? "packages" : "colis"} · {tournee.period === "MORNING" ? (locale === "en" ? "Morning slot" : "Créneau matin") : (locale === "en" ? "Afternoon slot" : "Créneau après-midi")}
+                </p>
+              </div>
+              <div className="text-sm font-semibold text-cyan-900 dark:text-cyan-100">
+                {new Date(tournee.slot_date).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}
+              </div>
+              <button type="button" onClick={() => void claimTournee(tournee.id)} disabled={actionBusy} className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">
+                {locale === "en" ? "Claim" : "Revendiquer"}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </Panel>
     <Panel kicker={locale === "en" ? "Dispatch queue" : "File d'affectation"} title={locale === "en" ? "Missions waiting for a courier" : "Missions en attente d'un livreur"}>
       {missionQueue.length === 0 ? <EmptyState>{locale === "en" ? "No compatible mission is waiting." : "Aucune mission compatible en attente."}</EmptyState> : <div className="space-y-3">{missionQueue.map((mission) => (
         <div key={mission.id} className="grid gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30 md:grid-cols-[1fr_1.3fr_1fr_auto] md:items-center">
@@ -1235,7 +1291,11 @@ export default function DeliveryOrganizationPage() {
     if (tab === "dashboard") {
       return (
         <div className="space-y-5">
-          <section className="grid gap-4 lg:grid-cols-4">
+          {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="DELIVERY_ORG" />}
+          {/* Deux cartes par rangee des le telephone : empilees une par une, ces
+              quatre reperes poussaient le dispatch sous la ligne de flottaison.
+              En 2x2 le responsable les embrasse d'un seul regard. */}
+          <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
             <WorkCard title="SLA" value="48h" body={locale === "en" ? "BelivaY target for visible pickup and delivery tracking." : "Objectif BelivaY pour le suivi prise en charge et livraison."} icon={Clock3} />
             <WorkCard title={locale === "en" ? "Fleet readiness" : "Disponibilité flotte"} value={`${approvedCouriers}/${couriers.length}`} body={locale === "en" ? "Approved couriers ready for assignment." : "Livreurs approuvés prêts à recevoir des missions."} icon={Users} />
             <WorkCard title={locale === "en" ? "Active missions" : "Missions en cours"} value={activeMissionsCount.toString()} body={locale === "en" ? "Assigned to couriers from this organization." : "Assignées aux livreurs de cette organisation."} icon={Truck} />
@@ -1243,16 +1303,18 @@ export default function DeliveryOrganizationPage() {
           </section>
           <div className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
             <Panel kicker={locale === "en" ? "Live dispatch" : "Dispatch temps réel"} title={locale === "en" ? "Mission pipeline" : "Pipeline des missions"}>
-              <div className="grid gap-3 sm:grid-cols-3">
+              {/* Deux etapes par rangee sur telephone : le pipeline reste lisible
+                  d'un coup d'oeil au lieu de s'etirer sur trois ecrans. */}
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {([
                   [locale === "en" ? "Assigned" : "Assignées", assignedMissions, Truck],
                   [locale === "en" ? "Picked up" : "Collectées", pickedUpMissions, PackageSearch],
                   [locale === "en" ? "Last mile" : "Dernier km", outForDeliveryMissions, Route],
                 ] as Array<[string, number, IconComponent]>).map(([title, value, Icon]) => (
-                  <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                    <Icon className="text-cyan-700 dark:text-cyan-300" size={20} />
-                    <div className="mt-4 text-2xl font-black text-slate-950 dark:text-white">{value}</div>
-                    <div className="mt-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{title}</div>
+                  <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:p-4">
+                    <Icon className="h-4 w-4 text-cyan-700 dark:text-cyan-300 sm:h-5 sm:w-5" />
+                    <div className="mt-3 text-2xl font-black leading-none text-slate-950 dark:text-white sm:mt-4">{value}</div>
+                    <div className="mt-1.5 text-[10px] font-black uppercase leading-tight tracking-[0.1em] text-slate-500 sm:text-xs sm:tracking-[0.12em]">{title}</div>
                   </div>
                 ))}
               </div>
@@ -1425,45 +1487,10 @@ export default function DeliveryOrganizationPage() {
     }
 
     if (tab === "settings") {
-      return (
-        <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
-          <Panel kicker={ui.tabs.settings} title={locale === "en" ? "Workspace preferences" : "Préférences de l'espace"}>
-            <div className="grid gap-3">
-              <button type="button" onClick={switchLanguage} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
-                <span className="flex items-center gap-3"><Languages size={18} />{locale === "en" ? "Interface language" : "Langue de l'interface"}</span>
-                <StatusPill>{locale === "fr" ? "FR" : "EN"}</StatusPill>
-              </button>
-              <button type="button" onClick={toggleTheme} className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white p-4 text-left font-bold text-slate-800 transition hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800">
-                <span className="flex items-center gap-3">{theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}{locale === "en" ? "Display theme" : "Thème d'affichage"}</span>
-                <StatusPill>{theme === "dark" ? locale === "en" ? "Dark" : "Sombre" : locale === "en" ? "Light" : "Clair"}</StatusPill>
-              </button>
-              <button type="button" onClick={handleLogout} className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50 p-4 text-left font-bold text-red-700 transition hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30">
-                <span className="flex items-center gap-3"><LogOut size={18} />{ui.shell.logout}</span>
-              </button>
-            </div>
-          </Panel>
-          <Panel kicker={locale === "en" ? "Account" : "Compte"} title={locale === "en" ? "Profile summary" : "Résumé du profil"}>
-            <div className="space-y-3">
-              <div className="flex flex-col gap-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30 sm:flex-row sm:items-center">
-                <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-cyan-300 bg-white text-2xl font-black text-cyan-700 dark:bg-slate-900">
-                  {avatarUrl ? <img src={avatarUrl} alt="Photo du responsable" className="h-full w-full object-cover" /> : (user?.first_name?.[0] || user?.username?.[0] || "O").toUpperCase()}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-black text-cyan-950 dark:text-cyan-100">{locale === "en" ? "Profile photo" : "Photo de profil"}</div>
-                  <p className="mt-1 text-xs font-semibold leading-5 text-cyan-800/70 dark:text-cyan-200/70">{locale === "en" ? "Crop and compress the manager photo before upload." : "Rognez et compressez la photo du responsable avant son transfert."}</p>
-                </div>
-                <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white hover:bg-cyan-600">
-                  <Camera size={16} />{locale === "en" ? "Edit" : "Modifier"}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={(event) => { setAvatarFile(event.target.files?.[0] || null); event.currentTarget.value = ""; }} />
-                </label>
-              </div>
-              <Field label={locale === "en" ? "Username" : "Identifiant"} value={user?.username || "-"} icon={UserCircle} />
-              <Field label={locale === "en" ? "Organization" : "Organisation"} value={organization.name} icon={Building2} />
-              <Field label={locale === "en" ? "Partner status" : "Statut partenaire"} value={organization.status} icon={ShieldCheck} />
-            </div>
-          </Panel>
-        </div>
-      );
+      // Meme rendu que la feuille ouverte par l'avatar : profil entreprise,
+      // securite, certificat verifiable et etat de l'application. Un seul
+      // ecran de reglages a maintenir pour les deux points d'entree.
+      return <DeliverySettingsContent {...settingsProps} />;
     }
 
     if (tab === "zones") {
@@ -1768,6 +1795,9 @@ export default function DeliveryOrganizationPage() {
           if (alive) setOperationsLoading(false);
         });
     void loadOperations();
+    http<BourseTournee[]>("/api/auth/delivery-organization/bourse/")
+      .then((items) => { if (alive) setBourseTournees(items); })
+      .catch(() => { if (alive) setBourseTournees([]); });
     const operationsInterval = window.setInterval(loadOperations, 5000);
 
     return () => {
@@ -1777,88 +1807,144 @@ export default function DeliveryOrganizationPage() {
   }, []);
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-slate-950 dark:bg-slate-950 dark:text-white">
+    <main className="belivay-portal min-h-screen bg-[#f4f7fb] text-slate-950 dark:bg-slate-950 dark:text-white">
       <div className="flex">
-        <aside className="hidden min-h-screen w-[278px] flex-shrink-0 bg-[linear-gradient(185deg,#083344,#0E7490_58%,#155E75)] p-4 text-white lg:block">
-          {renderBrandBlock()}
-
-          <div className="mb-5 rounded-2xl border border-white/10 bg-white/8 p-4">
-            <div className="font-black">{organization.name}</div>
-            <div className="mt-1 text-xs text-cyan-100/70">{organization.manager} · {organization.city}</div>
-            <div className="mt-1 text-xs text-cyan-100/55">{organization.contract}</div>
-            <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-3 text-xs">
-              <span className="text-cyan-100/70">{ui.shell.status}</span>
-              <strong>{operationalStatus}</strong>
-            </div>
-          </div>
-
-          <nav className="space-y-4">
-            {Object.entries(menu).map(([group, items]) => (
-              <div key={group}>
-                <div className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100/40">{ui.groups[group as keyof typeof ui.groups]}</div>
-                <div className="space-y-1">
-                  {items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = item.id === tab;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => setTab(item.id)}
-                        className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${
-                          isActive ? "bg-white/18 text-white" : "text-cyan-50/75 hover:bg-white/10 hover:text-white"
-                        }`}
-                      >
-                        <Icon size={17} />
-                        <span className="min-w-0 flex-1 truncate">{ui.tabs[item.id]}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </nav>
-        </aside>
+        <DeliverySidebar
+          activeTab={tab}
+          onSelect={setTab}
+          onLogout={handleLogout}
+          labels={ui.tabs}
+          groupLabels={ui.groups}
+          badges={navBadges}
+          brandKicker={ui.shell.brand}
+          logoutLabel={ui.shell.logout}
+          organization={{
+            name: organization.name,
+            manager: organization.manager,
+            city: organization.city,
+            contract: organization.contract,
+            status: operationalStatus,
+            avatarUrl: avatarUrl || undefined,
+          }}
+          statusLabel={ui.shell.status}
+          footer={ui.footer}
+        />
 
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur dark:border-slate-800 dark:bg-slate-900/95 sm:px-6">
-            <div className="flex flex-wrap items-center justify-between gap-3">
+          {/* `safe-pt` : sous l'encoche, la barre collante ne passe plus sous le
+              statut systeme. La densite se resserre sur telephone (menu + logo
+              + reglages) et retrouve toutes les actions a partir de `lg`. */}
+          <header className="safe-pt sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-3 py-2.5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:px-6 sm:py-3">
+            {/* ── Bandeau telephone/tablette ──────────────────────────────────
+                Menu et logo a gauche, reglages a droite. Le tiroir s'ouvrant
+                depuis la gauche, son bouton d'appel reste de ce cote : le geste
+                et l'animation vont dans le meme sens. */}
+            <div className="flex items-center gap-1 lg:hidden">
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                aria-label={ui.shell.space}
+                aria-haspopup="dialog"
+                aria-expanded={drawerOpen}
+                className="tap-target relative -ml-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
+              >
+                <MenuIcon size={22} strokeWidth={2.2} />
+                {/* Le menu porte seul les alertes des destinations hors barre du
+                    bas : un point suffit a dire « il y a quelque chose la-dedans »
+                    sans encombrer l'icone d'un compteur. */}
+                {hiddenBadgeTotal > 0 ? (
+                  <span
+                    aria-hidden
+                    className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-gradient-to-br from-rose-500 to-red-600 ring-2 ring-white dark:ring-slate-900"
+                  />
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTab("dashboard")}
+                aria-label={ui.tabs.dashboard}
+                className="flex min-w-0 flex-shrink items-center rounded-xl px-1 py-1 transition active:scale-95"
+              >
+                <img src="/belivay-logo-delivery-org.png" alt="BelivaY" className="h-8 w-auto object-contain" />
+              </button>
+
+              <div className="flex-1" />
+
+              {/* Canal d'alerte du portail organisation : ce sont les litiges
+                  ouverts qui reclament une reponse, pas des notifications. */}
+              <button
+                type="button"
+                onClick={() => setTab("disputes")}
+                aria-label={ui.tabs.disputes}
+                className="tap-target relative flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <AlertTriangle size={19} />
+                {openDisputesCount ? (
+                  <span className="absolute right-1 top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white dark:ring-slate-900">
+                    {openDisputesCount > 99 ? "99+" : openDisputesCount}
+                  </span>
+                ) : null}
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={switchLanguage}
+                aria-label="Changer de langue"
+                className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl px-1 text-xs font-black text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                {locale === "fr" ? "FR" : "EN"}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setProfileSheetOpen(true)}
+                aria-label={ui.shell.openProfile}
+                aria-haspopup="dialog"
+                aria-expanded={profileSheetOpen}
+                className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-cyan-700 text-xs font-black text-white ring-1 ring-black/5 transition active:scale-90"
+              >
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  (user?.username || organization.manager).slice(0, 2).toUpperCase()
+                )}
+              </button>
+            </div>
+
+            {/* Titre de l'ecran : sorti du bandeau pour lui laisser toute sa
+                largeur, il garde sa place de repere de navigation. */}
+            <div className="mt-2 min-w-0 lg:hidden">
+              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
+              <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{ui.tabs[tab]}</h1>
+            </div>
+
+            <div className="hidden flex-wrap items-center justify-between gap-3 lg:flex">
               <div>
                 <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
                 <h1 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h1>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <div className="relative hidden sm:block">
-                  <button
+                <button
                   type="button"
-                  onClick={() => setProfileMenuOpen((open) => !open)}
-                  className="flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-                  aria-expanded={profileMenuOpen}
+                  onClick={() => setProfileSheetOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={profileSheetOpen}
+                  title={ui.shell.profile}
+                  className="tap-target flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                 >
                   {avatarUrl ? <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" /> : <UserCircle size={17} />}
                   <span className="max-w-[150px] truncate">{user?.username || organization.manager}</span>
                 </button>
-                  {profileMenuOpen ? (
-                    <div className="absolute right-0 top-12 z-50 w-64 rounded-2xl border border-slate-200 bg-white p-2 shadow-[0_20px_50px_rgba(15,23,42,.16)] dark:border-slate-700 dark:bg-slate-900">
-                      <div className="flex items-start justify-between gap-3 border-b border-slate-100 p-3 dark:border-slate-800">
-                        <div>
-                          <div className="font-black text-slate-950 dark:text-white">{user?.username}</div>
-                          <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{organization.name}</div>
-                        </div>
-                        <button type="button" onClick={() => setProfileMenuOpen(false)} className="rounded-lg p-1 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" title={ui.shell.close}>
-                          <X size={15} />
-                        </button>
-                      </div>
-                      <button type="button" onClick={() => { setProfileMenuOpen(false); navigate("/profile"); }} className="mt-2 flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-slate-700 hover:bg-slate-50 dark:text-slate-100 dark:hover:bg-slate-800">
-                        <UserCircle size={16} />
-                        {ui.shell.openProfile}
-                      </button>
-                      <button type="button" onClick={handleLogout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-sm font-bold text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30">
-                        <LogOut size={16} />
-                        {ui.shell.logout}
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
                 <button type="button" onClick={switchLanguage} className="inline-flex h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                   <Languages size={15} className="mr-1" />
                   {locale === "fr" ? "FR" : "EN"}
@@ -1871,33 +1957,31 @@ export default function DeliveryOrganizationPage() {
                 </button>
               </div>
             </div>
+
+            {/* Ruban de contexte : ce que le responsable doit avoir sous les yeux
+                en permanence (statut partenaire, flotte, missions, zones). Il
+                remplace l'ancien defilement lateral des 13 onglets, desormais
+                repartis entre la barre du bas et le tiroir. */}
+            <div className="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto lg:hidden">
+              <span className="flex-shrink-0 whitespace-nowrap">
+                <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
+              </span>
+              <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
+                {approvedCouriers}/{couriers.length} {locale === "en" ? "couriers" : "livreurs"}
+              </span>
+              <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                {activeMissionsCount} missions
+              </span>
+              <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+                {displayZones.length} zones
+              </span>
+            </div>
           </header>
 
-          <div className="block border-b border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-900 lg:hidden">
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {tabs.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setTab(item.id)}
-                    className={`inline-flex flex-shrink-0 items-center gap-2 rounded-full border px-3 py-2 text-xs font-black ${
-                      tab === item.id
-                        ? "border-cyan-700 bg-cyan-700 text-white"
-                        : "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-                    }`}
-                  >
-                    <Icon size={14} />
-                    {ui.tabs[item.id]}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="space-y-5 p-4 sm:p-6">
+          {/* `pb-tabbar` : le dernier bloc de chaque ecran reste atteignable
+              au-dessus de la barre d'onglets fixe et de la barre gestuelle. */}
+          <div className="pb-tabbar space-y-5 p-4 sm:p-6 lg:pb-6">
             <EvidenceRequestInbox accent="#0891B2" />
-            {renderMobileBrief()}
             {organizationMessage ? (
               <div className={`flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-bold ${organizationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{organizationMessage.text}</span>
@@ -1908,6 +1992,55 @@ export default function DeliveryOrganizationPage() {
           </div>
         </section>
       </div>
+
+      {/* Barre du bas : uniquement les quatre raccourcis du travail quotidien
+          d'un dispatcher. Le reste du menu s'ouvre par l'icone du bandeau — une
+          seule liste de destinations, donc un seul endroit ou l'utilisateur
+          apprend a chercher. */}
+      <DeliveryMobileNav
+        activeTab={tab}
+        onSelect={(next) => {
+          setDrawerOpen(false);
+          setTab(next);
+        }}
+        labels={ui.tabs}
+        badges={navBadges}
+        navLabel={ui.shell.space}
+      />
+
+      <DeliveryDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeTab={tab}
+        onSelect={(next) => {
+          setDrawerOpen(false);
+          setTab(next);
+        }}
+        onLogout={handleLogout}
+        labels={ui.tabs}
+        groupLabels={ui.groups}
+        badges={navBadges}
+        brandKicker={ui.shell.brand}
+        logoutLabel={ui.shell.logout}
+        organization={{
+          name: organization.name,
+          manager: organization.manager,
+          city: organization.city,
+          contract: organization.contract,
+          status: operationalStatus,
+          avatarUrl: avatarUrl || undefined,
+        }}
+        statusLabel={ui.shell.status}
+        footer={ui.footer}
+        title={ui.shell.space}
+        closeLabel={ui.shell.close}
+      />
+
+      {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
+          le tiroir de navigation vient de gauche, les deux gestes restent donc
+          distincts meme quand les deux panneaux ont ete appris. */}
+      <DeliveryProfileSheet open={profileSheetOpen} onClose={() => setProfileSheetOpen(false)} {...settingsProps} />
+
       {avatarFile ? (
         <AvatarCropDialog
           file={avatarFile}

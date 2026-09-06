@@ -263,7 +263,7 @@ export default function SellerOrderDetailPage() {
           </button>
         </Link>
         <div className="flex-1" style={{ minWidth: 200 }}>
-          <h1 className="font-black" style={{ fontSize: 21, color: T.text, letterSpacing: '-.025em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+          <h1 className="font-black" style={{ fontSize: 21, color: T.text, letterSpacing: '-.025em' }}>
             Commande {orderRef(order.id)}
           </h1>
           <p className="mt-0.5" style={{ fontSize: 12, color: T.muted }}>
@@ -425,6 +425,20 @@ export default function SellerOrderDetailPage() {
               </div>
             </div>
 
+            {order.shipment.pickup_confirmation_code && (
+              <div className="mt-4 rounded-2xl" style={{ padding: '14px 16px', background: '#FEF3C7', border: '1px solid #FDE68A' }}>
+                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: '#92400E' }}>
+                  Code de remise — à donner au livreur
+                </p>
+                <p className="font-black mt-1.5" style={{ fontSize: 24, letterSpacing: '.15em', color: '#78350F' }}>
+                  {order.shipment.pickup_confirmation_code}
+                </p>
+                <p style={{ fontSize: 11, color: '#92400E', marginTop: 4 }}>
+                  Lisez ce code au livreur au moment du ramassage. Il en a besoin pour valider la prise en charge.
+                </p>
+              </div>
+            )}
+
             <div className="mt-5">
               {(order.shipment.timeline ?? []).map((e, i, arr) => {
                 const isLast = i === arr.length - 1;
@@ -533,7 +547,7 @@ export default function SellerOrderDetailPage() {
                 style={{ padding: '17px 16px', background: T.greenL, borderTop: `1px solid ${T.greenB}` }}>
                 <span className="font-bold" style={{ fontSize: 12, color: T.green }}>Net qui vous revient</span>
                 <span className="font-black flex-shrink-0"
-                  style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+                  style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em' }}>
                   {fmtXAF(order.vendor_net_amount ?? 0)}
                 </span>
               </div>
@@ -552,7 +566,7 @@ export default function SellerOrderDetailPage() {
                 {rank >= 3 ? 'Déjà versé' : 'Bloqué pour vous'}
               </p>
               <p className="font-black mt-2"
-                style={{ fontSize: 29, color: '#fff', letterSpacing: '-.025em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+                style={{ fontSize: 29, color: '#fff', letterSpacing: '-.025em' }}>
                 {nf(order.vendor_net_amount ?? 0)} <span style={{ fontSize: 13, color: 'rgba(255,255,255,.45)' }}>FCFA</span>
               </p>
 

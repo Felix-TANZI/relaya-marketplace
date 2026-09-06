@@ -6,8 +6,11 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib.auth.models import User
 from .models import (
+    AppRelease,
     ComplianceDocument,
     DeliveryVehicle,
+    PartnerBlacklist,
+    SanctionRecord,
     UserProfile,
     UserActivityLog,
     UserFavorite,
@@ -26,6 +29,30 @@ class TrustScoreProfileAdmin(admin.ModelAdmin):
     list_filter = ("role", "tier", "veto_active")
     search_fields = ("user__username", "user__email", "veto_reason")
     readonly_fields = ("score", "tier", "candidate_tier", "candidate_since", "breakdown", "sample_size", "calculated_at")
+
+
+@admin.register(SanctionRecord)
+class SanctionRecordAdmin(admin.ModelAdmin):
+    list_display = ("profile", "level", "issued_by", "expires_at", "lifted_at", "created_at")
+    list_filter = ("level",)
+    search_fields = ("profile__user__username", "reason")
+    readonly_fields = ("profile", "level", "reason", "issued_by", "expires_at", "lifted_at", "created_at")
+
+    def has_add_permission(self, request):
+        # Une sanction se declenche via apply_sanction() (moteur Trust Score), jamais a la main.
+        return False
+
+
+@admin.register(PartnerBlacklist)
+class PartnerBlacklistAdmin(admin.ModelAdmin):
+    list_display = ("identifier_type", "identifier_hash", "sanction", "created_by", "created_at")
+    list_filter = ("identifier_type",)
+    search_fields = ("identifier_hash", "reason")
+    readonly_fields = ("identifier_type", "identifier_hash", "reason", "sanction", "created_by", "created_at")
+
+    def has_add_permission(self, request):
+        # Un identifiant est blackliste automatiquement au bannissement (niveau 4), jamais a la main.
+        return False
 
 
 @admin.register(DeliveryVehicle)
@@ -215,3 +242,14 @@ class OTPCodeAdmin(admin.ModelAdmin):
     def has_add_permission(self, request):
         # Les codes OTP se génèrent via le système
         return False
+
+
+# ─── VERSIONS D'APPLIS PARTENAIRES (distribution hors Play Store) ─────────────
+
+@admin.register(AppRelease)
+class AppReleaseAdmin(admin.ModelAdmin):
+    list_display  = ('portal', 'version', 'apk_url', 'updated_at')
+    list_editable = ('version', 'apk_url')
+    fields        = ('portal', 'version', 'apk_url', 'release_notes', 'updated_at')
+    readonly_fields = ('updated_at',)
+    ordering      = ('portal',)

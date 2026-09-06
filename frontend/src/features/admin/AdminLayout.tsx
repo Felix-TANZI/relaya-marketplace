@@ -11,8 +11,9 @@
 //   - Fond de page : suit le thème clair/sombre (useAdminTheme)
 //   - Accent : rouge #DC2626
 
-import { useState, useEffect, useCallback, useContext } from 'react';
+import { Suspense, useState, useEffect, useCallback, useContext } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import { useTranslation } from 'react-i18next';
 import { useTheme }       from '@/context/ThemeContext';
 import { useAuth }        from '@/context/AuthContext';
@@ -21,12 +22,12 @@ import { AdminBadgesContext, useAdminAttentionBadges } from '@/hooks/useAdminAtt
 import {
   LayoutDashboard, Users, Radio, Store, MapPin, FileCheck,
   ArrowDownToLine, CreditCard, Award, FilePenLine, Truck,
-  ShoppingCart, Map, Scale, Package, Tag, Star, BarChart3,
+  ShoppingCart, Map, Scale, Package, Tag, Star, BarChart3, RotateCcw,
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
   LayoutGrid, UserPlus, Layers, Palette, FolderTree, Building2, Warehouse,
-  Send, Undo2, Lock, Receipt, SlidersHorizontal, ShieldAlert, Clock,
+  Send, Undo2, Lock, Receipt, SlidersHorizontal, ShieldAlert, Clock, Gauge,
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -120,6 +121,8 @@ const SECTIONS: NavSection[] = [
       { key: 'orders',     path: '/admin/orders',               icon: ShoppingCart, end: true },
       { key: 'orders_map', path: '/admin/orders/map',           icon: Map },
       { key: 'disputes',   path: '/admin/disputes',             icon: Scale, end: true },
+      { key: 'returns',    path: '/admin/returns',              icon: RotateCcw, end: true },
+      { key: 'supervision', path: '/admin/supervision',         icon: Gauge, end: true },
       { key: 'catalogue',  path: '/admin/catalogue',            icon: Package, end: true },
       { key: 'categories', path: '/admin/catalogue/categories', icon: Tag },
       { key: 'reviews',    path: '/admin/catalogue/reviews',    icon: Star },
@@ -476,7 +479,7 @@ export default function AdminLayout() {
 
           {/* Logo mobile (visible uniquement sur mobile, zone A n'existe pas) */}
           <Link to="/admin/dashboard" className="mr-auto flex min-w-0 items-center pr-1 lg:hidden">
-            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-7 w-auto max-w-[108px] object-contain sm:h-9 sm:max-w-[180px]" />
+            <img src="/admin-belivay-logo-red.png" alt="BelivaY Admin" className="h-9 w-auto max-w-[130px] object-contain sm:h-11 sm:max-w-[210px]" />
           </Link>
 
           {/* Indicateur production (desktop) */}
@@ -641,7 +644,9 @@ export default function AdminLayout() {
           className="min-h-[calc(100vh-60px)] px-4 sm:px-5 lg:px-7 py-6"
           style={{ maxWidth: 1400, margin: '0 auto' }}
         >
-          <Outlet />
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 

@@ -27,6 +27,8 @@ import {
   Plus,
   Zap,
   Percent,
+  HelpCircle,
+  Trash2,
 } from "lucide-react";
 import {
   vendorsApi,
@@ -154,7 +156,7 @@ function Section({
         </div>
         <p
           className="font-bold text-[14px]"
-          style={{ color: T.text, fontFamily: "Poppins,sans-serif" }}
+          style={{ color: T.text }}
         >
           {title}
         </p>
@@ -225,6 +227,7 @@ type ProductAttributeSelection = {
 
 type ProductPayload = Partial<VendorProduct> & {
   short_description: string;
+  faq: { question: string; answer: string }[];
   compare_at_price: number | null;
   promo_end_date: string | null;
   stock_threshold: number;
@@ -291,6 +294,7 @@ export default function ProductFormPage() {
   const [title, setTitle] = useState("");
   const [description, setDesc] = useState("");
   const [shortDesc, setShortDesc] = useState("");
+  const [faq, setFaq] = useState<{ question: string; answer: string }[]>([]);
   const [parentCatId, setParentCatId] = useState(""); // catégorie parent
   const [subCatId, setSubCatId] = useState(""); // sous-catégorie (optionnel)
   const [priceXaf, setPriceXaf] = useState("");
@@ -415,6 +419,7 @@ export default function ProductFormPage() {
           setTitle(p.title);
           setDesc(p.description || "");
           setShortDesc(product.short_description || "");
+          setFaq(Array.isArray(product.faq) ? product.faq : []);
           setPriceXaf(String(p.price_xaf));
           setCompareAt(String(product.compare_at_price || ""));
           setPromoEnd(product.promo_end_date || "");
@@ -782,6 +787,9 @@ export default function ProductFormPage() {
         title: attachMode ? selectedMaster!.title : title.trim(),
         description: description.trim(),
         short_description: shortDesc.trim(),
+        faq: faq
+          .map((entry) => ({ question: entry.question.trim(), answer: entry.answer.trim() }))
+          .filter((entry) => entry.question && entry.answer),
         price_xaf: price,
         compare_at_price: compare > price ? compare : null,
         promo_end_date: promoEnd || null,
@@ -890,7 +898,7 @@ export default function ProductFormPage() {
         <div>
           <h1
             className="font-black text-[20px]"
-            style={{ color: T.text, fontFamily: "Poppins,sans-serif" }}
+            style={{ color: T.text }}
           >
             {isEdit ? "Modifier le produit" : "Nouveau produit"}
           </h1>
@@ -1157,6 +1165,50 @@ export default function ProductFormPage() {
                     />
                   </Field>
                 )}
+              </Section>
+
+              {/* FAQ PRODUIT — compense l'absence de messagerie directe acheteur-vendeur */}
+              <Section title="FAQ produit" icon={<HelpCircle size={15} />}>
+                <p style={{ fontSize: 12.5, color: T.muted, marginTop: -4, marginBottom: 12 }}>
+                  Anticipez les questions des acheteurs : il n'y a pas de chat direct avec eux,
+                  une FAQ complète évite les hésitations à l'achat.
+                </p>
+                {faq.map((entry, index) => (
+                  <div key={index} style={{ marginBottom: 12, padding: 12, borderRadius: 12, border: `1px solid ${T.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>Question {index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => setFaq((cur) => cur.filter((_, i) => i !== index))}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", color: T.red, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                      >
+                        <Trash2 size={13} /> Retirer
+                      </button>
+                    </div>
+                    <input
+                      value={entry.question}
+                      onChange={(e) => setFaq((cur) => cur.map((it, i) => (i === index ? { ...it, question: e.target.value } : it)))}
+                      maxLength={300}
+                      placeholder="Ex : Ce produit est-il garanti ?"
+                      style={{ ...iBase, marginBottom: 8 }}
+                    />
+                    <textarea
+                      value={entry.answer}
+                      onChange={(e) => setFaq((cur) => cur.map((it, i) => (i === index ? { ...it, answer: e.target.value } : it)))}
+                      maxLength={2000}
+                      rows={2}
+                      placeholder="Réponse claire et complète."
+                      style={{ ...iBase, resize: "vertical" }}
+                    />
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setFaq((cur) => [...cur, { question: "", answer: "" }])}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: T.orange, cursor: "pointer" }}
+                >
+                  <Plus size={14} /> Ajouter une question
+                </button>
               </Section>
 
               {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}

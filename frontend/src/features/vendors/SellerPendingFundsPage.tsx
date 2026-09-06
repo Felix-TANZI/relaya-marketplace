@@ -172,7 +172,7 @@ export default function SellerPendingFundsPage() {
             <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.16em', color: 'rgba(255,255,255,.4)' }}>
               Arrive sous 24 h
             </p>
-            <p className="font-black mt-1.5" style={{ fontSize: 24, color: '#34d399', letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+            <p className="font-black mt-1.5" style={{ fontSize: 24, color: '#34d399', letterSpacing: '-.02em' }}>
               {nf(soon)} <span style={{ fontSize: 12, color: 'rgba(255,255,255,.4)' }}>FCFA</span>
             </p>
           </div>
@@ -269,7 +269,7 @@ export default function SellerPendingFundsPage() {
                   style={{ background: T.redL, color: T.red }}><TriangleAlert size={15} /></span>
                 <p className="font-bold flex-1" style={{ fontSize: 12.5, color: T.text }}>Montant gelé</p>
               </div>
-              <p className="font-black mt-3" style={{ fontSize: 24, color: T.red, letterSpacing: '-.02em', fontFamily: 'Syne,Poppins,sans-serif' }}>
+              <p className="font-black mt-3" style={{ fontSize: 24, color: T.red, letterSpacing: '-.02em' }}>
                 {nf(frozen)} FCFA
               </p>
               <p className="mt-1.5" style={{ fontSize: 11, lineHeight: 1.55, color: T.muted }}>

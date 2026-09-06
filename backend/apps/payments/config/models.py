@@ -456,13 +456,16 @@ class EscrowPolicy(VersionedConfig):
         choices=DistributionRule.Component.choices,
     )
     auto_confirm_hours = models.PositiveIntegerField(
-        default=48, verbose_name="Auto-confirmation (h)",
+        default=96, verbose_name="Auto-confirmation (h)",
+        help_text="Verrouille a 4 jours (96h) depuis la remise — Addendum Decisions v1.0 §3.1.",
     )
     release_delay_hours = models.PositiveIntegerField(
-        default=24, verbose_name="Delai de liberation (h)",
+        default=72, verbose_name="Delai de liberation (h)",
+        help_text="Verrouille a J+3 (72h) depuis la cloture du droit de retour — Addendum Decisions v1.0 §3.1.",
     )
     dispute_window_days = models.PositiveIntegerField(
-        default=7, verbose_name="Fenetre de litige (jours)",
+        default=4, verbose_name="Fenetre de litige (jours)",
+        help_text="Verrouille a 4 jours depuis la remise, cale sur l'auto-confirmation — Addendum Decisions v1.0 §4.4.",
     )
     vendor_reply_hours = models.PositiveIntegerField(
         default=72, verbose_name="Delai de reponse vendeur (h)",

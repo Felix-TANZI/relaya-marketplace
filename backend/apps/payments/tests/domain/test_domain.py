@@ -426,7 +426,7 @@ class TestPolicies:
             PolicyContext(PayeeType.VENDOR, EconomicComponent.GOODS),
             [generique],
         )
-        assert res.auto_confirm_hours == 48
+        assert res.auto_confirm_hours == 96  # Addendum Decisions v1.0 §3.1 — verrouille a 4 jours (96h)
         assert res.release_trigger == ReleaseTrigger.BUYER_RECEIPT_CONFIRMED
 
     def test_surcharge_par_categorie(self):

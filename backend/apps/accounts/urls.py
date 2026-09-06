@@ -3,6 +3,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from .views import (
+    app_release_latest,
     health,
     bootstrap_admin,
     bootstrap_demo_accounts,
@@ -20,6 +21,8 @@ from .views import (
     delivery_organization_active_missions,
     delivery_organization_mission_queue,
     delivery_organization_assign_mission,
+    delivery_organization_bourse,
+    delivery_organization_claim_tournee,
     delivery_organization_open_disputes,
     delivery_organization_profile,
     delivery_organization_update_courier,
@@ -27,6 +30,7 @@ from .views import (
     delivery_organization_dispute_reply,
     relay_point_profile,
     relay_point_open_disputes,
+    relay_point_training,
     ComplianceDocumentListCreateView,
     RegisterView,
     RewardAccountsView,
@@ -98,6 +102,8 @@ urlpatterns = [
     path("delivery-organization/missions/active/", delivery_organization_active_missions, name="delivery-organization-active-missions"),
     path("delivery-organization/missions/queue/", delivery_organization_mission_queue, name="delivery-organization-mission-queue"),
     path("delivery-organization/missions/<int:shipment_id>/assign/", delivery_organization_assign_mission, name="delivery-organization-assign-mission"),
+    path("delivery-organization/bourse/", delivery_organization_bourse, name="delivery-organization-bourse"),
+    path("delivery-organization/bourse/<int:tournee_id>/claim/", delivery_organization_claim_tournee, name="delivery-organization-claim-tournee"),
     path("delivery-organization/disputes/open/", delivery_organization_open_disputes, name="delivery-organization-open-disputes"),
     path("delivery-organization/profile/", delivery_organization_profile, name="delivery-organization-profile"),
     path("delivery-organization/couriers/<int:courier_id>/", delivery_organization_update_courier, name="delivery-organization-update-courier"),
@@ -105,6 +111,8 @@ urlpatterns = [
     path("delivery-organization/disputes/<int:dispute_id>/reply/", delivery_organization_dispute_reply, name="delivery-organization-dispute-reply"),
     path("relay-point/profile/", relay_point_profile, name="relay-point-profile"),
     path("relay-point/disputes/open/", relay_point_open_disputes, name="relay-point-open-disputes"),
+    path("relay-point/training/", relay_point_training, name="relay-point-training"),
+    path("app-release/", app_release_latest, name="app-release-latest"),
     path("compliance-documents/", ComplianceDocumentListCreateView.as_view(), name="compliance-documents"),
 
     # ── Sessions / Appareils ──────────────────────────────────────────────────

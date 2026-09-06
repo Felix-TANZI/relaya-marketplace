@@ -5,8 +5,10 @@
 //   SellerLayout → /seller/*
 //   AdminLayout  → /admin/* (AdminRoute = ProtectedRoute + is_staff check)
 
+import { lazy, Suspense } from 'react';
 import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { isDedicatedPortal, portalHomePath } from '@/config/portals';
+import PageLoader from '@/components/PageLoader';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LAYOUTS
@@ -25,59 +27,58 @@ import RoleRoute      from '@/components/auth/RoleRoute';
 // ─────────────────────────────────────────────────────────────────────────────
 // CLIENT PAGES
 // ─────────────────────────────────────────────────────────────────────────────
-import HomePage               from '@/features/home/HomePage';
-import CatalogPage            from '@/features/catalog/CatalogPage';
-import CategoriesPage         from '@/features/categories/CategoriesPage';
-import CategoryThemePage      from '@/features/categories/CategoryThemePage';
-import PremiumPage             from '@/features/premium/PremiumPage';
-import SelectionPremiumPage    from '@/features/premium/SelectionPremiumPage';
-import CartPage               from '@/features/cart/CartPage';
-import CheckoutPage           from '@/features/checkout/CheckoutPage';
-import CheckoutConfirmPage    from '@/features/checkout/CheckoutConfirmPage';
-import OrdersHistoryPage      from '@/features/orders/OrdersHistoryPage';
-import OrderDetailPage        from '@/features/orders/OrderDetailPage';
-import WishlistPage           from '@/features/wishlist/WishlistPage';
-import ProfilePage            from '@/features/profile/ProfilePage';
-import NotificationsPage      from '@/features/notifications/NotificationsPage';
-import SearchPage             from '@/features/search/SearchPage';
-import ContactPage            from '@/features/contact/ContactPage';
-import HelpPage               from '@/features/help/HelpPage';
-import AboutPage              from '@/features/about/AboutPage';
-import BecomeSellerPage       from '@/features/vendors/BecomeSellerPage';
-import NotFoundPage           from '@/features/system/NotFoundPage';
-import PromotionsPage         from '@/features/promotions/PromotionsPage';
-import DriverApp              from '@/features/driver/DriverApp';
-import FicheDetailPage        from '@/features/catalog/FicheDetailPage';
-import RelayPointPage         from '@/features/relay/RelayPointPage';
-import DeliveryOrganizationPage from '@/features/delivery-organization/DeliveryOrganizationPage';
-
+const HomePage = lazy(() => import('@/features/home/HomePage'));
+const CatalogPage = lazy(() => import('@/features/catalog/CatalogPage'));
+const CategoriesPage = lazy(() => import('@/features/categories/CategoriesPage'));
+const CategoryThemePage = lazy(() => import('@/features/categories/CategoryThemePage'));
+const PremiumPage = lazy(() => import('@/features/premium/PremiumPage'));
+const SelectionPremiumPage = lazy(() => import('@/features/premium/SelectionPremiumPage'));
+const CartPage = lazy(() => import('@/features/cart/CartPage'));
+const CheckoutPage = lazy(() => import('@/features/checkout/CheckoutPage'));
+const CheckoutConfirmPage = lazy(() => import('@/features/checkout/CheckoutConfirmPage'));
+const OrdersHistoryPage = lazy(() => import('@/features/orders/OrdersHistoryPage'));
+const OrderDetailPage = lazy(() => import('@/features/orders/OrderDetailPage'));
+const WishlistPage = lazy(() => import('@/features/wishlist/WishlistPage'));
+const ProfilePage = lazy(() => import('@/features/profile/ProfilePage'));
+const NotificationsPage = lazy(() => import('@/features/notifications/NotificationsPage'));
+const SearchPage = lazy(() => import('@/features/search/SearchPage'));
+const ContactPage = lazy(() => import('@/features/contact/ContactPage'));
+const HelpPage = lazy(() => import('@/features/help/HelpPage'));
+const AboutPage = lazy(() => import('@/features/about/AboutPage'));
+const BecomeSellerPage = lazy(() => import('@/features/vendors/BecomeSellerPage'));
+const NotFoundPage = lazy(() => import('@/features/system/NotFoundPage'));
+const PromotionsPage = lazy(() => import('@/features/promotions/PromotionsPage'));
+const FlashDealsPage = lazy(() => import('@/features/flash/FlashDealsPage'));
+const DriverApp = lazy(() => import('@/features/driver/DriverApp'));
+const FicheDetailPage = lazy(() => import('@/features/catalog/FicheDetailPage'));
+const RelayPointPage = lazy(() => import('@/features/relay/RelayPointPage'));
+const DeliveryOrganizationPage = lazy(() => import('@/features/delivery-organization/DeliveryOrganizationPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH PAGES
 // ─────────────────────────────────────────────────────────────────────────────
-import LoginPage    from '@/features/auth/LoginPage';
-import RegisterPage from '@/features/auth/RegisterPage';
-
+const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
+const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // SELLER PAGES
 // ─────────────────────────────────────────────────────────────────────────────
-import SellerDashboardPage      from '@/features/vendors/SellerDashboardPage';
-import SellerProductsPage       from '@/features/vendors/SellerProductsPage';
-import ProductFormPage          from '@/features/vendors/ProductFormPage';
-import SellerOrdersPage         from '@/features/vendors/SellerOrdersPage';
-import SellerOrderDetailPage    from '@/features/vendors/SellerOrderDetailPage';
-import SellerDisputesPage       from '@/features/vendors/SellerDisputesPage';
-import SellerShopPage           from '@/features/vendors/SellerShopPage';
-import SellerAnalyticsPage      from '@/features/vendors/SellerAnalyticsPage';
-import SellerBoostPage          from '@/features/vendors/SellerBoostPage';
-import SellerCertificationsPage from '@/features/vendors/SellerCertificationsPage';
-import SellerPlansPage          from '@/features/vendors/SellerPlansPage';
-import SellerSettingsPage       from '@/features/vendors/SellerSettingsPage';
-import SellerPaymentsPage        from '@/features/vendors/SellerPaymentsPage';
-import SellerWalletPage          from '@/features/vendors/SellerWalletPage';
-import SellerSettlementsPage     from '@/features/vendors/SellerSettlementsPage';
-import SellerPendingFundsPage    from '@/features/vendors/SellerPendingFundsPage';
-import SellerAdjustmentsPage     from '@/features/vendors/SellerAdjustmentsPage';
-
+const SellerDashboardPage = lazy(() => import('@/features/vendors/SellerDashboardPage'));
+const SellerProductsPage = lazy(() => import('@/features/vendors/SellerProductsPage'));
+const ProductFormPage = lazy(() => import('@/features/vendors/ProductFormPage'));
+const SellerOrdersPage = lazy(() => import('@/features/vendors/SellerOrdersPage'));
+const SellerOrderDetailPage = lazy(() => import('@/features/vendors/SellerOrderDetailPage'));
+const SellerDisputesPage = lazy(() => import('@/features/vendors/SellerDisputesPage'));
+const SellerReturnsPage = lazy(() => import('@/features/vendors/SellerReturnsPage'));
+const SellerShopPage = lazy(() => import('@/features/vendors/SellerShopPage'));
+const SellerAnalyticsPage = lazy(() => import('@/features/vendors/SellerAnalyticsPage'));
+const SellerBoostPage = lazy(() => import('@/features/vendors/SellerBoostPage'));
+const SellerCertificationsPage = lazy(() => import('@/features/vendors/SellerCertificationsPage'));
+const SellerPlansPage = lazy(() => import('@/features/vendors/SellerPlansPage'));
+const SellerSettingsPage = lazy(() => import('@/features/vendors/SellerSettingsPage'));
+const SellerPaymentsPage = lazy(() => import('@/features/vendors/SellerPaymentsPage'));
+const SellerWalletPage = lazy(() => import('@/features/vendors/SellerWalletPage'));
+const SellerSettlementsPage = lazy(() => import('@/features/vendors/SellerSettlementsPage'));
+const SellerPendingFundsPage = lazy(() => import('@/features/vendors/SellerPendingFundsPage'));
+const SellerAdjustmentsPage = lazy(() => import('@/features/vendors/SellerAdjustmentsPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // ROUTES FINANCIÈRES PARTENAIRES
 // ─────────────────────────────────────────────────────────────────────────────
@@ -92,72 +93,65 @@ import {
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN — PARTAGÉ
 // ─────────────────────────────────────────────────────────────────────────────
-import AdminDashboardPage      from '@/features/admin/AdminDashboardPage';
+const AdminDashboardPage = lazy(() => import('@/features/admin/AdminDashboardPage'));
 import AdminStub               from '@/features/admin/_AdminStub';
 
 // ── Finances ─────────────────────────────────────────────────────────────────
-import FinancesPage            from '@/features/admin/finances/FinancesPage';
-import AccountPage             from '@/features/admin/finances/AccountPage';
-import PlansPage               from '@/features/admin/finances/PlansPage';
-import CommissionsPage         from '@/features/admin/finances/CommissionsPage';
-
+const FinancesPage = lazy(() => import('@/features/admin/finances/FinancesPage'));
+const AccountPage = lazy(() => import('@/features/admin/finances/AccountPage'));
+const PlansPage = lazy(() => import('@/features/admin/finances/PlansPage'));
+const CommissionsPage = lazy(() => import('@/features/admin/finances/CommissionsPage'));
 // ── Vendeurs ─────────────────────────────────────────────────────────────────
-import VendorsListPage         from '@/features/admin/vendors/VendorsListPage';
-import VendorDetailPage        from '@/features/admin/vendors/VendorDetailPage';
-import KYCPage                 from '@/features/admin/vendors/KYCPage';
-import WithdrawalsPage         from '@/features/admin/vendors/WithdrawalsPage';
-import ModificationsPage       from '@/features/admin/vendors/ModificationsPage';
-import CertificationsPage      from '@/features/admin/vendors/CertificationsPage';
-import SubscriptionsPage       from '@/features/admin/vendors/SubscriptionsPage';
-import VendorsOverviewPage     from '@/features/admin/vendors/VendorsOverviewPage';
-import OrdersMapPage           from '@/features/admin/operations/OrdersMapPage';
-import VendorsMapPage          from '@/features/admin/vendors/VendorsMapPage';
-
+const VendorsListPage = lazy(() => import('@/features/admin/vendors/VendorsListPage'));
+const VendorDetailPage = lazy(() => import('@/features/admin/vendors/VendorDetailPage'));
+const KYCPage = lazy(() => import('@/features/admin/vendors/KYCPage'));
+const WithdrawalsPage = lazy(() => import('@/features/admin/vendors/WithdrawalsPage'));
+const ModificationsPage = lazy(() => import('@/features/admin/vendors/ModificationsPage'));
+const CertificationsPage = lazy(() => import('@/features/admin/vendors/CertificationsPage'));
+const SubscriptionsPage = lazy(() => import('@/features/admin/vendors/SubscriptionsPage'));
+const VendorsOverviewPage = lazy(() => import('@/features/admin/vendors/VendorsOverviewPage'));
+const OrdersMapPage = lazy(() => import('@/features/admin/operations/OrdersMapPage'));
+const VendorsMapPage = lazy(() => import('@/features/admin/vendors/VendorsMapPage'));
 // ── Clients ──────────────────────────────────────────────────────────────────
-import CustomersListPage       from '@/features/admin/customers/CustomersListPage';
-import CustomerDetailPage      from '@/features/admin/customers/CustomerDetailPage';
-import CustomersOverviewPage   from '@/features/admin/customers/CustomersOverviewPage';
-import CustomersBroadcastPage  from '@/features/admin/customers/CustomersBroadcastPage';
-import CustomersLoyaltyPage    from '@/features/admin/customers/CustomersLoyaltyPage';
-
+const CustomersListPage = lazy(() => import('@/features/admin/customers/CustomersListPage'));
+const CustomerDetailPage = lazy(() => import('@/features/admin/customers/CustomerDetailPage'));
+const CustomersOverviewPage = lazy(() => import('@/features/admin/customers/CustomersOverviewPage'));
+const CustomersBroadcastPage = lazy(() => import('@/features/admin/customers/CustomersBroadcastPage'));
+const CustomersLoyaltyPage = lazy(() => import('@/features/admin/customers/CustomersLoyaltyPage'));
 // ── Opérations ───────────────────────────────────────────────────────────────
-import OrdersListPage          from '@/features/admin/operations/OrdersListPage';
-import AdminOrderDetailPage    from '@/features/admin/operations/OrderDetailPage';
-import DisputesListPage        from '@/features/admin/operations/DisputesListPage';
-import AdminDisputeDetailPage  from '@/features/admin/operations/DisputeDetailPage';
-import DeliveriesListPage from '@/features/admin/deliveries/DeliveriesListPage';
-import DeliveriesZonesPage from '@/features/admin/deliveries/DeliveriesZonesPage';
-import DeliveriesPerformancePage from '@/features/admin/deliveries/DeliveriesPerformancePage';
-import DeliveryOrganizationsMapPage from '@/features/admin/deliveries/DeliveryOrganizationsMapPage';
-import RelayPointsMapPage from '@/features/admin/deliveries/RelayPointsMapPage';
-import CataloguePage           from '@/features/admin/operations/CataloguePage';
-import AdminCategoriesPage     from '@/features/admin/operations/CategoriesPage';
-import ReviewsPage             from '@/features/admin/operations/ReviewsPage';
-import MasterProductsPage from '@/features/admin/operations/MasterProductsPage';
-
+const OrdersListPage = lazy(() => import('@/features/admin/operations/OrdersListPage'));
+const AdminOrderDetailPage = lazy(() => import('@/features/admin/operations/OrderDetailPage'));
+const DisputesListPage = lazy(() => import('@/features/admin/operations/DisputesListPage'));
+const ReturnsListPage = lazy(() => import('@/features/admin/operations/ReturnsListPage'));
+const SupervisionPage = lazy(() => import('@/features/admin/operations/SupervisionPage'));
+const AdminDisputeDetailPage = lazy(() => import('@/features/admin/operations/DisputeDetailPage'));
+const DeliveriesListPage = lazy(() => import('@/features/admin/deliveries/DeliveriesListPage'));
+const DeliveriesZonesPage = lazy(() => import('@/features/admin/deliveries/DeliveriesZonesPage'));
+const DeliveriesPerformancePage = lazy(() => import('@/features/admin/deliveries/DeliveriesPerformancePage'));
+const DeliveryOrganizationsMapPage = lazy(() => import('@/features/admin/deliveries/DeliveryOrganizationsMapPage'));
+const RelayPointsMapPage = lazy(() => import('@/features/admin/deliveries/RelayPointsMapPage'));
+const CataloguePage = lazy(() => import('@/features/admin/operations/CataloguePage'));
+const AdminCategoriesPage = lazy(() => import('@/features/admin/operations/CategoriesPage'));
+const ReviewsPage = lazy(() => import('@/features/admin/operations/ReviewsPage'));
+const MasterProductsPage = lazy(() => import('@/features/admin/operations/MasterProductsPage'));
 // ── Système ──────────────────────────────────────────────────────────────────
-import AuditPage               from '@/features/admin/system/AuditPage';
-import NotificationsAdminPage  from '@/features/admin/system/NotificationsPage';
-import LogsPage                from '@/features/admin/system/LogsPage';
-import SettingsPage            from '@/features/admin/SettingsPage';
-import UserCreatePage from '@/features/admin/customers/UserCreatePage';
-
+const AuditPage = lazy(() => import('@/features/admin/system/AuditPage'));
+const NotificationsAdminPage = lazy(() => import('@/features/admin/system/NotificationsPage'));
+const LogsPage = lazy(() => import('@/features/admin/system/LogsPage'));
+const SettingsPage = lazy(() => import('@/features/admin/SettingsPage'));
+const UserCreatePage = lazy(() => import('@/features/admin/customers/UserCreatePage'));
 // ── Live ─────────────────────────────────────────────────────────────────────
-import LiveUsersPage           from '@/features/admin/LiveUsersPage';
-import LiveMapPage             from '@/features/admin/LiveMapPage';
-
+const LiveUsersPage = lazy(() => import('@/features/admin/LiveUsersPage'));
+const LiveMapPage = lazy(() => import('@/features/admin/LiveMapPage'));
 // ── Utilisateurs ─────────────────────────────────────────────────────────────
-import UsersManagementPage     from '@/features/admin/UsersManagementPage';
-import UserDetailPage          from '@/features/admin/UserDetailPage';
-
+const UsersManagementPage = lazy(() => import('@/features/admin/UsersManagementPage'));
+const UserDetailPage = lazy(() => import('@/features/admin/UserDetailPage'));
 // ── Catalogue ─────────────────────────────────────────────────────────────
-import AdminVariantsPage from '@/features/admin/catalog/AdminVariantsPage';
-import AdminBrandsPage from '@/features/admin/catalog/AdminBrandsPage';
-import AdminAttributesPage from '@/features/admin/catalog/AdminAttributesPage';
-import AdminColorsPage from '@/features/admin/catalog/AdminColorsPage';
-import AdminCategPage from '@/features/admin/catalog/AdminCategPage';
-
-
+const AdminVariantsPage = lazy(() => import('@/features/admin/catalog/AdminVariantsPage'));
+const AdminBrandsPage = lazy(() => import('@/features/admin/catalog/AdminBrandsPage'));
+const AdminAttributesPage = lazy(() => import('@/features/admin/catalog/AdminAttributesPage'));
+const AdminColorsPage = lazy(() => import('@/features/admin/catalog/AdminColorsPage'));
+const AdminCategPage = lazy(() => import('@/features/admin/catalog/AdminCategPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // STUBS — icônes pour les pages à venir
 // ─────────────────────────────────────────────────────────────────────────────
@@ -198,6 +192,7 @@ export const router = createBrowserRouter([
       { path: 'wishlist',        element: <WishlistPage /> },
       { path: 'search',          element: <SearchPage /> },
       { path: 'promotions',      element: <PromotionsPage /> },
+      { path: 'flash-deals',     element: <FlashDealsPage /> },
       { path: 'premium',         element: <PremiumPage /> },
       { path: 'selection-premium', element: <SelectionPremiumPage /> },
       { path: 'contact',         element: <ContactPage /> },
@@ -238,6 +233,7 @@ export const router = createBrowserRouter([
       { path: 'orders',            element: <SellerOrdersPage /> },
       { path: 'orders/:id',        element: <SellerOrderDetailPage /> },
       { path: 'disputes',          element: <SellerDisputesPage /> },
+      { path: 'returns',           element: <SellerReturnsPage /> },
       { path: 'shop',              element: <SellerShopPage /> },
       { path: 'analytics',         element: <SellerAnalyticsPage /> },
       { path: 'boost',             element: <SellerBoostPage /> },
@@ -261,22 +257,22 @@ export const router = createBrowserRouter([
   // Espace livreur
   {
     path: '/courier',
-    element: <ProtectedRoute><RoleRoute role="courier"><DriverApp /></RoleRoute></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="courier"><Suspense fallback={<PageLoader />}><DriverApp /></Suspense></RoleRoute></ProtectedRoute>,
   },
   {
     path: '/driver/*',
-    element: <ProtectedRoute><RoleRoute role="courier"><DriverApp /></RoleRoute></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="courier"><Suspense fallback={<PageLoader />}><DriverApp /></Suspense></RoleRoute></ProtectedRoute>,
   },
   {
     path: '/relay-point',
-    element: <ProtectedRoute><RoleRoute role="relay_point"><RelayPointPage /></RoleRoute></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="relay_point"><Suspense fallback={<PageLoader />}><RelayPointPage /></Suspense></RoleRoute></ProtectedRoute>,
     children: [
       ...relayPaymentRoutes,
     ],
   },
   {
     path: '/delivery-organization',
-    element: <ProtectedRoute><RoleRoute role="delivery_organization"><DeliveryOrganizationPage /></RoleRoute></ProtectedRoute>,
+    element: <ProtectedRoute><RoleRoute role="delivery_organization"><Suspense fallback={<PageLoader />}><DeliveryOrganizationPage /></Suspense></RoleRoute></ProtectedRoute>,
     children: [
       ...deliveryPaymentRoutes,
     ],
@@ -348,6 +344,8 @@ export const router = createBrowserRouter([
       { path: 'orders/map',           element: <OrdersMapPage /> },
       { path: 'disputes',             element: <DisputesListPage /> },
       { path: 'disputes/:id',         element: <AdminDisputeDetailPage /> },
+      { path: 'returns',              element: <ReturnsListPage /> },
+      { path: 'supervision',          element: <SupervisionPage /> },
       { path: 'catalogue',            element: <CataloguePage /> },
       { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
       { path: 'catalogue/reviews',    element: <ReviewsPage /> },

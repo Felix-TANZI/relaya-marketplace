@@ -2,6 +2,7 @@
 // Service API pour l'administration BelivaY
 
 import { http } from "./http";
+import type { OrderReturn } from "./customer";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // HELPER AUTH
@@ -1254,6 +1255,41 @@ export interface CategoryUpdatePayload {
  
 export type CategoryFlag = "is_active" | "is_deprecated" | "requires_admin_approval";
 
+export interface SupervisionLateShipment {
+  shipment_id: number;
+  order_id: number;
+  status: string;
+  zone: string | null;
+  city: string;
+  estimated_availability_at: string;
+  hours_late: number;
+}
+
+export interface SupervisionUnclaimedTournee {
+  id: number;
+  zone: string;
+  city: string;
+  colis_count: number;
+  composed_at: string;
+  waiting_hours: number;
+}
+
+export interface SupervisionSubsidyZone {
+  zone_id: number;
+  zone__name: string;
+  zone__city: string;
+  forced_exits: number;
+  colis_perdus: number;
+}
+
+export interface SupervisionDashboard {
+  late_shipments: SupervisionLateShipment[];
+  late_shipments_count: number;
+  unclaimed_tournees: SupervisionUnclaimedTournee[];
+  unclaimed_tournees_count: number;
+  subsidy_by_zone: SupervisionSubsidyZone[];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // API OBJECT
 // ─────────────────────────────────────────────────────────────────────────────
@@ -2479,4 +2515,32 @@ export const adminApi = {
       },
     );
   },
+
+  // ── SUPERVISION (console minimale) ──────────────────────────────────────────
+
+  getSupervisionDashboard: async (): Promise<SupervisionDashboard> =>
+    http<SupervisionDashboard>("/api/shipping/admin/supervision/", { headers: authHeader() }),
+
+  // ── RETOURS ───────────────────────────────────────────────────────────────
+
+  listReturns: async (statusFilter?: string): Promise<OrderReturn[]> => {
+    const qs = statusFilter ? `?status=${statusFilter}` : "";
+    return http<OrderReturn[]>(`/api/vendors/admin/returns/${qs}`, { headers: authHeader() });
+  },
+
+  markReturnReceived: async (returnId: number): Promise<OrderReturn> =>
+    http<OrderReturn>(`/api/vendors/admin/returns/${returnId}/received/`, {
+      method: "POST",
+      headers: authHeader(),
+    }),
+
+  finalizeReturn: async (
+    returnId: number,
+    data: { inspection_passed: boolean; refund_amount_xaf?: number | null; note?: string },
+  ): Promise<OrderReturn> =>
+    http<OrderReturn>(`/api/vendors/admin/returns/${returnId}/finalize/`, {
+      method: "POST",
+      headers: { ...authHeader(), "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    }),
 };

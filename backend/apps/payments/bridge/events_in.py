@@ -525,6 +525,108 @@ def dispute_resolved(*, order_id: int, resolution: str, component: str = "",
     )
 
 
+def return_initiated(*, order_id: int, reason: str, component: str = "",
+                     event_id: str = "", emitter: str = "",
+                     occurred_at=None) -> EscrowEvent:
+    """
+    Un retour est demande par l'acheteur (produit defectueux/non conforme).
+
+    GELE LE SEQUESTRE CONCERNE, exactement comme dispute_opened : le domaine
+    financier ne distingue pas "litige" de "retour" au niveau du sequestre,
+    ce sont deux faits metier qui gelent le meme type de sequestre pour la
+    meme raison (P9). Kind separe (RETURN_INITIATED) pour que l'audit trail
+    distingue les deux dans les journaux/rapports.
+    """
+    cible = component or EscrowHold.Component.GOODS
+
+    evenement, nouveau = _journalise(
+        EscrowEvent.Kind.RETURN_INITIATED, event_id,
+        emitter=emitter, order_id=order_id, component=cible,
+        payload={"reason": reason}, occurred_at=occurred_at,
+    )
+    if not nouveau:
+        return evenement
+
+    concernes = list(EscrowHold.objects.filter(
+        order_id=order_id, component=cible,
+        status__in=[EscrowHold.Status.HELD, EscrowHold.Status.RELEASE_SCHEDULED],
+    ))
+
+    if not concernes:
+        return _cloture(
+            evenement, EscrowEvent.Outcome.IGNORED,
+            f"Aucun sequestre gelable pour la commande #{order_id} "
+            f"({cible}). Deja libere ou inexistant.",
+        )
+
+    for hold in concernes:
+        freeze_hold(hold, reason=f"Retour : {reason}")
+
+    return _cloture(
+        evenement, EscrowEvent.Outcome.APPLIED,
+        f"{len(concernes)} sequestre(s) gele(s) pour retour — commande "
+        f"#{order_id}, composant {cible}.",
+        len(concernes),
+    )
+
+
+@db_transaction.atomic
+def return_completed(*, order_id: int, outcome: str, component: str = "",
+                     refund_amount_xaf: int = 0, event_id: str = "",
+                     emitter: str = "", occurred_at=None) -> EscrowEvent:
+    """
+    Un retour est finalise APRES reception physique et inspection du colis
+    retourne — jamais a la simple demande (regle produit verrouillee).
+
+    outcome :
+      REJECTED — retour refuse ou inspection non conforme : le cycle normal
+                 de liberation vers le vendeur reprend (degel).
+      REFUND   — remboursement total a l'acheteur (execute au meme circuit
+                 d'approbation que dispute_resolved : demande creee,
+                 PAS d'argent verse automatiquement).
+      PARTIAL  — remboursement partiel.
+    """
+    cible = component or EscrowHold.Component.GOODS
+
+    evenement, nouveau = _journalise(
+        EscrowEvent.Kind.RETURN_COMPLETED, event_id,
+        emitter=emitter, order_id=order_id, component=cible,
+        payload={"outcome": outcome, "refund_amount_xaf": refund_amount_xaf},
+        occurred_at=occurred_at,
+    )
+    if not nouveau:
+        return evenement
+
+    geles = list(EscrowHold.objects.filter(
+        order_id=order_id, component=cible, status=EscrowHold.Status.FROZEN,
+    ))
+    if not geles:
+        return _cloture(
+            evenement, EscrowEvent.Outcome.IGNORED,
+            f"Aucun sequestre gele pour la commande #{order_id}.",
+        )
+
+    decision = (outcome or "").upper()
+
+    if decision in ("REJECTED", "DISMISSED"):
+        for hold in geles:
+            unfreeze_hold(hold, reason="Retour rejete ou inspection non conforme.")
+        return _cloture(
+            evenement, EscrowEvent.Outcome.APPLIED,
+            f"Retour rejete : {len(geles)} sequestre(s) degele(s). "
+            "Le cycle de liberation reprend.",
+            len(geles),
+        )
+
+    if decision in ("REFUND", "PARTIAL", "PARTIAL_REFUND"):
+        return _rembourser(evenement, geles, decision, refund_amount_xaf)
+
+    return _cloture(
+        evenement, EscrowEvent.Outcome.IGNORED,
+        f"Issue '{decision}' inconnue. Les sequestres restent geles.",
+    )
+
+
 def _rembourser(evenement, geles, decision: str, montant: int):
     """
     Cree la demande de remboursement d'un litige tranche en faveur de

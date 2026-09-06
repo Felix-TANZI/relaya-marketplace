@@ -1152,6 +1152,14 @@ class Product(SoftDeleteModel):
         max_length=300, blank=True,
         help_text="Description courte pour la page produit et les aperçus.",
     )
+    faq = models.JSONField(
+        default=list, blank=True,
+        help_text=(
+            "FAQ produit à remplir par le vendeur : liste de {question, answer}. "
+            "Compense l'absence de messagerie directe acheteur-vendeur "
+            "— Addendum Décisions v1.0, Portail vendeur."
+        ),
+    )
 
     # ── Prix ────────────────────────────────────────────────────────────────
     price_xaf        = models.PositiveIntegerField(help_text="Prix de vente en FCFA (XAF)")

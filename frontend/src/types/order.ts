@@ -42,6 +42,8 @@ export interface Order {
   address: string;
   address_precision?: Record<string, unknown>;
   note: string | null;
+  authorized_pickup_name?: string;
+  authorized_pickup_phone?: string;
   payment_status: PaymentStatus;
   fulfillment_status: FulfillmentStatus;
   subtotal_xaf: number;

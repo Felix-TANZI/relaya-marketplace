@@ -81,7 +81,11 @@ urlpatterns = [
     path('disputes/<int:dispute_id>/messages/',     views.vendor_dispute_send_message,   name='vendor-dispute-message'),
     path('disputes/<int:dispute_id>/evidences/',    views.vendor_dispute_upload_evidence, name='vendor-dispute-evidence'),
 
-    #  ADMINISTRATION 
+    # RETOURS VENDEUR
+    path('returns/',                                views.vendor_return_list,   name='vendor-return-list'),
+    path('returns/<int:return_id>/review/',         views.vendor_return_review, name='vendor-return-review'),
+
+    #  ADMINISTRATION
     path('admin/vendors/',                           views.admin_list_vendors,       name='admin-list-vendors'),
     path('admin/vendors/<int:vendor_id>/',           views.admin_vendor_detail,      name='admin-vendor-detail'),
     path('admin/vendors/<int:vendor_id>/approve/',   views.admin_approve_vendor,     name='admin-approve-vendor'),
@@ -168,6 +172,11 @@ urlpatterns = [
     path('admin/disputes/<int:dispute_id>/resolve/',       views.admin_resolve_dispute,      name='admin-resolve-dispute'),
     path('admin/disputes/<int:dispute_id>/toggle-reply/', views.admin_toggle_dispute_reply,  name='admin-toggle-dispute-reply'),
     path('admin/disputes/<int:dispute_id>/request-evidence/', views.admin_request_dispute_evidence, name='admin-request-dispute-evidence'),
+
+    #  ADMINISTRATION - RETOURS
+    path('admin/returns/',                             views.admin_list_returns,          name='admin-list-returns'),
+    path('admin/returns/<int:return_id>/received/',    views.admin_return_mark_received,  name='admin-return-mark-received'),
+    path('admin/returns/<int:return_id>/finalize/',    views.admin_finalize_return,       name='admin-finalize-return'),
 
     #  ADMINISTRATION — LIVREURS & BROADCAST ÉTENDU
     path('admin/couriers/',                       views.admin_list_couriers,       name='admin-list-couriers'),

@@ -13,19 +13,9 @@ import { OperatorLogo } from "@/features/payments/OperatorLogo";
 import { getDefaultPaymentMethod } from "@/features/payments/SavedPaymentMethods";
 import type { PaymentTransaction } from "@/services/api/payments";
 import { locationApi, type LocationPrecisionResult } from '@/services/api/location';
+import { customerApi, type NearbyRelayPoint } from '@/services/api/customer';
 
 const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
-
-const PICKUP_CENTERS = {
-  "Yaoundé": [
-    { id: "yaounde-mokolo", name: "Centre BelivaY Mokolo", address: "Mokolo, face marché central", hours: "Lun-Sam · 8h30-18h30" },
-    { id: "yaounde-bastos", name: "Centre BelivaY Bastos", address: "Bastos, rond-point Nlongkak", hours: "Lun-Sam · 9h00-18h00" },
-  ],
-  "Douala": [
-    { id: "douala-akwa", name: "Centre BelivaY Akwa", address: "Akwa, boulevard de la Liberté", hours: "Lun-Sam · 8h30-18h30" },
-    { id: "douala-bonapriso", name: "Centre BelivaY Bonapriso", address: "Bonapriso, av. Charles de Gaulle", hours: "Lun-Sam · 9h00-18h00" },
-  ],
-} as const;
 
 function readCheckoutSelection(): number[] {
   if (typeof window === "undefined") return [];
@@ -53,10 +43,39 @@ export default function CheckoutPage() {
     firstName: user?.first_name || "",
     lastName: user?.last_name || "",
     phone: user?.phone || getDefaultPaymentMethod()?.phone || "",
+    district: "",
     address: "",
     city: "Yaoundé" as "Yaoundé" | "Douala",
-    pickupCenterId: "yaounde-mokolo",
+    deliveryLatitude: null as number | null,
+    deliveryLongitude: null as number | null,
   });
+  const [gpsStatus, setGpsStatus] = useState<"idle" | "loading" | "found" | "not_found">("idle");
+  const [allowThirdPartyPickup, setAllowThirdPartyPickup] = useState(false);
+  const [thirdPartyPickup, setThirdPartyPickup] = useState({ name: "", phone: "" });
+  const [relayPoints, setRelayPoints] = useState<NearbyRelayPoint[]>([]);
+  const [relayLoading, setRelayLoading] = useState(false);
+  const [selectedRelayId, setSelectedRelayId] = useState<number | null>(null);
+  const [buyerCoords, setBuyerCoords] = useState<{ lat: number; lng: number } | null>(null);
+
+  const handleUseGps = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus("not_found");
+      return;
+    }
+    setGpsStatus("loading");
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setFormData((p) => ({
+          ...p,
+          deliveryLatitude: pos.coords.latitude,
+          deliveryLongitude: pos.coords.longitude,
+        }));
+        setGpsStatus("found");
+      },
+      () => setGpsStatus("not_found"),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
 
   // `items.length` n'est pas lu par la fabrique : c'est volontairement une cle
   // de recalcul, pour relire la selection stockee quand le panier change — il
@@ -67,16 +86,53 @@ export default function CheckoutPage() {
   const subtotal = checkoutItems.reduce((s, i) => s + i.price * i.quantity, 0);
   const shipping = isPickup ? 0 : 2000;
   const finalTotal = subtotal + shipping;
-  const centers = PICKUP_CENTERS[formData.city];
-  const center = centers.find((c) => c.id === formData.pickupCenterId) ?? centers[0];
   const fmt = (n: number) => `${n.toLocaleString(locale)} FCFA`;
 
+  // Point le plus proche AVEC de la place — regle verrouillee : on ne trie
+  // jamais par disponibilite, seulement par distance, pour que l'acheteur
+  // voie clairement pourquoi un point plus loin a ete retenu (le(s)
+  // precedent(s) etaient complets).
+  const recommendedRelay = relayPoints.find((r) => r.has_space) ?? null;
+  const selectedRelay = relayPoints.find((r) => r.id === selectedRelayId) ?? recommendedRelay;
+  const selectedRelayIsNotNearest = Boolean(
+    selectedRelay && relayPoints.length > 0 && relayPoints[0].id !== selectedRelay.id,
+  );
+
   const infoDone = Boolean(formData.firstName.trim() && formData.phone.trim());
-  const placeDone = isPickup ? Boolean(center) : Boolean(formData.address.trim());
+  const placeDone = isPickup ? Boolean(selectedRelay) : Boolean(formData.address.trim() && formData.district.trim());
 
   useEffect(() => {
     setAddressPrecision(null);
   }, [formData.address, formData.city]);
+
+  useEffect(() => {
+    if (!isPickup || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setBuyerCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => setBuyerCoords(null),
+      { enableHighAccuracy: true, timeout: 6000 },
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPickup]);
+
+  useEffect(() => {
+    if (!isPickup) return;
+    let cancelled = false;
+    setRelayLoading(true);
+    const cityCode = formData.city === 'Douala' ? 'DOUALA' : 'YAOUNDE';
+    customerApi.getNearbyRelayPoints({ city: cityCode, lat: buyerCoords?.lat, lng: buyerCoords?.lng })
+      .then((points) => {
+        if (cancelled) return;
+        setRelayPoints(points);
+        setSelectedRelayId((current) => {
+          if (current && points.some((p) => p.id === current)) return current;
+          return points.find((p) => p.has_space)?.id ?? null;
+        });
+      })
+      .catch(() => { if (!cancelled) setRelayPoints([]); })
+      .finally(() => { if (!cancelled) setRelayLoading(false); });
+    return () => { cancelled = true; };
+  }, [isPickup, formData.city, buyerCoords]);
 
   const analyzeDeliveryAddress = useCallback(async () => {
     if (isPickup) return true;
@@ -117,16 +173,30 @@ export default function CheckoutPage() {
       const ok = await analyzeDeliveryAddress();
       if (!ok) return;
     }
+    if (allowThirdPartyPickup && (!thirdPartyPickup.name.trim() || !thirdPartyPickup.phone.trim())) {
+      showToast("Indiquez le nom et le téléphone de la personne autorisée à retirer le colis.", "error");
+      return;
+    }
+    if (isPickup && !selectedRelay) {
+      showToast("Aucun point relais disponible pour le moment dans cette ville.", "error");
+      return;
+    }
     setLoading(true);
     try {
       const order = await ordersApi.create({
         delivery_mode: isPickup ? 'PICKUP' : 'DELIVERY',
         city: formData.city === 'Douala' ? 'DOUALA' : 'YAOUNDE',
-        address: isPickup ? `${center.name} - ${center.address}` : formData.address,
+        district: isPickup ? undefined : formData.district,
+        address: isPickup ? `${selectedRelay!.name} - ${selectedRelay!.address}` : formData.address,
+        relay_point_id: isPickup ? selectedRelay!.id : undefined,
         customer_phone: formData.phone,
         customer_email: '',
-        note: isPickup ? `CLICK_AND_COLLECT - ${center.name} - ${center.address} - ${center.hours}` : '',
+        note: '',
         address_precision: isPickup ? undefined : addressPrecision ?? undefined,
+        delivery_latitude: isPickup ? undefined : formData.deliveryLatitude,
+        delivery_longitude: isPickup ? undefined : formData.deliveryLongitude,
+        authorized_pickup_name: allowThirdPartyPickup ? thirdPartyPickup.name.trim() : '',
+        authorized_pickup_phone: allowThirdPartyPickup ? thirdPartyPickup.phone.trim() : '',
         cart_items: checkoutItems.map((item) => ({
           product_id: item.id, qty: item.quantity, title: item.name,
           price_xaf: item.price, image_url: item.image, is_demo: item.isDemo,
@@ -245,6 +315,32 @@ export default function CheckoutPage() {
                       onChange={(phone) => setFormData({ ...formData, phone })}
                       helperText={isPickup ? "Le code de retrait arrive par SMS sur ce numéro." : t('checkout.phone_helper')} />
                   </div>
+                  <div className="pf-field pf-col2">
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer" }}>
+                      <input type="checkbox" checked={allowThirdPartyPickup}
+                        onChange={(e) => setAllowThirdPartyPickup(e.target.checked)} />
+                      <span className="pf-label" style={{ margin: 0 }}>
+                        Une autre personne viendra récupérer le colis à ma place
+                      </span>
+                    </label>
+                    {allowThirdPartyPickup && (
+                      <div className="pf-form-grid" style={{ marginTop: 12 }}>
+                        <div className="pf-field">
+                          <label className="pf-label">Nom de cette personne</label>
+                          <input className="pf-input" type="text" required={allowThirdPartyPickup}
+                            value={thirdPartyPickup.name}
+                            onChange={(e) => setThirdPartyPickup({ ...thirdPartyPickup, name: e.target.value })}
+                            placeholder="Nom et prénom" />
+                        </div>
+                        <div className="pf-field">
+                          <PhoneInput required={allowThirdPartyPickup}
+                            label="Téléphone de cette personne"
+                            value={thirdPartyPickup.phone}
+                            onChange={(phone) => setThirdPartyPickup({ ...thirdPartyPickup, phone })} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
@@ -263,7 +359,7 @@ export default function CheckoutPage() {
                     {(["Yaoundé", "Douala"] as const).map((city) => (
                       <button key={city} type="button"
                         className={`pf-type-btn${formData.city === city ? " on" : ""}`}
-                        onClick={() => setFormData({ ...formData, city, pickupCenterId: PICKUP_CENTERS[city][0].id })}>
+                        onClick={() => { setFormData({ ...formData, city }); setSelectedRelayId(null); }}>
                         {city}
                       </button>
                     ))}
@@ -271,31 +367,78 @@ export default function CheckoutPage() {
                 </div>
 
                 {isPickup ? (
-                  <div className="pf-addr-grid">
-                    {centers.map((c) => (
-                      <button key={c.id} type="button"
-                        className={`pf-addr${center.id === c.id ? " def" : ""}`}
-                        style={{ textAlign: "left", cursor: "pointer", fontFamily: "inherit" }}
-                        onClick={() => setFormData({ ...formData, pickupCenterId: c.id })}>
-                        <div className="pf-addr-label">
-                          <span className="pf-addr-ic"><Store size={14} /></span>
-                          {c.name}
-                          {center.id === c.id && <span className="pf-badge-soft">Choisi</span>}
-                        </div>
-                        <div className="pf-addr-line">{c.address}</div>
-                        <div className="pf-k" style={{ marginTop: 8 }}>{c.hours}</div>
-                      </button>
-                    ))}
-                  </div>
+                  <>
+                    {selectedRelayIsNotNearest && (
+                      <div className="pf-muted-sm" style={{
+                        marginBottom: 12, padding: "10px 14px", borderRadius: 12,
+                        background: "#fff7ed", border: "1px solid #fed7aa", color: "#9a3412",
+                      }}>
+                        Le(s) point(s) relais le(s) plus proche(s) sont complets — nous vous proposons celui-ci, un peu plus loin mais disponible.
+                      </div>
+                    )}
+                    {relayLoading ? (
+                      <div className="pf-muted-sm">Recherche des points relais…</div>
+                    ) : relayPoints.length === 0 ? (
+                      <div className="pf-muted-sm" style={{ color: "#dc2626" }}>
+                        Aucun point relais actif dans cette ville pour le moment.
+                      </div>
+                    ) : (
+                      <div className="pf-addr-grid">
+                        {relayPoints.map((r) => (
+                          <button key={r.id} type="button" disabled={!r.has_space}
+                            className={`pf-addr${selectedRelay?.id === r.id ? " def" : ""}`}
+                            style={{ textAlign: "left", cursor: r.has_space ? "pointer" : "not-allowed", fontFamily: "inherit", opacity: r.has_space ? 1 : 0.5 }}
+                            onClick={() => r.has_space && setSelectedRelayId(r.id)}>
+                            <div className="pf-addr-label">
+                              <span className="pf-addr-ic"><Store size={14} /></span>
+                              {r.name}
+                              {selectedRelay?.id === r.id && <span className="pf-badge-soft">Choisi</span>}
+                              {!r.has_space && <span className="pf-badge-soft" style={{ background: "#fee2e2", color: "#991b1b" }}>Complet</span>}
+                            </div>
+                            <div className="pf-addr-line">{r.address}</div>
+                            <div className="pf-k" style={{ marginTop: 8 }}>
+                              {r.opening_hours}
+                              {r.distance_km != null && ` · ${r.distance_km} km`}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </>
                 ) : (
-                  <div className="pf-field">
-                    <label className="pf-label">{t('checkout.address')}</label>
-                    <input className="pf-input" type="text" required value={formData.address}
-                      onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                      onBlur={() => void analyzeDeliveryAddress()}
-                      placeholder={t('checkout.address_placeholder')} />
-                    <div className="pf-muted-sm" style={{ marginTop: 6 }}>{t('checkout.address_helper')}</div>
-                  </div>
+                  <>
+                    <div className="pf-field" style={{ marginBottom: 16 }}>
+                      <label className="pf-label">Quartier</label>
+                      <input className="pf-input" type="text" required value={formData.district}
+                        onChange={(e) => setFormData({ ...formData, district: e.target.value })}
+                        placeholder="Ex: Bastos" />
+                    </div>
+
+                    <button type="button" onClick={handleUseGps} disabled={gpsStatus === "loading"}
+                      className="pf-btn-block" style={{
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                        marginBottom: 16, padding: "10px 14px", borderRadius: 12,
+                        background: "var(--pf-s3)", border: "1px solid var(--pf-border)",
+                        fontWeight: 700, fontSize: 13, cursor: "pointer",
+                      }}>
+                      {gpsStatus === "found" ? <Check size={14} /> : <Lock size={14} style={{ opacity: 0 }} />}
+                      {gpsStatus === "found" ? "Position enregistrée" : gpsStatus === "loading" ? "Localisation en cours…" : "Utiliser ma position GPS"}
+                    </button>
+                    {gpsStatus === "not_found" && (
+                      <div className="pf-muted-sm" style={{ marginTop: -8, marginBottom: 16, color: "#dc2626" }}>
+                        Position indisponible — autorisez la géolocalisation ou décrivez précisément votre adresse ci-dessous.
+                      </div>
+                    )}
+
+                    <div className="pf-field">
+                      <label className="pf-label">{t('checkout.address')}</label>
+                      <input className="pf-input" type="text" required value={formData.address}
+                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                        onBlur={() => void analyzeDeliveryAddress()}
+                        placeholder={t('checkout.address_placeholder')} />
+                      <div className="pf-muted-sm" style={{ marginTop: 6 }}>{t('checkout.address_helper')}</div>
+                    </div>
+                  </>
                 )}
                 {!isPickup && addressAnalyzing && (
                   <div className="rounded-lg border border-orange-100 bg-orange-50 p-4 text-sm font-semibold text-orange-800 dark:border-orange-900 dark:bg-orange-950/20 dark:text-orange-200" style={{ marginTop: 12 }}>

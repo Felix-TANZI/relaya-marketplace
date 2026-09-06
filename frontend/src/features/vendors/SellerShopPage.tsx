@@ -11,7 +11,7 @@ import {
   Download, Phone, Mail, MapPin, Plus, Pencil, Trash2,
   Globe, Lock, AlertTriangle, X, Paperclip, Send,
   ChevronRight, Navigation, Loader2, CheckCircle2,
-  XCircle, Target,
+  XCircle, Target, LocateFixed, Star,
 } from 'lucide-react';
 import {
   MapContainer, TileLayer, Marker, Popup,
@@ -72,7 +72,7 @@ interface ShopProfile {
 interface Location {
   id?: number; name: string; address: string; phone: string; email: string;
   representative_name: string; representative_phone: string;
-  latitude: string; longitude: string; is_active: boolean;
+  latitude: string; longitude: string; is_active: boolean; is_main: boolean;
 }
 
 interface DocType { id: number; name: string; description: string; }
@@ -95,7 +95,7 @@ const SENSITIVE_FIELD_LABELS: Record<string, string> = {
 const EMPTY_LOCATION: Location = {
   name: '', address: '', phone: '', email: '',
   representative_name: '', representative_phone: '',
-  latitude: '', longitude: '', is_active: true,
+  latitude: '', longitude: '', is_active: true, is_main: false,
 };
 
 // ─── MARQUEUR PERSONNALISÉ BelivaY ────────────────────────────────────────────
@@ -126,7 +126,7 @@ function createLocationIcon(initial: string, size: 'normal' | 'large' = 'normal'
           border: 3px solid #ffffff;
           display: flex; align-items: center; justify-content: center;
           color: white; font-weight: 900; font-size: ${fs}px;
-          font-family: Poppins, sans-serif; line-height: 1;
+          font-family: 'Plus Jakarta Sans', system-ui, sans-serif; line-height: 1;
           box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
         ">${letter}</div>
         <div style="
@@ -264,7 +264,7 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
           <Globe size={15} style={{ color: T.orange }}/>
         </div>
         <div>
-          <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>
             Emplacements sur la carte
           </p>
           <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -388,7 +388,7 @@ function ModRequestModal({
         style={{ background: T.white }}>
         <div className="flex-shrink-0 flex items-center justify-between px-5 py-4"
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[15px]" style={{ color: T.text }}>
             <Lock size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
             Demander une modification
           </p>
@@ -533,6 +533,7 @@ function LocationModal({
       ? [parseFloat(initial.latitude), parseFloat(initial.longitude)]
       : null
   );
+  const [gpsStatus, setGpsStatus] = useState<GeoStatus>('idle');
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const icon = useMemo(() => createLocationIcon(shopName, 'large'), [shopName]);
@@ -603,6 +604,29 @@ function LocationModal({
     if (addr) setForm(p => ({ ...p, address: addr }));
   }, []);
 
+  // ── Bouton "Utiliser ma position GPS" — plus fiable qu'une adresse tapee ───
+  const handleUseGps = () => {
+    if (!navigator.geolocation) {
+      setGpsStatus('not_found');
+      return;
+    }
+    setGpsStatus('loading');
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setMapPosition([lat, lng]);
+        setForm(p => ({ ...p, latitude: String(lat.toFixed(6)), longitude: String(lng.toFixed(6)) }));
+        setGpsStatus('found');
+        setGeoStatus('found');
+        const addr = await reverseGeocode(lat, lng);
+        if (addr) setForm(p => ({ ...p, address: addr }));
+      },
+      () => setGpsStatus('not_found'),
+      { enableHighAccuracy: true, timeout: 8000 },
+    );
+  };
+
   const canSave = form.name.trim() && form.address.trim();
 
   return (
@@ -621,7 +645,7 @@ function LocationModal({
               <MapPin size={16} style={{ color: T.orange }}/>
             </div>
             <div>
-              <p className="font-black text-[15px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-black text-[15px]" style={{ color: T.text }}>
                 {initial?.id ? 'Modifier l\'emplacement' : 'Ajouter un emplacement'}
               </p>
               <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -742,6 +766,21 @@ function LocationModal({
               </p>
             </div>
 
+            {/* Bouton GPS — plus fiable qu'une adresse tapee, a utiliser sur place */}
+            <button type="button" onClick={handleUseGps} disabled={gpsStatus === 'loading'}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-[12.5px] font-bold transition-all hover:opacity-85 disabled:opacity-50"
+              style={{ background: T.orangeB, color: T.orange }}>
+              {gpsStatus === 'loading'
+                ? <Loader2 size={14} className="animate-spin"/>
+                : <LocateFixed size={14}/>}
+              Utiliser ma position GPS actuelle
+            </button>
+            {gpsStatus === 'not_found' && (
+              <p className="text-[11.5px] flex items-center gap-1" style={{ color: T.red }}>
+                <XCircle size={12}/> Position indisponible — autorisez la géolocalisation ou positionnez manuellement sur la carte.
+              </p>
+            )}
+
             {/* Instruction */}
             <div className="rounded-xl px-4 py-3 flex items-center gap-3"
               style={{ background: T.creamAlt }}>
@@ -813,6 +852,28 @@ function LocationModal({
               Coordonnées auto-remplies via la carte. Modifiables manuellement si besoin.
             </p>
           </div>
+
+          {/* Séparateur */}
+          <div style={{ height: 1, background: T.border }}/>
+
+          {/* ── SECTION : CENTRE PRINCIPAL ─────────────────────────────────── */}
+          <button type="button" onClick={() => set('is_main', !form.is_main)}
+            className="w-full flex items-center justify-between gap-3 rounded-xl px-4 py-3 transition-all"
+            style={{ background: form.is_main ? T.orangeB : T.creamAlt }}>
+            <div className="flex items-center gap-3">
+              <Star size={16} style={{ color: form.is_main ? T.orange : T.mutedL }} fill={form.is_main ? T.orange : 'none'}/>
+              <div className="text-left">
+                <p className="text-[13px] font-bold" style={{ color: T.text }}>Centre principal</p>
+                <p className="text-[11px]" style={{ color: T.mutedL }}>
+                  Les autres emplacements deviennent automatiquement secondaires.
+                </p>
+              </div>
+            </div>
+            <div className="w-10 h-6 rounded-full flex items-center px-0.5 flex-shrink-0 transition-all"
+              style={{ background: form.is_main ? T.orange : T.border, justifyContent: form.is_main ? 'flex-end' : 'flex-start' }}>
+              <div className="w-5 h-5 rounded-full bg-white shadow-sm"/>
+            </div>
+          </button>
         </div>
 
         {/* PIED — bouton flottant */}
@@ -992,7 +1053,7 @@ export default function SellerShopPage() {
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
-            style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            style={{ color: T.text }}>
             <Store size={20} style={{ color: T.orange }}/> Ma Boutique
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>Configuration et présentation</p>
@@ -1070,7 +1131,7 @@ export default function SellerShopPage() {
           </button>
         </div>
         <div className="flex-1">
-          <p className="font-black text-[18px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+          <p className="font-black text-[18px]" style={{ color: T.text }}>
             {shop?.business_name || 'Ma Boutique'}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -1107,7 +1168,7 @@ export default function SellerShopPage() {
               style={{ background: 'rgba(28,18,9,0.06)' }}>
               <Lock size={14} style={{ color: T.muted }}/>
             </div>
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Informations officielles
             </p>
           </div>
@@ -1147,7 +1208,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <Phone size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 Contact & disponibilité
               </p>
             </div>
@@ -1172,7 +1233,7 @@ export default function SellerShopPage() {
                 style={{ background: T.orangeB }}>
                 <QrCode size={14} style={{ color: T.orange }}/>
               </div>
-              <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+              <p className="font-bold text-[14px]" style={{ color: T.text }}>
                 QR Code BelivaY
               </p>
             </div>
@@ -1229,7 +1290,7 @@ export default function SellerShopPage() {
                 <MapPin size={14} style={{ color: T.orange }}/>
               </div>
               <div>
-                <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+                <p className="font-bold text-[14px]" style={{ color: T.text }}>
                   Nos emplacements
                 </p>
                 <p className="text-[11.5px]" style={{ color: T.muted }}>
@@ -1250,16 +1311,29 @@ export default function SellerShopPage() {
                     background: `linear-gradient(135deg, ${T.orange}, #D4640E)`,
                     boxShadow: '0 3px 10px rgba(244,121,32,0.3)',
                   }}>
-                  <span className="font-black text-[16px] text-white" style={{ fontFamily: 'Poppins,sans-serif' }}>
+                  <span className="font-black text-[16px] text-white" style={{  }}>
                     {(loc.name || '?').charAt(0).toUpperCase()}
                   </span>
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  {/* Nom */}
-                  <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
-                    {loc.name}
-                  </p>
+                  {/* Nom + statut principal/secondaire */}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-[14px]" style={{ color: T.text }}>
+                      {loc.name}
+                    </p>
+                    {loc.is_main ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: T.orangeB, color: T.orange }}>
+                        <Star size={9} fill={T.orange}/> Principal
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: T.creamAlt, color: T.mutedL }}>
+                        Secondaire
+                      </span>
+                    )}
+                  </div>
 
                   {/* Adresse */}
                   <p className="flex items-start gap-1.5 text-[12.5px] mt-1" style={{ color: T.muted }}>
@@ -1335,7 +1409,7 @@ export default function SellerShopPage() {
             <MapPin size={14} style={{ color: T.orange }}/>
           </div>
           <div className="flex-1">
-            <p className="font-bold text-[14px]" style={{ color: T.text, fontFamily: 'Poppins,sans-serif' }}>
+            <p className="font-bold text-[14px]" style={{ color: T.text }}>
               Emplacements physiques
             </p>
             <p className="text-[11.5px]" style={{ color: T.mutedL }}>
@@ -1373,7 +1447,20 @@ export default function SellerShopPage() {
 
                 {/* Infos */}
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[13.5px]" style={{ color: T.text }}>{loc.name}</p>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <p className="font-bold text-[13.5px]" style={{ color: T.text }}>{loc.name}</p>
+                    {loc.is_main ? (
+                      <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: T.orangeB, color: T.orange }}>
+                        <Star size={9} fill={T.orange}/> Principal
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
+                        style={{ background: T.creamAlt, color: T.mutedL }}>
+                        Secondaire
+                      </span>
+                    )}
+                  </div>
                   <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>{loc.address}</p>
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: T.mutedL }}>
                     {loc.phone && (

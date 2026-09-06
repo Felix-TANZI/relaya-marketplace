@@ -79,6 +79,24 @@ class VendorProfile(models.Model):
     city                 = models.CharField(max_length=100)
     id_document          = models.CharField(max_length=255, blank=True)
 
+    # Zone de tarification (BelivaY_Regles_Systeme_DEV v2.0 §3) — sert a
+    # comparer "meme zone / zone differente" entre vendeurs d'une meme
+    # commande. Optionnel : sans zone assignee, un vendeur est toujours
+    # traite comme "zone differente" par la grille de prix (pas de zone
+    # gratuite par defaut).
+    zone = models.ForeignKey(
+        "shipping.Zone", on_delete=models.SET_NULL, null=True, blank=True, related_name="vendors",
+        verbose_name="Zone de tarification",
+    )
+
+    # Heures ouvrées verrouillées 8h-18h, Lun-Sam pour tous (decision produit :
+    # pas d'horaires individuels au lancement, ca rendrait le triage automatique
+    # du bon de preparation intestable). Seul le jour de fermeture varie.
+    closed_days = models.JSONField(
+        default=list, blank=True,
+        help_text="Jours de fermeture hebdomadaire du vendeur (0=lundi ... 6=dimanche). Dimanche est toujours ferme, pas besoin de l'ajouter.",
+    )
+
     # ── Boutique publique ────────────────────────────────────────────────────
     shop_slug         = models.SlugField(max_length=120, unique=True, blank=True)
     banner_image      = models.ImageField(upload_to='vendors/banners/%Y/%m/', null=True, blank=True)
@@ -358,16 +376,30 @@ class VendorLocation(models.Model):
         help_text="Ex: 11.502 (Yaoundé)"
     )
     is_active            = models.BooleanField(default=True)
+    is_main              = models.BooleanField(
+        default=False,
+        verbose_name="Centre principal",
+        help_text="Un seul emplacement principal par vendeur — les autres sont secondaires.",
+    )
     created_at           = models.DateTimeField(auto_now_add=True)
     updated_at           = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['name']
+        ordering = ['-is_main', 'name']
         verbose_name = "Emplacement de boutique"
         verbose_name_plural = "Emplacements de boutique"
 
     def __str__(self):
         return f"{self.vendor.business_name} — {self.name}"
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        if is_new and not self.is_main and not VendorLocation.objects.filter(vendor=self.vendor, is_main=True).exists():
+            # Premier emplacement du vendeur : devient principal par defaut.
+            self.is_main = True
+        super().save(*args, **kwargs)
+        if self.is_main:
+            VendorLocation.objects.filter(vendor=self.vendor, is_main=True).exclude(pk=self.pk).update(is_main=False)
 
 
 # ─── NOTE INTERNE VENDEUR / COMMANDE ─────────────────────────────────────────

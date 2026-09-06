@@ -1,7 +1,11 @@
 import { type ComponentType, type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { Capacitor } from "@capacitor/core";
+import { BackgroundGeolocation } from "@/lib/backgroundGeolocation";
+import { enqueueEvidence, syncPendingEvidence } from "@/lib/evidenceQueue";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
+import AppDownloadBanner from "@/components/AppDownloadBanner";
 import {
   AlertTriangle,
   ArrowRight,
@@ -18,7 +22,6 @@ import {
   LoaderCircle,
   LockKeyhole,
   LogOut,
-  Map,
   MapPin,
   Navigation,
   Package,
@@ -31,7 +34,7 @@ import {
   Send,
   Sun,
   Moon,
-  MoreHorizontal,
+  Menu as MenuIcon,
   Store,
   Truck,
   User,
@@ -56,35 +59,21 @@ import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccou
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import * as QRCode from "qrcode";
 
-type CourierTab =
-  | "dashboard"
-  | "tournee"
-  | "courses"
-  | "scanner"
-  | "map"
-  | "reseau"
-  | "profil"
-  | "formation"
-  | "notifications"
-  | "incidents"
-  | "litiges"
-  | "preuves"
-  | "parametres";
+import {
+  COURIER_TABS,
+  TAB_LABELS,
+  type CourierTab,
+} from './courierNav';
+import CourierSidebar from './CourierSidebar';
+import CourierDrawer from './CourierDrawer';
+import CourierMobileNav, { COURIER_TABBAR_IDS } from './CourierMobileNav';
+import CourierProfileSheet from './CourierProfileSheet';
 
-const COURIER_TABS: CourierTab[] = [
-  "dashboard",
-  "tournee",
-  "courses",
-  "scanner",
-  "map",
-  "reseau",
-  "profil",
-  "formation",
-  "notifications",
-  "incidents",
-  "litiges",
-  "preuves",
-  "parametres",
+/** Mentions legales du pied de menu, communes a la colonne et au tiroir. */
+const COURIER_FOOTER = [
+  "BelivaY Livreur v1.0 — Juillet 2026",
+  "Partenaire Independant · ANTIC · OHADA",
+  "Anonymat V5 ch.1",
 ];
 
 function getInitialCourierTab(): CourierTab {
@@ -100,22 +89,6 @@ const VEHICLE_LABELS: Record<string, string> = {
   VAN: "Camionnette",
 };
 
-const TAB_LABELS: Record<CourierTab, string> = {
-  dashboard: "Vue d'ensemble",
-  tournee: "Ma Tournee",
-  courses: "Courses",
-  scanner: "Scanner QR",
-  map: "Carte & Navigation",
-  reseau: "Boutiques & Points Relais",
-  profil: "Mon Profil",
-  formation: "Formation",
-  notifications: "Notifications",
-  incidents: "Incidents",
-  litiges: "Litiges",
-  preuves: "Preuves & Relais",
-  parametres: "Parametres",
-};
-
 function statusLabel(status: string) {
   switch (status) {
     case "ASSIGNED":
@@ -126,6 +99,8 @@ function statusLabel(status: string) {
       return "En livraison";
     case "DELIVERED":
       return "Livree";
+    case "INCIDENT":
+      return "Incident signale";
     case "FAILED":
       return "Echec";
     default:
@@ -143,11 +118,31 @@ function statusTone(status: string) {
       return "border-orange-500/30 bg-orange-500/10 text-orange-300";
     case "DELIVERED":
       return "border-sky-500/30 bg-sky-500/10 text-sky-300";
+    case "INCIDENT":
+      return "border-red-500/30 bg-red-500/10 text-red-300";
     case "FAILED":
       return "border-red-500/30 bg-red-500/10 text-red-300";
     default:
       return "border-slate-500/30 bg-slate-500/10 text-slate-300";
   }
+}
+
+function haversineDistanceMeters(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const earthRadiusM = 6371000;
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatElapsedMinutes(sinceMs: number) {
+  const minutes = Math.floor((Date.now() - sinceMs) / 60000);
+  if (minutes < 1) return "à l'instant";
+  if (minutes === 1) return "il y a 1 min";
+  return `il y a ${minutes} min`;
 }
 
 function applyLocalAction(
@@ -165,11 +160,13 @@ function applyLocalAction(
           ? "OUT_FOR_DELIVERY"
           : action === "DELIVERED"
             ? "DELIVERED"
-            : action === "FAILED"
-              ? "FAILED"
-              : action === "DECLINE"
-                ? "CREATED"
-                : shipment.status;
+            : action === "INCIDENT"
+              ? "INCIDENT"
+              : action === "FAILED"
+                ? "FAILED"
+                : action === "DECLINE"
+                  ? "CREATED"
+                  : shipment.status;
 
   return {
     ...shipment,
@@ -223,11 +220,17 @@ function MetricCard({
   return (
     <article className={`relative overflow-hidden rounded-[24px] border p-4 shadow-[0_18px_38px_rgba(0,0,0,.22)] ${tone}`}>
       <div className="pointer-events-none absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top,rgba(255,255,255,.12),transparent_65%)]" />
-      <div className="relative mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-white/40 text-slate-700 dark:bg-black/10 dark:text-white">
-        <Icon size={19} />
+      {/* Libelle et icone sur la meme ligne : a deux cartes par rangee, une
+          pastille posee au-dessus du texte mangeait la moitie de la carte. */}
+      <div className="relative flex items-start justify-between gap-2">
+        <div className="min-w-0 text-[10px] font-bold uppercase leading-tight tracking-[0.12em] text-slate-600 dark:text-white/65 sm:text-[11px] sm:tracking-[0.16em]">
+          {label}
+        </div>
+        <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-white/40 text-slate-700 dark:bg-black/10 dark:text-white sm:h-11 sm:w-11 sm:rounded-2xl">
+          <Icon className="h-4 w-4 sm:h-[19px] sm:w-[19px]" />
+        </div>
       </div>
-      <div className="relative text-[11px] font-bold uppercase tracking-[0.16em] text-slate-600 dark:text-white/65">{label}</div>
-      <div className="relative mt-2 text-[24px] font-extrabold text-slate-950 dark:text-white">{value}</div>
+      <div className="relative mt-2 text-[22px] font-extrabold leading-none text-slate-950 dark:text-white sm:mt-3 sm:text-[24px]">{value}</div>
     </article>
   );
 }
@@ -271,6 +274,9 @@ export default function CourierDashboardPage() {
   const [availableShipmentsFromAPI, setAvailableShipmentsFromAPI] = useState<CourierShipment[]>([]);
   const [selectedShipmentId, setSelectedShipmentId] = useState<number | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
+  const [pickupCodeDraft, setPickupCodeDraft] = useState("");
+  const [capturedEvidence, setCapturedEvidence] = useState<Record<string, boolean>>({});
+  const [pendingEvidenceCount, setPendingEvidenceCount] = useState(0);
   const [scanCode, setScanCode] = useState("");
   const [scanAction, setScanAction] = useState<"PICKED_UP" | "OUT_FOR_DELIVERY" | "DELIVERED">("PICKED_UP");
   const [scanFeedback, setScanFeedback] = useState<string>("");
@@ -280,7 +286,8 @@ export default function CourierDashboardPage() {
   const [contactLoading, setContactLoading] = useState(false);
   const [settingsSaving, setSettingsSaving] = useState<string | null>(null);
   const [settingsFeedback, setSettingsFeedback] = useState("");
-  const [moreOpen, setMoreOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [clientMessages, setClientMessages] = useState<OrderChatMessage[]>([]);
   const [clientReplyDraft, setClientReplyDraft] = useState("");
   const clientChatEndRef = useRef<HTMLDivElement | null>(null);
@@ -288,7 +295,13 @@ export default function CourierDashboardPage() {
   const [disputeReplyDraft, setDisputeReplyDraft] = useState("");
   const [disputeFeedback, setDisputeFeedback] = useState("");
   const [trackingFeedback, setTrackingFeedback] = useState("");
+  const [gpsPermissionDenied, setGpsPermissionDenied] = useState(false);
+  const [lastLocationAt, setLastLocationAt] = useState<number | null>(null);
   const lastLocationPublishRef = useRef(0);
+  const lastKnownPositionRef = useRef<{ lat: number; lng: number; t: number } | null>(null);
+  const gpsRetryTimeoutRef = useRef<number | null>(null);
+  const gpsRetryDelayRef = useRef(10000);
+  const [gpsRetryNonce, setGpsRetryNonce] = useState(0);
 
   const refreshCourierWork = useCallback(async () => {
     const [shipmentsResult, dashboardResult, availableResult, notificationsResult] = await Promise.allSettled([
@@ -410,44 +423,185 @@ export default function CourierDashboardPage() {
   useEffect(() => {
     if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
     if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
-    if (!("geolocation" in navigator)) {
-      setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
-      return;
+
+    const MAX_ACCURACY_M = 100;
+    const MAX_PLAUSIBLE_SPEED_MPS = 60; // ~216 km/h : au-dela, on suppose un saut GPS aberrant
+
+    let cancelled = false;
+    let webWatchId: number | null = null;
+    let nativeWatcherId: string | null = null;
+    gpsRetryDelayRef.current = 10000;
+    setGpsPermissionDenied(false);
+
+    const isPlausibleFix = (lat: number, lng: number, accuracy: number | null, timestamp: number) => {
+      if (accuracy != null && accuracy > MAX_ACCURACY_M) return false;
+      const previous = lastKnownPositionRef.current;
+      if (previous) {
+        const elapsedS = (timestamp - previous.t) / 1000;
+        if (elapsedS > 0) {
+          const distanceM = haversineDistanceMeters(previous.lat, previous.lng, lat, lng);
+          if (distanceM / elapsedS > MAX_PLAUSIBLE_SPEED_MPS) return false;
+        }
+      }
+      return true;
+    };
+
+    const publishFix = (fix: {
+      latitude: number;
+      longitude: number;
+      accuracy: number | null;
+      speed: number | null;
+      heading: number | null;
+      timestamp: number;
+    }) => {
+      const now = Date.now();
+      if (now - lastLocationPublishRef.current < 5000) return;
+      if (!isPlausibleFix(fix.latitude, fix.longitude, fix.accuracy, fix.timestamp)) return;
+      lastLocationPublishRef.current = now;
+      lastKnownPositionRef.current = { lat: fix.latitude, lng: fix.longitude, t: fix.timestamp };
+      gpsRetryDelayRef.current = 10000;
+
+      courierApi.publishLocation(selectedShipment.id, {
+        latitude: fix.latitude,
+        longitude: fix.longitude,
+        accuracy_m: fix.accuracy,
+        speed_mps: fix.speed,
+        heading_deg: fix.heading,
+        source: "DEVICE",
+        captured_at: new Date(fix.timestamp).toISOString(),
+      }).then((location) => {
+        setLastLocationAt(Date.now());
+        setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
+        setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
+          ? {
+              ...shipment,
+              latest_location: location,
+              location_history: [...shipment.location_history, location].slice(-100),
+            }
+          : shipment));
+      }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS. Nouvelle tentative en cours..."));
+    };
+
+    const scheduleWebRetry = () => {
+      if (cancelled) return;
+      const delay = gpsRetryDelayRef.current;
+      gpsRetryTimeoutRef.current = window.setTimeout(() => {
+        if (cancelled) return;
+        gpsRetryDelayRef.current = Math.min(delay * 2, 40000);
+        startWebWatch();
+      }, delay);
+    };
+
+    const startWebWatch = () => {
+      if (!("geolocation" in navigator)) {
+        setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
+        return;
+      }
+      webWatchId = navigator.geolocation.watchPosition(
+        (position) => {
+          publishFix({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+            accuracy: position.coords.accuracy,
+            speed: position.coords.speed,
+            heading: position.coords.heading,
+            timestamp: position.timestamp,
+          });
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            setGpsPermissionDenied(true);
+            setTrackingFeedback("Autorisez la localisation dans le navigateur pour démarrer le suivi.");
+            return;
+          }
+          setTrackingFeedback("Position GPS momentanément indisponible. Nouvelle tentative dans quelques secondes...");
+          if (webWatchId != null) {
+            navigator.geolocation.clearWatch(webWatchId);
+            webWatchId = null;
+          }
+          scheduleWebRetry();
+        },
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
+      );
+    };
+
+    if (Capacitor.isNativePlatform()) {
+      BackgroundGeolocation.addWatcher(
+        {
+          backgroundTitle: "BelivaY Livreur",
+          backgroundMessage: "Le suivi de votre position reste actif pour cette course.",
+          requestPermissions: true,
+          stale: false,
+          distanceFilter: 10,
+        },
+        (location, error) => {
+          if (cancelled) return;
+          if (error) {
+            if (error.code === "NOT_AUTHORIZED") {
+              setGpsPermissionDenied(true);
+              setTrackingFeedback("Autorisez la localisation en arrière-plan dans les réglages de l'application.");
+              return;
+            }
+            setTrackingFeedback("Position GPS momentanément indisponible.");
+            return;
+          }
+          if (!location) return;
+          publishFix({
+            latitude: location.latitude,
+            longitude: location.longitude,
+            accuracy: location.accuracy,
+            speed: location.speed,
+            heading: location.bearing,
+            timestamp: location.time ?? Date.now(),
+          });
+        },
+      ).then((id) => {
+        if (cancelled) {
+          BackgroundGeolocation.removeWatcher({ id }).catch(() => {});
+          return;
+        }
+        nativeWatcherId = id;
+      }).catch(() => setTrackingFeedback("Impossible de démarrer le suivi GPS natif."));
+    } else {
+      startWebWatch();
     }
 
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const now = Date.now();
-        if (now - lastLocationPublishRef.current < 5000) return;
-        lastLocationPublishRef.current = now;
-        courierApi.publishLocation(selectedShipment.id, {
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-          accuracy_m: position.coords.accuracy,
-          speed_mps: position.coords.speed,
-          heading_deg: position.coords.heading,
-          source: "DEVICE",
-          captured_at: new Date(position.timestamp).toISOString(),
-        }).then((location) => {
-          setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
-          setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
-            ? {
-                ...shipment,
-                latest_location: location,
-                location_history: [...shipment.location_history, location].slice(-100),
-              }
-            : shipment));
-        }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS."));
-      },
-      (error) => setTrackingFeedback(
-        error.code === error.PERMISSION_DENIED
-          ? "Autorisez la localisation dans le navigateur pour démarrer le suivi."
-          : "Position GPS momentanément indisponible.",
-      ),
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 },
-    );
+    return () => {
+      cancelled = true;
+      if (gpsRetryTimeoutRef.current != null) window.clearTimeout(gpsRetryTimeoutRef.current);
+      if (webWatchId != null) navigator.geolocation.clearWatch(webWatchId);
+      if (nativeWatcherId != null) BackgroundGeolocation.removeWatcher({ id: nativeWatcherId }).catch(() => {});
+    };
+  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status, gpsRetryNonce]);
 
-    return () => navigator.geolocation.clearWatch(watchId);
+  useEffect(() => {
+    if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
+    if (!["ASSIGNED", "PICKED_UP", "IN_TRANSIT", "OUT_FOR_DELIVERY"].includes(selectedShipment.status)) return;
+    if (Capacitor.isNativePlatform() || !("wakeLock" in navigator)) return;
+
+    let cancelled = false;
+    let sentinel: { release: () => Promise<void> } | null = null;
+
+    const acquire = async () => {
+      try {
+        sentinel = await (navigator as unknown as { wakeLock: { request: (type: "screen") => Promise<{ release: () => Promise<void> }> } }).wakeLock.request("screen");
+      } catch {
+        // Refus silencieux (batterie faible, onglet non visible, etc.)
+      }
+    };
+
+    acquire();
+
+    const reacquireOnVisible = () => {
+      if (document.visibilityState === "visible" && !cancelled) acquire();
+    };
+    document.addEventListener("visibilitychange", reacquireOnVisible);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", reacquireOnVisible);
+      sentinel?.release().catch(() => {});
+    };
   }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status]);
 
   useEffect(() => {
@@ -482,13 +636,16 @@ export default function CourierDashboardPage() {
     setActionFeedback("");
 
     try {
+      const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
       const updated = await courierApi.actOnShipment(selectedShipment.id, {
         action,
-        message: action === "NOTE" ? noteDraft.trim() : undefined,
+        message,
         location: selectedShipment.city,
+        pickup_code: action === "PICKED_UP" ? pickupCodeDraft.trim() : undefined,
       });
       setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
-      if (action === "NOTE") setNoteDraft("");
+      if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
+      if (action === "PICKED_UP") setPickupCodeDraft("");
       setActionFeedback(
         action === "ACCEPT"
           ? "Mission acceptee et synchronisee."
@@ -498,23 +655,52 @@ export default function CourierDashboardPage() {
               ? "Course marquee en livraison."
               : action === "DELIVERED"
                 ? "Colis remis au client et livraison certifiee."
-                : action === "NOTE"
-                  ? "Note enregistree sur la mission."
-                  : "Action synchronisee.",
+                : action === "INCIDENT"
+                  ? "Incident signale au client immediatement."
+                  : action === "NOTE"
+                    ? "Note enregistree sur la mission."
+                    : "Action synchronisee.",
       );
     } catch {
+      const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
       setShipments((current) =>
         current.map((shipment) =>
           shipment.id === selectedShipment.id
-            ? applyLocalAction(shipment, action, action === "NOTE" ? noteDraft.trim() : undefined, selectedShipment.city)
+            ? applyLocalAction(shipment, action, message, selectedShipment.city)
             : shipment,
         ),
       );
-      if (action === "NOTE") setNoteDraft("");
+      if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
       setActionFeedback("Action appliquee localement. La synchronisation backend sera a reverifier.");
     } finally {
       setActionLoading(null);
     }
+  };
+
+  // Capture obligatoire, transmission best-effort (regle verrouillee) : la
+  // photo est mise en file localement des la prise, la synchro reseau se
+  // fait en tache de fond sans jamais bloquer la course.
+  useEffect(() => {
+    const sync = () => { void syncPendingEvidence().then(({ remaining }) => setPendingEvidenceCount(remaining)); };
+    sync();
+    window.addEventListener("online", sync);
+    const interval = window.setInterval(sync, 30000);
+    return () => { window.removeEventListener("online", sync); window.clearInterval(interval); };
+  }, []);
+
+  const handleCapturePhoto = async (
+    shipmentId: number,
+    stage: "COURIER_PICKUP_VENDOR" | "CUSTOMER_DELIVERY",
+    file: File,
+  ) => {
+    await enqueueEvidence({
+      endpoint: `/api/shipping/my-shipments/${shipmentId}/evidence/`,
+      fields: { stage },
+      blob: file,
+      fileName: file.name || "preuve.jpg",
+    });
+    setCapturedEvidence((current) => ({ ...current, [`${shipmentId}:${stage}`]: true }));
+    void syncPendingEvidence().then(({ remaining }) => setPendingEvidenceCount(remaining));
   };
 
   const handleClaimShipment = async (id: number) => {
@@ -613,23 +799,6 @@ export default function CourierDashboardPage() {
     }
   };
 
-  const menu = [
-    { id: "dashboard", label: "Vue d'ensemble", icon: Gauge },
-    { id: "tournee", label: "Ma Tournee", icon: Route },
-    { id: "courses", label: "Courses", icon: Package },
-    { id: "scanner", label: "Scanner QR", icon: ScanLine },
-    { id: "map", label: "Carte & Navigation", icon: Map },
-    { id: "reseau", label: "Boutiques & Points Relais", icon: Store },
-    { id: "profil", label: "Mon Profil", icon: User },
-    { id: "formation", label: "Formation", icon: BookOpen },
-    { id: "notifications", label: "Notifications", icon: Bell },
-    { id: "incidents", label: "Incidents", icon: AlertTriangle },
-    { id: "litiges", label: "Litiges", icon: ShieldCheck },
-    { id: "preuves", label: "Preuves & Relais", icon: FileBadge2 },
-    { id: "parametres", label: "Parametres", icon: Settings2 },
-  ] as const;
-  const mobileTabs = menu.slice(0, 4);
-  const mobileMoreTabs = menu.slice(4);
 
   const quickStats = [
     {
@@ -678,6 +847,53 @@ export default function CourierDashboardPage() {
   ];
 
   const unreadNotifications = notifications.filter((item) => !item.is_read).length;
+
+  /**
+   * Carte d'identite du livreur, partagee par la colonne de bureau, le tiroir
+   * mobile et la feuille compte : une seule source, donc aucune derive entre
+   * les trois surfaces.
+   */
+  const courierIdentity = {
+    name: `${user?.first_name || "Livreur"} ${user?.last_name || ""}`.trim(),
+    city: currentCourierCity,
+    vehicle: VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle,
+    status: courierProfile
+      ? currentIsOnline
+        ? "Disponible"
+        : "Hors ligne"
+      : "Demande a finaliser",
+    online: currentIsOnline,
+    avatarUrl: user?.avatar_url || undefined,
+  };
+
+  /**
+   * Alertes portees par le menu, dans l'ordre ou un livreur les traite :
+   * courses actives, litiges ouverts, notifications non lues.
+   */
+  const navBadges = useMemo<Partial<Record<CourierTab, number>>>(
+    () => ({
+      courses: activeShipments.length,
+      litiges: disputes.length,
+      notifications: unreadNotifications,
+    }),
+    [activeShipments.length, disputes.length, unreadNotifications],
+  );
+
+  /**
+   * Alertes des destinations absentes de la barre du bas. Elles remontent sur
+   * l'icone de menu du bandeau : sans ce report, un litige ouvert resterait
+   * invisible sur telephone tant que le tiroir n'est pas ouvert. Les
+   * notifications en sont exclues, la cloche du bandeau les affiche deja.
+   */
+  const hiddenBadgeTotal = useMemo(
+    () =>
+      Object.entries(navBadges).reduce(
+        (total, [id, count]) =>
+          COURIER_TABBAR_IDS.includes(id as CourierTab) || id === "notifications" ? total : total + (count || 0),
+        0,
+      ),
+    [navBadges],
+  );
 
   const mapShipment = selectedShipment ?? activeShipments[0] ?? shipments[0] ?? null;
   const receiptCode = mapShipment?.receipt_confirmation_code || "";
@@ -824,7 +1040,49 @@ export default function CourierDashboardPage() {
 
   const renderDashboard = () => (
     <>
-      <section className="grid gap-4 md:grid-cols-4">
+      {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="COURIER" />}
+      {/* Briefing du jour en tete : c'est la premiere chose qu'un livreur
+          veut lire en ouvrant l'app — son statut terrain et son depart
+          conseille — avant meme ses compteurs. */}
+      <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
+              <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
+                {currentIsOnline ? "Disponible" : "Hors ligne"}
+              </InfoPill>
+            </div>
+            <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Depart conseille</span>
+                <strong>{dashboard?.recommended_departure ?? "—"}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Trafic</span>
+                <strong>{dashboard?.traffic_label ?? "—"}</strong>
+              </div>
+              <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
+                <span>Meteo</span>
+                <strong>{dashboard?.weather_label ?? "—"}</strong>
+              </div>
+            </div>
+          </div>
+          <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
+            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
+            <div className="space-y-3">
+              {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
+                <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
+                  <CheckCircle2 size={16} className="text-emerald-300" />
+                  {item}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </SectionShell>
+
+      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {[
           { ...quickStats[0], value: dashboard?.active_shipments ?? quickStats[0].value },
           { ...quickStats[1], value: dashboard?.delivered_shipments ?? quickStats[1].value },
@@ -835,7 +1093,7 @@ export default function CourierDashboardPage() {
         ))}
       </section>
 
-      <section className="grid gap-3 md:grid-cols-2 xl:grid-cols-6">
+      <section className="grid grid-cols-2 gap-3 xl:grid-cols-6">
         {liveHeaderStats.map((item) => (
           <article
             key={item.label}
@@ -865,45 +1123,7 @@ export default function CourierDashboardPage() {
         </section>
       )}
 
-      <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
-        <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-              <div className="mb-3 flex items-center justify-between">
-                <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
-                <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                  {currentIsOnline ? "Disponible" : "Hors ligne"}
-                </InfoPill>
-              </div>
-              <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Depart conseille</span>
-                  <strong>{dashboard?.recommended_departure ?? "—"}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Trafic</span>
-                  <strong>{dashboard?.traffic_label ?? "—"}</strong>
-                </div>
-                <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                  <span>Meteo</span>
-                  <strong>{dashboard?.weather_label ?? "—"}</strong>
-                </div>
-              </div>
-            </div>
-            <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
-              <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
-              <div className="space-y-3">
-                {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
-                  <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
-                    <CheckCircle2 size={16} className="text-emerald-300" />
-                    {item}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </SectionShell>
-
+      <section className="grid gap-5">
         <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-green-300">
           <div className="space-y-3">
             {leaderboard.length ? (
@@ -1247,15 +1467,41 @@ export default function CourierDashboardPage() {
                 </div>
               ) : null}
               {(selectedShipment.status === "PICKED_UP" || selectedShipment.status === "ASSIGNED") && (
-                <button
-                  type="button"
-                  onClick={() => handleShipmentAction("PICKED_UP")}
-                  disabled={Boolean(actionLoading)}
-                  className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
-                  {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
-                </button>
+                <>
+                  {!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] && (
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
+                      <Camera size={14} /> Photo colis (obligatoire)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleCapturePhoto(selectedShipment.id, "COURIER_PICKUP_VENDOR", file);
+                        }}
+                      />
+                    </label>
+                  )}
+                  <input
+                    value={pickupCodeDraft}
+                    onChange={(event) => setPickupCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                    inputMode="numeric"
+                    placeholder="Code de remise (vendeur)"
+                    maxLength={6}
+                    className="w-[168px] rounded-full border border-amber-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-300/50"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleShipmentAction("PICKED_UP")}
+                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] || pickupCodeDraft.length !== 6}
+                    title={!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] ? "Prenez d'abord une photo du colis" : pickupCodeDraft.length !== 6 ? "Demandez le code de remise au vendeur" : undefined}
+                    className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
+                    {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
+                  </button>
+                </>
               )}
               {selectedShipment.status === "PICKED_UP" && (
                 <button
@@ -1270,10 +1516,26 @@ export default function CourierDashboardPage() {
               )}
               {selectedShipment.status === "OUT_FOR_DELIVERY" && (
                 <>
+                  {!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] && (
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
+                      <Camera size={14} /> Photo remise (obligatoire)
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        className="sr-only"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          if (file) void handleCapturePhoto(selectedShipment.id, "CUSTOMER_DELIVERY", file);
+                        }}
+                      />
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() => handleShipmentAction("DELIVERED")}
-                    disabled={Boolean(actionLoading)}
+                    disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`]}
+                    title={!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] ? "Prenez d'abord une photo de la remise" : undefined}
                     className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "DELIVERED" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
@@ -1304,16 +1566,42 @@ export default function CourierDashboardPage() {
                 {actionFeedback}
               </div>
             ) : null}
+            {pendingEvidenceCount > 0 && (
+              <div className="mt-3 flex items-center gap-2 rounded-[14px] border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-[12px] font-bold text-amber-300">
+                <Camera size={13} /> {pendingEvidenceCount} photo{pendingEvidenceCount > 1 ? "s" : ""} en attente de synchro
+              </div>
+            )}
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
                 Details de commande
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <InfoPill icon={MapPin}>Adresse: {selectedShipment.delivery_address}</InfoPill>
-                <InfoPill icon={Store}>Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
-                <InfoPill icon={Truck}>Statut: {statusLabel(selectedShipment.status)}</InfoPill>
+                <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Adresse: {selectedShipment.delivery_address}</InfoPill>
+                {selectedShipment.delivery_district ? (
+                  <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Quartier: {selectedShipment.delivery_district}</InfoPill>
+                ) : null}
+                <InfoPill icon={Store} tone="border-gray-200 bg-gray-50 text-gray-700">Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
+                <InfoPill icon={Truck} tone="border-gray-200 bg-gray-50 text-gray-700">Statut: {statusLabel(selectedShipment.status)}</InfoPill>
               </div>
+              {selectedShipment.authorized_pickup_name ? (
+                <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-[13px] font-bold text-amber-200">
+                  Tiers autorisé au retrait : {selectedShipment.authorized_pickup_name}
+                  {selectedShipment.authorized_pickup_phone ? ` · ${selectedShipment.authorized_pickup_phone}` : ""}
+                  <span className="mt-1 block text-[11px] font-semibold text-amber-200/70">
+                    Vérifiez l'identité de cette personne avant de remettre le colis si ce n'est pas le client.
+                  </span>
+                </div>
+              ) : null}
+              {selectedShipment.delivery_latitude != null && selectedShipment.delivery_longitude != null ? (
+                <a
+                  href={`https://www.openstreetmap.org/?mlat=${selectedShipment.delivery_latitude}&mlon=${selectedShipment.delivery_longitude}#map=17/${selectedShipment.delivery_latitude}/${selectedShipment.delivery_longitude}`}
+                  target="_blank" rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-emerald-500/10 px-4 py-2.5 text-[12.5px] font-bold text-emerald-300 hover:bg-emerald-500/15"
+                >
+                  <Navigation size={14} /> Position GPS exacte du client — ouvrir sur la carte
+                </a>
+              ) : null}
             </div>
 
             <div className="mt-5 rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
@@ -1389,6 +1677,16 @@ export default function CourierDashboardPage() {
                 >
                   {actionLoading === "NOTE" ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
                   {actionLoading === "NOTE" ? "Enregistrement..." : "Enregistrer"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleShipmentAction("INCIDENT")}
+                  disabled={Boolean(actionLoading) || !noteDraft.trim()}
+                  title="Decrivez l'incident dans le champ ci-dessus avant de le signaler"
+                  className="inline-flex items-center justify-center gap-2 rounded-[14px] border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {actionLoading === "INCIDENT" ? <LoaderCircle size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
+                  {actionLoading === "INCIDENT" ? "Signalement..." : "Signaler un incident"}
                 </button>
               </div>
             </div>
@@ -1516,11 +1814,35 @@ export default function CourierDashboardPage() {
               height={420}
             />
           </div>
+          {gpsPermissionDenied && (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] font-semibold text-red-200">
+              <span>
+                {Capacitor.isNativePlatform()
+                  ? "Localisation refusée. Ouvrez les réglages de l'application pour l'autoriser (y compris en arrière-plan)."
+                  : "Localisation refusée par le navigateur. Autorisez-la dans les réglages du site, puis réessayez."}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  setGpsPermissionDenied(false);
+                  setGpsRetryNonce((value) => value + 1);
+                }}
+                className="rounded-full border border-red-400/40 px-3 py-1 text-[11px] font-bold text-red-100 hover:bg-red-500/20"
+              >
+                J'ai autorisé, réessayer
+              </button>
+            </div>
+          )}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
             <span>{trackingFeedback || (mapShipment?.latest_location
               ? `Dernière position : ${new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR")}`
               : "Activez le GPS et le statut en ligne pour partager votre position.")}</span>
-            <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
+            <span className="flex items-center gap-3">
+              {lastLocationAt != null && (
+                <span className="text-white/60">{formatElapsedMinutes(lastLocationAt)}</span>
+              )}
+              <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
+            </span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
@@ -2206,8 +2528,18 @@ export default function CourierDashboardPage() {
     navigate("/login");
   };
 
+  /**
+   * Boutons ronds du bandeau. Le fond du header passe au blanc en theme clair :
+   * sans cette bascule, `text-white bg-white/10` rendait la cloche, le theme et
+   * la langue invisibles — blanc sur blanc.
+   */
+  const headerButton =
+    theme === "dark"
+      ? "border-white/15 bg-white/10 text-white hover:bg-white/15"
+      : "border-emerald-200 bg-emerald-50 text-emerald-800 hover:bg-emerald-100";
+
   return (
-    <div className={theme === "dark" ? "min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "min-h-screen bg-[#F4F7F5] text-slate-950"}>
+    <div className={theme === "dark" ? "belivay-portal min-h-screen bg-[radial-gradient(circle_at_top,#101828_0%,#070b14_55%,#04070d_100%)] text-[#E6EDF3]" : "belivay-portal min-h-screen bg-[#F4F7F5] text-slate-950"}>
       <div className="fixed inset-x-0 top-0 z-[1000] h-1 bg-white/5">
         <div
           className="h-full bg-[linear-gradient(90deg,#10B981,#6EE7B7)] transition-all duration-200"
@@ -2217,11 +2549,35 @@ export default function CourierDashboardPage() {
 
       <header className={theme === "dark" ? "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-500/10 bg-[linear-gradient(135deg,#02120d,#05261c_55%,#0b2f25)] px-3 shadow-[0_2px_22px_rgba(0,0,0,.4)] sm:gap-4 sm:px-4" : "fixed inset-x-0 top-1 z-[950] flex h-[58px] items-center gap-2 border-b border-emerald-200 bg-white px-3 shadow-[0_2px_22px_rgba(15,23,42,.10)] sm:gap-4 sm:px-4"}>
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          {/* Le tiroir s'ouvrant depuis la gauche, son bouton d'appel reste de
+              ce cote : le geste et l'animation vont dans le meme sens. */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(true)}
+            aria-label="Ouvrir le menu"
+            aria-haspopup="dialog"
+            aria-expanded={drawerOpen}
+            className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition active:scale-90 lg:hidden ${
+              theme === "dark" ? "text-white hover:bg-white/10" : "text-emerald-800 hover:bg-emerald-50"
+            }`}
+          >
+            <MenuIcon size={21} strokeWidth={2.2} />
+            {/* Le menu porte seul les alertes des destinations hors barre du
+                bas : un point suffit a dire « il y a quelque chose la-dedans »
+                sans encombrer l'icone d'un compteur. */}
+            {hiddenBadgeTotal > 0 ? (
+              <span
+                aria-hidden
+                className="absolute right-1 top-1 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-[#05261c]"
+              />
+            ) : null}
+          </button>
+
           <div className="flex h-9 flex-shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 px-1.5 sm:h-10 sm:rounded-2xl sm:px-2">
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
-              className="h-6 w-auto sm:h-7"
+              className="h-8 w-auto sm:h-9"
               style={{ filter: "brightness(0) saturate(100%) invert(63%) sepia(54%) saturate(673%) hue-rotate(104deg) brightness(93%) contrast(92%)" }}
             />
           </div>
@@ -2231,16 +2587,60 @@ export default function CourierDashboardPage() {
           </div>
         </div>
 
-        <button
-          type="button"
-          onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
-          className="ml-auto flex h-9 flex-shrink-0 items-center justify-center rounded-full border border-white/15 bg-white/10 px-2.5 text-[10px] font-black tracking-[0.12em] text-white transition hover:bg-white/15 md:hidden"
-          aria-label="Changer de langue"
-        >
-          {i18n.language.startsWith("fr") ? "FR" : "EN"}
-        </button>
+        {/* ── Reglages telephone/tablette ────────────────────────────────────
+            Notifications, theme, langue et compte, dans le meme ordre que les
+            autres portails BelivaY. Le bouton menu vit a l'extreme gauche du
+            bandeau, du cote d'ou sort le tiroir. */}
+        <div className="ml-auto flex items-center gap-1 lg:hidden">
+          <button
+            type="button"
+            onClick={() => setTab("notifications")}
+            aria-label="Notifications"
+            className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
+          >
+            <Bell size={16} />
+            {unreadNotifications > 0 ? (
+              <span className="absolute right-[-2px] top-[-2px] flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-emerald-400 px-1 text-[10px] font-black leading-none text-[#022c22]">
+                {unreadNotifications > 99 ? "99+" : unreadNotifications}
+              </span>
+            ) : null}
+          </button>
 
-        <div className="ml-auto hidden items-center gap-2 md:flex">
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label="Changer de theme"
+            className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
+            className={`flex h-9 flex-shrink-0 items-center justify-center rounded-full border px-2.5 text-[10px] font-black tracking-[0.12em] transition active:scale-90 ${headerButton}`}
+            aria-label="Changer de langue"
+          >
+            {i18n.language.startsWith("fr") ? "FR" : "EN"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setProfileSheetOpen(true)}
+            aria-label="Mon compte"
+            aria-haspopup="dialog"
+            aria-expanded={profileSheetOpen}
+            className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-[11px] font-black text-white ring-1 ring-emerald-300/40 transition active:scale-90"
+          >
+            {user?.avatar_url ? (
+              <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+            ) : (
+              (user?.first_name?.[0] || user?.username?.[0] || "L").toUpperCase()
+            )}
+          </button>
+        </div>
+
+        <div className="ml-auto hidden items-center gap-2 lg:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
             {currentIsOnline ? "Disponible" : "Hors ligne"}
           </div>
@@ -2366,41 +2766,14 @@ export default function CourierDashboardPage() {
         </div>
       ) : null}
 
-      <aside className="fixed bottom-0 left-0 top-[59px] hidden w-[232px] border-r border-emerald-500/8 bg-[#0A1020] lg:block">
-        <div className="m-4 rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-          <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-lg font-extrabold text-white">
-            {user?.first_name?.[0] || user?.username?.[0] || "L"}
-          </div>
-          <div className="font-bold text-white">
-            {user?.first_name || "Livreur"} {user?.last_name || ""}
-          </div>
-          <div className="mt-1 text-[12px] text-emerald-300">
-            {courierProfile ? `${currentCourierCity} · ${VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}` : "Demande a finaliser"}
-          </div>
-        </div>
-
-        <nav className="px-3 pb-8">
-          {menu.map((item) => {
-            const Icon = item.icon;
-            const active = tab === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setTab(item.id)}
-                className={`mb-1 flex w-full items-center gap-3 rounded-[12px] px-4 py-3 text-left text-[13px] font-semibold transition ${
-                  active
-                    ? "border-l-[3px] border-emerald-300 bg-emerald-500/10 text-emerald-300"
-                    : "text-[#8B949E] hover:bg-white/5 hover:text-white"
-                }`}
-              >
-                <Icon size={16} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-      </aside>
+      <CourierSidebar
+        activeTab={tab}
+        onSelect={setTab}
+        onLogout={handleLogout}
+        badges={navBadges}
+        courier={courierIdentity}
+        footer={COURIER_FOOTER}
+      />
 
       <main className="px-4 pb-24 pt-[84px] lg:ml-[232px] lg:pb-12 lg:px-6">
         {booting ? (
@@ -2416,38 +2789,44 @@ export default function CourierDashboardPage() {
         ) : (
           <div className="mx-auto max-w-[1180px] space-y-5">
             <EvidenceRequestInbox accent="#10B981" />
-            <section className="overflow-hidden rounded-[28px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-6 shadow-[0_20px_56px_rgba(0,0,0,.32)]">
-              <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-                <div>
-                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[11px] font-black uppercase tracking-[0.16em] text-emerald-300">
+            {/* Bandeau de contexte. Sur telephone il se resserre — coins et
+                marges reduits, titre plus court, trois faits en une seule
+                rangee — pour ne pas repousser le contenu du jour sous la ligne
+                de flottaison. Rien n'est retire : tout reste lisible, en plus
+                dense. */}
+            <section className="overflow-hidden rounded-[22px] border border-emerald-500/10 bg-[linear-gradient(135deg,#0E1522,#10251d_58%,#111827)] p-4 shadow-[0_20px_56px_rgba(0,0,0,.32)] sm:rounded-[28px] sm:p-6">
+              <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between lg:gap-6">
+                <div className="min-w-0">
+                  <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:text-[11px] sm:tracking-[0.16em]">
                     <ShieldCheck size={13} />
                     Acteur livreur
                   </div>
-                  <h1 className="text-[30px] font-extrabold tracking-tight text-white">
+                  <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[30px]">
                     {TAB_LABELS[tab]}
                   </h1>
-                  <p className="mt-2 max-w-[760px] text-[14px] leading-7 text-[#8B949E]">
+                  <p className="mt-2 max-w-[760px] text-[12.5px] leading-6 text-[#8B949E] sm:text-[14px] sm:leading-7">
                     Cette interface reprend les vues utiles du modele BelivaY Livreur: operations, preuves,
                     communication supervisee, navigation et suivi metier du livreur.
                   </p>
                 </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Ville</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">{currentCourierCity}</div>
-                  </div>
-                  <div className="rounded-[20px] border border-green-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Vehicule</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-green-300">
-                      {VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle}
+                {/* Trois faits courts (une ville, un vehicule, un etat) : en
+                    rangee de trois des le telephone, ils tiennent sur une ligne
+                    au lieu d'ajouter trois blocs a faire defiler. */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:flex-shrink-0">
+                  {([
+                    ["Ville", currentCourierCity, "text-emerald-300", "border-emerald-500/10"],
+                    ["Vehicule", VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle, "text-green-300", "border-green-500/10"],
+                    ["Statut", currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending", "text-emerald-300", "border-emerald-500/10"],
+                  ] as Array<[string, string, string, string]>).map(([label, value, tone, border]) => (
+                    <div key={label} className={`rounded-[16px] border bg-white/5 p-3 sm:rounded-[20px] sm:p-4 ${border}`}>
+                      <div className="text-[9px] uppercase leading-tight tracking-[0.1em] text-[#8B949E] sm:text-[11px] sm:tracking-[0.16em]">
+                        {label}
+                      </div>
+                      <div className={`mt-1.5 break-words text-[14px] font-extrabold leading-tight sm:mt-2 sm:text-[22px] ${tone}`}>
+                        {value}
+                      </div>
                     </div>
-                  </div>
-                  <div className="rounded-[20px] border border-emerald-500/10 bg-white/5 p-4">
-                    <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Statut</div>
-                    <div className="mt-2 text-[22px] font-extrabold text-emerald-300">
-                      {currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending"}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             </section>
@@ -2457,55 +2836,71 @@ export default function CourierDashboardPage() {
         )}
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f]/95 shadow-[0_-8px_30px_rgba(0,0,0,.35)] backdrop-blur lg:hidden">
-        <div className="flex h-[58px] items-center px-2">
-          {mobileTabs.map((item) => {
-            const Icon = item.icon;
-            const active = tab === item.id;
-            return (
-              <button key={item.id} type="button" onClick={() => { setTab(item.id); setMoreOpen(false); }} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
-                <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${active ? "bg-emerald-500 text-[#022c22]" : "text-[#8B949E]"}`}>
-                  <Icon size={17} />
-                </span>
-                <span className={`max-w-full truncate text-[8px] font-bold ${active ? "text-emerald-300" : "text-[#8B949E]"}`}>{item.label}</span>
-              </button>
-            );
-          })}
-          <button type="button" onClick={() => setMoreOpen(true)} className="flex flex-1 flex-col items-center justify-center gap-[3px]">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl text-[#8B949E]">
-              <MoreHorizontal size={17} />
-            </span>
-            <span className="text-[8px] font-bold text-[#8B949E]">Plus</span>
-          </button>
-        </div>
-        <div className="h-[env(safe-area-inset-bottom)]" />
-      </nav>
+      {/* Barre du bas : uniquement les quatre raccourcis du travail
+          quotidien. Le reste du menu s'ouvre par l'icone du bandeau — une
+          seule liste de destinations, donc un seul endroit ou le livreur
+          apprend a chercher. */}
+      <CourierMobileNav activeTab={tab} onSelect={setTab} badges={navBadges} />
 
-      <div
-        onClick={() => setMoreOpen(false)}
-        className={`fixed inset-0 z-[1300] bg-black/60 backdrop-blur-sm transition lg:hidden ${moreOpen ? "opacity-100" : "pointer-events-none opacity-0"}`}
+      <CourierDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        activeTab={tab}
+        onSelect={(next) => {
+          setDrawerOpen(false);
+          setTab(next);
+        }}
+        onLogout={handleLogout}
+        badges={navBadges}
+        courier={courierIdentity}
+        footer={COURIER_FOOTER}
       />
-      <div className={`fixed inset-x-0 bottom-0 z-[1301] max-h-[72vh] overflow-y-auto rounded-t-[24px] border-t border-emerald-500/15 bg-[#0A1020] pb-[calc(18px+env(safe-area-inset-bottom))] shadow-[0_-18px_60px_rgba(0,0,0,.45)] transition-transform lg:hidden ${moreOpen ? "translate-y-0" : "translate-y-full"}`}>
-        <div className="mx-auto my-3 h-1 w-9 rounded-full bg-white/15" />
-        {mobileMoreTabs.map((item) => {
-          const Icon = item.icon;
-          const active = tab === item.id;
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => { setTab(item.id); setMoreOpen(false); }}
-              className={`flex w-full items-center gap-3 px-5 py-3 text-left ${active ? "text-emerald-300" : "text-white/75"}`}
-            >
-              <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${active ? "bg-emerald-500/20" : "bg-white/5"}`}>
-                <Icon size={18} />
-              </span>
-              <span className="flex-1 text-[13px] font-bold">{item.label}</span>
-              <ChevronRight size={14} className="text-white/35" />
-            </button>
-          );
-        })}
-      </div>
+
+      {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
+          le tiroir de navigation vient de gauche, les deux gestes restent donc
+          distincts meme quand les deux panneaux ont ete appris. */}
+      <CourierProfileSheet
+        open={profileSheetOpen}
+        onClose={() => setProfileSheetOpen(false)}
+        locale={i18n.language.startsWith('en') ? 'en' : 'fr'}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onChangeLanguage={(next) => void updateCourierSettings('language', { preferred_language: next })}
+        courier={{
+          name: courierIdentity.name,
+          username: user?.username || "",
+          email: user?.email || "",
+          city: courierIdentity.city,
+          vehicle: courierIdentity.vehicle,
+          zones: currentCourierZones,
+          accountStatus: isApprovedCourier ? "Approuve" : "En validation",
+          online: currentIsOnline,
+          trustScore: dashboard
+            ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}`
+            : null,
+          // Le certificat n'existe qu'une fois le dossier approuve : avant, le
+          // QR renverrait vers une fiche livreur qui n'est pas encore publique.
+          courierRef:
+            isApprovedCourier && courierProfile?.id
+              ? `BV-LIV-${String(courierProfile.id).padStart(4, "0")}`
+              : "",
+          memberSince: courierProfile?.created_at || null,
+        }}
+        avatarUrl={user?.avatar_url || undefined}
+        onAvatarFile={setAvatarFile}
+        gpsGranted={currentGpsGranted}
+        cameraGranted={currentCameraGranted}
+        onToggleGps={() => void updateCourierSettings('gps', { gps_permission_granted: !currentGpsGranted })}
+        onToggleCamera={() => void updateCourierSettings('camera', { camera_permission_granted: !currentCameraGranted })}
+        savingLabel={settingsSaving}
+        onLogout={handleLogout}
+        onNavigate={(next) => {
+          setProfileSheetOpen(false);
+          setTab(next);
+        }}
+        onFeedback={setSettingsFeedback}
+        footer={COURIER_FOOTER}
+      />
       {avatarFile ? (
         <AvatarCropDialog
           file={avatarFile}

@@ -571,30 +571,47 @@ def call_openrouter(payload: dict, actor=None) -> dict:
         "Ne fournis jamais un numéro de téléphone, une adresse email ou un canal de messagerie qui ne figure pas dans le contexte. "
         "N'affirme jamais l'existence d'un SMS, email, menu, bouton, messagerie, ticket ou action si le contexte ne le confirme pas. "
         "Réponds dans la langue utilisée par l'utilisateur, en restant centré sur BelivaY. "
+        "Les messages precedents de cette conversation sont fournis comme de vrais tours de dialogue : "
+        "reste concentre sur le produit ou le sujet deja discute tant que l'utilisateur ne change pas "
+        "clairement de sujet lui-meme. Ne recommence pas une recherche generique si la question qui suit "
+        "porte encore sur le meme produit ou la meme demande. "
         "Retourne strictement un JSON avec les clés answer, suggestions, followUp. "
         "suggestions doit être un tableau de maximum 3 objets {productId, title, reason}. "
         "followUp doit être un tableau de 3 questions courtes."
     )
 
-    user_prompt = {
-        "question": payload.get("message", ""),
+    # Le frontend envoie l'historique comme de vrais tours (role/content) et
+    # duplique la question courante en dernier element : on l'exclut pour ne
+    # pas la repeter, puis on construit un vrai fil de discussion multi-tours
+    # au lieu de noyer l'historique dans un unique blob JSON — c'est ce qui
+    # faisait perdre le fil au modele apres quelques echanges.
+    current_message = payload.get("message", "")
+    history_turns = [
+        item for item in history
+        if isinstance(item, dict) and item.get("role") in ("user", "assistant") and item.get("content")
+    ]
+    if history_turns and history_turns[-1].get("role") == "user" and history_turns[-1].get("content") == current_message:
+        history_turns = history_turns[:-1]
+
+    current_context = {
+        "question": current_message,
         "portal_role": payload.get("portalRole", "client"),
         "current_path": payload.get("path", ""),
         "current_page": payload.get("routeLabel", ""),
         "selected_category": payload.get("selectedCategoryName", "Toutes les catégories"),
         "filters": payload.get("filters", {}),
-        "history": history,
         "products": visible_products,
     }
+
+    messages = [{"role": "system", "content": system_prompt}]
+    messages.extend({"role": item["role"], "content": item["content"]} for item in history_turns)
+    messages.append({"role": "user", "content": json.dumps(current_context, ensure_ascii=False)})
 
     body = json.dumps(
         {
             "model": model,
             "response_format": {"type": "json_object"},
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": json.dumps(user_prompt, ensure_ascii=False)},
-            ],
+            "messages": messages,
             "temperature": settings.OPENROUTER_TEMPERATURE,
             "max_tokens": settings.OPENROUTER_MAX_TOKENS,
         }

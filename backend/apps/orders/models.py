@@ -17,6 +17,10 @@ from datetime import timedelta
 from apps.catalog.models import Product
 
 
+def dispute_evidence_retention_deadline():
+    return timezone.now() + timedelta(days=PlatformSettings.get_settings().dispute_evidence_retention_days)
+
+
 class TimeStampedModel(models.Model):
     """Modèle abstrait — timestamps automatiques."""
     created_at = models.DateTimeField(auto_now_add=True)
@@ -101,6 +105,13 @@ class Order(TimeStampedModel):
         verbose_name="Mode de livraison",
     )
     city    = models.CharField(max_length=50)
+    region  = models.CharField(max_length=50, blank=True, verbose_name="Région")
+    district = models.CharField(max_length=100, blank=True, verbose_name="Quartier")
+    zone = models.ForeignKey(
+        "shipping.Zone", on_delete=models.SET_NULL, null=True, blank=True, related_name="orders",
+        verbose_name="Zone de livraison",
+        help_text="Resolue depuis city+district au checkout (Zone.match). None si aucune zone ne couvre ce quartier.",
+    )
     address = models.CharField(max_length=255)
     address_precision = models.JSONField(
         blank=True,
@@ -108,7 +119,39 @@ class Order(TimeStampedModel):
         verbose_name="Analyse de précision adresse",
         help_text="Adresse structurée pour aider le livreur: quartier, repères, score et instruction.",
     )
+    delivery_latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Latitude de livraison",
+        help_text="Position GPS donnée par le client au checkout, en complément de l'adresse.",
+    )
+    delivery_longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Longitude de livraison",
+    )
     note    = models.TextField(blank=True, null=True)
+
+    # Point relais choisi par l'acheteur au checkout (retrait via reseau de
+    # points relais partenaires — distinct des boutiques BelivaY en dur).
+    # Reserve la capacite du relais des la commande (RelayParcel EXPECTED).
+    relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile",
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name="orders",
+        verbose_name="Point relais choisi",
+    )
+
+    # Tiers autorise a retirer le colis a la place de l'acheteur (retrait
+    # boutique/point relais). Le livreur/point relais verifie ce nom avant
+    # de remettre le colis a une personne autre que le client.
+    authorized_pickup_name = models.CharField(
+        max_length=120, blank=True, default="",
+        verbose_name="Nom du tiers autorisé au retrait",
+    )
+    authorized_pickup_phone = models.CharField(
+        max_length=32, blank=True, default="",
+        verbose_name="Téléphone du tiers autorisé au retrait",
+    )
 
     # Statuts
     payment_status = models.CharField(
@@ -150,6 +193,15 @@ class Order(TimeStampedModel):
         null=True, blank=True,
         verbose_name="Délai de réponse vendeur",
     )
+
+    # Bon de préparation — 4h ouvrées entre l'accusé de réception vendeur et
+    # "prêt pour enlèvement", avec escalier (proposition validée, non écrite
+    # dans les PDF de référence) : rappel à 4h, alerte admin à 6h,
+    # réattribution signalée après 2 créneaux supplémentaires.
+    prep_deadline = models.DateTimeField(null=True, blank=True, verbose_name="Délai de préparation (bon de préparation)")
+    prep_reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    prep_admin_alert_sent_at = models.DateTimeField(null=True, blank=True)
+    prep_reassignment_flagged_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]
@@ -306,6 +358,7 @@ class Dispute(models.Model):
         ("NOT_AS_DESCRIBED", "Non conforme à la description"),
         ("COUNTERFEIT",      "Suspicion de contrefaçon"),
         ("REFUND_REQUEST",   "Demande de remboursement"),
+        ("PAYMENT_NOT_RECOGNIZED", "Paiement non reconnu"),
         ("OTHER",            "Autre"),
     ]
     STATUS_CHOICES = [
@@ -397,6 +450,14 @@ class Dispute(models.Model):
         help_text="Rempli uniquement si vendor_reply_type = COMPROMISE.",
     )
     vendor_replied_at      = models.DateTimeField(null=True, blank=True, verbose_name="Date réponse vendeur")
+    vendor_reply_deadline  = models.DateTimeField(
+        null=True, blank=True, verbose_name="Délai de réponse vendeur (48h)",
+        help_text="Démarre au contact vendeur (vendor_contacted=True), pas à l'ouverture du litige.",
+    )
+    silence_flagged_at     = models.DateTimeField(
+        null=True, blank=True, verbose_name="Signalé pour arbitrage sur silence",
+        help_text="Le vendeur n'a pas répondu sous 48h : arbitrage BelivaY sur pièces, présomption favorable à l'acheteur (pas un gain automatique).",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -467,6 +528,14 @@ class DisputeEvidence(models.Model):
         null=True,
         blank=True,
     )
+    message     = models.ForeignKey(
+        "DisputeMessage",
+        on_delete=models.SET_NULL,
+        related_name="evidences",
+        null=True,
+        blank=True,
+        help_text="Message du fil de discussion auquel cette photo était jointe, le cas échéant.",
+    )
     uploaded_by = models.ForeignKey(User, on_delete=models.CASCADE)
     evidence_type = models.CharField(max_length=16, choices=EvidenceType.choices, default=EvidenceType.PHOTO)
     uploader_role = models.CharField(max_length=20, blank=True)
@@ -475,12 +544,18 @@ class DisputeEvidence(models.Model):
     content_type = models.CharField(max_length=100, blank=True)
     size_bytes = models.PositiveBigIntegerField(default=0)
     sha256 = models.CharField(max_length=64, blank=True)
+    retain_until = models.DateTimeField(default=dispute_evidence_retention_deadline)
+    litigation_hold = models.BooleanField(default=False)
+    purged_at = models.DateTimeField(null=True, blank=True)
     created_at  = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ["created_at"]
         verbose_name = "Preuve Litige"
         verbose_name_plural = "Preuves Litiges"
+        indexes = [
+            models.Index(fields=["retain_until", "litigation_hold", "purged_at"]),
+        ]
 
     def __str__(self):
         return f"Preuve — Litige #{self.dispute.id}"
@@ -522,6 +597,89 @@ class DisputeEvidenceRequest(models.Model):
         return f"Demande preuve #{self.id} — Litige #{self.dispute_id}"
 
 
+class Return(models.Model):
+    """
+    Retour d'un article après livraison.
+
+    Distinct de Dispute : un Dispute sert à trancher un désaccord ; un Return
+    documente un retour déjà reconnu comme fondé (par le vendeur ou par un
+    arbitrage), avec son propre cycle logistique (dépôt/ramassage → réception
+    physique → inspection → remboursement).
+
+    Règle verrouillée : le remboursement (evenement RETURN_COMPLETED) ne se
+    déclenche JAMAIS à la simple demande — seulement après réception physique
+    + inspection du colis retourné (voir events_in.return_completed).
+    """
+
+    class Reason(models.TextChoices):
+        DAMAGED = "DAMAGED", "Article endommagé"
+        NOT_AS_DESCRIBED = "NOT_AS_DESCRIBED", "Non conforme à la description"
+        WRONG_ITEM = "WRONG_ITEM", "Mauvais article reçu"
+        COUNTERFEIT = "COUNTERFEIT", "Suspicion de contrefaçon"
+        OTHER = "OTHER", "Autre"
+
+    class Status(models.TextChoices):
+        REQUESTED = "REQUESTED", "Demande de retour"
+        APPROVED = "APPROVED", "Retour approuvé"
+        REJECTED = "REJECTED", "Retour rejeté"
+        AWAITING_DROPOFF = "AWAITING_DROPOFF", "En attente de dépôt/ramassage"
+        RECEIVED = "RECEIVED", "Colis reçu — inspection en cours"
+        REFUNDED = "REFUNDED", "Remboursé"
+        CLOSED_NO_REFUND = "CLOSED_NO_REFUND", "Clôturé sans remboursement"
+
+    class TransportMode(models.TextChoices):
+        RELAY_DROPOFF = "RELAY_DROPOFF", "Dépôt en point relais"
+        COURIER_PICKUP = "COURIER_PICKUP", "Ramassage à domicile"
+
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="returns")
+    order_item = models.ForeignKey(OrderItem, on_delete=models.CASCADE, related_name="returns")
+    requested_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name="requested_returns")
+    vendor = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="vendor_returns",
+        help_text="Vendeur du produit retourné, dérivé de order_item.",
+    )
+
+    reason = models.CharField(max_length=30, choices=Reason.choices)
+    description = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.REQUESTED)
+
+    transport_mode = models.CharField(
+        max_length=20, choices=TransportMode.choices, default=TransportMode.RELAY_DROPOFF,
+        help_text="Dépôt en point relais par défaut ; ramassage réservé aux colis encombrants.",
+    )
+    dropoff_relay_point = models.ForeignKey(
+        "accounts.RelayPointProfile", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="return_dropoffs",
+    )
+
+    reviewed_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="reviewed_returns",
+        help_text="Vendeur ou admin ayant approuvé/rejeté la demande initiale.",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    review_note = models.TextField(blank=True, default="")
+
+    received_at = models.DateTimeField(null=True, blank=True)
+    received_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="received_returns",
+        help_text="Point relais ou admin ayant constaté la réception physique du colis retourné.",
+    )
+    inspection_passed = models.BooleanField(null=True, blank=True)
+    inspection_note = models.TextField(blank=True, default="")
+    refund_amount_xaf = models.IntegerField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Retour"
+        verbose_name_plural = "Retours"
+
+    def __str__(self):
+        return f"Retour #{self.id} — Commande #{self.order_id}"
+
+
 class PlatformSettings(models.Model):
     """
     Configuration globale BelivaY — singleton (id=1).
@@ -560,19 +718,19 @@ class PlatformSettings(models.Model):
         verbose_name="Délai réponse vendeur (h)",
     )
     escrow_auto_confirm_h = models.PositiveIntegerField(
-        default=48,
+        default=96,
         verbose_name="Auto-confirmation escrow (h)",
-        help_text="Délai après livraison avant auto-confirmation sans litige.",
+        help_text="Délai après remise avant auto-confirmation sans litige. Verrouillé à 4 jours (96h) — Addendum Décisions v1.0 §3.1.",
     )
     escrow_release_h = models.PositiveIntegerField(
-        default=24,
+        default=72,
         verbose_name="Délai libération escrow (h)",
-        help_text="Délai entre confirmation et libération effective des fonds.",
+        help_text="Délai entre clôture du droit de retour (confirmation ou auto-confirmation) et libération effective des fonds. Verrouillé à J+3 (72h) — Addendum Décisions v1.0 §3.1.",
     )
     litige_window_days = models.PositiveIntegerField(
-        default=7,
+        default=4,
         verbose_name="Fenêtre litige (jours)",
-        help_text="Jours après livraison pendant lesquels l'acheteur peut ouvrir un litige.",
+        help_text="Jours après la remise pendant lesquels l'acheteur peut ouvrir un litige. Verrouillé à 4 jours, calé sur l'auto-confirmation — Addendum Décisions v1.0 §4.4.",
     )
     evidence_retention_days = models.PositiveIntegerField(
         default=8,
@@ -581,6 +739,15 @@ class PlatformSettings(models.Model):
         help_text=(
             "Délai après lequel une preuve de livraison (ShipmentEvidence) sans litige "
             "ouvert est purgée. Sans effet sur une preuve déjà gelée par un litige actif."
+        ),
+    )
+    dispute_evidence_retention_days = models.PositiveIntegerField(
+        default=60,
+        validators=[MinValueValidator(1)],
+        verbose_name="Conservation des preuves de litige (jours)",
+        help_text=(
+            "Délai après lequel une preuve jointe à un litige (DisputeEvidence) est "
+            "purgée automatiquement. Verrouillé à 60 jours — Addendum Décisions v1.0 §4.4."
         ),
     )
 

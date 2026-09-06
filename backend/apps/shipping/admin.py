@@ -3,7 +3,24 @@
 
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentMessage
+from .models import RelayParcel, Shipment, ShipmentEvent, ShipmentMessage, Zone
+
+
+@admin.register(Zone)
+class ZoneAdmin(admin.ModelAdmin):
+    list_display = ('name', 'city', 'tier', 'is_active', 'is_bootstrapping', 'surcharge_xaf')
+    list_filter = ('city', 'tier', 'is_active', 'is_bootstrapping')
+    search_fields = ('name', 'city')
+    fieldsets = (
+        (None, {'fields': ('name', 'city', 'tier', 'districts', 'is_active')}),
+        ('Majoration Vague 3', {'fields': ('surcharge_xaf',)}),
+        ('Créneaux (§5.1)', {'fields': (
+            'morning_slot_start', 'morning_slot_end', 'afternoon_slot_start', 'afternoon_slot_end',
+        )}),
+        ('Amorçage (§5.4)', {'fields': (
+            'is_bootstrapping', 'bootstrap_budget_xaf', 'bootstrap_target_colis_per_tournee', 'bootstrap_started_at',
+        )}),
+    )
 
 
 # ─── INLINE : Événements d'une livraison ─────────────────────────────────────

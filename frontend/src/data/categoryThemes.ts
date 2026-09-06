@@ -64,7 +64,7 @@ const THEME_SEEDS: Omit<CategoryTheme, "thumb">[] = [
     subtitle: "15 240 produits · 3 200 vendeurs certifiés",
     description:
       "L'intégralité de l'offre BelivaY, tous thèmes confondus : mode, électronique, beauté, maison, supermarché et bien plus. Paiement Mobile Money sécurisé par escrow, vendeurs vérifiés et livraison partout au Cameroun et en Afrique centrale.",
-    image: `https://images.unsplash.com/photo-1441986300917-64674bd600d8?${IMG}`,
+    image: `https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?${IMG}`,
     facets: ["Nouveautés", "Promotions", "Made in Cameroon", "Livraison 24h", "Coup de cœur"],
     vendors: "3 200",
     rating: "4.8 / 5",
@@ -262,7 +262,7 @@ export const CATEGORY_THEMES: CategoryTheme[] = THEME_SEEDS.map((seed) => ({
  * Hauteur commune au hero des pages catégorie et au carrousel de l'accueil.
  * Définie ici pour que les deux surfaces ne puissent pas diverger.
  */
-export const HERO_MIN_HEIGHT = "min-h-[300px] sm:min-h-[360px]";
+export const HERO_MIN_HEIGHT = "min-h-[196px] sm:min-h-[300px]";
 
 const THEMES_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
 

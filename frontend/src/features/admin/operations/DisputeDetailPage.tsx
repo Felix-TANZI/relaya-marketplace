@@ -195,7 +195,9 @@ export default function DisputeDetailPage() {
       showToast('Litige résolu', 'success');
       setShowResolve(false);
       await load();
-    } catch { showToast('Erreur lors de la résolution', 'error'); }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Erreur lors de la résolution', 'error');
+    }
     finally  { setActing(false); }
   };
 
@@ -405,22 +407,26 @@ export default function DisputeDetailPage() {
           {/* Note de résolution */}
           <div className="mb-4">
             <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>
-              Note de résolution (visible par le client)
+              Note de résolution (visible par le client) — 40 caractères minimum, arbitrage motivé
             </label>
             <textarea
               value={resolveForm.resolution_note}
               onChange={e => setResolveForm(f => ({ ...f, resolution_note: e.target.value }))}
               rows={3}
-              placeholder="Expliquez la décision prise…"
+              minLength={40}
+              placeholder="Expliquez la décision prise, avec les éléments qui la justifient…"
               className="w-full px-3 py-2.5 rounded-xl text-[13px] outline-none resize-none"
               style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}`, fontFamily: "'Plus Jakarta Sans',sans-serif" }}
               onFocus={e  => (e.target.style.borderColor = '#10B981')}
               onBlur={e   => (e.target.style.borderColor = T.inputBorder)}
             />
+            <p style={{ fontSize: 11, marginTop: 4, color: resolveForm.resolution_note.trim().length < 40 ? '#DC2626' : T.muted }}>
+              {resolveForm.resolution_note.trim().length}/40 caractères minimum
+            </p>
           </div>
           <div className="flex items-center gap-3">
-            <button onClick={handleResolve} disabled={acting}
-              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white"
+            <button onClick={handleResolve} disabled={acting || resolveForm.resolution_note.trim().length < 40}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
               {acting ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle size={13} />}
               Confirmer la résolution

@@ -18,10 +18,7 @@ export default function SellerPageComingSoon({ title, description }: Props) {
       >
         <Construction size={28} className="text-vendor-orange" />
       </div>
-      <h1
-        className="text-[22px] font-extrabold text-vendor-n900 dark:text-white mb-2"
-        style={{ fontFamily: 'Syne, Poppins, sans-serif' }}
-      >
+      <h1 className="text-[22px] font-extrabold text-vendor-n900 dark:text-white mb-2">
         {title}
       </h1>
       <p className="text-[13px] text-vendor-n500 max-w-xs leading-relaxed">

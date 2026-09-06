@@ -15,12 +15,15 @@ interface PromoCarouselProps {
   autoPlayMs?: number;
   /** Classes de hauteur du visuel — permet d'aligner le carrousel sur d'autres heros. */
   minHeightClass?: string;
+  /** Rayon des coins — « rounded-none » quand le carrousel remplit sa frame parente. */
+  roundedClass?: string;
 }
 
 export default function PromoCarousel({
   slides,
   autoPlayMs = 5000,
   minHeightClass = "min-h-[180px]",
+  roundedClass = "rounded-2xl",
 }: PromoCarouselProps) {
   const [current, setCurrent] = useState(0);
   const total = slides.length;
@@ -37,7 +40,7 @@ export default function PromoCarousel({
   }, [next, autoPlayMs]);
 
   return (
-    <div className="relative overflow-hidden rounded-2xl">
+    <div className={`relative overflow-hidden ${roundedClass}`}>
       {/* Track */}
       <div
         className="flex transition-transform duration-500 ease-out"

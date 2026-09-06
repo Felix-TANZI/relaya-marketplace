@@ -32,6 +32,7 @@ export interface Product {
   slug: string;
   description: string;
   short_description?: string;
+  faq?: { question: string; answer: string }[];
   price_xaf: number;
   compare_at_price?: number | null;
   promo_end_date?: string | null;
@@ -125,6 +126,7 @@ export interface MasterOffer {
   stock_quantity: number;
   is_active: boolean;
   short_description?: string;
+  faq?: { question: string; answer: string }[];
   real_image?: string | null;
 }
 

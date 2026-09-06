@@ -185,6 +185,15 @@ class RelayPointProfile(models.Model):
     address = models.CharField(max_length=255, blank=True, default="")
     relay_code = models.CharField(max_length=80, blank=True, default="")
     opening_hours = models.CharField(max_length=160, blank=True, default="")
+    latitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Latitude",
+        help_text="Position GPS du point relais, utilisee pour le routage acheteur (point le plus proche avec de la place).",
+    )
+    longitude = models.DecimalField(
+        max_digits=9, decimal_places=6, null=True, blank=True,
+        verbose_name="Longitude",
+    )
     storage_capacity = models.PositiveIntegerField(default=0)
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDING)
     is_active = models.BooleanField(default=True)
@@ -213,6 +222,24 @@ class UserProfile(models.Model):
     # Préférences
     newsletter_subscribed = models.BooleanField(default=True)
     sms_notifications = models.BooleanField(default=True)
+
+    # ── Fiabilité acheteur (IFA) — non-retrait au relais ────────────────────
+    # Addendum Décisions v1.0 §3.2 : baisse de l'IFA a chaque non-retrait
+    # (jamais de penalite monetaire au-dela des frais+garde). Un non-retrait
+    # repete bascule le compte en "prepaiement obligatoire" — champ prevu ici
+    # mais SANS levier d'application aujourd'hui : le systeme est deja 100%
+    # prepaye a chaque commande (aucun mode de paiement a la remise n'existe),
+    # donc ce flag est pour l'instant informatif/futur, pas encore applique
+    # a un flux de paiement alternatif.
+    non_retrait_count = models.PositiveIntegerField(
+        default=0,
+        verbose_name="Nombre de non-retraits au relais",
+    )
+    requires_prepayment = models.BooleanField(
+        default=False,
+        verbose_name="Compte basculé en prépaiement obligatoire",
+        help_text="Déclenché après non-retraits répétés — sans effet tant qu'aucun mode de paiement différé n'existe.",
+    )
 
         # ── Double authentification ──────────────────────────────────────────────
     two_factor_enabled = models.BooleanField(
@@ -443,22 +470,70 @@ class TrustScoreProfile(models.Model):
         VENDOR = "VENDOR", "Vendeur"
         COURIER = "COURIER", "Livreur"
         RELAY_POINT = "RELAY_POINT", "Point relais"
+        # IFA (V5.5 §6) : indice de fiabilité acheteur, usage strictement
+        # interne (jamais de Trust Score public côté acheteur) — throttling
+        # anti-abus et, si le COD est activé un jour, gating du paiement à
+        # la livraison. Ne jamais exposer ce role via une API publique.
+        BUYER = "BUYER", "Acheteur (IFA interne)"
 
     class Tier(models.TextChoices):
+        # Valeurs internes stables (utilisees par le plafond de valeur colis
+        # livreur, entre autres) — le libelle AFFICHE varie par role, voir
+        # get_role_tier_display() (Trust Score V5.5 : Bronze/Argent/Or/Platine
+        # pour le vendeur, Starter/Confirme/Expert pour le livreur,
+        # Starter/Confirme/Premium pour le relais).
         NEW = "NEW", "Nouveau"
         CONFIRMED = "CONFIRMED", "Confirmé"
         GOLD = "GOLD", "Or"
+        PLATINUM = "PLATINUM", "Platine"
+
+    # V5.5 : palier au-dessus de Or/Expert/Premium, atteignable uniquement
+    # par le vendeur (score >= 90 tenu 6 mois + audit).
+    ROLE_TIER_LABELS = {
+        Role.VENDOR: {"NEW": "Bronze", "CONFIRMED": "Argent", "GOLD": "Or", "PLATINUM": "Platine"},
+        Role.COURIER: {"NEW": "Starter", "CONFIRMED": "Confirmé", "GOLD": "Expert", "PLATINUM": "Expert"},
+        Role.RELAY_POINT: {"NEW": "Starter", "CONFIRMED": "Confirmé", "GOLD": "Premium", "PLATINUM": "Premium"},
+    }
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="trust_score_profiles")
     role = models.CharField(max_length=20, choices=Role.choices)
-    score = models.DecimalField(max_digits=5, decimal_places=2, default=70)
+    score = models.DecimalField(max_digits=5, decimal_places=2, default=50)
     tier = models.CharField(max_length=20, choices=Tier.choices, default=Tier.NEW)
     candidate_tier = models.CharField(max_length=20, choices=Tier.choices, blank=True, default="")
     candidate_since = models.DateTimeField(null=True, blank=True)
     veto_active = models.BooleanField(default=False)
     veto_reason = models.CharField(max_length=255, blank=True, default="")
+    audit_passed = models.BooleanField(
+        default=False,
+        help_text="Verification manuelle admin requise pour Or/Platine vendeur (V5.5). A renouveler par l'admin (trimestriel pour Platine).",
+    )
     breakdown = models.JSONField(default=dict, blank=True)
     sample_size = models.PositiveIntegerField(default=0)
+    volume = models.PositiveIntegerField(
+        default=0,
+        help_text="Commandes livrees (vendeur) / colis geres (relais) / courses terminees (livreur) — jauge les paliers V5.5.",
+    )
+
+    # Échelle de sanctions 1→4 (V5.5 §8). Le veto/gel existant (ci-dessus)
+    # sert de mécanique pour le niveau 3 ; ces champs portent l'état propre
+    # à l'échelle complète.
+    class SanctionLevel(models.IntegerChoices):
+        NONE = 0, "Aucune"
+        WARNING = 1, "Avertissement"
+        THROTTLING = 2, "Throttling"
+        SUSPENSION = 3, "Suspension"
+        BAN = 4, "Bannissement"
+
+    sanction_level = models.PositiveSmallIntegerField(choices=SanctionLevel.choices, default=SanctionLevel.NONE)
+    throttled_until = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Niveau 2 : visibilité/dispatch réduits jusqu'à cette date.",
+    )
+    frozen_until = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Niveau 3 : compte gelé jusqu'à cette date. À l'expiration, réhabilitation par re-cold-start (jamais restauration du score gelé).",
+    )
+
     calculated_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -470,15 +545,92 @@ class TrustScoreProfile(models.Model):
         ordering = ["role", "-score"]
 
     @property
+    def is_throttled(self):
+        return bool(self.throttled_until and timezone.now() < self.throttled_until)
+
+    @property
     def parcel_value_cap_xaf(self):
-        if self.tier == self.Tier.GOLD:
+        if self.tier in (self.Tier.GOLD, self.Tier.PLATINUM):
             return None
         if self.tier == self.Tier.CONFIRMED:
             return 250000
         return 75000
 
+    def get_role_tier_display(self, tier=None):
+        tier = tier or self.tier
+        return self.ROLE_TIER_LABELS.get(self.role, {}).get(tier, tier)
+
     def __str__(self):
         return f"{self.user.username} · {self.role} · {self.score}"
+
+
+class SanctionRecord(models.Model):
+    """
+    Journal des sanctions 1→4 (V5.5 §8) — un événement par palier appliqué,
+    jamais réécrit ni supprimé (traçabilité OHADA, comme le score lui-même).
+    """
+    profile = models.ForeignKey(TrustScoreProfile, on_delete=models.CASCADE, related_name="sanctions")
+    level = models.PositiveSmallIntegerField(choices=TrustScoreProfile.SanctionLevel.choices)
+    reason = models.TextField()
+    issued_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True, related_name="issued_sanctions",
+        help_text="Vide = déclenché automatiquement par le système (ex. véto anti-collusion).",
+    )
+    expires_at = models.DateTimeField(
+        null=True, blank=True,
+        help_text="Niveaux 2/3 : levée automatique prévue à cette date. Vide = niveau 1 (log) ou niveau 4 (permanent).",
+    )
+    lifted_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        verbose_name = "Sanction"
+        verbose_name_plural = "Sanctions"
+
+    def __str__(self):
+        return f"{self.profile.user.username} · niveau {self.level} · {self.created_at:%Y-%m-%d}"
+
+
+class PartnerBlacklist(models.Model):
+    """
+    Bannissement définitif (niveau 4) : bloque toute nouvelle inscription
+    sous la même identité. On stocke un hash, jamais la valeur en clair —
+    cette table n'a besoin que de comparer, pas de retrouver l'original.
+    """
+    class IdentifierType(models.TextChoices):
+        CNI = "CNI", "Pièce d'identité"
+        MOMO = "MOMO", "Numéro Mobile Money"
+        DEVICE = "DEVICE", "Empreinte appareil"
+
+    identifier_type = models.CharField(max_length=10, choices=IdentifierType.choices)
+    identifier_hash = models.CharField(max_length=64, db_index=True, help_text="SHA-256 de la valeur normalisée.")
+    reason = models.TextField()
+    sanction = models.ForeignKey(SanctionRecord, on_delete=models.SET_NULL, null=True, blank=True, related_name="blacklist_entries")
+    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["identifier_type", "identifier_hash"], name="unique_blacklist_identifier"),
+        ]
+        verbose_name = "Blacklist partenaire"
+        verbose_name_plural = "Blacklist partenaires"
+
+    def __str__(self):
+        return f"{self.identifier_type} · {self.identifier_hash[:12]}…"
+
+    @staticmethod
+    def hash_identifier(raw_value: str) -> str:
+        import hashlib
+        normalised = "".join(ch for ch in (raw_value or "").strip().upper() if ch.isalnum())
+        return hashlib.sha256(normalised.encode("utf-8")).hexdigest()
+
+    @classmethod
+    def is_blacklisted(cls, identifier_type: str, raw_value: str) -> bool:
+        if not raw_value:
+            return False
+        return cls.objects.filter(identifier_type=identifier_type, identifier_hash=cls.hash_identifier(raw_value)).exists()
 
 
 class PayoutAccount(models.Model):
@@ -609,3 +761,77 @@ class OTPCode(models.Model):
     def is_valid(self) -> bool:
         from django.utils import timezone
         return not self.is_used and self.expires_at > timezone.now()
+
+
+class RelayTrainingCompletion(models.Model):
+    """
+    Module de formation valide par un point relais.
+
+    Le tronc obligatoire conditionne l'activation du statut de partenaire : la
+    validation doit donc survivre au navigateur, d'ou un enregistrement serveur
+    plutot qu'un stockage local.
+    """
+
+    class Module(models.TextChoices):
+        RECEPTION = "reception", "Reception & garde des colis"
+        CNI = "cni", "Verification CNI & cross-check ANTIC"
+        STOCKAGE = "stockage", "Securite du stockage"
+        LITIGE = "litige", "Gerer un litige & le mediateur"
+        RELATION = "relation", "Relation acheteur & avis"
+        PIDGIN = "pidgin", "Service en Pidgin"
+
+    #: Modules du tronc obligatoire, requis pour activer le statut partenaire.
+    CORE_MODULES = (Module.RECEPTION, Module.CNI, Module.STOCKAGE)
+
+    #: Avantages credites a chaque module valide.
+    POINTS_PER_MODULE = 30
+
+    relay_point = models.ForeignKey(
+        RelayPointProfile,
+        on_delete=models.CASCADE,
+        related_name="training_completions",
+    )
+    module_key = models.CharField(max_length=30, choices=Module.choices)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-completed_at"]
+        verbose_name = "Module de formation valide"
+        verbose_name_plural = "Modules de formation valides"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["relay_point", "module_key"],
+                name="unique_training_module_per_relay_point",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.relay_point.name} - {self.module_key}"
+
+
+class AppRelease(models.Model):
+    """
+    Dernière version publiée de chaque appli partenaire, distribuée en dehors
+    du Play Store (lien direct depuis le portail web une fois le compte
+    approuvé). Une ligne par portail, modifiable depuis l'admin Django à
+    chaque nouvelle build — pas de mise à jour automatique via un store.
+    """
+
+    class Portal(models.TextChoices):
+        VENDOR = "VENDOR", "Vendeur"
+        COURIER = "COURIER", "Livreur"
+        DELIVERY_ORG = "DELIVERY_ORG", "Organisation de livraison"
+        RELAY_POINT = "RELAY_POINT", "Point relais"
+
+    portal = models.CharField(max_length=20, choices=Portal.choices, unique=True)
+    version = models.CharField(max_length=30, help_text="Ex. 1.2.0")
+    apk_url = models.URLField(max_length=500, help_text="Lien direct vers l'APK (heberge sur le domaine BelivaY, jamais un lien de stockage brut).")
+    release_notes = models.TextField(blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Version d'appli partenaire"
+        verbose_name_plural = "Versions d'applis partenaires"
+
+    def __str__(self):
+        return f"{self.get_portal_display()} v{self.version}"

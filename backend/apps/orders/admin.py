@@ -65,7 +65,7 @@ class OrderAdmin(admin.ModelAdmin):
             'fields': ('user', 'customer_email', 'customer_phone'),
         }),
         ('Livraison', {
-            'fields': ('city', 'address', 'note'),
+            'fields': ('city', 'district', 'zone', 'address', 'note'),
         }),
         ('Statuts', {
             'fields': ('payment_status', 'fulfillment_status', 'escrow_status'),
@@ -228,8 +228,14 @@ class DisputeAdmin(admin.ModelAdmin):
     actions = ['mark_vendor_contacted', 'mark_resolved', 'mark_closed']
 
     def mark_vendor_contacted(self, request, queryset):
-        count = queryset.filter(vendor_contacted=False).update(vendor_contacted=True)
-        self.message_user(request, f"{count} litige(s) : vendeur marqué contacté.")
+        # Le delai de reponse (3 postures : accepter / contester / proposer un
+        # arrangement) demarre au contact, pas a l'ouverture du litige — un
+        # vendeur ne peut pas rater un delai qu'il ignore encore.
+        count = queryset.filter(vendor_contacted=False).update(
+            vendor_contacted=True,
+            vendor_reply_deadline=timezone.now() + timezone.timedelta(hours=48),
+        )
+        self.message_user(request, f"{count} litige(s) : vendeur marqué contacté, réponse attendue sous 48h.")
     mark_vendor_contacted.short_description = "Marquer vendeur contacté"
 
     def mark_resolved(self, request, queryset):

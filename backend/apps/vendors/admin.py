@@ -49,7 +49,7 @@ class VendorProfileAdmin(admin.ModelAdmin):
         ('Identité', {
             'fields': (
                 'user', 'business_name', 'business_description',
-                'phone', 'address', 'city',
+                'phone', 'address', 'city', 'zone',
             ),
         }),
         ('Boutique publique', {

@@ -22,7 +22,6 @@ import {
 import type { LucideIcon } from "lucide-react";
 import CategorySidebar from "@/components/home/CategorySidebar";
 import ProductCard from "@/components/product/ProductCard";
-import TrustBannersStrip from "@/components/home/TrustBannersStrip";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
 import {
   CATEGORY_THEMES,
@@ -665,8 +664,6 @@ export default function CategoryThemePage() {
                 </div>
               </div>
             </section>
-
-            <TrustBannersStrip />
 
             {/* ═══ Grille produits ═══ */}
             <section className="rounded-[22px] border border-[#f1d2bb] bg-white p-3 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-4 dark:border-gray-800 dark:bg-gray-900">

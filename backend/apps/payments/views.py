@@ -24,6 +24,13 @@ def _sync_order_payment_status(tx):
         order.payment_status = new_status
         order.save(update_fields=["payment_status", "updated_at"])
 
+    if new_status == Order.PaymentStatus.PAID:
+        # Anti-collusion sous anonymat (V5.5 §9) : le même numéro Mobile
+        # Money ne doit jamais financer ET encaisser sur une même commande.
+        from apps.accounts.trust_score import apply_collusion_veto_for_order
+
+        apply_collusion_veto_for_order(order)
+
 
 @extend_schema(
     tags=["Payments"],

@@ -12,7 +12,7 @@ from django.db.models import Q
 
 from .models import (
     Order, OrderItem, Dispute, DisputeMessage, DisputeEvidenceRequest,
-    OrderHistory, PlatformSettings,
+    OrderHistory, PlatformSettings, Return,
 )
 from .serializers import (
     OrderCreateSerializer,
@@ -22,6 +22,8 @@ from .serializers import (
     DisputeMessageSerializer,
     DisputeMessageCreateSerializer,
     DisputeEvidenceRequestSerializer,
+    ReturnSerializer,
+    ReturnCreateSerializer,
 )
 from .evidence import create_evidence
 from apps.shipping.models import Shipment, ShipmentEvent
@@ -91,40 +93,21 @@ class OrderCreateView(generics.CreateAPIView):
 
         order = serializer.save()
 
-        # ── Lot 12 : éclatement du panier par vendeur (Option A) ──────────
-        # Une commande multi-vendeurs rend le litige et la libération de
-        # séquestre ambigus. On l'égrène en N commandes mono-vendeur, toutes
-        # couvertes par UNE seule intention de paiement.
-        #
-        # L'échec n'annule PAS la commande : elle reste créée et payable par
-        # l'ancien chemin. Mieux vaut une commande non éclatée qu'un panier
-        # perdu.
+        # ── Lot 12 (éclatement du panier en N commandes mono-vendeur) a été
+        # RETIRÉ de ce chemin d'appel. Il datait d'avant la règle mère "un
+        # colis par vendeur et par commande" (Regles_Systeme_DEV v2.0 §1) :
+        # OrderCreateSerializer.create(), juste au-dessus, crée déjà un
+        # Shipment par vendeur SUR CETTE MÊME commande. Appeler en plus
+        # apps.payments.bridge.checkout.checkout() ici arrachait les
+        # OrderItem des vendeurs 2..N vers de NOUVELLES commandes — laissant
+        # les Shipment déjà créés orphelins de leurs articles. L'erreur était
+        # avalée par un except large et ne s'est jamais manifestée en
+        # pratique, mais restait une bombe à retardement à chaque évolution
+        # du modèle Shipment. Le module apps.payments.bridge.checkout reste
+        # intact (et testé isolément) pour une éventuelle reprise future,
+        # une fois réconcilié avec le modèle multi-colis.
         orders = [order]
         payment_intent = None
-        try:
-            from apps.payments.bridge.checkout import checkout as _split_checkout
-
-            payer_msisdn = (
-                request.data.get("payer_msisdn")
-                or request.data.get("customer_phone")
-                or order.customer_phone
-            )
-            payer_operator = request.data.get("payer_operator", "")
-
-            orders, payment_intent = _split_checkout(
-                order,
-                payer_msisdn=payer_msisdn,
-                payer_operator=payer_operator,
-                idempotency_key=f"cart-{order.pk}",
-            )
-            order = orders[0]
-        except Exception:
-            import logging
-            logging.getLogger("apps.orders").exception(
-                "Éclatement du panier impossible pour la commande #%s. "
-                "La commande reste valide et payable par l'ancien chemin.",
-                order.pk,
-            )
 
         if request.user.is_authenticated:
             UserNotification.objects.create(
@@ -167,10 +150,23 @@ class OrderTrackingView(APIView):
 
     def get(self, request, id):
         order = get_user_order_or_404(request, id)
-        shipment = getattr(order, 'shipment', None)
-        if not shipment:
+        shipments = list(order.shipments.all().order_by('-updated_at'))
+        if not shipments:
             return Response({"detail": "No shipment found for this order"}, status=status.HTTP_404_NOT_FOUND)
-        return Response(ShipmentSerializer(shipment, context={"request": request}).data)
+
+        # Un colis par vendeur (regle mere) : une commande multi-vendeurs a
+        # plusieurs shipments. Le contrat API historique (un seul objet) est
+        # conserve pour ne pas casser le suivi acheteur existant — on expose
+        # le colis le plus actif en principal, et les autres en complement
+        # pour une UI multi-colis a construire plus tard.
+        primary = shipments[0]
+        data = ShipmentSerializer(primary, context={"request": request}).data
+        data["colis_count"] = len(shipments)
+        if len(shipments) > 1:
+            data["other_shipments"] = ShipmentSerializer(
+                shipments[1:], many=True, context={"request": request},
+            ).data
+        return Response(data)
 
 
 @extend_schema(
@@ -194,8 +190,26 @@ class MyOrdersView(generics.ListAPIView):
         return {**super().get_serializer_context(), "request": self.request}
 
 
+CANCEL_REASON_CHOICES = {
+    "CHEAPER_ELSEWHERE": "Trouvé moins cher ailleurs",
+    "CHANGED_MIND": "Changement d'avis",
+    "TOO_SLOW": "Délai trop long",
+    "ORDER_MISTAKE": "Erreur de commande",
+    "PAYMENT_ISSUE": "Problème de paiement",
+    "OTHER": "Autre",
+}
+
+
 @extend_schema(tags=["Orders"], summary="Annuler une commande client")
 class CancelOrderView(APIView):
+    """
+    Annulation gratuite — Addendum Décisions v1.0 §5.1 : possible uniquement
+    tant qu'AUCUN colis de la commande n'a été ramassé chez le vendeur.
+    Passé ce point, la commande suit le parcours de retour (§2), pas
+    l'annulation. Un flux de rétention (raison -> confirmation) est piloté
+    côté frontend ; ce endpoint n'exige la raison que pour traçabilité.
+    """
+
     permission_classes = [IsAuthenticated]
     serializer_class = OrderDetailSerializer
 
@@ -215,17 +229,34 @@ class CancelOrderView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        shipments = list(order.shipments.all())
+        already_picked_up = [
+            s for s in shipments
+            if s.status not in (Shipment.Status.CREATED, Shipment.Status.ASSIGNED)
+        ]
+        if already_picked_up:
+            return Response(
+                {"detail": "Au moins un colis a déjà été ramassé — cette commande ne peut plus être annulée gratuitement. Utilisez le parcours de retour après réception."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        reason_code = str(request.data.get("reason") or "OTHER").upper()
+        reason_label = CANCEL_REASON_CHOICES.get(reason_code, CANCEL_REASON_CHOICES["OTHER"])
+
         old_status = order.fulfillment_status
         order.cancel()
 
-        shipment = getattr(order, "shipment", None)
-        if shipment:
+        indemnified_couriers = []
+        for shipment in shipments:
+            if shipment.status == Shipment.Status.ASSIGNED and shipment.courier_id:
+                self._indemnify_courier(shipment, request.user)
+                indemnified_couriers.append(shipment.courier_id)
             shipment.status = Shipment.Status.CANCELLED
             shipment.save(update_fields=["status", "updated_at"])
             ShipmentEvent.objects.create(
                 shipment=shipment,
                 status=Shipment.Status.CANCELLED,
-                message="Commande annulee par le client",
+                message=f"Commande annulée par le client ({reason_label})",
                 location=order.city,
             )
 
@@ -237,11 +268,19 @@ class CancelOrderView(APIView):
             old_value=old_status,
             new_value=Order.FulfillmentStatus.CANCELLED,
         )
+        OrderHistory.objects.create(
+            order=order,
+            user=request.user,
+            action="Motif d'annulation",
+            field_name="cancel_reason",
+            old_value="",
+            new_value=reason_label,
+        )
 
         UserNotification.objects.create(
             user=request.user,
             title=f"Commande #{order.id} annulee",
-            message="Votre commande a bien ete annulee et retiree de vos commandes en cours.",
+            message="Votre commande a bien ete annulee. Remboursement intégral vers votre moyen de paiement d'origine.",
             notification_type=UserNotification.NotificationType.ORDER,
             action_url="/orders",
         )
@@ -263,6 +302,45 @@ class CancelOrderView(APIView):
 
         return Response(OrderDetailSerializer(order).data)
 
+    def _indemnify_courier(self, shipment, cancelled_by):
+        """
+        Indemnité course annulée (500 F, provisoire — Addendum Décisions
+        v1.0 §7/§10) : le livreur avait déjà accepté la course avant que la
+        commande soit annulée. Crée une demande de compensation — elle exige
+        une approbation par un tiers avant tout versement (même principe que
+        les remboursements : on crée, on n'exécute jamais automatiquement).
+        """
+        import logging
+
+        COURSE_CANCELLED_INDEMNITY_XAF = 500
+        try:
+            from apps.payments.bridge.actors import partner_payee_for_user
+            from apps.payments.settlements.services import create_adjustment
+            from apps.payments.domain.enums import AdjustmentCategory, AdjustmentDirection
+
+            payee = partner_payee_for_user(shipment.courier.user)
+            if payee is None:
+                logging.getLogger("apps.orders").warning(
+                    "Indemnité course annulée non créée (pas de compte financier) — livreur #%s, commande #%s.",
+                    shipment.courier_id, shipment.order_id,
+                )
+                return
+            create_adjustment(
+                payee=payee,
+                direction=AdjustmentDirection.DEBIT.value,
+                category=AdjustmentCategory.COMPENSATION.value,
+                amount_xaf=COURSE_CANCELLED_INDEMNITY_XAF,
+                reason=f"Course annulée après acceptation — commande #{shipment.order_id}, colis #{shipment.id}.",
+                created_by=cancelled_by,
+                source_order_id=shipment.order_id,
+                source_event="ORDER_CANCELLED_AFTER_COURIER_ACCEPTED",
+            )
+        except Exception:
+            logging.getLogger("apps.orders").exception(
+                "Indemnité course annulée non créée pour le livreur #%s, commande #%s.",
+                shipment.courier_id, shipment.order_id,
+            )
+
 
 @extend_schema(tags=["Orders"], summary="Confirmer la reception d'une commande")
 class ConfirmReceiptView(APIView):
@@ -282,12 +360,19 @@ class ConfirmReceiptView(APIView):
             )
 
         old_status = order.fulfillment_status
-        shipment, _ = Shipment.objects.get_or_create(order=order)
+        shipments = list(order.shipments.all())
+        if not shipments:
+            shipments = [Shipment.objects.create(order=order)]
 
         if order.fulfillment_status == Order.FulfillmentStatus.DELIVERED:
             submitted_code = str(request.data.get("code", "")).strip()
-            expected_code = shipment.ensure_receipt_confirmation_code()
-            if not submitted_code or submitted_code != expected_code:
+            # Un colis par vendeur : le code soumis doit correspondre a l'UN
+            # des colis de cette commande — celui-la est confirme.
+            shipment = next(
+                (s for s in shipments if submitted_code and submitted_code == s.ensure_receipt_confirmation_code()),
+                None,
+            )
+            if not shipment:
                 return Response(
                     {
                         "detail": "Code de confirmation invalide. Demandez le code au livreur.",
@@ -295,15 +380,34 @@ class ConfirmReceiptView(APIView):
                     },
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            order.buyer_confirm()
-        shipment.status = Shipment.Status.DELIVERED
-        shipment.save(update_fields=['status', 'updated_at'])
-        ShipmentEvent.objects.create(
-            shipment=shipment,
-            status=Shipment.Status.DELIVERED,
-            message="Reception confirmee par le client",
-            location=order.city,
-        )
+            shipment.status = Shipment.Status.DELIVERED
+            shipment.buyer_confirmed_at = timezone.now()
+            shipment.save(update_fields=['status', 'buyer_confirmed_at', 'updated_at'])
+            ShipmentEvent.objects.create(
+                shipment=shipment,
+                status=Shipment.Status.DELIVERED,
+                message="Reception confirmee par le client",
+                location=order.city,
+            )
+            # La liberation de l'escrow (evenement plus bas) reste au niveau
+            # commande — elle n'intervient qu'une fois TOUS les colis
+            # confirmes, jamais sur la confirmation d'un seul (multi-vendeur).
+            all_confirmed = all(
+                s.id == shipment.id or s.buyer_confirmed_at is not None
+                for s in shipments
+            )
+            if all_confirmed:
+                order.buyer_confirm()
+        else:
+            for shipment in shipments:
+                shipment.status = Shipment.Status.DELIVERED
+                shipment.save(update_fields=['status', 'updated_at'])
+                ShipmentEvent.objects.create(
+                    shipment=shipment,
+                    status=Shipment.Status.DELIVERED,
+                    message="Reception confirmee par le client",
+                    location=order.city,
+                )
 
         OrderHistory.objects.create(
             order=order,
@@ -341,6 +445,35 @@ class ConfirmReceiptView(APIView):
             )
 
         return Response(OrderDetailSerializer(order).data)
+
+
+@extend_schema(
+    tags=["Orders"],
+    summary="Prolonger une fois la garde d'un colis en attente de retrait au relais",
+)
+class ExtendRelayGardeView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, id):
+        from apps.shipping.models import RelayParcel
+
+        order = get_user_order_or_404(request, id)
+        parcel = RelayParcel.objects.filter(
+            shipment__order=order,
+            status__in=[RelayParcel.Status.RECEIVED, RelayParcel.Status.STORED],
+        ).first()
+        if not parcel:
+            return Response({"detail": "Aucun colis en attente de retrait pour cette commande."}, status=status.HTTP_404_NOT_FOUND)
+        if parcel.garde_extended:
+            return Response({"detail": "La prolongation de garde a deja ete utilisee pour ce colis."}, status=status.HTTP_400_BAD_REQUEST)
+        if timezone.now() >= parcel.garde_deadline:
+            return Response({"detail": "Le delai de garde est deja depasse."}, status=status.HTTP_400_BAD_REQUEST)
+
+        parcel.garde_extended = True
+        parcel.save(update_fields=["garde_extended", "updated_at"])
+
+        from apps.shipping.serializers import RelayParcelSerializer
+        return Response(RelayParcelSerializer(parcel, context={"request": request}).data)
 
 
 @extend_schema(tags=["Orders"], summary="Lister ou ouvrir un litige pour une commande")
@@ -386,9 +519,18 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
         serializer.is_valid(raise_exception=True)
         files = request.FILES.getlist("files") or request.FILES.getlist("file")
         reason = serializer.validated_data.get("reason")
-        if reason in {"DAMAGED", "WRONG_ITEM", "NOT_AS_DESCRIBED", "COUNTERFEIT"} and not files:
+        # Litige guide par motif — Addendum Decisions v1.0 §4 : nombre de
+        # preuves photo minimal exige selon le motif declare.
+        min_files_by_reason = {
+            "DAMAGED": 2,
+            "NOT_AS_DESCRIBED": 2,
+            "COUNTERFEIT": 2,
+            "WRONG_ITEM": 1,
+        }
+        min_files = min_files_by_reason.get(reason, 0)
+        if len(files) < min_files:
             return Response(
-                {"files": "Ajoutez au moins une photo ou un document pour ce motif."},
+                {"files": f"Ajoutez au moins {min_files} photo(s) ou document(s) pour ce motif."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
         order_item = serializer.validated_data.get("order_item")
@@ -480,6 +622,108 @@ class OrderDisputeListCreateView(generics.ListCreateAPIView):
         return Response(DisputeSerializer(dispute, context={"request": request}).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(tags=["Orders"], summary="Lister/creer un retour pour une commande")
+class OrderReturnListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+
+    def get_order(self):
+        return get_user_order_or_404(self.request, self.kwargs['id'])
+
+    def get_queryset(self):
+        return Return.objects.filter(order=self.get_order()).select_related(
+            'order_item', 'vendor', 'dropoff_relay_point',
+        )
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return ReturnCreateSerializer
+        return ReturnSerializer
+
+    def create(self, request, *args, **kwargs):
+        order = self.get_order()
+        platform_settings = PlatformSettings.get_settings()
+        return_window_days = max(1, getattr(platform_settings, "litige_window_days", 7))
+        allowed_statuses = [
+            Order.FulfillmentStatus.DELIVERED,
+            Order.FulfillmentStatus.BUYER_CONFIRMED,
+            Order.FulfillmentStatus.AUTO_CONFIRMED,
+        ]
+        if order.fulfillment_status not in allowed_statuses:
+            return Response(
+                {"detail": "Le retour s'ouvre seulement apres reception du colis."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        expires_at = order.updated_at + timezone.timedelta(days=return_window_days)
+        if timezone.now() > expires_at:
+            return Response(
+                {"detail": f"Le delai de {return_window_days} jour(s) apres reception est depasse pour cette commande."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        order_item = serializer.validated_data.get("order_item")
+        if order_item.order_id != order.id:
+            return Response(
+                {"order_item": "Cet article n'appartient pas a cette commande."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if Return.objects.filter(
+            order=order, order_item=order_item, requested_by=request.user,
+        ).exclude(status__in=["REJECTED", "CLOSED_NO_REFUND"]).exists():
+            return Response(
+                {"detail": "Un retour est deja en cours pour cet article."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return_obj = Return.objects.create(
+            order=order,
+            order_item=order_item,
+            requested_by=request.user,
+            vendor=order_item.product.vendor,
+            reason=serializer.validated_data["reason"],
+            description=serializer.validated_data.get("description", ""),
+            transport_mode=serializer.validated_data.get("transport_mode") or Return.TransportMode.RELAY_DROPOFF,
+        )
+
+        UserNotification.objects.create(
+            user=request.user,
+            title=f"Retour demande · commande #{order.id}",
+            message="Votre demande de retour a ete transmise au vendeur. Si elle est validee, le renvoi est gratuit pour vous.",
+            notification_type=UserNotification.NotificationType.ORDER,
+            action_url=f"/orders/{order.id}",
+        )
+        if return_obj.vendor_id:
+            UserNotification.objects.create(
+                user_id=return_obj.vendor_id,
+                title=f"Demande de retour · commande #{order.id}",
+                message=f"Un acheteur demande a retourner un article ({return_obj.get_reason_display()}). A examiner.",
+                notification_type=UserNotification.NotificationType.ORDER,
+                action_url="/seller/disputes",
+            )
+
+        # Gele le sequestre de cette commande le temps du retour — meme
+        # mecanique que pour un litige (P9 : le financier ne juge pas,
+        # il consomme l'evenement).
+        try:
+            from apps.payments.bridge import events_in
+            events_in.return_initiated(
+                order_id=order.id,
+                reason=return_obj.reason or "Retour demande par l'acheteur.",
+                event_id=f"return-{return_obj.id}-initiated",
+                emitter="apps.orders.OrderReturnListCreateView",
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Evenement de retour non transmis pour la commande #%s.",
+                order.id,
+            )
+
+        return Response(ReturnSerializer(return_obj, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+
 @extend_schema(tags=["Orders"], summary="Ajouter un message a un litige client")
 class DisputeMessageCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
@@ -500,9 +744,21 @@ class DisputeMessageCreateView(generics.CreateAPIView):
             is_internal=False,
             sender_role=DisputeMessage.SenderRole.CLIENT,
         )
+        for upload in request.FILES.getlist('files'):
+            create_evidence(
+                dispute=dispute,
+                user=request.user,
+                upload=upload,
+                uploader_role='CLIENT',
+                description="Photo jointe au message de litige",
+                message=message,
+            )
         dispute.updated_at = timezone.now()
         dispute.save(update_fields=['updated_at'])
-        return Response(DisputeMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+        return Response(
+            DisputeMessageSerializer(message, context={'request': request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class DisputeEvidenceRequestListView(generics.ListAPIView):

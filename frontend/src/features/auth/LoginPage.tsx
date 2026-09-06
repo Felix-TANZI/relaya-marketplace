@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
-import { isDedicatedPortal, portalHomePath, portalRole, type PortalRole } from '@/config/portals';
+import { inferPortalRoleFromPath, isDedicatedPortal, portalHomePath, portalRole, type PortalRole } from '@/config/portals';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const portalCopy: Record<PortalRole, {
@@ -58,7 +58,7 @@ const portalCopy: Record<PortalRole, {
     accentDark: '#166534',
     soft: 'rgba(22,163,74,.14)',
     icon: Truck,
-    logo: '/belivay-logo-mark.png',
+    logo: '/belivay-logo-mark-courier.png',
   },
   admin: {
     label: 'Console interne',
@@ -98,15 +98,21 @@ export default function LoginPage() {
   const location = useLocation();
   const { login, googleLogin, verify2FA } = useAuth();
   const { showToast } = useToast();
-  const copy = portalCopy[portalRole];
-  const PortalIcon = copy.icon;
   const loginState = location.state as {
     from?: string;
     googleTwoFA?: { userId: number; email: string };
   } | null;
+  // Le site web sert tous les portails depuis un seul build (portalRole y
+  // vaut toujours 'client') : on devine alors le portail vise depuis la
+  // page qui a redirige ici. Les apps mobiles dediees gardent leur
+  // portalRole fixe, deja correct.
+  const effectivePortalRole = isDedicatedPortal ? portalRole : inferPortalRoleFromPath(loginState?.from);
+  const copy = portalCopy[effectivePortalRole];
+  const PortalIcon = copy.icon;
   const [showPassword, setShowPassword] = useState(false);
   const [secureMode, setSecureMode] = useState(isDedicatedPortal);
   const [loading, setLoading] = useState(false);
+  const [googleUnavailable, setGoogleUnavailable] = useState(false);
   const [formData, setFormData] = useState({ username: '', password: '' });
   const [twoFA, setTwoFA] = useState<{ userId: number; email: string } | null>(
     loginState?.googleTwoFA ?? null,
@@ -357,7 +363,7 @@ export default function LoginPage() {
                   )}
                 </button>
 
-                {portalRole === 'client' && (
+                {!googleUnavailable && (
                   <>
                     <div className="relative flex items-center py-1">
                       <div className="h-px flex-1 bg-white/45" />
@@ -371,6 +377,8 @@ export default function LoginPage() {
                       disabled={loading}
                       label="signin_with"
                       locale={String(i18n.language || 'fr').split('-')[0]}
+                      onUnavailable={() => setGoogleUnavailable(true)}
+                      onError={(message) => showToast(message, 'error')}
                     />
                   </>
                 )}

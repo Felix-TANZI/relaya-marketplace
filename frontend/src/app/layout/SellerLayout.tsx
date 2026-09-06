@@ -2,19 +2,21 @@
 // Espace vendeur BelivaY — même ADN que l'espace client (chaud, orange, propre).
 // Sidebar brun foncé chaleureux + fond crème + orange dominant.
 
-import { useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
+import PageLoader from '@/components/PageLoader';
 import {
   LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
-  FileText, Lock, CircleCheckBig,
+  FileText, Lock, CircleCheckBig, RotateCcw,
   Plus, TrendingUp, Zap, Store, Award, CreditCard, Wallet,
-  Settings, Sun, Moon, Bell, X, Menu, LogOut,
-  ChevronRight, MoreHorizontal, Sparkles, ExternalLink,
+  Settings, Sun, Moon, Bell, X, Menu,
+  ChevronRight, Sparkles, ExternalLink,
 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
+import SellerProfileSheet from '@/features/vendors/SellerProfileSheet';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -28,6 +30,13 @@ const T = {
   text:     '#1A1209',
   muted:    '#7C6E5A',
 };
+
+/** Mentions legales du pied de la feuille compte. */
+const SELLER_FOOTER = [
+  'BelivaY Vendeur v1.0 — Juillet 2026',
+  'Partenaire Independant · ANTIC · OHADA',
+  'Anonymat V5 ch.1',
+];
 
 // ─── TYPES ──────────────────────────────────
 interface NavItem {
@@ -49,6 +58,7 @@ function buildNav(t: TFn): NavSection[] {
         { label: t('seller_layout.nav_dashboard'), path: '/seller/dashboard', icon: LayoutDashboard },
         { label: t('seller_layout.nav_orders'),    path: '/seller/orders',    icon: ShoppingBag, badge: true },
         { label: t('seller_layout.nav_disputes'),  path: '/seller/disputes',  icon: Scale },
+        { label: t('seller_layout.nav_returns'),   path: '/seller/returns',   icon: RotateCcw },
       ],
     },
     {
@@ -228,7 +238,8 @@ export default function SellerLayout() {
   const { i18n, t }            = useTranslation();
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [moreOpen,    setMoreOpen]    = useState(false);
+  const [profileSheetOpen, setProfileSheetOpen] = useState(false);
+  const [sheetFeedback,    setSheetFeedback]    = useState('');
   const [profile,     setProfile]     = useState<VendorProfile | null>(null);
   const prevPath = useRef(location.pathname);
 
@@ -243,7 +254,7 @@ export default function SellerLayout() {
     if (prevPath.current !== location.pathname) {
       prevPath.current = location.pathname;
       setSidebarOpen(false);
-      setMoreOpen(false);
+      setProfileSheetOpen(false);
     }
   }, [location.pathname]);
 
@@ -259,7 +270,10 @@ export default function SellerLayout() {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: T.cream }}>
+    /* `belivay-portal` : scope typographique des espaces metier.
+       Voir index.css — les titres reprennent le Plus Jakarta Sans du corps de
+       texte au lieu du Syne de `font-display`. */
+    <div className="belivay-portal min-h-screen" style={{ background: T.cream }}>
 
       {/* ═══ TOPBAR ═══ */}
       <header
@@ -285,7 +299,7 @@ export default function SellerLayout() {
           <img
             src="/belivay-logo.png"
             alt="BelivaY"
-            className="h-8 w-auto object-contain"
+            className="h-10 w-auto object-contain"
           />
         </Link>
 
@@ -305,37 +319,48 @@ export default function SellerLayout() {
           {shopName}
         </p>
 
-        {/* Actions */}
+        {/* Actions : notifications, theme, langue puis compte — meme ordre que
+            les portails point relais, organisation et livreur. La deconnexion
+            quitte le bandeau pour la feuille compte, ou elle est moins exposee
+            a l'appui accidentel. */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={() => i18n.changeLanguage(i18n.language === 'fr' ? 'en' : 'fr')}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-sm font-bold"
+          <button onClick={() => navigate('/seller/orders')}
+            aria-label={t('seller_layout.nav_orders')}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
             style={{ color: T.muted }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
-            {i18n.language.toUpperCase()}
+            <Bell size={16} />
           </button>
           <button onClick={toggleTheme}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+            aria-label={theme === 'dark' ? 'Mode clair' : 'Mode sombre'}
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
             style={{ color: T.muted }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
             {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
           </button>
-          <button className="w-9 h-9 rounded-xl flex items-center justify-center transition-all" style={{ color: T.muted }}
+          <button onClick={() => i18n.changeLanguage(i18n.language.startsWith('fr') ? 'en' : 'fr')}
+            aria-label="Changer de langue"
+            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all text-[11px] font-black active:scale-90"
+            style={{ color: T.muted }}
             onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
             onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
           >
-            <Bell size={16} />
+            {i18n.language.startsWith('fr') ? 'FR' : 'EN'}
           </button>
-          <button onClick={() => { logout(); navigate('/'); }}
-            className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-            style={{ color: T.muted }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#EF4444'; (e.currentTarget as HTMLElement).style.background = 'rgba(239,68,68,0.06)'; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+          <button onClick={() => setProfileSheetOpen(true)}
+            aria-label={t('seller_layout.nav_settings_short')}
+            aria-haspopup="dialog"
+            aria-expanded={profileSheetOpen}
+            className="w-9 h-9 rounded-full flex items-center justify-center overflow-hidden text-[11px] font-black text-white transition-all active:scale-90"
+            style={{ background: `linear-gradient(135deg, ${T.orange}, #9A3412)` }}
           >
-            <LogOut size={16} />
+            {user?.avatar_url
+              ? <img src={user.avatar_url} alt="" className="h-full w-full object-cover" />
+              : shopName.slice(0, 2).toUpperCase()}
           </button>
         </div>
       </header>
@@ -357,12 +382,25 @@ export default function SellerLayout() {
 
       {/* ═══ MAIN ═══ */}
       <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
-        <div className="max-w-[1100px] mx-auto px-4 sm:px-5 lg:px-7 py-6">
-          <Outlet />
+        {/* Gouttiere resserree sur telephone : a 16px de chaque cote plus 20px
+            de padding interne, chaque carte perdait un cinquieme de la
+            largeur utile en fond creme. */}
+        <div className="max-w-[1100px] mx-auto px-2 py-2 sm:px-5 sm:py-6 lg:px-7">
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
         </div>
       </main>
 
-      {/* ═══ MOBILE BOTTOM NAV ═══ */}
+      {/* ═══ MOBILE BOTTOM NAV ═══
+          Quatre raccourcis du quotidien, sans bouton « Plus » : le reste du
+          menu s'ouvre par l'icone du bandeau, du meme cote que le tiroir. Un
+          second point d'entree en bas dupliquait le geste et volait un
+          cinquieme de la barre aux destinations du quotidien.
+          Fond OPAQUE et `fixed` seul, sans classe CSS maison : une regle
+          personnelle declarant `position` ecraserait l'utilitaire `fixed` de
+          Tailwind (meme specificite, declaree plus loin dans la feuille) et la
+          barre se remettrait a defiler avec la page. */}
       <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[700]"
         style={{
           background: T.topbar,
@@ -375,70 +413,70 @@ export default function SellerLayout() {
             const Icon = tab.icon;
             const active = location.pathname === tab.path || location.pathname.startsWith(tab.path + '/');
             return (
-              <NavLink key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center justify-center gap-[3px] py-1">
+              <NavLink key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center justify-center gap-[3px] py-1 transition active:scale-[.93]">
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                  style={active ? { background: T.orange, boxShadow: `0 4px 14px rgba(244,121,32,0.4)` } : {}}>
+                  style={active ? { background: T.orange, boxShadow: `0 4px 14px rgba(244,121,32,0.45)` } : {}}>
                   <Icon size={17} style={{ color: active ? '#fff' : T.muted }} />
                 </div>
-                <span className="text-[8px] font-semibold" style={{ color: active ? T.orange : T.muted }}>
+                <span className="text-[8.5px] font-semibold" style={{ color: active ? T.orange : T.muted }}>
                   {tab.label}
                 </span>
               </NavLink>
             );
           })}
-          <button onClick={() => setMoreOpen(true)} className="flex-1 flex flex-col items-center justify-center gap-[3px] py-1">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center">
-              <MoreHorizontal size={17} style={{ color: T.muted }} />
-            </div>
-            <span className="text-[8px] font-semibold" style={{ color: T.muted }}>{t('seller_layout.more')}</span>
-          </button>
         </div>
       </nav>
 
-      {/* MORE SHEET */}
-      <div onClick={() => setMoreOpen(false)}
-        className={`lg:hidden fixed inset-0 z-[1500] transition-all duration-300 ${moreOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(28,18,9,0.6)', backdropFilter: 'blur(4px)' }} />
-      <div className={`lg:hidden fixed bottom-0 left-0 right-0 z-[1501] rounded-t-[22px] transition-transform duration-300 ${moreOpen ? 'translate-y-0' : 'translate-y-full'}`}
-        style={{ background: T.topbar, paddingBottom: 'calc(20px + env(safe-area-inset-bottom))', boxShadow: '0 -8px 40px rgba(0,0,0,0.12)', borderTop: `1px solid ${T.border}` }}>
-        <div className="w-8 h-1 rounded-full mx-auto mt-3 mb-4" style={{ background: T.border }} />
-        {[
-          { label: t('seller_layout.nav_disputes'),        path: '/seller/disputes',       icon: Scale,      sub: t('seller_layout.sub_disputes') },
-          { label: t('seller_layout.nav_shop'),            path: '/seller/shop',           icon: Store,      sub: t('seller_layout.sub_shop') },
-          { label: t('seller_layout.nav_analytics_short'), path: '/seller/analytics',      icon: TrendingUp, sub: t('seller_layout.sub_analytics') },
-          { label: t('seller_layout.nav_boost_short'),     path: '/seller/boost',          icon: Zap,        sub: t('seller_layout.sub_boost') },
-          { label: t('seller_layout.nav_plans_short'),     path: '/seller/plans',          icon: CreditCard, sub: t('seller_layout.sub_plans') },
-          { label: t('seller_layout.nav_settings_short'),  path: '/seller/settings',       icon: Settings,   sub: t('seller_layout.sub_settings') },
-        ].map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink key={item.path} to={item.path} onClick={() => setMoreOpen(false)}
-              className="flex items-center gap-3.5 px-5 py-3 transition-colors"
-              style={{ borderBottom: `1px solid ${T.border}` }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.cream; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-            >
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: `rgba(244,121,32,0.10)` }}>
-                <Icon size={18} style={{ color: T.orange }} />
-              </div>
-              <div className="flex-1">
-                <p className="text-[13px] font-semibold" style={{ color: T.text }}>{item.label}</p>
-                <p className="text-[10.5px]" style={{ color: T.muted }}>{item.sub}</p>
-              </div>
-              <ChevronRight size={14} style={{ color: T.muted }} />
-            </NavLink>
-          );
-        })}
-        <div className="px-5 pt-3">
-          <button onClick={() => { logout(); navigate('/'); }}
-            className="flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-[13px] font-medium text-red-500 transition-all"
-            style={{ background: 'rgba(239,68,68,0.05)' }}>
-            <LogOut size={15} />
-            {t('seller_layout.logout')}
-          </button>
-        </div>
-      </div>
+      {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
+          le tiroir de navigation vient de gauche, les deux gestes restent donc
+          distincts meme quand les deux panneaux ont ete appris. */}
+      <SellerProfileSheet
+        open={profileSheetOpen}
+        onClose={() => setProfileSheetOpen(false)}
+        locale={i18n.language.startsWith('en') ? 'en' : 'fr'}
+        theme={theme}
+        onToggleTheme={toggleTheme}
+        onChangeLanguage={(next) => void i18n.changeLanguage(next)}
+        shop={{
+          name: shopName,
+          username: user?.username ?? '',
+          email: user?.email ?? '',
+          city: profile?.city ?? '',
+          address: profile?.address ?? '',
+          phone: profile?.phone ?? '',
+          status:
+            profile?.status === 'APPROVED'
+              ? 'Approuvee'
+              : profile?.status === 'SUSPENDED'
+                ? 'Suspendue'
+                : 'En attente',
+          tier: profile?.certification_tier ?? 'BRONZE',
+          points: profile?.total_points ?? 0,
+          // Le certificat n'existe qu'une fois la boutique approuvee :
+          // avant, le QR renverrait vers une vitrine non publiee.
+          slug: profile?.status === 'APPROVED' ? (profile?.shop_slug ?? '') : '',
+          memberSince: profile?.created_at ?? null,
+        }}
+        avatarUrl={user?.avatar_url || undefined}
+        onLogout={() => { logout(); navigate('/'); }}
+        onNavigate={(path) => { setProfileSheetOpen(false); navigate(path); }}
+        onFeedback={setSheetFeedback}
+        T={T}
+        footer={SELLER_FOOTER}
+      />
+
+      {/* Retour des actions de la feuille compte (2FA, PWA) : un bandeau
+          discret au-dessus de la barre du bas, qui s'efface au clic. */}
+      {sheetFeedback ? (
+        <button
+          type="button"
+          onClick={() => setSheetFeedback('')}
+          className="fixed inset-x-3 bottom-[76px] z-[1700] rounded-[14px] px-4 py-3 text-left text-[13px] font-semibold lg:bottom-4 lg:left-auto lg:right-4 lg:w-[360px]"
+          style={{ background: T.topbar, border: `1px solid ${T.border}`, color: T.text, boxShadow: '0 10px 30px rgba(28,18,9,0.18)' }}
+        >
+          {sheetFeedback}
+        </button>
+      ) : null}
 
     </div>
   );

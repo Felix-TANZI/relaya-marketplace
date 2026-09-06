@@ -348,7 +348,7 @@ export interface PaymentTransaction {
   provider: string;
   status: string;
   amount_xaf: number;
-  payer_phone: string;
+  payer_phone_masked: string;
   external_ref: string | null;
   created_at: string;
 }

@@ -769,37 +769,31 @@ def _resolve_scan_target(code: str, courier) -> Shipment:
     raise PermissionDenied("Unsupported scan code format")
 
 
-# Repli tant que la ligne DistributionRule "dist-transport-carrier" n'est
-# pas encore approuvee (voir apps.payments.management.commands
-# .request_locked_financial_config) — meme valeur provisoire, pour que
-# l'affichage ne change pas le jour ou la gouvernance prend le relais.
-_TRANSPORT_CARRIER_SHARE_FALLBACK = 0.70
-
-
 def _courier_payout_xaf(shipment: Shipment) -> int:
     """
     Part du livreur/entreprise de livraison sur CE colis — feres de transport
     de la commande divisees entre ses colis, puis part transporteur du
-    composant TRANSPORT (DistributionRule si approuvee, sinon repli).
+    composant TRANSPORT, lue depuis le module financier.
 
     Remplace l'ancien calcul "8% du total de la commande", qui n'avait aucun
     lien avec les frais de transport reels et grossissait avec la valeur des
     articles plutot qu'avec l'effort de livraison.
     """
-    from apps.payments.config.models import DistributionRule
-
     order = shipment.order
     colis_count = order.shipments.count() or 1
     transport_share = (order.delivery_fee_xaf or 0) / colis_count
 
-    rule = (
-        DistributionRule.current()
-        .filter(component=DistributionRule.Component.TRANSPORT, payee_type=DistributionRule.PayeeType.DELIVERY_COMPANY)
-        .order_by("-priority")
-        .first()
-    )
-    carrier_ratio = float(rule.value) / 100 if rule else _TRANSPORT_CARRIER_SHARE_FALLBACK
-    return round(transport_share * carrier_ratio)
+    # ─────────────────────────────────────────────────────────────────────
+    # LE TAUX VIENT DU MODULE FINANCIER
+    #
+    # Cette vue lisait elle-meme la DistributionRule, avec un repli a 70 %
+    # en dur. Deux sources pour un meme taux finissent par diverger — et
+    # l'ecart ne se verrait qu'au moment ou un transporteur compterait
+    # son du.
+    # ─────────────────────────────────────────────────────────────────────
+    from apps.payments.bridge import queries
+
+    return round(transport_share * float(queries.carrier_share_ratio()))
 
 
 def _estimate_shipment_distance_km(shipment: Shipment) -> float:

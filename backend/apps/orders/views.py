@@ -107,7 +107,34 @@ class OrderCreateView(generics.CreateAPIView):
         # intact (et testé isolément) pour une éventuelle reprise future,
         # une fois réconcilié avec le modèle multi-colis.
         orders = [order]
+
+        # Le module financier, sans eclatement de la commande.
+        # Sans cet appel, aucune intention n'existe : l'acheteur ne peut
+        # pas payer, et aucun partenaire n'est jamais regle.
         payment_intent = None
+        try:
+            from apps.payments.bridge.checkout_v2 import (
+                CheckoutError, prepare_payment,
+            )
+
+            payment_intent = prepare_payment(
+                order,
+                payer_msisdn=(order.customer_phone or "").replace(" ", ""),
+                payer_operator="",
+                idempotency_key=f"order-{order.pk}",
+            )
+        except CheckoutError as exc:
+            import logging
+            logging.getLogger("apps.orders").error(
+                "Preparation du paiement impossible pour la commande #%s : %s",
+                order.pk, exc,
+            )
+        except Exception:
+            import logging
+            logging.getLogger("apps.orders").exception(
+                "Erreur inattendue a la preparation du paiement, commande #%s.",
+                order.pk,
+            )
 
         if request.user.is_authenticated:
             UserNotification.objects.create(
@@ -312,11 +339,23 @@ class CancelOrderView(APIView):
         """
         import logging
 
-        COURSE_CANCELLED_INDEMNITY_XAF = 500
         try:
             from apps.payments.bridge.actors import partner_payee_for_user
             from apps.payments.settlements.services import create_adjustment
             from apps.payments.domain.enums import AdjustmentCategory, AdjustmentDirection
+            from apps.payments.bridge import queries
+
+            # Le montant vient de la configuration, jamais d'une constante :
+            # une indemnite contractuelle doit pouvoir changer sans
+            # recompiler.
+            montant = queries.course_cancellation_indemnity_xaf()
+            if montant <= 0:
+                logging.getLogger("apps.orders").warning(
+                    "Aucune indemnite configuree : course annulee non "
+                    "indemnisee — livreur #%s, commande #%s.",
+                    shipment.courier_id, shipment.order_id,
+                )
+                return
 
             payee = partner_payee_for_user(shipment.courier.user)
             if payee is None:
@@ -329,7 +368,7 @@ class CancelOrderView(APIView):
                 payee=payee,
                 direction=AdjustmentDirection.DEBIT.value,
                 category=AdjustmentCategory.COMPENSATION.value,
-                amount_xaf=COURSE_CANCELLED_INDEMNITY_XAF,
+                amount_xaf=montant,
                 reason=f"Course annulée après acceptation — commande #{shipment.order_id}, colis #{shipment.id}.",
                 created_by=cancelled_by,
                 source_order_id=shipment.order_id,

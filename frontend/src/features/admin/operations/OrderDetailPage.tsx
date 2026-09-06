@@ -468,7 +468,7 @@ export default function OrderDetailPage() {
                     </div>
                     <p style={{ fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 4 }}>{fmtXaf(tx.amount_xaf)}</p>
                     <div style={{ marginBottom: -6 }}>
-                      <InfoRow label="Numéro"     value={tx.payer_phone} T={T} />
+                      <InfoRow label="Numéro"     value={tx.payer_phone_masked} T={T} />
                       {tx.external_ref && <InfoRow label="Réf. externe" value={<code style={{ fontSize: 11, background: T.border, padding: '1px 5px', borderRadius: 3 }}>{tx.external_ref}</code>} T={T} />}
                       <InfoRow label="Date"       value={fmtDateTime(tx.created_at)} T={T} />
                     </div>

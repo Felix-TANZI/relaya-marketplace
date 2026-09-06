@@ -39,6 +39,9 @@ from apps.payments.config.models import (
     PayoutPolicy, ProviderConfig, RelayCompensationRule, RiskPolicy,
     SettlementCycle,
 )
+from apps.payments.config.delivery_pricing import (
+    CourierIndemnityRule, DeliveryPricingRule,
+)
 
 from .config_schema import describe_model
 from .permissions import CanApproveMoney, IsFinanceStaff
@@ -82,6 +85,18 @@ MODELES = {
         "model": RelayCompensationRule,
         "label": "Remuneration points relais",
         "hint": "Le tarif contractuel par categorie de colis.",
+    },
+    "delivery_pricing": {
+        "model": DeliveryPricingRule,
+        "label": "Frais de livraison",
+        "hint": "Ce que l'acheteur paie pour etre livre, selon le mode et "
+                "le nombre de vendeurs.",
+    },
+    "courier_indemnity": {
+        "model": CourierIndemnityRule,
+        "label": "Indemnites livreur",
+        "hint": "Montants dus a un livreur en dehors de la course — course "
+                "annulee, attente prolongee.",
     },
     "risk": {
         "model": RiskPolicy,

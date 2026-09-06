@@ -544,6 +544,10 @@ class AdminUserListSerializer(serializers.ModelSerializer):
         courier = getattr(obj, 'courier_profile', None)
         if courier:
             roles.append('COURIER')
+        if getattr(obj, 'delivery_organization_profile', None):
+            roles.append('DELIVERY_ORGANIZATION')
+        if getattr(obj, 'relay_point_profile', None):
+            roles.append('RELAY_POINT')
         if obj.is_staff:
             roles.append('STAFF')
         if obj.is_superuser:

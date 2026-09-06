@@ -27,7 +27,7 @@ type AdminUser = AdminUserBase & {
   vendor_business_name?: string | null;
   vendor_plan?:          'FREE' | 'STARTER' | 'PRO' | 'BUSINESS' | null;
   courier_status?:       'APPROVED' | 'PENDING' | 'INACTIVE' | null;
-  actor_roles?:          Array<'CLIENT' | 'VENDOR' | 'COURIER' | 'STAFF' | 'ADMIN'>;
+  actor_roles?:          Array<'CLIENT' | 'VENDOR' | 'COURIER' | 'DELIVERY_ORGANIZATION' | 'RELAY_POINT' | 'STAFF' | 'ADMIN'>;
   loyalty_tier?:         'BRONZE' | 'SILVER' | 'GOLD' | 'DIAMOND';
   loyalty_points?:       number;
   city?:                 string | null;
@@ -92,6 +92,8 @@ const ROLE_COLORS: Record<string, string> = {
   role_buyer:  '#3B82F6',
   role_vendor: '#F47920',
   role_courier:'#10B981',
+  role_delivery_org: '#0891B2',
+  role_relay_point:  '#1D4ED8',
   role_staff:  '#8B5CF6',
   role_admin:  '#DC2626',
 };
@@ -125,6 +127,8 @@ function RoleChips({ user }: { user: AdminUser }) {
   if (roles.includes('CLIENT'))  chips.push({ label: 'Client',  color: ROLE_COLORS.role_buyer });
   if (roles.includes('VENDOR'))  chips.push({ label: 'Vendeur', color: ROLE_COLORS.role_vendor });
   if (roles.includes('COURIER')) chips.push({ label: 'Livreur', color: ROLE_COLORS.role_courier });
+  if (roles.includes('DELIVERY_ORGANIZATION')) chips.push({ label: 'Entreprise livraison', color: ROLE_COLORS.role_delivery_org });
+  if (roles.includes('RELAY_POINT'))           chips.push({ label: 'Point relais',         color: ROLE_COLORS.role_relay_point });
   if (roles.includes('STAFF'))   chips.push({ label: 'Staff',   color: ROLE_COLORS.role_staff });
   if (roles.includes('ADMIN'))   chips.push({ label: 'Admin',   color: ROLE_COLORS.role_admin });
 

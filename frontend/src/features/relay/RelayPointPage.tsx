@@ -8,7 +8,6 @@ import {
   AlertTriangle,
   Archive,
   BadgeCheck,
-  Banknote,
   Bell,
   BookOpen,
   CalendarClock,
@@ -17,7 +16,6 @@ import {
   ChevronRight,
   ClipboardCheck,
   Clock3,
-  CreditCard,
   FileBadge2,
   FileCheck2,
   FileText,
@@ -50,6 +48,9 @@ import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { http } from "@/services/api/http";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
+import RelayFinancePanel from "./RelayFinancePanel";
+import ParcelSizeDisplay from "./ParcelSizeDisplay";
+import type { ParcelSize } from "@/services/api/relaySettlements";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 
 type RelayTab =
@@ -238,24 +239,9 @@ const training = [
   ["Gestion litige & médiateur", "Recommandé", "Escalade J+7, retour vendeur ou arbitrage BelivaY."],
 ];
 
-function fmtXaf(value: number) {
-  return `${value.toLocaleString("fr-FR")} FCFA`;
-}
-
 function anonymizedBuyerRef(parcel: RelayParcel) {
   const seed = `${parcel.order_id || parcel.id}`.padStart(4, "0").slice(-4);
   return `BV-ACH-${seed}`;
-}
-
-function nextRelayPayoutDate(locale: "fr" | "en") {
-  const date = new Date();
-  const daysUntilFriday = (5 - date.getDay() + 7) % 7 || 7;
-  date.setDate(date.getDate() + daysUntilFriday);
-  return date.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
 }
 
 function progressTone(value: number) {
@@ -336,6 +322,7 @@ export default function RelayPointPage() {
   const [shipmentReference, setShipmentReference] = useState("");
   const [slotCode, setSlotCode] = useState("");
   const [proofNote, setProofNote] = useState("");
+  const [parcelSize, setParcelSize] = useState<ParcelSize | "">("");
   const [capacityInput, setCapacityInput] = useState("");
   const [hoursInput, setHoursInput] = useState("");
   const [notifications, setNotifications] = useState<RelayNotification[]>([]);
@@ -425,7 +412,6 @@ export default function RelayPointPage() {
   const capacityPct = Math.round((relayProfile.capacityUsed / relayProfile.capacityMax) * 100);
   const safeCapacityPct = Number.isFinite(capacityPct) ? capacityPct : 0;
   const statusTone = relayProfile.status === "Ouvert" ? "emerald" : relayProfile.status === "Suspendu" ? "red" : "amber";
-  const relayPayoutDate = nextRelayPayoutDate(locale);
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
   const handleLogout = () => {
     logout();
@@ -447,7 +433,7 @@ export default function RelayPointPage() {
     try {
       await http<RelayParcel>("/api/shipping/relay-point/receive/", {
         method: "POST",
-        body: JSON.stringify({ shipment_id: reference, slot_code: slotCode.trim(), proof_note: proofNote.trim() }),
+        body: JSON.stringify({ shipment_id: reference, slot_code: slotCode.trim(), proof_note: proofNote.trim(), parcel_size: parcelSize || undefined }),
       });
       setOperationMessage({ tone: "success", text: "Colis réceptionné, tracé et placé en stock." });
       setShipmentReference("");
@@ -711,6 +697,12 @@ export default function RelayPointPage() {
               <input value={slotCode} onChange={(event) => setSlotCode(event.target.value)} placeholder="Ex. A-12" className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-base font-bold outline-none focus:border-blue-600" />
             </label>
           </div>
+          <div className="mt-4">
+            <ParcelSizeDisplay
+              shipmentId={shipmentReference}
+              onResolved={setParcelSize}
+            />
+          </div>
           <textarea value={proofNote} onChange={(event) => setProofNote(event.target.value)} placeholder="État du colis et observations de réception" className="mt-3 min-h-24 w-full rounded-xl border border-blue-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-600" />
           <button type="button" onClick={receiveParcel} disabled={operationBusy || !shipmentReference} className="mt-3 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-50">
             {operationBusy ? "Validation..." : "Valider la réception"}
@@ -914,32 +906,12 @@ export default function RelayPointPage() {
   );
 
   const renderFinances = () => (
-    <Panel kicker="Reversements" title="Finances MoMo">
-      <div className="grid gap-4 md:grid-cols-4">
-        {[
-          [Banknote, "Tarif actuel", "150 FCFA / colis", "Montant prévu par opération validée."],
-          [CreditCard, "Mois courant", fmtXaf(relayProfile.monthlyRevenue), "Calculé uniquement depuis les retraits clôturés."],
-          [WalletCards, "Versement", "Hebdomadaire", "Reversement MoMo après consolidation BelivaY."],
-          [Clock3, "Prochain versement", relayPayoutDate, "Échéance estimée selon le cycle hebdomadaire."],
-        ].map(([Icon, label, value, body]) => (
-          <div key={label as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
-            <Icon className="text-blue-700 dark:text-blue-300" />
-            <div className="mt-3 text-sm font-bold text-slate-500 dark:text-slate-400">{label as string}</div>
-            <div className="mt-1 text-2xl font-black text-slate-950 dark:text-white">{value as string}</div>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-          </div>
-        ))}
-      </div>
-      <div className="mt-5 grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
+    <>
+      <RelayFinancePanel onOpenKyc={() => setTab("kyc")} />
+      <div className="mt-4">
         <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" />
-        <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
-          <h3 className="font-black text-slate-950 dark:text-white">Historique des versements</h3>
-          <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Aucun versement réel connecté pour le moment. Les lignes apparaîtront ici avec période, montant, numéro MoMo, statut et référence transaction.
-          </p>
-        </div>
       </div>
-    </Panel>
+    </>
   );
 
   const renderCapacite = () => (

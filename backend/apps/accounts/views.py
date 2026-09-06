@@ -301,6 +301,14 @@ class PayoutAccountVerifyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         account.mark_verified()
+
+        # Le numero doit atteindre le module financier. Sans ce report, un
+        # partenaire verifiait son numero et restait bloque au versement.
+        # L'echec est ABSORBE : il a fait sa part.
+        from apps.payments.bridge.payout_accounts import sync_verified_account
+
+        sync_verified_account(account)
+
         return Response(PayoutAccountSerializer(account).data)
 
 

@@ -11,7 +11,7 @@
 //
 // Max 4 toasts simultanés. Le plus ancien est retiré si la limite est dépassée.
 
-import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import Toast, { type ToastType, type ToastProps } from '@/components/ui/Toast';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -110,12 +110,13 @@ const MAX_TOASTS = 4;
 // ─────────────────────────────────────────────────────────────────────────────
 
 export function ToastProvider({ children }: { children: ReactNode }) {
-  // Injecter les keyframes une fois au premier rendu
-  const keyframesRef = useRef(false);
-  if (!keyframesRef.current) {
+  // Injecter les keyframes une fois au montage.
+  // L'insertion d'un <style> dans le <head> est un effet de bord : elle n'a
+  // pas sa place pendant le rendu. `ensureKeyframes` porte deja son propre
+  // garde-fou (`keyframesInjected`), l'appel est donc idempotent.
+  useEffect(() => {
     ensureKeyframes();
-    keyframesRef.current = true;
-  }
+  }, []);
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 

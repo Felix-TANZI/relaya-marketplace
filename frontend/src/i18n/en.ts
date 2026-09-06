@@ -275,6 +275,17 @@
     support_available: 'Our support team is available 24/7 to help you',
     send_message: 'Send a message',
     call_support: 'Call',
+    call_now: 'Call now',
+    result_found: 'result found',
+    results_found: 'results found',
+    categories_title_prefix: 'Browse by',
+    categories_title_suffix: 'category',
+    categories_subtitle: 'Pick a topic to filter the questions below',
+    view_all_categories: 'View all categories',
+    faq_title: 'Frequently asked questions',
+    faq_subtitle: 'Answers to the questions our customers ask most often',
+    cta_title: "Can't find your answer?",
+    cta_subtitle: 'Our BelivaY team can help you directly.',
     categories: {
       orders: {
         title: 'Orders',
@@ -300,6 +311,14 @@
         title: 'Technical',
         description: 'Technical issues',
       },
+      payments: {
+        title: 'Payments & Escrow',
+        description: 'Mobile Money and fund security',
+      },
+      disputes: {
+        title: 'Disputes & Arbitration',
+        description: 'How BelivaY settles a disagreement',
+      },
     },
     faq: {
       order_tracking: {
@@ -308,15 +327,35 @@
       },
       payment_methods: {
         question: 'What payment methods do you accept?',
-        answer: 'We accept mobile wallets (MTN Money, Orange Money) and credit cards. All payments are secured with SSL encryption.',
+        answer: 'We accept MTN Mobile Money and Orange Money. The number you pay with can be different from the phone number on your BelivaY account.',
+      },
+      mobile_money_operators: {
+        question: 'How does BelivaY know which operator to use (MTN, Orange)?',
+        answer: 'As soon as you enter the number to be debited, BelivaY automatically detects the operator (MTN or Orange) from the prefix and confirms it before you validate. If the number does not match a recognized operator, you are warned before paying.',
+      },
+      escrow: {
+        question: 'Where does my money go when I pay for an order?',
+        answer: 'Your payment is held in BelivaY escrow, not sent directly to the seller. Funds are only released to the seller after you confirm receipt, or automatically 48h after delivery if you do nothing. If you open a dispute before that deadline, the release is frozen while BelivaY arbitrates.',
       },
       delivery_time: {
         question: 'What is the delivery time?',
         answer: 'Delivery times vary by location: Yaoundé (1-2 days), other cities (2-5 days). Express delivery options are available for an additional fee.',
       },
+      pickup_relay: {
+        question: 'How does in-store pickup work?',
+        answer: 'When placing your order, you can choose pickup instead of home delivery. Once your parcel is ready, you receive a pickup code to present in store. Always check the exact pickup address shown on your order before traveling.',
+      },
+      delivery_delay: {
+        question: 'My order is late, what should I do?',
+        answer: 'First check the live tracking on your order page. You can message the courier directly from that page. If the delay is unusual or the courier does not respond, open a conversation with BelivaY from the order: our team will step in.',
+      },
       return_policy: {
         question: 'Can I return a product?',
-        answer: 'You have 30 days after receipt to return an item. Free returns are available if the product is defective or not as described.',
+        answer: 'If an item you received is defective, damaged, or not as described, report it from your order page within 7 days of receipt: a case is opened with the BelivaY team, who decides on a refund, exchange, or return based on the situation. After that window, contact support for a case-by-case review.',
+      },
+      dispute_arbitration: {
+        question: 'How does a dispute with a seller work?',
+        answer: 'From your order, you open a conversation with the BelivaY team stating the reason and attaching photos if needed. BelivaY contacts the seller (and the courier if relevant), may request further evidence from both parties, then decides: full refund, partial refund, exchange, or a reasoned rejection. While the dispute is open, the money stays in escrow and is not paid to the seller.',
       },
       become_seller: {
         question: 'How do I become a seller on Belivay?',
@@ -325,6 +364,10 @@
       account_security: {
         question: 'How do I secure my account?',
         answer: 'Use a strong password, enable two-factor verification, and never share your credentials. Report any suspicious activity immediately.',
+      },
+      privacy_anonymity: {
+        question: 'Can the seller see my personal details?',
+        answer: 'No. Your real phone number and email are never shared with the seller: they only see anonymized information, enough to prepare your order. Public reviews you leave (products, pickup points) only show your initials, never your full name.',
       },
     },
   },
@@ -1153,6 +1196,7 @@
     nav_orders: 'Orders',
     nav_payments: 'Payments',
     nav_disputes: 'Disputes',
+    nav_returns: 'Returns',
     nav_my_products: 'My products',
     nav_products: 'Products',
     nav_add_product: 'Add a product',
@@ -1215,6 +1259,8 @@
     orders:               'Orders & Escrow',
     orders_map:           'Orders Map',
     disputes:             'Disputes',
+    returns:              'Returns',
+    supervision:          'Supervision',
     catalogue:            'Catalogue',
     categories:           'Categories',
     reviews:              'Product Reviews',
@@ -1232,6 +1278,7 @@
     fin_risk: 'Risk',
     fin_payees: 'Payees',
     fin_scheduler: 'Scheduler',
+    fin_configuration:    'Configuration',
     finances:             'Finances & Commissions',
     account:              'BelivaY Account',
     plans:                'Plans & Subscriptions',

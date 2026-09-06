@@ -36,6 +36,7 @@ import { http } from "@/services/api/http";
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
+import DeliverySettlementsPanel from "./DeliverySettlementsPanel";
 import TrackingMap from "@/components/TrackingMap";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
 import type { LocationPrecisionResult } from "@/services/api/location";
@@ -535,17 +536,6 @@ function normalizeCoverageZones(zones: string[], city: string) {
   return uniqueZones.filter((zone) => zone.toUpperCase() !== normalizedCity);
 }
 
-function nextSettlementDate(locale: "fr" | "en") {
-  const date = new Date();
-  const daysUntilFriday = (5 - date.getDay() + 7) % 7 || 7;
-  date.setDate(date.getDate() + daysUntilFriday);
-  return date.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
 function vehicleLabel(value?: string) {
   const labels: Record<string, string> = {
     MOTORBIKE: "Moto",
@@ -857,7 +847,6 @@ export default function DeliveryOrganizationPage() {
   const assignedMissions = missions.filter((mission) => mission.status === "ASSIGNED").length;
   const pickedUpMissions = missions.filter((mission) => ["PICKED_UP", "IN_TRANSIT"].includes(mission.status)).length;
   const outForDeliveryMissions = missions.filter((mission) => mission.status === "OUT_FOR_DELIVERY").length;
-  const payoutDate = nextSettlementDate(locale);
   const isOrgApproved = orgProfile?.status === "APPROVED";
   const isOrgSuspended = orgProfile?.status === "SUSPENDED";
   const hasContract = Boolean(orgProfile?.contract_reference?.trim());
@@ -1552,21 +1541,18 @@ export default function DeliveryOrganizationPage() {
       return (
         <div className="space-y-5">
           {renderSectionIntro()}
-          <section className="grid gap-4 md:grid-cols-4">
-            <WorkCard title={locale === "en" ? "To settle" : "À régler"} value="0 FCFA" body={locale === "en" ? "Validated missions pending payout." : "Missions validées en attente de règlement."} icon={WalletCards} />
-            <WorkCard title={locale === "en" ? "Paid" : "Payé"} value="0 FCFA" body={locale === "en" ? "Closed settlements by period." : "Règlements clôturés par période."} icon={CheckCircle2} />
-            <WorkCard title={locale === "en" ? "Next payout" : "Prochaine échéance"} value={hasContract ? payoutDate : locale === "en" ? "Pending" : "En attente"} body={locale === "en" ? "Estimated from the weekly contract cycle." : "Estimée depuis le cycle hebdomadaire du contrat."} icon={Clock3} />
-            <WorkCard title={locale === "en" ? "Payment method" : "Moyen paiement"} value={locale === "en" ? "To configure" : "À configurer"} body={locale === "en" ? "Mobile Money or bank transfer." : "Mobile Money ou virement."} icon={CreditCard} />
-          </section>
-          <Panel kicker={locale === "en" ? "Payment method" : "Moyen de paiement"} title={locale === "en" ? "Settlement account" : "Compte de règlement"}>
-            <PayoutAccountVerificationCard ownerRole="DELIVERY_ORGANIZATION" accent="#0891B2" />
-          </Panel>
-          <Panel kicker={locale === "en" ? "Reconciliation" : "Rapprochement"} title={locale === "en" ? "Settlement history" : "Historique des règlements"}>
-            <EmptyState>
-              {locale === "en"
-                ? "No real settlement is connected yet. Future rows will show period, amount, payout method, status and transaction reference."
-                : "Aucun règlement réel n'est encore connecté. Les lignes afficheront période, montant, moyen de paiement, statut et référence transaction."}
-            </EmptyState>
+          <DeliverySettlementsPanel
+            locale={locale}
+            onOpenSettings={() => setTab("settings")}
+          />
+          <Panel
+            kicker={locale === "en" ? "Payment method" : "Moyen de paiement"}
+            title={locale === "en" ? "Settlement account" : "Compte de règlement"}
+          >
+            <PayoutAccountVerificationCard
+              ownerRole="DELIVERY_ORGANIZATION"
+              accent="#0891B2"
+            />
           </Panel>
         </div>
       );

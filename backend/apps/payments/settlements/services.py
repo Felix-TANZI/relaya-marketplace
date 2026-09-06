@@ -1364,6 +1364,41 @@ def relay_accepts_size(payee: PayeeAccount, parcel_size: str) -> bool:
 
 
 @db_transaction.atomic
+def _alerter_si_non_couvert(payee, order_id, regle, parcel_reference) -> None:
+    """
+    Signale une remuneration relais superieure a la commission encaissee.
+
+    N'interrompt JAMAIS le traitement : une alerte manquee se rattrape, un
+    partenaire non paye pour une prestation rendue, non.
+    """
+    if not order_id:
+        return
+
+    try:
+        from apps.payments.escrow.models import EscrowHold
+
+        commission = sum(
+            h.commission_xaf or 0
+            for h in EscrowHold.objects.filter(
+                order_id=order_id, component=EscrowHold.Component.GOODS)
+        )
+        if commission >= regle.amount_xaf:
+            return
+
+        logger.warning(
+            "Remuneration relais NON COUVERTE : %s XAF dus au point relais "
+            "%s pour le colis %s, alors que la commande #%s n'a rapporte "
+            "que %s XAF de commission. Deficit de %s XAF a la charge de "
+            "BelivaY. Revoir la grille tarifaire ou le minimum de commande.",
+            regle.amount_xaf, payee.payee_code, parcel_reference,
+            order_id, commission, regle.amount_xaf - commission,
+        )
+    except Exception:
+        # Un controle d'alerte ne doit jamais casser une remuneration.
+        logger.debug("Controle de couverture impossible pour %s.",
+                     parcel_reference, exc_info=True)
+
+
 def compensate_relay_parcel(payee: PayeeAccount, *, order_id: int,
                             parcel_reference: str, parcel_size: str = "",
                             created_by=None):
@@ -1410,6 +1445,27 @@ def compensate_relay_parcel(payee: PayeeAccount, *, order_id: int,
 
     if regle.amount_xaf <= 0:
         return None
+
+    # ─────────────────────────────────────────────────────────────────────
+    # LA COMMISSION COUVRE-T-ELLE CETTE REMUNERATION ?
+    #
+    # Le relais est paye par CONTRAT, pas par l'acheteur : c'est une charge
+    # de BelivaY. Sur une petite commande, elle peut donc DEPASSER la
+    # commission encaissee — et la plateforme perd de l'argent a chaque
+    # colis remis.
+    #
+    # Un test l'a montre : une commande de 25 XAF genere 6 XAF de
+    # commission, pour une remuneration relais de 500 XAF. Deficit de
+    # 494 XAF, silencieux.
+    #
+    # On NE BLOQUE PAS : le colis a ete remis, la prestation est due, et
+    # refuser de payer un partenaire parce que la commande etait petite
+    # serait une faute contractuelle.
+    #
+    # On SIGNALE, pour que la grille tarifaire soit revue avant que le cas
+    # se repete a l'echelle.
+    # ─────────────────────────────────────────────────────────────────────
+    _alerter_si_non_couvert(payee, order_id, regle, parcel_reference)
 
     # Idempotence : la reference du colis identifie la prestation.
     existant = Adjustment.objects.filter(

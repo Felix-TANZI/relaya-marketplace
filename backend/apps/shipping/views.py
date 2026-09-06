@@ -179,6 +179,53 @@ class RelayPointParcelReceiveView(APIView):
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Categorie suggeree pour un colis, avant reception",
+)
+class RelayParcelSizeSuggestionView(APIView):
+    """
+    Propose une categorie a partir du contenu de la commande.
+
+    UNE SUGGESTION, PAS UNE DECISION. Le gerant a le colis en main : aucune
+    estimation ne battra ce qu'il voit. Sa REMUNERATION en depend, donc la
+    decision lui revient.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from apps.shipping.parcel_sizing import suggest_for_shipment
+
+        _get_active_relay_point(request.user)
+
+        try:
+            shipment_id = int(request.query_params.get("shipment_id") or 0)
+        except (TypeError, ValueError):
+            shipment_id = 0
+
+        if not shipment_id:
+            return Response(
+                {"detail": "shipment_id est obligatoire."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            shipment = Shipment.objects.select_related("order").get(
+                pk=shipment_id)
+        except Shipment.DoesNotExist:
+            return Response({"detail": "Expedition introuvable."},
+                            status=status.HTTP_404_NOT_FOUND)
+
+        suggestion = suggest_for_shipment(shipment)
+        # La taille deja portee par l'expedition est renvoyee telle quelle :
+        # si un transporteur l'a renseignee, elle vaut mieux qu'une
+        # estimation.
+        suggestion["current_parcel_size"] = shipment.parcel_size or ""
+        return Response(suggestion)
+
+
+
 @extend_schema(tags=["Relay Point"], summary="Confirmer le retrait client au point relais")
 class RelayPointParcelPickupView(APIView):
     permission_classes = [IsAuthenticated]

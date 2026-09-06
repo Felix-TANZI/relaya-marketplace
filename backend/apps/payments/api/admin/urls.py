@@ -10,6 +10,7 @@
 
 from django.urls import path
 
+from . import config_views as cv
 from . import views as v
 
 app_name = "payments_admin"
@@ -19,6 +20,21 @@ urlpatterns = [
     path("dashboard/", v.FinanceDashboardView.as_view(), name="dashboard"),
     path("preflight/", v.FinancePreflightView.as_view(), name="preflight"),
     path("analytics/", v.FinanceAnalyticsView.as_view(), name="analytics"),
+
+    # ── Configuration financiere ────────────────────────────────────────
+    # Aucune vue de modification directe : tout passe par une demande
+    # approuvee par un tiers. C'est ce que la gouvernance impose.
+    path("config/", cv.ConfigOverviewView.as_view(), name="config-overview"),
+    path("config/requests/", cv.ConfigChangeRequestListView.as_view(),
+         name="config-requests"),
+    path("config/requests/<str:reference>/approve/",
+         cv.ConfigChangeApproveView.as_view(), name="config-approve"),
+    path("config/requests/<str:reference>/rollback/",
+         cv.ConfigChangeRollbackView.as_view(), name="config-rollback"),
+    path("config/requests/<str:reference>/reject/",
+         cv.ConfigChangeRejectView.as_view(), name="config-reject"),
+    path("config/<str:section>/", cv.ConfigDetailView.as_view(),
+         name="config-detail"),
 
     # ── Paiements ───────────────────────────────────────────────────────────
     path("intents/", v.AdminIntentListView.as_view(), name="intents"),

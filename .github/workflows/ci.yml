@@ -2,11 +2,18 @@ name: CI
 
 on:
   push:
-    branches: [ main ]
+    # `dev` est la branche d'integration de l'equipe : sans elle, le CI ne
+    # tournait qu'a la fusion vers main, trop tard pour rattraper une
+    # migration en conflit ou une dependance cassee.
+    branches: [ main, dev ]
   pull_request:
 
 jobs:
+  # ═══════════════════════════════════════════════════════════════════════
+  # BACKEND — configuration, migrations, tests
+  # ═══════════════════════════════════════════════════════════════════════
   backend:
+    name: Backend (Django)
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -19,6 +26,12 @@ jobs:
         options: >-
           --health-cmd "pg_isready -U belivay"
           --health-interval 5s --health-timeout 5s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: [ "6379:6379" ]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 20
     env:
       DJANGO_SETTINGS_MODULE: relaya.settings.test
       DJANGO_SECRET_KEY: ci-test-secret-key
@@ -28,29 +41,103 @@ jobs:
       POSTGRES_HOST: localhost
       POSTGRES_PORT: 5432
       POSTGRES_SSLMODE: disable
+      # base.py construit les URL de cache et de Celery depuis REDIS_HOST /
+      # REDIS_PORT, dont le defaut « redis » est le nom du service Docker.
+      # En CI, le conteneur de service est joignable sur localhost.
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
     defaults:
       run:
         working-directory: backend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-      - run: pip install -r requirements-dev.txt
-      - run: pytest
+          cache: pip
+          cache-dependency-path: backend/requirements-dev.txt
 
+      - name: Installer les dependances
+        run: pip install -r requirements-dev.txt
+
+      # Reglages Django coherents : applications chargeables, urls resolvables,
+      # modeles valides. Echoue vite et avec un message clair.
+      - name: Verification Django
+        run: python manage.py check
+
+      # ─────────────────────────────────────────────────────────────────────
+      # GARDE-FOU MIGRATIONS
+      #
+      # Detecte deux pannes que les tests ne signalent pas toujours nettement :
+      #   - un modele modifie sans migration correspondante ;
+      #   - plusieurs feuilles dans le graphe d'une application, ce qui fait
+      #     echouer `migrate` avec « Conflicting migrations detected ».
+      #
+      # Ce second cas s'est produit lors d'une fusion : deux migrations de
+      # fusion concurrentes portaient les memes parents. Git n'avait rien
+      # signale, les noms de fichiers differant.
+      # ─────────────────────────────────────────────────────────────────────
+      - name: Graphe de migrations coherent
+        run: python manage.py makemigrations --check --dry-run
+
+      # Les migrations sont REELLEMENT jouees : un graphe valide ne garantit
+      # pas que le SQL passe (contrainte impossible, donnee de migration en
+      # erreur). pytest recree sa propre base, donc ce passage est le seul a
+      # valider la base de developpement telle qu'elle sera deployee.
+      - name: Appliquer les migrations
+        run: python manage.py migrate --noinput
+
+      # La couverture est deja configuree dans pytest.ini
+      # (addopts = -ra --cov=apps --cov-report=term-missing).
+      - name: Tests
+        run: pytest
+
+      # Non bloquant : le schema produit aujourd'hui ~243 avertissements
+      # (serializers non typables, vues sans annotation). A resorber, mais on
+      # veut la visibilite sans bloquer les livraisons.
+      - name: Schema OpenAPI (non bloquant — 243 avertissements a resorber)
+        run: python manage.py spectacular --fail-on-warn --file /dev/null
+        continue-on-error: true
+
+  # ═══════════════════════════════════════════════════════════════════════
+  # FRONTEND — types, lint, tests, build de production
+  # ═══════════════════════════════════════════════════════════════════════
   frontend:
+    name: Frontend (React / Vite)
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: frontend
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-      - run: npm ci
+          # Aligne sur frontend/Dockerfile (node:22-alpine) et sur Vite 7,
+          # qui exige ^20.19 || >=22.12.
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # --legacy-peer-deps : @codetrix-studio/capacitor-google-auth demande
+      # @capacitor/core@^6 alors que le projet est sur ^7, et aucune version
+      # publiee du plugin ne supporte la v7. Sans ce drapeau, `npm ci` echoue
+      # sur ERESOLVE et le job s'arrete avant le moindre test.
+      # Meme contournement qu'en production (voir frontend/Dockerfile.prod).
+      - name: Installer les dependances
+        run: npm ci --legacy-peer-deps
+
       - name: Lint (non bloquant — dette ESLint historique a nettoyer)
         run: npm run lint
         continue-on-error: true
-      - run: npm run test
+
+      - name: Tests
+        run: npm run test
+
+      # Bloquant, et volontairement en dernier : `npm run build` enchaine
+      # `tsc -b` puis `vite build`. Il couvre donc le typage ET l'empaquetage
+      # — un import circulaire ou un actif manquant ne casse qu'ici, jamais
+      # au typage seul.
+      - name: Build de production
+        run: npm run build

@@ -32,6 +32,7 @@ import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
 import TrackingMap from "@/components/TrackingMap";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
+import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
 import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
@@ -651,26 +652,28 @@ export default function OrderDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f5f1] py-10 dark:bg-gray-950">
-      <div className="container mx-auto max-w-6xl px-4">
+    <div className="pf-root" style={{ minHeight: "100vh" }}>
+      <PfShellStyles />
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 64px" }}>
         <Link
           to="/orders"
-          className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-primary dark:text-gray-400"
+          className="mb-6 inline-flex items-center gap-2 text-sm font-medium transition-colors hover:text-[color:var(--pf-accent)]"
+          style={{ color: "var(--pf-text2)" }}
         >
           <ArrowLeft size={18} />
           {t('order.detail.back_link')}
         </Link>
 
-        <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
+        <div className="pf-card pf-anim" style={{ marginBottom: 20 }}>
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em]" style={{ color: "var(--pf-accent)" }}>
                 {t('order.detail.breadcrumb')}
               </p>
-              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+              <h1 className="mt-2 text-3xl font-bold" style={{ color: "var(--pf-text)" }}>
                 {t('order.detail.order_title', { id: order.id })}
               </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+              <p className="mt-2 text-sm" style={{ color: "var(--pf-text2)" }}>
                 {t('order.detail.placed_on', { date: new Date(order.created_at).toLocaleDateString("fr-FR") })}
               </p>
             </div>
@@ -692,7 +695,7 @@ export default function OrderDetailPage() {
 
         <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
           <div className="space-y-6">
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="pf-card pf-anim">
               <div className="mb-5 flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-primary">
                   <MapPin size={22} />
@@ -1046,7 +1049,7 @@ export default function OrderDetailPage() {
               )}
             </section>
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="pf-card pf-anim">
               <h2 className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
                 {t('order.detail.items_title')}
               </h2>
@@ -1160,7 +1163,7 @@ export default function OrderDetailPage() {
             {canSeeDisputeArea && (
             <section
               ref={disputeSectionRef}
-              className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900"
+              className="pf-card pf-anim"
             >
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -1658,7 +1661,7 @@ export default function OrderDetailPage() {
           <div className="space-y-6">
             <OrderPaymentPanel order={order} onPaid={reloadOrder} />
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="pf-card pf-anim">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 {t('order.detail.summary_title')}
               </h2>
@@ -1682,7 +1685,7 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="pf-card pf-anim">
               <h2 className="mb-4 text-lg font-bold text-gray-900 dark:text-white">
                 {t('order.detail.shipping_title')}
               </h2>
@@ -1722,7 +1725,7 @@ export default function OrderDetailPage() {
               </div>
             </section>
 
-            <section className="rounded-[2rem] border border-gray-100 bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <section className="pf-card pf-anim">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600 dark:bg-green-900/20">
                   <ShieldCheck size={20} />

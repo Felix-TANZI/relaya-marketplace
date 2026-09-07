@@ -178,6 +178,18 @@ STORAGES = {
 }
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# ─────────────────────────────────────────────────────────────────────────────
+# URL PUBLIQUE DU SITE
+#
+# Les sitemaps doivent contenir des URL absolues pointant vers le FRONTEND
+# (belivay.com/product/...), jamais vers l'API. Le backend ne connait pas son
+# nom de domaine public : on le lui donne ici.
+# ─────────────────────────────────────────────────────────────────────────────
+PUBLIC_SITE_URL = os.getenv(
+    "PUBLIC_SITE_URL",
+    os.getenv("FRONTEND_URL") or "https://belivay.com",
+).rstrip("/")
+
 # CORS
 frontend_url = os.getenv("FRONTEND_URL")
 CORS_ALLOWED_ORIGINS = [

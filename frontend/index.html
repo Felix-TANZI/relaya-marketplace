@@ -2,28 +2,143 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/favicon-belivay-cart.png" />
-    <link rel="apple-touch-icon" href="/favicon-belivay-cart.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="Belivay - Votre marketplace de confiance au Cameroun. Achetez et vendez en toute sécurité." />
-    <meta name="keywords" content="marketplace, Cameroun, e-commerce, Belivay, shopping, livraison" />
-    <meta name="theme-color" content="#F59E0B" />
-    
-    <!-- Open Graph / Facebook -->
+    <!-- viewport-fit=cover : indispensable pour que l'app remplisse les zones
+         encoche et barre du bas sur mobile. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!--
+      FAVICON — c'est CE fichier que Google affiche a cote du resultat.
+      Il doit etre CARRE et faire au moins 48x48 (multiple de 8). L'ancien
+      favicon-belivay-cart.png faisait 47x54 : non carre, donc ignore, et
+      Google retombait sur l'icone globe generique.
+    -->
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+
+    <link rel="canonical" href="https://belivay.com/" />
+    <!-- Couleur du theme clair par defaut ; ThemeContext la bascule en sombre. -->
+    <meta name="theme-color" content="#F3F4F6" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
+
+    <title>BelivaY — Marketplace camerounaise : le vendeur est payé quand vous êtes livré</title>
+    <meta
+      name="description"
+      content="Marketplace multi-vendeurs à Yaoundé : le vendeur n'est réglé qu'une fois votre colis livré et la réception confirmée. Paiement MTN Mobile Money et Orange Money, livraison en 24-72 h, retour gratuit sous 7 jours."
+    />
+
+    <!-- Open Graph — les URL d'image DOIVENT etre absolues, sinon aucun
+         apercu ne s'affiche sur WhatsApp, Facebook ou LinkedIn. -->
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="BelivaY" />
+    <meta property="og:locale" content="fr_CM" />
     <meta property="og:url" content="https://belivay.com/" />
-    <meta property="og:title" content="BelivaY - Marketplace Cameroun" />
-    <meta property="og:description" content="Votre marketplace de confiance au Cameroun" />
-    <meta property="og:image" content="/favicon-belivay-cart.png" />
+    <meta property="og:title" content="BelivaY — Le vendeur est payé quand vous êtes livré" />
+    <meta
+      property="og:description"
+      content="Marketplace multi-vendeurs à Yaoundé. Vous payez sur la plateforme, le vendeur n'est réglé qu'après votre confirmation de réception. Mobile Money, livraison 24-72 h, retour 7 jours."
+    />
+    <meta property="og:image" content="https://belivay.com/belivay-logo.png" />
+    <meta property="og:image:width" content="300" />
+    <meta property="og:image:height" content="84" />
 
-    <!-- Twitter -->
-    <meta property="twitter:card" content="summary_large_image" />
-    <meta property="twitter:url" content="https://belivay.com/" />
-    <meta property="twitter:title" content="Belivay - Marketplace Cameroun" />
-    <meta property="twitter:description" content="Votre marketplace de confiance au Cameroun" />
-    <meta property="twitter:image" content="/favicon-belivay-cart.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:url" content="https://belivay.com/" />
+    <meta name="twitter:title" content="BelivaY — Le vendeur est payé quand vous êtes livré" />
+    <meta
+      name="twitter:description"
+      content="Marketplace multi-vendeurs à Yaoundé. Vous payez sur la plateforme, le vendeur n'est réglé qu'après votre confirmation de réception. Mobile Money, livraison 24-72 h, retour 7 jours."
+    />
+    <meta name="twitter:image" content="https://belivay.com/belivay-logo.png" />
 
-    <title>Belivay - Marketplace Cameroun</title>
+    <!--
+      DONNEES STRUCTUREES — Organization
+      Declare officiellement le nom et le LOGO de la marque. C'est ce bloc
+      qui alimente le panneau de connaissance Google et associe le logo au
+      domaine. Le logo doit etre accessible sans authentification.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "OnlineStore",
+        "@id": "https://belivay.com/#organization",
+        "name": "BelivaY",
+        "alternateName": "Belivay Marketplace",
+        "url": "https://belivay.com/",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "https://belivay.com/icon-512.png",
+          "width": 512,
+          "height": 512
+        },
+        "image": "https://belivay.com/icon-512.png",
+        "description": "BelivaY est une marketplace en ligne multi-vendeurs basée à Yaoundé, au Cameroun. Particuliers et professionnels y achètent et y vendent des produits neufs ou d'occasion — électronique, mode, beauté, maison, électroménager, alimentation — auprès de boutiques vérifiées, avec paiement par Mobile Money et livraison locale. Au Cameroun, acheter en ligne revient trop souvent à payer d'avance un inconnu, ou à recevoir un article qui ne ressemble pas à l'annonce. BelivaY inverse la logique : l'acheteur paie sur la plateforme, le colis est livré et contrôlé, et le vendeur n'est réglé qu'une fois la réception confirmée. L'acheteur paie par MTN Mobile Money ou Orange Money — les encaissements sont traités par un agrégateur de paiement agréé, BelivaY ne manipule jamais d'espèces — puis choisit la livraison à domicile ou le retrait en point relais, sous 24 à 72 heures à Yaoundé. Chaque colis est suivi jusqu'à la remise, avec un code de retrait et une preuve photo de livraison. Après réception, l'acheteur dispose de 7 jours pour signaler un produit non conforme, endommagé ou contrefait : le retour est gratuit si la réclamation est validée, et le remboursement est effectué sur le moyen de paiement d'origine. Pour les vendeurs, BelivaY est à la fois une vitrine et un back-office : ouverture de boutique après vérification d'identité, fiches produits structurées, gestion des commandes, logistique assurée par le réseau de livreurs et de points relais partenaires, et versement des ventes après confirmation de réception. Aucun abonnement obligatoire : la commission ne s'applique qu'aux ventes réalisées. BelivaY s'adresse aussi à la diaspora : commander depuis l'étranger et faire livrer ses proches à Yaoundé, avec paiement par carte bancaire sécurisé. Lancée à Yaoundé, la plateforme prépare son extension aux autres villes du Cameroun, puis à la zone CEMAC.",
+        "slogan": "La marketplace camerounaise où le vendeur est payé quand vous êtes livré.",
+        "foundingLocation": { "@type": "Place", "name": "Yaoundé, Cameroun" },
+        "email": "contact@belivay.cm",
+        "telephone": "+237689002812",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Yaoundé",
+          "addressCountry": "CM"
+        },
+        "areaServed": [
+          { "@type": "City", "name": "Yaoundé" },
+          { "@type": "Country", "name": "Cameroun" }
+        ],
+        "knowsAbout": [
+          "électronique", "mode", "beauté", "maison", "électroménager",
+          "alimentation", "produits neufs et d'occasion",
+          "paiement Mobile Money", "livraison à domicile", "point relais"
+        ],
+        "contactPoint": {
+          "@type": "ContactPoint",
+          "telephone": "+237689002812",
+          "email": "contact@belivay.cm",
+          "contactType": "customer support",
+          "areaServed": "CM",
+          "availableLanguage": ["fr", "en"]
+        },
+        "paymentAccepted": "MTN Mobile Money, Orange Money, carte bancaire",
+        "currenciesAccepted": "XAF",
+        "hasMerchantReturnPolicy": {
+          "@type": "MerchantReturnPolicy",
+          "applicableCountry": "CM",
+          "returnPolicyCategory": "https://schema.org/MerchantReturnFiniteReturnWindow",
+          "merchantReturnDays": 7,
+          "returnMethod": "https://schema.org/ReturnByMail",
+          "returnFees": "https://schema.org/FreeReturn",
+          "refundType": "https://schema.org/FullRefund"
+        }
+      }
+    </script>
+
+    <!--
+      DONNEES STRUCTUREES — WebSite + SearchAction
+      Decrit le moteur de recherche interne. Condition NECESSAIRE (mais pas
+      suffisante) pour que Google propose un champ de recherche directement
+      dans les resultats.
+    -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "@id": "https://belivay.com/#website",
+        "url": "https://belivay.com/",
+        "name": "BelivaY",
+        "inLanguage": "fr-CM",
+        "publisher": { "@id": "https://belivay.com/#organization" },
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": {
+            "@type": "EntryPoint",
+            "urlTemplate": "https://belivay.com/search?q={search_term_string}"
+          },
+          "query-input": "required name=search_term_string"
+        }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

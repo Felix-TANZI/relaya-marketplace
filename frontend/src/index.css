@@ -29,12 +29,22 @@
   html {
     scroll-behavior: smooth;
     -webkit-font-smoothing: antialiased;
+    background-color: #F3F4F6;   /* bg.light — couvre l'overscroll + les safe-areas en clair */
+    color-scheme: light;
+  }
+  html.dark {
+    background-color: #090E1A;   /* bg.dark */
+    color-scheme: dark;
   }
 
   body {
     @apply bg-bg-light dark:bg-bg-dark text-text-light dark:text-text-dark antialiased;
     background: linear-gradient(135deg, #f3f4f6 0%, #f9fafb 100%);
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  }
+
+  html.dark body {
+    background: linear-gradient(135deg, #090E1A 0%, #111827 100%);
   }
 
   button, a, input, select, textarea {

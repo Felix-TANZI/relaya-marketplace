@@ -374,7 +374,7 @@ export default function HomePage() {
 
             {/* ═══ Récemment consultés — mobile : une rangée de cartes réduites ═══ */}
             {recentProducts.length > 0 ? (
-              <section className="rounded-[22px] border border-[#f1e3d8] bg-[linear-gradient(180deg,#fff7f4,#fff)] p-2.5 shadow-[0_10px_26px_rgba(15,23,42,.05)] lg:hidden dark:border-gray-800 dark:bg-gray-900">
+              <section className="rounded-[22px] border border-[#f1e3d8] bg-[linear-gradient(180deg,#fff7f4,#fff)] p-2.5 shadow-[0_10px_26px_rgba(15,23,42,.05)] lg:hidden dark:border-gray-800 dark:bg-gray-900 dark:bg-none">
                 <div className="mb-2.5 flex items-center gap-2">
                   <Eye size={14} className="text-primary" />
                   <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a6b55] dark:text-gray-400">

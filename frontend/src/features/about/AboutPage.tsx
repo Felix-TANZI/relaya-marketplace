@@ -282,8 +282,8 @@ export default function AboutPage() {
                   style={{ background: "var(--pf-s3)", borderLeft: `4px solid ${value.accent}` }}
                 >
                   <Icon size={24} style={{ color: value.color }} />
-                  <h3 className="mt-3 text-[14px] font-extrabold text-gray-900">{value.title}</h3>
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-600">{value.text}</p>
+                  <h3 className="mt-3 text-[14px] font-extrabold" style={{ color: "var(--pf-text)" }}>{value.title}</h3>
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed" style={{ color: "var(--pf-text2)" }}>{value.text}</p>
                 </article>
               );
             })}
@@ -305,7 +305,7 @@ export default function AboutPage() {
                 style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
               >
                 <p className="text-[21px] font-black leading-none" style={{ color: "var(--pf-text)" }}>{country.code}</p>
-                <p className="mt-1.5 text-[11.5px] font-semibold text-gray-500">{country.name}</p>
+                <p className="mt-1.5 text-[11.5px] font-semibold" style={{ color: "var(--pf-text2)" }}>{country.name}</p>
               </article>
             ))}
           </div>
@@ -318,11 +318,11 @@ export default function AboutPage() {
             Chiffres clés
           </h2>
 
-          <p className="mt-3 text-[13.5px] leading-relaxed text-gray-600 dark:text-gray-400">
-            BelivaY traite plus de <strong className="text-gray-900 dark:text-white">100M FCFA de GMV mensuel</strong>{" "}
-            avec un taux de satisfaction de <strong className="text-gray-900 dark:text-white">98%</strong>. Les
+          <p className="mt-3 text-[13.5px] leading-relaxed" style={{ color: "var(--pf-text2)" }}>
+            BelivaY traite plus de <strong style={{ color: "var(--pf-text)" }}>100M FCFA de GMV mensuel</strong>{" "}
+            avec un taux de satisfaction de <strong style={{ color: "var(--pf-text)" }}>98%</strong>. Les
             commissions vendeurs varient de{" "}
-            <strong className="text-gray-900 dark:text-white">12% à 23%</strong> selon la catégorie, avec des
+            <strong style={{ color: "var(--pf-text)" }}>12% à 23%</strong> selon la catégorie, avec des
             réductions via les plans d'abonnement Premium.
           </p>
 
@@ -336,7 +336,7 @@ export default function AboutPage() {
                   style={{ background: "var(--pf-s3)" }}
                 >
                   <Icon size={20} className="mx-auto" style={{ color: figure.color }} />
-                  <p className="mt-2 text-[12.5px] font-extrabold" style={{ color: figure.color }}>
+                  <p className="mt-2 text-[12.5px] font-extrabold" style={{ color: "var(--pf-text)" }}>
                     {figure.label}
                   </p>
                 </article>
@@ -348,11 +348,11 @@ export default function AboutPage() {
         {/* ═══════════════════ Mentions légales & Conditions ═══════════════════ */}
         <section className="pf-card pf-anim">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900 dark:text-white">
-              <FileText size={20} className="text-gray-400" />
+            <h2 className="flex items-center gap-2.5 text-[19px] font-black" style={{ color: "var(--pf-text)" }}>
+              <FileText size={20} style={{ color: "var(--pf-accent)" }} />
               Mentions légales &amp; Conditions
             </h2>
-            <span className="rounded-full bg-gray-100 px-3 py-1.5 text-[11.5px] font-semibold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
+            <span className="rounded-full px-3 py-1.5 text-[11.5px] font-semibold" style={{ background: "var(--pf-s3)", color: "var(--pf-text2)" }}>
               Dernière mise à jour : 17 mai 2026
             </span>
           </div>
@@ -364,13 +364,13 @@ export default function AboutPage() {
               return (
                 <article
                   key={item.title}
-                  className="overflow-hidden rounded-[12px] border border-gray-100 dark:border-gray-800"
+                  className="overflow-hidden rounded-[12px]" style={{ border: "1px solid var(--pf-border)" }}
                 >
                   <button
                     type="button"
                     onClick={() => setOpenLegal(open ? null : item.title)}
                     aria-expanded={open}
-                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors duration-200 hover:bg-gray-50 dark:hover:bg-gray-800/60"
+                    className="flex w-full items-center gap-3.5 px-4 py-3.5 text-left transition-colors duration-200"
                   >
                     <span
                       className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px]"
@@ -380,20 +380,21 @@ export default function AboutPage() {
                     </span>
 
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13.5px] font-extrabold text-gray-900 dark:text-white">
+                      <span className="block text-[13.5px] font-extrabold" style={{ color: "var(--pf-text)" }}>
                         {item.title}
                       </span>
-                      <span className="block text-[12px] text-gray-500 dark:text-gray-400">{item.sub}</span>
+                      <span className="block text-[12px]" style={{ color: "var(--pf-text2)" }}>{item.sub}</span>
                     </span>
 
                     <ChevronDown
                       size={17}
-                      className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                      className={`flex-shrink-0 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+                      style={{ color: "var(--pf-muted)" }}
                     />
                   </button>
 
                   {open ? (
-                    <p className="border-t border-gray-100 px-4 py-4 text-[12.5px] leading-relaxed text-gray-600 dark:border-gray-800 dark:text-gray-400">
+                    <p className="px-4 py-4 text-[12.5px] leading-relaxed" style={{ borderTop: "1px solid var(--pf-border)", color: "var(--pf-text2)" }}>
                       {item.body}
                     </p>
                   ) : null}

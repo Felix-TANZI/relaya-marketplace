@@ -56,7 +56,7 @@ const DeliveryOrganizationPage = lazy(() => import('@/features/delivery-organiza
 // ─────────────────────────────────────────────────────────────────────────────
 // AUTH PAGES
 // ─────────────────────────────────────────────────────────────────────────────
-const LoginPage = lazy(() => import('@/features/auth/LoginPage'));
+const LoginRoute = lazy(() => import('@/features/auth/LoginRoute'));
 const RegisterPage = lazy(() => import('@/features/auth/RegisterPage'));
 // ─────────────────────────────────────────────────────────────────────────────
 // SELLER PAGES
@@ -201,7 +201,7 @@ export const router = createBrowserRouter([
       { path: 'become-seller',   element: <BecomeSellerPage /> },
 
       // Auth
-      { path: 'login',    element: <PublicRoute><LoginPage /></PublicRoute> },
+      { path: 'login',    element: <PublicRoute><LoginRoute /></PublicRoute> },
       { path: 'register', element: <PublicRoute><RegisterPage /></PublicRoute> },
 
       // Protected (client)

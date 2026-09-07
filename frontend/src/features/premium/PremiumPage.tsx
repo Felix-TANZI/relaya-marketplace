@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { PfShellStyles } from "@/styles/pfShell";
 
 /* ─────────────────────────── Données de la page ─────────────────────────── */
 
@@ -217,6 +218,7 @@ export default function PremiumPage() {
   const { user, isAuthenticated } = useAuth();
 
   /* Calculatrice d'économies — mêmes coefficients que la maquette. */
+  const [billing, setBilling] = useState<"monthly" | "yearly">("monthly");
   const [orders, setOrders] = useState(6);
   const [cart, setCart] = useState(25000);
 
@@ -262,229 +264,171 @@ export default function PremiumPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[linear-gradient(180deg,#f7f4ff_0%,#fff_14%,#f8fafc_100%)] dark:bg-gray-950">
-      <div className="mx-auto max-w-[860px] px-3 pb-16 pt-8 sm:px-4">
-        {/* ═══════════════════════════ Hero ═══════════════════════════ */}
-        <section className="animate-page-in text-center">
-          <span
-            className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-[12px] font-black text-white shadow-[0_8px_22px_rgba(124,58,237,.35)]"
-            style={{ background: "linear-gradient(135deg,#4C1D95,#7C3AED)" }}
-          >
-            <Sparkles size={13} className="animate-gem-sparkle text-amber-200" fill="currentColor" />
-            BelivaY+ Premium
+    <div className="pf-root" style={{ minHeight: "100vh" }}>
+      <PfShellStyles />
+      <div style={{ maxWidth: 1200, margin: "0 auto", padding: "28px 16px 64px" }}>
+        {/* ═══ Hero ═══ */}
+        <section className="pf-anim" style={{ textAlign: "center", marginBottom: 6 }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "5px 13px", borderRadius: 999, fontSize: 11, fontWeight: 700, color: "var(--pf-accent)", background: "var(--pf-asoft)", border: "1px solid var(--pf-aring)" }}>
+            <Gem size={12} fill="currentColor" /> BelivaY+ Premium
           </span>
-
-          <h1 className="mx-auto mt-4 max-w-[520px] bg-[linear-gradient(135deg,#6D28D9,#8B5CF6_55%,#A78BFA)] bg-clip-text text-[30px] font-black leading-[1.15] text-transparent sm:text-[38px]">
-            Vivez une expérience shopping premium
+          <h1 style={{ margin: "10px 0 4px", fontSize: 26, fontWeight: 800, letterSpacing: "-.02em", color: "var(--pf-text)" }}>
+            Une expérience shopping premium
           </h1>
-
-          <p className="mx-auto mt-3 max-w-[420px] text-[13px] leading-relaxed text-gray-500 dark:text-gray-400">
-            Un seul plan. Tous les avantages. Annulable à tout moment, sans frais caché.
+          <p style={{ margin: 0, fontSize: 13, color: "var(--pf-text2)" }}>
+            Un seul plan, tous les avantages. Annulable à tout moment.
           </p>
         </section>
 
-        {/* ═════════════════ Carte membre actif (si connecté) ═════════════════ */}
+        {/* ═══ Membre actif (glass) ═══ */}
         {isAuthenticated ? (
-          <section
-            className="relative mt-8 overflow-hidden rounded-[20px] p-5 text-white shadow-[0_14px_34px_rgba(16,185,129,.24)] sm:p-6"
-            style={{ background: "linear-gradient(135deg,#065F46,#10B981)" }}
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-white/10"
-            />
-
-            <div className="relative z-10">
-              <p className="flex items-center gap-2 text-[15px] font-black">
-                <BadgeCheck size={18} className="text-white" />
-                Vous êtes membre BelivaY+
-              </p>
-
-              <dl className="mt-4 grid grid-cols-2 gap-x-4 gap-y-3.5">
-                <div>
-                  <dt className="text-[9.5px] font-black uppercase tracking-[0.14em] text-white/70">
-                    Membre depuis
-                  </dt>
-                  <dd className="mt-0.5 text-[13px] font-extrabold">{memberSince ?? "—"}</dd>
+          <section className="pf-card pf-anim" style={{ marginTop: 16 }}>
+            <p style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 15, fontWeight: 800, color: "var(--pf-text)" }}>
+              <span style={{ display: "inline-flex", width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", background: "linear-gradient(135deg,#34d399,#059669)", color: "#fff", boxShadow: "0 5px 14px rgba(5,150,105,.35)" }}>
+                <BadgeCheck size={18} />
+              </span>
+              Vous êtes membre BelivaY+
+            </p>
+            <div style={{ marginTop: 14, display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: "14px 16px" }} className="sm:grid-cols-4">
+              {[
+                ["Membre depuis", memberSince ?? "—"],
+                ["Plan", billing === "monthly" ? "Mensuel" : "Annuel"],
+                ["Prochain prélèvement", nextDebit ?? "—"],
+                ["Économies ce mois", `${fmt(savings.perMonth)} FCFA`],
+              ].map(([k, v]) => (
+                <div key={k}>
+                  <div style={{ fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".14em", color: "var(--pf-muted)" }}>{k}</div>
+                  <div style={{ marginTop: 2, fontSize: 13, fontWeight: 800, color: "var(--pf-text)" }}>{v}</div>
                 </div>
-                <div>
-                  <dt className="text-[9.5px] font-black uppercase tracking-[0.14em] text-white/70">
-                    Plan
-                  </dt>
-                  <dd className="mt-0.5 text-[13px] font-extrabold">Mensuel</dd>
-                </div>
-                <div>
-                  <dt className="text-[9.5px] font-black uppercase tracking-[0.14em] text-white/70">
-                    Prochain prélèvement
-                  </dt>
-                  <dd className="mt-0.5 text-[13px] font-extrabold">{nextDebit ?? "—"}</dd>
-                </div>
-                <div>
-                  <dt className="text-[9.5px] font-black uppercase tracking-[0.14em] text-white/70">
-                    Économies ce mois
-                  </dt>
-                  <dd className="mt-0.5 text-[13px] font-extrabold">
-                    {fmt(savings.perMonth)} FCFA
-                  </dd>
-                </div>
-              </dl>
+              ))}
             </div>
           </section>
         ) : null}
 
-        {/* ═══════════════════════ Carte du plan unique ═══════════════════════ */}
-        <section className="relative mt-9">
-          <span className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 whitespace-nowrap rounded-full bg-[linear-gradient(135deg,#F59E0B,#FBBF24)] px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.14em] text-amber-950 shadow-[0_6px_18px_rgba(245,158,11,.4)]">
-            <Star size={10} className="mr-1 inline animate-gem-sparkle" fill="currentColor" />
-            Le plus populaire
-          </span>
+        {/* ═══ 2 colonnes : plan | calculateur + gains ═══ */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1.12fr_0.88fr]" style={{ marginTop: 18, alignItems: "start" }}>
 
-          <div
-            className="relative overflow-hidden rounded-[22px] p-5 pt-8 shadow-[0_20px_46px_rgba(76,29,149,.38)] ring-1 ring-violet-500/30 sm:p-7 sm:pt-9"
-            style={{ background: "linear-gradient(145deg,#1E0A3C,#2E1065,#3B1F72)" }}
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute -right-12 -top-16 h-48 w-48 rounded-full bg-violet-500/20"
-            />
-            <div
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 animate-promo-sweep bg-gradient-to-r from-transparent via-white/12 to-transparent"
-            />
-
-            <div className="relative z-10">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5 text-[11px] font-black text-white ring-1 ring-white/15 backdrop-blur-sm">
-                <Gem size={12} className="animate-gem-sparkle text-amber-300" fill="currentColor" />
-                Plan Unique · Tout Inclus
-              </span>
-
-              <p className="mt-4 flex flex-wrap items-baseline gap-2 text-white">
-                <span className="text-[40px] font-black leading-none sm:text-[46px]">
-                  {fmt(PRICE_MONTHLY)}
+          {/* PLAN — verre, orange en accent */}
+          <div className="pf-anim" style={{ position: "relative", overflow: "hidden", borderRadius: 20, padding: 20, background: "var(--pf-glass)", backdropFilter: "blur(22px) saturate(1.6)", WebkitBackdropFilter: "blur(22px) saturate(1.6)", border: "1px solid var(--pf-glass-border)", boxShadow: "0 10px 40px rgba(244,97,15,.08),0 2px 10px rgba(20,10,5,.04)" }}>
+            <span aria-hidden style={{ position: "absolute", top: -40, right: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle,rgba(244,97,15,.10),transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ position: "relative", zIndex: 1 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 11px", borderRadius: 999, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--pf-accent)", background: "var(--pf-asoft)", border: "1px solid var(--pf-aring)" }}>
+                  <Star size={10} fill="currentColor" /> Le plus populaire
                 </span>
-                <span className="text-[15px] font-bold text-white/75">FCFA/mois</span>
+                <span style={{ fontSize: 13, fontWeight: 800, color: "var(--pf-text)" }}>BelivaY+</span>
+              </div>
+
+              {/* Bascule mensuel / annuel */}
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 3, padding: 3, borderRadius: 999, background: "var(--pf-s3)", border: "1px solid var(--pf-border)", marginBottom: 14 }}>
+                {(["monthly", "yearly"] as const).map((key) => {
+                  const on = billing === key;
+                  return (
+                    <button key={key} type="button" onClick={() => setBilling(key)}
+                      style={{ padding: "6px 14px", borderRadius: 999, fontSize: "11.5px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", border: "none",
+                        ...(on
+                          ? { color: "#fff", background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))", boxShadow: "0 4px 12px rgba(244,97,15,.28)" }
+                          : { color: "var(--pf-text2)", background: "transparent" }) }}>
+                      {key === "monthly" ? "Mensuel" : <>Annuel <span style={{ color: "#16a34a", fontWeight: 800 }}>−17%</span></>}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 2 }}>
+                <span style={{ fontSize: 38, fontWeight: 800, letterSpacing: "-.02em", lineHeight: 1, color: "var(--pf-accent)" }}>
+                  {fmt(billing === "monthly" ? PRICE_MONTHLY : PRICE_YEARLY)}
+                </span>
+                <span style={{ fontSize: 14, fontWeight: 700, color: "var(--pf-text2)" }}>
+                  {billing === "monthly" ? "F/mois" : "F/an"}
+                </span>
+              </div>
+              <p style={{ fontSize: "11.5px", color: "var(--pf-muted)", margin: "0 0 16px" }}>
+                {billing === "monthly"
+                  ? `ou ${fmt(PRICE_YEARLY)} F/an — 2 mois offerts`
+                  : `soit ~${fmt(Math.round(PRICE_YEARLY / 12))} F/mois`}
               </p>
 
-              <p className="mt-2 flex flex-wrap items-center gap-2 text-[12px] font-semibold text-white/60">
-                ou{" "}
-                <span className="font-extrabold text-amber-300">
-                  {fmt(PRICE_YEARLY)} FCFA/an
-                </span>
-                <span className="rounded-full bg-amber-400/20 px-2 py-0.5 text-[10px] font-black text-amber-200 ring-1 ring-amber-300/30">
-                  2 mois offerts
-                </span>
-              </p>
-
-              {/* Les 10 avantages, deux colonnes */}
-              <ul className="mt-5 grid gap-2 sm:grid-cols-2">
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "9px 14px", marginBottom: 18 }}>
                 {PLAN_FEATURES.map((feature) => {
                   const Icon = feature.icon;
                   return (
-                    <li
-                      key={feature.label}
-                      className="flex items-center gap-2.5 rounded-[12px] bg-white/[0.06] px-3 py-2.5 text-[11.5px] font-bold text-white ring-1 ring-white/10 transition-colors duration-200 hover:bg-white/[0.12]"
-                    >
-                      <Icon size={14} className={`flex-shrink-0 ${feature.tone}`} />
+                    <span key={feature.label} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: "11.5px", color: "var(--pf-text)" }}>
+                      <Icon size={14} style={{ flexShrink: 0, color: "var(--pf-accent)" }} />
                       {feature.label}
-                    </li>
+                    </span>
                   );
                 })}
-              </ul>
+              </div>
 
-              {/* Pied de carte : statut membre ou double CTA */}
               {isAuthenticated ? (
-                <p className="mt-5 flex items-center justify-center gap-2 rounded-[12px] bg-emerald-400/15 px-4 py-3 text-center text-[12px] font-extrabold text-emerald-200 ring-1 ring-emerald-300/25">
-                  <BadgeCheck size={14} />
-                  Vous êtes membre BelivaY+ · Actif jusqu'au {nextDebit ?? "—"}
+                <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, background: "rgba(16,185,129,.12)", border: "1px solid rgba(16,185,129,.28)", padding: "12px", fontSize: 12, fontWeight: 800, color: "#059669" }}>
+                  <BadgeCheck size={14} /> Membre actif · jusqu'au {nextDebit ?? "—"}
                 </p>
               ) : (
-                <div className="mt-5 flex flex-col gap-2.5">
-                  <Link
-                    to="/register"
-                    className="flex items-center justify-center gap-2 rounded-full bg-white px-5 py-3.5 text-[13px] font-black text-[#4C1D95] transition-transform duration-200 hover:-translate-y-0.5 hover:bg-amber-100"
-                  >
-                    <Gift size={15} />
-                    Essayer 7 jours gratuits
+                <>
+                  <Link to="/register" className="pf-btn-accent" style={{ width: "100%", justifyContent: "center", padding: "13px", fontSize: 13.5, textDecoration: "none" }}>
+                    <Gift size={15} /> {billing === "monthly" ? "Essayer 7 jours gratuits" : `S'abonner à l'année · ${fmt(PRICE_YEARLY)} F`}
                   </Link>
-                  <Link
-                    to="/register"
-                    className="flex items-center justify-center gap-2 rounded-full border border-white/25 px-5 py-3 text-[12.5px] font-bold text-white/85 transition-colors duration-200 hover:bg-white/10"
-                  >
-                    Ou payer à l'année · {fmt(PRICE_YEARLY)} FCFA
-                  </Link>
-                </div>
+                  <p style={{ textAlign: "center", fontSize: 11, color: "var(--pf-muted)", margin: "8px 0 0" }}>
+                    Sans engagement · annulable à tout moment
+                  </p>
+                </>
               )}
             </div>
           </div>
-        </section>
 
-        {/* ═════════════════════ Calculatrice d'économies ═════════════════════ */}
-        <section
-          className="mt-6 rounded-[20px] p-5 shadow-[0_12px_30px_rgba(245,158,11,.18)] sm:p-6"
-          style={{ background: "linear-gradient(135deg,#FEF3C7,#FDE68A)" }}
-        >
-          <h2 className="flex items-center gap-2 text-[15px] font-black text-amber-950">
-            <Calculator size={17} className="text-amber-700" />
-            Calculez vos économies
-          </h2>
+          {/* COLONNE DROITE : calculateur + gains */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div className="pf-card pf-anim">
+              <h2 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13.5, fontWeight: 800, color: "var(--pf-text)", marginBottom: 12 }}>
+                <Calculator size={16} style={{ color: "var(--pf-accent)" }} /> Calculez vos économies
+              </h2>
 
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="premium-orders"
-                className="text-[11.5px] font-bold text-amber-900"
-              >
-                Commandes par mois
-              </label>
-              <input
-                id="premium-orders"
-                type="range"
-                min={1}
-                max={20}
-                step={1}
-                value={orders}
-                onChange={(event) => setOrders(Number(event.target.value))}
-                className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-amber-600/25 accent-[#D97706]"
-              />
-              <p className="mt-2 text-center text-[12px] font-black text-amber-900">
-                {orders} cmd/mois
-              </p>
+              <label htmlFor="premium-orders" style={{ fontSize: 11, fontWeight: 600, color: "var(--pf-text2)" }}>Commandes / mois</label>
+              <input id="premium-orders" type="range" min={1} max={20} step={1} value={orders}
+                onChange={(e) => setOrders(Number(e.target.value))}
+                className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full accent-[#f4610f]"
+                style={{ background: "var(--pf-s3)" }} />
+              <p style={{ textAlign: "center", fontSize: 11.5, fontWeight: 800, color: "var(--pf-accent)", margin: "6px 0 10px" }}>{orders} cmd/mois</p>
+
+              <label htmlFor="premium-cart" style={{ fontSize: 11, fontWeight: 600, color: "var(--pf-text2)" }}>Panier moyen (FCFA)</label>
+              <input id="premium-cart" type="range" min={5000} max={100000} step={5000} value={cart}
+                onChange={(e) => setCart(Number(e.target.value))}
+                className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full accent-[#f4610f]"
+                style={{ background: "var(--pf-s3)" }} />
+              <p style={{ textAlign: "center", fontSize: 11.5, fontWeight: 800, color: "var(--pf-accent)", margin: "6px 0 12px" }}>{fmt(cart)} FCFA</p>
+
+              <div style={{ borderRadius: 14, padding: 14, textAlign: "center", background: "rgba(16,185,129,.08)", border: "1px solid rgba(16,185,129,.22)" }}>
+                <p style={{ fontSize: 9.5, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".14em", color: "var(--pf-muted)", margin: 0 }}>Économies estimées</p>
+                <p style={{ fontSize: 26, fontWeight: 800, color: "#059669", lineHeight: 1, margin: "5px 0 0" }}>
+                  {fmt(savings.perMonth)} <span style={{ fontSize: 12, fontWeight: 700, color: "var(--pf-text2)" }}>F/mois</span>
+                </p>
+                <p style={{ fontSize: 10.5, color: "var(--pf-muted)", margin: "4px 0 0" }}>
+                  soit {fmt(savings.perYear)} F/an · ROI ×{savings.roi}
+                </p>
+              </div>
             </div>
 
-            <div>
-              <label htmlFor="premium-cart" className="text-[11.5px] font-bold text-amber-900">
-                Panier moyen (FCFA)
-              </label>
-              <input
-                id="premium-cart"
-                type="range"
-                min={5000}
-                max={100000}
-                step={5000}
-                value={cart}
-                onChange={(event) => setCart(Number(event.target.value))}
-                className="mt-2 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-amber-600/25 accent-[#D97706]"
-              />
-              <p className="mt-2 text-center text-[12px] font-black text-amber-900">
-                {fmt(cart)} FCFA
-              </p>
+            <div className="pf-card pf-anim" style={{ display: "flex", flexDirection: "column", gap: 11 }}>
+              {[
+                { icon: Truck, grad: "linear-gradient(135deg,#ffa04d,#f4610f)", label: "Livraison gratuite illimitée" },
+                { icon: CreditCard, grad: "linear-gradient(135deg,#34d399,#059669)", label: "Points fidélité ×3" },
+                { icon: Phone, grad: "linear-gradient(135deg,#5bb8ff,#2563eb)", label: "Support 24/7 prioritaire" },
+              ].map((g) => {
+                const Icon = g.icon;
+                return (
+                  <div key={g.label} style={{ display: "flex", alignItems: "center", gap: 11 }}>
+                    <span style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 11, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: g.grad }}>
+                      <Icon size={17} />
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "var(--pf-text)" }}>{g.label}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
-
-          <div className="mt-4 rounded-[14px] bg-white p-4 text-center shadow-[0_6px_18px_rgba(180,83,9,.12)]">
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-gray-500">
-              Vos économies estimées
-            </p>
-            <p className="mt-1.5 text-[30px] font-black leading-none text-emerald-600 sm:text-[34px]">
-              {fmt(savings.perMonth)} FCFA
-              <span className="ml-1 text-[14px] font-bold text-emerald-600/70">/mois</span>
-            </p>
-            <p className="mt-2 text-[11.5px] font-semibold text-gray-500">
-              soit <strong className="text-gray-700">{fmt(savings.perYear)} FCFA</strong> par an ·
-              ROI <strong className="text-gray-700">×{savings.roi}</strong> sur votre abonnement
-            </p>
-          </div>
-        </section>
+        </div>
 
         {/* ═══════════════════ Tous les avantages Premium ═══════════════════ */}
         <section className="mt-8">
@@ -493,25 +437,18 @@ export default function PremiumPage() {
             Tous les avantages Premium
           </h2>
 
-          <div className="mt-3 rounded-[18px] border border-gray-100 bg-white px-4 shadow-[0_10px_28px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-gray-900">
-            {ADVANTAGES.map((advantage, index) => {
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {ADVANTAGES.map((advantage) => {
               const Icon = advantage.icon;
               return (
-                <article
-                  key={advantage.title}
-                  className={`flex gap-3.5 py-4 transition-transform duration-200 hover:translate-x-1 ${
-                    index > 0 ? "border-t border-gray-100 dark:border-gray-800" : ""
-                  }`}
-                >
-                  <Icon size={20} className={`mt-0.5 flex-shrink-0 ${advantage.tone}`} />
-                  <div>
-                    <h3 className="text-[13.5px] font-extrabold text-gray-900 dark:text-white">
-                      {advantage.title}
-                    </h3>
-                    <p className="mt-1 text-[12px] leading-relaxed text-gray-500 dark:text-gray-400">
-                      {advantage.text}
-                    </p>
-                  </div>
+                <article key={advantage.title} className="pf-card">
+                  <Icon size={22} className={`flex-shrink-0 ${advantage.tone}`} />
+                  <h3 style={{ fontSize: 13.5, fontWeight: 800, color: "var(--pf-text)", marginTop: 10 }}>
+                    {advantage.title}
+                  </h3>
+                  <p style={{ fontSize: 12, lineHeight: 1.6, color: "var(--pf-text2)", marginTop: 4 }}>
+                    {advantage.text}
+                  </p>
                 </article>
               );
             })}
@@ -519,9 +456,9 @@ export default function PremiumPage() {
         </section>
 
         {/* ═══════════════════════ Gratuit vs BelivaY+ ═══════════════════════ */}
-        <section className="mt-8 rounded-[18px] border border-gray-100 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-5 dark:border-gray-800 dark:bg-gray-900">
+        <section className="pf-card pf-anim" style={{ marginTop: 24 }}>
           <h2 className="flex items-center gap-2 text-[16px] font-black text-gray-900 dark:text-white">
-            <BarChart3 size={17} className="text-[#7C3AED]" />
+            <BarChart3 size={17} className="text-[#f4610f]" />
             Gratuit vs BelivaY+
           </h2>
 
@@ -533,7 +470,7 @@ export default function PremiumPage() {
                   <th className="py-2.5 pr-3 text-[10px] font-black uppercase tracking-[0.12em] text-gray-400">
                     Gratuit
                   </th>
-                  <th className="py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#7C3AED]">
+                  <th className="py-2.5 text-[10px] font-black uppercase tracking-[0.12em] text-[#f4610f]">
                     BelivaY+
                   </th>
                 </tr>
@@ -550,7 +487,7 @@ export default function PremiumPage() {
                     <td className="py-3 pr-3 text-[12px] text-gray-500 dark:text-gray-400">
                       {row.free}
                     </td>
-                    <td className="py-3 text-[12px] font-bold text-[#7C3AED] dark:text-violet-300">
+                    <td className="py-3 text-[12px] font-bold text-[#f4610f] dark:text-[#ff8a3d]">
                       <span className="inline-flex items-center gap-1.5">
                         {row.plus}
                         {row.icon === "map" ? <Map size={12} className="text-sky-500" /> : null}
@@ -573,7 +510,7 @@ export default function PremiumPage() {
 
         {/* ═════════════ Gestion de l'abonnement (membres connectés) ═════════════ */}
         {isAuthenticated ? (
-          <section className="mt-6 rounded-[18px] border border-gray-100 bg-white p-4 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-5 dark:border-gray-800 dark:bg-gray-900">
+          <section className="pf-card pf-anim" style={{ marginTop: 24 }}>
             <h2 className="flex items-center gap-2 text-[16px] font-black text-gray-900 dark:text-white">
               <CreditCard size={17} className="text-gray-500" />
               Gestion de votre abonnement
@@ -679,26 +616,26 @@ export default function PremiumPage() {
         ) : null}
 
         {/* ══════════════════════════ Parrainage ══════════════════════════ */}
-        <section
-          className="mt-6 rounded-[18px] border border-pink-100 p-4 sm:p-5 dark:border-pink-500/20"
-          style={{ background: "linear-gradient(135deg,#FDF2F8,#FCE7F3)" }}
-        >
-          <h2 className="flex items-center gap-2 text-[15px] font-black text-gray-900">
-            <Gift size={17} className="text-[#F47920]" />
+        <section className="pf-card pf-anim" style={{ marginTop: 24 }}>
+          <h2 className="flex items-center gap-2 text-[15px] font-black" style={{ color: "var(--pf-text)" }}>
+            <Gift size={17} style={{ color: "var(--pf-accent)" }} />
             Parrainez et gagnez 1 mois offert
           </h2>
 
-          <p className="mt-2 text-[12px] leading-relaxed text-gray-600">
+          <p className="mt-2 text-[12px] leading-relaxed" style={{ color: "var(--pf-text2)" }}>
             Invitez vos amis sur BelivaY+. Pour chaque ami qui souscrit, vous gagnez{" "}
-            <strong className="text-gray-800">1 mois gratuit</strong> et lui aussi.
+            <strong style={{ color: "var(--pf-text)" }}>1 mois gratuit</strong> et lui aussi.
           </p>
 
-          <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-pink-200/70 bg-white px-4 py-3">
+          <div
+            className="mt-3 flex flex-wrap items-center justify-between gap-3 px-4 py-3"
+            style={{ borderRadius: 14, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
+          >
             <div>
-              <p className="text-[9.5px] font-black uppercase tracking-[0.14em] text-pink-500">
+              <p className="text-[9.5px] font-black uppercase tracking-[0.14em]" style={{ color: "var(--pf-accent)" }}>
                 Votre code parrainage
               </p>
-              <p className="mt-0.5 font-mono text-[15px] font-black tracking-wide text-gray-900">
+              <p className="mt-0.5 font-mono text-[15px] font-black tracking-wide" style={{ color: "var(--pf-text)" }}>
                 {referralCode}
               </p>
             </div>
@@ -706,15 +643,16 @@ export default function PremiumPage() {
             <button
               type="button"
               onClick={copyReferral}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[linear-gradient(135deg,#DB2777,#EC4899)] px-4 py-2 text-[12px] font-black text-white transition-transform duration-200 hover:-translate-y-0.5"
+              className="inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-[12px] font-black text-white transition-transform duration-200 hover:-translate-y-0.5"
+              style={{ background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))" }}
             >
               {codeCopied ? <Check size={13} /> : <Copy size={13} />}
               {codeCopied ? "Copié" : "Copier"}
             </button>
           </div>
 
-          <p className="mt-2.5 text-[11px] text-gray-500">
-            <strong className="text-gray-700">0 ami parrainé</strong> · 1 mois offert par ami
+          <p className="mt-2.5 text-[11px]" style={{ color: "var(--pf-muted)" }}>
+            <strong style={{ color: "var(--pf-text2)" }}>0 ami parrainé</strong> · 1 mois offert par ami
           </p>
         </section>
 
@@ -725,11 +663,11 @@ export default function PremiumPage() {
             Ils ont choisi BelivaY+
           </h2>
 
-          <div className="mt-3 flex flex-col gap-3">
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {TESTIMONIALS.map((testimonial) => (
               <article
                 key={testimonial.name}
-                className="rounded-[16px] border border-gray-100 bg-white p-4 shadow-[0_8px_22px_rgba(15,23,42,.04)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_32px_rgba(124,58,237,.12)] dark:border-gray-800 dark:bg-gray-900"
+                className="pf-card"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2.5">
@@ -766,19 +704,14 @@ export default function PremiumPage() {
             Questions fréquentes
           </h2>
 
-          <div className="mt-3 rounded-[18px] border border-gray-100 bg-white px-4 shadow-[0_10px_28px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-gray-900">
-            {FAQ.map((item, index) => (
-              <article
-                key={item.q}
-                className={`py-4 ${
-                  index > 0 ? "border-t border-gray-100 dark:border-gray-800" : ""
-                }`}
-              >
-                <h3 className="flex items-start gap-2 text-[12.5px] font-extrabold text-gray-900 dark:text-white">
-                  <span className="mt-1.5 h-1.5 w-1.5 flex-shrink-0 rotate-45 bg-[#F47920]" />
+          <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {FAQ.map((item) => (
+              <article key={item.q} className="pf-card">
+                <h3 style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 12.5, fontWeight: 800, color: "var(--pf-text)" }}>
+                  <span style={{ marginTop: 6, width: 6, height: 6, flexShrink: 0, transform: "rotate(45deg)", background: "var(--pf-accent)" }} />
                   {item.q}
                 </h3>
-                <p className="mt-1.5 pl-3.5 text-[12px] leading-relaxed text-gray-500 dark:text-gray-400">
+                <p style={{ marginTop: 6, paddingLeft: 14, fontSize: 12, lineHeight: 1.6, color: "var(--pf-text2)" }}>
                   {item.a}
                 </p>
               </article>

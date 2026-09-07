@@ -1,0 +1,18 @@
+{
+  "name": "BelivaY — Marketplace Cameroun",
+  "short_name": "BelivaY",
+  "description": "Marketplace multi-vendeurs à Yaoundé : le vendeur n'est réglé qu'une fois votre colis livré et la réception confirmée. Mobile Money, livraison 24-72 h, retour gratuit sous 7 jours.",
+  "lang": "fr-CM",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f5f3f7",
+  "theme_color": "#F47920",
+  "icons": [
+    { "src": "/favicon-48.png", "sizes": "48x48", "type": "image/png" },
+    { "src": "/favicon-96.png", "sizes": "96x96", "type": "image/png" },
+    { "src": "/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
+}

@@ -12,6 +12,7 @@ import MobileBottomNav from '@/components/MobileBottomNav';
 import BackToTop from '@/components/BackToTop';
 import { isDedicatedPortal } from '@/config/portals';
 import useFixedHeaderHeight from '@/hooks/useFixedHeaderHeight';
+import RouteSeo from '@/components/seo/RouteSeo';
 
 function ScrollToTopOnRouteChange() {
   const { pathname, search } = useLocation();
@@ -143,6 +144,10 @@ export default function AppLayout() {
     <div className="belivay-client min-h-screen flex flex-col overflow-x-hidden bg-bg-light dark:bg-bg-dark transition-colors">
       <a href="#main-content" className="fixed left-3 top-3 z-[9999] -translate-y-24 rounded-lg bg-gray-950 px-4 py-3 text-sm font-bold text-white transition focus:translate-y-0">Aller au contenu principal</a>
       <ScrollToTopOnRouteChange />
+      {/* Titre, description, canonical et noindex selon la route. Les pages
+          dont les metadonnees dependent des donnees (fiche produit) posent
+          leur propre <Seo> et sont absentes de la table de RouteSeo. */}
+      <RouteSeo />
       {(!online || usingOfflineCache) && <div role="status" className="fixed inset-x-0 top-0 z-[9998] bg-amber-600 px-4 py-2 text-center text-sm font-bold text-white">Mode hors ligne : les données affichées proviennent du cache et peuvent ne plus être à jour.</div>}
       {!hideChrome && !isCheckout && <TopAdBar />}
       {!hideChrome && !isCheckout && <Header />}

@@ -117,13 +117,10 @@ export default function WhyBelivaySection() {
       </div>
 
       {/* ═══════════════ Bandeau BelivaY · Marketplace CEMAC ═══════════════ */}
-      <div
-        className="relative mt-5 overflow-hidden rounded-[18px] border border-[#f7e2c9] p-3.5 sm:mt-6 sm:rounded-[22px] sm:p-4"
-        style={{ background: "linear-gradient(118deg,#FFF3E4 0%,#FFE7CE 52%,#FFF7EC 100%)" }}
-      >
+      <div className="relative mt-5 overflow-hidden rounded-[18px] border border-[#f7e2c9] p-3.5 sm:mt-6 sm:rounded-[22px] sm:p-4 bg-[linear-gradient(118deg,#FFF3E4,#FFE7CE,#FFF7EC)] dark:border-gray-800 dark:bg-[linear-gradient(118deg,#111827,#0f172a)]">
         <span
           aria-hidden
-          className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-white/45"
+          className="pointer-events-none absolute -right-10 -top-14 h-40 w-40 rounded-full bg-white/45 dark:bg-white/[0.05]"
         />
         <div
           aria-hidden
@@ -143,20 +140,20 @@ export default function WhyBelivaySection() {
         <div className="relative z-10 flex flex-col gap-3 lg:flex-row lg:items-center lg:gap-4">
           {/* Identité */}
           <div className="flex min-w-0 items-center gap-3 lg:w-[300px] lg:flex-shrink-0">
-            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary shadow-[0_6px_16px_rgba(244,121,32,.18)]">
+            <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-white text-primary dark:bg-gray-800 shadow-[0_6px_16px_rgba(244,121,32,.18)]">
               <ShoppingCart size={22} />
             </span>
 
             <div className="min-w-0">
-              <p className="text-[14.5px] font-black leading-tight text-gray-900 sm:text-[16px] lg:whitespace-nowrap">
+              <p className="text-[14.5px] font-black leading-tight text-gray-900 dark:text-white sm:text-[16px] lg:whitespace-nowrap">
                 BelivaY · Marketplace CEMAC
               </p>
-              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold leading-snug text-gray-500">
+              <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold leading-snug text-gray-500 dark:text-gray-400">
                 <span className="rounded bg-primary/15 px-1 py-px text-[8.5px] font-black uppercase tracking-[0.1em] text-[#C85E14]">
                   CM
                 </span>
                 Made in Cameroon
-                <span className="text-gray-300">·</span>
+                <span className="text-gray-300 dark:text-gray-600">·</span>
                 <Globe size={11} className="text-primary" />
                 {CEMAC_COUNTRIES}
               </p>
@@ -168,15 +165,15 @@ export default function WhyBelivaySection() {
             {marketplaceStats.map((stat) => (
               <article
                 key={stat.label}
-                className="rounded-[12px] bg-white px-3 py-2 text-center shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-transform duration-200 hover:-translate-y-0.5"
+                className="rounded-[12px] bg-white dark:bg-gray-900 px-3 py-2 text-center shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-transform duration-200 hover:-translate-y-0.5"
               >
-                <p className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[13px] font-black leading-none text-[#C85E14]">
+                <p className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[13px] font-black leading-none text-[#C85E14] dark:text-primary">
                   {stat.value}
                   {stat.star ? (
                     <Star size={10} className="text-amber-500" fill="currentColor" />
                   ) : null}
                 </p>
-                <p className="mt-1 whitespace-nowrap text-[8.5px] font-black uppercase tracking-[0.12em] text-gray-400">
+                <p className="mt-1 whitespace-nowrap text-[8.5px] font-black uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
                   {stat.label}
                 </p>
               </article>
@@ -191,7 +188,7 @@ export default function WhyBelivaySection() {
                 <Link
                   key={link.label}
                   to={link.to}
-                  className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-3 py-1.5 text-[11.5px] font-bold text-gray-700 shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-all duration-200 hover:-translate-y-0.5 hover:text-primary"
+                  className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white dark:bg-gray-800 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 dark:text-gray-200 shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-all duration-200 hover:-translate-y-0.5 hover:text-primary"
                 >
                   <Icon size={12} className="flex-shrink-0 text-primary" />
                   {link.label}

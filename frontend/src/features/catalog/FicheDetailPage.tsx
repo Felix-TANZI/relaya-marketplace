@@ -5,6 +5,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { recordProductView } from '@/lib/recentlyViewed';
+import Seo from '@/components/seo/Seo';
 import {
   Bell, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Clock, Heart, HelpCircle, Link2, Lock,
   MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag,
@@ -425,8 +426,71 @@ export default function FicheDetailPage() {
     );
   };
 
+  // ───────────────────────────────────────────────────────────────────────────
+  // REFERENCEMENT DE LA FICHE
+  //
+  // Sans ce bloc, chaque fiche s'annoncait a Google sous le titre generique
+  // d'index.html. Le JSON-LD Product est ce qui permet d'afficher prix,
+  // disponibilite et etoiles directement dans les resultats de recherche.
+  // ───────────────────────────────────────────────────────────────────────────
+  const prixOffres = filteredMasterOffers
+    .filter((o) => o.is_active && o.price_final > 0)
+    .map((o) => o.price_final);
+  const enStock = filteredMasterOffers.some((o) => o.is_active && o.stock_quantity > 0);
+  const descriptionSeo = (shortDesc || master.description || "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 300);
+
+  const ficheJsonLd: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: master.title,
+    sku: String(master.id),
+    ...(master.brand ? { brand: { "@type": "Brand", name: master.brand } } : {}),
+    ...(descriptionSeo ? { description: descriptionSeo } : {}),
+    ...(master.primary_image ? { image: [master.primary_image] } : {}),
+    ...(master.category?.name ? { category: master.category.name } : {}),
+    ...(prixOffres.length
+      ? {
+          offers: {
+            "@type": "AggregateOffer",
+            priceCurrency: "XAF",
+            lowPrice: Math.min(...prixOffres),
+            highPrice: Math.max(...prixOffres),
+            offerCount: prixOffres.length,
+            availability: enStock
+              ? "https://schema.org/InStock"
+              : "https://schema.org/OutOfStock",
+            url: `https://belivay.com/product/${master.slug}`,
+          },
+        }
+      : {}),
+    ...(bbReviews.length
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: Number(avgRating.toFixed(1)),
+            reviewCount: bbReviews.length,
+          },
+        }
+      : {}),
+  };
+
   return (
     <div className="min-h-screen w-full bg-[#f5f6f8] dark:bg-gray-900">
+      <Seo
+        title={master.brand ? `${master.title} — ${master.brand}` : master.title}
+        description={
+          descriptionSeo ||
+          `${master.title} disponible sur BelivaY. Paiement Mobile Money securise, livraison au Cameroun.`
+        }
+        path={`/product/${master.slug}`}
+        image={master.primary_image ?? undefined}
+        type="product"
+        jsonLd={ficheJsonLd}
+      />
       <div className="w-full space-y-5 px-3 py-6 sm:px-6 lg:px-10">
 
         <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">

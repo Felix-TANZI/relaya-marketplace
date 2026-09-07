@@ -7,9 +7,23 @@ from django.conf import settings
 from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.vendors import views as vendors_views
+from apps.common import seo_views
 
 urlpatterns = [
     path("django-admin/", admin.site.urls),
+
+    # ─────────────────────────────────────────────────────────────────────
+    # SITEMAPS DYNAMIQUES
+    #
+    # Montes sous /api/ parce que nginx n'y route que ce prefixe vers le
+    # backend ; tout le reste part vers le conteneur frontend. Les URL
+    # publiques /sitemap-products.xml et /sitemap-categories.xml sont
+    # obtenues par un proxy nginx vers ces deux chemins (voir nginx.conf).
+    # ─────────────────────────────────────────────────────────────────────
+    path("api/sitemap-products.xml", seo_views.sitemap_produits,
+         name="sitemap-products"),
+    path("api/sitemap-categories.xml", seo_views.sitemap_categories,
+         name="sitemap-categories"),
 
     # API
     path("api/auth/", include("apps.accounts.urls")),

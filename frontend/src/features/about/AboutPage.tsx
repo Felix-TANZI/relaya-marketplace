@@ -4,6 +4,7 @@
 
 import { useState } from "react";
 import { Link } from "react-router-dom";
+import { PfShellStyles } from "@/styles/pfShell";
 import {
   BarChart3,
   ChevronDown,
@@ -188,52 +189,29 @@ export default function AboutPage() {
   const [openLegal, setOpenLegal] = useState<string | null>(null);
 
   return (
-    <div className="min-h-screen bg-[#f5f6f8] px-3 py-5 dark:bg-gray-950 sm:px-6 sm:py-7">
-      <div className="mx-auto max-w-[1160px] space-y-5">
+    <div className="pf-root" style={{ minHeight: "100vh" }}>
+      <PfShellStyles />
+      <div className="space-y-5" style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 16px 64px" }}>
 
-        {/* ═══════════════════════════ Hero ═══════════════════════════ */}
-        <section
-          className="animate-page-in relative overflow-hidden rounded-[22px] px-5 py-12 text-center text-white shadow-[0_20px_46px_rgba(234,88,12,.26)] sm:px-10 sm:py-16"
-          style={{
-            background:
-              "linear-gradient(102deg,#B91C1C 0%,#DC2626 14%,#EA580C 42%,#F47920 72%,#FB923C 100%)",
-          }}
-        >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -right-16 top-6 h-52 w-52 rounded-full bg-white/10"
-          />
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-y-0 -left-1/3 w-1/3 animate-promo-sweep bg-gradient-to-r from-transparent via-white/15 to-transparent"
-          />
-
-          <div className="relative z-10">
-            <ShoppingBag size={64} className="mx-auto text-white/90 drop-shadow-lg" strokeWidth={1.6} />
-
-            <h1 className="mt-6 text-[38px] font-black leading-none sm:text-[46px]">BelivaY</h1>
-            <p className="mt-3 text-[15px] font-extrabold sm:text-[17px]">
+        {/* ═══ Hero (glass) ═══ */}
+        <section className="pf-ident pf-anim" style={{ flexDirection: "column", justifyContent: "center", textAlign: "center", padding: "34px 24px" }}>
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 62, height: 62, borderRadius: 18, color: "#fff", background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))", boxShadow: "0 8px 22px rgba(244,97,15,.4)", marginBottom: 12 }}>
+              <ShoppingBag size={30} strokeWidth={1.8} />
+            </div>
+            <h1 style={{ fontSize: 34, fontWeight: 800, letterSpacing: "-.02em", color: "var(--pf-text)" }}>BelivaY</h1>
+            <p style={{ marginTop: 6, fontSize: 14.5, fontWeight: 800, color: "var(--pf-accent)" }}>
               La marketplace de confiance de l'Afrique Centrale
             </p>
-            <p className="mx-auto mt-3 max-w-[520px] text-[13.5px] leading-relaxed text-white/90">
-              Achetez et vendez en toute sécurité avec <strong>paiement Mobile Money</strong> et
-              protection <strong>Escrow BelivaY</strong>.
+            <p style={{ margin: "8px auto 0", maxWidth: 520, fontSize: 13, lineHeight: 1.6, color: "var(--pf-text2)" }}>
+              Achetez et vendez en toute sécurité avec paiement Mobile Money et protection Escrow BelivaY.
             </p>
-
-            <div className="mt-7 flex flex-wrap items-center justify-center gap-3">
-              <Link
-                to="/catalog"
-                className="inline-flex items-center gap-2 rounded-full bg-white px-6 py-3 text-[13.5px] font-black text-[#EA580C] shadow-lg transition-transform duration-200 hover:-translate-y-0.5"
-              >
-                <ShoppingCart size={15} />
-                Commencer à acheter
+            <div style={{ marginTop: 20, display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "center", gap: 12 }}>
+              <Link to="/catalog" className="pf-btn-accent" style={{ textDecoration: "none" }}>
+                <ShoppingCart size={15} /> Commencer à acheter
               </Link>
-              <Link
-                to="/become-seller"
-                className="inline-flex items-center gap-2 rounded-full border border-white/40 bg-white/15 px-6 py-3 text-[13.5px] font-black text-white backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white/25"
-              >
-                <Store size={15} />
-                Devenir vendeur
+              <Link to="/become-seller" className="pf-btn-ghost" style={{ textDecoration: "none" }}>
+                <Store size={15} /> Devenir vendeur
               </Link>
             </div>
           </div>
@@ -242,77 +220,55 @@ export default function AboutPage() {
         {/* ═══════════════════════ Chiffres d'ouverture ═══════════════════════ */}
         <section className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {STATS.map((item) => (
-            <article
-              key={item.label}
-              className="rounded-[16px] p-5 text-center transition-transform duration-200 hover:-translate-y-1"
-              style={{ background: item.bg }}
-            >
-              <p
-                className="flex items-center justify-center gap-1 text-[26px] font-black leading-none sm:text-[30px]"
-                style={{ color: item.color }}
-              >
+            <article key={item.label} className="pf-stat pf-anim" style={{ flexDirection: "column", justifyContent: "center", textAlign: "center", gap: 4 }}>
+              <p style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 4, fontSize: 26, fontWeight: 800, lineHeight: 1, color: item.color }}>
                 {item.value}
                 {item.star ? <Star size={20} className="text-amber-500" fill="currentColor" /> : null}
               </p>
-              <p className="mt-2 text-[12px] font-semibold text-gray-500">{item.label}</p>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "var(--pf-text2)" }}>{item.label}</p>
             </article>
           ))}
         </section>
 
-        {/* ═══════════════════════════ Mission ═══════════════════════════ */}
-        <section
-          className="flex flex-wrap items-start gap-4 rounded-[18px] border border-[#ddd6fe] p-5 sm:flex-nowrap sm:p-6 dark:border-gray-800"
-          style={{ background: "linear-gradient(135deg,#f3f0ff,#f8f6ff)" }}
-        >
-          <span className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
-            <Target size={30} className="text-red-600" />
-          </span>
-
-          <div className="min-w-0">
-            <h2 className="text-[19px] font-black text-gray-900">Notre Mission</h2>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-gray-600">
+        {/* ═══ Mission + Escrow (2 colonnes) ═══ */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2" style={{ alignItems: "start" }}>
+          <section className="pf-card pf-anim">
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+              <span style={{ display: "inline-flex", width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", color: "#fff", background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))", boxShadow: "0 6px 16px rgba(244,97,15,.35)" }}>
+                <Target size={20} />
+              </span>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: "var(--pf-text)" }}>Notre Mission</h2>
+            </div>
+            <p style={{ fontSize: 13, lineHeight: 1.65, color: "var(--pf-text2)" }}>
               Démocratiser le commerce numérique en Afrique Centrale avec un environnement{" "}
-              <strong className="text-gray-900">sûr, transparent et accessible</strong> à tous.
-              BelivaY connecte vendeurs artisans et acheteurs grâce à un système de confiance basé
-              sur l'<strong className="text-gray-900">Escrow</strong> — vos fonds sont protégés
-              jusqu'à la confirmation de réception.
+              <strong style={{ color: "var(--pf-text)" }}>sûr, transparent et accessible</strong> à tous. BelivaY connecte vendeurs et acheteurs grâce à un système de confiance basé sur l'<strong style={{ color: "var(--pf-text)" }}>Escrow</strong> — vos fonds sont protégés jusqu'à la confirmation de réception.
             </p>
-          </div>
-        </section>
+          </section>
 
-        {/* ═══════════════════════ Fonctionnement Escrow ═══════════════════════ */}
-        <section className="rounded-[18px] border border-gray-100 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900 dark:text-white">
-            <Lock size={20} className="text-[#F47920]" />
-            Comment fonctionne l'Escrow BelivaY ?
-          </h2>
-
-          <ol className="mt-4 flex flex-col gap-2.5">
-            {ESCROW_STEPS.map((step, index) => (
-              <li
-                key={step.title}
-                className="flex items-start gap-3.5 rounded-[12px] p-4 transition-transform duration-200 hover:translate-x-1"
-                style={{ background: step.bg }}
-              >
-                <span
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full text-[14px] font-black text-white"
-                  style={{ background: step.dot }}
-                >
-                  {index + 1}
-                </span>
-                <div className="min-w-0">
-                  <p className="text-[13.5px] font-extrabold text-gray-900">{step.title}</p>
-                  <p className="mt-1 text-[12.5px] leading-relaxed text-gray-600">{step.text}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
+          <section className="pf-card pf-anim">
+            <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 17, fontWeight: 800, color: "var(--pf-text)", marginBottom: 14 }}>
+              <Lock size={19} style={{ color: "var(--pf-accent)" }} /> L'Escrow BelivaY
+            </h2>
+            <ol style={{ display: "flex", flexDirection: "column", gap: 10, listStyle: "none", padding: 0, margin: 0 }}>
+              {ESCROW_STEPS.map((step, index) => (
+                <li key={step.title} style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                  <span style={{ display: "inline-flex", width: 28, height: 28, flexShrink: 0, alignItems: "center", justifyContent: "center", borderRadius: "50%", fontSize: 12, fontWeight: 800, color: "#fff", background: "linear-gradient(135deg,var(--pf-accent2),var(--pf-accent))" }}>
+                    {index + 1}
+                  </span>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 13, fontWeight: 800, color: "var(--pf-text)" }}>{step.title}</p>
+                    <p style={{ marginTop: 2, fontSize: 12, lineHeight: 1.55, color: "var(--pf-text2)" }}>{step.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+          </section>
+        </div>
 
         {/* ═══════════════════════════ Valeurs ═══════════════════════════ */}
-        <section className="rounded-[18px] border border-gray-100 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900 dark:text-white">
-            <Gem size={20} className="animate-gem-sparkle text-[#F47920]" fill="currentColor" />
+        <section className="pf-card pf-anim">
+          <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
+            <Gem size={20} style={{ color: "var(--pf-accent)" }} fill="currentColor" />
             Nos Valeurs
           </h2>
 
@@ -323,7 +279,7 @@ export default function AboutPage() {
                 <article
                   key={value.title}
                   className="rounded-[12px] p-4 transition-transform duration-200 hover:-translate-y-1"
-                  style={{ background: value.bg, borderLeft: `4px solid ${value.accent}` }}
+                  style={{ background: "var(--pf-s3)", borderLeft: `4px solid ${value.accent}` }}
                 >
                   <Icon size={24} style={{ color: value.color }} />
                   <h3 className="mt-3 text-[14px] font-extrabold text-gray-900">{value.title}</h3>
@@ -335,12 +291,9 @@ export default function AboutPage() {
         </section>
 
         {/* ═══════════════════════ Présence CEMAC ═══════════════════════ */}
-        <section
-          className="rounded-[18px] border border-[#cfe0fb] p-5 sm:p-6 dark:border-gray-800"
-          style={{ background: "linear-gradient(135deg,#eaf2fe,#f5f9ff)" }}
-        >
-          <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900">
-            <Globe size={20} className="text-[#2563EB]" />
+        <section className="pf-card pf-anim">
+          <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
+            <Globe size={20} style={{ color: "#2563eb" }} />
             Présence CEMAC
           </h2>
 
@@ -348,9 +301,10 @@ export default function AboutPage() {
             {COUNTRIES.map((country) => (
               <article
                 key={country.code}
-                className="rounded-[12px] bg-white px-3 py-4 text-center shadow-[0_4px_12px_rgba(37,99,235,.08)] transition-transform duration-200 hover:-translate-y-1"
+                className="rounded-[12px] px-3 py-4 text-center transition-transform duration-200 hover:-translate-y-1"
+                style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
               >
-                <p className="text-[21px] font-black leading-none text-gray-800">{country.code}</p>
+                <p className="text-[21px] font-black leading-none" style={{ color: "var(--pf-text)" }}>{country.code}</p>
                 <p className="mt-1.5 text-[11.5px] font-semibold text-gray-500">{country.name}</p>
               </article>
             ))}
@@ -358,9 +312,9 @@ export default function AboutPage() {
         </section>
 
         {/* ═══════════════════════════ Chiffres clés ═══════════════════════════ */}
-        <section className="rounded-[18px] border border-gray-100 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-6 dark:border-gray-800 dark:bg-gray-900">
-          <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900 dark:text-white">
-            <BarChart3 size={20} className="text-[#F47920]" />
+        <section className="pf-card pf-anim">
+          <h2 style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>
+            <BarChart3 size={20} style={{ color: "var(--pf-accent)" }} />
             Chiffres clés
           </h2>
 
@@ -379,7 +333,7 @@ export default function AboutPage() {
                 <article
                   key={figure.label}
                   className="rounded-[12px] p-4 text-center transition-transform duration-200 hover:-translate-y-1"
-                  style={{ background: figure.bg }}
+                  style={{ background: "var(--pf-s3)" }}
                 >
                   <Icon size={20} className="mx-auto" style={{ color: figure.color }} />
                   <p className="mt-2 text-[12.5px] font-extrabold" style={{ color: figure.color }}>
@@ -392,7 +346,7 @@ export default function AboutPage() {
         </section>
 
         {/* ═══════════════════ Mentions légales & Conditions ═══════════════════ */}
-        <section className="rounded-[18px] border border-gray-100 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,.05)] sm:p-6 dark:border-gray-800 dark:bg-gray-900">
+        <section className="pf-card pf-anim">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="flex items-center gap-2.5 text-[19px] font-black text-gray-900 dark:text-white">
               <FileText size={20} className="text-gray-400" />
@@ -450,22 +404,13 @@ export default function AboutPage() {
         </section>
 
         {/* ═══════════════════════════ Contact ═══════════════════════════ */}
-        <section
-          className="relative overflow-hidden rounded-[22px] px-5 py-10 text-center text-white sm:px-10 sm:py-12"
-          style={{ background: "linear-gradient(150deg,#111827 0%,#1a2438 55%,#20293d 100%)" }}
-        >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -right-16 bottom-0 h-56 w-56 rounded-full bg-[#F47920]/10"
-          />
+        <section className="pf-card pf-anim" style={{ textAlign: "center", padding: 28 }}>
+          <Phone size={34} style={{ margin: "0 auto", color: "#059669" }} />
 
-          <div className="relative z-10">
-            <Phone size={34} className="mx-auto text-emerald-400" />
-
-            <h2 className="mt-4 text-[24px] font-black">Contactez-nous</h2>
-            <p className="mt-2 text-[13.5px] text-white/75">
+          <h2 style={{ marginTop: 12, fontSize: 24, fontWeight: 800, color: "var(--pf-text)" }}>Contactez-nous</h2>
+          <p style={{ marginTop: 6, fontSize: 13.5, color: "var(--pf-text2)" }}>
               Une question ? Notre équipe est disponible{" "}
-              <span className="font-bold text-[#F8A45E]">7j/7</span>.
+              <span style={{ color: "var(--pf-accent)", fontWeight: 700 }}>7j/7</span>.
             </p>
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
@@ -490,31 +435,30 @@ export default function AboutPage() {
 
               <a
                 href="mailto:contact@belivay.cm"
-                className="inline-flex items-center gap-2 rounded-full bg-white/10 px-6 py-3 text-[13px] font-black text-white ring-1 ring-white/20 transition-transform duration-200 hover:-translate-y-0.5 hover:bg-white/20"
+                className="pf-btn-ghost" style={{ textDecoration: "none" }}
               >
                 <Mail size={15} />
                 Email
               </a>
             </div>
 
-            <div className="mx-auto mt-8 max-w-[560px] border-t border-white/15 pt-5 text-[12.5px] text-white/75">
+            <div className="mx-auto mt-8 max-w-[560px] border-t border-[color:var(--pf-border)] pt-5 text-[12.5px] text-[color:var(--pf-text2)]">
               <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1">
                 <span className="inline-flex items-center gap-1.5">
                   <Mail size={13} />
                   contact@belivay.cm
                 </span>
-                <span className="text-white/30">·</span>
+                <span style={{ color: "var(--pf-muted)" }}>·</span>
                 <span className="inline-flex items-center gap-1.5">
                   <Phone size={13} />
                   +237 689 002 812
                 </span>
               </p>
               <p className="mt-1.5 inline-flex items-center gap-1.5">
-                <MapPin size={13} className="text-[#F8A45E]" />
+                <MapPin size={13} className="text-[#f4610f]" />
                 Yaoundé, Cameroun · CEMAC
               </p>
             </div>
-          </div>
         </section>
       </div>
     </div>

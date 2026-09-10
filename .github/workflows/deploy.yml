@@ -151,7 +151,7 @@ jobs:
             set -e
             cd "${{ vars.TARGET_PATH }}"
             git fetch origin main
-            git checkout "${{ steps.sha.outputs.sha }}"
+            git reset --hard "${{ steps.sha.outputs.sha }}"
             chmod +x deploy.sh
             ./deploy.sh
 

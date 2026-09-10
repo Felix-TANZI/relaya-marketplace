@@ -144,6 +144,20 @@ class VendorProfile(models.Model):
         return self.status == 'APPROVED'
 
     @property
+    def required_location(self):
+        for location in self.locations.filter(is_active=True).order_by('-is_main', 'name'):
+            has_address = bool((location.address or '').strip())
+            has_coords = location.latitude is not None and location.longitude is not None
+            has_access_description = len((location.description or '').strip()) >= 10
+            if location.is_main and has_address and (has_coords or has_access_description):
+                return location
+        return None
+
+    @property
+    def has_required_location(self):
+        return self.required_location is not None
+
+    @property
     def public_url(self):
         return f"https://belivay.com?ref={self.shop_slug}" if self.shop_slug else None
 
@@ -360,6 +374,11 @@ class VendorLocation(models.Model):
     vendor               = models.ForeignKey(VendorProfile, on_delete=models.CASCADE, related_name='locations')
     name                 = models.CharField(max_length=200, verbose_name="Nom de l'emplacement")
     address              = models.TextField(verbose_name="Adresse complète")
+    description          = models.TextField(
+        blank=True,
+        verbose_name="Description d'accès",
+        help_text="Repères et indications permettant à BelivaY de retrouver la boutique.",
+    )
     phone                = models.CharField(max_length=20, verbose_name="Téléphone de l'emplacement")
     email                = models.EmailField(blank=True, verbose_name="Email de l'emplacement")
     representative_name  = models.CharField(max_length=200, verbose_name="Nom du représentant")

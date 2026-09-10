@@ -113,6 +113,7 @@ services:
     container_name: relaya_frontend_client
     environment:
       VITE_PORTAL_ROLE: client
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5173
       VITE_HMR_CLIENT_PORT: 5174
     ports:
@@ -125,6 +126,7 @@ services:
     container_name: relaya_frontend_admin
     environment:
       VITE_PORTAL_ROLE: admin
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5176
       VITE_HMR_CLIENT_PORT: 5175
     ports:
@@ -137,6 +139,7 @@ services:
     container_name: relaya_frontend_seller
     environment:
       VITE_PORTAL_ROLE: seller
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5174
       VITE_HMR_CLIENT_PORT: 5176
     ports:
@@ -149,6 +152,7 @@ services:
     container_name: relaya_frontend_courier
     environment:
       VITE_PORTAL_ROLE: courier
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5175
       VITE_HMR_CLIENT_PORT: 5177
     ports:
@@ -161,6 +165,7 @@ services:
     container_name: relaya_frontend_delivery_organization
     environment:
       VITE_PORTAL_ROLE: delivery_organization
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5177
       VITE_HMR_CLIENT_PORT: 5178
     ports:
@@ -173,6 +178,7 @@ services:
     container_name: relaya_frontend_relay_point
     environment:
       VITE_PORTAL_ROLE: relay_point
+      VITE_API_URL: http://localhost:8000
       VITE_DEV_PORT: 5178
       VITE_HMR_CLIENT_PORT: 5179
     ports:

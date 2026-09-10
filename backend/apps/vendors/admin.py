@@ -25,7 +25,7 @@ from .models import (
 class VendorLocationInline(admin.TabularInline):
     model  = VendorLocation
     extra  = 0
-    fields = ('name', 'address', 'phone', 'email', 'representative_name', 'latitude', 'longitude')
+    fields = ('name', 'address', 'description', 'phone', 'email', 'representative_name', 'latitude', 'longitude')
 
 
 # ─── PROFIL VENDEUR ───────────────────────────────────────────────────────────
@@ -93,8 +93,23 @@ class VendorProfileAdmin(admin.ModelAdmin):
     actions = ['approve_vendors', 'reject_vendors', 'suspend_vendors']
 
     def approve_vendors(self, request, queryset):
-        count = queryset.update(status='APPROVED', approved_at=timezone.now())
-        self.message_user(request, f"{count} vendeur(s) approuvé(s).")
+        approved = 0
+        blocked = 0
+        for vendor in queryset:
+            if not vendor.has_required_location:
+                blocked += 1
+                continue
+            vendor.status = 'APPROVED'
+            vendor.approved_at = timezone.now()
+            vendor.save(update_fields=['status', 'approved_at', 'updated_at'])
+            approved += 1
+        if blocked:
+            self.message_user(
+                request,
+                f"{blocked} vendeur(s) ignoré(s) : boutique principale localisable manquante.",
+                level=messages.WARNING,
+            )
+        self.message_user(request, f"{approved} vendeur(s) approuvé(s).")
     approve_vendors.short_description = "Approuver les vendeurs sélectionnés"
 
     def reject_vendors(self, request, queryset):
@@ -114,7 +129,7 @@ class VendorProfileAdmin(admin.ModelAdmin):
 class VendorLocationAdmin(admin.ModelAdmin):
     list_display  = ('name', 'vendor', 'address', 'phone', 'latitude', 'longitude')
     list_filter   = ('vendor',)
-    search_fields = ('name', 'vendor__business_name', 'address', 'phone')
+    search_fields = ('name', 'vendor__business_name', 'address', 'description', 'phone')
     ordering      = ('vendor', 'name')
 
 

@@ -1757,11 +1757,41 @@ class VendorLocationSerializer(serializers.ModelSerializer):
     class Meta:
         model  = VendorLocation
         fields = [
-            'id', 'name', 'address', 'phone', 'email',
+            'id', 'name', 'address', 'description', 'phone', 'email',
             'representative_name', 'representative_phone',
             'latitude', 'longitude', 'is_active', 'is_main', 'created_at',
         ]
         read_only_fields = ['id', 'created_at']
+
+    def validate(self, attrs):
+        data = {}
+        if self.instance:
+            for field in self.Meta.fields:
+                if hasattr(self.instance, field):
+                    data[field] = getattr(self.instance, field)
+        data.update(attrs)
+
+        latitude = data.get('latitude')
+        longitude = data.get('longitude')
+        has_lat = latitude is not None and str(latitude).strip() != ''
+        has_lng = longitude is not None and str(longitude).strip() != ''
+        has_coords = has_lat and has_lng
+        description = (data.get('description') or '').strip()
+
+        if has_lat != has_lng:
+            raise serializers.ValidationError({
+                'latitude': "Latitude et longitude doivent être renseignées ensemble.",
+                'longitude': "Latitude et longitude doivent être renseignées ensemble.",
+            })
+
+        if not has_coords and len(description) < 10:
+            raise serializers.ValidationError({
+                'description': "Ajoutez une description d'accès d'au moins 10 caractères ou pointez la boutique sur la carte.",
+            })
+
+        if 'description' in attrs:
+            attrs['description'] = description
+        return attrs
  
  
 class RequiredDocumentTypeSerializer(serializers.ModelSerializer):

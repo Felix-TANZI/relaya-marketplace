@@ -22,7 +22,9 @@ import 'leaflet/dist/leaflet.css';
 import { vendorsApi } from '@/services/api/vendors';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
-import { geocodingApiUrl, mapAttribution, mapTileUrl } from '@/config/maps';
+import { geocodingApiUrl, isGoogleMapsEnabled, mapAttribution, mapTileUrl } from '@/config/maps';
+import { GoogleMap } from '@/components/maps/GoogleMap';
+import { googleGeocodeAddress, googleReverseGeocode } from '@/lib/googleMaps';
 import { ensureImageUnderLimit, ensureImagesUnderLimit } from '@/lib/imageCompression';
 import * as QRCode from 'qrcode';
 
@@ -71,6 +73,7 @@ interface ShopProfile {
 
 interface Location {
   id?: number; name: string; address: string; phone: string; email: string;
+  description: string;
   representative_name: string; representative_phone: string;
   latitude: string; longitude: string; is_active: boolean; is_main: boolean;
 }
@@ -93,7 +96,7 @@ const SENSITIVE_FIELD_LABELS: Record<string, string> = {
 };
 
 const EMPTY_LOCATION: Location = {
-  name: '', address: '', phone: '', email: '',
+  name: '', address: '', description: '', phone: '', email: '',
   representative_name: '', representative_phone: '',
   latitude: '', longitude: '', is_active: true, is_main: false,
 };
@@ -215,11 +218,12 @@ const DraggableMarker = memo(function DraggableMarker({
   );
 });
 
-// ─── SERVICES GÉOCODAGE (Nominatim / OpenStreetMap) ──────────────────────────
-// Gratuit pour les tests légers. En production, remplacer VITE_GEOCODING_API_URL
-// par un service maîtrisé ou un prestataire.
+// ─── SERVICES GÉOCODAGE ──────────────────────────────────────────────────────
 
 async function geocodeAddress(address: string): Promise<[number, number] | null> {
+  if (isGoogleMapsEnabled) {
+    return googleGeocodeAddress(address);
+  }
   try {
     const url = `${geocodingApiUrl}/search?q=${encodeURIComponent(address)}&format=json&limit=1`;
     const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
@@ -230,6 +234,9 @@ async function geocodeAddress(address: string): Promise<[number, number] | null>
 }
 
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  if (isGoogleMapsEnabled) {
+    return googleReverseGeocode(lat, lng);
+  }
   try {
     const url = `${geocodingApiUrl}/reverse?lat=${lat}&lon=${lng}&format=json`;
     const res  = await fetch(url, { headers: { Accept: 'application/json', 'Accept-Language': 'fr' } });
@@ -255,6 +262,13 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
 
   const defaultCenter: [number, number] = positions[0] || [3.848, 11.502];
   const icon = createLocationIcon(shopName, 'normal');
+  const googleMarkers = validLocs.map((loc, i) => ({
+    id: loc.id ?? i,
+    position: positions[i],
+    title: loc.name,
+    subtitle: [loc.address, loc.description].filter(Boolean).join(' — '),
+    color: T.orange,
+  }));
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${T.border}`, boxShadow: '0 2px 12px rgba(28,18,9,0.06)' }}>
@@ -274,50 +288,59 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
       </div>
 
       {/* Carte */}
-      <MapContainer
-        center={defaultCenter}
-        zoom={13}
-        style={{ height: 300, width: '100%' }}
-        scrollWheelZoom={false}
-      >
-        <TileLayer
-          url={mapTileUrl}
-          attribution={mapAttribution}
-        />
-        <FitBoundsController positions={positions}/>
-        {validLocs.map((loc, i) => (
-          <Marker key={loc.id ?? i} position={positions[i]} icon={icon}>
-            <Popup>
-              <div style={{ minWidth: 200, fontFamily: 'system-ui, sans-serif' }}>
-                <p style={{ fontWeight: 800, fontSize: 13, color: T.text, marginBottom: 6 }}>
-                  {loc.name}
-                </p>
-                <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
-                  📍 {loc.address}
-                </p>
-                {loc.phone && (
-                  <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
-                    📞 {loc.phone}
+      {isGoogleMapsEnabled ? (
+        <GoogleMap markers={googleMarkers} center={defaultCenter} zoom={13} height={300} scrollWheelZoom={false} className="rounded-none" />
+      ) : (
+        <MapContainer
+          center={defaultCenter}
+          zoom={13}
+          style={{ height: 300, width: '100%' }}
+          scrollWheelZoom={false}
+        >
+          <TileLayer
+            url={mapTileUrl}
+            attribution={mapAttribution}
+          />
+          <FitBoundsController positions={positions}/>
+          {validLocs.map((loc, i) => (
+            <Marker key={loc.id ?? i} position={positions[i]} icon={icon}>
+              <Popup>
+                <div style={{ minWidth: 200, fontFamily: 'system-ui, sans-serif' }}>
+                  <p style={{ fontWeight: 800, fontSize: 13, color: T.text, marginBottom: 6 }}>
+                    {loc.name}
                   </p>
-                )}
-                {loc.representative_name && (
-                  <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
-                    <p style={{ fontSize: 11, color: T.mutedL, marginBottom: 2 }}>Représentant</p>
-                    <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
-                      {loc.representative_name}
+                  <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
+                    📍 {loc.address}
+                  </p>
+                  {loc.description && (
+                    <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
+                      {loc.description}
                     </p>
-                    {loc.representative_phone && (
-                      <p style={{ fontSize: 12, color: T.muted }}>
-                        {loc.representative_phone}
+                  )}
+                  {loc.phone && (
+                    <p style={{ fontSize: 12, color: T.muted, marginBottom: 4 }}>
+                      📞 {loc.phone}
+                    </p>
+                  )}
+                  {loc.representative_name && (
+                    <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
+                      <p style={{ fontSize: 11, color: T.mutedL, marginBottom: 2 }}>Représentant</p>
+                      <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
+                        {loc.representative_name}
                       </p>
-                    )}
-                  </div>
-                )}
-              </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+                      {loc.representative_phone && (
+                        <p style={{ fontSize: 12, color: T.muted }}>
+                          {loc.representative_phone}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </Popup>
+            </Marker>
+          ))}
+        </MapContainer>
+      )}
     </div>
   );
 });
@@ -524,7 +547,7 @@ function LocationModal({
   onClose: () => void;
   onSave: (data: Location) => void;
 }) {
-  const [form, setForm]     = useState<Location>(initial || EMPTY_LOCATION);
+  const [form, setForm]     = useState<Location>({ ...EMPTY_LOCATION, ...(initial || {}) });
   const [geoStatus, setGeoStatus] = useState<GeoStatus>(
     initial?.latitude && initial?.longitude ? 'found' : 'idle'
   );
@@ -540,6 +563,9 @@ function LocationModal({
 
   const set = (k: keyof Location, v: string | boolean) =>
     setForm(p => ({ ...p, [k]: v }));
+
+  const hasCoords = Boolean(form.latitude && form.longitude);
+  const hasAccessDescription = form.description.trim().length >= 10;
 
   // ── Auto-géocodage sur changement d'adresse (debounce 800ms) ──────────────
   // Tous les setState sont à l'intérieur du setTimeout pour éviter
@@ -627,7 +653,14 @@ function LocationModal({
     );
   };
 
-  const canSave = form.name.trim() && form.address.trim();
+  const canSave = Boolean(
+    form.name.trim()
+    && form.address.trim()
+    && form.phone.trim()
+    && form.representative_name.trim()
+    && form.representative_phone.trim()
+    && (hasCoords || hasAccessDescription),
+  );
 
   return (
     <div className="fixed inset-0 z-[999] overflow-y-auto flex items-end sm:items-center justify-center p-0 sm:p-4"
@@ -713,10 +746,25 @@ function LocationModal({
               )}
             </div>
 
+            <div>
+              <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
+                Description d'accès <span style={{ color: T.red }}>*</span>
+              </label>
+              <textarea value={form.description} onChange={e => set('description', e.target.value)}
+                placeholder="Ex: portail orange derrière la pharmacie, 2e étage, appelez le responsable à l'arrivée"
+                rows={3}
+                style={{ ...inp, minHeight: 84, resize: 'vertical', lineHeight: 1.5 }}/>
+              <p className="text-[11.5px] mt-1.5" style={{ color: hasCoords || hasAccessDescription ? T.mutedL : T.red }}>
+                Pointez la boutique sur la carte ou ajoutez une description d'accès précise.
+              </p>
+            </div>
+
             {/* Téléphone + Email */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Téléphone</label>
+                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
+                  Téléphone <span style={{ color: T.red }}>*</span>
+                </label>
                 <input value={form.phone} onChange={e => set('phone', e.target.value)}
                   placeholder="+237 6XX XXX XXX" style={inp}/>
               </div>
@@ -738,13 +786,17 @@ function LocationModal({
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Nom</label>
+                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
+                  Nom <span style={{ color: T.red }}>*</span>
+                </label>
                 <input value={form.representative_name}
                   onChange={e => set('representative_name', e.target.value)}
                   placeholder="Jean Dupont" style={inp}/>
               </div>
               <div>
-                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Téléphone</label>
+                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
+                  Téléphone <span style={{ color: T.red }}>*</span>
+                </label>
                 <input value={form.representative_phone}
                   onChange={e => set('representative_phone', e.target.value)}
                   placeholder="+237 6XX XXX XXX" style={inp}/>
@@ -762,7 +814,7 @@ function LocationModal({
                 Position sur la carte
               </p>
               <p className="text-[11px]" style={{ color: T.mutedL }}>
-                Optionnel
+                Requis si aucune description précise
               </p>
             </div>
 
@@ -794,33 +846,51 @@ function LocationModal({
 
             {/* Carte interactive */}
             <div className="rounded-2xl overflow-hidden" style={{ border: `1.5px solid ${T.border}` }}>
-              <MapContainer
-                center={mapPosition || [3.848, 11.502]}
-                zoom={mapPosition ? 15 : 12}
-                style={{ height: 240, width: '100%' }}
-                scrollWheelZoom
-              >
-                <TileLayer
-                  url={mapTileUrl}
-                  attribution={mapAttribution}
+              {isGoogleMapsEnabled ? (
+                <GoogleMap
+                  markers={[]}
+                  center={mapPosition || [3.848, 11.502]}
+                  zoom={mapPosition ? 15 : 12}
+                  height={240}
+                  className="rounded-none"
+                  onMapClick={handleMapClick}
+                  draggableMarker={mapPosition ? {
+                    position: mapPosition,
+                    title: form.name || 'Emplacement',
+                    subtitle: form.address || 'Glissez pour ajuster',
+                    color: T.orange,
+                    onDragEnd: handleMarkerDragEnd,
+                  } : null}
                 />
-                <MapClickHandler onMapClick={handleMapClick}/>
-                <RecenterMap position={mapPosition}/>
-                {mapPosition && (
-                  <DraggableMarker
-                    position={mapPosition}
-                    icon={icon}
-                    onDragEnd={handleMarkerDragEnd}
-                  >
-                    <Popup>
-                      <div style={{ fontFamily: 'system-ui', fontSize: 12 }}>
-                        <p style={{ fontWeight: 700, marginBottom: 4 }}>{form.name || 'Emplacement'}</p>
-                        <p style={{ color: T.muted }}>{form.address || 'Glissez pour ajuster'}</p>
-                      </div>
-                    </Popup>
-                  </DraggableMarker>
-                )}
-              </MapContainer>
+              ) : (
+                <MapContainer
+                  center={mapPosition || [3.848, 11.502]}
+                  zoom={mapPosition ? 15 : 12}
+                  style={{ height: 240, width: '100%' }}
+                  scrollWheelZoom
+                >
+                  <TileLayer
+                    url={mapTileUrl}
+                    attribution={mapAttribution}
+                  />
+                  <MapClickHandler onMapClick={handleMapClick}/>
+                  <RecenterMap position={mapPosition}/>
+                  {mapPosition && (
+                    <DraggableMarker
+                      position={mapPosition}
+                      icon={icon}
+                      onDragEnd={handleMarkerDragEnd}
+                    >
+                      <Popup>
+                        <div style={{ fontFamily: 'system-ui', fontSize: 12 }}>
+                          <p style={{ fontWeight: 700, marginBottom: 4 }}>{form.name || 'Emplacement'}</p>
+                          <p style={{ color: T.muted }}>{form.address || 'Glissez pour ajuster'}</p>
+                        </div>
+                      </Popup>
+                    </DraggableMarker>
+                  )}
+                </MapContainer>
+              )}
             </div>
 
             {/* Coordonnées — affichées en lecture et modifiables */}
@@ -1002,6 +1072,7 @@ export default function SellerShopPage() {
         ...data,
         latitude:  roundCoord(data.latitude),
         longitude: roundCoord(data.longitude),
+        description: data.description.trim(),
       });
 
       // http() utilise API_BASE_URL → pointe bien vers Django (localhost:8000)
@@ -1340,6 +1411,11 @@ export default function SellerShopPage() {
                     <MapPin size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.orange }}/>
                     {loc.address}
                   </p>
+                  {loc.description && (
+                    <p className="text-[12.5px] mt-1.5 leading-5" style={{ color: T.muted }}>
+                      {loc.description}
+                    </p>
+                  )}
 
                   {/* Contacts emplacement */}
                   <div className="flex flex-wrap gap-x-5 gap-y-1.5 mt-2">
@@ -1413,7 +1489,7 @@ export default function SellerShopPage() {
               Emplacements physiques
             </p>
             <p className="text-[11.5px]" style={{ color: T.mutedL }}>
-              Tous les endroits où vos clients peuvent vous retrouver.
+              Requis pour que BelivaY valide votre boutique et puisse vous retrouver.
             </p>
           </div>
           <button type="button" onClick={() => setLocModal({ open: true, data: null })}
@@ -1429,8 +1505,8 @@ export default function SellerShopPage() {
               className="w-full flex flex-col items-center justify-center py-10 rounded-2xl transition-all hover:opacity-75"
               style={{ background: T.creamAlt, border: `2px dashed ${T.border}` }}>
               <MapPin size={28} className="mb-2" style={{ color: T.mutedL }}/>
-              <p className="text-[13px] font-semibold" style={{ color: T.muted }}>Aucun emplacement</p>
-              <p className="text-[12px] mt-0.5" style={{ color: T.mutedL }}>Cliquez pour en ajouter un</p>
+              <p className="text-[13px] font-semibold" style={{ color: T.muted }}>Boutique principale requise</p>
+              <p className="text-[12px] mt-0.5" style={{ color: T.mutedL }}>Ajoutez une adresse avec position carte ou description d'accès.</p>
             </button>
           ) : (
             locations.map(loc => (
@@ -1462,6 +1538,11 @@ export default function SellerShopPage() {
                     )}
                   </div>
                   <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>{loc.address}</p>
+                  {loc.description && (
+                    <p className="text-[12px] mt-1 leading-5" style={{ color: T.muted }}>
+                      {loc.description}
+                    </p>
+                  )}
                   <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5 text-[11.5px]" style={{ color: T.mutedL }}>
                     {loc.phone && (
                       <span className="flex items-center gap-1">

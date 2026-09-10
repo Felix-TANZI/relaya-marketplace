@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { geocodingApiUrl, mapAttribution, mapTileUrl } from "@/config/maps";
+import { geocodingApiUrl, isGoogleMapsEnabled, mapAttribution, mapTileUrl } from "@/config/maps";
+import { GoogleMap } from "@/components/maps/GoogleMap";
+import { googleGeocodeAddress } from "@/lib/googleMaps";
 
 // Fix default marker icons in React
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
@@ -184,6 +186,13 @@ async function geocodeAddress(query: string, signal: AbortSignal): Promise<[numb
   const cache = readGeocodeCache();
   if (cache[query]) return cache[query];
 
+  if (isGoogleMapsEnabled) {
+    if (signal.aborted) return null;
+    const coords = await googleGeocodeAddress(query);
+    if (coords && !signal.aborted) writeGeocodeCache(query, coords);
+    return signal.aborted ? null : coords;
+  }
+
   const params = new URLSearchParams({
     format: "jsonv2",
     limit: "1",
@@ -343,6 +352,53 @@ export default function TrackingMap({
 
   // Build destination label from address
   const destLabel = destinationLabel || destinationAddress || "Adresse de livraison";
+
+  if (isGoogleMapsEnabled) {
+    return (
+      <div className={`relative z-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 ${className}`}>
+        <GoogleMap
+          markers={[
+            { id: "vendor", position: origin, title: originLabel, color: "#0F172A" },
+            ...(currentLocation
+              ? [{ id: "delivery", position: currentLocation, title: "Position GPS actuelle du livreur", color: "#F47920" }]
+              : []),
+            { id: "customer", position: destination, title: destLabel, color: "#16A34A" },
+          ]}
+          center={deliveryPos}
+          zoom={13}
+          height={height}
+          scrollWheelZoom={false}
+          className="rounded-none"
+          polylines={[
+            { positions: routePoints, color: "#F47920", weight: 4, opacity: 0.8 },
+            ...(trailPoints.length > 1
+              ? [{ positions: trailPoints, color: "#0284C7", weight: 6, opacity: 0.9 }]
+              : []),
+          ]}
+        />
+        {isApproximate ? (
+          <div className="absolute top-3 left-3 z-[500] rounded-full bg-amber-500/95 px-3 py-2 text-xs font-black text-white shadow-lg backdrop-blur">
+            Position approximative — repère non localisé précisément
+          </div>
+        ) : null}
+        {remainingDistance !== null ? (
+          <div
+            className={`absolute bottom-3 left-3 z-[500] rounded-full px-3 py-2 text-xs font-black shadow-lg backdrop-blur ${
+              isNearDestination
+                ? "bg-emerald-600/95 text-white"
+                : "bg-white/95 text-gray-800 dark:bg-gray-900/95 dark:text-white"
+            }`}
+          >
+            {isNearDestination
+              ? "Livreur arrivé dans la zone de destination"
+              : `Distance restante : ${remainingDistance < 1000
+                  ? `${Math.round(remainingDistance)} m`
+                  : `${(remainingDistance / 1000).toFixed(1)} km`}`}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
 
   return (
     <div className={`relative z-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 ${className}`}>

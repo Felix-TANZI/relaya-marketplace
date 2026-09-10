@@ -152,6 +152,7 @@ jobs:
             cd "${{ vars.TARGET_PATH }}"
             git fetch origin main
             git checkout "${{ steps.sha.outputs.sha }}"
+            chmod +x deploy.sh
             ./deploy.sh
 
       - name: Résumé

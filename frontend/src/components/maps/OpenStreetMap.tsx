@@ -3,7 +3,8 @@ import type { ReactNode } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { mapAttribution, mapTileUrl } from "@/config/maps";
+import { isGoogleMapsEnabled, mapAttribution, mapTileUrl } from "@/config/maps";
+import { GoogleMap } from "@/components/maps/GoogleMap";
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -152,6 +153,24 @@ export function OpenStreetMap({
   className?: string;
 }) {
   const positions = markers.map((marker) => marker.position);
+
+  if (isGoogleMapsEnabled) {
+    return (
+      <GoogleMap
+        markers={markers.map((marker) => ({
+          id: marker.id,
+          position: marker.position,
+          title: marker.title,
+          subtitle: marker.subtitle,
+          color: marker.color,
+        }))}
+        height={height}
+        center={center}
+        zoom={zoom}
+        className={className}
+      />
+    );
+  }
 
   return (
     <div className={`relative overflow-hidden rounded-2xl ${className}`}>

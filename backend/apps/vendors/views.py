@@ -2,6 +2,7 @@
 # Vues pour l'espace vendeur
 
 from rest_framework import status, viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -187,9 +188,13 @@ class VendorProductViewSet(viewsets.ModelViewSet):
         try:
             vendor_profile = VendorProfile.objects.get(user=self.request.user)
             if not vendor_profile.is_active_vendor:
-                raise PermissionError("Votre compte vendeur n'est pas encore approuvé.")
+                raise PermissionDenied("Votre compte vendeur n'est pas encore approuvé.")
+            if not vendor_profile.has_required_location:
+                raise PermissionDenied(
+                    "Ajoutez une boutique principale localisable avant de créer des produits."
+                )
         except VendorProfile.DoesNotExist:
-            raise PermissionError("Vous devez être vendeur pour créer des produits.")
+            raise PermissionDenied("Vous devez être vendeur pour créer des produits.")
         
         serializer.save(vendor=self.request.user)
 
@@ -2166,6 +2171,19 @@ def admin_approve_vendor(request, vendor_id):
         return Response(
             {'detail': 'Vendeur introuvable.'},
             status=status.HTTP_404_NOT_FOUND
+        )
+
+    if not vendor.has_required_location:
+        return Response(
+            {
+                'detail': (
+                    "Ajoutez une boutique principale active avec une adresse "
+                    "et une position GPS ou une description d'accès avant "
+                    "d'approuver ce vendeur."
+                ),
+                'code': 'VENDOR_LOCATION_REQUIRED',
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
     
     vendor.status = VendorProfile.Status.APPROVED
@@ -4616,9 +4634,13 @@ def admin_list_orders(request):
     """
     from apps.vendors.serializers import AdminOrderListSerializer
     
-    orders = Order.objects.select_related(
-        'user', 'shipment', 'shipment__courier', 'shipment__courier__user'
-    ).prefetch_related('items', 'items__product__vendor')
+    orders = Order.objects.select_related('user').prefetch_related(
+        'shipments',
+        'shipments__courier',
+        'shipments__courier__user',
+        'items',
+        'items__product__vendor',
+    )
 
     # Filtres statuts
     payment_status = request.query_params.get('payment_status')
@@ -4686,9 +4708,10 @@ def admin_list_orders(request):
 def admin_order_detail(request, order_id):
     """Détail complet d'une commande"""
     try:
-        order = Order.objects.select_related(
-            'user', 'shipment', 'shipment__courier', 'shipment__courier__user'
-        ).prefetch_related(
+        order = Order.objects.select_related('user').prefetch_related(
+            'shipments',
+            'shipments__courier',
+            'shipments__courier__user',
             'items',
             'items__product',
             'items__product__vendor',
@@ -6134,8 +6157,6 @@ def vendor_locations_list(request):
 def vendor_location_create(request):
     try:
         profile = VendorProfile.objects.get(user=request.user)
-        if not profile.is_active_vendor:
-            return Response({'detail': 'Compte vendeur non approuvé.'}, status=403)
  
         serializer = VendorLocationSerializer(data=request.data)
         if serializer.is_valid():

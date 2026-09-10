@@ -415,7 +415,11 @@ def _vendor_observations(user) -> dict[str, list[Observation]]:
     review_observations = [Observation(review.rating * 20, review.created_at) for review in reviews]
     disputes = Dispute.objects.filter(vendor=user)
     profile = getattr(user, "vendor_profile", None)
-    docs_value = 100 if profile and str(profile.status).lower() == "approved" else 40
+    docs_value = 100 if (
+        profile
+        and str(profile.status).lower() == "approved"
+        and profile.has_required_location
+    ) else 40
     return {
         "punctuality": punctuality,
         "quality": review_observations,

@@ -9,7 +9,7 @@ echo "🚀 Déploiement Relaya Production"
 # ALLOWED_HOSTS, etc.) — le `env_file:` déclaré dans ce fichier ne
 # fournit ces valeurs qu'AU CONTENEUR, pas à l'interpolation du compose
 # lui-même.
-COMPOSE="docker-compose -f docker-compose.prod.yml --env-file .env.prod"
+COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
 
 # Arrêter les containers
 echo "📦 Arrêt des containers..."

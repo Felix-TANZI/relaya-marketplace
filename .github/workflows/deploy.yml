@@ -152,7 +152,7 @@ jobs:
             cd "${{ vars.TARGET_PATH }}"
             git fetch origin main
             git reset --hard "${{ steps.sha.outputs.sha }}"
-            chmod +x deploy.sh
+            chmod +x deploy.sh backup.sh
             ./deploy.sh
 
       - name: Résumé

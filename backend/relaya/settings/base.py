@@ -10,7 +10,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "unsafe-key")
 DEBUG = False
-ALLOWED_HOSTS = ["*"]
+
+# Liste blanche des noms d'hôtes autorisés (protection contre les attaques
+# par en-tête Host). "*" par défaut ici pour ne pas casser le dev/les tests
+# (qui ne définissent pas ALLOWED_HOSTS) — settings/prod.py impose une liste
+# stricte et refuse de démarrer si elle est absente.
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
+
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
 INSTALLED_APPS = [

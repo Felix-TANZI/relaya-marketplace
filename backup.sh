@@ -9,10 +9,11 @@ RETENTION_DAYS=14
 
 cd "$PROJECT_DIR"
 
-# Charge POSTGRES_USER / POSTGRES_DB depuis .env.prod (sans les afficher)
-set -a
-source .env.prod
-set +a
+# Extrait uniquement les 2 valeurs nécessaires, sans exécuter le fichier
+# comme un script bash (certaines valeurs de .env.prod contiennent des
+# espaces ou des caractères spéciaux qui casseraient un `source`).
+POSTGRES_USER=$(grep -m1 '^POSTGRES_USER=' .env.prod | cut -d'=' -f2-)
+POSTGRES_DB=$(grep -m1 '^POSTGRES_DB=' .env.prod | cut -d'=' -f2-)
 
 mkdir -p "$BACKUP_DIR"
 chmod 700 "$BACKUP_DIR"

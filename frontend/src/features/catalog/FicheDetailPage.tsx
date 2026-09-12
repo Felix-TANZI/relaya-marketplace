@@ -22,6 +22,7 @@ import {
 import { VariantSelector } from './VariantSelector';
 import { attributesApi, type MasterProductAxes } from '@/services/api/attributes';
 import { variantsApi, type ProductVariantLight } from '@/services/api/variants';
+import RelatedProductsSection from '@/components/catalog/RelatedProductsSection';
 
 function fmtXAF(n: number) { return n.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ') + ' FCFA'; }
 
@@ -912,6 +913,17 @@ export default function FicheDetailPage() {
           seeAllTo={master.category ? `/categorie/${master.category.slug}` : '/catalog'}
         />
         <FicheCarousel title="Vous aimeriez aussi" fiches={recos} />
+
+        {/* ════ Related Products Section ════ */}
+        {master && (
+          // MasterOffer (buyBox) ne porte pas d'info vendeur dans son
+          // typage actuel — pas d'exclusion de vendeur ici plutot que
+          // d'etendre serializer + type pour cet a-cote cosmetique.
+          <RelatedProductsSection
+            masterId={master.id}
+            limit={5}
+          />
+        )}
       </div>
 
       {reviewModalOffer && (

@@ -13,8 +13,9 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value
+from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value, Case, When, IntegerField
 from django.db.models.functions import Coalesce
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiParameter, OpenApiTypes
 from rest_framework.decorators import api_view, permission_classes, parser_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -118,40 +119,14 @@ class ProductViewSet(viewsets.ModelViewSet):
     ordering = ['-belivay_trust_score', '-belivay_rating_average', '-belivay_reviews_count', '-created_at']
 
     def get_queryset(self):
-        now = timezone.now()
-        approved_campaign = Q(
-            promotion_campaigns__status=PromotionCampaign.Status.APPROVED,
-            promotion_campaigns__starts_at__lte=now,
-            promotion_campaigns__ends_at__gte=now,
-        )
-        active_flash_campaign = approved_campaign & Q(
-            promotion_campaigns__campaign_type=PromotionCampaign.CampaignType.FLASH,
-            promotion_campaigns__stock_claimed__lt=models.F("promotion_campaigns__stock_reserved"),
-        )
-        return (
+        from .recommendation import annotate_trust_score
+
+        base = (
             Product.objects.all()
             .select_related('category', 'vendor')
             .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
-            .annotate(
-                belivay_rating_average=Coalesce(
-                    Avg('reviews__rating', filter=Q(reviews__is_approved=True)),
-                    Value(0.0),
-                    output_field=FloatField(),
-                ),
-                belivay_reviews_count=Count('reviews', filter=Q(reviews__is_approved=True)),
-                belivay_active_promo_count=Count('promotion_campaigns', filter=approved_campaign, distinct=True),
-                belivay_active_flash_count=Count('promotion_campaigns', filter=active_flash_campaign, distinct=True),
-            )
-            .annotate(
-                belivay_trust_score=ExpressionWrapper(
-                    models.F('belivay_rating_average') * Value(20.0)
-                    + models.F('belivay_reviews_count') * Value(1.0)
-                    + models.F('belivay_active_flash_count') * Value(3.0)
-                    + models.F('belivay_active_promo_count') * Value(1.0),
-                    output_field=FloatField(),
-                )
-            )
         )
+        return annotate_trust_score(base)
 
     def filter_queryset(self, queryset):
         """
@@ -236,6 +211,121 @@ class ProductViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         campaign = serializer.save()
         return Response(PromotionCampaignSerializer(campaign, context={"request": request}).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        tags=["Recommendations"],
+        summary="Obtenir les produits liés pour une fiche produit maître",
+        description="Retourne d'autres offres du même MasterProduct, triées par proximité boutique (si position fournie) puis trust_score et prix.",
+        parameters=[
+            OpenApiParameter(name='limit', description='Nombre max de recommandations', type=int, default=5),
+            OpenApiParameter(name='user_lat', description='Latitude acheteur (optionnel)', type=float),
+            OpenApiParameter(name='user_lon', description='Longitude acheteur (optionnel)', type=float),
+        ],
+        responses={200: ProductSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def related_products(self, request):
+        """Retourne les produits liés pour recommandations."""
+        from .recommendation import get_related_products
+        
+        master_product_id = request.query_params.get('master_id')
+        limit = int(request.query_params.get('limit', 5))
+        exclude_vendor_id = request.query_params.get('exclude_vendor_id') or None
+        user_lat = request.query_params.get('user_lat')
+        user_lon = request.query_params.get('user_lon')
+
+        if not master_product_id:
+            return Response({'error': 'master_id requis'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            master = MasterProduct.objects.get(id=master_product_id)
+        except MasterProduct.DoesNotExist:
+            return Response({'error': 'MasterProduct non trouvé'}, status=status.HTTP_404_NOT_FOUND)
+
+        products = get_related_products(
+            master,
+            exclude_vendor=exclude_vendor_id,
+            limit=limit,
+            user_lat=float(user_lat) if user_lat else None,
+            user_lon=float(user_lon) if user_lon else None,
+        )
+        
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Recommendations"],
+        summary="Recommandations pour le panier (upselling)",
+        description="Retourne les produits recommandés pour compléter le panier.",
+        parameters=[
+            OpenApiParameter(name='master_ids', description='IDs des MasterProducts du panier (séparés par virgules)', type=str),
+            OpenApiParameter(name='user_lat', description='Latitude utilisateur (optionnel)', type=float),
+            OpenApiParameter(name='user_lon', description='Longitude utilisateur (optionnel)', type=float),
+            OpenApiParameter(name='limit', description='Nombre max de recommandations', type=int, default=5),
+        ],
+        responses={200: ProductSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def cart_recommendations(self, request):
+        """Retourne les recommandations pour le panier."""
+        from .recommendation import get_cart_recommendations
+        
+        master_ids = request.query_params.get('master_ids', '').split(',')
+        master_ids = [m.strip() for m in master_ids if m.strip()]
+        limit = int(request.query_params.get('limit', 5))
+        user_lat = request.query_params.get('user_lat')
+        user_lon = request.query_params.get('user_lon')
+        
+        if not master_ids:
+            return Response({'error': 'master_ids requis'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            master_products = MasterProduct.objects.filter(id__in=master_ids)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        products = get_cart_recommendations(
+            master_products,
+            user_lat=float(user_lat) if user_lat else None,
+            user_lon=float(user_lon) if user_lon else None,
+            limit=limit
+        )
+        
+        serializer = ProductSerializer(products, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        tags=["Recommendations"],
+        summary="Rotation des produits d'accueil",
+        description="Retourne une rotation quotidienne des meilleurs produits pour éviter la monotonie.",
+        parameters=[
+            OpenApiParameter(name='page', description='Numéro de page', type=int, default=1),
+            OpenApiParameter(name='page_size', description='Produits par page', type=int, default=20),
+        ],
+        responses={200: ProductSerializer(many=True)}
+    )
+    @action(detail=False, methods=['get'], permission_classes=[])
+    def featured_rotation(self, request):
+        """Retourne une rotation quotidienne des produits d'accueil, paginee."""
+        from .recommendation import get_homepage_featured_rotation
+
+        page = int(request.query_params.get('page', 1))
+        page_size = int(request.query_params.get('page_size', 20))
+
+        queryset = self.get_queryset()
+        total_count = queryset.count()
+        products = get_homepage_featured_rotation(queryset, page=page, page_size=page_size)
+
+        serializer = ProductSerializer(products, many=True)
+        # Format aligne sur ProductListResponse (front) : results/count/next/
+        # previous, pas un tableau brut — cet endpoint alimente un pager
+        # avec compteur, contrairement a related_products/cart_recommendations.
+        return Response({
+            'count': total_count,
+            'next': str(page + 1) if page * page_size < total_count else None,
+            'previous': str(page - 1) if page > 1 else None,
+            'results': serializer.data,
+        })
 
 
 @extend_schema(

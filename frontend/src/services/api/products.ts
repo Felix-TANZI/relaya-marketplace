@@ -58,6 +58,7 @@ export interface Product {
   reviews_count?: number;
   created_at: string;
   updated_at: string;
+  master?: number | null;
   master_slug?: string | null;
 }
 

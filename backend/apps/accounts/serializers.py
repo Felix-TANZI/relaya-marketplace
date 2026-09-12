@@ -298,6 +298,9 @@ class PayoutAccountVerifySerializer(serializers.Serializer):
 
 class CartItemSerializer(serializers.Serializer):
     id = serializers.IntegerField()
+    # MasterProduct id (distinct de l'id de l'offre ci-dessus) : necessaire
+    # pour les recommandations panier, qui raisonnent en MasterProduct.
+    master_id = serializers.IntegerField(required=False, allow_null=True)
     name = serializers.CharField(max_length=255)
     price = serializers.IntegerField(min_value=0)
     quantity = serializers.IntegerField(min_value=1)

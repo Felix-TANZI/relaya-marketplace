@@ -200,8 +200,8 @@ export default function CartPage() {
 
             {/* ═══ Cart Recommendations Section ═══ */}
             {items.length > 0 && (
-              <CartRecommendationsSection 
-                cartMasterIds={items.map(item => item.id).filter(Boolean)}
+              <CartRecommendationsSection
+                cartMasterIds={items.map(item => item.master_id).filter((id): id is number => Boolean(id))}
                 limit={5}
               />
             )}

@@ -410,7 +410,7 @@ export default function FicheDetailPage() {
   const stockRatio = Math.min(100, Math.round(((buyBox?.stock_quantity ?? 0) / 25) * 100));
 
   const addOffer = (offer: MasterOffer, quantity = 1) => {
-    addItem({ id: offer.id, name: master.title, price: offer.price_final, quantity, image: heroImage ?? undefined });
+    addItem({ id: offer.id, master_id: master.id, name: master.title, price: offer.price_final, quantity, image: heroImage ?? undefined });
     showToast('Ajouté au panier', 'success');
   };
   const buyNow = (offer: MasterOffer) => { addOffer(offer, qty); navigate('/cart'); };

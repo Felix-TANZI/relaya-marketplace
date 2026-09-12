@@ -151,8 +151,8 @@ def get_nearby_products(queryset, user_lat=None, user_lon=None, max_distance_km=
         is_active=True,
         latitude__isnull=False,
         longitude__isnull=False,
-    ).select_related('vendor_profile__user')
-    
+    ).select_related('vendor__user')
+
     # Calculer la distance pour chaque emplacement
     location_distances = {}
     for location in nearby_locations:
@@ -160,9 +160,9 @@ def get_nearby_products(queryset, user_lat=None, user_lon=None, max_distance_km=
             float(user_lat), float(user_lon),
             float(location.latitude), float(location.longitude)
         )
-        
+
         if distance <= max_distance_km:
-            location_distances[location.vendor_profile.user_id] = distance
+            location_distances[location.vendor.user_id] = distance
     
     # Filtrer les produits par vendeurs proches
     products_in_zone = queryset.filter(vendor_id__in=location_distances.keys())
@@ -289,10 +289,10 @@ def _order_by_distance_then_trust_score(queryset, user_lat, user_lon, limit):
     vendor_ids = list(queryset.values_list('vendor_id', flat=True).distinct())
     locations = VendorLocation.objects.filter(
         is_active=True,
-        vendor_profile__user_id__in=vendor_ids,
+        vendor__user_id__in=vendor_ids,
         latitude__isnull=False,
         longitude__isnull=False,
-    ).values_list('vendor_profile__user_id', 'latitude', 'longitude')
+    ).values_list('vendor__user_id', 'latitude', 'longitude')
 
     distance_by_vendor = {}
     for vendor_id, lat, lon in locations:

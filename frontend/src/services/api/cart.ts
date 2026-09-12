@@ -2,6 +2,7 @@ import { api } from "./client";
 
 export interface ApiCartItem {
   id: number;
+  master_id?: number | null;
   name: string;
   price: number;
   quantity: number;

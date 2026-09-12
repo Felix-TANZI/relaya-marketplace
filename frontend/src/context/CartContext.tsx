@@ -7,6 +7,8 @@ import { useAuth } from "@/context/AuthContext";
 
 interface CartItem {
   id: number;
+  /** MasterProduct id (pas l'id de l'offre) — requis pour les recommandations panier. */
+  master_id?: number | null;
   name: string;
   price: number;
   quantity: number;

@@ -6,6 +6,7 @@ import { useCart } from "@/context/CartContext";
 import { V29_PRODUCTS as mockProducts } from "@/data/v29Products";
 import { PfShellStyles } from "@/styles/pfShell";
 import { OperatorLogo } from "@/features/payments/OperatorLogo";
+import CartRecommendationsSection from "@/components/cart/CartRecommendationsSection";
 
 const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 
@@ -196,6 +197,14 @@ export default function CartPage() {
                 </section>
               )}
             </div>
+
+            {/* ═══ Cart Recommendations Section ═══ */}
+            {items.length > 0 && (
+              <CartRecommendationsSection 
+                cartMasterIds={items.map(item => item.id).filter(Boolean)}
+                limit={5}
+              />
+            )}
 
             {/* Récapitulatif */}
             <aside className="pf-side" data-tutorial="cart-summary">

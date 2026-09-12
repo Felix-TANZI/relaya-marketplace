@@ -29,6 +29,8 @@ import {
   matchesCategory,
 } from "@/data/categoryThemes";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
+import FeaturedProductsRotation from "@/components/home/FeaturedProductsRotation";
+import NearbyProductsSection from "@/components/home/NearbyProductsSection";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -371,6 +373,12 @@ export default function HomePage() {
               maxDiscount={promoStats.maxDiscount}
               endDates={promoStats.endDates}
             />
+
+            {/* ═══ Featured Products Rotation ═══ */}
+            <FeaturedProductsRotation page={1} pageSize={20} />
+
+            {/* ═══ Nearby Products by Location ═══ */}
+            <NearbyProductsSection limit={10} maxDistanceKm={50} />
 
             {/* ═══ Récemment consultés — mobile : une rangée de cartes réduites ═══ */}
             {recentProducts.length > 0 ? (

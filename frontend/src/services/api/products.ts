@@ -241,4 +241,75 @@ export const productsApi = {
     data: { order_item: number; rating: number; title?: string; comment?: string }
   ): Promise<ProductReview> =>
     api.post<ProductReview>(`/catalog/products/${productId}/add_review/`, data),
+
+  // ==================== NOUVELLES FEATURES ====================
+
+  /**
+   * Rotation quotidienne des produits d'accueil.
+   * Déterministe par jour pour éviter la monotonie.
+   */
+  getFeaturedRotation: async (page: number = 1, pageSize: number = 20): Promise<ProductListResponse> => {
+    const response = await api.get<ProductListResponse>('/catalog/products/featured_rotation/', {
+      params: { page, page_size: pageSize }
+    });
+    return response;
+  },
+
+  /**
+   * Produits liés pour une fiche produit (autres offres du même MasterProduct).
+   */
+  getRelatedProducts: async (
+    masterId: number,
+    excludeVendorId?: number,
+    limit: number = 5
+  ): Promise<Product[]> => {
+    const params: any = { master_id: masterId, limit };
+    if (excludeVendorId) params.exclude_vendor_id = excludeVendorId;
+
+    // Cet endpoint renvoie un tableau brut (pas de pagination DRF), à la
+    // différence de /catalog/products/ — ne pas le traiter comme un
+    // ProductListResponse sous peine de récupérer toujours un tableau vide.
+    return api.get<Product[]>('/catalog/products/related_products/', { params });
+  },
+
+  /**
+   * Recommandations pour le panier (upselling intelligent).
+   * Produits complémentaires, priorisés par proximité si localisation fournie.
+   */
+  getCartRecommendations: async (
+    masterIds: number[],
+    userLat?: number,
+    userLon?: number,
+    limit: number = 5
+  ): Promise<Product[]> => {
+    const params: any = {
+      master_ids: masterIds.join(','),
+      limit
+    };
+    if (userLat !== undefined) params.user_lat = userLat;
+    if (userLon !== undefined) params.user_lon = userLon;
+
+    // Meme remarque que getRelatedProducts : tableau brut, pas de pagination.
+    return api.get<Product[]>('/catalog/products/cart_recommendations/', { params });
+  },
+
+  /**
+   * Produits proches de l'utilisateur (par localisation GPS).
+   * Filtre les produits par distance et les trie par proximité + trust_score.
+   */
+  getNearbyProducts: async (
+    userLat: number,
+    userLon: number,
+    maxDistanceKm: number = 50,
+    limit: number = 10
+  ): Promise<Product[]> => {
+    const response = await api.get<ProductListResponse>('/catalog/products/', {
+      params: {
+        user_lat: userLat,
+        user_lon: userLon,
+        page_size: limit
+      }
+    });
+    return response.results ?? [];
+  },
 };

@@ -1,0 +1,159 @@
+name: CD - Déploiement Production
+
+# Se déclenche automatiquement quand le workflow CI (ci.yml) se termine
+# sur la branche main — donc uniquement si les tests backend + frontend
+# sont passés. workflow_dispatch permet en plus de relancer un déploiement
+# à la main depuis l'onglet "Actions" de GitHub, sans repasser par un
+# terminal ni toucher au serveur directement.
+on:
+  workflow_run:
+    workflows: ["CI"]
+    branches: [main]
+    types: [completed]
+  workflow_dispatch:
+
+# Empêche deux déploiements de se marcher dessus si deux push arrivent
+# coup sur coup.
+concurrency:
+  group: production-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Déployer sur le serveur
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      github.event.workflow_run.conclusion == 'success'
+
+    # Charge les secrets/variables définis dans Settings > Environments >
+    # "Belivay Prod", et applique la règle "Required reviewers" que tu as
+    # configurée : ce job restera en attente d'approbation manuelle
+    # (onglet Actions) avant de contacter le serveur.
+    environment: "Belivay Prod"
+
+    steps:
+      - name: Déterminer le commit à déployer
+        id: sha
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ─────────────────────────────────────────────────────────────────
+      # Génère .env.prod à partir des Secrets/Variables de l'environnement
+      # GitHub "production". Rien n'est tapé ou copié à la main sur le
+      # serveur : ce fichier remplace entièrement l'édition manuelle.
+      #
+      # Le délimiteur 'ENVEOF' (entre quotes) empêche le shell d'interpréter
+      # les caractères spéciaux ($ ` " etc.) qui pourraient se trouver dans
+      # un secret — seules les expressions ${{ }} sont substituées, par
+      # GitHub Actions lui-même, avant que le shell ne s'exécute.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Générer .env.prod depuis l'environnement GitHub
+        run: |
+          cat > .env.prod << 'ENVEOF'
+          # Fichier généré automatiquement par GitHub Actions à chaque déploiement.
+          # NE PAS ÉDITER À LA MAIN SUR LE SERVEUR — les changements seraient
+          # écrasés au prochain déploiement. Modifie les valeurs dans
+          # GitHub > Settings > Environments > production à la place.
+
+          ENV=production
+          DJANGO_DEBUG=0
+          DJANGO_SECRET_KEY=${{ secrets.DJANGO_SECRET_KEY }}
+          BOOTSTRAP_ADMIN_TOKEN=${{ secrets.BOOTSTRAP_ADMIN_TOKEN }}
+
+          # ── Base de données ──────────────────────────────────────────
+          # DATABASE_URL (construite dans docker-compose.prod.yml à partir
+          # des 3 valeurs ci-dessous) inclut déjà ?sslmode=disable —
+          # inutile d'ajouter POSTGRES_SSLMODE séparément.
+          POSTGRES_DB=${{ vars.POSTGRES_DB }}
+          POSTGRES_USER=${{ vars.POSTGRES_USER }}
+          POSTGRES_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
+
+          # ── Réseau / sécurité ────────────────────────────────────────
+          ALLOWED_HOSTS=${{ vars.ALLOWED_HOSTS }}
+          CORS_ALLOWED_ORIGINS=${{ vars.CORS_ALLOWED_ORIGINS }}
+          WEB_CONCURRENCY=${{ vars.WEB_CONCURRENCY }}
+
+          # ── Stockage (Cloudflare R2) ─────────────────────────────────
+          USE_R2_STORAGE=${{ vars.USE_R2_STORAGE }}
+          AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_STORAGE_BUCKET_NAME=${{ vars.AWS_STORAGE_BUCKET_NAME }}
+          AWS_S3_ENDPOINT_URL=${{ vars.AWS_S3_ENDPOINT_URL }}
+          AWS_S3_REGION_NAME=${{ vars.AWS_S3_REGION_NAME }}
+          AWS_S3_ADDRESSING_STYLE=${{ vars.AWS_S3_ADDRESSING_STYLE }}
+          AWS_QUERYSTRING_EXPIRE=${{ vars.AWS_QUERYSTRING_EXPIRE }}
+
+          # ── Paiements (CamPay / MoMo) ────────────────────────────────
+          CAMPAY_TOKEN=${{ secrets.CAMPAY_TOKEN }}
+          CAMPAY_TOKEN_SANDBOX=${{ secrets.CAMPAY_TOKEN_SANDBOX }}
+          CAMPAY_TOKEN_LIVE=${{ secrets.CAMPAY_TOKEN_LIVE }}
+          CAMPAY_WEBHOOK_KEY=${{ secrets.CAMPAY_WEBHOOK_KEY }}
+          PAYMENTS_ENCRYPTION_KEY=${{ secrets.PAYMENTS_ENCRYPTION_KEY }}
+          PAYMENTS_ENCRYPTION_KEY_OLD=${{ secrets.PAYMENTS_ENCRYPTION_KEY_OLD }}
+          PAYMENTS_FINGERPRINT_SALT=${{ secrets.PAYMENTS_FINGERPRINT_SALT }}
+
+          # ── Email (SMTP Gmail) ──────────────────────────────────────
+          EMAIL_BACKEND=${{ vars.EMAIL_BACKEND }}
+          EMAIL_HOST=${{ vars.EMAIL_HOST }}
+          EMAIL_PORT=${{ vars.EMAIL_PORT }}
+          EMAIL_USE_TLS=${{ vars.EMAIL_USE_TLS }}
+          EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}
+          EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}
+          DEFAULT_FROM_EMAIL=${{ vars.DEFAULT_FROM_EMAIL }}
+
+          # ── Google OAuth ─────────────────────────────────────────────
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+
+          # ── Assistant IA (OpenRouter) ────────────────────────────────
+          OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL=${{ vars.OPENROUTER_MODEL }}
+          OPENROUTER_SITE_URL=${{ vars.OPENROUTER_SITE_URL }}
+          OPENROUTER_APP_NAME=${{ vars.OPENROUTER_APP_NAME }}
+          OPENROUTER_MAX_TOKENS=${{ vars.OPENROUTER_MAX_TOKENS }}
+          OPENROUTER_TEMPERATURE=${{ vars.OPENROUTER_TEMPERATURE }}
+          OPENROUTER_TIMEOUT_SECONDS=${{ vars.OPENROUTER_TIMEOUT_SECONDS }}
+
+          # ── URLs publiques ───────────────────────────────────────────
+          FRONTEND_URL=${{ vars.FRONTEND_URL }}
+          BACKEND_URL=${{ vars.BACKEND_URL }}
+          ENVEOF
+
+      - name: Copier .env.prod sur le serveur
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          source: ".env.prod"
+          target: ${{ vars.TARGET_PATH }}
+          strip_components: 0
+
+      # ─────────────────────────────────────────────────────────────────
+      # Déploie EXACTEMENT le commit qui a passé le CI (et non "le dernier
+      # main" au moment de l'exécution), pour éviter qu'un push arrivé
+      # entre-temps ne soit déployé sans avoir été testé.
+      # ─────────────────────────────────────────────────────────────────
+      - name: Déployer (pull + build + migrate)
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd "${{ vars.TARGET_PATH }}"
+            git fetch origin main
+            git reset --hard "${{ steps.sha.outputs.sha }}"
+            chmod +x deploy.sh backup.sh
+            ./deploy.sh
+
+      - name: Résumé
+        run: echo "✅ Déployé sur ${{ vars.TARGET_PATH }} — commit ${{ steps.sha.outputs.sha }}"

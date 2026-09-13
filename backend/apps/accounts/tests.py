@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch
 
 from django.contrib.auth.models import User
@@ -559,15 +560,39 @@ class SanctionEscalationTests(APITestCase):
 
 
 class AntiCollusionTests(APITestCase):
-    """Anti-collusion sous anonymat (V5.5 §9) : détection de rings device/MoMo."""
+    """
+    Anti-collusion sous anonymat (V5.5 §9) : détection de rings device/MoMo.
+
+    La détection (`detect_self_dealing`, `scan_shared_momo_across_buyers`)
+    lit les paiements réussis via `PaymentIntent.payer_msisdn_fingerprint`
+    (apps.payments.intents) — c'est le seul chemin de création de paiement
+    actif en production depuis la refonte du 12/08/2026 (`PaymentTransaction`
+    est réduit en lecture seule, cf. apps/payments/urls.py). Ces tests
+    créaient auparavant des `PaymentTransaction`, un modèle que la détection
+    ne lit plus : les 3 tests positifs échouaient silencieusement en CI
+    depuis leur ajout (04/09/2026), sans lien avec la production réelle.
+    """
+
+    def _create_succeeded_payment(self, order, payer_phone, amount_xaf=None):
+        from apps.payments.bridge.intent_orders import link_orders
+        from apps.payments.intents.models import PaymentIntent
+
+        intent = PaymentIntent(
+            buyer=order.user,
+            idempotency_key=f"test-collusion-{uuid.uuid4()}",
+            amount_xaf=amount_xaf or order.total_xaf,
+            status=PaymentIntent.Status.SUCCEEDED,
+        )
+        intent.set_payer(payer_phone, "MTN")
+        intent.save()
+        link_orders(intent, [order])
+        return intent
 
     def setUp(self):
         from apps.catalog.models import Category, Product
         from apps.orders.models import OrderItem
-        from apps.payments.models import PaymentTransaction
         from apps.vendors.models import VendorProfile
 
-        self.PaymentTransaction = PaymentTransaction
         self.buyer = User.objects.create_user("collusion_buyer", password="pass")
         self.vendor_user = User.objects.create_user("collusion_vendor", password="pass")
         VendorProfile.objects.create(
@@ -590,10 +615,7 @@ class AntiCollusionTests(APITestCase):
     def test_same_momo_number_as_buyer_and_vendor_is_detected(self):
         from .trust_score import detect_self_dealing
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237699111111",
-        )
+        self._create_succeeded_payment(self.order, "+237699111111")
 
         involved = detect_self_dealing(self.order)
 
@@ -602,10 +624,7 @@ class AntiCollusionTests(APITestCase):
     def test_apply_collusion_veto_bans_buyer_and_vendor(self):
         from .trust_score import apply_collusion_veto_for_order
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237699111111",
-        )
+        self._create_succeeded_payment(self.order, "+237699111111")
 
         records = apply_collusion_veto_for_order(self.order)
 
@@ -618,10 +637,7 @@ class AntiCollusionTests(APITestCase):
     def test_different_payer_number_triggers_no_veto(self):
         from .trust_score import apply_collusion_veto_for_order
 
-        self.PaymentTransaction.objects.create(
-            order=self.order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-            status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=8000, payer_phone="+237600000000",
-        )
+        self._create_succeeded_payment(self.order, "+237600000000")
 
         records = apply_collusion_veto_for_order(self.order)
 
@@ -636,10 +652,7 @@ class AntiCollusionTests(APITestCase):
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
-            self.PaymentTransaction.objects.create(
-                order=order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-                status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=3000, payer_phone=shared_phone,
-            )
+            self._create_succeeded_payment(order, shared_phone, amount_xaf=3000)
 
         flagged = scan_shared_momo_across_buyers(min_accounts=3)
 
@@ -656,10 +669,7 @@ class AntiCollusionTests(APITestCase):
             order = Order.objects.create(
                 user=buyer, customer_phone=shared_phone, city="Douala", address="Bonanjo", total_xaf=3000,
             )
-            self.PaymentTransaction.objects.create(
-                order=order, provider=self.PaymentTransaction.Provider.MTN_MOMO,
-                status=self.PaymentTransaction.Status.SUCCESS, amount_xaf=3000, payer_phone=shared_phone,
-            )
+            self._create_succeeded_payment(order, shared_phone, amount_xaf=3000)
 
         flagged = scan_shared_momo_across_buyers(min_accounts=3)
 

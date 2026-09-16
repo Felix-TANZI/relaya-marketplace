@@ -5,7 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
-import { productsApi, type Product, type MasterFicheCard } from '@/services/api/products';
+import { productsApi, type Product } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
 import { ChevronLeft, ChevronRight, Zap } from 'lucide-react';
 import { getCachedGeo } from '@/services/geolocation';

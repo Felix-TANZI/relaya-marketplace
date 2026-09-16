@@ -90,6 +90,7 @@ function normalizePlace(value: string) {
     .trim();
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared geo helpers, not components
 export function resolveCameroonPosition(...parts: Array<string | null | undefined>): MapPosition {
   const text = normalizePlace(parts.filter(Boolean).join(" "));
   for (const [name, coords] of Object.entries(NEIGHBORHOOD_COORDS)) {
@@ -101,6 +102,7 @@ export function resolveCameroonPosition(...parts: Array<string | null | undefine
   return CITY_COORDS.yaounde;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components -- shared geo helpers, not components
 export function offsetPosition(position: MapPosition, seed: number, amplitude = 0.012): MapPosition {
   return [
     position[0] + Math.sin(seed * 1.91) * amplitude,

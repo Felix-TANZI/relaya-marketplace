@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
-  Menu,
   ShoppingBag,
   Shirt,
   Laptop,
@@ -35,6 +34,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 const THEME_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
 
+// eslint-disable-next-line react-refresh/only-export-components -- helper colocated with its only consumer below
 export function categoryIcon(category: Pick<HomeCategoryItem, "name" | "slug" | "iconName">) {
   const theme = THEME_BY_SLUG.get(category.slug);
   if (theme) return theme.icon;

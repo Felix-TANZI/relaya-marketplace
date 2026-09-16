@@ -124,12 +124,16 @@ export default function GoogleAuthButton({
   }, [onCredential, onUnavailable]);
 
   useEffect(() => {
-    if (isNative) {
+    const initNative = () => {
       // Sur mobile, GoogleAuth.initialize() lit sa config (serverClientId,
       // scopes) depuis capacitor.config.ts — rien a initialiser ici avec un
       // client_id web, qui ne fonctionnerait pas dans une WebView native.
       GoogleAuth.initialize();
       setReady(true);
+    };
+
+    if (isNative) {
+      initNative();
       return;
     }
     if (!clientId) {

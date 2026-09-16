@@ -300,13 +300,12 @@ export default function TrackingMap({
   const [geocodedDestination, setGeocodedDestination] = useState<[number, number] | null>(null);
 
   useEffect(() => {
-    if (!districtGeocodeQuery && !fullAddressGeocodeQuery) {
-      setGeocodedDestination(null);
-      return;
-    }
-
     const controller = new AbortController();
     (async () => {
+      if (!districtGeocodeQuery && !fullAddressGeocodeQuery) {
+        setGeocodedDestination(null);
+        return;
+      }
       const districtResult = districtGeocodeQuery
         ? await geocodeAddress(districtGeocodeQuery, controller.signal).catch(() => null)
         : null;

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Building2, Clock3, MapPin, Package, Phone, RefreshCw, Search, ShieldCheck } from "lucide-react";
+import { Building2, Clock3, Package, Phone, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
 import { offsetPosition, OpenStreetMap, resolveCameroonPosition, type OpenStreetMapMarker } from "@/components/maps/OpenStreetMap";

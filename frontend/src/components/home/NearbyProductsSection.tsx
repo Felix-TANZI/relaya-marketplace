@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { productsApi, type Product } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
-import { getCachedGeo, requestGeolocation } from '@/services/geolocation';
+import { getCachedGeo, requestGeolocation, type GeoCoords } from '@/services/geolocation';
 import { ChevronLeft, ChevronRight, MapPin, Loader } from 'lucide-react';
 
 interface NearbyProductsSectionProps {
@@ -32,7 +32,7 @@ export default function NearbyProductsSection({
     const fetchNearby = async () => {
       try {
         // Demander la géolocalisation si non disponible
-        const geo = getCachedGeo() || (await new Promise<any>(resolve => {
+        const geo = getCachedGeo() || (await new Promise<GeoCoords | null>(resolve => {
           requestGeolocation();
           // Attendre 2 secondes que la géoloc se mette à jour
           setTimeout(() => resolve(getCachedGeo()), 2000);

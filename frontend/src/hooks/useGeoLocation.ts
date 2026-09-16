@@ -17,35 +17,37 @@ interface UseGeoLocationResult {
 
 export function useGeoLocation(): UseGeoLocationResult {
   const { t } = useTranslation();
-  const [coords, setCoords] = useState<GeoCoords | null>(null);
-  const [loading, setLoading] = useState(true);
+  // Coordonnées mises en cache lues une seule fois à l'initialisation : ça évite
+  // un setState synchrone dans l'effet pour ce cas déjà résolu au premier rendu.
+  const [coords, setCoords] = useState<GeoCoords | null>(() => getCachedGeo());
+  const [loading, setLoading] = useState(() => getCachedGeo() === null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Essayer d'obtenir les coordonnées mises en cache
-    const cached = getCachedGeo();
-    if (cached) {
-      setCoords(cached);
-      setLoading(false);
-      return;
-    }
+    if (getCachedGeo()) return;
 
     // Sinon, demander silencieusement la géolocalisation
+    let requestError: unknown;
     try {
       requestGeolocation();
-      
-      // Attendre un peu que la géolocalisation se mette à jour
-      const timer = setTimeout(() => {
-        const updated = getCachedGeo();
-        setCoords(updated);
-        setLoading(false);
-      }, 2000);
-
-      return () => clearTimeout(timer);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('misc1_geolocation.error_generic'));
-      setLoading(false);
+      requestError = err;
     }
+
+    // Attendre un peu que la géolocalisation se mette à jour (ou signaler
+    // l'échec) — toujours différé, jamais de setState synchrone dans l'effet.
+    const timer = setTimeout(() => {
+      if (requestError !== undefined) {
+        setError(requestError instanceof Error ? requestError.message : t('misc1_geolocation.error_generic'));
+        setLoading(false);
+        return;
+      }
+      const updated = getCachedGeo();
+      setCoords(updated);
+      setLoading(false);
+    }, requestError !== undefined ? 0 : 2000);
+
+    return () => clearTimeout(timer);
   }, [t]);
 
   const requestPermission = () => {

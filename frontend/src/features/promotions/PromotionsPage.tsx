@@ -70,10 +70,6 @@ function useCountdown(endTime: number) {
   };
 }
 
-function getProductImage(product: Product) {
-  return product.media?.[0]?.url || product.images?.[0]?.image_url || "";
-}
-
 function buildScoredList(list: Product[]) {
   const scored: PromoProduct[] = [...list]
     .map((product) => ({

@@ -392,8 +392,7 @@ function ActivityRow({ item, T }: { item: AdminAnalytics['recent_activity'][0]; 
 export default function AdminDashboardPage() {
   const { showToast }  = useToast();
   const T              = useAdminTheme();
-  const { t, i18n }    = useTranslation();
-  const lang           = i18n.language;
+  const { t }          = useTranslation();
 
   const [stats,      setStats]     = useState<AdminDashboardStats | null>(null);
   const [analytics,  setAnalytics] = useState<AdminAnalytics | null>(null);

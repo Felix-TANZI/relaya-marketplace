@@ -264,7 +264,7 @@ export const productsApi = {
     excludeVendorId?: number,
     limit: number = 5
   ): Promise<Product[]> => {
-    const params: any = { master_id: masterId, limit };
+    const params: Record<string, string | number> = { master_id: masterId, limit };
     if (excludeVendorId) params.exclude_vendor_id = excludeVendorId;
 
     // Cet endpoint renvoie un tableau brut (pas de pagination DRF), à la
@@ -283,7 +283,7 @@ export const productsApi = {
     userLon?: number,
     limit: number = 5
   ): Promise<Product[]> => {
-    const params: any = {
+    const params: Record<string, string | number> = {
       master_ids: masterIds.join(','),
       limit
     };
@@ -308,6 +308,7 @@ export const productsApi = {
       params: {
         user_lat: userLat,
         user_lon: userLon,
+        max_distance_km: maxDistanceKm,
         page_size: limit
       }
     });

@@ -19,7 +19,6 @@ export default function SupervisionPage() {
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
-    setLoading(true);
     adminApi.getSupervisionDashboard()
       .then(setData)
       .catch(() => showToast(t('ad5b_supervision.toast_load_error'), 'error'))

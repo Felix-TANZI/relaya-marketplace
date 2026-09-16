@@ -36,12 +36,26 @@ class WhatsAppConfig:
     catalog_source: str = "local"
     catalog_api_url: str = "https://belivay.com"
     catalog_cache_seconds: int = 60
+    # Site vers lequel pointent les liens envoyes au client (fiche commande,
+    # page produit). Doit etre en HTTPS : WhatsApp refuse tout autre lien.
+    site_url: str = "https://belivay.com"
     # Livreurs : compte WhatsApp Business (modèles de message), envoi à l'assignation.
     business_account_id: str = ""
     courier_notifications: bool = True
     # Développement : tous les messages livreurs partent vers ce numéro (vide en production).
     courier_notify_override: str = ""
     courier_app_url: str = "https://courier.belivay.com/courier"
+    # Vendeurs : envoi au paiement d'une commande.
+    vendor_notifications: bool = True
+    vendor_notify_override: str = ""
+    vendor_app_url: str = "https://seller.belivay.com/seller"
+    # Points relais : envoi au ramassage du colis chez le vendeur.
+    relay_notifications: bool = True
+    relay_notify_override: str = ""
+    relay_app_url: str = "https://relay-point.belivay.com/relay-point"
+    # Heures pendant lesquelles l'assistant se tait apres avoir passe la
+    # main a un conseiller, pour ne pas parler par-dessus lui.
+    human_handover_hours: int = 6
 
 
 def get_config() -> WhatsAppConfig:
@@ -60,10 +74,19 @@ def get_config() -> WhatsAppConfig:
         catalog_source=_setting("WHATSAPP_CATALOG_SOURCE", "local").lower(),
         catalog_api_url=_setting("WHATSAPP_CATALOG_API_URL", "https://belivay.com").rstrip("/"),
         catalog_cache_seconds=_int_setting("WHATSAPP_CATALOG_CACHE_SECONDS", 60),
+        # Par defaut, le site d'ou vient deja le catalogue.
+        site_url=(_setting("WHATSAPP_SITE_URL") or _setting("WHATSAPP_CATALOG_API_URL", "https://belivay.com")).rstrip("/"),
         business_account_id=_setting("WHATSAPP_BUSINESS_ACCOUNT_ID"),
         courier_notifications=_setting("WHATSAPP_COURIER_NOTIFICATIONS", "1").lower() in TRUE_VALUES,
         courier_notify_override="".join(ch for ch in _setting("WHATSAPP_COURIER_NOTIFY_OVERRIDE") if ch.isdigit()),
         courier_app_url=_setting("WHATSAPP_COURIER_APP_URL", "https://courier.belivay.com/courier"),
+        vendor_notifications=_setting("WHATSAPP_VENDOR_NOTIFICATIONS", "1").lower() in TRUE_VALUES,
+        vendor_notify_override="".join(ch for ch in _setting("WHATSAPP_VENDOR_NOTIFY_OVERRIDE") if ch.isdigit()),
+        vendor_app_url=_setting("WHATSAPP_VENDOR_APP_URL", "https://seller.belivay.com/seller"),
+        relay_notifications=_setting("WHATSAPP_RELAY_NOTIFICATIONS", "1").lower() in TRUE_VALUES,
+        relay_notify_override="".join(ch for ch in _setting("WHATSAPP_RELAY_NOTIFY_OVERRIDE") if ch.isdigit()),
+        relay_app_url=_setting("WHATSAPP_RELAY_APP_URL", "https://relay-point.belivay.com/relay-point"),
+        human_handover_hours=_int_setting("WHATSAPP_HUMAN_HANDOVER_HOURS", 6),
     )
 
 

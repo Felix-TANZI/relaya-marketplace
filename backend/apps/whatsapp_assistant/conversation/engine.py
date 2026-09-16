@@ -2,11 +2,13 @@
 # Le « cerveau » de l'assistant : décide quel écran afficher à chaque message.
 #
 # Ordre de décision :
+#   0. conseiller en ligne         → l'assistant se tait
 #   0. bouton ou mot d'un livreur → le volet livreur (il ne passe pas par l'accueil)
 #   1. langue pas encore choisie  → proposer 🇫🇷 / 🇬🇧
 #   2. bouton ou ligne touché     → l'écran correspondant (reply_id)
 #   3. message non textuel        → explication + boutons
 #   4. mot-clé (menu, aide…)      → l'écran correspondant
+#   4b. « ma commande »           → le suivi de ses commandes
 #   5. tout autre texte           → recherche d'articles
 
 import logging
@@ -17,7 +19,7 @@ from apps.whatsapp_assistant.bridge.catalog import CatalogUnavailable
 from apps.whatsapp_assistant.models import WhatsAppContact
 from apps.whatsapp_assistant.providers import Button, IncomingMessage, WhatsAppProvider
 
-from . import courier, screens
+from . import courier, orders, relay, screens, support, vendor
 from .outbox import send_buttons
 from .texts import t
 
@@ -56,11 +58,28 @@ def _decide(contact: WhatsAppContact, message: IncomingMessage, provider: WhatsA
     reply = message.reply_id
     words = normalize(message.text)
 
-    # 0. Livreur : ses boutons sont reconnaissables, et il ne choisit pas de
-    #    langue — c'est celle de son application livreur qui s'applique.
+    # 0. Un conseiller a la main : l'assistant se tait, quel que soit le
+    #    message reçu — sinon il parlerait par-dessus lui.
+    if support.handle_incoming(provider, contact, message, words):
+        return
+
+    # 0 bis. Les autres métiers. Chacun ne reconnaît que ce qui le concerne et
+    #    rend la main sinon. Le point relais passe en premier : un gérant qui
+    #    saisit un code de retrait peut taper n'importe quoi.
+    if not reply and message.type == "text" and relay.handle_text(
+            provider, contact, words, message.text.strip()):
+        return
+    if reply and relay.handle_reply(provider, contact, reply):
+        return
     if reply and courier.handle_reply(provider, contact, reply):
         return
     if not reply and message.type == "text" and courier.handle_text(provider, contact, words):
+        return
+    if reply and orders.handle_reply(provider, contact, reply):
+        return
+    if reply and vendor.handle_reply(provider, contact, reply):
+        return
+    if not reply and message.type == "text" and vendor.handle_text(provider, contact, words):
         return
 
     # 1. Langue
@@ -96,6 +115,8 @@ def _decide(contact: WhatsAppContact, message: IncomingMessage, provider: WhatsA
         return _open_shop(provider, contact)
     if words in SEARCH_WORDS:
         return screens.search_prompt(provider, contact)
+    if orders.handle_text(provider, contact, words):
+        return
 
     # 5. Texte libre : c'est un article recherché
     return screens.search(provider, contact, message.text.strip())

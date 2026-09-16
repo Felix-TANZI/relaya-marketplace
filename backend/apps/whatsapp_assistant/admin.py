@@ -5,7 +5,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import CourierNotification, WhatsAppContact, WhatsAppMedia, WhatsAppMessage, WhatsAppPoster
+from .models import CourierNotification, RelayNotification, VendorNotification, WhatsAppContact, WhatsAppMedia, WhatsAppMessage, WhatsAppPoster
 
 
 @admin.register(WhatsAppPoster)
@@ -97,6 +97,46 @@ class CourierNotificationAdmin(admin.ModelAdmin):
     @admin.display(description="Colis / tournee")
     def target(self, obj):
         return f"colis {obj.shipment_id}" if obj.shipment_id else f"tournee {obj.tournee_id}"
+
+    @admin.display(boolean=True, description="Echec")
+    def has_error(self, obj):
+        return bool(obj.error)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(VendorNotification)
+class VendorNotificationAdmin(admin.ModelAdmin):
+    """Messages envoyes aux vendeurs a chaque commande payee."""
+
+    list_display = ("created_at", "order_id", "vendor_id", "recipient", "language", "has_error")
+    list_filter = ("kind", "language")
+    search_fields = ("order_id", "vendor_id", "recipient", "provider_message_id")
+    readonly_fields = [f.name for f in VendorNotification._meta.fields]
+
+    @admin.display(boolean=True, description="Echec")
+    def has_error(self, obj):
+        return bool(obj.error)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(RelayNotification)
+class RelayNotificationAdmin(admin.ModelAdmin):
+    """Messages envoyes aux points relais quand un colis part vers eux."""
+
+    list_display = ("created_at", "parcel_id", "relay_id", "recipient", "language", "has_error")
+    list_filter = ("kind", "language")
+    search_fields = ("parcel_id", "relay_id", "recipient", "provider_message_id")
+    readonly_fields = [f.name for f in RelayNotification._meta.fields]
 
     @admin.display(boolean=True, description="Echec")
     def has_error(self, obj):

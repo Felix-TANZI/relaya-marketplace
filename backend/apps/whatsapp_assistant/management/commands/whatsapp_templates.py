@@ -39,7 +39,7 @@ class Command(BaseCommand):
                 "WhatsApp Business ». Ajoutez-le, puis relancez le conteneur backend."
             )
         provider = get_provider(config)
-        wanted = definitions(config.courier_app_url)
+        wanted = definitions(config.courier_app_url, config.vendor_app_url, config.relay_app_url)
 
         try:
             existing = {(item.get("name"), item.get("language")): item for item in provider.list_templates()}

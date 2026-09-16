@@ -8,6 +8,8 @@
 
 MISSION = "belivay_nouvelle_mission"
 TOUR_RECAP = "belivay_recap_tournee"
+NEW_ORDER = "belivay_nouvelle_commande"
+RELAY_PARCEL = "belivay_colis_relais"
 LANGUAGES = ("fr", "en")
 
 TEMPLATES = {
@@ -71,16 +73,87 @@ TEMPLATES = {
             "url_button": "Open the app",
         },
     },
+    # {{1}} commande BVY-… · {{2}} articles à préparer · {{3}} délai
+    # Boutons de réponse rapide : 0 = je confirme, 1 = voir la commande.
+    NEW_ORDER: {
+        "fr": {
+            "body": (
+                "🏪 *Nouvelle commande BelivaY*\n\n"
+                "Commande *{{1}}*\n"
+                "📦 À préparer : {{2}}\n"
+                "🕓 Avant le : {{3}}\n\n"
+                "Confirmez ici ou dans votre espace vendeur. "
+                "Touchez « Voir la commande » pour le détail des articles."
+            ),
+            "example": ["BVY-1024", "2 articles", "17/09 vers 14h"],
+            "footer": "BelivaY · Vendeur",
+            "quick_replies": ["Je confirme", "Voir la commande"],
+            "url_button": "Ouvrir mon espace",
+        },
+        "en": {
+            "body": (
+                "🏪 *New BelivaY order*\n\n"
+                "Order *{{1}}*\n"
+                "📦 To prepare: {{2}}\n"
+                "🕓 Before: {{3}}\n\n"
+                "Confirm here or in your seller space. "
+                "Tap « See the order » for the item details."
+            ),
+            "example": ["BVY-1024", "2 items", "17/09 around 2pm"],
+            "footer": "BelivaY · Seller",
+            "quick_replies": ["I confirm", "See the order"],
+            "url_button": "Open my space",
+        },
+    },
+    # {{1}} colis BVY-… · {{2}} contenu · {{3}} nom du relais
+    # Bouton de réponse rapide : 0 = voir le colis.
+    RELAY_PARCEL: {
+        "fr": {
+            "body": (
+                "🏪 *Un colis arrive chez vous*\n\n"
+                "Colis *{{1}}*\n"
+                "📦 Contenu : {{2}}\n"
+                "📍 Destination : {{3}}\n\n"
+                "Le livreur vient de le récupérer chez le vendeur. "
+                "Touchez « Voir le colis » pour le réceptionner à son arrivée."
+            ),
+            "example": ["BVY-1024-2048", "2 articles", "Relais Bastos"],
+            "footer": "BelivaY · Point relais",
+            "quick_replies": ["Voir le colis"],
+            "url_button": "Ouvrir mon espace",
+        },
+        "en": {
+            "body": (
+                "🏪 *A parcel is heading your way*\n\n"
+                "Parcel *{{1}}*\n"
+                "📦 Contents: {{2}}\n"
+                "📍 Destination: {{3}}\n\n"
+                "The courier has just collected it from the seller. "
+                "Tap « See the parcel » to receive it on arrival."
+            ),
+            "example": ["BVY-1024-2048", "2 items", "Bastos relay"],
+            "footer": "BelivaY · Relay point",
+            "quick_replies": ["See the parcel"],
+            "url_button": "Open my space",
+        },
+    },
 }
 
 
-def definitions(app_url: str) -> list[dict]:
+def definitions(app_url: str, vendor_url: str = "", relay_url: str = "") -> list[dict]:
     """Modèles au format de l'API Meta (POST /<WABA_ID>/message_templates)."""
     payloads = []
     for name, languages in TEMPLATES.items():
+        # Le livreur va vers son application, le vendeur vers son espace.
+        if name == NEW_ORDER:
+            destination = vendor_url or app_url
+        elif name == RELAY_PARCEL:
+            destination = relay_url or app_url
+        else:
+            destination = app_url
         for language, spec in languages.items():
             buttons = [{"type": "QUICK_REPLY", "text": text} for text in spec["quick_replies"]]
-            buttons.append({"type": "URL", "text": spec["url_button"], "url": app_url})
+            buttons.append({"type": "URL", "text": spec["url_button"], "url": destination})
             payloads.append({
                 "name": name,
                 "language": language,

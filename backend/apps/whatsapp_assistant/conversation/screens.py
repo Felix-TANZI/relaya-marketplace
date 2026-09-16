@@ -88,7 +88,8 @@ def help_screen(provider: WhatsAppProvider, contact: WhatsAppContact) -> None:
     send_buttons(
         provider, contact,
         t(lang, "help", phone=config.support_phone, email=config.support_email),
-        [_categories_button(lang), _menu_button(lang)],
+        [Button("human", t(lang, "btn_human")), Button("orders", t(lang, "btn_orders")),
+         _menu_button(lang)],
     )
     _remember(contact, "help")
 

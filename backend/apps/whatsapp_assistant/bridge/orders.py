@@ -85,6 +85,19 @@ def get_order(order_id: int, wa_id: str) -> CustomerOrder | None:
     return next((order for order in orders_of_phone(wa_id) if order.id == order_id), None)
 
 
+def order_url(order_id: int) -> str | None:
+    """
+    Fiche de la commande dans l'application client, ou None si le site n'est
+    pas en HTTPS : WhatsApp refuse tout autre lien sur un bouton.
+    """
+    from apps.whatsapp_assistant.conf import get_config
+
+    base = get_config().site_url
+    if not base.startswith("https://"):
+        return None
+    return f"{base}/orders/{order_id}?utm_source=whatsapp&utm_medium=assistant&utm_campaign=suivi"
+
+
 def _same_number(stored: str, wa_id: str) -> bool:
     from apps.whatsapp_assistant.bridge.deliveries import to_wa_id
 
@@ -115,12 +128,21 @@ def _destination(order) -> str:
     return " · ".join(filter(None, [order.district, order.city])) or order.address
 
 
+def _shop_name(shipment) -> str:
+    """Le nom de la boutique ; les anciens colis n'ont pas de vendeur attache."""
+    vendor = shipment.vendor if shipment.vendor_id else None
+    if vendor is None:
+        item = shipment.order_items.select_related("product__vendor").first()
+        vendor = item.product.vendor if item and item.product else None
+    profile = getattr(vendor, "vendor_profile", None) if vendor else None
+    return profile.business_name if profile else ""
+
+
 def _to_parcel(shipment) -> Parcel:
-    profile = getattr(shipment.vendor, "vendor_profile", None) if shipment.vendor_id else None
     return Parcel(
         reference=f"BVY-{shipment.order_id}-{shipment.id}",
         status=shipment.status,
-        shop=profile.business_name if profile else "",
+        shop=_shop_name(shipment),
         items_count=sum(shipment.order_items.values_list("qty", flat=True)),
         eta=_eta(shipment),
     )

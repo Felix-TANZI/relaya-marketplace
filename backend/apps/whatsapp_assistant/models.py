@@ -140,6 +140,76 @@ class CourierNotification(models.Model):
         return f"{self.get_kind_display()} · {target} → +{self.recipient}"
 
 
+class VendorNotification(models.Model):
+    """
+    Message envoye a un vendeur quand une commande vient d'etre payee. Les
+    commandes et les vendeurs sont references par leur numero (pas de cle
+    etrangere) : le module se retire sans toucher aux tables du coeur.
+    """
+
+    class Kind(models.TextChoices):
+        NEW_ORDER = "new_order", "Nouvelle commande payee"
+
+    kind = models.CharField(max_length=16, choices=Kind.choices,
+                            default=Kind.NEW_ORDER, verbose_name="Type")
+    order_id = models.PositiveBigIntegerField(verbose_name="Commande n°")
+    vendor_id = models.PositiveBigIntegerField(verbose_name="Vendeur n°")
+    recipient = models.CharField(max_length=32, blank=True, verbose_name="Envoyé au")
+    language = models.CharField(max_length=2, blank=True, verbose_name="Langue")
+    provider_message_id = models.CharField(max_length=128, blank=True)
+    error = models.TextField(blank=True, verbose_name="Erreur")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Envoyé le")
+
+    class Meta:
+        verbose_name = "Message vendeur"
+        verbose_name_plural = "Messages vendeurs"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["order_id", "vendor_id", "kind"],
+                name="whatsapp_vendor_order_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} · commande {self.order_id} → +{self.recipient}"
+
+
+class RelayNotification(models.Model):
+    """
+    Message envoye au gerant d'un point relais quand un colis part vers lui.
+    Colis et relais sont references par leur numero (pas de cle etrangere) :
+    le module se retire sans toucher aux tables du coeur.
+    """
+
+    class Kind(models.TextChoices):
+        ON_THE_WAY = "on_the_way", "Colis en route vers le relais"
+
+    kind = models.CharField(max_length=16, choices=Kind.choices,
+                            default=Kind.ON_THE_WAY, verbose_name="Type")
+    parcel_id = models.PositiveBigIntegerField(verbose_name="Colis relais n\u00b0")
+    relay_id = models.PositiveBigIntegerField(verbose_name="Point relais n\u00b0")
+    recipient = models.CharField(max_length=32, blank=True, verbose_name="Envoy\u00e9 au")
+    language = models.CharField(max_length=2, blank=True, verbose_name="Langue")
+    provider_message_id = models.CharField(max_length=128, blank=True)
+    error = models.TextField(blank=True, verbose_name="Erreur")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Envoy\u00e9 le")
+
+    class Meta:
+        verbose_name = "Message point relais"
+        verbose_name_plural = "Messages points relais"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["parcel_id", "relay_id", "kind"],
+                name="whatsapp_relay_parcel_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} \u00b7 colis {self.parcel_id} \u2192 +{self.recipient}"
+
+
 class WhatsAppMessage(models.Model):
     """Journal des échanges : sert au suivi, au débogage et à l'anti-doublon."""
 

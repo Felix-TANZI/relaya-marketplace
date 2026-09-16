@@ -1,19 +1,10 @@
-import { useMemo, useState, useEffect, type CSSProperties } from "react";
+import { useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { ChevronRight, ArrowRight, PackageSearch } from "lucide-react";
-import { categoryIcon } from "@/components/home/CategorySidebar";
-import { categoriesApi, type CategoryTreeNode } from "@/services/api/categories";
+import { categoryIcon } from "@/data/categoryIcon";
+import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import { PfShellStyles } from "@/styles/pfShell";
-
-const TILE_GRADIENTS = [
-  "linear-gradient(135deg,#5bb8ff,#2563eb)",
-  "linear-gradient(135deg,#ff86bb,#e11d74)",
-  "linear-gradient(135deg,#ffa04d,#f4610f)",
-  "linear-gradient(135deg,#34d399,#059669)",
-  "linear-gradient(135deg,#ffd45c,#f59e0b)",
-  "linear-gradient(135deg,#a78bfa,#7c3aed)",
-];
 
 const glass: CSSProperties = {
   background: "var(--pf-glass)",
@@ -25,31 +16,13 @@ const glass: CSSProperties = {
 
 export default function CategoriesPage() {
   const { t } = useTranslation();
-  const [categories, setCategories] = useState<CategoryTreeNode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const { categories, loading } = useStorefrontCategories();
+  const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        setCategories(await categoriesApi.tree());
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchCategories();
-  }, []);
-
-  const groupedCategories = useMemo(
-    () => [...categories].sort((a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name, "fr")),
-    [categories],
-  );
-
-  const selected = groupedCategories.find((c) => c.id === selectedId) ?? groupedCategories[0] ?? null;
-  const selectedIndex = selected ? groupedCategories.findIndex((c) => c.id === selected.id) : 0;
-  const SelectedIcon = selected
-    ? categoryIcon({ slug: selected.slug, name: selected.name, iconName: selected.icon_name })
-    : null;
+  // Univers = catégories racines créées par l'admin (« Tout voir » n'en est pas un).
+  const universes = categories.filter((category) => category.node);
+  const selected = universes.find((c) => c.slug === selectedSlug) ?? universes[0] ?? null;
+  const children = selected?.node?.children ?? [];
 
   return (
     <div className="pf-root" style={{ minHeight: "100vh" }}>
@@ -86,14 +59,14 @@ export default function CategoriesPage() {
               className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide lg:flex-col lg:gap-1 lg:overflow-visible lg:pb-0"
               style={{ ...glass, borderRadius: 18, padding: 8 }}
             >
-              {groupedCategories.map((category, index) => {
-                const Icon = categoryIcon({ slug: category.slug, name: category.name, iconName: category.icon_name });
-                const active = category.id === selected.id;
+              {universes.map((category) => {
+                const Icon = category.icon;
+                const active = category.slug === selected.slug;
                 return (
                   <button
-                    key={category.id}
+                    key={category.slug}
                     type="button"
-                    onClick={() => setSelectedId(category.id)}
+                    onClick={() => setSelectedSlug(category.slug)}
                     className="flex flex-shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors lg:w-full"
                     style={{
                       minWidth: 172,
@@ -101,16 +74,25 @@ export default function CategoriesPage() {
                       border: `1px solid ${active ? "var(--pf-aring)" : "transparent"}`,
                     }}
                   >
-                    <span style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: TILE_GRADIENTS[index % TILE_GRADIENTS.length] }}>
-                      <Icon size={18} />
-                    </span>
+                    {category.thumb ? (
+                      <img
+                        src={category.thumb}
+                        alt=""
+                        loading="lazy"
+                        style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 10, objectFit: "cover" }}
+                      />
+                    ) : (
+                      <span style={{ width: 36, height: 36, flexShrink: 0, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: category.accent }}>
+                        <Icon size={18} />
+                      </span>
+                    )}
                     <span style={{ flex: 1, minWidth: 0 }}>
                       <span style={{ display: "block", fontSize: 13, fontWeight: active ? 800 : 700, color: "var(--pf-text)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {category.name}
                       </span>
                       <span style={{ display: "block", fontSize: 10.5, color: "var(--pf-muted)" }}>
-                        {category.children.length > 0
-                          ? t("categories.subcategory_count_plural", { count: category.children.length })
+                        {(category.node?.children.length ?? 0) > 0
+                          ? t("categories.subcategory_count_plural", { count: category.node?.children.length })
                           : t("categories.main_category")}
                       </span>
                     </span>
@@ -120,68 +102,85 @@ export default function CategoriesPage() {
               })}
             </div>
 
-            {/* ── Panneau : détail du sélectionné ── */}
-            <div className="pf-card">
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-                  <span style={{ width: 50, height: 50, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: TILE_GRADIENTS[selectedIndex % TILE_GRADIENTS.length], boxShadow: "0 6px 16px rgba(0,0,0,.12)" }}>
-                    {SelectedIcon ? <SelectedIcon size={24} /> : null}
-                  </span>
-                  <div>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>{selected.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--pf-muted)" }}>
-                      {selected.children.length > 0
-                        ? t("categories.subcategory_count_plural", { count: selected.children.length })
-                        : t("categories.main_category")}
-                    </div>
+            {/* ── Panneau : bannière de l'univers puis ses sous-catégories ── */}
+            <div className="pf-card" style={{ padding: 0, overflow: "hidden" }}>
+              <div
+                style={{
+                  position: "relative", minHeight: 150, display: "flex", alignItems: "flex-end",
+                  background: selected.image
+                    ? `url(${selected.image}) center/cover`
+                    : `linear-gradient(135deg, ${selected.accent}, ${selected.accent}bb)`,
+                }}
+              >
+                <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.62), rgba(0,0,0,.08))" }} />
+                <div style={{ position: "relative", display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 12, width: "100%", padding: "18px 18px 16px", color: "#fff" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: "-.01em" }}>{selected.name}</div>
+                    <div style={{ fontSize: 12, opacity: 0.85 }}>{selected.subtitle}</div>
+                    {selected.description ? (
+                      <p style={{ marginTop: 6, maxWidth: 560, fontSize: 12.5, lineHeight: 1.5, opacity: 0.85 }}>
+                        {selected.description}
+                      </p>
+                    ) : null}
                   </div>
-                </div>
-                <Link to={`/catalog?category=${selected.id}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
-                  Voir tous les produits <ArrowRight size={15} />
-                </Link>
-              </div>
-
-              {selected.children.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
-                  {selected.children.map((child) => {
-                    const ChildIcon = categoryIcon({ slug: child.slug, name: child.name, iconName: child.icon_name });
-                    return (
-                      <Link
-                        key={child.id}
-                        to={`/catalog?category=${child.id}`}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all hover:-translate-y-0.5"
-                        style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
-                      >
-                        <span style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--pf-asoft)", color: "var(--pf-accent)" }}>
-                          <ChildIcon size={16} />
-                        </span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--pf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {child.name}
-                          </span>
-                          {child.children.length > 0 ? (
-                            <span style={{ display: "block", fontSize: 10.5, color: "var(--pf-muted)" }}>
-                              {t("categories.subcategory_count_plural", { count: child.children.length })}
-                            </span>
-                          ) : null}
-                        </span>
-                        <ChevronRight size={15} style={{ color: "#c2b6bf", flexShrink: 0 }} />
-                      </Link>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "36px 0", textAlign: "center" }}>
-                  <PackageSearch size={30} style={{ color: "var(--pf-muted)" }} />
-                  <p style={{ fontSize: 13, fontWeight: 700, color: "var(--pf-text)" }}>{t("categories.main_category")}</p>
-                  <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>
-                    Cet univers n'a pas de sous-catégories — explorez directement tous ses produits.
-                  </p>
-                  <Link to={`/catalog?category=${selected.id}`} className="pf-btn-accent" style={{ textDecoration: "none", marginTop: 6 }}>
-                    {t("categories.explore")} <ArrowRight size={15} />
+                  <Link to={`/categorie/${selected.slug}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
+                    Voir tous les produits <ArrowRight size={15} />
                   </Link>
                 </div>
-              )}
+              </div>
+
+              <div style={{ padding: 16 }}>
+                {children.length > 0 ? (
+                  <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {children.map((child) => {
+                      const ChildIcon = categoryIcon({ slug: child.slug, name: child.name, iconName: child.icon_name });
+                      return (
+                        <Link
+                          key={child.id}
+                          to={`/categorie/${child.slug}`}
+                          className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all hover:-translate-y-0.5"
+                          style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
+                        >
+                          {child.image_url ? (
+                            <img
+                              src={child.image_url}
+                              alt=""
+                              loading="lazy"
+                              style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", objectFit: "cover", boxShadow: "0 0 0 2px #fff, 0 2px 8px rgba(0,0,0,.12)" }}
+                            />
+                          ) : (
+                            <span style={{ width: 42, height: 42, flexShrink: 0, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--pf-asoft)", color: "var(--pf-accent)" }}>
+                              <ChildIcon size={18} />
+                            </span>
+                          )}
+                          <span style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--pf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              {child.name}
+                            </span>
+                            {child.children.length > 0 ? (
+                              <span style={{ display: "block", fontSize: 10.5, color: "var(--pf-muted)" }}>
+                                {t("categories.subcategory_count_plural", { count: child.children.length })}
+                              </span>
+                            ) : null}
+                          </span>
+                          <ChevronRight size={15} style={{ color: "#c2b6bf", flexShrink: 0 }} />
+                        </Link>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, padding: "28px 0", textAlign: "center" }}>
+                    <PackageSearch size={30} style={{ color: "var(--pf-muted)" }} />
+                    <p style={{ fontSize: 13, fontWeight: 700, color: "var(--pf-text)" }}>{t("categories.main_category")}</p>
+                    <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>
+                      Cet univers n'a pas de sous-catégories — explorez directement tous ses produits.
+                    </p>
+                    <Link to={`/categorie/${selected.slug}`} className="pf-btn-accent" style={{ textDecoration: "none", marginTop: 6 }}>
+                      {t("categories.explore")} <ArrowRight size={15} />
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}

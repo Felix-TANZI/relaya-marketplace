@@ -4,7 +4,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Globe, Moon, ShoppingBag, Sun, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/context/ThemeContext";
-import { CATEGORY_THEMES } from "@/data/categoryThemes";
+import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 
 interface MobileCategoryDrawerProps {
   open: boolean;
@@ -22,6 +22,7 @@ export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }:
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
   const { i18n } = useTranslation();
+  const { categories } = useStorefrontCategories();
 
   /* Le fond ne défile pas pendant que le tiroir est ouvert. */
   useEffect(() => {
@@ -86,9 +87,10 @@ export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }:
         </header>
 
         <nav className="flex-1 overflow-y-auto px-2 py-2">
-          {CATEGORY_THEMES.map((category) => {
+          {categories.map((category) => {
             const Icon = category.icon;
             const isActive = activeSlug === category.slug;
+            const badge = category.node ? category.node.children.length || null : category.count || null;
 
             return (
               <Link
@@ -101,17 +103,28 @@ export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }:
                     : "text-gray-700 hover:bg-[#fff7ef] dark:text-gray-200 dark:hover:bg-gray-800"
                 }`}
               >
-                <Icon size={19} className={isActive ? "text-primary" : "text-primary/80"} />
+                {category.hasOwnImage ? (
+                  <img
+                    src={category.thumb}
+                    alt=""
+                    loading="lazy"
+                    className="h-7 w-7 flex-shrink-0 rounded-full object-cover ring-2 ring-white dark:ring-gray-800"
+                  />
+                ) : (
+                  <Icon size={19} className={isActive ? "text-primary" : "text-primary/80"} />
+                )}
                 <span className="flex-1 truncate text-[14px] font-bold">{category.name}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
-                    isActive
-                      ? "bg-[#ffd9b3] text-[#a24d0a] dark:bg-primary/25 dark:text-orange-200"
-                      : "bg-[#f3f4f6] text-gray-500 dark:bg-gray-800 dark:text-gray-400"
-                  }`}
-                >
-                  {category.count}
-                </span>
+                {badge !== null ? (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-[11px] font-bold ${
+                      isActive
+                        ? "bg-[#ffd9b3] text-[#a24d0a] dark:bg-primary/25 dark:text-orange-200"
+                        : "bg-[#f3f4f6] text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                    }`}
+                  >
+                    {badge}
+                  </span>
+                ) : null}
               </Link>
             );
           })}

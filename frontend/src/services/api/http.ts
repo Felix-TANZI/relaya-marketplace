@@ -127,7 +127,11 @@ export async function http<T>(
     ...config.headers,
   };
 
-  if (!isFormData && !headers['Content-Type']) {
+  if (isFormData) {
+    // Le navigateur doit poser lui-même multipart/form-data et sa frontière :
+    // un Content-Type JSON hérité d'un helper rendrait le fichier illisible.
+    delete headers['Content-Type'];
+  } else if (!headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
   }
 

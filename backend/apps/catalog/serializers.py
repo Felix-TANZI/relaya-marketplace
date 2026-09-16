@@ -7,7 +7,22 @@ import re
 from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategoryImageUrlMixin(serializers.Serializer):
+    """
+    Expose `image_url` (URL absolue ou None) sur tous les serializers de
+    catégorie : l'acheteur, le vendeur et l'admin voient la même image.
+    """
+    image_url = serializers.SerializerMethodField()
+
+    def get_image_url(self, obj):
+        if not obj.image:
+            return None
+        request = self.context.get("request")
+        url = obj.image.url
+        return request.build_absolute_uri(url) if request else url
+
+
+class CategorySerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer de base — utilisé partout où on affiche UNE catégorie
     (fiche produit, listing, filtres, etc.).
@@ -28,6 +43,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "parent",
             "level",
             "icon_name",
+            "image_url",
             "description",
             "display_order",
             "is_active",
@@ -41,7 +57,7 @@ class CategorySerializer(serializers.ModelSerializer):
         ]
 
 
-class CategoryTreeSerializer(serializers.ModelSerializer):
+class CategoryTreeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer arborescent — sérialise une catégorie AVEC ses enfants
     récursivement. Utilisé par l'endpoint /api/catalog/categories/tree/.
@@ -57,8 +73,10 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "slug",
+            "parent",
             "level",
             "icon_name",
+            "image_url",
             "description",
             "display_order",
             "is_active",
@@ -81,14 +99,14 @@ class CategoryTreeSerializer(serializers.ModelSerializer):
         ).data
     
 
-class CategoryFlatSerializer(serializers.ModelSerializer):
+class CategoryFlatSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Version plate (pas d'enfants imbriqués) — utilisée pour les selects
     et les listes admin où on n'a pas besoin de l'arbre complet.
     Inclut le full_path pour l'affichage sans avoir à reconstruire côté client.
     """
     full_path = serializers.CharField(read_only=True)
- 
+
     class Meta:
         model = Category
         fields = [
@@ -98,6 +116,7 @@ class CategoryFlatSerializer(serializers.ModelSerializer):
             "parent",
             "level",
             "icon_name",
+            "image_url",
             "is_active",
             "is_deprecated",
             "requires_admin_approval",
@@ -421,6 +440,23 @@ class ProductSerializer(serializers.ModelSerializer):
         return round(float(rating) * 20 + reviews_count + commercial_boost, 2)
 
 
+def _seller_category_problem(category):
+    """
+    Message d'erreur si le vendeur ne peut pas publier dans cette catégorie,
+    chaîne vide sinon. Mêmes règles que le sélecteur vendeur : la catégorie
+    et ses ancêtres sont visibles, et c'est une sous-catégorie finale.
+    """
+    for node in [category, *category.get_ancestors()]:
+        if not node.is_active or node.is_deprecated:
+            return f"La catégorie « {node.name} » n'est plus proposée. Choisissez-en une autre."
+    has_open_children = category.children.filter(
+        deleted_at__isnull=True, is_active=True, is_deprecated=False,
+    ).exists()
+    if has_open_children:
+        return f"« {category.name} » contient des sous-catégories : choisissez la plus précise."
+    return ""
+
+
 class ProductCreateUpdateSerializer(serializers.ModelSerializer):
     """
     Création/édition d'un produit (= une OFFRE) par un vendeur.
@@ -475,6 +511,20 @@ class ProductCreateUpdateSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Chaque entrée de FAQ doit avoir une question et une réponse.")
             cleaned.append({"question": question[:300], "answer": answer[:2000]})
         return cleaned
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        category = attrs.get("category")
+        # Rattachée à une fiche existante, l'offre hérite de sa catégorie ;
+        # un produit dont on ne change pas la catégorie reste où il est, même
+        # si l'admin a depuis ajouté des sous-catégories.
+        attaching = attrs.get("master") is not None or attrs.get("variant") is not None
+        unchanged = self.instance is not None and category is not None and category.pk == self.instance.category_id
+        if category is not None and not attaching and not unchanged:
+            problem = _seller_category_problem(category)
+            if problem:
+                raise serializers.ValidationError({"category": problem})
+        return attrs
 
     def create(self, validated_data):
         from .models import Inventory, MasterProduct as _MP
@@ -1948,20 +1998,20 @@ class AdminColorCreateUpdateSerializer(serializers.ModelSerializer):
     
 
 
-class AdminCategoryListSerializer(serializers.ModelSerializer):
+class AdminCategoryListSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """Nœud d'arbre — infos essentielles + compteurs."""
- 
+
     parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
     children_count = serializers.SerializerMethodField()
     masters_count = serializers.SerializerMethodField()
     attributes_count = serializers.SerializerMethodField()
- 
+
     class Meta:
         model = Category
         fields = [
             "id", "name", "slug", "level",
             "parent", "parent_name",
-            "icon_name", "description",
+            "icon_name", "image_url", "description",
             "display_order",
             "is_active", "is_deprecated", "requires_admin_approval",
             "children_count", "masters_count", "attributes_count",
@@ -1977,7 +2027,7 @@ class AdminCategoryListSerializer(serializers.ModelSerializer):
         return obj.attributes.count()
  
  
-class AdminCategoryTreeNodeSerializer(serializers.ModelSerializer):
+class AdminCategoryTreeNodeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Nœud d'arbre AVEC enfants imbriqués — pour la vue arborescente.
     Utilise un dict `children_map` pré-calculé côté vue pour éviter N+1.
@@ -1987,13 +2037,13 @@ class AdminCategoryTreeNodeSerializer(serializers.ModelSerializer):
     masters_count = serializers.SerializerMethodField()
     attributes_count = serializers.SerializerMethodField()
     children = serializers.SerializerMethodField()
- 
+
     class Meta:
         model = Category
         fields = [
             "id", "name", "slug", "level",
             "parent", "parent_name",
-            "icon_name", "description",
+            "icon_name", "image_url", "description",
             "display_order",
             "is_active", "is_deprecated", "requires_admin_approval",
             "children_count", "masters_count", "attributes_count",
@@ -2075,26 +2125,26 @@ class AdminCategoryAttributeBriefSerializer(serializers.ModelSerializer):
 # DETAIL SERIALIZER
 # ═══════════════════════════════════════════════════════════════════════════
  
-class AdminCategoryDetailSerializer(serializers.ModelSerializer):
+class AdminCategoryDetailSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
     """Modale de détail — catégorie + parent + enfants + fiches + attributs."""
- 
+
     parent_name = serializers.CharField(source="parent.name", read_only=True, default=None)
     parent_slug = serializers.CharField(source="parent.slug", read_only=True, default=None)
     ancestors = serializers.SerializerMethodField()
- 
+
     children = serializers.SerializerMethodField()
     master_products = serializers.SerializerMethodField()
     attributes = serializers.SerializerMethodField()
- 
+
     stats = serializers.SerializerMethodField()
     is_deletable = serializers.SerializerMethodField()
- 
+
     class Meta:
         model = Category
         fields = [
             "id", "name", "slug", "level",
             "parent", "parent_name", "parent_slug", "ancestors",
-            "icon_name", "description",
+            "icon_name", "image_url", "description",
             "display_order",
             "is_active", "is_deprecated", "requires_admin_approval",
             "children", "master_products", "attributes",
@@ -2173,20 +2223,34 @@ class AdminCategoryDetailSerializer(serializers.ModelSerializer):
 # ═══════════════════════════════════════════════════════════════════════════
  
 class AdminCategoryCreateUpdateSerializer(serializers.ModelSerializer):
-    """Formulaire création / édition d'une catégorie."""
- 
+    """
+    Formulaire création / édition d'une catégorie.
+
+    Accepte du JSON ou du multipart : l'image arrive en multipart, avec les
+    autres champs. `remove_image=true` retire l'image sans en fournir une autre.
+    """
+
+    image = serializers.ImageField(required=False, allow_null=True, write_only=True)
+    remove_image = serializers.BooleanField(required=False, default=False, write_only=True)
+    # En multipart, DRF lit une case absente comme « décochée » : sans ces
+    # défauts, une catégorie créée avec son image naîtrait désactivée.
+    is_active = serializers.BooleanField(required=False, default=True)
+    is_deprecated = serializers.BooleanField(required=False, default=False)
+    requires_admin_approval = serializers.BooleanField(required=False, default=False)
+
     class Meta:
         model = Category
         fields = [
             "name", "slug", "parent",
-            "icon_name", "description",
+            "icon_name", "image", "remove_image", "description",
             "display_order",
             "is_active", "is_deprecated", "requires_admin_approval",
         ]
         extra_kwargs = {
-            "slug": {"required": False},  # Auto-généré si absent
+            # Vide ou absent : calculé depuis le nom à la création, inchangé en édition.
+            "slug": {"required": False, "allow_blank": True},
         }
- 
+
     def validate_name(self, value):
         value = (value or "").strip()
         if len(value) < 2:
@@ -2194,6 +2258,54 @@ class AdminCategoryCreateUpdateSerializer(serializers.ModelSerializer):
                 "Nom trop court (2 caractères minimum).",
             )
         return value
+
+    def validate_slug(self, value):
+        return (value or "").strip()
+
+    def validate_image(self, image):
+        if image is None:
+            return None
+        from apps.common.images import ImageOptimizationError, optimize_uploaded_image
+
+        try:
+            return optimize_uploaded_image(
+                image,
+                max_input_bytes=5 * 1024 * 1024,
+                max_dimension=1600,
+                quality=82,
+                filename_prefix="category",
+            )
+        except ImageOptimizationError as error:
+            raise serializers.ValidationError(str(error)) from error
+
+    def validate(self, attrs):
+        # Deux sœurs du même nom rendraient le sélecteur vendeur ambigu.
+        if "name" in attrs or "parent" in attrs:
+            name = attrs.get("name", getattr(self.instance, "name", ""))
+            parent = attrs["parent"] if "parent" in attrs else getattr(self.instance, "parent", None)
+            siblings = Category.objects.filter(parent=parent, name__iexact=name)
+            if self.instance is not None:
+                siblings = siblings.exclude(pk=self.instance.pk)
+            if siblings.exists():
+                where = f"sous « {parent.name} »" if parent else "au niveau racine"
+                raise serializers.ValidationError({
+                    "name": f"Une catégorie « {name} » existe déjà {where}.",
+                })
+        return attrs
+
+    def update(self, instance, validated_data):
+        if not validated_data.get("slug", instance.slug):
+            validated_data.pop("slug", None)
+        remove_image = validated_data.pop("remove_image", False)
+        if remove_image and "image" not in validated_data:
+            validated_data["image"] = None
+
+        old_name = instance.image.name if instance.image else None
+        instance = super().update(instance, validated_data)
+        new_name = instance.image.name if instance.image else None
+        if old_name and old_name != new_name:
+            _delete_file_after_commit(instance.image.storage, old_name)
+        return instance
  
     def validate_description(self, value):
         if value and len(value) > 280:
@@ -2229,14 +2341,29 @@ class AdminCategoryCreateUpdateSerializer(serializers.ModelSerializer):
         return value
  
     def create(self, validated_data):
+        validated_data.pop("remove_image", None)
         # Auto-slug si absent
         if not validated_data.get("slug"):
             from django.utils.text import slugify
             base = slugify(validated_data["name"]) or "category"
             slug = base
             counter = 1
-            while Category.objects.filter(slug=slug).exists():
+            # all_objects : un slug de catégorie supprimée (soft) reste pris en base.
+            while Category.all_objects.filter(slug=slug).exists():
                 slug = f"{base}-{counter}"
                 counter += 1
             validated_data["slug"] = slug
         return super().create(validated_data)
+
+
+def _delete_file_after_commit(storage, name):
+    """Supprime un fichier remplacé, seulement si la transaction aboutit."""
+    from django.db import transaction
+
+    def _delete():
+        try:
+            storage.delete(name)
+        except Exception:  # noqa: BLE001 — un fichier orphelin ne doit pas casser la requête
+            pass
+
+    transaction.on_commit(_delete)

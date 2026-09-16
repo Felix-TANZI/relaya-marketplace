@@ -233,7 +233,7 @@ class CategoryAdmin(admin.ModelAdmin):
             "fields": ("name", "slug", "parent", "level"),
         }),
         ("Présentation", {
-            "fields": ("icon_name", "description", "display_order"),
+            "fields": ("icon_name", "image", "description", "display_order"),
         }),
         ("État", {
             "fields": ("is_active", "is_deprecated", "requires_admin_approval"),

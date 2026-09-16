@@ -1,62 +1,7 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  Menu,
-  ShoppingBag,
-  Shirt,
-  Laptop,
-  Smartphone,
-  Sparkles,
-  Home,
-  ShoppingCart,
-  Footprints,
-  Dumbbell,
-  Baby,
-  LayoutGrid,
-  Package,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
-import type { LucideIcon } from "lucide-react";
-import { CATEGORY_THEMES } from "@/data/categoryThemes";
-
-export interface HomeCategoryItem {
-  id: number | null;
-  slug: string;
-  name: string;
-  iconName?: string;
-  count: number;
-}
-
-const ICONS: Record<string, LucideIcon> = {
-  Baby, Dumbbell, Footprints, Home, Laptop, LayoutGrid, Package, Shirt,
-  ShoppingBag, ShoppingCart, Smartphone, Sparkles,
-};
-
-const THEME_BY_SLUG = new Map(CATEGORY_THEMES.map((theme) => [theme.slug, theme]));
-
-export function categoryIcon(category: Pick<HomeCategoryItem, "name" | "slug" | "iconName">) {
-  const theme = THEME_BY_SLUG.get(category.slug);
-  if (theme) return theme.icon;
-  if (category.iconName && ICONS[category.iconName]) return ICONS[category.iconName];
-  const value = `${category.slug} ${category.name}`.toLowerCase();
-  if (value.includes("phone") || value.includes("télé") || value.includes("smart")) return Smartphone;
-  if (value.includes("électron") || value.includes("electron") || value.includes("ordinateur")) return Laptop;
-  if (value.includes("mode") || value.includes("vêtement") || value.includes("vetement")) return Shirt;
-  if (value.includes("chauss")) return Footprints;
-  if (value.includes("sport")) return Dumbbell;
-  if (value.includes("bébé") || value.includes("bebe") || value.includes("enfant")) return Baby;
-  if (value.includes("maison") || value.includes("bureau")) return Home;
-  if (value.includes("aliment") || value.includes("marché") || value.includes("marche")) return ShoppingCart;
-  if (value.includes("beauté") || value.includes("beaute") || value.includes("santé")) return Sparkles;
-  return category.slug === "all" ? ShoppingBag : Package;
-}
-
-const THEME_HOME_CATEGORIES: HomeCategoryItem[] = CATEGORY_THEMES.map((theme) => ({
-  id: null,
-  slug: theme.slug,
-  name: theme.name,
-  count: Number(theme.count.replace(/\D/g, "")) || 0,
-}));
+import { ShoppingBag, ChevronsLeft, ChevronsRight } from "lucide-react";
+import useStorefrontCategories from "@/hooks/useStorefrontCategories";
+import type { StorefrontCategory } from "@/data/storefrontCategories";
 
 interface CategorySidebarProps {
   activeCategory: string;
@@ -66,8 +11,25 @@ interface CategorySidebarProps {
   trackTop: number;
   trackHeight: number;
   topOffset: number;
-  /** Par défaut : le thème statique br1, pour les pages qui ne chargent pas le catalogue live. */
-  categories?: HomeCategoryItem[];
+  /** Par défaut : les catégories de la base, créées par l'admin. */
+  categories?: StorefrontCategory[];
+}
+
+/* Pastille de la sidebar : l'image de l'admin si elle existe, sinon l'icône. */
+function CategoryGlyph({ category, size }: { category: StorefrontCategory; size: number }) {
+  if (category.hasOwnImage) {
+    return (
+      <img
+        src={category.thumb}
+        alt=""
+        loading="lazy"
+        className="flex-shrink-0 rounded-full object-cover ring-1 ring-[#f3dcc9] dark:ring-gray-700"
+        style={{ width: size + 5, height: size + 5 }}
+      />
+    );
+  }
+  const Icon = category.icon;
+  return <Icon size={size} className="flex-shrink-0 text-primary" />;
 }
 
 export default function CategorySidebar({
@@ -78,8 +40,10 @@ export default function CategorySidebar({
   trackTop,
   trackHeight,
   topOffset,
-  categories = THEME_HOME_CATEGORIES,
+  categories: categoriesProp,
 }: CategorySidebarProps) {
+  const { categories: storefront } = useStorefrontCategories();
+  const categories = categoriesProp ?? storefront;
   const panelRef = useRef<HTMLElement | null>(null);
   const [mode, setMode] = useState<"start" | "fixed" | "end">("start");
   const [endTop, setEndTop] = useState(0);
@@ -158,7 +122,8 @@ export default function CategorySidebar({
               </div>
               <div className="flex flex-col gap-0.5">
                 {categories.map((cat) => {
-                  const Icon = categoryIcon(cat);
+                  // Thème statique : effectif indicatif ; catégorie en base : ses sous-catégories.
+                  const badge = cat.node ? cat.node.children.length || null : cat.count || null;
                   return (
                     <button
                       key={cat.slug}
@@ -172,11 +137,16 @@ export default function CategorySidebar({
                       {activeCategory === cat.slug ? (
                         <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-primary" />
                       ) : null}
-                      <Icon size={17} className="flex-shrink-0 text-primary" />
+                      <CategoryGlyph category={cat} size={17} />
                       <span className="flex-1 text-[12.5px] font-bold">{cat.name}</span>
-                      <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-gray-800 dark:text-gray-400">
-                        {cat.count.toLocaleString("fr-FR")}
-                      </span>
+                      {badge !== null ? (
+                        <span
+                          title={cat.node ? cat.subtitle : undefined}
+                          className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+                        >
+                          {badge.toLocaleString("fr-FR")}
+                        </span>
+                      ) : null}
                     </button>
                   );
                 })}
@@ -185,13 +155,12 @@ export default function CategorySidebar({
           ) : (
             <div className="flex flex-col gap-2">
               {categories.slice(0, 6).map((cat) => {
-                const Icon = categoryIcon(cat);
                 const active = activeCategory === cat.slug;
                 return (
                   <button
                     key={cat.slug}
                     onClick={() => onSelectCategory(cat.slug)}
-                    title={`${cat.name} · ${cat.count}`}
+                    title={cat.name}
                     aria-label={cat.name}
                     className={`relative flex h-12 w-full items-center justify-center rounded-xl transition-all duration-200 ${
                       active
@@ -202,7 +171,7 @@ export default function CategorySidebar({
                     {active ? (
                       <span className="absolute inset-y-2 left-0 w-[3px] rounded-r bg-primary" />
                     ) : null}
-                    <Icon size={19} className="text-primary" />
+                    <CategoryGlyph category={cat} size={19} />
                   </button>
                 );
               })}

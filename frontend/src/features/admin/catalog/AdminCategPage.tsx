@@ -18,7 +18,7 @@ import {
   Search, Check, X, RefreshCw, Eye, Plus, Edit3, Trash2,
   ChevronRight, ChevronDown, Folder, FolderOpen, ImageIcon,
   AlertTriangle, ExternalLink, FolderTree, Shield, ArrowUp, ArrowDown,
-  Sparkles, Boxes, BookOpen, Grid3x3, XCircle,
+  Sparkles, Boxes, BookOpen, Grid3x3, XCircle, Upload, Layers, ImageOff,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
@@ -136,6 +136,17 @@ function renderLucideIcon(name: string, size = 14, color?: string): React.ReactN
   return createElement(IconComponent, { size, color });
 }
 
+/** Message du serveur (http() le place dans Error.message), sinon le repli. */
+function errorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback;
+}
+
+/** Catégorie principale (racine) ou sous-catégorie : pilote le formulaire et l'aperçu. */
+type CategoryKind = "root" | "sub";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const IMAGE_MAX_BYTES = 5 * 1024 * 1024;
+
 function collectAllIds(nodes: AdminCategoryTreeNode[]): number[] {
   const ids: number[] = [];
   const walk = (n: AdminCategoryTreeNode) => {
@@ -203,10 +214,12 @@ export default function AdminCategoriesPage() {
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [search, setSearch] = useState("");
+  const [missingImageOnly, setMissingImageOnly] = useState(false);
 
   const [detailId, setDetailId] = useState<number | null>(null);
   const [editItem, setEditItem] = useState<AdminCategoryDetail | null | "new">(null);
   const [newParentId, setNewParentId] = useState<number | null>(null);
+  const [newKind, setNewKind] = useState<CategoryKind>("root");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -225,30 +238,32 @@ export default function AdminCategoriesPage() {
   useEffect(() => { load(); }, [load]);
 
   const filteredTree = useMemo(() => {
-    if (!search.trim()) return tree;
     const q = search.trim().toLowerCase();
+    if (!q && !missingImageOnly) return tree;
     return filterTree(tree, (n) =>
-      n.name.toLowerCase().includes(q) || n.slug.toLowerCase().includes(q),
+      (!q || n.name.toLowerCase().includes(q) || n.slug.toLowerCase().includes(q))
+      && (!missingImageOnly || !n.image_url),
     );
-  }, [tree, search]);
+  }, [tree, search, missingImageOnly]);
 
   useEffect(() => {
-    if (search.trim()) {
+    if (search.trim() || missingImageOnly) {
       setExpandedIds(new Set(collectAllIds(filteredTree)));
     }
-  }, [search, filteredTree]);
+  }, [search, missingImageOnly, filteredTree]);
 
   const stats = useMemo(() => {
     const all = collectAllIds(tree);
-    let deprecated = 0, inactive = 0, requiresApproval = 0;
+    let deprecated = 0, inactive = 0, requiresApproval = 0, withoutImage = 0;
     const walk = (n: AdminCategoryTreeNode) => {
       if (n.is_deprecated) deprecated++;
       if (!n.is_active) inactive++;
       if (n.requires_admin_approval) requiresApproval++;
+      if (!n.image_url) withoutImage++;
       n.children.forEach(walk);
     };
     tree.forEach(walk);
-    return { total: all.length, deprecated, inactive, requiresApproval };
+    return { total: all.length, roots: tree.length, deprecated, inactive, requiresApproval, withoutImage };
   }, [tree]);
 
   const toggleExpand = (id: number) => {
@@ -276,7 +291,7 @@ export default function AdminCategoriesPage() {
       else await adminApi.toggleCategoryApproval(cat.id, newValue);
       showToast(`${cat.name} mis à jour`, "success");
       load();
-    } catch { showToast("Erreur", "error"); }
+    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
 
   const handleMoveOrder = async (cat: AdminCategory, delta: number) => {
@@ -284,7 +299,7 @@ export default function AdminCategoriesPage() {
     try {
       await adminApi.moveCategoryOrder(cat.id, newOrder);
       load();
-    } catch { showToast("Erreur", "error"); }
+    } catch (err) { showToast(errorMessage(err, "Déplacement impossible."), "error"); }
   };
 
   const handleDelete = async (cat: AdminCategory) => {
@@ -301,8 +316,7 @@ export default function AdminCategoriesPage() {
       showToast(`${cat.name} supprimée`, "success");
       load();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Impossible.";
-      showToast(msg, "error");
+      showToast(errorMessage(err, "Suppression impossible."), "error");
     }
   };
 
@@ -310,11 +324,13 @@ export default function AdminCategoriesPage() {
     try {
       const detail = await adminApi.getCategoryDetail(cat.id);
       setEditItem(detail);
-    } catch { showToast("Erreur", "error"); }
+    } catch (err) { showToast(errorMessage(err, "Chargement impossible."), "error"); }
   };
 
-  const openCreateChild = (parent: AdminCategory | null) => {
+  /** Catégorie principale (parent null) ou sous-catégorie (parent choisi ou à choisir). */
+  const openCreateChild = (parent: AdminCategory | null, kind: CategoryKind = parent ? "sub" : "root") => {
     setNewParentId(parent?.id ?? null);
+    setNewKind(kind);
     setEditItem("new");
   };
 
@@ -332,7 +348,7 @@ export default function AdminCategoriesPage() {
       const res = await adminApi.bulkSetCategoriesFlag(Array.from(selectedIds), flag, value);
       showToast(`${res.updated_count} catégorie(s) mise(s) à jour`, "success");
       load();
-    } catch { showToast("Erreur", "error"); }
+    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
 
   return (
@@ -343,19 +359,28 @@ export default function AdminCategoriesPage() {
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
             color: T.text, marginBottom: 4,
-          }}>Catégories</h1>
-          <p style={{ fontSize: 13, color: T.muted }}>
-            {stats.total} catégorie{stats.total > 1 ? "s" : ""} au total
+          }}>Gestion des catégories</h1>
+          <p style={{ fontSize: 13, color: T.muted, maxWidth: 640 }}>
+            Les catégories et sous-catégories créées ici, avec leur nom et leur image, sont
+            celles que voient les acheteurs et que les vendeurs choisissent pour publier.
+          </p>
+          <p style={{ fontSize: 12, color: T.mutedL, marginTop: 6 }}>
+            {stats.roots} catégorie{stats.roots > 1 ? "s" : ""} principale{stats.roots > 1 ? "s" : ""}
+            {" · "}{stats.total} au total
+            {stats.withoutImage > 0 && ` · ${stats.withoutImage} sans image`}
             {stats.deprecated > 0 && ` · ${stats.deprecated} deprecated`}
             {stats.inactive > 0 && ` · ${stats.inactive} inactive${stats.inactive > 1 ? "s" : ""}`}
             {stats.requiresApproval > 0 && ` · ${stats.requiresApproval} en modération renforcée`}
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button onClick={load} style={btnGhost(T)}>
             <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Actualiser
           </button>
-          <button onClick={() => openCreateChild(null)} style={btnPrimary(T)}>
+          <button onClick={() => openCreateChild(null, "sub")} style={btnGhost(T)}>
+            <Layers size={12} /> Nouvelle sous-catégorie
+          </button>
+          <button onClick={() => openCreateChild(null, "root")} style={btnPrimary(T)}>
             <Plus size={12} /> Nouvelle catégorie
           </button>
         </div>
@@ -383,6 +408,14 @@ export default function AdminCategoriesPage() {
         </button>
         <button onClick={collapseAll} style={btnGhost(T)} title="Tout replier">
           <ChevronRight size={12} /> Tout replier
+        </button>
+        <button
+          onClick={() => setMissingImageOnly((v) => !v)}
+          style={missingImageOnly ? btnColored("#F59E0B") : btnGhost(T)}
+          title="Afficher seulement les catégories à illustrer"
+          aria-pressed={missingImageOnly}
+        >
+          <ImageOff size={12} /> Sans image{stats.withoutImage > 0 ? ` (${stats.withoutImage})` : ""}
         </button>
 
         {selectedIds.size > 0 && (
@@ -421,7 +454,11 @@ export default function AdminCategoriesPage() {
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <FolderTree size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
             <p style={{ fontSize: 13 }}>
-              {search ? "Aucune catégorie ne correspond à la recherche." : "Aucune catégorie."}
+              {missingImageOnly && !search
+                ? "Toutes les catégories ont une image."
+                : search || missingImageOnly
+                  ? "Aucune catégorie ne correspond à la recherche."
+                  : "Aucune catégorie. Créez la première avec « Nouvelle catégorie »."}
             </p>
           </div>
         ) : (
@@ -455,6 +492,7 @@ export default function AdminCategoriesPage() {
         <CategoryFormModal
           category={editItem === "new" ? null : editItem}
           initialParentId={editItem === "new" ? newParentId : null}
+          initialKind={editItem === "new" ? newKind : undefined}
           tree={tree}
           onClose={() => { setEditItem(null); setNewParentId(null); }}
           onSaved={() => { setEditItem(null); setNewParentId(null); load(); }}
@@ -543,6 +581,19 @@ function TreeNode({
           <div style={{ width: 20, flexShrink: 0 }} />
         )}
 
+        {node.image_url ? (
+          <img
+            src={node.image_url}
+            alt=""
+            loading="lazy"
+            title={level === 0 ? "Bannière côté acheteur" : "Pastille côté acheteur"}
+            style={{
+              width: level === 0 ? 40 : 28, height: 28, flexShrink: 0,
+              borderRadius: level === 0 ? 7 : "50%", objectFit: "cover",
+              border: `1px solid ${T.border}`,
+            }}
+          />
+        ) : (
         <div style={{
           width: 24, height: 24, display: "flex", alignItems: "center",
           justifyContent: "center", flexShrink: 0, color: levelColor,
@@ -558,6 +609,7 @@ function TreeNode({
               : <Folder size={14} />
           )}
         </div>
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{
@@ -569,6 +621,7 @@ function TreeNode({
             {node.is_deprecated && <FlagBadge label="DEPRECATED" color="#DC2626" />}
             {node.requires_admin_approval && <FlagBadge label="MOD-RENFORCÉE" color="#F59E0B" />}
             {!node.is_active && <FlagBadge label="INACTIVE" color="#6B7280" />}
+            {!node.image_url && <FlagBadge label="SANS IMAGE" color="#F59E0B" />}
           </div>
           <div style={{ fontSize: 10.5, color: T.mutedL, marginTop: 2, display: "flex", gap: 8, flexWrap: "wrap" }}>
             <code style={{ fontFamily: "monospace" }}>{node.slug}</code>
@@ -591,7 +644,7 @@ function TreeNode({
           <IconBtn onClick={() => onMoveOrder(node, 1)} title="Descendre" T={T}>
             <ArrowDown size={11} />
           </IconBtn>
-          <IconBtn onClick={() => onCreateChild(node)} title="Ajouter enfant" T={T} color={T.red}>
+          <IconBtn onClick={() => onCreateChild(node)} title="Ajouter une sous-catégorie" T={T} color={T.red}>
             <Plus size={11} />
           </IconBtn>
           <IconBtn onClick={() => onDetail(node.id)} title="Détails" T={T}>
@@ -922,7 +975,7 @@ function CategoryDetailModal({
       setDetail(updated);
       showToast("Mis à jour", "success");
       onModified();
-    } catch { showToast("Erreur", "error"); }
+    } catch (err) { showToast(errorMessage(err, "Mise à jour impossible."), "error"); }
   };
 
   const handleDelete = async () => {
@@ -937,8 +990,7 @@ function CategoryDetailModal({
       showToast("Supprimée", "success");
       onClose(); onModified();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Impossible.";
-      showToast(msg, "error");
+      showToast(errorMessage(err, "Suppression impossible."), "error");
     }
   };
 
@@ -983,7 +1035,18 @@ function CategoryDetailModal({
             )}
 
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-              {detail.icon_name && VALID_ICON_NAMES.has(detail.icon_name) && (
+              {detail.image_url ? (
+                <img
+                  src={detail.image_url}
+                  alt=""
+                  title={detail.parent ? "Pastille côté acheteur" : "Bannière côté acheteur"}
+                  style={{
+                    width: detail.parent ? 64 : 104, height: 64, flexShrink: 0,
+                    borderRadius: detail.parent ? "50%" : 14, objectFit: "cover",
+                    boxShadow: "0 4px 14px rgba(0,0,0,.18)",
+                  }}
+                />
+              ) : detail.icon_name && VALID_ICON_NAMES.has(detail.icon_name) && (
                 <div style={{
                   width: 56, height: 56, borderRadius: 14,
                   background: LEVEL_COLORS[Math.min(detail.level, 4)],
@@ -1053,7 +1116,11 @@ function CategoryDetailModal({
                       border: `1px solid ${T.border}`,
                       opacity: c.is_active ? 1 : 0.6,
                     }}>
-                      {c.icon_name && renderLucideIcon(c.icon_name, 13, T.muted)}
+                      {c.image_url ? (
+                        <img src={c.image_url} alt="" style={{
+                          width: 22, height: 22, borderRadius: "50%", objectFit: "cover", flexShrink: 0,
+                        }} />
+                      ) : c.icon_name && renderLucideIcon(c.icon_name, 13, T.muted)}
                       <span style={{ fontWeight: 700 }}>{c.name}</span>
                       {c.masters_count > 0 && (
                         <span style={{
@@ -1266,9 +1333,10 @@ function StatCard({ T, label, value, sub, icon: Icon, color }: {
 // MODALE CREATE / EDIT
 // ═════════════════════════════════════════════════════════════════════════════
 
-function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }: {
+function CategoryFormModal({ category, initialParentId, initialKind, tree, onClose, onSaved }: {
   category: AdminCategoryDetail | null;
   initialParentId: number | null;
+  initialKind?: CategoryKind;
   tree: AdminCategoryTreeNode[];
   onClose: () => void; onSaved: () => void;
 }) {
@@ -1276,6 +1344,9 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
   const { showToast } = useToast();
   const isEdit = category !== null;
 
+  const [kind, setKind] = useState<CategoryKind>(
+    category ? (category.parent ? "sub" : "root") : (initialKind ?? (initialParentId ? "sub" : "root")),
+  );
   const [form, setForm] = useState<CategoryUpdatePayload>({
     name: category?.name ?? "",
     slug: category?.slug ?? "",
@@ -1287,47 +1358,75 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
     is_deprecated: category?.is_deprecated ?? false,
     requires_admin_approval: category?.requires_admin_approval ?? false,
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
   const [busy, setBusy] = useState(false);
   const [showIconPicker, setShowIconPicker] = useState(false);
 
+  // Aperçu local du fichier choisi, libéré dès qu'il change.
+  const filePreview = useMemo(() => (imageFile ? URL.createObjectURL(imageFile) : null), [imageFile]);
+  useEffect(() => () => { if (filePreview) URL.revokeObjectURL(filePreview); }, [filePreview]);
+  const shownImage = filePreview ?? (removeImage ? null : category?.image_url ?? null);
+
+  // Parents possibles : tout l'arbre, sauf la catégorie éditée et sa descendance (cycle).
   const flatTree = useMemo(() => {
     const out: { id: number; name: string; level: number }[] = [];
     const walk = (nodes: AdminCategoryTreeNode[], depth: number) => {
       for (const n of nodes) {
+        if (isEdit && n.id === category?.id) continue;
         out.push({ id: n.id, name: n.name, level: depth });
         walk(n.children, depth + 1);
       }
     };
     walk(tree, 0);
     return out;
-  }, [tree]);
+  }, [tree, isEdit, category?.id]);
 
+  const parentName = flatTree.find((n) => n.id === form.parent)?.name ?? null;
   const currentIcon = form.icon_name || "";
   const iconRender = currentIcon ? renderLucideIcon(currentIcon, 22, "#fff") : null;
 
+  const chooseKind = (next: CategoryKind) => {
+    setKind(next);
+    if (next === "root") setForm((f) => ({ ...f, parent: null }));
+  };
+
   const handleSubmit = async () => {
     if (!form.name || form.name.trim().length < 2) {
-      showToast("Nom trop court", "warning"); return;
+      showToast("Donnez un nom d'au moins 2 caractères.", "warning"); return;
     }
+    if (kind === "sub" && !form.parent) {
+      showToast("Choisissez la catégorie parente de cette sous-catégorie.", "warning"); return;
+    }
+    const payload: CategoryUpdatePayload = {
+      ...form,
+      parent: kind === "root" ? null : form.parent,
+      image: imageFile ?? undefined,
+      remove_image: !imageFile && removeImage ? true : undefined,
+    };
     setBusy(true);
     try {
       if (isEdit) {
-        await adminApi.updateCategory(category.id, form);
-        showToast("Catégorie mise à jour", "success");
+        await adminApi.updateCategory(category.id, payload);
+        showToast(`« ${form.name?.trim()} » mise à jour`, "success");
       } else {
-        await adminApi.createCategory(form);
-        showToast("Catégorie créée", "success");
+        await adminApi.createCategory(payload);
+        showToast(
+          kind === "root"
+            ? `Catégorie « ${form.name?.trim()} » créée — visible par les acheteurs et les vendeurs`
+            : `Sous-catégorie « ${form.name?.trim()} » créée dans « ${parentName} »`,
+          "success",
+        );
       }
       onSaved();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Erreur";
-      showToast(msg, "error");
+      showToast(errorMessage(err, "Enregistrement impossible."), "error");
     } finally { setBusy(false); }
   };
 
   return (
     <>
-      <ModalShell onClose={onClose} T={T} maxWidth={640}>
+      <ModalShell onClose={onClose} T={T} maxWidth={720}>
         <div style={{
           padding: "24px 28px", borderBottom: `1px solid ${T.border}`,
           background: T.cardAlt, borderRadius: "20px 20px 0 0",
@@ -1342,7 +1441,7 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
               fontSize: 20, fontWeight: 800, color: T.text, margin: 0,
               fontFamily: "'Syne', sans-serif",
             }}>
-              {isEdit ? category.name : "Nouvelle catégorie"}
+              {isEdit ? category.name : kind === "root" ? "Nouvelle catégorie" : "Nouvelle sous-catégorie"}
             </h2>
           </div>
           <button onClick={onClose} style={{
@@ -1352,39 +1451,51 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
         </div>
 
         <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+          {/* BLOC 0 — Nature : catégorie principale ou sous-catégorie */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+            <KindCard T={T} active={kind === "root"} onClick={() => chooseKind("root")}
+              icon={FolderTree} title="Catégorie principale"
+              hint="Un univers de la boutique, affiché en grande bannière." />
+            <KindCard T={T} active={kind === "sub"} onClick={() => chooseKind("sub")}
+              icon={Layers} title="Sous-catégorie"
+              hint="Rangée dans une catégorie, affichée en pastille ronde." />
+          </div>
+
           {/* BLOC 1 — Identité */}
           <div>
             <BlockTitle T={T} icon={BookOpen}>Identité</BlockTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-              <FormField label="Nom *" T={T}>
+              <FormField label="Nom *" T={T}
+                hint="Tel qu'il apparaîtra aux acheteurs et dans le sélecteur des vendeurs.">
                 <input value={form.name ?? ""} onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  placeholder="Ex : Smartphones Android" style={inputStyle(T)} autoFocus />
+                  placeholder={kind === "root" ? "Ex : Mode Femme" : "Ex : Robes"}
+                  style={inputStyle(T)} autoFocus />
               </FormField>
+
+              {kind === "sub" && (
+                <FormField label="Catégorie parente *" T={T}
+                  hint="La sous-catégorie s'affichera dans la page de ce parent.">
+                  <select value={form.parent ?? ""}
+                    onChange={(e) => setForm({ ...form, parent: e.target.value ? Number(e.target.value) : null })}
+                    style={inputStyle(T)}>
+                    <option value="">— Choisir un parent —</option>
+                    {flatTree.map((n) => (
+                      <option key={n.id} value={n.id}>
+                        {"— ".repeat(n.level)}{n.name}
+                      </option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
 
               {isEdit && (
                 <FormField label="Slug" T={T}
-                  hint="⚠️ Ne modifie que si nécessaire. Auto-généré à la création.">
+                  hint="⚠️ Adresse de la page (/categorie/…). Ne modifie que si nécessaire.">
                   <input value={form.slug ?? ""}
                     onChange={(e) => setForm({ ...form, slug: e.target.value })}
                     style={{ ...inputStyle(T), fontFamily: "monospace", fontSize: 12 }} />
                 </FormField>
               )}
-
-              <FormField label="Catégorie parente" T={T}
-                hint="Laisse vide pour créer une catégorie de niveau racine.">
-                <select value={form.parent ?? ""}
-                  onChange={(e) => setForm({ ...form, parent: e.target.value ? Number(e.target.value) : null })}
-                  style={inputStyle(T)}>
-                  <option value="">— Racine (niveau 0) —</option>
-                  {flatTree
-                    .filter((n) => !isEdit || n.id !== category?.id)
-                    .map((n) => (
-                      <option key={n.id} value={n.id}>
-                        {"— ".repeat(n.level)}{n.name}
-                      </option>
-                    ))}
-                </select>
-              </FormField>
 
               <FormField label="Description" T={T}
                 hint={`${(form.description ?? "").length} / 280 caractères — s'affiche sous le titre côté acheteur`}>
@@ -1401,11 +1512,34 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
             </div>
           </div>
 
-          {/* BLOC 2 — Apparence */}
+          {/* BLOC 2 — Image, avec l'aperçu de ce que verra l'acheteur */}
           <div>
-            <BlockTitle T={T} icon={Sparkles}>Apparence</BlockTitle>
-            <FormField label="Icône" T={T}
-              hint={`Choisis parmi ${ALL_LUCIDE_ICONS.length} icônes disponibles ou laisse vide.`}>
+            <BlockTitle T={T} icon={ImageIcon}>Image</BlockTitle>
+            <div style={{ display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(0,1fr)", gap: 14 }}>
+              <CategoryImageInput
+                T={T}
+                kind={kind}
+                preview={shownImage}
+                onPick={(file) => { setImageFile(file); setRemoveImage(false); }}
+                onRemove={() => { setImageFile(null); setRemoveImage(true); }}
+                onError={(msg) => showToast(msg, "warning")}
+              />
+              <ClientPreview
+                T={T}
+                kind={kind}
+                name={form.name?.trim() || (kind === "root" ? "Nom de la catégorie" : "Sous-catégorie")}
+                description={form.description ?? ""}
+                image={shownImage}
+                parentName={parentName}
+              />
+            </div>
+          </div>
+
+          {/* BLOC 3 — Apparence */}
+          <div>
+            <BlockTitle T={T} icon={Sparkles}>Icône</BlockTitle>
+            <FormField label="Icône de repli" T={T}
+              hint="Affichée à la place de l'image tant qu'aucune image n'est définie, et dans les listes compactes.">
               <button onClick={() => setShowIconPicker(true)} style={{
                 width: "100%", padding: "12px 14px", borderRadius: 12,
                 background: T.input, border: `1.5px solid ${T.inputBorder}`,
@@ -1432,7 +1566,7 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
                     {currentIcon || "Aucune icône"}
                   </div>
                   <div style={{ fontSize: 11, color: T.muted, marginTop: 2 }}>
-                    Clique pour {currentIcon ? "changer" : "choisir"} une icône
+                    Clique pour {currentIcon ? "changer" : "choisir"} parmi {ALL_LUCIDE_ICONS.length} icônes
                   </div>
                 </div>
                 <Sparkles size={16} color={T.muted} />
@@ -1440,12 +1574,12 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
             </FormField>
           </div>
 
-          {/* BLOC 3 — Configuration */}
+          {/* BLOC 4 — Configuration */}
           <div>
             <BlockTitle T={T} icon={Shield}>Configuration</BlockTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <FormField label="Ordre d'affichage" T={T}
-                hint="Plus la valeur est basse, plus la catégorie apparaît haut dans les listes.">
+                hint="Plus la valeur est basse, plus la catégorie apparaît tôt (menus, pastilles, sélecteur vendeur).">
                 <input type="number" value={form.display_order ?? 0}
                   onChange={(e) => setForm({ ...form, display_order: parseInt(e.target.value) || 0 })}
                   style={{ ...inputStyle(T), maxWidth: 140 }} />
@@ -1453,7 +1587,7 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
 
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <ToggleRow T={T} label="Active"
-                  hint="Décochée : la catégorie disparaît des formulaires vendeur."
+                  hint="Décochée : la catégorie disparaît de la boutique et du sélecteur vendeur."
                   value={!!form.is_active}
                   onChange={(v) => setForm({ ...form, is_active: v })} />
                 <ToggleRow T={T} label="Deprecated"
@@ -1489,7 +1623,7 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
             boxShadow: `0 3px 10px ${T.red}44`,
           }}>
             {busy ? <RefreshCw size={14} className="animate-spin" /> : <Check size={14} />}
-            {isEdit ? "Enregistrer" : "Créer la catégorie"}
+            {isEdit ? "Enregistrer" : kind === "root" ? "Créer la catégorie" : "Créer la sous-catégorie"}
           </button>
         </div>
       </ModalShell>
@@ -1502,6 +1636,170 @@ function CategoryFormModal({ category, initialParentId, tree, onClose, onSaved }
         />
       )}
     </>
+  );
+}
+
+function KindCard({ T, active, onClick, icon: Icon, title, hint }: {
+  T: AdminTokens; active: boolean; onClick: () => void;
+  icon: React.ElementType; title: string; hint: string;
+}) {
+  return (
+    <button type="button" onClick={onClick} aria-pressed={active} style={{
+      display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left",
+      padding: "12px 14px", borderRadius: 12, cursor: "pointer",
+      background: active ? T.red + "10" : T.cardAlt,
+      border: `1.5px solid ${active ? T.red + "66" : T.border}`,
+    }}>
+      <span style={{
+        width: 30, height: 30, borderRadius: 8, flexShrink: 0,
+        display: "flex", alignItems: "center", justifyContent: "center",
+        background: active ? T.red : T.card, color: active ? "#fff" : T.muted,
+      }}><Icon size={15} /></span>
+      <span style={{ minWidth: 0 }}>
+        <span style={{ display: "block", fontSize: 13, fontWeight: 800, color: active ? T.red : T.text }}>
+          {title}
+        </span>
+        <span style={{ display: "block", fontSize: 10.5, color: T.muted, marginTop: 2, lineHeight: 1.4 }}>
+          {hint}
+        </span>
+      </span>
+    </button>
+  );
+}
+
+/* Zone d'envoi : clic ou glisser-déposer, contrôle format/poids avant l'envoi. */
+function CategoryImageInput({ T, kind, preview, onPick, onRemove, onError }: {
+  T: AdminTokens; kind: CategoryKind; preview: string | null;
+  onPick: (file: File) => void; onRemove: () => void; onError: (msg: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragging, setDragging] = useState(false);
+
+  const accept = (file: File | undefined) => {
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type)) { onError("Format accepté : JPG, PNG ou WEBP."); return; }
+    if (file.size > IMAGE_MAX_BYTES) { onError("Image trop lourde : 5 Mo maximum."); return; }
+    onPick(file);
+  };
+
+  return (
+    <div>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => inputRef.current?.click()}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") inputRef.current?.click(); }}
+        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); accept(e.dataTransfer.files?.[0]); }}
+        style={{
+          position: "relative", height: 150, borderRadius: 12, cursor: "pointer", overflow: "hidden",
+          border: `1.5px dashed ${dragging ? T.red : T.inputBorder}`,
+          background: preview ? `url(${preview}) center/cover` : T.input,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {preview ? (
+          <span style={{
+            position: "absolute", bottom: 8, left: 8, padding: "4px 10px", borderRadius: 20,
+            fontSize: 11, fontWeight: 700, background: "rgba(0,0,0,.6)", color: "#fff",
+            display: "flex", alignItems: "center", gap: 5,
+          }}><Upload size={11} /> Remplacer</span>
+        ) : (
+          <div style={{ textAlign: "center", color: T.muted, padding: 12 }}>
+            <Upload size={22} style={{ margin: "0 auto 8px" }} />
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: T.text }}>
+              Glisser une image ou cliquer
+            </div>
+            <div style={{ fontSize: 10.5, marginTop: 4 }}>
+              {kind === "root" ? "Format paysage conseillé (≈ 1600 × 600 px)" : "Format carré conseillé (≈ 600 × 600 px)"}
+            </div>
+          </div>
+        )}
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={IMAGE_TYPES.join(",")}
+        style={{ display: "none" }}
+        onChange={(e) => { accept(e.target.files?.[0]); e.target.value = ""; }}
+      />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6, gap: 8 }}>
+        <span style={{ fontSize: 10.5, color: T.mutedL }}>
+          JPG, PNG ou WEBP · 5 Mo max · converti en WebP
+        </span>
+        {preview && (
+          <button type="button" onClick={onRemove} style={{
+            display: "flex", alignItems: "center", gap: 4, fontSize: 11, fontWeight: 700,
+            color: "#DC2626", background: "none", border: "none", cursor: "pointer", padding: 0,
+          }}><Trash2 size={11} /> Retirer</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* Aperçu fidèle de la vitrine : bannière pour une catégorie, pastille pour une sous-catégorie. */
+function ClientPreview({ T, kind, name, description, image, parentName }: {
+  T: AdminTokens; kind: CategoryKind; name: string; description: string;
+  image: string | null; parentName: string | null;
+}) {
+  return (
+    <div style={{
+      borderRadius: 12, border: `1px solid ${T.border}`, background: T.cardAlt,
+      padding: 10, display: "flex", flexDirection: "column", gap: 8,
+    }}>
+      <div style={{
+        fontSize: 10, fontWeight: 800, color: T.mutedL, letterSpacing: "0.06em",
+        textTransform: "uppercase", display: "flex", alignItems: "center", gap: 5,
+      }}><Eye size={11} /> Aperçu côté acheteur</div>
+
+      {kind === "root" ? (
+        <div style={{
+          position: "relative", height: 104, borderRadius: 12, overflow: "hidden",
+          background: image ? `url(${image}) center/cover` : "linear-gradient(135deg,#F47920,#111827)",
+          display: "flex", alignItems: "flex-end",
+        }}>
+          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(0,0,0,.65), rgba(0,0,0,.05))" }} />
+          <div style={{ position: "relative", padding: "10px 12px", color: "#fff", minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 900, lineHeight: 1.15 }}>{name}</div>
+            {description && (
+              <div style={{ fontSize: 10, opacity: 0.85, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {description}
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          height: 104, borderRadius: 12, background: T.card, border: `1px solid ${T.border}`,
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 14,
+        }}>
+          {[0, 1, 2].map((slot) => (
+            <div key={slot} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 5, opacity: slot === 1 ? 1 : 0.35 }}>
+              <div style={{
+                width: slot === 1 ? 56 : 44, height: slot === 1 ? 56 : 44, borderRadius: "50%",
+                background: slot === 1 && image ? `url(${image}) center/cover` : T.cardAlt,
+                boxShadow: slot === 1 ? `0 0 0 2px #fff, 0 0 0 4px ${T.red}` : "none",
+                display: "flex", alignItems: "center", justifyContent: "center", color: T.mutedL,
+              }}>
+                {!(slot === 1 && image) && <ImageIcon size={16} />}
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: T.text, maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {slot === 1 ? name : "…"}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ fontSize: 10.5, color: T.muted, lineHeight: 1.45 }}>
+        {kind === "root"
+          ? "Grande bannière de la page catégorie et frame du carrousel d'accueil."
+          : `Pastille ronde dans la page « ${parentName ?? "catégorie parente"} ».`}
+        {" "}Le vendeur retrouve la même image dans son sélecteur.
+      </div>
+    </div>
   );
 }
 

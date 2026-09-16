@@ -19,6 +19,7 @@ export interface Category {
   parent: number | null;
   level: number;
   icon_name: string;                       // Nom de composant Lucide (ex: "Smartphone")
+  image_url: string | null;                // Image gérée par l'admin (bannière / pastille)
   description: string;
   display_order: number;
   is_active: boolean;
@@ -39,6 +40,7 @@ export interface CategoryTreeNode {
   parent: number | null;
   level: number;
   icon_name: string;
+  image_url: string | null;
   description: string;
   display_order: number;
   is_active: boolean;
@@ -130,4 +132,52 @@ export function flattenCategoryTree(nodes: CategoryTreeNode[]): CategoryTreeNode
   };
   walk(nodes);
   return result;
+}
+
+/**
+ * Retrouve un nœud par son slug, avec la chaîne de ses ancêtres
+ * (racine d'abord, parent direct en dernier). `null` si absent.
+ */
+export function findCategoryBySlug(
+  nodes: CategoryTreeNode[],
+  slug: string,
+): CategoryMatch | null {
+  const target = slug.toLowerCase();
+  return findCategoryNode(nodes, (n) => n.slug.toLowerCase() === target);
+}
+
+/** Même recherche, par id — ex. pour rouvrir la branche d'une catégorie déjà choisie. */
+export function findCategoryById(nodes: CategoryTreeNode[], id: number): CategoryMatch | null {
+  return findCategoryNode(nodes, (n) => n.id === id);
+}
+
+export interface CategoryMatch {
+  node: CategoryTreeNode;
+  ancestors: CategoryTreeNode[];
+}
+
+function findCategoryNode(
+  nodes: CategoryTreeNode[],
+  predicate: (node: CategoryTreeNode) => boolean,
+): CategoryMatch | null {
+  const walk = (list: CategoryTreeNode[], ancestors: CategoryTreeNode[]): CategoryMatch | null => {
+    for (const n of list) {
+      if (predicate(n)) return { node: n, ancestors };
+      const found = walk(n.children ?? [], [...ancestors, n]);
+      if (found) return found;
+    }
+    return null;
+  };
+  return walk(nodes, []);
+}
+
+/** Ids du nœud et de toutes ses descendantes — pour filtrer les produits d'une branche. */
+export function categorySubtreeIds(node: CategoryTreeNode): Set<number> {
+  const ids = new Set<number>();
+  const walk = (n: CategoryTreeNode) => {
+    ids.add(n.id);
+    (n.children ?? []).forEach(walk);
+  };
+  walk(node);
+  return ids;
 }

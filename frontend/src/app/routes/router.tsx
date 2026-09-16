@@ -131,7 +131,6 @@ const DeliveriesPerformancePage = lazy(() => import('@/features/admin/deliveries
 const DeliveryOrganizationsMapPage = lazy(() => import('@/features/admin/deliveries/DeliveryOrganizationsMapPage'));
 const RelayPointsMapPage = lazy(() => import('@/features/admin/deliveries/RelayPointsMapPage'));
 const CataloguePage = lazy(() => import('@/features/admin/operations/CataloguePage'));
-const AdminCategoriesPage = lazy(() => import('@/features/admin/operations/CategoriesPage'));
 const ReviewsPage = lazy(() => import('@/features/admin/operations/ReviewsPage'));
 const MasterProductsPage = lazy(() => import('@/features/admin/operations/MasterProductsPage'));
 // ── Système ──────────────────────────────────────────────────────────────────
@@ -347,7 +346,8 @@ export const router = createBrowserRouter([
       { path: 'returns',              element: <ReturnsListPage /> },
       { path: 'supervision',          element: <SupervisionPage /> },
       { path: 'catalogue',            element: <CataloguePage /> },
-      { path: 'catalogue/categories', element: <AdminCategoriesPage /> },
+      // Ancien écran de catégories (sans images) : remplacé par « Gestion des catégories ».
+      { path: 'catalogue/categories', element: <Navigate to="/admin/catalog/categories" replace /> },
       { path: 'catalogue/reviews',    element: <ReviewsPage /> },
       { path: 'catalogue/masters', element: <MasterProductsPage /> },
 

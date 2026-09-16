@@ -22,12 +22,9 @@ import {
   getNewProducts,
 } from "@/data/v29Products";
 import { productsApi, type Product } from "@/services/api/products";
-import {
-  CATEGORY_THEMES,
-  HERO_MIN_HEIGHT,
-  getCategoryTheme,
-  matchesCategory,
-} from "@/data/categoryThemes";
+import { HERO_MIN_HEIGHT } from "@/data/categoryThemes";
+import { productInStorefrontCategory } from "@/data/storefrontCategories";
+import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
 import FeaturedProductsRotation from "@/components/home/FeaturedProductsRotation";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
@@ -52,6 +49,15 @@ export default function HomePage() {
   const [lastCat, setLastCat] = useState(activeCat);
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [usingMockProducts, setUsingMockProducts] = useState(true);
+
+  /* Catégories de la vitrine : celles créées par l'admin, avec leurs images. */
+  const { categories: storefront } = useStorefrontCategories();
+  const activeStorefront = storefront.find((category) => category.slug === activeCat);
+  /* Les produits de démonstration sont rangés par thème statique, pas par id. */
+  const mockSlug = activeStorefront?.themeSlug ?? activeCat;
+  /* Une catégorie de l'admin montre toujours ses vrais produits (validés), jamais
+     la démo : l'article qu'un vendeur y publie doit s'y retrouver. */
+  const realCategoryActive = Boolean(activeStorefront?.node);
 
   useEffect(() => {
     let cancelled = false;
@@ -79,18 +85,22 @@ export default function HomePage() {
   }, []);
 
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  /* La grille de l'accueil montre-t-elle des produits de démonstration ? */
+  const filteredAreMock = usingMockProducts && !realCategoryActive;
 
   const allFiltered = useMemo(
     () => {
-      if (usingMockProducts) {
-        return activeCat === "all" ? V29_PRODUCTS : getByCat(activeCat);
-      }
-
       if (activeCat === "all") return sourceProducts;
 
-      return sourceProducts.filter((product) => matchesCategory(product, activeCat));
+      if (realCategoryActive) {
+        return apiProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
+      }
+
+      if (usingMockProducts) return getByCat(mockSlug);
+
+      return sourceProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
     },
-    [activeCat, sourceProducts, usingMockProducts]
+    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts]
   );
 
   const sortedProducts = useMemo(() => {
@@ -146,18 +156,29 @@ export default function HomePage() {
   }
 
   /* ── Carousel slides ──
-     Chaque frame ouvre la page du thème correspondant (/categorie/:slug). Les deux frames
-     éditoriales n'ont pas de catégorie propre : la frame de marque mène à « Tout voir »,
-     et « Made in Cameroon » au Supermarché, qui porte le sous-thème du même nom. */
-  const slides = [
-    {
-      label: "CEMAC · CMR · Gabon · RCA · Tchad",
-      title: "Achetez en toute confiance au Cameroun & Afrique centrale",
-      subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
-      bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
-      labelBg: "rgba(244,121,32,0.9)",
-      action: () => navigate("/categorie/all"),
-    },
+     Chaque frame ouvre la page du thème correspondant (/categorie/:slug). La frame de
+     marque mène à « Tout voir ». Dès que l'admin a donné une image à des catégories,
+     ce sont elles qui composent le carrousel ; sinon, les frames éditoriales ci-dessous. */
+  const brandSlide = {
+    label: "CEMAC · CMR · Gabon · RCA · Tchad",
+    title: "Achetez en toute confiance au Cameroun & Afrique centrale",
+    subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
+    bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
+    labelBg: "rgba(244,121,32,0.9)",
+    action: () => navigate("/categorie/all"),
+  };
+  const categorySlides = storefront
+    .filter((category) => category.hasOwnImage)
+    .map((category) => ({
+      label: category.name,
+      title: category.description || category.name,
+      subtitle: category.facets.length > 0 ? category.facets.slice(0, 4).join(" · ") : category.subtitle,
+      bg: `url(${category.image}) center/cover`,
+      labelBg: category.accent,
+      action: () => navigate(`/categorie/${category.slug}`),
+    }));
+  const slides = categorySlides.length > 0 ? [brandSlide, ...categorySlides] : [
+    brandSlide,
     { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
     { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
     { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
@@ -169,14 +190,14 @@ export default function HomePage() {
 
   /* ── Featured sections (horizontal scroll, top of page) ── */
   const popular = useMemo(() => {
-    if (usingMockProducts) {
-      return activeCat === "all" ? getTopProducts() : getByCat(activeCat);
+    if (filteredAreMock) {
+      return activeCat === "all" ? getTopProducts() : getByCat(mockSlug);
     }
 
     return [...allFiltered]
       .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
-  }, [activeCat, allFiltered, usingMockProducts]);
+  }, [activeCat, allFiltered, filteredAreMock, mockSlug]);
 
   /* « À la une » — les mieux notés d'abord, c'est la vitrine de la page mobile. */
   const featured = useMemo(
@@ -213,16 +234,21 @@ export default function HomePage() {
   /* Frames par catégorie de l'accueil mobile : on écarte celles trop peu fournies. */
   const mobileCategorySections = useMemo(
     () =>
-      CATEGORY_THEMES.filter((theme) => theme.slug !== "all")
+      storefront
+        .filter((category) => category.slug !== "all")
         .map((theme) => ({
           theme,
-          products: usingMockProducts
-            ? getByCat(theme.slug)
-            : sourceProducts.filter((product) => matchesCategory(product, theme.slug)),
+          // Catégorie de l'admin : ses vrais produits ; thème de repli : la démo.
+          mock: usingMockProducts && !theme.node,
+          products: theme.node
+            ? apiProducts.filter((product) => productInStorefrontCategory(product, theme))
+            : usingMockProducts
+              ? (theme.themeSlug ? getByCat(theme.themeSlug) : [])
+              : sourceProducts.filter((product) => productInStorefrontCategory(product, theme)),
         }))
         .filter((entry) => entry.products.length >= 4)
         .slice(0, 6),
-    [sourceProducts, usingMockProducts],
+    [apiProducts, sourceProducts, storefront, usingMockProducts],
   );
 
   /* Chiffres du bandeau promotions, calculés sur le catalogue réellement affiché. */
@@ -296,8 +322,9 @@ export default function HomePage() {
                   </button>
 
                   <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto scrollbar-hide">
-                  {CATEGORY_THEMES.map((c) => {
+                  {storefront.map((c) => {
                     const active = activeCat === c.slug;
+                    const Icon = c.icon;
                     return (
                       <button
                         key={c.slug}
@@ -308,12 +335,21 @@ export default function HomePage() {
                             : "border-[#ecd3c1] bg-white text-gray-700 hover:border-primary hover:bg-[#fff4eb] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                         }`}
                       >
-                        <img
-                          src={c.thumb}
-                          alt=""
-                          loading="lazy"
-                          className="h-8 w-8 flex-shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
-                        />
+                        {c.thumb ? (
+                          <img
+                            src={c.thumb}
+                            alt=""
+                            loading="lazy"
+                            className="h-8 w-8 flex-shrink-0 rounded-full object-cover shadow-sm ring-2 ring-white"
+                          />
+                        ) : (
+                          <span
+                            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-white shadow-sm ring-2 ring-white"
+                            style={{ background: c.accent }}
+                          >
+                            <Icon size={15} />
+                          </span>
+                        )}
                         {c.name}
                       </button>
                     );
@@ -364,7 +400,7 @@ export default function HomePage() {
                 rows={2}
                 to="/categorie/all"
                 seeAllLabel="Voir tout"
-                isMockProducts={usingMockProducts}
+                isMockProducts={filteredAreMock}
               />
             </div>
 
@@ -441,7 +477,7 @@ export default function HomePage() {
                 products={popular}
                 rows={2}
                 seeMoreTo="/categorie/all"
-                isMockProducts={usingMockProducts}
+                isMockProducts={filteredAreMock}
               />
             </section>
 
@@ -478,19 +514,19 @@ export default function HomePage() {
             </section>
 
             {/* ═══ Frames par catégorie — mobile : deux rangées défilantes chacune ═══ */}
-            {mobileCategorySections.map(({ theme, products }, index) => (
+            {mobileCategorySections.map(({ theme, products, mock }, index) => (
               <div key={theme.slug} className="lg:hidden">
                 <section className="rounded-[22px] border border-[#f1e3d8] bg-white p-2.5 shadow-[0_10px_26px_rgba(15,23,42,.05)] dark:border-gray-800 dark:bg-gray-900">
                   <HomeSection
                     title={theme.name}
                     icon={theme.icon}
-                    badge={theme.facets[0]}
+                    badge={theme.facets[0] ?? theme.subtitle}
                     badgeColor="bg-[#fff1e5] text-primary"
                     products={products}
                     rows={2}
                     seeMoreTo={`/categorie/${theme.slug}`}
                     seeMoreLabel="Tout voir"
-                    isMockProducts={usingMockProducts}
+                    isMockProducts={mock}
                   />
                 </section>
 
@@ -523,7 +559,7 @@ export default function HomePage() {
                   <Globe size={16} className="text-primary" />
                   <div>
                     <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">
-                      {activeCat === "all" ? "Catalogue de l'accueil" : getCategoryTheme(activeCat)?.name ?? activeCat}
+                      {activeCat === "all" ? "Catalogue de l'accueil" : activeStorefront?.name ?? activeCat}
                     </h3>
                     <p className="text-[12px] text-gray-500 dark:text-gray-400">
                       Sélection finie pour garder le footer visible et une lecture claire de la page.
@@ -536,10 +572,28 @@ export default function HomePage() {
               </div>
 
               <div className="flex flex-col gap-3">
+                {allFiltered.length === 0 && realCategoryActive ? (
+                  <div className="flex flex-col items-center gap-2 py-10 text-center">
+                    <p className="text-[14px] font-extrabold text-gray-900 dark:text-white">
+                      Pas encore d'article validé dans « {activeStorefront?.name} »
+                    </p>
+                    <p className="max-w-md text-[12px] text-gray-500 dark:text-gray-400">
+                      Les produits apparaissent ici dès que les vendeurs les publient dans cette
+                      catégorie et que l'équipe BelivaY les a validés.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => navigate(`/categorie/${activeCat}`)}
+                      className="mt-1 inline-flex items-center gap-1.5 rounded-full border border-[#ecd3c1] bg-white px-4 py-2 text-[12px] font-bold text-gray-700 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                    >
+                      Voir la page de la catégorie <ArrowRight size={14} />
+                    </button>
+                  </div>
+                ) : null}
                 {productChunks[0].length > 0 ? (
                   <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
                     {productChunks[0].map((p) => (
-                      <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
+                      <ProductCard key={p.id} product={p} showPromo compact isMock={filteredAreMock} />
                     ))}
                   </div>
                 ) : null}
@@ -562,7 +616,7 @@ export default function HomePage() {
                 {productChunks[1].length > 0 ? (
                   <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
                     {productChunks[1].map((p) => (
-                      <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
+                      <ProductCard key={p.id} product={p} showPromo compact isMock={filteredAreMock} />
                     ))}
                   </div>
                 ) : null}
@@ -585,7 +639,7 @@ export default function HomePage() {
                 {productChunks[2].length > 0 ? (
                   <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-4">
                     {productChunks[2].map((p) => (
-                      <ProductCard key={p.id} product={p} showPromo compact isMock={usingMockProducts} />
+                      <ProductCard key={p.id} product={p} showPromo compact isMock={filteredAreMock} />
                     ))}
                   </div>
                 ) : null}

@@ -10,7 +10,9 @@ from rest_framework.views import APIView
 from rest_framework.decorators import action
 from django.db import models, transaction
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated, IsAdminUser
+from rest_framework.permissions import (
+    SAFE_METHODS, BasePermission, IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser,
+)
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Avg, Count, ExpressionWrapper, FloatField, Q, Value, Case, When, IntegerField
@@ -69,6 +71,17 @@ VALID_ROLES = ("AXE", "SPEC", "OFFRE")
 VALID_VALUES_TYPES = ("SELECT", "NUMBER", "BOOL", "TEXT", "COLORDICT", "BRAND")
 
 
+class IsAdminOrReadOnly(BasePermission):
+    """
+    Lecture pour tous ; création, modification et suppression réservées à
+    l'admin. Les catégories se gèrent depuis « Gestion des catégories », les
+    produits passent par l'espace vendeur (/api/vendors/products/) et ses règles.
+    """
+
+    def has_permission(self, request, view):
+        return request.method in SAFE_METHODS or bool(request.user and request.user.is_staff)
+
+
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
@@ -98,8 +111,10 @@ class ProductViewSet(viewsets.ModelViewSet):
                 .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns'))
     serializer_class = ProductSerializer
     pagination_class = StandardResultsSetPagination
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    
+    # Les vendeurs publient par /api/vendors/products/ (règles de catégorie,
+    # modération) : ici, seules les actions déclarées ouvrent l'écriture.
+    permission_classes = [IsAdminOrReadOnly]
+
     filter_backends = [
         DjangoFilterBackend,
         filters.SearchFilter,
@@ -121,8 +136,12 @@ class ProductViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         from .recommendation import annotate_trust_score
 
+        # Vitrine acheteur : uniquement les offres validées par l'admin, hors
+        # des catégories qu'il a désactivées (et de leurs sous-catégories).
         base = (
-            Product.objects.all()
+            Product.objects
+            .filter(moderation_status=ModerationStatus.APPROVED)
+            .exclude(category_id__in=Category.hidden_subtree_ids())
             .select_related('category', 'vendor')
             .prefetch_related('media', 'inventory', 'images', 'promotion_campaigns')
         )
@@ -335,6 +354,8 @@ class ProductViewSet(viewsets.ModelViewSet):
 class CategoryViewSet(viewsets.ModelViewSet):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
+    # Seul l'admin crée ou modifie une catégorie (« Gestion des catégories »).
+    permission_classes = [IsAdminOrReadOnly]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend]
     filterset_class = CategoryFilter
@@ -2310,6 +2331,7 @@ def admin_categories_tree(request):
 )
 @api_view(["POST"])
 @permission_classes([IsAdminUser])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_categories_create(request):
     serializer = AdminCategoryCreateUpdateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -2351,6 +2373,7 @@ def admin_category_detail(request, cat_id):
 )
 @api_view(["PATCH"])
 @permission_classes([IsAdminUser])
+@parser_classes([MultiPartParser, FormParser, JSONParser])
 def admin_category_update(request, cat_id):
     try:
         cat = Category.objects.get(pk=cat_id)

@@ -287,6 +287,21 @@ const CATEGORY_ALIASES: Record<string, string[]> = {
   bebe: ["bebe", "bébé", "enfant", "puericulture", "puériculture"],
 };
 
+/**
+ * Thème visuel de secours pour une catégorie en base : même slug, sinon premier
+ * thème dont un alias apparaît dans son slug ou son nom (« electronique » → tech).
+ */
+export function findThemeForCategory(category: { slug: string; name: string }): CategoryTheme | undefined {
+  const exact = THEMES_BY_SLUG.get(category.slug);
+  if (exact) return exact;
+
+  const haystack = `${category.slug} ${category.name}`.toLowerCase();
+  const slug = Object.keys(CATEGORY_ALIASES).find((key) =>
+    CATEGORY_ALIASES[key].some((alias) => haystack.includes(alias)),
+  );
+  return slug ? THEMES_BY_SLUG.get(slug) : undefined;
+}
+
 interface CategoryLike {
   category?: { slug?: string; name?: string } | null;
 }

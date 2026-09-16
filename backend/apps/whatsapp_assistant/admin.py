@@ -5,7 +5,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 
-from .models import CourierNotification, RelayNotification, VendorNotification, WhatsAppContact, WhatsAppMedia, WhatsAppMessage, WhatsAppPoster
+from .models import CourierNotification, CustomerNotification, RelayNotification, VendorNotification, WhatsAppContact, WhatsAppMedia, WhatsAppMessage, WhatsAppPoster
 
 
 @admin.register(WhatsAppPoster)
@@ -137,6 +137,26 @@ class RelayNotificationAdmin(admin.ModelAdmin):
     list_filter = ("kind", "language")
     search_fields = ("parcel_id", "relay_id", "recipient", "provider_message_id")
     readonly_fields = [f.name for f in RelayNotification._meta.fields]
+
+    @admin.display(boolean=True, description="Echec")
+    def has_error(self, obj):
+        return bool(obj.error)
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(CustomerNotification)
+class CustomerNotificationAdmin(admin.ModelAdmin):
+    """Messages envoyes aux clients a chaque etape de leur livraison."""
+
+    list_display = ("created_at", "kind", "order_id", "shipment_id", "recipient", "has_error")
+    list_filter = ("kind", "language")
+    search_fields = ("order_id", "shipment_id", "recipient", "provider_message_id")
+    readonly_fields = [f.name for f in CustomerNotification._meta.fields]
 
     @admin.display(boolean=True, description="Echec")
     def has_error(self, obj):

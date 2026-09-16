@@ -10,6 +10,7 @@ MISSION = "belivay_nouvelle_mission"
 TOUR_RECAP = "belivay_recap_tournee"
 NEW_ORDER = "belivay_nouvelle_commande"
 RELAY_PARCEL = "belivay_colis_relais"
+ORDER_UPDATE = "belivay_suivi_commande"
 LANGUAGES = ("fr", "en")
 
 TEMPLATES = {
@@ -137,10 +138,43 @@ TEMPLATES = {
             "url_button": "Open my space",
         },
     },
+    # {{1}} colis BVY-… · {{2}} etape en clair · {{3}} destination ou creneau
+    # Bouton de réponse rapide : 0 = suivre ma commande.
+    ORDER_UPDATE: {
+        "fr": {
+            "body": (
+                "📦 *Votre commande BelivaY*\n\n"
+                "Colis *{{1}}*\n"
+                "🚚 {{2}}\n"
+                "📍 {{3}}\n\n"
+                "Touchez « Suivre ma commande » pour le détail, "
+                "ou écrivez *ma commande* à tout moment."
+            ),
+            "example": ["BVY-1024-2048", "Parti de chez le vendeur", "Bastos, Yaoundé"],
+            "footer": "BelivaY · Suivi de commande",
+            "quick_replies": ["Suivre ma commande"],
+            "url_button": "Ouvrir l'application",
+        },
+        "en": {
+            "body": (
+                "📦 *Your BelivaY order*\n\n"
+                "Parcel *{{1}}*\n"
+                "🚚 {{2}}\n"
+                "📍 {{3}}\n\n"
+                "Tap « Track my order » for the details, "
+                "or type *my order* at any time."
+            ),
+            "example": ["BVY-1024-2048", "Left the seller", "Bastos, Yaoundé"],
+            "footer": "BelivaY · Order tracking",
+            "quick_replies": ["Track my order"],
+            "url_button": "Open the app",
+        },
+    },
 }
 
 
-def definitions(app_url: str, vendor_url: str = "", relay_url: str = "") -> list[dict]:
+def definitions(app_url: str, vendor_url: str = "", relay_url: str = "",
+                site_url: str = "") -> list[dict]:
     """Modèles au format de l'API Meta (POST /<WABA_ID>/message_templates)."""
     payloads = []
     for name, languages in TEMPLATES.items():
@@ -149,6 +183,8 @@ def definitions(app_url: str, vendor_url: str = "", relay_url: str = "") -> list
             destination = vendor_url or app_url
         elif name == RELAY_PARCEL:
             destination = relay_url or app_url
+        elif name == ORDER_UPDATE:
+            destination = site_url or app_url
         else:
             destination = app_url
         for language, spec in languages.items():

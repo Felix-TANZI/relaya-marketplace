@@ -210,6 +210,43 @@ class RelayNotification(models.Model):
         return f"{self.get_kind_display()} \u00b7 colis {self.parcel_id} \u2192 +{self.recipient}"
 
 
+class CustomerNotification(models.Model):
+    """
+    Message envoye a un client a chaque etape de sa livraison. Commandes et
+    colis sont references par leur numero (pas de cle etrangere) : le module
+    se retire sans toucher aux tables du coeur.
+    """
+
+    class Kind(models.TextChoices):
+        PICKED_UP = "picked_up", "Colis parti de chez le vendeur"
+        AT_RELAY = "at_relay", "Colis arrive au point relais"
+        OUT_FOR_DELIVERY = "out_for_delivery", "Le livreur arrive"
+        DELIVERED = "delivered", "Livre"
+
+    kind = models.CharField(max_length=20, choices=Kind.choices, verbose_name="Etape")
+    order_id = models.PositiveBigIntegerField(verbose_name="Commande n\u00b0")
+    shipment_id = models.PositiveBigIntegerField(verbose_name="Colis n\u00b0")
+    recipient = models.CharField(max_length=32, blank=True, verbose_name="Envoy\u00e9 au")
+    language = models.CharField(max_length=2, blank=True, verbose_name="Langue")
+    provider_message_id = models.CharField(max_length=128, blank=True)
+    error = models.TextField(blank=True, verbose_name="Erreur")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Envoy\u00e9 le")
+
+    class Meta:
+        verbose_name = "Message client"
+        verbose_name_plural = "Messages clients"
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["shipment_id", "kind"],
+                name="whatsapp_customer_step_unique",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_kind_display()} \u00b7 colis {self.shipment_id} \u2192 +{self.recipient}"
+
+
 class WhatsAppMessage(models.Model):
     """Journal des échanges : sert au suivi, au débogage et à l'anti-doublon."""
 

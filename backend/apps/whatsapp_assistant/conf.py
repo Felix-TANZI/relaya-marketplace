@@ -12,10 +12,21 @@ TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 def _setting(name: str, default: str = "") -> str:
+    """
+    La valeur du reglage : celle de Django (tests), sinon l'environnement,
+    sinon le defaut.
+
+    Une valeur VIDE vaut absence. C'est indispensable en production : le
+    deploiement genere le .env.prod depuis les variables GitHub, et une
+    variable non renseignee y ecrit une ligne vide. Sans cette regle, elle
+    ecraserait le defaut et l'assistant se retrouverait, par exemple, avec une
+    adresse de site vide et plus aucun bouton.
+    """
     value = getattr(settings, name, None)
     if value is None:
-        value = os.getenv(name, default)
-    return str(value).strip()
+        value = os.getenv(name, "")
+    value = str(value).strip()
+    return value or default
 
 
 @dataclass(frozen=True)
@@ -56,6 +67,9 @@ class WhatsAppConfig:
     # Heures pendant lesquelles l'assistant se tait apres avoir passe la
     # main a un conseiller, pour ne pas parler par-dessus lui.
     human_handover_hours: int = 6
+    # Clients : envoi a chaque etape de la livraison.
+    customer_notifications: bool = True
+    customer_notify_override: str = ""
 
 
 def get_config() -> WhatsAppConfig:
@@ -87,6 +101,8 @@ def get_config() -> WhatsAppConfig:
         relay_notify_override="".join(ch for ch in _setting("WHATSAPP_RELAY_NOTIFY_OVERRIDE") if ch.isdigit()),
         relay_app_url=_setting("WHATSAPP_RELAY_APP_URL", "https://relay-point.belivay.com/relay-point"),
         human_handover_hours=_int_setting("WHATSAPP_HUMAN_HANDOVER_HOURS", 6),
+        customer_notifications=_setting("WHATSAPP_CUSTOMER_NOTIFICATIONS", "1").lower() in TRUE_VALUES,
+        customer_notify_override="".join(ch for ch in _setting("WHATSAPP_CUSTOMER_NOTIFY_OVERRIDE") if ch.isdigit()),
     )
 
 

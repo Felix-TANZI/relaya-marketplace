@@ -122,6 +122,34 @@ jobs:
           # ── URLs publiques ───────────────────────────────────────────
           FRONTEND_URL=${{ vars.FRONTEND_URL }}
           BACKEND_URL=${{ vars.BACKEND_URL }}
+
+          # ── Assistant WhatsApp ───────────────────────────────────────
+          # Sans WHATSAPP_ASSISTANT_ENABLED=1, le webhook repond 404 et
+          # l'assistant reste muet. Les identifiants viennent de Meta
+          # (developers.facebook.com > l'application > WhatsApp).
+          WHATSAPP_ASSISTANT_ENABLED=${{ vars.WHATSAPP_ASSISTANT_ENABLED }}
+          WHATSAPP_VERIFY_TOKEN=${{ secrets.WHATSAPP_VERIFY_TOKEN }}
+          WHATSAPP_APP_SECRET=${{ secrets.WHATSAPP_APP_SECRET }}
+          WHATSAPP_ACCESS_TOKEN=${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          WHATSAPP_PHONE_NUMBER_ID=${{ vars.WHATSAPP_PHONE_NUMBER_ID }}
+          WHATSAPP_BUSINESS_ACCOUNT_ID=${{ vars.WHATSAPP_BUSINESS_ACCOUNT_ID }}
+
+          # Catalogue et liens. En production, l'assistant tourne sur le meme
+          # serveur que le site : « local » evite un aller-retour reseau.
+          WHATSAPP_CATALOG_SOURCE=${{ vars.WHATSAPP_CATALOG_SOURCE }}
+          WHATSAPP_SITE_URL=${{ vars.WHATSAPP_SITE_URL }}
+
+          # Envois par metier. Non renseignes, ils valent 1 (actifs).
+          WHATSAPP_CUSTOMER_NOTIFICATIONS=${{ vars.WHATSAPP_CUSTOMER_NOTIFICATIONS }}
+          WHATSAPP_COURIER_NOTIFICATIONS=${{ vars.WHATSAPP_COURIER_NOTIFICATIONS }}
+          WHATSAPP_VENDOR_NOTIFICATIONS=${{ vars.WHATSAPP_VENDOR_NOTIFICATIONS }}
+          WHATSAPP_RELAY_NOTIFICATIONS=${{ vars.WHATSAPP_RELAY_NOTIFICATIONS }}
+
+          # Presentation et support affiches au client.
+          WHATSAPP_ASSISTANT_NAME=${{ vars.WHATSAPP_ASSISTANT_NAME }}
+          WHATSAPP_SUPPORT_PHONE=${{ vars.WHATSAPP_SUPPORT_PHONE }}
+          WHATSAPP_SUPPORT_EMAIL=${{ vars.WHATSAPP_SUPPORT_EMAIL }}
+          WHATSAPP_HUMAN_HANDOVER_HOURS=${{ vars.WHATSAPP_HUMAN_HANDOVER_HOURS }}
           ENVEOF
 
       - name: Copier .env.prod sur le serveur

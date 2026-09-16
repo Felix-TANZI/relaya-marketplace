@@ -241,6 +241,16 @@ TEXTS = {
         "human_sent": "✅ *Votre demande est transmise* (n° {ref}).\nUn conseiller BelivaY vous répond ici, dans cette conversation.\n\nJe me mets en retrait le temps qu'il vous réponde. Écrivez *menu* si vous préférez reprendre avec moi.",
         "human_failed": "😕 Je n'arrive pas à transmettre votre demande pour le moment.\nAppelez-nous au {phone} ou écrivez à {email}.",
         "human_back": "👋 Me revoilà ! Que souhaitez-vous faire ?",
+
+        # ── Etapes de livraison annoncees au client ──
+        "template_step": "Commande {ref}",
+        "step_picked_up": "Parti de chez le vendeur",
+        "step_at_relay": "Arrivé à votre point relais",
+        "step_out_for_delivery": "Le livreur est en route",
+        "step_delivered": "Livré",
+        "step_place_home": "Livraison à {place}",
+        "step_place_relay": "À retirer : {place}",
+        "step_eta": "Attendu le {eta}",
     },
     "en": {
         "welcome": "Hello{name} 👋 I'm *{assistant}*, your shopping assistant.\nWhat would you like to do?",
@@ -479,6 +489,16 @@ TEXTS = {
         "human_sent": "✅ *Your request has been sent* (no. {ref}).\nA BelivaY adviser will answer you here, in this conversation.\n\nI will step aside while they get back to you. Type *menu* if you would rather carry on with me.",
         "human_failed": "😕 I cannot pass your request on right now.\nCall us on {phone} or write to {email}.",
         "human_back": "👋 I am back! What would you like to do?",
+
+        # ── Delivery steps announced to the customer ──
+        "template_step": "Order {ref}",
+        "step_picked_up": "Left the seller",
+        "step_at_relay": "Arrived at your relay point",
+        "step_out_for_delivery": "The courier is on the way",
+        "step_delivered": "Delivered",
+        "step_place_home": "Delivery to {place}",
+        "step_place_relay": "To collect: {place}",
+        "step_eta": "Expected on {eta}",
     },
 }
 

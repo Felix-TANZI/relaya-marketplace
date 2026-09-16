@@ -159,3 +159,93 @@ def _eta(shipment) -> str:
     if not moment:
         return ""
     return timezone.localtime(moment).strftime("%d/%m vers %Hh")
+
+# ── Ecoute des etapes de la livraison ──────────────────────────────────────
+
+_UNKNOWN = object()
+
+# Les moments ou le client merite d'etre prevenu, et le statut de colis qui les
+# declenche. IN_TRANSIT n'interesse le client que si son colis va en relais :
+# c'est le serializer du point relais qui le pose, a la reception.
+MOMENTS = {
+    "PICKED_UP": "picked_up",
+    "IN_TRANSIT": "at_relay",
+    "OUT_FOR_DELIVERY": "out_for_delivery",
+    "DELIVERED": "delivered",
+}
+
+
+def connect_shipment_signal(on_step, is_enabled) -> None:
+    """
+    Appelle on_step(shipment_id, moment) apres validation en base, a chaque
+    etape franchie par un colis — quel que soit le chemin qui l'a franchie.
+    """
+    from django.db import transaction
+    from django.db.models.signals import post_save, pre_save
+
+    from apps.shipping.models import Shipment
+
+    def remember_previous_status(sender, instance, raw=False, update_fields=None, **kwargs):
+        if raw or not is_enabled():
+            return
+        if update_fields is not None and "status" not in set(update_fields):
+            return
+        instance._whatsapp_previous_client_status = (
+            sender.objects.filter(pk=instance.pk).values_list("status", flat=True).first()
+            if instance.pk else None
+        )
+
+    def notify_client(sender, instance, raw=False, **kwargs):
+        previous = instance.__dict__.pop("_whatsapp_previous_client_status", _UNKNOWN)
+        if raw or previous is _UNKNOWN or previous == instance.status:
+            return
+        moment = MOMENTS.get(instance.status)
+        if not moment:
+            return
+        shipment_id = instance.pk
+        transaction.on_commit(lambda: on_step(shipment_id, moment))
+
+    pre_save.connect(remember_previous_status, sender=Shipment, weak=False,
+                     dispatch_uid="whatsapp_assistant.client_remember_status")
+    post_save.connect(notify_client, sender=Shipment, weak=False,
+                      dispatch_uid="whatsapp_assistant.client_notify_step")
+
+
+@dataclass(frozen=True)
+class Step:
+    order_id: int
+    reference: str              # BVY-<commande>-<colis>
+    wa_id: str                  # le numero du client, vide s'il n'est pas valide
+    to_relay: bool
+    place: str                  # point relais, ou quartier de livraison
+    eta: str
+
+
+def step_of(shipment_id: int) -> Step | None:
+    """Ce qu'il faut dire au client sur ce colis, et a quel numero."""
+    from apps.shipping.models import Shipment
+
+    from .deliveries import to_wa_id
+
+    shipment = (
+        Shipment.objects.select_related("order", "order__relay_point")
+        .filter(pk=shipment_id).first()
+    )
+    if shipment is None:
+        return None
+    order = shipment.order
+    to_relay = bool(order.relay_point_id)
+    return Step(
+        order_id=order.id,
+        reference=f"BVY-{order.id}-{shipment.id}",
+        wa_id=to_wa_id(order.customer_phone or ""),
+        to_relay=to_relay,
+        place=_destination(order),
+        eta=_eta(shipment),
+    )
+
+
+def has_relay_parcel(shipment_id: int) -> bool:
+    from apps.shipping.models import RelayParcel
+
+    return RelayParcel.objects.filter(shipment_id=shipment_id).exists()

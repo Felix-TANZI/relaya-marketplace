@@ -101,14 +101,14 @@ export default function CartPage() {
           <div className="pf-ident pf-anim">
             <span className="pf-notif-ic"><ShoppingCart size={20} /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="pf-name">Mon panier</div>
+              <div className="pf-name">{t('cl1_cart.my_cart')}</div>
               <div className="pf-meta">
-                <span>{selectedItemCount} sélectionné{selectedItemCount > 1 ? "s" : ""}</span>
-                <span>{itemCount} article{itemCount > 1 ? "s" : ""}</span>
+                <span>{t(selectedItemCount > 1 ? 'cl1_cart.selected_count_plural' : 'cl1_cart.selected_count', { count: selectedItemCount })}</span>
+                <span>{t(itemCount > 1 ? 'cl1_cart.item_count_plural' : 'cl1_cart.item_count', { count: itemCount })}</span>
               </div>
             </div>
             <button className="pf-btn-ghost" onClick={() => setSelectedIds(allSelected ? [] : items.map((i) => i.id))}>
-              {allSelected ? "Tout désélectionner" : "Tout sélectionner"}
+              {allSelected ? t('cl1_cart.deselect_all') : t('cl1_cart.select_all')}
             </button>
           </div>
 
@@ -124,7 +124,7 @@ export default function CartPage() {
                         className={`pf-tick${selected ? " on" : ""}`}
                         onClick={() => toggleSelection(item.id)}
                         aria-pressed={selected}
-                        aria-label={`Sélectionner ${item.name}`}
+                        aria-label={t('cl1_cart.select_item_aria', { name: item.name })}
                       >
                         <Check size={12} strokeWidth={3.2} />
                       </button>
@@ -138,7 +138,7 @@ export default function CartPage() {
                           <Link to={link} style={{ flex: 1, minWidth: 0 }}>
                             <div className="pf-support-t">{item.name}</div>
                           </Link>
-                          <button className="pf-del" onClick={() => removeWithUndo(item.id)} aria-label={`Retirer ${item.name}`}>
+                          <button className="pf-del" onClick={() => removeWithUndo(item.id)} aria-label={t('cl1_cart.remove_item_aria', { name: item.name })}>
                             <Trash2 size={15} />
                           </button>
                         </div>
@@ -153,12 +153,12 @@ export default function CartPage() {
                         <div className="pf-row-between" style={{ marginTop: 11 }}>
                           <div>
                             <div className="pf-order-total" style={{ fontSize: 15, color: "var(--pf-text)" }}>{fmt(item.price * item.quantity)}</div>
-                            {item.quantity > 1 && <div className="pf-muted-sm">{fmt(item.price)} / unité</div>}
+                            {item.quantity > 1 && <div className="pf-muted-sm">{fmt(item.price)} {t('cl1_cart.per_unit')}</div>}
                           </div>
                           <div className="pf-qty">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label="Diminuer"><Minus size={13} /></button>
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} aria-label={t('cl1_cart.decrease_aria')}><Minus size={13} /></button>
                             <span>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label="Augmenter"><Plus size={13} /></button>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} aria-label={t('cl1_cart.increase_aria')}><Plus size={13} /></button>
                           </div>
                         </div>
                       </div>
@@ -170,7 +170,7 @@ export default function CartPage() {
               {suggestions.length > 0 && (
                 <section className="pf-card pf-anim">
                   <div className="pf-row-between pf-mb">
-                    <span className="pf-card-title">Complétez votre commande</span>
+                    <span className="pf-card-title">{t('cl1_cart.complete_your_order')}</span>
                   </div>
                   <div className="pf-xsell">
                     {suggestions.map((p) => {
@@ -188,7 +188,7 @@ export default function CartPage() {
                             style={{ marginTop: 8, width: "100%", justifyContent: "center", padding: "7px 10px", fontSize: 11 }}
                             onClick={() => addItem({ id: p.id, name: p.title, price, quantity: 1, image: img, isDemo: true })}
                           >
-                            + Ajouter
+                            + {t('cl1_cart.add')}
                           </button>
                         </div>
                       );
@@ -209,30 +209,30 @@ export default function CartPage() {
             {/* Récapitulatif */}
             <aside className="pf-side" data-tutorial="cart-summary">
               <div className="pf-glass-panel pf-anim">
-                <div className="pf-k">Récapitulatif</div>
+                <div className="pf-k">{t('cl1_cart.summary')}</div>
 
                 <div style={{ marginTop: 14 }}>
                   <div className="pf-summary-row"><span className="pf-muted-sm">{t("cart.subtotal")}</span><span className="pf-summary-v">{fmt(selectedTotal)}</span></div>
                   <div className="pf-summary-row"><span className="pf-muted-sm">{t("cart.shipping")}</span><span className="pf-summary-v">{shippingCost > 0 ? fmt(shippingCost) : "—"}</span></div>
                   {savings > 0 && (
-                    <div className="pf-summary-row"><span className="pf-muted-sm">Économie estimée</span><span className="pf-summary-v" style={{ color: "#128a45" }}>− {fmt(savings)}</span></div>
+                    <div className="pf-summary-row"><span className="pf-muted-sm">{t('cl1_cart.estimated_savings')}</span><span className="pf-summary-v" style={{ color: "#128a45" }}>− {fmt(savings)}</span></div>
                   )}
                 </div>
 
                 <div style={{ marginTop: 14 }}>
                   <button type="button" onClick={() => setPromoOpen((current) => !current)} className="pf-link" style={{ fontSize: 12 }}>
-                    {promoOpen ? "Masquer le code promotionnel" : "Ajouter un code promotionnel"}
+                    {promoOpen ? t('cl1_cart.hide_promo_code') : t('cl1_cart.add_promo_code')}
                   </button>
                   {promoOpen && (
                     <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
                       <input
                         value={promoCode}
                         onChange={(event) => setPromoCode(event.target.value.toUpperCase())}
-                        placeholder="CODE PROMO"
+                        placeholder={t('cl1_cart.promo_code_placeholder')}
                         className="pf-input"
                         style={{ flex: 1, minWidth: 0 }}
                       />
-                      <button type="button" className="pf-btn-ghost">Appliquer</button>
+                      <button type="button" className="pf-btn-ghost">{t('cl1_cart.apply')}</button>
                     </div>
                   )}
                 </div>
@@ -244,7 +244,7 @@ export default function CartPage() {
                 </div>
 
                 <div style={{ marginTop: 16, padding: 13, borderRadius: 14, background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}>
-                  <div className="pf-sec" style={{ padding: 0 }}>Moyens acceptés</div>
+                  <div className="pf-sec" style={{ padding: 0 }}>{t('cl1_cart.accepted_methods')}</div>
                   <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
                     <OperatorLogo provider="MTN_MOMO" size={34} />
                     <OperatorLogo provider="ORANGE_MONEY" size={34} />
@@ -254,22 +254,22 @@ export default function CartPage() {
                 </div>
 
                 <Link to="/checkout" onClick={guard}>
-                  <button className="pf-btn-accent pf-btn-block"><Truck size={16} />Passer commande<ArrowRight size={15} /></button>
+                  <button className="pf-btn-accent pf-btn-block"><Truck size={16} />{t('cl1_cart.place_order')}<ArrowRight size={15} /></button>
                 </Link>
                 <Link to="/checkout?mode=pickup" onClick={guard}>
-                  <button className="pf-btn-ghost pf-btn-block"><Store size={15} />Payer au retrait (centre BelivaY)</button>
+                  <button className="pf-btn-ghost pf-btn-block"><Store size={15} />{t('cl1_cart.pay_on_pickup')}</button>
                 </Link>
                 <Link to="/catalog">
                   <button className="pf-btn-ghost pf-btn-block" style={{ border: "none", background: "transparent", color: "var(--pf-text2)" }}>
-                    Continuer mes achats
+                    {t('cl1_cart.continue_shopping')}
                   </button>
                 </Link>
 
                 <div className="pf-info-note">
                   <span className="pf-info-ic"><ShieldCheck size={15} /></span>
                   <div>
-                    <div className="pf-support-t" style={{ fontSize: 13 }}>Escrow BelivaY</div>
-                    <div className="pf-muted-sm">Paiement protégé jusqu'à la réception. Livraison suivie 24–72h Cameroun &amp; CEMAC.</div>
+                    <div className="pf-support-t" style={{ fontSize: 13 }}>{t('cl1_cart.escrow_title')}</div>
+                    <div className="pf-muted-sm">{t('cl1_cart.escrow_desc')}</div>
                   </div>
                 </div>
               </div>
@@ -279,9 +279,9 @@ export default function CartPage() {
       </div>
       {removedItem && (
         <div className="fixed bottom-20 left-1/2 z-[90] flex w-[min(420px,calc(100%-2rem))] -translate-x-1/2 items-center justify-between gap-3 rounded-xl bg-slate-950 px-4 py-3 text-sm text-white shadow-2xl lg:bottom-6">
-          <span className="truncate">{removedItem.name} retiré du panier</span>
+          <span className="truncate">{t('cl1_cart.item_removed', { name: removedItem.name })}</span>
           <button type="button" onClick={() => { addItem(removedItem); setRemovedItem(null); }} className="inline-flex shrink-0 items-center gap-1 font-bold text-orange-300">
-            <Undo2 size={15} /> Annuler
+            <Undo2 size={15} /> {t('cl1_cart.undo')}
           </button>
         </div>
       )}

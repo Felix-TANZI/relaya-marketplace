@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useAdminEscrowDetail } from '../../hooks/useFinanceAdmin';
 import EmptyState from '../../shared/EmptyState';
@@ -47,6 +48,7 @@ function Ligne({ label, value }: { label: string; value: React.ReactNode }) {
 export default function EscrowDetailPage({
   basePath = '/admin/finance',
 }: EscrowDetailPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const navigate = useNavigate();
   const { data: hold, loading, error } = useAdminEscrowDetail(reference);
@@ -54,7 +56,7 @@ export default function EscrowDetailPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_escrow_detail.loading')}</span>
       </div>
     );
   }
@@ -63,7 +65,7 @@ export default function EscrowDetailPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Séquestre introuvable"
+        title={t('pm1_escrow_detail.not_found')}
         description={error ?? undefined}
       />
     );
@@ -71,10 +73,10 @@ export default function EscrowDetailPage({
 
   return (
     <AdminPageShell
-      title="Séquestre"
+      title={t('pm1_escrow_detail.title')}
       subtitle={hold.reference}
       backTo={`${basePath}/escrow`}
-      backLabel="Séquestres"
+      backLabel={t('pm1_escrow_detail.back_label')}
       maxWidth={760}
     >
       <AdminCard>
@@ -87,7 +89,7 @@ export default function EscrowDetailPage({
             <TransactionReference value={hold.reference} size={14} />
             <p style={{ fontSize: 12, margin: '3px 0 0', color: FT.muted }}>
               {hold.order_id
-                ? `Commande #${hold.order_id}`
+                ? t('pm1_escrow_detail.order_number', { id: hold.order_id })
                 : hold.component_label}
               {' · '}{hold.payee.display_label || hold.payee.payee_code}
             </p>
@@ -108,7 +110,7 @@ export default function EscrowDetailPage({
 
         <div style={{ padding: '0.25rem 1.25rem' }}>
           <Ligne
-            label="Paiement"
+            label={t('pm1_escrow_detail.field_payment')}
             value={(
               <button
                 type="button"
@@ -124,47 +126,47 @@ export default function EscrowDetailPage({
               </button>
             )}
           />
-          <Ligne label="Montant brut" value={
+          <Ligne label={t('pm1_escrow_detail.field_gross_amount')} value={
             <Money value={hold.gross_amount_xaf} size={13} />
           } />
-          <Ligne label="Commission" value={
+          <Ligne label={t('pm1_escrow_detail.field_commission')} value={
             <Money value={-hold.commission_xaf} size={13} tone="muted" />
           } />
-          <Ligne label="Net au partenaire" value={
+          <Ligne label={t('pm1_escrow_detail.field_net_to_partner')} value={
             <Money value={hold.net_amount_xaf} size={13} />
           } />
           {hold.refunded_amount_xaf > 0 && (
-            <Ligne label="Remboursé" value={
+            <Ligne label={t('pm1_escrow_detail.field_refunded')} value={
               <Money value={-hold.refunded_amount_xaf} size={13} />
             } />
           )}
-          <Ligne label="Déclencheur" value={hold.release_trigger} />
+          <Ligne label={t('pm1_escrow_detail.field_trigger')} value={hold.release_trigger} />
           {hold.auto_confirm_at && (
             <Ligne
-              label="Auto-confirmation"
+              label={t('pm1_escrow_detail.field_auto_confirm')}
               value={formatDay(hold.auto_confirm_at)}
             />
           )}
           {hold.release_at && (
-            <Ligne label="Libération" value={formatDay(hold.release_at)} />
+            <Ligne label={t('pm1_escrow_detail.field_release')} value={formatDay(hold.release_at)} />
           )}
           {hold.frozen_reason && (
             <Ligne
-              label="Motif du gel"
+              label={t('pm1_escrow_detail.field_freeze_reason')}
               value={<span style={{ color: FT.redD }}>
                 {hold.frozen_reason}
               </span>}
             />
           )}
           {hold.settlement_batch_ref && (
-            <Ligne label="Lot de règlement" value={hold.settlement_batch_ref} />
+            <Ligne label={t('pm1_escrow_detail.field_settlement_batch')} value={hold.settlement_batch_ref} />
           )}
         </div>
       </AdminCard>
 
       {hold.siblings.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <AdminCard title="Autres séquestres du même paiement">
+          <AdminCard title={t('pm1_escrow_detail.siblings_title')}>
             <div style={{
               padding: '0 1.25rem 10px', borderTop: `0.5px solid ${FT.border}`,
               paddingTop: 12,
@@ -172,12 +174,11 @@ export default function EscrowDetailPage({
               <p style={{
                 fontSize: 12, margin: 0, lineHeight: 1.6, color: FT.muted,
               }}>
-                Geler celui-ci ne gèlera pas ceux-là. Chaque séquestre suit
-                son propre parcours.
+                {t('pm1_escrow_detail.siblings_note')}
               </p>
             </div>
             {hold.siblings.map((frere) => {
-              const meta = statusMeta('escrow', frere.status);
+              const meta = statusMeta('escrow', frere.status, t);
               return (
                 <div
                   key={frere.reference}
@@ -199,7 +200,7 @@ export default function EscrowDetailPage({
                     color: 'var(--text-primary, #1A1209)',
                   }}>
                     {frere.order_id
-                      ? `Commande #${frere.order_id}`
+                      ? t('pm1_escrow_detail.order_number', { id: frere.order_id })
                       : frere.component}
                     <span style={{ color: FT.faint }}>
                       {' · '}{frere.payee_code}

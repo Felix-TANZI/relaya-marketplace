@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, AlertCircle, Download,
   ChevronLeft, ChevronRight, Eye, XCircle, CheckCircle,
@@ -29,19 +30,19 @@ const fmtDateTime = (d: string) =>
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PAYMENT_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:  { label: 'En attente',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
-  PAID:     { label: 'Payée',        color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
-  FAILED:   { label: 'Échouée',      color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
-  REFUNDED: { label: 'Remboursée',   color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)'  },
+const PAYMENT_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:  { labelKey: 'ad5b_orders_list.payment_pending',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
+  PAID:     { labelKey: 'ad5b_orders_list.payment_paid',     color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
+  FAILED:   { labelKey: 'ad5b_orders_list.payment_failed',   color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
+  REFUNDED: { labelKey: 'ad5b_orders_list.payment_refunded', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)'  },
 };
 
-const FULFILLMENT_CFG: Record<string, { label: string; color: string; bg: string; icon: React.ElementType }> = {
-  PENDING:    { label: 'En attente',    color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  icon: Clock       },
-  PROCESSING: { label: 'En cours',      color: '#3B82F6', bg: 'rgba(59,130,246,0.12)',  icon: Package     },
-  SHIPPED:    { label: 'Expédiée',      color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)',  icon: Truck       },
-  DELIVERED:  { label: 'Livrée',        color: '#10B981', bg: 'rgba(16,185,129,0.12)',  icon: CheckCircle },
-  CANCELLED:  { label: 'Annulée',       color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   icon: Ban         },
+const FULFILLMENT_CFG: Record<string, { labelKey: string; color: string; bg: string; icon: React.ElementType }> = {
+  PENDING:    { labelKey: 'ad5b_orders_list.fulfill_pending',    color: '#F59E0B', bg: 'rgba(245,158,11,0.12)',  icon: Clock       },
+  PROCESSING: { labelKey: 'ad5b_orders_list.fulfill_processing', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)',  icon: Package     },
+  SHIPPED:    { labelKey: 'ad5b_orders_list.fulfill_shipped',    color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)',  icon: Truck       },
+  DELIVERED:  { labelKey: 'ad5b_orders_list.fulfill_delivered',  color: '#10B981', bg: 'rgba(16,185,129,0.12)',  icon: CheckCircle },
+  CANCELLED:  { labelKey: 'ad5b_orders_list.fulfill_cancelled',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)',   icon: Ban         },
 };
 
 type SortKey    = 'id' | 'created_at' | 'total_xaf';
@@ -57,20 +58,22 @@ const PAGE_SIZES = [10, 20, 50] as const;
 // ─────────────────────────────────────────────────────────────────────────────
 
 function PayBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const c = PAYMENT_CFG[status] ?? PAYMENT_CFG.PENDING;
   return (
     <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: c.bg, color: c.color, border: `1px solid ${c.color}40`, whiteSpace: 'nowrap' }}>
-      {c.label}
+      {t(c.labelKey)}
     </span>
   );
 }
 
 function FulfillBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const c   = FULFILLMENT_CFG[status] ?? FULFILLMENT_CFG.PENDING;
   const Icon = c.icon;
   return (
     <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: c.bg, color: c.color, border: `1px solid ${c.color}40`, display: 'inline-flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}>
-      <Icon size={10} /> {c.label}
+      <Icon size={10} /> {t(c.labelKey)}
     </span>
   );
 }
@@ -92,6 +95,7 @@ function SkeletonRow({ T }: { T: ReturnType<typeof useAdminTheme> }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function OrdersListPage() {
+  const { t }           = useTranslation();
   const T              = useAdminTheme();
   const { showToast }  = useToast();
   const { confirm }    = useConfirm();
@@ -134,11 +138,11 @@ export default function OrdersListPage() {
       const data = await adminApi.listOrders(filters);
       setOrders(data);
     } catch {
-      showToast('Erreur chargement des commandes', 'error');
+      showToast(t('ad5b_orders_list.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [payTab, fulfillTab, searchParams, showToast]);
+  }, [payTab, fulfillTab, searchParams, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -199,17 +203,17 @@ export default function OrdersListPage() {
   // ── Annulation ────────────────────────────────────────────────────────────
   const handleCancel = async (o: AdminOrder) => {
     const ok = await confirm({
-      title: `Annuler la commande #${o.id} ?`,
-      message: 'Cette action est irréversible. La commande passera en statut Annulée.',
-      type: 'danger', confirmText: 'Annuler la commande', cancelText: 'Garder',
+      title: t('ad5b_orders_list.confirm_cancel_title', { id: o.id }),
+      message: t('ad5b_orders_list.confirm_cancel_message'),
+      type: 'danger', confirmText: t('ad5b_orders_list.confirm_cancel_confirm'), cancelText: t('ad5b_orders_list.confirm_cancel_cancel'),
     });
     if (!ok) return;
     setActing(o.id);
     try {
       await adminApi.cancelOrder(o.id);
-      showToast(`Commande #${o.id} annulée`, 'success');
+      showToast(t('ad5b_orders_list.toast_cancel_success', { id: o.id }), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad5b_orders_list.toast_generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -246,11 +250,11 @@ export default function OrdersListPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion Commandes
+            {t('ad5b_orders_list.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {kpis.pending > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{kpis.pending} en attente ·</span>}
-            {orders.length.toLocaleString('fr-FR')} commandes au total
+            {kpis.pending > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{t('ad5b_orders_list.subtitle_pending', { count: kpis.pending })}</span>}
+            {t('ad5b_orders_list.subtitle_total', { n: orders.length.toLocaleString('fr-FR') })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -259,7 +263,7 @@ export default function OrdersListPage() {
             style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
             onMouseEnter={e => (e.currentTarget.style.color = T.text)}
             onMouseLeave={e => (e.currentTarget.style.color = T.muted)}>
-            <Download size={13} /> <span className="hidden sm:inline">Exporter CSV</span>
+            <Download size={13} /> <span className="hidden sm:inline">{t('ad5b_orders_list.export_csv')}</span>
           </button>
           <button onClick={() => load()}
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold transition-all"
@@ -267,7 +271,7 @@ export default function OrdersListPage() {
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad5b_orders_list.refresh')}</span>
           </button>
         </div>
       </div>
@@ -275,10 +279,10 @@ export default function OrdersListPage() {
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total',        value: kpis.total,                  sub: 'toutes commandes',   accent: T.text,    click: () => { setPayTab('all'); setFulfillTab('all'); } },
-          { label: 'Paiement att.',value: kpis.pending,                sub: 'à encaisser',        accent: '#F59E0B', click: () => setPayTab('PENDING') },
-          { label: 'Revenus (payé)',value: fmtXaf(kpis.revenue),       sub: `${kpis.paid} payées`,accent: '#10B981', click: () => setPayTab('PAID') },
-          { label: 'Livrées',      value: kpis.delivered,              sub: `${kpis.cancelled} annulées`, accent: '#3B82F6', click: () => setFulfillTab('DELIVERED') },
+          { label: t('ad5b_orders_list.kpi_total_label'),        value: kpis.total,                  sub: t('ad5b_orders_list.kpi_total_sub'),   accent: T.text,    click: () => { setPayTab('all'); setFulfillTab('all'); } },
+          { label: t('ad5b_orders_list.kpi_pending_label'),value: kpis.pending,                sub: t('ad5b_orders_list.kpi_pending_sub'),        accent: '#F59E0B', click: () => setPayTab('PENDING') },
+          { label: t('ad5b_orders_list.kpi_revenue_label'),value: fmtXaf(kpis.revenue),       sub: t('ad5b_orders_list.kpi_revenue_sub', { count: kpis.paid }),accent: '#10B981', click: () => setPayTab('PAID') },
+          { label: t('ad5b_orders_list.kpi_delivered_label'),      value: kpis.delivered,              sub: t('ad5b_orders_list.kpi_delivered_sub', { count: kpis.cancelled }), accent: '#3B82F6', click: () => setFulfillTab('DELIVERED') },
         ].map((k, i) => (
           <button key={i} onClick={() => { k.click(); setPage(1); }}
             className="rounded-2xl p-4 text-left transition-all w-full"
@@ -300,17 +304,17 @@ export default function OrdersListPage() {
         {/* Tabs paiement */}
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: 'none' }}>
-            {(['all','PENDING','PAID','FAILED','REFUNDED'] as PayTab[]).map(t => {
-              const cfg = t === 'all' ? null : PAYMENT_CFG[t];
-              const count = t === 'all' ? orders.length : orders.filter(o => o.payment_status === t).length;
+            {(['all','PENDING','PAID','FAILED','REFUNDED'] as PayTab[]).map(payKey => {
+              const cfg = payKey === 'all' ? null : PAYMENT_CFG[payKey];
+              const count = payKey === 'all' ? orders.length : orders.filter(o => o.payment_status === payKey).length;
               return (
-                <button key={t} onClick={() => { setPayTab(t); setPage(1); load(); }}
+                <button key={payKey} onClick={() => { setPayTab(payKey); setPage(1); load(); }}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all"
-                  style={{ background: payTab === t ? (cfg?.color ?? T.red) : 'transparent', color: payTab === t ? '#fff' : (cfg?.color ?? T.muted) }}
-                  onMouseEnter={e => { if (payTab !== t) (e.currentTarget.style.color = T.text); }}
-                  onMouseLeave={e => { if (payTab !== t) (e.currentTarget.style.color = cfg?.color ?? T.muted); }}>
-                  {t === 'all' ? 'Tous' : cfg?.label}
-                  <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: payTab === t ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: payTab === t ? '#fff' : T.muted }}>{count}</span>
+                  style={{ background: payTab === payKey ? (cfg?.color ?? T.red) : 'transparent', color: payTab === payKey ? '#fff' : (cfg?.color ?? T.muted) }}
+                  onMouseEnter={e => { if (payTab !== payKey) (e.currentTarget.style.color = T.text); }}
+                  onMouseLeave={e => { if (payTab !== payKey) (e.currentTarget.style.color = cfg?.color ?? T.muted); }}>
+                  {payKey === 'all' ? t('ad5b_orders_list.tab_all') : (cfg ? t(cfg.labelKey) : '')}
+                  <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: payTab === payKey ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: payTab === payKey ? '#fff' : T.muted }}>{count}</span>
                 </button>
               );
             })}
@@ -319,7 +323,7 @@ export default function OrdersListPage() {
           {/* Recherche */}
           <div className="relative w-full sm:w-60 flex-shrink-0">
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
-            <input type="text" placeholder="#ID, client, ville…"
+            <input type="text" placeholder={t('ad5b_orders_list.search_placeholder')}
               onChange={e => handleSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
               style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
@@ -337,12 +341,12 @@ export default function OrdersListPage() {
             <button onClick={() => setOpenDrop(openDrop === 'fulfill' ? null : 'fulfill')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
               style={{ background: fulfillTab !== 'all' ? T.red + '18' : T.cardAlt, color: fulfillTab !== 'all' ? T.red : T.muted, border: `1px solid ${fulfillTab !== 'all' ? T.red + '40' : T.border}` }}>
-              {fulfillTab === 'all' ? 'Livraison' : FULFILLMENT_CFG[fulfillTab]?.label} <ChevronDown size={11} />
+              {fulfillTab === 'all' ? t('ad5b_orders_list.filter_delivery_label') : (FULFILLMENT_CFG[fulfillTab] ? t(FULFILLMENT_CFG[fulfillTab].labelKey) : '')} <ChevronDown size={11} />
             </button>
             <DropMenu show={openDrop === 'fulfill'}>
-              <DropItem label="Tous" active={fulfillTab === 'all'} onClick={() => { setFulfillTab('all'); setPage(1); load(); }} />
+              <DropItem label={t('ad5b_orders_list.tab_all')} active={fulfillTab === 'all'} onClick={() => { setFulfillTab('all'); setPage(1); load(); }} />
               {(['PENDING','PROCESSING','SHIPPED','DELIVERED','CANCELLED'] as FulfillTab[]).map(f => (
-                <DropItem key={f} label={FULFILLMENT_CFG[f]?.label ?? f} active={fulfillTab === f} onClick={() => { setFulfillTab(f); setPage(1); }} />
+                <DropItem key={f} label={FULFILLMENT_CFG[f] ? t(FULFILLMENT_CFG[f].labelKey) : f} active={fulfillTab === f} onClick={() => { setFulfillTab(f); setPage(1); }} />
               ))}
             </DropMenu>
           </div>
@@ -352,10 +356,10 @@ export default function OrdersListPage() {
             <button onClick={() => setOpenDrop(openDrop === 'date' ? null : 'date')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
               style={{ background: dateF !== 'all' ? T.red + '18' : T.cardAlt, color: dateF !== 'all' ? T.red : T.muted, border: `1px solid ${dateF !== 'all' ? T.red + '40' : T.border}` }}>
-              {({ all: 'Période', today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois' } as Record<DateFilter, string>)[dateF]} <ChevronDown size={11} />
+              {({ all: t('ad5b_orders_list.period_button_all'), today: t('ad5b_orders_list.period_today'), week: t('ad5b_orders_list.period_week'), month: t('ad5b_orders_list.period_month') } as Record<DateFilter, string>)[dateF]} <ChevronDown size={11} />
             </button>
             <DropMenu show={openDrop === 'date'}>
-              {([['all',"Toutes périodes"],['today',"Aujourd'hui"],['week','Cette semaine'],['month','Ce mois']] as [DateFilter,string][]).map(([k,l]) => (
+              {([['all',t('ad5b_orders_list.period_all')],['today',t('ad5b_orders_list.period_today')],['week',t('ad5b_orders_list.period_week')],['month',t('ad5b_orders_list.period_month')]] as [DateFilter,string][]).map(([k,l]) => (
                 <DropItem key={k} label={l} active={dateF === k} onClick={() => { setDateF(k); setPage(1); }} />
               ))}
             </DropMenu>
@@ -365,12 +369,12 @@ export default function OrdersListPage() {
             <button onClick={resetFilters}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
               style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
-              <X size={11} /> {activeFilters} filtre{activeFilters > 1 ? 's' : ''}
+              <X size={11} /> {t(activeFilters > 1 ? 'ad5b_orders_list.filters_active_plural' : 'ad5b_orders_list.filters_active', { count: activeFilters })}
             </button>
           )}
 
           <p style={{ fontSize: 12, color: T.muted, marginLeft: 'auto' }}>
-            {sorted.length} résultat{sorted.length > 1 ? 's' : ''}
+            {t(sorted.length > 1 ? 'ad5b_orders_list.results_count_plural' : 'ad5b_orders_list.results_count', { count: sorted.length })}
           </p>
         </div>
       </div>
@@ -384,13 +388,13 @@ export default function OrdersListPage() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 {([
-                  { label: '#',          k: 'id'         as SortKey | null },
-                  { label: 'Client',     k: null },
-                  { label: 'Vendeurs',   k: null },
-                  { label: 'Paiement',   k: null },
-                  { label: 'Livraison',  k: null },
-                  { label: 'Montant',    k: 'total_xaf'  as SortKey | null },
-                  { label: 'Date',       k: 'created_at' as SortKey | null },
+                  { label: '#',                                      k: 'id'         as SortKey | null },
+                  { label: t('ad5b_orders_list.col_client'),         k: null },
+                  { label: t('ad5b_orders_list.col_vendors'),        k: null },
+                  { label: t('ad5b_orders_list.col_payment'),        k: null },
+                  { label: t('ad5b_orders_list.col_delivery'),       k: null },
+                  { label: t('ad5b_orders_list.col_amount'),         k: 'total_xaf'  as SortKey | null },
+                  { label: t('ad5b_orders_list.col_date'),           k: 'created_at' as SortKey | null },
                   { label: '',           k: null },
                 ] as { label: string; k: SortKey | null }[]).map((col, i) => (
                   <th key={i}
@@ -412,8 +416,8 @@ export default function OrdersListPage() {
                   ? <tr><td colSpan={8} style={{ padding: '60px 0', textAlign: 'center' }}>
                       <div className="flex flex-col items-center gap-3">
                         <AlertCircle size={28} style={{ color: T.muted }} />
-                        <p style={{ fontSize: 14, color: T.muted }}>Aucune commande trouvée</p>
-                        {activeFilters > 0 && <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>Réinitialiser</button>}
+                        <p style={{ fontSize: 14, color: T.muted }}>{t('ad5b_orders_list.empty_state')}</p>
+                        {activeFilters > 0 && <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>{t('ad5b_orders_list.reset_filters')}</button>}
                       </div>
                     </td></tr>
                   : paginated.map((o, i) => (
@@ -502,7 +506,7 @@ export default function OrdersListPage() {
           ) : paginated.length === 0 ? (
             <div className="flex flex-col items-center py-16 gap-3">
               <AlertCircle size={28} style={{ color: T.muted }} />
-              <p style={{ fontSize: 14, color: T.muted }}>Aucune commande</p>
+              <p style={{ fontSize: 14, color: T.muted }}>{t('ad5b_orders_list.empty_mobile')}</p>
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: T.border }}>
@@ -526,13 +530,13 @@ export default function OrdersListPage() {
                     <Link to={`/admin/orders/${o.id}`}
                       className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
                       style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                      <Eye size={12} /> Détail
+                      <Eye size={12} /> {t('ad5b_orders_list.detail_link')}
                     </Link>
                     {o.fulfillment_status !== 'CANCELLED' && o.fulfillment_status !== 'DELIVERED' && (
                       <button onClick={() => handleCancel(o)}
                         className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
                         style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                        <XCircle size={12} /> Annuler
+                        <XCircle size={12} /> {t('ad5b_orders_list.cancel_button')}
                       </button>
                     )}
                   </div>
@@ -546,7 +550,7 @@ export default function OrdersListPage() {
         {!loading && sorted.length > 0 && (
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad5b_orders_list.rows_label')}</span>
               {PAGE_SIZES.map(s => (
                 <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                   className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -556,7 +560,7 @@ export default function OrdersListPage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad5b_orders_list.pagination_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, sorted.length), total: sorted.length })}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

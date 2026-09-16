@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   Gem,
@@ -16,9 +17,9 @@ import { getCategoryTheme } from "@/data/categoryThemes";
 
 interface Pillar {
   icon: LucideIcon;
-  title: string;
-  text: string;
-  cta: string;
+  titleKey: string;
+  textKey: string;
+  ctaKey: string;
   to: string;
   tint: string;
   color: string;
@@ -27,27 +28,27 @@ interface Pillar {
 const PILLARS: Pillar[] = [
   {
     icon: Lock,
-    title: "Paiement Sécurisé",
-    text: "Escrow BelivaY · MoMo, Orange & Visa protégés",
-    cta: "En savoir plus",
+    titleKey: "why_belivay.pillar1_title",
+    textKey: "why_belivay.pillar1_text",
+    ctaKey: "why_belivay.pillar1_cta",
     to: "/help",
     tint: "#e7f8ee",
     color: "#059669",
   },
   {
     icon: Truck,
-    title: "Livraison 24–72h",
-    text: "Partout au Cameroun & en zone CEMAC",
-    cta: "Découvrir",
+    titleKey: "why_belivay.pillar2_title",
+    textKey: "why_belivay.pillar2_text",
+    ctaKey: "why_belivay.pillar2_cta",
     to: "/help",
     tint: "#e8eefc",
     color: "#2563EB",
   },
   {
     icon: RotateCcw,
-    title: "Satisfait ou Remboursé",
-    text: "7 jours pour changer d'avis · Sans question",
-    cta: "Notre engagement",
+    titleKey: "why_belivay.pillar3_title",
+    textKey: "why_belivay.pillar3_text",
+    ctaKey: "why_belivay.pillar3_cta",
     to: "/about",
     tint: "#e8f1fe",
     color: "#3B82F6",
@@ -55,30 +56,29 @@ const PILLARS: Pillar[] = [
 ];
 
 /** Raccourcis du bandeau marketplace, à droite. */
-const MARKETPLACE_LINKS: { icon: LucideIcon; label: string; to: string }[] = [
-  { icon: Info, label: "À propos", to: "/about" },
-  { icon: ShoppingCart, label: "Explorer BelivaY", to: "/categorie/all" },
-  { icon: LifeBuoy, label: "Aide", to: "/help" },
-  { icon: Gem, label: "Premium", to: "/premium" },
+const MARKETPLACE_LINKS: { icon: LucideIcon; labelKey: string; to: string }[] = [
+  { icon: Info, labelKey: "why_belivay.link_about", to: "/about" },
+  { icon: ShoppingCart, labelKey: "why_belivay.link_explore", to: "/categorie/all" },
+  { icon: LifeBuoy, labelKey: "why_belivay.link_help", to: "/help" },
+  { icon: Gem, labelKey: "why_belivay.link_premium", to: "/premium" },
 ];
 
-const CEMAC_COUNTRIES = "CMR · Gabon · RCA · Tchad · Congo · Guinée Éq.";
-
 export default function WhyBelivaySection() {
+  const { t } = useTranslation();
   /* Les volumes viennent du thème « Tout voir » : une seule source à maintenir. */
   const catalogue = getCategoryTheme("all");
 
   const marketplaceStats = [
-    { value: catalogue?.count ?? "15 240", label: "Produits" },
-    { value: catalogue?.vendors ?? "3 200", label: "Vendeurs" },
-    { value: "50K+", label: "Clients" },
-    { value: (catalogue?.rating ?? "4.8 / 5").split(" ")[0], label: "Satisfaction", star: true },
+    { value: catalogue?.count ?? "15 240", labelKey: "why_belivay.stat_products" },
+    { value: catalogue?.vendors ?? "3 200", labelKey: "why_belivay.stat_vendors" },
+    { value: "50K+", labelKey: "why_belivay.stat_clients" },
+    { value: (catalogue?.rating ?? "4.8 / 5").split(" ")[0], labelKey: "why_belivay.stat_satisfaction", star: true },
   ];
 
   return (
     <section className="rounded-[22px] border border-[#eef2f7] bg-[linear-gradient(180deg,#fbfcfe,#fff)] p-3 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-5 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
       <h2 className="mb-4 text-center text-[19px] font-extrabold text-gray-900 sm:text-[22px] dark:text-white">
-        Pourquoi choisir <span className="text-primary">BelivaY</span> ?
+        {t("why_belivay.heading_prefix")}<span className="text-primary">BelivaY</span>{t("why_belivay.heading_suffix")}
       </h2>
 
       <div className="grid gap-3 sm:gap-4 md:grid-cols-3">
@@ -86,7 +86,7 @@ export default function WhyBelivaySection() {
           const Icon = pillar.icon;
           return (
             <Link
-              key={pillar.title}
+              key={pillar.titleKey}
               to={pillar.to}
               className="group flex flex-col rounded-[18px] border border-[#eef2f7] bg-white p-4 transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-[0_14px_34px_rgba(15,23,42,.09)] sm:rounded-[22px] sm:p-5 dark:border-gray-800 dark:bg-gray-900"
             >
@@ -98,14 +98,14 @@ export default function WhyBelivaySection() {
               </span>
 
               <h3 className="mt-4 text-[15px] font-extrabold text-gray-900 dark:text-white">
-                {pillar.title}
+                {t(pillar.titleKey)}
               </h3>
               <p className="mt-1.5 text-[12.5px] leading-relaxed text-gray-500 dark:text-gray-400">
-                {pillar.text}
+                {t(pillar.textKey)}
               </p>
 
               <span className="mt-4 flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.12em] text-gray-400 transition-colors group-hover:text-primary">
-                {pillar.cta}
+                {t(pillar.ctaKey)}
                 <ArrowRight
                   size={13}
                   className="transition-transform duration-200 group-hover:translate-x-1"
@@ -146,16 +146,16 @@ export default function WhyBelivaySection() {
 
             <div className="min-w-0">
               <p className="text-[14.5px] font-black leading-tight text-gray-900 dark:text-white sm:text-[16px] lg:whitespace-nowrap">
-                BelivaY · Marketplace CEMAC
+                {t("why_belivay.marketplace_title")}
               </p>
               <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px] font-semibold leading-snug text-gray-500 dark:text-gray-400">
                 <span className="rounded bg-primary/15 px-1 py-px text-[8.5px] font-black uppercase tracking-[0.1em] text-[#C85E14]">
-                  CM
+                  {t("why_belivay.country_badge")}
                 </span>
-                Made in Cameroon
+                {t("why_belivay.made_in_cameroon")}
                 <span className="text-gray-300 dark:text-gray-600">·</span>
                 <Globe size={11} className="text-primary" />
-                {CEMAC_COUNTRIES}
+                {t("why_belivay.cemac_countries")}
               </p>
             </div>
           </div>
@@ -164,7 +164,7 @@ export default function WhyBelivaySection() {
           <div className="grid grid-cols-4 gap-2 lg:flex lg:flex-1 lg:flex-nowrap lg:items-center">
             {marketplaceStats.map((stat) => (
               <article
-                key={stat.label}
+                key={stat.labelKey}
                 className="rounded-[12px] bg-white dark:bg-gray-900 px-3 py-2 text-center shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-transform duration-200 hover:-translate-y-0.5"
               >
                 <p className="flex items-center justify-center gap-0.5 whitespace-nowrap text-[13px] font-black leading-none text-[#C85E14] dark:text-primary">
@@ -174,7 +174,7 @@ export default function WhyBelivaySection() {
                   ) : null}
                 </p>
                 <p className="mt-1 whitespace-nowrap text-[8.5px] font-black uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500">
-                  {stat.label}
+                  {t(stat.labelKey)}
                 </p>
               </article>
             ))}
@@ -186,12 +186,12 @@ export default function WhyBelivaySection() {
               const Icon = link.icon;
               return (
                 <Link
-                  key={link.label}
+                  key={link.labelKey}
                   to={link.to}
                   className="inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white dark:bg-gray-800 px-3 py-1.5 text-[11.5px] font-bold text-gray-700 dark:text-gray-200 shadow-[0_4px_12px_rgba(180,83,9,.10)] transition-all duration-200 hover:-translate-y-0.5 hover:text-primary"
                 >
                   <Icon size={12} className="flex-shrink-0 text-primary" />
-                  {link.label}
+                  {t(link.labelKey)}
                 </Link>
               );
             })}

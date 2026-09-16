@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Megaphone, Send, Users, MapPin, Award, User,
   RefreshCw, Clock, CheckCircle, ChevronLeft,
@@ -41,17 +42,17 @@ interface BroadcastEntry {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AUDIENCE_OPTIONS: Array<{ key: Audience; label: string; desc: string; icon: React.ElementType; color: string }> = [
-  { key: 'all',  label: 'Tous les clients',      desc: 'Acheteurs actifs non bannis',          icon: Users,   color: '#3B82F6' },
-  { key: 'city', label: 'Par ville',              desc: 'Clients d\'une ville spécifique',       icon: MapPin,  color: '#10B981' },
-  { key: 'tier', label: 'Par tier fidélité',      desc: 'Bronze, Argent, Or ou Diamant',         icon: Award,   color: '#C8A000' },
-  { key: 'user', label: 'Utilisateur spécifique', desc: 'Un seul utilisateur par ID ou username', icon: User,    color: '#8B5CF6' },
+const AUDIENCE_OPTIONS: Array<{ key: Audience; labelKey: string; descKey: string; icon: React.ElementType; color: string }> = [
+  { key: 'all',  labelKey: 'ad2_customers_broadcast.audience_all_label',  descKey: 'ad2_customers_broadcast.audience_all_desc',          icon: Users,   color: '#3B82F6' },
+  { key: 'city', labelKey: 'ad2_customers_broadcast.audience_city_label',  descKey: 'ad2_customers_broadcast.audience_city_desc',       icon: MapPin,  color: '#10B981' },
+  { key: 'tier', labelKey: 'ad2_customers_broadcast.audience_tier_label',  descKey: 'ad2_customers_broadcast.audience_tier_desc',         icon: Award,   color: '#C8A000' },
+  { key: 'user', labelKey: 'ad2_customers_broadcast.audience_user_label', descKey: 'ad2_customers_broadcast.audience_user_desc', icon: User,    color: '#8B5CF6' },
 ];
 
-const NOTIF_TYPES: Array<{ key: NotifType; label: string; color: string }> = [
-  { key: 'PROMOTION', label: 'Promotion',  color: '#F47920' },
-  { key: 'SYSTEM',    label: 'Système',    color: '#6B7280' },
-  { key: 'ORDER',     label: 'Commande',   color: '#3B82F6' },
+const NOTIF_TYPES: Array<{ key: NotifType; labelKey: string; color: string }> = [
+  { key: 'PROMOTION', labelKey: 'ad2_customers_broadcast.notif_type_promotion',  color: '#F47920' },
+  { key: 'SYSTEM',    labelKey: 'ad2_customers_broadcast.notif_type_system',    color: '#6B7280' },
+  { key: 'ORDER',     labelKey: 'ad2_customers_broadcast.notif_type_order',   color: '#3B82F6' },
 ];
 
 const TIERS = ['BRONZE', 'SILVER', 'GOLD', 'DIAMOND'];
@@ -74,6 +75,7 @@ const authHeader = () => ({
 
 export default function CustomersBroadcastPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -138,14 +140,14 @@ export default function CustomersBroadcastPage() {
   }, [audience, city, tier, userId]);
 
   useEffect(() => {
-    const t = setTimeout(loadPreview, 500);
-    return () => clearTimeout(t);
+    const timeoutId = setTimeout(loadPreview, 500);
+    return () => clearTimeout(timeoutId);
   }, [loadPreview]);
 
   // Envoi
   const handleSend = async () => {
     if (!title.trim() || !message.trim()) {
-      toastRef.current('Titre et message requis.', 'error');
+      toastRef.current(t('ad2_customers_broadcast.toast_title_message_required'), 'error');
       return;
     }
     setSending(true);
@@ -173,7 +175,7 @@ export default function CustomersBroadcastPage() {
       setPreview(null);
       loadHistory();
     } catch {
-      toastRef.current("Erreur lors de l'envoi.", 'error');
+      toastRef.current(t('ad2_customers_broadcast.toast_send_error'), 'error');
     } finally {
       setSending(false);
     }
@@ -196,11 +198,11 @@ export default function CustomersBroadcastPage() {
               <ChevronLeft size={14} />
             </Link>
             <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text }}>
-              Broadcast Clients
+              {t('ad2_customers_broadcast.heading')}
             </h1>
           </div>
           <p style={{ fontSize: 13, color: T.muted, paddingLeft: 44 }}>
-            Envoyer des notifications ciblées aux clients de la plateforme
+            {t('ad2_customers_broadcast.subtitle')}
           </p>
         </div>
       </div>
@@ -214,7 +216,7 @@ export default function CustomersBroadcastPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <Users size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Audience cible</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_broadcast.section_audience_title')}</span>
             </div>
             <div className="p-5 space-y-4">
               {/* Sélection audience */}
@@ -230,8 +232,8 @@ export default function CustomersBroadcastPage() {
                         style={{ background: opt.color + '20' }}>
                         <Icon size={13} style={{ color: opt.color }} />
                       </div>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: active ? opt.color : T.text, marginBottom: 2 }}>{opt.label}</p>
-                      <p style={{ fontSize: 10.5, color: T.muted, lineHeight: 1.4 }}>{opt.desc}</p>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: active ? opt.color : T.text, marginBottom: 2 }}>{t(opt.labelKey)}</p>
+                      <p style={{ fontSize: 10.5, color: T.muted, lineHeight: 1.4 }}>{t(opt.descKey)}</p>
                     </button>
                   );
                 })}
@@ -241,11 +243,11 @@ export default function CustomersBroadcastPage() {
               {audience === 'city' && (
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>
-                    Ville cible
+                    {t('ad2_customers_broadcast.label_city')}
                   </label>
                   <select value={city} onChange={e => setCity(e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '10px 14px', fontSize: 13, outline: 'none' }}>
-                    <option value="">-- Sélectionner une ville --</option>
+                    <option value="">{t('ad2_customers_broadcast.option_select_city')}</option>
                     {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -255,17 +257,23 @@ export default function CustomersBroadcastPage() {
               {audience === 'tier' && (
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>
-                    Tier fidélité
+                    {t('ad2_customers_broadcast.label_tier')}
                   </label>
                   <div className="flex gap-2">
-                    {TIERS.map(t => {
+                    {TIERS.map(tr => {
                       const colors: Record<string, string> = { BRONZE: '#CD7F32', SILVER: '#8B909A', GOLD: '#C8A000', DIAMOND: '#2563EB' };
-                      const active = tier === t;
+                      const active = tier === tr;
+                      const tierLabelKey: Record<string, string> = {
+                        BRONZE: 'ad2_customers_broadcast.tier_bronze',
+                        SILVER: 'ad2_customers_broadcast.tier_silver',
+                        GOLD: 'ad2_customers_broadcast.tier_gold',
+                        DIAMOND: 'ad2_customers_broadcast.tier_diamond',
+                      };
                       return (
-                        <button key={t} onClick={() => setTier(t)}
+                        <button key={tr} onClick={() => setTier(tr)}
                           className="flex-1 py-2 rounded-xl text-[12px] font-bold"
-                          style={{ background: active ? colors[t] + '20' : T.cardAlt, border: `2px solid ${active ? colors[t] + '50' : T.border}`, color: active ? colors[t] : T.muted }}>
-                          {t === 'BRONZE' ? 'Bronze' : t === 'SILVER' ? 'Argent' : t === 'GOLD' ? 'Or' : 'Diamant'}
+                          style={{ background: active ? colors[tr] + '20' : T.cardAlt, border: `2px solid ${active ? colors[tr] + '50' : T.border}`, color: active ? colors[tr] : T.muted }}>
+                          {t(tierLabelKey[tr])}
                         </button>
                       );
                     })}
@@ -277,11 +285,11 @@ export default function CustomersBroadcastPage() {
               {audience === 'user' && (
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>
-                    ID de l'utilisateur
+                    {t('ad2_customers_broadcast.label_user_id')}
                   </label>
                   <input
                     type="number" value={userId} onChange={e => setUserId(e.target.value)}
-                    placeholder="Ex : 42"
+                    placeholder={t('ad2_customers_broadcast.placeholder_user_id')}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '10px 14px', fontSize: 13, outline: 'none' }}
                   />
                 </div>
@@ -293,28 +301,28 @@ export default function CustomersBroadcastPage() {
                 {previewing ? (
                   <>
                     <RefreshCw size={14} style={{ color: T.muted, animation: 'spin 0.8s linear infinite' }} />
-                    <span style={{ fontSize: 13, color: T.muted }}>Calcul du nombre de destinataires…</span>
+                    <span style={{ fontSize: 13, color: T.muted }}>{t('ad2_customers_broadcast.preview_calculating')}</span>
                   </>
                 ) : preview ? (
                   <>
                     <CheckCircle size={14} style={{ color: '#10B981' }} />
                     <span style={{ fontSize: 13, fontWeight: 700, color: '#10B981' }}>
-                      {preview.count} destinataire{preview.count > 1 ? 's' : ''}
+                      {t(preview.count > 1 ? 'ad2_customers_broadcast.preview_recipient_plural' : 'ad2_customers_broadcast.preview_recipient', { count: preview.count })}
                     </span>
                     {preview.count > 0 && preview.sample.length > 0 && (
                       <span style={{ fontSize: 12, color: T.muted }}>
-                        — ex: {preview.sample.slice(0, 2).map(u => `@${u.username}`).join(', ')}
+                        {t('ad2_customers_broadcast.preview_example', { list: preview.sample.slice(0, 2).map(u => `@${u.username}`).join(', ') })}
                         {preview.sample.length > 2 ? '…' : ''}
                       </span>
                     )}
                     {preview.count === 0 && (
-                      <span style={{ fontSize: 12, color: '#F59E0B' }}>Aucun utilisateur ciblé</span>
+                      <span style={{ fontSize: 12, color: '#F59E0B' }}>{t('ad2_customers_broadcast.preview_none')}</span>
                     )}
                   </>
                 ) : (
                   <>
                     <Eye size={14} style={{ color: T.muted }} />
-                    <span style={{ fontSize: 13, color: T.muted }}>Aperçu disponible dès que les filtres sont définis</span>
+                    <span style={{ fontSize: 13, color: T.muted }}>{t('ad2_customers_broadcast.preview_placeholder')}</span>
                   </>
                 )}
               </div>
@@ -325,18 +333,18 @@ export default function CustomersBroadcastPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <Bell size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Contenu de la notification</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_broadcast.section_content_title')}</span>
             </div>
             <div className="p-5 space-y-4">
               {/* Type */}
               <div>
-                <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>Type</label>
+                <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad2_customers_broadcast.label_type')}</label>
                 <div className="flex gap-2">
                   {NOTIF_TYPES.map(nt => (
                     <button key={nt.key} onClick={() => setNotifType(nt.key)}
                       className="px-4 py-2 rounded-xl text-[12px] font-bold"
                       style={{ background: notifType === nt.key ? nt.color + '20' : T.cardAlt, border: `2px solid ${notifType === nt.key ? nt.color + '50' : T.border}`, color: notifType === nt.key ? nt.color : T.muted }}>
-                      {nt.label}
+                      {t(nt.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -345,12 +353,12 @@ export default function CustomersBroadcastPage() {
               {/* Titre */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>Titre <span style={{ color: T.red }}>*</span></label>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>{t('ad2_customers_broadcast.label_title')} <span style={{ color: T.red }}>*</span></label>
                   <span style={{ fontSize: 11, color: T.muted }}>{title.length}/80</span>
                 </div>
                 <input
                   type="text" value={title} onChange={e => setTitle(e.target.value.slice(0, 80))}
-                  placeholder="Ex : Flash promo -20% sur la mode féminine"
+                  placeholder={t('ad2_customers_broadcast.placeholder_title')}
                   style={{ width: '100%', background: T.input, border: `1px solid ${title ? T.red + '40' : T.inputBorder}`, color: T.text, borderRadius: 10, padding: '10px 14px', fontSize: 13, outline: 'none' }}
                 />
               </div>
@@ -358,13 +366,13 @@ export default function CustomersBroadcastPage() {
               {/* Message */}
               <div>
                 <div className="flex items-center justify-between mb-1.5">
-                  <label style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>Message <span style={{ color: T.red }}>*</span></label>
-                  <span style={{ fontSize: 11, color: charLeft < 50 ? '#F59E0B' : T.muted }}>{charLeft} restants</span>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>{t('ad2_customers_broadcast.label_message')} <span style={{ color: T.red }}>*</span></label>
+                  <span style={{ fontSize: 11, color: charLeft < 50 ? '#F59E0B' : T.muted }}>{t('ad2_customers_broadcast.chars_left', { count: charLeft })}</span>
                 </div>
                 <textarea
                   value={message} onChange={e => setMessage(e.target.value.slice(0, 500))}
                   rows={4}
-                  placeholder="Rédigez votre message ici…"
+                  placeholder={t('ad2_customers_broadcast.placeholder_message')}
                   style={{ width: '100%', background: T.input, border: `1px solid ${message ? T.red + '40' : T.inputBorder}`, color: T.text, borderRadius: 10, padding: '10px 14px', fontSize: 13, outline: 'none', resize: 'vertical' }}
                 />
               </div>
@@ -372,11 +380,11 @@ export default function CustomersBroadcastPage() {
               {/* Lien action (optionnel) */}
               <div>
                 <label style={{ fontSize: 12, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 6 }}>
-                  Lien d'action <span style={{ fontSize: 11, color: T.muted }}>(optionnel)</span>
+                  {t('ad2_customers_broadcast.label_action_url')} <span style={{ fontSize: 11, color: T.muted }}>{t('ad2_customers_broadcast.optional')}</span>
                 </label>
                 <input
                   type="text" value={actionUrl} onChange={e => setActionUrl(e.target.value)}
-                  placeholder="Ex : /catalog ou /orders"
+                  placeholder={t('ad2_customers_broadcast.placeholder_action_url')}
                   style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '10px 14px', fontSize: 13, outline: 'none' }}
                 />
               </div>
@@ -388,27 +396,27 @@ export default function CustomersBroadcastPage() {
                   disabled={!canSend}
                   className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[14px]"
                   style={{ background: canSend ? T.red : T.border, color: canSend ? '#fff' : T.muted, cursor: canSend ? 'pointer' : 'not-allowed', transition: 'all 0.2s' }}>
-                  <Send size={15} /> Envoyer la notification
+                  <Send size={15} /> {t('ad2_customers_broadcast.btn_send')}
                 </button>
               ) : (
                 <div className="rounded-xl p-4 space-y-3" style={{ background: 'rgba(220,38,38,0.06)', border: '1px solid rgba(220,38,38,0.2)' }}>
                   <div className="flex items-start gap-2">
                     <AlertTriangle size={14} style={{ color: T.red, flexShrink: 0, marginTop: 1 }} />
                     <p style={{ fontSize: 13, color: T.text }}>
-                      Cette action va envoyer <strong style={{ color: T.red }}>{preview?.count} notification{(preview?.count ?? 0) > 1 ? 's' : ''}</strong>. Cette opération est irréversible.
+                      {t((preview?.count ?? 0) > 1 ? 'ad2_customers_broadcast.confirm_send_warning_plural' : 'ad2_customers_broadcast.confirm_send_warning', { count: preview?.count ?? 0 })}
                     </p>
                   </div>
                   <div className="flex gap-2">
                     <button onClick={() => setShowConfirm(false)}
                       className="flex-1 py-2 rounded-xl text-[13px] font-semibold"
                       style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                      Annuler
+                      {t('ad2_customers_broadcast.confirm_cancel')}
                     </button>
                     <button onClick={handleSend} disabled={sending}
                       className="flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-[13px] font-bold"
                       style={{ background: T.red, color: '#fff', opacity: sending ? 0.7 : 1 }}>
                       {sending ? <RefreshCw size={13} className="animate-spin" /> : <Send size={13} />}
-                      {sending ? 'Envoi…' : 'Confirmer l\'envoi'}
+                      {sending ? t('ad2_customers_broadcast.sending') : t('ad2_customers_broadcast.confirm_send_label')}
                     </button>
                   </div>
                 </div>
@@ -424,7 +432,7 @@ export default function CustomersBroadcastPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <Eye size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Aperçu</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_broadcast.preview_section_title')}</span>
             </div>
             <div className="p-4">
               {/* Maquette notification mobile */}
@@ -436,26 +444,26 @@ export default function CustomersBroadcastPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between mb-0.5">
-                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>BelivaY</span>
-                      <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>maintenant</span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.5)' }}>{t('ad2_customers_broadcast.preview_brand')}</span>
+                      <span style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.3)' }}>{t('ad2_customers_broadcast.preview_now')}</span>
                     </div>
                     <p style={{ fontSize: 13, fontWeight: 700, color: '#fff', marginBottom: 4 }}>
-                      {title || <span style={{ opacity: 0.3 }}>Titre de la notification</span>}
+                      {title || <span style={{ opacity: 0.3 }}>{t('ad2_customers_broadcast.preview_title_placeholder')}</span>}
                     </p>
                     <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
-                      {message || <span style={{ opacity: 0.3 }}>Votre message apparaîtra ici…</span>}
+                      {message || <span style={{ opacity: 0.3 }}>{t('ad2_customers_broadcast.preview_message_placeholder')}</span>}
                     </p>
                   </div>
                 </div>
                 {actionUrl && (
                   <div className="mt-2 px-3 py-1.5 rounded-lg text-center"
                     style={{ background: 'rgba(255,255,255,0.08)', fontSize: 12, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>
-                    Voir →
+                    {t('ad2_customers_broadcast.preview_action_label')}
                   </div>
                 )}
               </div>
               <p style={{ fontSize: 11, color: T.muted, textAlign: 'center', marginTop: 8 }}>
-                Aperçu de l'affichage côté client
+                {t('ad2_customers_broadcast.preview_footer_note')}
               </p>
             </div>
           </div>
@@ -465,7 +473,7 @@ export default function CustomersBroadcastPage() {
             <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <div className="flex items-center gap-2">
                 <Clock size={14} style={{ color: T.red }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Historique</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad2_customers_broadcast.history_title')}</span>
               </div>
               <button onClick={loadHistory} style={{ color: T.muted, display: 'flex', alignItems: 'center' }}>
                 <RefreshCw size={12} className={loadingHist ? 'animate-spin' : ''} />
@@ -479,7 +487,7 @@ export default function CustomersBroadcastPage() {
             ) : history.length === 0 ? (
               <div className="flex flex-col items-center py-10 gap-2">
                 <Megaphone size={28} style={{ color: T.muted }} />
-                <p style={{ fontSize: 13, color: T.muted }}>Aucun broadcast envoyé</p>
+                <p style={{ fontSize: 13, color: T.muted }}>{t('ad2_customers_broadcast.history_empty')}</p>
               </div>
             ) : (
               <div className="max-h-80 overflow-y-auto divide-y" style={{ borderColor: T.border, scrollbarWidth: 'thin' }}>
@@ -494,7 +502,7 @@ export default function CustomersBroadcastPage() {
                     <p style={{ fontSize: 11.5, color: T.muted }} className="truncate">{h.message}</p>
                     <div className="flex items-center gap-3 mt-1">
                       <span style={{ fontSize: 10.5, color: T.muted }}>{fmtDate(h.sent_at)}</span>
-                      <span style={{ fontSize: 10.5, color: T.muted }}>par @{h.sent_by}</span>
+                      <span style={{ fontSize: 10.5, color: T.muted }}>{t('ad2_customers_broadcast.history_sent_by', { username: h.sent_by })}</span>
                     </div>
                   </div>
                 ))}

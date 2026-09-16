@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle,
   CalendarOff,
@@ -41,12 +42,12 @@ interface ClosureReason {
   key: string;
   icon: typeof Palmtree;
   tone: string;
-  label: string;
-  rule: string;
+  labelKey: string;
+  ruleKey: string;
   /** Preavis minimum en heures avant le debut de la fermeture. 0 = immediat. */
   noticeHours: number;
   /** Justificatif a fournir apres coup, affiche dans l'accuse de reception. */
-  proof: string;
+  proofKey: string;
 }
 
 const REASONS: ClosureReason[] = [
@@ -54,59 +55,59 @@ const REASONS: ClosureReason[] = [
     key: "vacances",
     icon: Palmtree,
     tone: "text-emerald-600",
-    label: "Vacances personnelles",
-    rule: "Déclaration 48 h à l'avance",
+    labelKey: "rl2_closure.reason_vacation_label",
+    ruleKey: "rl2_closure.reason_vacation_rule",
     noticeHours: 48,
-    proof: "Aucun justificatif requis.",
+    proofKey: "rl2_closure.reason_vacation_proof",
   },
   {
     key: "maladie",
     icon: HeartPulse,
     tone: "text-rose-600",
-    label: "Maladie",
-    rule: "Immédiate + certificat sous 48 h",
+    labelKey: "rl2_closure.reason_illness_label",
+    ruleKey: "rl2_closure.reason_illness_rule",
     noticeHours: 0,
-    proof: "Certificat médical à téléverser sous 48 h dans Documents KYC.",
+    proofKey: "rl2_closure.reason_illness_proof",
   },
   {
     key: "famille",
     icon: Users,
     tone: "text-indigo-600",
-    label: "Urgence familiale",
-    rule: "Immédiate + justificatif sous 7 j",
+    labelKey: "rl2_closure.reason_family_label",
+    ruleKey: "rl2_closure.reason_family_rule",
     noticeHours: 0,
-    proof: "Justificatif à téléverser sous 7 jours dans Documents KYC.",
+    proofKey: "rl2_closure.reason_family_proof",
   },
   {
     key: "force-majeure",
     icon: Flame,
     tone: "text-orange-600",
-    label: "Force majeure",
-    rule: "Immédiate (incendie, inondation, vol)",
+    labelKey: "rl2_closure.reason_force_majeure_label",
+    ruleKey: "rl2_closure.reason_force_majeure_rule",
     noticeHours: 0,
-    proof: "Déclaration de sinistre ou dépôt de plainte à joindre au dossier.",
+    proofKey: "rl2_closure.reason_force_majeure_proof",
   },
 ];
 
 interface ClosureDuration {
   key: string;
-  label: string;
+  labelKey: string;
   /** Duree maximale en heures, sert a determiner la regle stock applicable. */
   hours: number;
 }
 
 const DURATIONS: ClosureDuration[] = [
-  { key: "24", label: "Moins de 24 h", hours: 24 },
-  { key: "72", label: "24 h à 72 h", hours: 72 },
-  { key: "168", label: "72 h à 7 jours", hours: 168 },
-  { key: "720", label: "Plus de 7 jours", hours: 720 },
+  { key: "24", labelKey: "rl2_closure.duration_24", hours: 24 },
+  { key: "72", labelKey: "rl2_closure.duration_72", hours: 72 },
+  { key: "168", labelKey: "rl2_closure.duration_168", hours: 168 },
+  { key: "720", labelKey: "rl2_closure.duration_720", hours: 720 },
 ];
 
 interface StockRule {
   key: "garde" | "transfert" | "retour";
   icon: typeof Clock3;
-  title: string;
-  body: string;
+  titleKey: string;
+  bodyKey: string;
   /** Classes du bloc quand la regle s'applique a la duree choisie. */
   active: string;
   idle: string;
@@ -116,16 +117,16 @@ const STOCK_RULES: StockRule[] = [
   {
     key: "transfert",
     icon: Clock3,
-    title: "Fermeture > 24 h",
-    body: "transfert automatique des colis vers le PR partenaire le plus proche.",
+    titleKey: "rl2_closure.stock_rule_transfer_title",
+    bodyKey: "rl2_closure.stock_rule_transfer_body",
     active: "border-blue-300 bg-blue-50 dark:border-blue-700 dark:bg-blue-950/40",
     idle: "border-blue-100 bg-blue-50/50 dark:border-blue-900 dark:bg-blue-950/20",
   },
   {
     key: "retour",
     icon: Undo2,
-    title: "Fermeture > 72 h",
-    body: "retour des colis aux vendeurs + remboursement de vos frais PR.",
+    titleKey: "rl2_closure.stock_rule_return_title",
+    bodyKey: "rl2_closure.stock_rule_return_body",
     active: "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/40",
     idle: "border-amber-100 bg-amber-50/50 dark:border-amber-900 dark:bg-amber-950/20",
   },
@@ -168,17 +169,19 @@ function frDate(value: string) {
   return Number.isNaN(parsed.getTime()) ? value : parsed.toLocaleDateString("fr-FR");
 }
 
-/** Statut derive des dates : une declaration passee est close, pas annulable. */
-function closureStatus(closure: ClosureDeclaration): { label: string; tone: "blue" | "emerald" | "slate" } {
-  const now = new Date();
-  const from = new Date(`${closure.from}T00:00:00`);
-  const to = new Date(`${closure.to}T23:59:59`);
-  if (now < from) return { label: "Programmée", tone: "blue" };
-  if (now > to) return { label: "Terminée", tone: "slate" };
-  return { label: "En cours", tone: "emerald" };
-}
-
 export default function RelayClosure({ onError, relay }: RelayClosureProps) {
+  const { t } = useTranslation();
+
+  /** Statut derive des dates : une declaration passee est close, pas annulable. */
+  const closureStatus = (closure: ClosureDeclaration): { label: string; tone: "blue" | "emerald" | "slate" } => {
+    const now = new Date();
+    const from = new Date(`${closure.from}T00:00:00`);
+    const to = new Date(`${closure.to}T23:59:59`);
+    if (now < from) return { label: t("rl2_closure.status_scheduled"), tone: "blue" };
+    if (now > to) return { label: t("rl2_closure.status_ended"), tone: "slate" };
+    return { label: t("rl2_closure.status_ongoing"), tone: "emerald" };
+  };
+
   const [stockCount, setStockCount] = useState(0);
   const [reasonKey, setReasonKey] = useState(REASONS[0].key);
   const [durationKey, setDurationKey] = useState(DURATIONS[0].key);
@@ -208,21 +211,23 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
 
   const reason = REASONS.find((item) => item.key === reasonKey) ?? REASONS[0];
   const duration = DURATIONS.find((item) => item.key === durationKey) ?? DURATIONS[0];
+  const reasonLabel = t(reason.labelKey);
+  const durationLabel = t(duration.labelKey);
 
   /** Regle stock effectivement declenchee par la duree choisie. */
   const activeRule: StockRule["key"] = duration.hours > 72 ? "retour" : duration.hours > 24 ? "transfert" : "garde";
 
   const error = useMemo(() => {
-    if (!from || !to) return "Renseignez les dates de début et de fin de fermeture.";
+    if (!from || !to) return t("rl2_closure.error_missing_dates");
     const start = new Date(`${from}T00:00:00`);
     const end = new Date(`${to}T23:59:59`);
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return "Dates invalides.";
-    if (end < start) return "La date de fin ne peut pas précéder la date de début.";
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return t("rl2_closure.error_invalid_dates");
+    if (end < start) return t("rl2_closure.error_end_before_start");
 
     if (reason.noticeHours > 0) {
       const noticeMs = reason.noticeHours * 3600_000;
       if (start.getTime() - Date.now() < noticeMs) {
-        return `« ${reason.label} » exige un préavis de ${reason.noticeHours} h : choisissez une date de début plus lointaine, ou déclarez un autre motif si la situation est urgente.`;
+        return t("rl2_closure.error_notice_required", { reason: reasonLabel, hours: reason.noticeHours });
       }
     }
 
@@ -230,11 +235,12 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
     // annoncee comme "moins de 24 h", ce qui fausserait le sort des colis.
     const spanHours = (end.getTime() - start.getTime()) / 3600_000;
     if (spanHours > duration.hours + 24) {
-      return `La période saisie dépasse la durée « ${duration.label} » : ajustez la durée prévue pour que BelivaY applique la bonne règle de transfert.`;
+      return t("rl2_closure.error_span_exceeds_duration", { duration: durationLabel });
     }
 
     return null;
-  }, [duration.hours, duration.label, from, reason.label, reason.noticeHours, to]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [duration.hours, durationLabel, from, reasonLabel, reason.noticeHours, to, t]);
 
   const submit = async () => {
     if (error) {
@@ -246,10 +252,11 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
 
     const consigne =
       activeRule === "retour"
-        ? "Fermeture > 72 h : retour des colis aux vendeurs et remboursement des frais PR."
+        ? t("rl2_closure.instruction_return")
         : activeRule === "transfert"
-          ? "Fermeture > 24 h : transfert des colis vers le point relais partenaire le plus proche."
-          : "Fermeture < 24 h : les colis restent en garde sur place.";
+          ? t("rl2_closure.instruction_transfer")
+          : t("rl2_closure.instruction_hold");
+    const proof = t(reason.proofKey);
 
     try {
       await http("/api/contact/", {
@@ -258,15 +265,15 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
           name: relay.name,
           email: relay.email,
           phone: relay.phone,
-          subject: `[Point relais] Fermeture exceptionnelle — ${reason.label}`,
+          subject: t("rl2_closure.contact_subject", { reason: reasonLabel }),
           message: [
-            `Point relais : ${relay.name}`,
-            `Motif : ${reason.label}`,
-            `Durée prévue : ${duration.label}`,
-            `Période : du ${frDate(from)} au ${frDate(to)}`,
-            `Colis en stock au moment de la déclaration : ${stockCount}`,
-            `Consigne logistique applicable : ${consigne}`,
-            `Justificatif : ${reason.proof}`,
+            t("rl2_closure.contact_line_relay", { name: relay.name }),
+            t("rl2_closure.contact_line_reason", { reason: reasonLabel }),
+            t("rl2_closure.contact_line_duration", { duration: durationLabel }),
+            t("rl2_closure.contact_line_period", { from: frDate(from), to: frDate(to) }),
+            t("rl2_closure.contact_line_stock", { count: stockCount }),
+            t("rl2_closure.contact_line_instruction", { instruction: consigne }),
+            t("rl2_closure.contact_line_proof", { proof }),
           ].join("\n"),
         }),
       });
@@ -274,8 +281,8 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
       const declaration: ClosureDeclaration = {
         id: `${Date.now()}`,
         reasonKey: reason.key,
-        reasonLabel: reason.label,
-        durationLabel: duration.label,
+        reasonLabel,
+        durationLabel,
         durationHours: duration.hours,
         from,
         to,
@@ -289,11 +296,11 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
       setTo("");
       setFeedback({
         tone: "success",
-        text: `Fermeture déclarée du ${frDate(declaration.from)} au ${frDate(declaration.to)}. ${consigne} ${reason.proof}`,
+        text: t("rl2_closure.declared_success", { from: frDate(declaration.from), to: frDate(declaration.to), instruction: consigne, proof }),
       });
     } catch (submitError) {
       onError(submitError);
-      setFeedback({ tone: "error", text: "La déclaration n'a pas pu être transmise. Réessayez dans un instant." });
+      setFeedback({ tone: "error", text: t("rl2_closure.submit_error") });
     } finally {
       setBusy(false);
     }
@@ -309,21 +316,21 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
     <div className="space-y-5">
       <ModuleHeader
         icon={CalendarOff}
-        title="Fermeture exceptionnelle"
-        subtitle="Déclarez une absence · BelivaY coordonne le transfert des colis"
+        title={t("rl2_closure.header_title")}
+        subtitle={t("rl2_closure.header_subtitle")}
         tone="text-rose-600 dark:text-rose-400"
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-800 dark:bg-amber-950/30">
         <Package size={18} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-300" />
         <p className="text-sm font-semibold leading-6 text-amber-900 dark:text-amber-100">
-          Vous avez actuellement <strong className="font-black">{stockCount} colis</strong> en stock. En cas de fermeture prolongée,
-          ils seront transférés ou retournés (voir règles ci-dessous).
+          {t("rl2_closure.stock_notice_prefix")} <strong className="font-black">{t("rl2_closure.stock_notice_count", { count: stockCount })}</strong>{" "}
+          {t("rl2_closure.stock_notice_suffix")}
         </p>
       </div>
 
       <div className="grid gap-5 lg:grid-cols-2">
-        <Panel icon={ClipboardList} title="Motifs & délais de déclaration">
+        <Panel icon={ClipboardList} title={t("rl2_closure.reasons_panel_title")}>
           <div className="space-y-2.5">
             {REASONS.map((item) => {
               const Icon = item.icon;
@@ -342,8 +349,8 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
                 >
                   <Icon size={19} strokeWidth={2.3} className={`mt-0.5 flex-shrink-0 ${item.tone}`} />
                   <span className="min-w-0">
-                    <span className="block font-black text-slate-950 dark:text-white">{item.label}</span>
-                    <span className="mt-0.5 block text-xs font-semibold text-slate-500 dark:text-slate-400">{item.rule}</span>
+                    <span className="block font-black text-slate-950 dark:text-white">{t(item.labelKey)}</span>
+                    <span className="mt-0.5 block text-xs font-semibold text-slate-500 dark:text-slate-400">{t(item.ruleKey)}</span>
                   </span>
                 </button>
               );
@@ -351,7 +358,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
           </div>
         </Panel>
 
-        <Panel icon={Package} title="Gestion des colis en stock">
+        <Panel icon={Package} title={t("rl2_closure.stock_panel_title")}>
           <div className="space-y-3">
             {STOCK_RULES.map((rule) => {
               const Icon = rule.icon;
@@ -368,15 +375,15 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
                       <strong
                         className={`font-black ${rule.key === "retour" ? "text-amber-800 dark:text-amber-200" : "text-blue-800 dark:text-blue-200"}`}
                       >
-                        {rule.title}
+                        {t(rule.titleKey)}
                       </strong>{" "}
-                      : {rule.body}
+                      : {t(rule.bodyKey)}
                     </p>
                   </div>
                   {applies ? (
                     <div className="mt-3 pl-7">
                       <StatusPill tone={rule.key === "retour" ? "amber" : "blue"}>
-                        Règle applicable à votre durée · {stockCount} colis concernés
+                        {t("rl2_closure.rule_applies_badge", { count: stockCount })}
                       </StatusPill>
                     </div>
                   ) : null}
@@ -388,24 +395,24 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
               <div className="flex items-start gap-3">
                 <Handshake size={18} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-300" />
                 <p className="text-sm leading-6 text-slate-700 dark:text-slate-200">
-                  BelivaY assure toute la <strong className="font-black">coordination logistique</strong> du transfert.
+                  {t("rl2_closure.coordination_prefix")} <strong className="font-black">{t("rl2_closure.coordination_strong")}</strong> {t("rl2_closure.coordination_suffix")}
                 </p>
               </div>
             </div>
 
             {activeRule === "garde" ? (
               <p className="pl-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                Durée courte sélectionnée : aucun mouvement de stock n'est déclenché, vous restez responsable des colis.
+                {t("rl2_closure.short_duration_note")}
               </p>
             ) : null}
           </div>
         </Panel>
       </div>
 
-      <Panel icon={CalendarOff} title="Déclarer une fermeture">
+      <Panel icon={CalendarOff} title={t("rl2_closure.declare_panel_title")}>
         <div className="grid gap-4 md:grid-cols-2">
           <label className="block">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Motif</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("rl2_closure.field_reason")}</span>
             <select
               value={reasonKey}
               onChange={(event) => setReasonKey(event.target.value)}
@@ -413,14 +420,14 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
             >
               {REASONS.map((item) => (
                 <option key={item.key} value={item.key}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Durée prévue</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("rl2_closure.field_duration")}</span>
             <select
               value={durationKey}
               onChange={(event) => setDurationKey(event.target.value)}
@@ -428,14 +435,14 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
             >
               {DURATIONS.map((item) => (
                 <option key={item.key} value={item.key}>
-                  {item.label}
+                  {t(item.labelKey)}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Du</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("rl2_closure.field_from")}</span>
             <input
               type="date"
               value={from}
@@ -445,7 +452,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
           </label>
 
           <label className="block">
-            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Au</span>
+            <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("rl2_closure.field_to")}</span>
             <input
               type="date"
               value={to}
@@ -457,7 +464,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
         </div>
 
         <p className="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-          Justificatif attendu : {reason.proof}
+          {t("rl2_closure.expected_proof", { proof: t(reason.proofKey) })}
         </p>
 
         {feedback ? (
@@ -489,14 +496,14 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
           className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-700 to-blue-600 px-4 py-3 text-sm font-black text-white shadow-[0_10px_22px_-12px_rgba(29,78,216,.9)] transition hover:from-blue-800 hover:to-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <CalendarOff size={16} strokeWidth={2.6} />
-          {busy ? "Transmission…" : "Déclarer la fermeture"}
+          {busy ? t("rl2_closure.submitting") : t("rl2_closure.submit_button")}
         </button>
       </Panel>
 
       {closures.length > 0 ? (
         <Panel
           icon={PackageX}
-          title="Fermetures déclarées"
+          title={t("rl2_closure.declared_panel_title")}
           action={<StatusPill tone="slate">{closures.length}</StatusPill>}
         >
           <div className="space-y-2.5">
@@ -510,8 +517,12 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
                   <div className="min-w-0">
                     <div className="font-black text-slate-950 dark:text-white">{closure.reasonLabel}</div>
                     <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      Du {frDate(closure.from)} au {frDate(closure.to)} · {closure.durationLabel} ·{" "}
-                      {closure.parcelsAtDeclaration} colis au moment de la déclaration
+                      {t("rl2_closure.declared_item_summary", {
+                        from: frDate(closure.from),
+                        to: frDate(closure.to),
+                        duration: closure.durationLabel,
+                        count: closure.parcelsAtDeclaration,
+                      })}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -519,7 +530,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
                     <button
                       type="button"
                       onClick={() => removeClosure(closure.id)}
-                      aria-label={`Retirer la fermeture du ${frDate(closure.from)}`}
+                      aria-label={t("rl2_closure.remove_closure_aria", { date: frDate(closure.from) })}
                       className="rounded-xl border border-slate-200 bg-white p-2 text-slate-500 transition hover:text-red-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-400"
                     >
                       <Trash2 size={15} strokeWidth={2.4} />
@@ -530,7 +541,7 @@ export default function RelayClosure({ onError, relay }: RelayClosureProps) {
             })}
           </div>
           <p className="mt-3 text-xs font-semibold text-slate-500 dark:text-slate-400">
-            Cet historique est conservé sur cet appareil. Le support BelivaY reste la référence en cas de litige sur une absence.
+            {t("rl2_closure.history_note")}
           </p>
         </Panel>
       ) : null}

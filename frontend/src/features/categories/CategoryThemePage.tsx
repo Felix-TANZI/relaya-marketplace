@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowDown,
   ArrowRight,
@@ -34,36 +35,37 @@ import { productsApi, type Product } from "@/services/api/products";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest" | "discount";
 
-const SORT_OPTIONS: { key: SortKey; label: string; icon: LucideIcon }[] = [
-  { key: "relevance", label: "Pertinence", icon: Zap },
-  { key: "price-asc", label: "Prix croissant", icon: ArrowUp },
-  { key: "price-desc", label: "Prix décroissant", icon: ArrowDown },
-  { key: "rating", label: "Mieux notés", icon: Star },
-  { key: "newest", label: "Plus récents", icon: Sparkles },
-  { key: "discount", label: "Meilleures remises", icon: TicketPercent },
+const SORT_OPTIONS: { key: SortKey; labelKey: string; icon: LucideIcon }[] = [
+  { key: "relevance", labelKey: "cl4_category_theme.sort_relevance", icon: Zap },
+  { key: "price-asc", labelKey: "cl4_category_theme.sort_price_asc", icon: ArrowUp },
+  { key: "price-desc", labelKey: "cl4_category_theme.sort_price_desc", icon: ArrowDown },
+  { key: "rating", labelKey: "cl4_category_theme.sort_top_rated", icon: Star },
+  { key: "newest", labelKey: "cl4_category_theme.sort_newest", icon: Sparkles },
+  { key: "discount", labelKey: "cl4_category_theme.sort_best_discount", icon: TicketPercent },
 ];
 
 type PriceKey = "all" | "under-10k" | "10k-30k" | "30k-100k" | "over-100k";
 
-const PRICE_RANGES: { key: PriceKey; label: string; min: number; max: number | null }[] = [
-  { key: "all", label: "Tous les prix", min: 0, max: null },
-  { key: "under-10k", label: "Moins de 10 000 FCFA", min: 0, max: 10000 },
-  { key: "10k-30k", label: "10 000 – 30 000 FCFA", min: 10000, max: 30000 },
-  { key: "30k-100k", label: "30 000 – 100 000 FCFA", min: 30000, max: 100000 },
-  { key: "over-100k", label: "Plus de 100 000 FCFA", min: 100000, max: null },
+const PRICE_RANGES: { key: PriceKey; labelKey: string; min: number; max: number | null }[] = [
+  { key: "all", labelKey: "cl4_category_theme.price_all", min: 0, max: null },
+  { key: "under-10k", labelKey: "cl4_category_theme.price_under_10k", min: 0, max: 10000 },
+  { key: "10k-30k", labelKey: "cl4_category_theme.price_10_30k", min: 10000, max: 30000 },
+  { key: "30k-100k", labelKey: "cl4_category_theme.price_30_100k", min: 30000, max: 100000 },
+  { key: "over-100k", labelKey: "cl4_category_theme.price_over_100k", min: 100000, max: null },
 ];
 
 type RatingKey = "all" | "4-plus" | "5-only";
 
-const RATING_FILTERS: { key: RatingKey; label: string; stars: number; min: number }[] = [
-  { key: "all", label: "Toutes les notes", stars: 0, min: 0 },
-  { key: "4-plus", label: "et plus", stars: 4, min: 4 },
-  { key: "5-only", label: "uniquement", stars: 5, min: 5 },
+const RATING_FILTERS: { key: RatingKey; labelKey: string; stars: number; min: number }[] = [
+  { key: "all", labelKey: "cl4_category_theme.rating_all", stars: 0, min: 0 },
+  { key: "4-plus", labelKey: "cl4_category_theme.rating_and_more", stars: 4, min: 4 },
+  { key: "5-only", labelKey: "cl4_category_theme.rating_only", stars: 5, min: 5 },
 ];
 
 const PAGE_STEP = 20;
 
 export default function CategoryThemePage() {
+  const { t } = useTranslation();
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const theme = getCategoryTheme(slug);
@@ -258,18 +260,17 @@ export default function CategoryThemePage() {
             <PackageSearch size={26} />
           </div>
           <h1 className="mt-4 text-xl font-extrabold text-gray-900 dark:text-white">
-            Cette catégorie n'existe pas
+            {t("cl4_category_theme.not_found_title")}
           </h1>
           <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            Le thème « {slug} » n'est pas au catalogue. Parcourez la liste complète des catégories
-            pour trouver ce que vous cherchez.
+            {t("cl4_category_theme.not_found_desc", { slug })}
           </p>
           <Link
             to="/categories"
             className="mt-5 inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-extrabold text-white transition hover:bg-primary-dark"
           >
             <LayoutGrid size={16} />
-            Voir toutes les catégories
+            {t("cl4_category_theme.view_all_categories")}
           </Link>
         </div>
       </div>
@@ -308,11 +309,11 @@ export default function CategoryThemePage() {
               <div className="relative z-10 flex w-full flex-col justify-center p-4 text-white sm:p-7">
                 <nav className="flex flex-wrap items-center gap-1 text-[11px] font-semibold text-white/75">
                   <Link to="/" className="transition hover:text-white">
-                    Accueil
+                    {t("cl4_category_theme.breadcrumb_home")}
                   </Link>
                   <ChevronRight size={12} />
                   <Link to="/categories" className="transition hover:text-white">
-                    Catégories
+                    {t("cl4_category_theme.breadcrumb_categories")}
                   </Link>
                   <ChevronRight size={12} />
                   <span className="text-white">{theme.name}</span>
@@ -334,10 +335,10 @@ export default function CategoryThemePage() {
 
                 <div className="mt-5 grid grid-cols-2 gap-2 md:grid-cols-4 md:gap-3">
                   {[
-                    { icon: ShoppingCart, num: theme.count, label: "Produits" },
-                    { icon: ShieldCheck, num: theme.vendors, label: "Vendeurs certifiés" },
-                    { icon: Star, num: theme.rating, label: "Note moyenne" },
-                    { icon: Truck, num: theme.delivery, label: "Livraison" },
+                    { icon: ShoppingCart, num: theme.count, label: t("cl4_category_theme.stat_products") },
+                    { icon: ShieldCheck, num: theme.vendors, label: t("cl4_category_theme.stat_certified_vendors") },
+                    { icon: Star, num: theme.rating, label: t("cl4_category_theme.stat_avg_rating") },
+                    { icon: Truck, num: theme.delivery, label: t("cl4_category_theme.stat_delivery") },
                   ].map((stat) => {
                     const Icon = stat.icon;
                     return (
@@ -373,7 +374,7 @@ export default function CategoryThemePage() {
                   }`}
                   style={activeFacet === null ? { background: accent } : undefined}
                 >
-                  Tout le thème
+                  {t("cl4_category_theme.all_theme")}
                 </button>
                 {theme.facets.map((facet) => {
                   const active = activeFacet === facet;
@@ -402,7 +403,7 @@ export default function CategoryThemePage() {
                   <span className="text-[14px] font-black text-gray-900 dark:text-white">
                     {sortedProducts.length}
                   </span>{" "}
-                  {sortedProducts.length > 1 ? "articles disponibles" : "article disponible"}
+                  {t(sortedProducts.length > 1 ? "cl4_category_theme.article_available_plural" : "cl4_category_theme.article_available")}
                   {activeFacet ? ` · ${activeFacet}` : ""}
                 </p>
 
@@ -417,7 +418,7 @@ export default function CategoryThemePage() {
                       }}
                       aria-haspopup="listbox"
                       aria-expanded={sortOpen}
-                      aria-label="Trier les articles"
+                      aria-label={t("cl4_category_theme.aria_sort")}
                       className={`flex h-[38px] items-center gap-2 rounded-xl border bg-white pl-3 pr-2.5 text-[12.5px] font-bold text-gray-800 transition-all dark:bg-gray-800 dark:text-gray-100 ${
                         sortOpen
                           ? "border-primary shadow-[0_0_0_3px_rgba(244,121,32,.15)]"
@@ -426,7 +427,7 @@ export default function CategoryThemePage() {
                     >
                       {/* Éclair bicolore : cœur orange clair, contour orange foncé. */}
                       <Zap size={14} fill="#F8A45E" stroke="#E86010" strokeWidth={2} />
-                      {SORT_OPTIONS.find((option) => option.key === sort)?.label}
+                      {t(SORT_OPTIONS.find((option) => option.key === sort)?.labelKey ?? "")}
                       <ChevronDown
                         size={14}
                         className={`text-gray-400 transition-transform ${sortOpen ? "rotate-180" : ""}`}
@@ -465,7 +466,7 @@ export default function CategoryThemePage() {
                                   ? { fill: "currentColor" }
                                   : {})}
                               />
-                              {option.label}
+                              {t(option.labelKey)}
                             </button>
                           );
                         })}
@@ -479,8 +480,8 @@ export default function CategoryThemePage() {
                       setFiltersOpen((open) => !open);
                       setSortOpen(false);
                     }}
-                    title="Filtres"
-                    aria-label="Ouvrir les filtres"
+                    title={t("cl4_category_theme.filters_title_attr") ?? undefined}
+                    aria-label={t("cl4_category_theme.aria_open_filters")}
                     aria-expanded={filtersOpen}
                     className={`relative flex h-[38px] w-[38px] flex-shrink-0 items-center justify-center rounded-xl border transition-all ${
                       filtersOpen || activeFilterCount > 0
@@ -505,14 +506,14 @@ export default function CategoryThemePage() {
                             <ListFilter size={12} />
                           </span>
                           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                            Sous-catégories
+                            {t("cl4_category_theme.subcategories_heading")}
                           </p>
                         </div>
 
                         <div className="flex flex-col px-2 pb-1 pt-1.5">
                           {[
                             {
-                              label: "Tous les articles",
+                              label: t("cl4_category_theme.all_articles"),
                               count: categoryProducts.length,
                               value: null as string | null,
                             },
@@ -563,7 +564,7 @@ export default function CategoryThemePage() {
                             <Banknote size={12} />
                           </span>
                           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                            Prix
+                            {t("cl4_category_theme.price_heading")}
                           </p>
                         </div>
 
@@ -589,7 +590,7 @@ export default function CategoryThemePage() {
                                   }}
                                   className="h-4 w-4 flex-shrink-0 accent-[#F47920]"
                                 />
-                                {range.label}
+                                {t(range.labelKey)}
                               </label>
                             );
                           })}
@@ -601,7 +602,7 @@ export default function CategoryThemePage() {
                             <Star size={12} fill="currentColor" />
                           </span>
                           <p className="text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                            Note
+                            {t("cl4_category_theme.rating_heading")}
                           </p>
                         </div>
 
@@ -639,7 +640,7 @@ export default function CategoryThemePage() {
                                     ))}
                                   </span>
                                 ) : null}
-                                {option.label}
+                                {t(option.labelKey)}
                               </label>
                             );
                           })}
@@ -657,7 +658,7 @@ export default function CategoryThemePage() {
                         disabled={activeFilterCount === 0}
                         className="flex-shrink-0 border-t border-[#f5e2d4] py-2.5 text-[12px] font-extrabold text-primary transition hover:bg-[#fff7ef] disabled:text-gray-300 disabled:hover:bg-transparent dark:border-gray-700 dark:hover:bg-gray-700 dark:disabled:text-gray-600"
                       >
-                        Réinitialiser
+                        {t("cl4_category_theme.reset")}
                       </button>
                     </div>
                   ) : null}
@@ -675,7 +676,9 @@ export default function CategoryThemePage() {
                     {theme.name}
                   </h2>
                   <p className="text-[12px] text-gray-500 dark:text-gray-400">
-                    Sélection du thème, triée par {SORT_OPTIONS.find((o) => o.key === sort)?.label.toLowerCase()}.
+                    {t("cl4_category_theme.theme_selection_sorted_by", {
+                      sort: t(SORT_OPTIONS.find((o) => o.key === sort)?.labelKey ?? "").toLowerCase(),
+                    })}
                   </p>
                 </div>
               </div>
@@ -711,12 +714,12 @@ export default function CategoryThemePage() {
                         }
                         className="inline-flex items-center gap-2 rounded-full border border-[#ecd3c1] bg-white px-5 py-3 text-sm font-bold text-gray-700 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                       >
-                        Voir plus d'articles
+                        {t("cl4_category_theme.view_more")}
                         <ArrowRight size={16} />
                       </button>
                     ) : (
                       <span className="rounded-full border border-[#ecd3c1] bg-white px-5 py-3 text-sm font-bold text-[#5e7891] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        Tous les articles de ce thème sont affichés
+                        {t("cl4_category_theme.all_displayed")}
                       </span>
                     )}
                   </div>
@@ -731,12 +734,11 @@ export default function CategoryThemePage() {
                   </div>
                   <p className="text-[15px] font-extrabold text-gray-900 dark:text-white">
                     {activeFacet
-                      ? `Aucun article « ${activeFacet} » pour le moment`
-                      : "Ce thème n'a pas encore d'articles en ligne"}
+                      ? t("cl4_category_theme.no_facet_articles", { facet: activeFacet })
+                      : t("cl4_category_theme.no_articles_yet")}
                   </p>
                   <p className="max-w-md text-[12.5px] text-gray-500 dark:text-gray-400">
-                    Les vendeurs enrichissent le catalogue chaque jour. En attendant, explorez le
-                    reste de la boutique ou retirez le filtre en cours.
+                    {t("cl4_category_theme.empty_state_desc")}
                   </p>
                   <div className="mt-1 flex flex-wrap justify-center gap-2">
                     {activeFacet ? (
@@ -745,14 +747,14 @@ export default function CategoryThemePage() {
                         className="rounded-full px-5 py-2.5 text-sm font-extrabold text-white transition hover:opacity-90"
                         style={{ background: accent }}
                       >
-                        Retirer le filtre
+                        {t("cl4_category_theme.remove_filter")}
                       </button>
                     ) : null}
                     <Link
                       to="/catalog"
                       className="rounded-full border border-[#ecd3c1] bg-white px-5 py-2.5 text-sm font-bold text-gray-700 transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
                     >
-                      Parcourir tout le catalogue
+                      {t("cl4_category_theme.browse_catalog")}
                     </Link>
                   </div>
                 </div>
@@ -765,13 +767,13 @@ export default function CategoryThemePage() {
                 <div className="h-[16px] w-[3px] rounded bg-primary" />
                 <LayoutGrid size={15} className="text-primary" />
                 <h2 className="text-[14px] font-extrabold text-gray-900 dark:text-white">
-                  Explorer d'autres thèmes
+                  {t("cl4_category_theme.explore_other_themes")}
                 </h2>
                 <Link
                   to="/categories"
                   className="ml-auto text-[11px] font-bold text-[#c85e14] dark:text-primary"
                 >
-                  Tout voir
+                  {t("cl4_category_theme.see_all")}
                 </Link>
               </div>
 
@@ -795,7 +797,7 @@ export default function CategoryThemePage() {
                           {item.name}
                         </span>
                         <span className="block text-[10.5px] font-semibold text-gray-400 dark:text-gray-500">
-                          {item.count} produits
+                          {t("cl4_category_theme.products_count", { n: item.count })}
                         </span>
                       </span>
                     </Link>

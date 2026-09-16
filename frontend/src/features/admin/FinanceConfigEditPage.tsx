@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ArrowLeft, GitPullRequest, RefreshCw, RotateCcw, Save,
 } from 'lucide-react';
@@ -80,6 +81,7 @@ function different(a: unknown, b: unknown): boolean {
 
 export default function FinanceConfigEditPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { section = '', configKey = '' } = useParams<{
     section: string; configKey: string;
@@ -116,7 +118,7 @@ export default function FinanceConfigEditPage() {
       setValeurs(depart);
       setInitial(depart);
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : 'Chargement impossible.');
+      setError(exc instanceof Error ? exc.message : t('ad6_finance_config_edit.load_impossible'));
     } finally {
       setLoading(false);
     }
@@ -131,11 +133,11 @@ export default function FinanceConfigEditPage() {
 
   const soumettre = async () => {
     if (modifies.length === 0) {
-      setError('Aucune modification à demander.');
+      setError(t('ad6_finance_config_edit.no_change_to_request'));
       return;
     }
     if (!justification.trim()) {
-      setError('La justification est obligatoire.');
+      setError(t('ad6_finance_config_edit.justification_required'));
       return;
     }
 
@@ -154,22 +156,19 @@ export default function FinanceConfigEditPage() {
         payload,
         justification: justification.trim(),
       });
-      setNotice(
-        'Demande créée. Elle doit être approuvée par une autre personne '
-        + 'avant de prendre effet.',
-      );
+      setNotice(t('ad6_finance_config_edit.request_created'));
       setJustification('');
       await load();
     } catch (exc) {
       // Le message du serveur, TEL QUEL.
-      setError(exc instanceof Error ? exc.message : 'La demande a échoué.');
+      setError(exc instanceof Error ? exc.message : t('ad6_finance_config_edit.request_failed'));
     } finally {
       setBusy(false);
     }
   };
 
   if (loading && !detail) {
-    return <p style={{ fontSize: 13, color: T.muted }}>Chargement…</p>;
+    return <p style={{ fontSize: 13, color: T.muted }}>{t('ad6_finance_config_edit.loading')}</p>;
   }
 
   if (!detail) {
@@ -177,7 +176,7 @@ export default function FinanceConfigEditPage() {
       <div className="space-y-4">
         <Retour T={T} onClick={() => navigate('/admin/finance/configuration')} />
         <p style={{ fontSize: 13, color: T.red }}>
-          {error ?? 'Réglage introuvable.'}
+          {error ?? t('ad6_finance_config_edit.setting_not_found')}
         </p>
       </div>
     );
@@ -216,7 +215,7 @@ export default function FinanceConfigEditPage() {
 
       {/* ── Choisir l'objet quand il y en a plusieurs ────────────────── */}
       {detail.active.length > 1 && (
-        <Section title="Règle à modifier" icon={GitPullRequest} T={T}>
+        <Section title={t('ad6_finance_config_edit.rule_to_modify')} icon={GitPullRequest} T={T}>
           <div className="flex flex-wrap gap-2">
             {detail.active.map((o) => {
               const cle = String(o.config_key);
@@ -245,7 +244,7 @@ export default function FinanceConfigEditPage() {
       )}
 
       {/* ── Le formulaire ───────────────────────────────────────────── */}
-      <Section title="Valeurs" icon={Save} T={T}>
+      <Section title={t('ad6_finance_config_edit.values')} icon={Save} T={T}>
         {detail.schema.map((champ) => {
           const change = modifies.includes(champ.name);
           const valeur = valeurs[champ.name];
@@ -257,7 +256,7 @@ export default function FinanceConfigEditPage() {
                   {champ.label}
                   {champ.sensitive && (
                     <span style={{ color: '#FBBF24', marginLeft: 6, fontSize: 11 }}>
-                      sensible
+                      {t('ad6_finance_config_edit.sensitive')}
                     </span>
                   )}
                 </label>
@@ -272,7 +271,7 @@ export default function FinanceConfigEditPage() {
                     className="inline-flex items-center gap-1"
                     style={{ fontSize: 11, color: T.mutedL }}
                   >
-                    <RotateCcw size={10} /> annuler
+                    <RotateCcw size={10} /> {t('ad6_finance_config_edit.undo')}
                   </button>
                 )}
               </div>
@@ -309,7 +308,7 @@ export default function FinanceConfigEditPage() {
                       background: '#fff', transition: 'left .15s',
                     }} />
                   </span>
-                  {valeur ? 'Activé' : 'Désactivé'}
+                  {valeur ? t('ad6_finance_config_edit.enabled') : t('ad6_finance_config_edit.disabled')}
                 </button>
               ) : champ.type === 'select' ? (
                 <select
@@ -372,7 +371,7 @@ export default function FinanceConfigEditPage() {
 
       {/* ── Le différentiel avant envoi ─────────────────────────────── */}
       {modifies.length > 0 && (
-        <Section title="Ce qui va changer" icon={GitPullRequest} T={T}>
+        <Section title={t('ad6_finance_config_edit.whats_changing')} icon={GitPullRequest} T={T}>
           <div style={{
             border: `1px solid ${T.border}`, borderRadius: 12,
             padding: '12px 16px', background: T.cardAlt,
@@ -407,9 +406,7 @@ export default function FinanceConfigEditPage() {
             }}>
               <AlertTriangle size={15} style={{ color: '#FBBF24', flexShrink: 0, marginTop: 1 }} />
               <p style={{ fontSize: 12, color: '#FBBF24', margin: 0, lineHeight: 1.55 }}>
-                Vous modifiez un réglage sensible. Il engage de l’argent réel
-                ou lève une protection — relisez le différentiel avant de
-                demander.
+                {t('ad6_finance_config_edit.sensitive_warning')}
               </p>
             </div>
           )}
@@ -419,16 +416,15 @@ export default function FinanceConfigEditPage() {
               fontSize: 12.5, fontWeight: 600, color: T.muted,
               display: 'block', marginBottom: 6,
             }}>
-              Justification
+              {t('ad6_finance_config_edit.justification')}
             </label>
             <p style={{ fontSize: 11, color: T.mutedL, margin: '0 0 6px', lineHeight: 1.5 }}>
-              Elle sera lue par la personne qui approuve, et conservée dans
-              l’historique.
+              {t('ad6_finance_config_edit.justification_hint')}
             </p>
             <input
               value={justification}
               onChange={(e) => setJustification(e.target.value)}
-              placeholder="Pourquoi ce changement…"
+              placeholder={t('ad6_finance_config_edit.justification_placeholder')}
               style={{
                 width: '100%', padding: '9px 13px', borderRadius: 10,
                 background: T.cardAlt, color: T.text, fontSize: 13,
@@ -447,7 +443,7 @@ export default function FinanceConfigEditPage() {
                 border: `1px solid ${T.border}`,
               }}
             >
-              Tout annuler
+              {t('ad6_finance_config_edit.undo_all')}
             </button>
             <button
               type="button"
@@ -462,22 +458,21 @@ export default function FinanceConfigEditPage() {
               }}
             >
               <GitPullRequest size={13} />
-              {busy ? 'Envoi…' : 'Demander la modification'}
+              {busy ? t('ad6_finance_config_edit.sending') : t('ad6_finance_config_edit.request_modification')}
             </button>
           </div>
 
           {/* Dire d'avance que rien n'est enregistre : le decouvrir apres
               coup serait pire. */}
           <p style={{ fontSize: 11.5, color: T.mutedL, textAlign: 'right', lineHeight: 1.5 }}>
-            Rien n’est enregistré maintenant. Une autre personne devra
-            approuver la demande.
+            {t('ad6_finance_config_edit.nothing_saved_yet')}
           </p>
         </Section>
       )}
 
       {/* ── Historique ──────────────────────────────────────────────── */}
       {detail.history.length > 0 && (
-        <Section title="Historique des versions" icon={RotateCcw} T={T}>
+        <Section title={t('ad6_finance_config_edit.version_history')} icon={RotateCcw} T={T}>
           {detail.history.slice(0, 10).map((h) => (
             <div key={`${h.config_key}-${h.version}`} className="flex gap-3">
               <span style={{ fontSize: 11.5, color: T.mutedL, width: 74, flexShrink: 0 }}>
@@ -485,16 +480,13 @@ export default function FinanceConfigEditPage() {
               </span>
               <span style={{ fontSize: 12, color: T.muted }}>
                 <b style={{ color: T.text }}>v{h.version}</b> · {h.config_key}
-                {h.created_by && ` · par ${h.created_by}`}
-                {h.is_active && <span style={{ color: '#34D399' }}> · active</span>}
+                {h.created_by && ` · ${t('ad6_finance_config_edit.by_prefix')} ${h.created_by}`}
+                {h.is_active && <span style={{ color: '#34D399' }}> · {t('ad6_finance_config_edit.active')}</span>}
               </span>
             </div>
           ))}
           <p style={{ fontSize: 11.5, color: T.mutedL, lineHeight: 1.6 }}>
-            Pour revenir à une version antérieure, utilisez le retour arrière
-            depuis la demande correspondante, dans l’écran de configuration.
-            Une nouvelle version portant les anciennes valeurs sera créée —
-            l’historique reste complet.
+            {t('ad6_finance_config_edit.history_footer')}
           </p>
         </Section>
       )}
@@ -507,6 +499,7 @@ export default function FinanceConfigEditPage() {
 function Retour({ onClick, T }: {
   onClick: () => void; T: ReturnType<typeof useAdminTheme>;
 }) {
+  const { t } = useTranslation();
   return (
     <button
       type="button"
@@ -517,7 +510,7 @@ function Retour({ onClick, T }: {
         background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`,
       }}
     >
-      <ArrowLeft size={13} /> Configuration
+      <ArrowLeft size={13} /> {t('ad6_finance_config_edit.back_to_configuration')}
     </button>
   );
 }

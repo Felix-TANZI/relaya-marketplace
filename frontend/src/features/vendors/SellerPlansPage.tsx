@@ -2,6 +2,7 @@
 // Page Plans & Tarifs — avec essai gratuit, prix depuis l'API (non codés en dur).
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   CreditCard, RefreshCw, Check, Zap, Star,
   ChevronDown, ChevronUp, Phone, AlertTriangle, X, Clock,
@@ -55,6 +56,7 @@ function errorMessage(error: unknown, fallback: string) {
 // ─── CALCULATEUR ROI ─────────────────────────────────────────────────────────
 
 function RoiCalculator({ plans }: { plans: PlanData[] }) {
+  const { t } = useTranslation();
   const [sales, setSales] = useState(150000);
   const freePlan = plans.find(p => p.code === 'FREE');
   const proPlan  = plans.find(p => p.code === 'PRO');
@@ -68,15 +70,15 @@ function RoiCalculator({ plans }: { plans: PlanData[] }) {
       style={{ background: `linear-gradient(135deg,${T.text},#2A1C0E)`, color: T.white }}>
       <div>
         <p className="font-black text-[16px]" style={{  }}>
-          Calculez votre économie avec le Plan Pro
+          {t('sl4_plans.roi_title')}
         </p>
         <p className="text-[12px] mt-0.5" style={{ color: 'rgba(255,255,255,0.55)' }}>
-          Glissez pour estimer vos économies mensuelles
+          {t('sl4_plans.roi_subtitle')}
         </p>
       </div>
       <div>
         <div className="flex justify-between text-[12px] mb-2" style={{ color: 'rgba(255,255,255,0.7)' }}>
-          <span>Ventes mensuelles estimées</span>
+          <span>{t('sl4_plans.roi_sales_label')}</span>
           <span className="font-black" style={{ color: T.violet }}>{fmtXAF(sales)}</span>
         </div>
         <input type="range" min={10000} max={1000000} step={5000} value={sales}
@@ -85,16 +87,16 @@ function RoiCalculator({ plans }: { plans: PlanData[] }) {
       </div>
       <div className="rounded-xl p-4 space-y-2.5" style={{ background: 'rgba(255,255,255,0.08)' }}>
         <div className="flex justify-between text-[12.5px]">
-          <span style={{ color: 'rgba(255,255,255,0.7)' }}>Commission plan Gratuit ({freePlan?.commission_rate || 10}%)</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_free_commission_label', { rate: freePlan?.commission_rate || 10 })}</span>
           <span className="font-bold" style={{ color: T.red }}>-{fmtXAF(freeComm)}</span>
         </div>
         <div className="flex justify-between text-[12.5px]">
-          <span style={{ color: 'rgba(255,255,255,0.7)' }}>Commission Pro ({proPlan?.commission_rate || 5}%) + abonnement</span>
+          <span style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_pro_commission_label', { rate: proPlan?.commission_rate || 5 })}</span>
           <span className="font-bold" style={{ color: T.amber }}>-{fmtXAF(proComm + proCost)}</span>
         </div>
         <div className="h-px" style={{ background: 'rgba(255,255,255,0.12)' }}/>
         <div className="flex justify-between items-center">
-          <span className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>Économie mensuelle avec Pro</span>
+          <span className="text-[12.5px]" style={{ color: 'rgba(255,255,255,0.7)' }}>{t('sl4_plans.roi_monthly_saving_label')}</span>
           <span className="font-black text-[16px]" style={{ color: saving > 0 ? T.green : T.red }}>
             {saving > 0 ? '+' : ''}{fmtXAF(saving)}
           </span>
@@ -110,6 +112,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
   plan: PlanData; cycle: 'MONTHLY' | 'ANNUAL';
   onClose: () => void; onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [operator, setOperator] = useState<'ORANGE_MONEY' | 'MTN_MOMO'>('ORANGE_MONEY');
   const [phone,    setPhone]    = useState('');
@@ -119,7 +122,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
 
   const handleSubmit = async () => {
     if (!phone.replace(/\s/g,'').match(/^\d{9}$/)) {
-      showToast('Entrez un numéro valide (9 chiffres)', 'error');
+      showToast(t('sl4_plans.toast_invalid_phone'), 'error');
       return;
     }
     try {
@@ -130,7 +133,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
       });
       showToast(res.message, 'success');
       onSuccess();
-    } catch (e: unknown) { showToast(errorMessage(e, 'Erreur'), 'error'); }
+    } catch (e: unknown) { showToast(errorMessage(e, t('sl4_plans.toast_generic_error')), 'error'); }
     finally { setLoading(false); }
   };
 
@@ -141,7 +144,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
         <div className="flex items-center justify-between px-5 py-4"
           style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
           <p className="font-black text-[15px]" style={{ color: T.text }}>
-            Souscrire — {plan.name}
+            {t('sl4_plans.subscribe_modal_title', { name: plan.name })}
           </p>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: T.creamAlt }}>
@@ -155,7 +158,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
             <div>
               <p className="font-bold text-[13.5px]" style={{ color: T.text }}>{plan.name}</p>
               <p className="text-[12px]" style={{ color: T.muted }}>
-                {cycle === 'ANNUAL' ? `Annuel (${plan.plan_duration_days * 12} jours)` : `Mensuel (${plan.plan_duration_days} jours)`}
+                {cycle === 'ANNUAL' ? t('sl4_plans.cycle_annual', { days: plan.plan_duration_days * 12 }) : t('sl4_plans.cycle_monthly', { days: plan.plan_duration_days })}
               </p>
             </div>
             <p className="font-black text-[20px]" style={{ color: T.orange }}>
@@ -165,13 +168,13 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
 
           <div className="rounded-xl p-4" style={{ background: T.amberL, border: `1px solid rgba(217,119,6,0.2)` }}>
             <p className="flex items-center gap-2 font-bold text-[12.5px] mb-2" style={{ color: T.amber }}>
-              <AlertTriangle size={13}/> Comment procéder
+              <AlertTriangle size={13}/> {t('sl4_plans.how_to_title')}
             </p>
             <ol className="space-y-1.5 text-[12px]" style={{ color: T.muted }}>
-              <li>1. Choisissez votre opérateur Mobile Money</li>
-              <li>2. Payez {fmtXAF(amount)} vers le numéro BelivaY affiché</li>
-              <li>3. Saisissez votre numéro expéditeur et soumettez</li>
-              <li>4. Un admin BelivaY active votre plan sous 24h</li>
+              <li>{t('sl4_plans.how_to_step1')}</li>
+              <li>{t('sl4_plans.how_to_step2', { amount: fmtXAF(amount) })}</li>
+              <li>{t('sl4_plans.how_to_step3')}</li>
+              <li>{t('sl4_plans.how_to_step4')}</li>
             </ol>
           </div>
 
@@ -193,7 +196,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
 
           <div>
             <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-              Votre numéro {operator==='ORANGE_MONEY' ? 'Orange Money' : 'MTN MoMo'} (expéditeur)
+              {t('sl4_plans.sender_number_label', { operator: operator==='ORANGE_MONEY' ? 'Orange Money' : 'MTN MoMo' })}
             </label>
             <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl"
               style={{ background: T.cream, border: `1px solid ${T.border}` }}>
@@ -209,10 +212,10 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
           <button type="button" onClick={handleSubmit} disabled={loading}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[13.5px] text-white disabled:opacity-50"
             style={{ background: T.orange, boxShadow: '0 4px 14px rgba(244,121,32,0.4)' }}>
-            {loading ? <><RefreshCw size={14} className="animate-spin"/>Soumission…</> : <><Check size={14}/>J'ai effectué le paiement</>}
+            {loading ? <><RefreshCw size={14} className="animate-spin"/>{t('sl4_plans.submitting')}</> : <><Check size={14}/>{t('sl4_plans.payment_done_button')}</>}
           </button>
           <p className="text-center text-[11px]" style={{ color: T.mutedL }}>
-            Plan activé sous 24h après vérification du paiement par notre équipe.
+            {t('sl4_plans.activation_note')}
           </p>
         </div>
       </div>
@@ -225,6 +228,7 @@ function SubscribeModal({ plan, cycle, onClose, onSuccess }: {
 function TrialModal({ plan, onClose, onSuccess }: {
   plan: PlanData; onClose: () => void; onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -238,10 +242,10 @@ function TrialModal({ plan, onClose, onSuccess }: {
         body: JSON.stringify({ plan_code: plan.code }),
       });
       const data = await res.json() as TrialResponse;
-      if (!res.ok) throw new Error(data.detail || 'Erreur');
+      if (!res.ok) throw new Error(data.detail || t('sl4_plans.toast_generic_error'));
       showToast(data.message, 'success');
       onSuccess();
-    } catch (e: unknown) { showToast(errorMessage(e, 'Erreur'), 'error'); }
+    } catch (e: unknown) { showToast(errorMessage(e, t('sl4_plans.toast_generic_error')), 'error'); }
     finally { setLoading(false); }
   };
 
@@ -254,7 +258,7 @@ function TrialModal({ plan, onClose, onSuccess }: {
         <div className="flex items-center justify-between px-5 py-4"
           style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
           <p className="font-black text-[15px]" style={{ color: T.text }}>
-            Essai gratuit — {plan.name}
+            {t('sl4_plans.trial_modal_title', { name: plan.name })}
           </p>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: T.creamAlt }}>
@@ -269,15 +273,15 @@ function TrialModal({ plan, onClose, onSuccess }: {
               <Clock size={28} style={{ color: isViolet ? T.violet : T.orange }}/>
             </div>
             <p className="font-black text-[24px]" style={{ color: isViolet ? T.violet : T.orange }}>
-              {plan.trial_days} jours gratuits
+              {t('sl4_plans.trial_days_count', { count: plan.trial_days })}
             </p>
             <p className="text-[13px] mt-1" style={{ color: T.muted }}>
-              Testez le plan {plan.name} sans paiement
+              {t('sl4_plans.trial_test_plan', { name: plan.name })}
             </p>
           </div>
 
           <div className="rounded-xl p-4 space-y-2" style={{ background: T.cream }}>
-            <p className="font-semibold text-[12.5px] mb-2" style={{ color: T.text }}>Vous aurez accès à :</p>
+            <p className="font-semibold text-[12.5px] mb-2" style={{ color: T.text }}>{t('sl4_plans.trial_access_label')}</p>
             {plan.features.map((f, i) => (
               <div key={i} className="flex items-center gap-2 text-[12.5px]" style={{ color: T.muted }}>
                 <Check size={12} style={{ color: isViolet ? T.violet : T.orange, flexShrink: 0 }}/>
@@ -286,13 +290,13 @@ function TrialModal({ plan, onClose, onSuccess }: {
             ))}
             <div className="flex items-center gap-2 text-[12.5px]" style={{ color: T.muted }}>
               <Check size={12} style={{ color: isViolet ? T.violet : T.orange, flexShrink: 0 }}/>
-              Commission réduite à {plan.commission_rate}%
+              {t('sl4_plans.trial_reduced_commission', { rate: plan.commission_rate })}
             </div>
           </div>
 
           <div className="rounded-xl p-4" style={{ background: T.amberL, border: `1px solid rgba(217,119,6,0.2)` }}>
             <p className="text-[12px] leading-relaxed" style={{ color: T.muted }}>
-              À l'expiration de l'essai, vous revenez automatiquement sur le plan Gratuit. L'essai ne peut être utilisé <strong>qu'une seule fois</strong> par plan.
+              {t('sl4_plans.trial_expiry_note_before')}<strong>{t('sl4_plans.trial_expiry_note_strong')}</strong>{t('sl4_plans.trial_expiry_note_after')}
             </p>
           </div>
 
@@ -300,8 +304,8 @@ function TrialModal({ plan, onClose, onSuccess }: {
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[13.5px] text-white disabled:opacity-50"
             style={{ background: isViolet ? T.violet : T.orange }}>
             {loading
-              ? <><RefreshCw size={14} className="animate-spin"/>Activation…</>
-              : <><Clock size={14}/>Activer {plan.trial_days} jours d'essai gratuit</>}
+              ? <><RefreshCw size={14} className="animate-spin"/>{t('sl4_plans.activating')}</>
+              : <><Clock size={14}/>{t('sl4_plans.activate_trial_button', { count: plan.trial_days })}</>}
           </button>
         </div>
       </div>
@@ -317,6 +321,7 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
   onSubscribe: (p: PlanData) => void;
   onTrial: (p: PlanData) => void;
 }) {
+  const { t } = useTranslation();
   const price    = cycle === 'ANNUAL' ? plan.price_annual_xaf : plan.price_monthly_xaf;
   const isViolet = plan.code === 'BUSINESS';
   const accent   = isCurrent ? T.green : plan.is_popular ? T.orange : isViolet ? T.violet : T.border;
@@ -329,7 +334,7 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
       {(plan.is_popular || isCurrent || plan.trial_available) && (
         <div className="py-1.5 text-center text-[11px] font-bold text-white"
           style={{ background: isCurrent ? T.green : plan.is_popular ? T.orange : T.violet }}>
-          {isCurrent ? '✓ Plan actuel' : plan.is_popular ? '⚡ Plus populaire' : `${plan.trial_days}j essai gratuit disponible`}
+          {isCurrent ? t('sl4_plans.badge_current_plan') : plan.is_popular ? t('sl4_plans.badge_most_popular') : t('sl4_plans.badge_trial_available', { count: plan.trial_days })}
         </div>
       )}
 
@@ -341,13 +346,13 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
           </div>
           <div className="text-right">
             {price === 0
-              ? <p className="font-black text-[20px]" style={{ color: T.green }}>Gratuit</p>
+              ? <p className="font-black text-[20px]" style={{ color: T.green }}>{t('sl4_plans.free_price_label')}</p>
               : <>
                   <p className="font-black text-[20px]" style={{ color: isViolet?T.violet:T.orange }}>
                     {fmtXAF(price)}
                   </p>
                   <p className="text-[10.5px]" style={{ color: T.mutedL }}>
-                    /{cycle==='ANNUAL'?`${plan.plan_duration_days*12}j`:`${plan.plan_duration_days}j`}
+                    /{cycle==='ANNUAL'?t('sl4_plans.duration_days', { days: plan.plan_duration_days*12 }):t('sl4_plans.duration_days', { days: plan.plan_duration_days })}
                   </p>
                 </>
             }
@@ -356,8 +361,8 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
 
         <div className="grid grid-cols-2 gap-2">
           {[
-            { label: 'Commission', value: `${plan.commission_rate}%`, color: isViolet?T.violet:T.orange },
-            { label: 'Produits max', value: plan.max_products === null ? '∞' : String(plan.max_products), color: T.text },
+            { label: t('sl4_plans.stat_commission_label'), value: `${plan.commission_rate}%`, color: isViolet?T.violet:T.orange },
+            { label: t('sl4_plans.stat_max_products_label'), value: plan.max_products === null ? '∞' : String(plan.max_products), color: T.text },
           ].map((row, i) => (
             <div key={i} className="rounded-xl p-2.5 text-center"
               style={{ background: isCurrent ? T.greenL : plan.is_popular ? T.orangeL : isViolet ? T.violetL : T.creamAlt }}>
@@ -378,13 +383,13 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
           {plan.max_boosts_month > 0 && (
             <li className="flex items-start gap-2 text-[12.5px]" style={{ color: T.muted }}>
               <Zap size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.amber }}/>
-              {plan.max_boosts_month} boost{plan.max_boosts_month>1?'s':''}/mois
+              {t(plan.max_boosts_month > 1 ? 'sl4_plans.boosts_per_month_plural' : 'sl4_plans.boosts_per_month', { count: plan.max_boosts_month })}
             </li>
           )}
           {plan.trial_days > 0 && (
             <li className="flex items-start gap-2 text-[12.5px]" style={{ color: T.muted }}>
               <Clock size={12} className="flex-shrink-0 mt-0.5" style={{ color: T.blue }}/>
-              {plan.trial_used ? `Essai de ${plan.trial_days}j déjà utilisé` : `${plan.trial_days} jours d'essai gratuit`}
+              {plan.trial_used ? t('sl4_plans.trial_already_used', { days: plan.trial_days }) : t('sl4_plans.trial_days_available', { count: plan.trial_days })}
             </li>
           )}
         </ul>
@@ -396,25 +401,25 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
           <button type="button" onClick={() => onTrial(plan)}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[12.5px] font-bold transition-all hover:opacity-90"
             style={{ background: isViolet ? T.violetL : T.orangeL, color: isViolet ? T.violet : T.orange, border: `1.5px solid ${isViolet ? T.violet : T.orange}40` }}>
-            <Clock size={13}/> Essayer {plan.trial_days} jours gratuit
+            <Clock size={13}/> {t('sl4_plans.try_free_button', { count: plan.trial_days })}
           </button>
         )}
         {/* Bouton paiement */}
         {isCurrent ? (
           <div className="w-full py-2.5 rounded-xl text-center text-[13px] font-bold"
             style={{ background: T.greenL, color: T.green, border: `1px solid ${T.greenB}` }}>
-            <Check size={13} className="inline mr-1.5"/>Plan actuel
+            <Check size={13} className="inline mr-1.5"/>{t('sl4_plans.current_plan_label')}
           </div>
         ) : plan.code === 'FREE' ? (
           <div className="w-full py-2.5 rounded-xl text-center text-[13px]"
             style={{ background: T.creamAlt, color: T.muted }}>
-            Disponible sans abonnement
+            {t('sl4_plans.free_no_subscription')}
           </div>
         ) : (
           <button type="button" onClick={() => onSubscribe(plan)}
             className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold text-white transition-all hover:opacity-90"
             style={{ background: isViolet ? T.violet : T.orange }}>
-            <Star size={13}/> Souscrire
+            <Star size={13}/> {t('sl4_plans.subscribe_button')}
           </button>
         )}
       </div>
@@ -425,11 +430,11 @@ function PlanCard({ plan, cycle, isCurrent, onSubscribe, onTrial }: {
 // ─── FAQ ──────────────────────────────────────────────────────────────────────
 
 const FAQ = [
-  { q: 'Comment fonctionne l\'essai gratuit ?',     a: 'Cliquez sur "Essayer gratuit" sur le plan de votre choix. L\'accès est immédiat, sans paiement. À l\'expiration, vous revenez sur le plan Gratuit. L\'essai ne peut être utilisé qu\'une seule fois par plan.' },
-  { q: 'Comment la commission est-elle prélevée ?', a: 'Elle est déduite automatiquement de chaque vente lors de la libération de l\'escrow. Vous recevez le montant net sur votre compte BelivaY.' },
-  { q: 'Puis-je changer de plan ?',                 a: 'Oui. Votre plan actuel reste actif jusqu\'à expiration. Initiez une nouvelle souscription à tout moment.' },
-  { q: 'Que se passe-t-il si mon plan expire ?',    a: 'Vous revenez automatiquement sur le plan Gratuit. Vos produits et commandes ne sont pas affectés.' },
-  { q: 'Le paiement est-il sécurisé ?',             a: 'Oui. Vous payez via Orange Money ou MTN MoMo. Notre équipe vérifie le paiement et active le plan sous 24h.' },
+  { qKey: 'sl4_plans.faq_trial_q',      aKey: 'sl4_plans.faq_trial_a' },
+  { qKey: 'sl4_plans.faq_commission_q', aKey: 'sl4_plans.faq_commission_a' },
+  { qKey: 'sl4_plans.faq_change_plan_q', aKey: 'sl4_plans.faq_change_plan_a' },
+  { qKey: 'sl4_plans.faq_expiry_q',     aKey: 'sl4_plans.faq_expiry_a' },
+  { qKey: 'sl4_plans.faq_payment_q',    aKey: 'sl4_plans.faq_payment_a' },
 ];
 
 function FaqItem({ q, a }: { q: string; a: string }) {
@@ -449,6 +454,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function SellerPlansPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [data,      setData]      = useState<PlansResponse | null>(null);
   const [history,   setHistory]   = useState<SubscriptionHistoryItem[]>([]);
@@ -466,9 +472,9 @@ export default function SellerPlansPage() {
       ]);
       setData(plans as unknown as PlansResponse);
       setHistory(hist as unknown as SubscriptionHistoryItem[]);
-    } catch { showToast('Erreur de chargement', 'error'); }
+    } catch { showToast(t('sl4_plans.toast_load_error'), 'error'); }
     finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -488,10 +494,10 @@ export default function SellerPlansPage() {
       <div>
         <h1 className="flex items-center gap-2 font-black text-[22px]"
           style={{ color: T.text }}>
-          <CreditCard size={20} style={{ color: T.orange }}/> Plans & Abonnements
+          <CreditCard size={20} style={{ color: T.orange }}/> {t('sl4_plans.page_title')}
         </h1>
         <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
-          Choisissez le plan adapté à votre croissance
+          {t('sl4_plans.page_subtitle')}
         </p>
       </div>
 
@@ -506,12 +512,12 @@ export default function SellerPlansPage() {
           )}
           <div>
             <p className="font-bold text-[13.5px]" style={{ color: currentPlan.is_trial ? T.blue : T.green }}>
-              Plan actuel : {currentPlan.name}
-              {currentPlan.is_trial && ' (Essai gratuit)'}
+              {t('sl4_plans.current_plan_line', { name: currentPlan.name })}
+              {currentPlan.is_trial && t('sl4_plans.current_plan_trial_suffix')}
             </p>
             {currentPlan.expires_at && (
               <p className="text-[12px]" style={{ color: T.muted }}>
-                Expire le {new Date(currentPlan.expires_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}
+                {t('sl4_plans.expires_on', { date: new Date(currentPlan.expires_at).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' }) })}
               </p>
             )}
           </div>
@@ -523,7 +529,7 @@ export default function SellerPlansPage() {
 
       {/* TOGGLE MENSUEL/ANNUEL */}
       <div className="flex items-center justify-center gap-4">
-        <span className="text-[13px] font-semibold" style={{ color: cycle==='MONTHLY'?T.text:T.muted }}>Mensuel</span>
+        <span className="text-[13px] font-semibold" style={{ color: cycle==='MONTHLY'?T.text:T.muted }}>{t('sl4_plans.cycle_toggle_monthly')}</span>
         <button type="button" onClick={() => setCycle(c => c==='MONTHLY'?'ANNUAL':'MONTHLY')}
           className="w-14 h-7 rounded-full transition-all relative"
           style={{ background: cycle==='ANNUAL' ? T.orange : T.border }}>
@@ -531,9 +537,9 @@ export default function SellerPlansPage() {
             style={{ left: cycle==='ANNUAL' ? '32px' : '2px' }}/>
         </button>
         <div className="flex items-center gap-2">
-          <span className="text-[13px] font-semibold" style={{ color: cycle==='ANNUAL'?T.text:T.muted }}>Annuel</span>
+          <span className="text-[13px] font-semibold" style={{ color: cycle==='ANNUAL'?T.text:T.muted }}>{t('sl4_plans.cycle_toggle_annual')}</span>
           <span className="text-[11px] font-bold px-2 py-0.5 rounded-full"
-            style={{ background: T.greenL, color: T.green }}>2 mois offerts</span>
+            style={{ background: T.greenL, color: T.green }}>{t('sl4_plans.cycle_toggle_bonus')}</span>
         </div>
       </div>
 
@@ -557,7 +563,7 @@ export default function SellerPlansPage() {
           style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
             <p className="font-bold text-[14px]" style={{ color: T.text }}>
-              Historique de vos abonnements
+              {t('sl4_plans.history_title')}
             </p>
           </div>
           <div className="divide-y" style={{ borderColor: T.border }}>
@@ -568,11 +574,11 @@ export default function SellerPlansPage() {
                     <p className="font-semibold text-[13px]" style={{ color: T.text }}>{s.plan_name}</p>
                     {s.is_trial && (
                       <span className="text-[10.5px] px-1.5 py-0.5 rounded-full font-bold"
-                        style={{ background: T.blueL, color: T.blue }}>ESSAI</span>
+                        style={{ background: T.blueL, color: T.blue }}>{t('sl4_plans.history_trial_badge')}</span>
                     )}
                   </div>
                   <p className="text-[11.5px]" style={{ color: T.muted }}>
-                    {s.reference} · {s.billing_cycle === 'ANNUAL' ? 'Annuel' : s.billing_cycle === 'TRIAL' ? 'Essai' : 'Mensuel'}
+                    {s.reference} · {s.billing_cycle === 'ANNUAL' ? t('sl4_plans.cycle_toggle_annual') : s.billing_cycle === 'TRIAL' ? t('sl4_plans.history_cycle_trial') : t('sl4_plans.cycle_toggle_monthly')}
                     {s.operator ? ` · ${s.operator.replace('_', ' ')}` : ''}
                   </p>
                 </div>
@@ -585,7 +591,7 @@ export default function SellerPlansPage() {
                       background: s.sub_status==='ACTIVE' ? T.greenL : s.sub_status==='PENDING' ? T.amberL : T.creamAlt,
                       color:      s.sub_status==='ACTIVE' ? T.green  : s.sub_status==='PENDING' ? T.amber  : T.muted,
                     }}>
-                    {s.sub_status==='ACTIVE'?'Actif':s.sub_status==='PENDING'?'En attente':s.sub_status==='EXPIRED'?'Expiré':'Annulé'}
+                    {s.sub_status==='ACTIVE'?t('sl4_plans.status_active'):s.sub_status==='PENDING'?t('sl4_plans.status_pending'):s.sub_status==='EXPIRED'?t('sl4_plans.status_expired'):t('sl4_plans.status_cancelled')}
                   </span>
                 </div>
               </div>
@@ -597,9 +603,9 @@ export default function SellerPlansPage() {
       {/* FAQ */}
       <div className="rounded-2xl overflow-hidden" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
-          <p className="font-bold text-[14px]" style={{ color: T.text }}>Questions fréquentes</p>
+          <p className="font-bold text-[14px]" style={{ color: T.text }}>{t('sl4_plans.faq_title')}</p>
         </div>
-        <div className="px-5">{FAQ.map((item, i) => <FaqItem key={i} q={item.q} a={item.a}/>)}</div>
+        <div className="px-5">{FAQ.map((item, i) => <FaqItem key={i} q={t(item.qKey)} a={t(item.aKey)}/>)}</div>
       </div>
 
       {/* MODALES */}

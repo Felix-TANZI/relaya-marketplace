@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import PromoCarousel from "@/components/PromoCarousel";
 import HomeSection from "@/components/HomeSection";
 import FlashPanel from "@/components/home/FlashPanel";
@@ -34,15 +35,16 @@ import NearbyProductsSection from "@/components/home/NearbyProductsSection";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "relevance", label: "Pertinence" },
-  { key: "price-asc", label: "Prix croissant" },
-  { key: "price-desc", label: "Prix décroissant" },
-  { key: "rating", label: "Mieux notés" },
-  { key: "newest", label: "Plus récents" },
+const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
+  { key: "relevance", labelKey: "home.sort_relevance" },
+  { key: "price-asc", labelKey: "home.sort_price_asc" },
+  { key: "price-desc", labelKey: "home.sort_price_desc" },
+  { key: "rating", labelKey: "home.sort_rating" },
+  { key: "newest", labelKey: "home.sort_newest" },
 ];
 
 export default function HomePage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { mainRef, trackTop: mainTop, trackHeight: mainHeight, topOffset } = useSidebarTrack();
   const [activeCat, setActiveCat] = useState("all");
@@ -151,20 +153,20 @@ export default function HomePage() {
      et « Made in Cameroon » au Supermarché, qui porte le sous-thème du même nom. */
   const slides = [
     {
-      label: "CEMAC · CMR · Gabon · RCA · Tchad",
-      title: "Achetez en toute confiance au Cameroun & Afrique centrale",
-      subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
+      label: t("home.slide1_label"),
+      title: t("home.slide1_title"),
+      subtitle: t("home.slide1_subtitle"),
       bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
       labelBg: "rgba(244,121,32,0.9)",
       action: () => navigate("/categorie/all"),
     },
-    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
-    { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
-    { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
-    { label: "Made in Cameroon", title: "Produits artisanaux locaux", subtitle: "Soutenez les PME camerounaises · Certifié BelivaY", bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
-    { label: "Maison & Déco", title: "Aménagez votre intérieur", subtitle: "1 720 produits · Meubles · Déco · Électroménager", bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
-    { label: "Mode Homme", title: "Bazin · Costume · Chemise Brodée", subtitle: "2 100 produits · Tenues de cérémonie et casual", bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
-    { label: "Chaussures", title: "Sneakers · Escarpins · Sandales", subtitle: "1 100 produits · Toutes pointures disponibles", bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
+    { label: t("home.slide2_label"), title: t("home.slide2_title"), subtitle: t("home.slide2_subtitle"), bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
+    { label: t("home.slide3_label"), title: t("home.slide3_title"), subtitle: t("home.slide3_subtitle"), bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
+    { label: t("home.slide4_label"), title: t("home.slide4_title"), subtitle: t("home.slide4_subtitle"), bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
+    { label: t("home.slide5_label"), title: t("home.slide5_title"), subtitle: t("home.slide5_subtitle"), bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
+    { label: t("home.slide6_label"), title: t("home.slide6_title"), subtitle: t("home.slide6_subtitle"), bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
+    { label: t("home.slide7_label"), title: t("home.slide7_title"), subtitle: t("home.slide7_subtitle"), bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
+    { label: t("home.slide8_label"), title: t("home.slide8_title"), subtitle: t("home.slide8_subtitle"), bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
   ];
 
   /* ── Featured sections (horizontal scroll, top of page) ── */
@@ -292,7 +294,7 @@ export default function HomePage() {
                     <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-[#fff1e5] text-primary shadow-sm ring-2 ring-white dark:bg-primary/20">
                       <LayoutGrid size={15} />
                     </span>
-                    Explorer
+                    {t("home.explore")}
                   </button>
 
                   <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto scrollbar-hide">
@@ -325,15 +327,15 @@ export default function HomePage() {
               {/* Stats — icône puis information, sur une seule ligne à toutes les tailles. */}
               <div className="hidden grid-cols-2 gap-2 bg-white px-3 py-2 sm:px-4 md:grid md:grid-cols-4 dark:bg-gray-900">
                 {[
-                  { icon: ShoppingCart, num: "15 240", label: "Produits", tint: "#fff1e5", color: "#F47920" },
-                  { icon: ShieldCheck, num: "3 200", label: "Vendeurs certifiés", tint: "#e7f8ee", color: "#059669" },
-                  { icon: Star, num: "4.8 / 5", label: "Note moyenne", tint: "#fff4d9", color: "#F59E0B" },
-                  { icon: Truck, num: "24–72h", label: "Livraison", tint: "#fff1e5", color: "#F47920" },
+                  { icon: ShoppingCart, num: "15 240", labelKey: "home.stat_products", tint: "#fff1e5", color: "#F47920" },
+                  { icon: ShieldCheck, num: "3 200", labelKey: "home.stat_certified_vendors", tint: "#e7f8ee", color: "#059669" },
+                  { icon: Star, num: "4.8 / 5", labelKey: "home.stat_avg_rating", tint: "#fff4d9", color: "#F59E0B" },
+                  { icon: Truck, num: "24–72h", labelKey: "home.stat_delivery", tint: "#fff1e5", color: "#F47920" },
                 ].map((item) => {
                   const Icon = item.icon;
                   return (
                     <div
-                      key={item.label}
+                      key={item.labelKey}
                       className="flex cursor-default items-center gap-2 rounded-2xl border border-[#f3e4d7] bg-[#fffaf6] p-2 transition-all duration-200 hover:-translate-y-0.5 hover:scale-[1.03] hover:border-[#f0c9a8] hover:shadow-[0_8px_20px_rgba(244,121,32,.14)] dark:border-gray-800 dark:bg-gray-800"
                     >
                       <div
@@ -344,7 +346,7 @@ export default function HomePage() {
                       </div>
                       <div className="min-w-0">
                         <p className="text-[13.5px] font-black leading-none text-[#c85e14] dark:text-primary">{item.num}</p>
-                        <p className="mt-0.5 truncate text-[10px] font-semibold text-[#8a6b55] dark:text-gray-400">{item.label}</p>
+                        <p className="mt-0.5 truncate text-[10px] font-semibold text-[#8a6b55] dark:text-gray-400">{t(item.labelKey)}</p>
                       </div>
                     </div>
                   );
@@ -358,12 +360,12 @@ export default function HomePage() {
             {/* ═══ À la une — mobile : deux rangées compactes ═══ */}
             <div className="lg:hidden">
               <MiniProductRow
-                title="À la une"
+                title={t("home.featured_of_day")}
                 icon={Star}
                 products={featured}
                 rows={2}
                 to="/categorie/all"
-                seeAllLabel="Voir tout"
+                seeAllLabel={t("home.see_all_short")}
                 isMockProducts={usingMockProducts}
               />
             </div>
@@ -386,7 +388,7 @@ export default function HomePage() {
                 <div className="mb-2.5 flex items-center gap-2">
                   <Eye size={14} className="text-primary" />
                   <h3 className="text-[11px] font-black uppercase tracking-[0.18em] text-[#8a6b55] dark:text-gray-400">
-                    Récemment consultés
+                    {t("home.recently_viewed")}
                   </h3>
                 </div>
 
@@ -413,7 +415,7 @@ export default function HomePage() {
                 htmlFor="home-sort"
                 className="text-[12px] font-semibold text-gray-500 dark:text-gray-400"
               >
-                Trier :
+                {t("home.sort_label")}
               </label>
               <select
                 id="home-sort"
@@ -426,7 +428,7 @@ export default function HomePage() {
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.key} value={option.key}>
-                    {option.label}
+                    {t(option.labelKey)}
                   </option>
                 ))}
               </select>
@@ -434,9 +436,9 @@ export default function HomePage() {
 
             <section className="rounded-[22px] border border-[#f4d9dd] bg-[linear-gradient(180deg,#fff5f6,#fff)] p-2.5 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-3 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection
-                title="Produits populaires"
+                title={t("home.popular_products")}
                 icon={Flame}
-                badge={`${sourceProducts.length} produits`}
+                badge={t("home.products_count", { count: sourceProducts.length })}
                 badgeColor="bg-red-50 text-red-600"
                 products={popular}
                 rows={2}
@@ -450,10 +452,10 @@ export default function HomePage() {
             <SectionBanner
               to="/premium"
               className="lg:hidden"
-              ariaLabel="BelivaY Premium — cashback 5 % et livraison prioritaire, s'inscrire"
-              title="BelivaY Premium"
-              badge="Sponso"
-              subtitle="Cashback 5% + livraison prioritaire 24h"
+              ariaLabel={t("home.premium_aria")}
+              title={t("home.premium_title")}
+              badge={t("home.premium_sponsored")}
+              subtitle={t("home.premium_subtitle")}
               icon={Gem}
               iconAnimation="animate-gem-sparkle"
               iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.7)]"
@@ -464,15 +466,15 @@ export default function HomePage() {
 
             <section className="rounded-[22px] border border-[#d8eadb] bg-[linear-gradient(180deg,#f6fff8,#fff)] p-2.5 shadow-[0_12px_32px_rgba(15,23,42,.05)] sm:rounded-[28px] sm:p-3 dark:border-gray-800 dark:bg-[linear-gradient(180deg,#111827,#0f172a)]">
               <HomeSection
-                title="Nouveaux Arrivages"
+                title={t("home.new_arrivals")}
                 icon={Sparkles}
-                badge="Nouveau"
+                badge={t("home.new_badge")}
                 badgeColor="bg-green-50 text-green-700"
                 animateBadge
                 products={newProds}
                 rows={1}
                 seeMoreTo="/categorie/all"
-                seeMoreLabel="Tout voir"
+                seeMoreLabel={t("home.see_more_short")}
                 isMockProducts={usingMockProducts}
               />
             </section>
@@ -489,7 +491,7 @@ export default function HomePage() {
                     products={products}
                     rows={2}
                     seeMoreTo={`/categorie/${theme.slug}`}
-                    seeMoreLabel="Tout voir"
+                    seeMoreLabel={t("home.see_more_short")}
                     isMockProducts={usingMockProducts}
                   />
                 </section>
@@ -499,10 +501,10 @@ export default function HomePage() {
                   <SectionBanner
                     to="/selection-premium"
                     className="mt-3"
-                    ariaLabel="Sélection Premium — les produits les mieux notés"
-                    title="Sélection Premium"
-                    badge="Curated"
-                    subtitle="Sélection Premium · Produits triés sur le volet"
+                    ariaLabel={t("home.selection_aria")}
+                    title={t("home.selection_title")}
+                    badge={t("home.selection_curated")}
+                    subtitle={t("home.selection_subtitle")}
                     icon={Star}
                     iconAnimation="animate-gem-sparkle"
                     iconClassName="text-amber-100 drop-shadow-[0_0_6px_rgba(253,230,138,.8)]"
@@ -523,15 +525,15 @@ export default function HomePage() {
                   <Globe size={16} className="text-primary" />
                   <div>
                     <h3 className="text-[16px] font-extrabold text-gray-900 dark:text-white">
-                      {activeCat === "all" ? "Catalogue de l'accueil" : getCategoryTheme(activeCat)?.name ?? activeCat}
+                      {activeCat === "all" ? t("home.home_catalog_title") : getCategoryTheme(activeCat)?.name ?? activeCat}
                     </h3>
                     <p className="text-[12px] text-gray-500 dark:text-gray-400">
-                      Sélection finie pour garder le footer visible et une lecture claire de la page.
+                      {t("home.catalog_helper")}
                     </p>
                   </div>
                 </div>
                 <span className="rounded-full bg-[#e9f2fb] px-3 py-1 text-[11px] font-bold text-[#2b6aa6] dark:bg-gray-800 dark:text-blue-300">
-                  {allFiltered.length} produits au total
+                  {t("home.total_products_count", { count: allFiltered.length })}
                 </span>
               </div>
 
@@ -547,10 +549,10 @@ export default function HomePage() {
                 <SectionBanner
                   to="/premium"
                   className="-mx-3 sm:-mx-4"
-                  ariaLabel="BelivaY Premium — cashback 5 % et livraison prioritaire, s'inscrire"
-                  title="BelivaY Premium"
-                  badge="Sponso"
-                  subtitle="Cashback 5% + livraison prioritaire 24h"
+                  ariaLabel={t("home.premium_aria")}
+                  title={t("home.premium_title")}
+                  badge={t("home.premium_sponsored")}
+                  subtitle={t("home.premium_subtitle")}
                   icon={Gem}
                   iconAnimation="animate-gem-sparkle"
                   iconClassName="text-amber-200 drop-shadow-[0_0_6px_rgba(253,224,71,.7)]"
@@ -570,10 +572,10 @@ export default function HomePage() {
                 <SectionBanner
                   to="/selection-premium"
                   className="-mx-3 sm:-mx-4"
-                  ariaLabel="Sélection Premium — les produits les mieux notés"
-                  title="Sélection Premium"
-                  badge="Curated"
-                  subtitle="Sélection Premium · Produits triés sur le volet"
+                  ariaLabel={t("home.selection_aria")}
+                  title={t("home.selection_title")}
+                  badge={t("home.selection_curated")}
+                  subtitle={t("home.selection_subtitle")}
                   icon={Star}
                   iconAnimation="animate-gem-sparkle"
                   iconClassName="text-amber-100 drop-shadow-[0_0_6px_rgba(253,230,138,.8)]"
@@ -598,12 +600,12 @@ export default function HomePage() {
                     onClick={() => setVisibleCount((count) => Math.min(count + 20, sortedProducts.length))}
                     className="inline-flex items-center gap-2 rounded-full border border-[#cfe1f2] bg-white px-5 py-3 text-sm font-bold text-[#245f95] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-blue-300"
                   >
-                    Voir plus d'articles
+                    {t("home.load_more")}
                     <ArrowRight size={16} />
                   </button>
                 ) : (
                   <span className="rounded-full border border-[#d6e5f2] bg-white px-5 py-3 text-sm font-bold text-[#5e7891] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                    Tous les articles de cette sélection sont affichés
+                    {t("home.all_items_shown")}
                   </span>
                 )}
               </div>

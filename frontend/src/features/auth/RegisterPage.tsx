@@ -46,12 +46,12 @@ export default function RegisterPage() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-    if (!formData.username.trim()) newErrors.username = 'Nom d\'utilisateur requis';
-    if (!formData.email.includes('@')) newErrors.email = 'Email valide requis';
-    if (!/^\+2376\d{8}$/.test(formData.phone)) newErrors.phone = 'Numéro mobile camerounais valide requis';
-    if (formData.password.length < 8) newErrors.password = 'Minimum 8 caractères';
+    if (!formData.username.trim()) newErrors.username = t('cl1_register.error_username_required');
+    if (!formData.email.includes('@')) newErrors.email = t('cl1_register.error_email_required');
+    if (!/^\+2376\d{8}$/.test(formData.phone)) newErrors.phone = t('cl1_register.error_phone_invalid');
+    if (formData.password.length < 8) newErrors.password = t('cl1_register.error_password_min');
     if (formData.password !== formData.password2) {
-      newErrors.password2 = 'Les mots de passe ne correspondent pas';
+      newErrors.password2 = t('cl1_register.error_password_mismatch');
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -102,7 +102,7 @@ export default function RegisterPage() {
       showToast(t('auth.register_success'), 'success');
       navigate('/');
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Inscription Google impossible.', 'error');
+      showToast(error instanceof Error ? error.message : t('cl1_register.google_register_unavailable'), 'error');
     } finally {
       setLoading(false);
     }
@@ -229,9 +229,9 @@ export default function RegisterPage() {
                   setFormData((current) => ({ ...current, phone }));
                   if (errors.phone) setErrors((current) => ({ ...current, phone: '' }));
                 }}
-                label="Téléphone"
+                label={t('cl1_register.phone_label')}
                 error={errors.phone}
-                helperText="Utilisé pour la livraison et pour retrouver votre compte."
+                helperText={t('cl1_register.phone_helper')}
                 disabled={loading}
                 required
               />
@@ -327,7 +327,7 @@ export default function RegisterPage() {
                       ))}
                     </div>
                     <p className="text-xs text-gray-800 font-semibold" style={{ textShadow: '0 1px 2px rgba(255,255,255,0.6)' }}>
-                      {passwordStrength < 2 ? 'Faible' : passwordStrength < 4 ? 'Moyen' : 'Fort'}
+                      {passwordStrength < 2 ? t('cl1_register.strength_weak') : passwordStrength < 4 ? t('cl1_register.strength_medium') : t('cl1_register.strength_strong')}
                     </p>
                   </div>
                 )}
@@ -389,7 +389,7 @@ export default function RegisterPage() {
                 <>
                   <div className="flex items-center gap-3 pt-1">
                     <div className="h-px flex-1 bg-white/40" />
-                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">ou</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.12em] text-gray-800">{t('cl1_register.or_divider')}</span>
                     <div className="h-px flex-1 bg-white/40" />
                   </div>
 

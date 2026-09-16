@@ -1,4 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Bike, Building2, MapPin, Store } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { isDedicatedPortal } from "@/config/portals";
@@ -15,6 +16,7 @@ const CLASSE_SECONDAIRE =
   "inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200";
 
 export default function RoleAccessDenied({ role, offline = false }: RoleAccessDeniedProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { logout } = useAuth();
 
@@ -24,32 +26,32 @@ export default function RoleAccessDenied({ role, offline = false }: RoleAccessDe
   const Icon = isSeller ? Store : isRelayPoint ? MapPin : isDeliveryOrganization ? Building2 : Bike;
 
   const nomEspace = isSeller
-    ? "vendeur"
+    ? t("misc1_role_access_denied.space_seller")
     : isRelayPoint
-      ? "point relais"
+      ? t("misc1_role_access_denied.space_relay_point")
       : isDeliveryOrganization
-        ? "organisation de livraison"
-        : "livreur";
+        ? t("misc1_role_access_denied.space_delivery_organization")
+        : t("misc1_role_access_denied.space_courier");
 
   const title = offline
-    ? "Vérification impossible"
+    ? t("misc1_role_access_denied.title_offline")
     : isSeller
-      ? "Espace vendeur non activé"
+      ? t("misc1_role_access_denied.title_seller")
       : isRelayPoint
-        ? "Espace point relais non activé"
+        ? t("misc1_role_access_denied.title_relay_point")
         : isDeliveryOrganization
-          ? "Espace organisation de livraison non activé"
-          : "Espace livreur non activé";
+          ? t("misc1_role_access_denied.title_delivery_organization")
+          : t("misc1_role_access_denied.title_courier");
 
   const instruction = offline
-    ? "Nous n'avons pas pu vérifier les droits de votre compte. Vérifiez votre connexion puis réessayez, ou reconnectez-vous."
+    ? t("misc1_role_access_denied.instruction_offline")
     : isSeller
-      ? "Pour devenir vendeur, vous devez aller dans mon profil et remplir les informations adéquates si vous ne l'avez pas encore fait."
+      ? t("misc1_role_access_denied.instruction_seller")
       : isRelayPoint
-        ? "Cet espace est réservé aux comptes Point relais validés par BelivaY."
+        ? t("misc1_role_access_denied.instruction_relay_point")
         : isDeliveryOrganization
-          ? "Cet espace est réservé aux entreprises de livraison partenaires validées par BelivaY."
-          : "Pour devenir livreur, vous devez aller dans mon profil et remplir les informations adéquates si vous ne l'avez pas encore fait.";
+          ? t("misc1_role_access_denied.instruction_delivery_organization")
+          : t("misc1_role_access_denied.instruction_courier");
 
   function seDeconnecter() {
     logout();
@@ -71,7 +73,7 @@ export default function RoleAccessDenied({ role, offline = false }: RoleAccessDe
     <>
       {offline && (
         <button type="button" onClick={() => window.location.reload()} className={CLASSE_PRIMAIRE}>
-          Réessayer
+          {t("misc1_role_access_denied.retry")}
         </button>
       )}
       <button
@@ -79,21 +81,21 @@ export default function RoleAccessDenied({ role, offline = false }: RoleAccessDe
         onClick={seDeconnecter}
         className={offline ? CLASSE_SECONDAIRE : CLASSE_PRIMAIRE}
       >
-        Se déconnecter
+        {t("misc1_role_access_denied.logout")}
       </button>
     </>
   ) : (
     <>
       {isSeller || (!isRelayPoint && !isDeliveryOrganization) ? (
         <Link to={`/profile?panel=${isSeller ? "vendeur" : "livreur"}`} className={CLASSE_PRIMAIRE}>
-          Aller dans mon profil
+          {t("misc1_role_access_denied.go_to_profile")}
         </Link>
       ) : null}
       <Link
         to="/"
         className={isRelayPoint || isDeliveryOrganization ? CLASSE_PRIMAIRE : CLASSE_SECONDAIRE}
       >
-        Retour à l'accueil
+        {t("misc1_role_access_denied.back_home")}
       </Link>
     </>
   );
@@ -111,7 +113,7 @@ export default function RoleAccessDenied({ role, offline = false }: RoleAccessDe
         </p>
         {isDedicatedPortal && !offline && (
           <p className="mx-auto mt-2 max-w-[440px] text-xs leading-6 text-gray-500 dark:text-gray-400">
-            Votre compte n'a pas le rôle {nomEspace}. Déconnectez-vous pour utiliser un autre compte.
+            {t("misc1_role_access_denied.account_missing_role", { role: nomEspace })}
           </p>
         )}
         <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">{actions}</div>

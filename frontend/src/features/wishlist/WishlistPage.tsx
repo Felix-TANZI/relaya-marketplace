@@ -82,12 +82,12 @@ export default function WishlistPage() {
   const shareWishlist = () => {
     const url = window.location.href;
     if (navigator.share) {
-      navigator.share({ title: "Ma wishlist BelivaY", url }).catch(() => { /* annulé */ });
+      navigator.share({ title: t("cl4_wishlist.share_title"), url }).catch(() => { /* annulé */ });
       return;
     }
     navigator.clipboard?.writeText(url).then(
-      () => showToast("Lien de la wishlist copié", "success"),
-      () => showToast("Copie impossible", "error"),
+      () => showToast(t("cl4_wishlist.link_copied"), "success"),
+      () => showToast(t("cl4_wishlist.copy_failed"), "error"),
     );
   };
 
@@ -101,7 +101,7 @@ export default function WishlistPage() {
       toggleFavoriteProduct(id);
     });
     setProducts([]);
-    showToast("Favoris vidés", "success");
+    showToast(t("cl4_wishlist.favorites_cleared"), "success");
 
     if (!hasValidAccessToken()) return;
     void (async () => {
@@ -129,7 +129,7 @@ export default function WishlistPage() {
           <h1 className="flex flex-wrap items-baseline gap-2 text-[22px] font-black text-gray-900 dark:text-white sm:text-[26px]">
             {t("wishlist.title")}
             <span className="text-[13px] font-semibold text-gray-400">
-              · {products.length} article{products.length > 1 ? "s" : ""}
+              · {t(products.length > 1 ? "cl4_wishlist.article_count_plural" : "cl4_wishlist.article_count", { count: products.length })}
             </span>
           </h1>
 
@@ -140,7 +140,7 @@ export default function WishlistPage() {
               className="inline-flex items-center gap-2 rounded-xl bg-[#1a2438] px-4 py-2.5 text-[12.5px] font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#26324a]"
             >
               <Link2 size={14} />
-              Partager ma wishlist
+              {t("cl4_wishlist.share_button")}
             </button>
 
             <button
@@ -150,16 +150,16 @@ export default function WishlistPage() {
               className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[12.5px] font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:text-red-500 disabled:translate-y-0 disabled:opacity-45 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
             >
               <Trash2 size={14} />
-              Tout retirer
+              {t("cl4_wishlist.remove_all")}
             </button>
           </div>
         </div>
 
         {!isAuthenticated ? (
           <div className="mb-5 rounded-2xl border border-orange-100 bg-white px-4 py-3 text-sm leading-6 text-gray-700 shadow-sm dark:border-orange-900/30 dark:bg-gray-900 dark:text-gray-200">
-            Vos favoris sont conservés sur cet appareil. Connectez-vous au moment de commander pour les retrouver avec votre panier et suivre vos achats.
+            {t("cl4_wishlist.guest_notice")}
             <Link to="/login" state={{ from: "/wishlist" }} className="ml-1 font-extrabold text-primary hover:underline">
-              Se connecter
+              {t("cl4_wishlist.login_link")}
             </Link>
           </div>
         ) : null}
@@ -196,7 +196,7 @@ export default function WishlistPage() {
                 className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
               >
                 <Sparkles size={18} />
-                Explorer avec la recherche
+                {t("cl4_wishlist.explore_search")}
               </Link>
             </div>
           </div>

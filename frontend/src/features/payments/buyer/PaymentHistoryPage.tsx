@@ -1,6 +1,7 @@
 // frontend/src/features/payments/buyer/PaymentHistoryPage.tsx
 // Mes paiements.
 
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 import { useMyPayments } from '../hooks/useMyPayments';
@@ -15,6 +16,7 @@ interface PaymentHistoryPageProps {
 export default function PaymentHistoryPage({
   basePath = '/payments',
 }: PaymentHistoryPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, loading, error } = useMyPayments();
   const paiements = data ?? [];
@@ -24,10 +26,10 @@ export default function PaymentHistoryPage({
       <p style={{
         fontSize: 19, margin: '0 0 4px', color: 'var(--text-primary, #1A1209)',
       }}>
-        Mes paiements
+        {t('pm2_buyer_history.title')}
       </p>
       <p style={{ fontSize: 12.5, margin: '0 0 1.25rem', color: FT.muted }}>
-        Chaque paiement peut couvrir plusieurs commandes.
+        {t('pm2_buyer_history.subtitle')}
       </p>
 
       <div style={{
@@ -37,14 +39,16 @@ export default function PaymentHistoryPage({
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>
+              {t('pm2_buyer_history.loading')}
+            </span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher vos paiements"
+            title={t('pm2_buyer_history.error_title')}
             description={error}
           />
         )}
@@ -52,8 +56,8 @@ export default function PaymentHistoryPage({
         {!loading && !error && paiements.length === 0 && (
           <EmptyState
             icon="credit-card"
-            title="Aucun paiement"
-            description="Vos paiements apparaîtront ici après votre première commande."
+            title={t('pm2_buyer_history.empty_title')}
+            description={t('pm2_buyer_history.empty_description')}
           />
         )}
 

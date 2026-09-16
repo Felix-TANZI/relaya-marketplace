@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Building2, Clock3, MapPin, Package, Phone, RefreshCw, Search, ShieldCheck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { useAdminTheme } from "@/hooks/useAdminTheme";
@@ -19,14 +20,15 @@ interface RelayPoint {
   username: string;
 }
 
-function statusLabel(status: RelayPoint["status"]) {
-  if (status === "APPROVED") return "Approuve";
-  if (status === "SUSPENDED") return "Suspendu";
-  return "En attente";
+function statusLabelKey(status: RelayPoint["status"]) {
+  if (status === "APPROVED") return "ad6_del_relay_map.status_approved";
+  if (status === "SUSPENDED") return "ad6_del_relay_map.status_suspended";
+  return "ad6_del_relay_map.status_pending";
 }
 
 export default function RelayPointsMapPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const [relayPoints, setRelayPoints] = useState<RelayPoint[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [search, setSearch] = useState("");
@@ -85,8 +87,8 @@ export default function RelayPointsMapPage() {
           <div className="text-sm font-black text-slate-950">{relay.name}</div>
           <div className="mt-1 text-xs font-semibold text-slate-600">{relay.address || relay.city}</div>
           <div className="mt-2 flex items-center justify-between gap-3 text-xs">
-            <span className="font-bold text-blue-700">{relay.relay_code || "Code a definir"}</span>
-            <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-700">{statusLabel(relay.status)}</span>
+            <span className="font-bold text-blue-700">{relay.relay_code || t('ad6_del_relay_map.code_to_define')}</span>
+            <span className="rounded-full bg-emerald-50 px-2 py-1 font-black text-emerald-700">{t(statusLabelKey(relay.status))}</span>
           </div>
         </button>
       ),
@@ -98,13 +100,13 @@ export default function RelayPointsMapPage() {
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <p style={{ color: T.red }} className="text-[11px] font-black uppercase tracking-[0.18em]">
-            Reseau points relais
+            {t('ad6_del_relay_map.eyebrow')}
           </p>
           <h1 style={{ color: T.text }} className="mt-1 text-2xl font-black">
-            Carte des points relais BelivaY
+            {t('ad6_del_relay_map.title')}
           </h1>
           <p style={{ color: T.muted }} className="mt-1 max-w-2xl text-sm">
-            Vue admin de supervision : localisation operationnelle, capacite, couverture et statut des relais partenaires.
+            {t('ad6_del_relay_map.subtitle')}
           </p>
         </div>
         <button
@@ -113,15 +115,15 @@ export default function RelayPointsMapPage() {
           style={{ background: T.card, border: `1px solid ${T.border}`, color: T.text }}
         >
           <RefreshCw size={15} />
-          Actualiser
+          {t('ad6_del_relay_map.refresh')}
         </button>
       </div>
 
       <section className="grid gap-4 md:grid-cols-3">
         {[
-          ["Points relais", relayPoints.length.toString(), Building2],
-          ["Approuves", approvedCount.toString(), ShieldCheck],
-          ["Capacite totale", totalCapacity.toString(), Package],
+          [t('ad6_del_relay_map.kpi_relay_points'), relayPoints.length.toString(), Building2],
+          [t('ad6_del_relay_map.kpi_approved'), approvedCount.toString(), ShieldCheck],
+          [t('ad6_del_relay_map.kpi_total_capacity'), totalCapacity.toString(), Package],
         ].map(([label, value, Icon]) => (
           <article key={label as string} className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center justify-between">
@@ -145,13 +147,13 @@ export default function RelayPointsMapPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Rechercher ville, zone, code relais..."
+                placeholder={t('ad6_del_relay_map.search_placeholder')}
                 className="w-full rounded-xl py-2 pl-10 pr-3 text-sm outline-none"
                 style={{ background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text }}
               />
             </div>
             <span style={{ color: T.muted }} className="text-sm font-semibold">
-              {loading ? "Chargement..." : `${filtered.length} relais affiches`}
+              {loading ? t('ad6_del_relay_map.loading') : t('ad6_del_relay_map.relays_shown', { count: filtered.length })}
             </span>
           </div>
 
@@ -163,34 +165,34 @@ export default function RelayPointsMapPage() {
             <div>
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-violet-700">{selected.relay_code || "Code a definir"}</p>
+                  <p className="text-[11px] font-black uppercase tracking-[0.16em] text-violet-700">{selected.relay_code || t('ad6_del_relay_map.code_to_define')}</p>
                   <h2 style={{ color: T.text }} className="mt-1 text-xl font-black">{selected.name}</h2>
                   <p style={{ color: T.muted }} className="mt-1 text-sm">{selected.address || selected.city}</p>
                 </div>
                 <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">
-                  {statusLabel(selected.status)}
+                  {t(statusLabelKey(selected.status))}
                 </span>
               </div>
 
               <div className="mt-5 space-y-3">
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Phone size={17} className="text-violet-700" />
-                  <span className="text-sm font-semibold text-slate-700">{selected.phone || "Telephone a completer"}</span>
+                  <span className="text-sm font-semibold text-slate-700">{selected.phone || t('ad6_del_relay_map.phone_to_complete')}</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Clock3 size={17} className="text-violet-700" />
-                  <span className="text-sm font-semibold text-slate-700">{selected.opening_hours || "Horaires a completer"}</span>
+                  <span className="text-sm font-semibold text-slate-700">{selected.opening_hours || t('ad6_del_relay_map.hours_to_complete')}</span>
                 </div>
                 <div className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3">
                   <Package size={17} className="text-violet-700" />
-                  <span className="text-sm font-semibold text-slate-700">Capacite {selected.storage_capacity || 0} colis</span>
+                  <span className="text-sm font-semibold text-slate-700">{t('ad6_del_relay_map.capacity_parcels', { count: selected.storage_capacity || 0 })}</span>
                 </div>
               </div>
 
               <div className="mt-5">
-                <p style={{ color: T.muted }} className="text-xs font-bold uppercase tracking-[0.12em]">Zones couvertes</p>
+                <p style={{ color: T.muted }} className="text-xs font-bold uppercase tracking-[0.12em]">{t('ad6_del_relay_map.covered_zones')}</p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {(selected.zones.length ? selected.zones : [selected.city || "Zone a definir"]).map((zone) => (
+                  {(selected.zones.length ? selected.zones : [selected.city || t('ad6_del_relay_map.zone_to_define')]).map((zone) => (
                     <span key={zone} className="rounded-full bg-violet-50 px-3 py-1 text-xs font-bold text-violet-700">
                       {zone}
                     </span>
@@ -199,7 +201,7 @@ export default function RelayPointsMapPage() {
               </div>
             </div>
           ) : (
-            <p style={{ color: T.muted }} className="text-sm">Aucun point relais a afficher.</p>
+            <p style={{ color: T.muted }} className="text-sm">{t('ad6_del_relay_map.no_relay')}</p>
           )}
         </aside>
       </section>

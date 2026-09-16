@@ -2,6 +2,7 @@
 // Bloc "Double authentification" côté client/acheteur — branché sur l'API réelle.
 
 import { useCallback, useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ShieldCheck, ShieldOff, Mail, Eye, EyeOff, RefreshCw } from 'lucide-react';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
@@ -14,6 +15,7 @@ interface TwoFAStatus {
 }
 
 export default function TwoFactorCard() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [status, setStatus] = useState<TwoFAStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -47,46 +49,46 @@ export default function TwoFactorCard() {
       });
       setStep('code');
       setCode('');
-      showToast(`Code envoyé à ${status?.email ?? 'votre email'}`, 'success');
+      showToast(t('cl7_two_factor.code_sent_toast', { email: status?.email ?? t('cl7_two_factor.your_email') }), 'success');
     } catch {
-      showToast("Impossible d'envoyer le code. Réessayez.", 'error');
+      showToast(t('cl7_two_factor.send_error'), 'error');
     } finally {
       setSending(false);
     }
   };
 
   const enable = async () => {
-    if (code.trim().length < 6) { showToast('Entrez le code à 6 chiffres.', 'error'); return; }
+    if (code.trim().length < 6) { showToast(t('cl7_two_factor.enter_code_error'), 'error'); return; }
     setEnabling(true);
     try {
       await http('/api/auth/2fa/enable/', {
         method: 'POST',
         body: JSON.stringify({ code: code.trim(), method: 'EMAIL', phone: '' }),
       });
-      showToast('Double authentification activée', 'success');
+      showToast(t('cl7_two_factor.enable_success'), 'success');
       setStep('idle');
       setCode('');
       await load();
     } catch {
-      showToast('Code incorrect ou expiré.', 'error');
+      showToast(t('cl7_two_factor.enable_error'), 'error');
     } finally {
       setEnabling(false);
     }
   };
 
   const disable = async () => {
-    if (!disablePwd) { showToast('Entrez votre mot de passe pour confirmer.', 'error'); return; }
+    if (!disablePwd) { showToast(t('cl7_two_factor.password_required'), 'error'); return; }
     setDisabling(true);
     try {
       await http('/api/auth/2fa/disable/', {
         method: 'POST',
         body: JSON.stringify({ password: disablePwd }),
       });
-      showToast('Double authentification désactivée', 'success');
+      showToast(t('cl7_two_factor.disable_success'), 'success');
       setDisablePwd('');
       await load();
     } catch {
-      showToast('Mot de passe incorrect.', 'error');
+      showToast(t('cl7_two_factor.disable_error'), 'error');
     } finally {
       setDisabling(false);
     }
@@ -98,7 +100,7 @@ export default function TwoFactorCard() {
   if (loading) {
     return (
       <div className="flex items-center gap-2 rounded-[12px] border border-[#e5e7eb] p-[14px] text-[13px] text-[#9ca3af] dark:border-gray-800">
-        <RefreshCw size={15} className="animate-spin" /> Chargement…
+        <RefreshCw size={15} className="animate-spin" /> {t('cl7_two_factor.loading')}
       </div>
     );
   }
@@ -113,11 +115,11 @@ export default function TwoFactorCard() {
             ? <ShieldCheck size={21} className="text-green-600" />
             : <ShieldOff size={21} className="text-[#f47920]" />}
           <div>
-            <div className="font-bold text-[#111827] dark:text-white">Double authentification</div>
+            <div className="font-bold text-[#111827] dark:text-white">{t('cl7_two_factor.title')}</div>
             <div className="text-[12px] text-[#9ca3af]">
               {enabled
-                ? `Activée · code envoyé à ${status?.email}`
-                : 'Protégez votre compte avec un code à chaque connexion.'}
+                ? t('cl7_two_factor.enabled_subtitle', { email: status?.email })
+                : t('cl7_two_factor.disabled_subtitle')}
             </div>
           </div>
         </div>
@@ -126,7 +128,7 @@ export default function TwoFactorCard() {
             enabled ? 'bg-green-50 text-green-700' : 'bg-[#f3f4f6] text-[#6b7280]'
           }`}
         >
-          {enabled ? 'Activée' : 'Désactivée'}
+          {enabled ? t('cl7_two_factor.badge_enabled') : t('cl7_two_factor.badge_disabled')}
         </span>
       </div>
 
@@ -141,12 +143,12 @@ export default function TwoFactorCard() {
               className="inline-flex items-center gap-2 rounded-[10px] bg-[#f47920] px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#c85e14] disabled:opacity-50"
             >
               <Mail size={14} />
-              {sending ? 'Envoi…' : 'Recevoir un code par email'}
+              {sending ? t('cl7_two_factor.sending') : t('cl7_two_factor.receive_code_button')}
             </button>
           ) : (
             <div className="space-y-3">
               <p className="text-[12.5px] text-[#4b5563] dark:text-gray-300">
-                Saisissez le code à 6 chiffres envoyé à <span className="font-semibold">{status?.email}</span>.
+                {t('cl7_two_factor.enter_code_prefix')} <span className="font-semibold">{status?.email}</span>.
               </p>
               <input
                 value={code}
@@ -165,7 +167,7 @@ export default function TwoFactorCard() {
                   className="inline-flex items-center gap-2 rounded-[10px] bg-[#f47920] px-4 py-2.5 text-[12.5px] font-bold text-white transition hover:bg-[#c85e14] disabled:opacity-50"
                 >
                   <ShieldCheck size={14} />
-                  {enabling ? 'Activation…' : 'Activer'}
+                  {enabling ? t('cl7_two_factor.activating') : t('cl7_two_factor.activate_button')}
                 </button>
                 <button
                   type="button"
@@ -173,14 +175,14 @@ export default function TwoFactorCard() {
                   disabled={sending}
                   className="rounded-[10px] border border-[#e5e7eb] px-4 py-2.5 text-[12.5px] font-bold text-[#4b5563] transition hover:bg-[#f9fafb] disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
                 >
-                  {sending ? 'Envoi…' : 'Renvoyer le code'}
+                  {sending ? t('cl7_two_factor.sending') : t('cl7_two_factor.resend_code')}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setStep('idle'); setCode(''); }}
                   className="rounded-[10px] px-3 py-2.5 text-[12.5px] font-bold text-[#9ca3af]"
                 >
-                  Annuler
+                  {t('cl7_two_factor.cancel')}
                 </button>
               </div>
             </div>
@@ -192,7 +194,7 @@ export default function TwoFactorCard() {
       {enabled && (
         <div className="mt-4 space-y-3">
           <p className="rounded-[10px] bg-[#fff4eb] px-3 py-2 text-[12px] text-[#c85e14] dark:bg-primary/10">
-            Désactiver la double authentification réduit la sécurité de votre compte.
+            {t('cl7_two_factor.disable_warning')}
           </p>
           <div className="relative">
             <input
@@ -200,7 +202,7 @@ export default function TwoFactorCard() {
               onChange={(e) => setDisablePwd(e.target.value)}
               type={showPwd ? 'text' : 'password'}
               autoComplete="off"
-              placeholder="Votre mot de passe actuel"
+              placeholder={t('cl7_two_factor.current_password_placeholder')}
               className={`${inputCls} pr-11`}
             />
             <button
@@ -218,7 +220,7 @@ export default function TwoFactorCard() {
             className="inline-flex items-center gap-2 rounded-[10px] border border-red-200 bg-red-50 px-4 py-2.5 text-[12.5px] font-bold text-red-600 transition hover:bg-red-100 disabled:opacity-50"
           >
             <ShieldOff size={14} />
-            {disabling ? 'Désactivation…' : 'Désactiver la 2FA'}
+            {disabling ? t('cl7_two_factor.disabling') : t('cl7_two_factor.disable_button')}
           </button>
         </div>
       )}

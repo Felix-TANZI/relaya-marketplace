@@ -2,6 +2,7 @@
 // Le detail d'un paiement : plan de repartition, tentatives, sequestres.
 
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import { useAdminIntent } from '../../hooks/useFinanceAdmin';
@@ -40,6 +41,7 @@ function Ligne({ label, value }: { label: string; value: React.ReactNode }) {
 export default function IntentDetailPage({
   basePath = '/admin/finance',
 }: IntentDetailPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const navigate = useNavigate();
   const { data: intention, loading, error, reload } = useAdminIntent(reference);
@@ -48,7 +50,7 @@ export default function IntentDetailPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_intent_detail.loading')}</span>
       </div>
     );
   }
@@ -57,7 +59,7 @@ export default function IntentDetailPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Paiement introuvable"
+        title={t('pm1_intent_detail.not_found_title')}
         description={error ?? undefined}
       />
     );
@@ -69,10 +71,10 @@ export default function IntentDetailPage({
 
   return (
     <AdminPageShell
-      title="Paiement"
+      title={t('pm1_intent_detail.title')}
       subtitle={intention.reference}
       backTo={`${basePath}/intents`}
-      backLabel="Paiements"
+      backLabel={t('pm1_intent_detail.back_label')}
       maxWidth={760}
       actions={enAttente ? (
         <button
@@ -81,12 +83,14 @@ export default function IntentDetailPage({
           onClick={() => {
             void action.run(
               () => adminFinanceApi.pollIntent(reference),
-              'Prestataire interrogé.',
+              t('pm1_intent_detail.toast_polled'),
             );
           }}
           style={{ fontSize: 12.5, padding: '7px 14px' }}
         >
-          {action.running ? 'Interrogation…' : 'Interroger le prestataire'}
+          {action.running
+            ? t('pm1_intent_detail.polling')
+            : t('pm1_intent_detail.poll_provider')}
         </button>
       ) : undefined}
     >
@@ -106,43 +110,47 @@ export default function IntentDetailPage({
         </div>
 
         <div style={{ padding: '0.25rem 1.25rem' }}>
-          <Ligne label="État" value={intention.status_label} />
+          <Ligne label={t('pm1_intent_detail.field_status')} value={intention.status_label} />
           <Ligne
-            label="Payeur"
-            value={`${intention.payer_msisdn_masked} · ${
-              intention.payer_operator}`}
+            label={t('pm1_intent_detail.field_payer')}
+            value={t('pm1_intent_detail.payer_value', {
+              msisdn: intention.payer_msisdn_masked,
+              operator: intention.payer_operator,
+            })}
           />
           {/* En diaspora, un payeur tiers est le cas NOMINAL. */}
           {intention.payer_relationship && (
             <Ligne
-              label="Relation payeur"
+              label={t('pm1_intent_detail.field_relation')}
               value={intention.payer_relationship === 'SELF'
-                ? "l'acheteur lui-même"
-                : 'un tiers'}
+                ? t('pm1_intent_detail.relation_self')
+                : t('pm1_intent_detail.relation_third_party')}
             />
           )}
           <Ligne
-            label="Commandes"
+            label={t('pm1_intent_detail.field_orders')}
             value={intention.orders.length > 0
-              ? intention.orders.map((id) => `#${id}`).join(', ')
+              ? intention.orders
+                .map((id) => t('pm1_intent_detail.order_number', { id }))
+                .join(', ')
               : '—'}
           />
           {intention.risk_score > 0 && (
-            <Ligne label="Score de risque" value={intention.risk_score} />
+            <Ligne label={t('pm1_intent_detail.field_risk_score')} value={intention.risk_score} />
           )}
           {intention.needs_reallocation && (
             <Ligne
-              label="Réallocation due"
+              label={t('pm1_intent_detail.field_reallocation')}
               value={(
                 <span style={{ color: FT.amberD }}>
-                  une part attend son bénéficiaire réel
+                  {t('pm1_intent_detail.reallocation_pending')}
                 </span>
               )}
             />
           )}
           {intention.failure_reason && (
             <Ligne
-              label="Motif d'échec"
+              label={t('pm1_intent_detail.field_failure_reason')}
               value={<span style={{ color: FT.redD }}>
                 {intention.failure_reason}
               </span>}
@@ -153,7 +161,7 @@ export default function IntentDetailPage({
 
       {intention.escrow_holds.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <AdminCard title="Séquestres">
+          <AdminCard title={t('pm1_intent_detail.escrow_title')}>
             {intention.escrow_holds.map((hold, index) => (
               <div
                 key={hold.reference}
@@ -172,7 +180,7 @@ export default function IntentDetailPage({
                     color: 'var(--text-primary, #1A1209)',
                   }}>
                     {hold.order_id
-                      ? `Commande #${hold.order_id}`
+                      ? t('pm1_intent_detail.order_label', { id: hold.order_id })
                       : hold.component_label}
                     <span style={{ color: FT.faint }}>
                       {' · '}{hold.payee.display_label || hold.payee.payee_code}
@@ -197,7 +205,7 @@ export default function IntentDetailPage({
 
       {intention.attempts.length > 0 && (
         <div style={{ marginTop: 12 }}>
-          <AdminCard title="Tentatives">
+          <AdminCard title={t('pm1_intent_detail.attempts_title')}>
             {intention.attempts.map((tentative) => (
               <div
                 key={tentative.external_reference}

@@ -1,6 +1,8 @@
 // frontend/src/features/payments/buyer/components/PaymentRow.tsx
 // Un paiement dans la liste de l'acheteur.
 
+import { useTranslation } from 'react-i18next';
+
 import Money from '../../shared/Money';
 import { FT } from '../../shared/tokens';
 import { formatShortDate } from '../../shared/dates';
@@ -17,24 +19,26 @@ interface PaymentRowProps {
  *
  * « SUCCEEDED » devient « payé », « REQUIRES_ACTION » devient « composez
  * votre code » — la phrase qui dit quoi faire, pas celle qui decrit l'etat.
+ *
+ * Les libelles sont des cles de traduction, resolues au rendu.
  */
-const ETATS: Record<string, { dot: string; label: string; hint: string }> = {
-  SUCCEEDED: { dot: FT.green, label: 'payé', hint: '' },
+const ETATS: Record<string, { dot: string; labelKey: string; hintKey: string }> = {
+  SUCCEEDED: { dot: FT.green, labelKey: 'pm2_buyer_row.status_paid', hintKey: '' },
   PROCESSING: {
-    dot: FT.amber, label: 'en attente', hint: 'composez votre code',
+    dot: FT.amber, labelKey: 'pm2_buyer_row.status_pending', hintKey: 'pm2_buyer_row.hint_enter_code',
   },
   REQUIRES_ACTION: {
-    dot: FT.amber, label: 'en attente', hint: 'composez votre code',
+    dot: FT.amber, labelKey: 'pm2_buyer_row.status_pending', hintKey: 'pm2_buyer_row.hint_enter_code',
   },
-  DRAFT: { dot: FT.faint, label: 'à payer', hint: '' },
-  FAILED: { dot: FT.red, label: 'échoué', hint: '' },
+  DRAFT: { dot: FT.faint, labelKey: 'pm2_buyer_row.status_to_pay', hintKey: '' },
+  FAILED: { dot: FT.red, labelKey: 'pm2_buyer_row.status_failed', hintKey: '' },
   EXPIRED: {
-    dot: FT.faint, label: 'expiré', hint: 'expiré sans confirmation',
+    dot: FT.faint, labelKey: 'pm2_buyer_row.status_expired', hintKey: 'pm2_buyer_row.hint_expired',
   },
-  CANCELLED: { dot: FT.faint, label: 'annulé', hint: '' },
-  REFUNDED: { dot: FT.faint, label: 'remboursé', hint: '' },
+  CANCELLED: { dot: FT.faint, labelKey: 'pm2_buyer_row.status_cancelled', hintKey: '' },
+  REFUNDED: { dot: FT.faint, labelKey: 'pm2_buyer_row.status_refunded', hintKey: '' },
   PARTIALLY_REFUNDED: {
-    dot: FT.green, label: 'payé', hint: 'partiellement remboursé',
+    dot: FT.green, labelKey: 'pm2_buyer_row.status_paid', hintKey: 'pm2_buyer_row.hint_partially_refunded',
   },
 };
 
@@ -43,8 +47,11 @@ const ETEINTS = ['EXPIRED', 'CANCELLED', 'FAILED'];
 export default function PaymentRow({
   payment, onClick, showBorder = true,
 }: PaymentRowProps) {
-  const etat = ETATS[payment.status]
-    ?? { dot: FT.faint, label: payment.status_label, hint: '' };
+  const { t } = useTranslation();
+  const etat = ETATS[payment.status];
+  const etatDot = etat?.dot ?? FT.faint;
+  const etatLabel = etat ? t(etat.labelKey) : payment.status_label;
+  const etatHint = etat?.hintKey ? t(etat.hintKey) : '';
 
   // Les paiements sans suite restent VISIBLES, en retrait.
   // Un acheteur qui cherche pourquoi sa commande n'est pas passee ne
@@ -56,9 +63,9 @@ export default function PaymentRow({
   const details = [
     formatShortDate(payment.created_at),
     nombreCommandes > 0
-      ? `${nombreCommandes} commande${nombreCommandes > 1 ? 's' : ''}`
+      ? t(nombreCommandes > 1 ? 'pm2_buyer_row.orders_count_plural' : 'pm2_buyer_row.orders_count', { count: nombreCommandes })
       : '',
-    etat.hint || (payment.payer_msisdn_masked
+    etatHint || (payment.payer_msisdn_masked
       ? `${payment.payer_operator} ${payment.payer_msisdn_masked}`
       : ''),
   ].filter(Boolean).join(' · ');
@@ -75,7 +82,7 @@ export default function PaymentRow({
     >
       <span aria-hidden="true" style={{
         width: 7, height: 7, borderRadius: '50%',
-        background: etat.dot, flexShrink: 0,
+        background: etatDot, flexShrink: 0,
       }} />
 
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -93,7 +100,7 @@ export default function PaymentRow({
       <span style={{
         fontSize: 11.5, width: 80, textAlign: 'right', color: FT.muted,
       }}>
-        {etat.label}
+        {etatLabel}
       </span>
 
       <span style={{ width: 82, textAlign: 'right' }}>

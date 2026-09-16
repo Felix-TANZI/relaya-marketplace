@@ -14,6 +14,7 @@
 
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -48,6 +49,7 @@ const FILTRES: Record<string, string> = {
 export default function AdminEscrowsPage({
   basePath = '/admin/finance',
 }: AdminEscrowsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filtre = params.get('filter') ?? 'held';
@@ -73,10 +75,10 @@ export default function AdminEscrowsPage({
   const total = lignes.reduce((somme, ligne) => somme + ligne.payable_xaf, 0);
 
   const onglets: FilterTab[] = [
-    { key: 'held', label: 'Sous séquestre' },
-    { key: 'scheduled', label: 'À libérer' },
-    { key: 'frozen', label: 'Gelés', urgent: true },
-    { key: 'all', label: 'Tous' },
+    { key: 'held', label: t('pm1_escrows.tab_held') },
+    { key: 'scheduled', label: t('pm1_escrows.tab_scheduled') },
+    { key: 'frozen', label: t('pm1_escrows.tab_frozen'), urgent: true },
+    { key: 'all', label: t('pm1_escrows.tab_all') },
   ];
 
   const confirmer = (motif: string) => {
@@ -88,9 +90,9 @@ export default function AdminEscrowsPage({
       release: () => adminFinanceApi.releaseEscrow(reference, motif),
     };
     const messages = {
-      freeze: 'Séquestre gelé. Les autres du même paiement ne le sont pas.',
-      unfreeze: 'Séquestre dégelé.',
-      release: 'Séquestre libéré.',
+      freeze: t('pm1_escrows.toast_frozen'),
+      unfreeze: t('pm1_escrows.toast_unfrozen'),
+      release: t('pm1_escrows.toast_released'),
     };
     void action.run(appels[dialogue.mode], messages[dialogue.mode]);
   };
@@ -107,7 +109,7 @@ export default function AdminEscrowsPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Centre financier
+        {t('pm1_escrows.back_label')}
       </button>
 
       <div style={{
@@ -119,11 +121,11 @@ export default function AdminEscrowsPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Séquestres
+            {t('pm1_escrows.title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
-            {data?.count ?? 0} au total
-            {total > 0 && ` · ${formatXaf(total)} FCFA sur cette page`}
+            {t('pm1_escrows.total_count', { count: data?.count ?? 0 })}
+            {total > 0 && t('pm1_escrows.total_on_page', { amount: formatXaf(total) })}
           </p>
         </div>
         <FilterTabs
@@ -157,20 +159,20 @@ export default function AdminEscrowsPage({
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_escrows.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les séquestres"
+            title={t('pm1_escrows.error_title')}
             description={error}
           />
         )}
 
         {!loading && !error && lignes.length === 0 && (
-          <EmptyState icon="lock" title="Aucun séquestre" />
+          <EmptyState icon="lock" title={t('pm1_escrows.empty_title')} />
         )}
 
         {!loading && !error && lignes.map((hold, index) => {
@@ -199,7 +201,7 @@ export default function AdminEscrowsPage({
                   color: 'var(--text-primary, #1A1209)',
                 }}>
                   {hold.order_id
-                    ? `Commande #${hold.order_id}`
+                    ? t('pm1_escrows.order_number', { id: hold.order_id })
                     : hold.component_label}
                   <span style={{ color: FT.faint }}>
                     {' · '}{hold.payee.display_label || hold.payee.payee_code}
@@ -225,7 +227,7 @@ export default function AdminEscrowsPage({
                   <p style={{
                     fontSize: 11.5, margin: '5px 0 0', color: FT.faint,
                   }}>
-                    libération le {formatShortDate(hold.release_at)}
+                    {t('pm1_escrows.release_on', { date: formatShortDate(hold.release_at) })}
                   </p>
                 )}
               </div>
@@ -244,7 +246,7 @@ export default function AdminEscrowsPage({
                     onClick={() => setDialogue({ mode: 'unfreeze', hold })}
                     style={{ fontSize: 12, padding: '5px 12px' }}
                   >
-                    Dégeler
+                    {t('pm1_escrows.unfreeze')}
                   </button>
                 )}
                 {actif && (
@@ -253,7 +255,7 @@ export default function AdminEscrowsPage({
                     onClick={() => setDialogue({ mode: 'freeze', hold })}
                     style={{ fontSize: 12, padding: '5px 12px' }}
                   >
-                    Geler
+                    {t('pm1_escrows.freeze')}
                   </button>
                 )}
               </div>
@@ -265,41 +267,43 @@ export default function AdminEscrowsPage({
       <ApprovalDialog
         open={dialogue !== null}
         title={{
-          freeze: 'Geler ce séquestre',
-          unfreeze: 'Dégeler ce séquestre',
-          release: 'Libérer ce séquestre',
+          freeze: t('pm1_escrows.dialog_title_freeze'),
+          unfreeze: t('pm1_escrows.dialog_title_unfreeze'),
+          release: t('pm1_escrows.dialog_title_release'),
         }[dialogue?.mode ?? 'freeze']}
         amountXaf={dialogue?.hold.payable_xaf ?? 0}
         fields={dialogue ? [
           {
-            label: 'Bénéficiaire',
+            label: t('pm1_escrows.field_payee'),
             value: dialogue.hold.payee.display_label
               || dialogue.hold.payee.payee_code,
           },
           {
-            label: 'Commande',
+            label: t('pm1_escrows.field_order'),
             value: dialogue.hold.order_id
               ? `#${dialogue.hold.order_id}`
               : dialogue.hold.component_label,
           },
-          { label: 'Référence', value: dialogue.hold.reference },
+          { label: t('pm1_escrows.field_reference'), value: dialogue.hold.reference },
         ] : []}
         confirmLabel={{
-          freeze: 'Geler', unfreeze: 'Dégeler', release: 'Libérer',
+          freeze: t('pm1_escrows.freeze'),
+          unfreeze: t('pm1_escrows.unfreeze'),
+          release: t('pm1_escrows.release'),
         }[dialogue?.mode ?? 'freeze']}
         // Toute action sur un sequestre exige un motif : elle deplace ou
         // retient de l'argent qui ne nous appartient pas.
         reasonRequired
         reasonPlaceholder={{
-          freeze: 'Litige ouvert par l’acheteur…',
-          unfreeze: 'Litige tranché en faveur du vendeur…',
-          release: 'Libération exceptionnelle — motif obligatoire…',
+          freeze: t('pm1_escrows.placeholder_freeze'),
+          unfreeze: t('pm1_escrows.placeholder_unfreeze'),
+          release: t('pm1_escrows.placeholder_release'),
         }[dialogue?.mode ?? 'freeze']}
         danger={dialogue?.mode === 'release'}
         warning={dialogue?.mode === 'freeze'
-          ? 'Seul CE séquestre sera gelé — les autres du même paiement ne le seront pas.'
+          ? t('pm1_escrows.warning_freeze')
           : dialogue?.mode === 'release'
-            ? 'Libération hors du cycle normal. L’argent devient exigible immédiatement.'
+            ? t('pm1_escrows.warning_release')
             : undefined}
         running={action.running}
         error={action.error}

@@ -25,7 +25,7 @@ type NotificationCard = CustomerNotification & {
 };
 
 export default function NotificationsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
 
   const fallbackNotifications = [
@@ -116,7 +116,7 @@ export default function NotificationsPage() {
   const notificationText = (notification: NotificationCard) =>
     'description' in notification && notification.description ? notification.description : notification.message;
   const notificationTime = (notification: NotificationCard) =>
-    'time' in notification && notification.time ? notification.time : new Date(notification.created_at).toLocaleString('fr-FR');
+    'time' in notification && notification.time ? notification.time : new Date(notification.created_at).toLocaleString(i18n.language === 'fr' ? 'fr-FR' : 'en-US');
   const getNotificationDate = (notification: NotificationCard) => {
     const date = new Date(notification.created_at);
     return Number.isNaN(date.getTime()) ? new Date() : date;
@@ -130,7 +130,7 @@ export default function NotificationsPage() {
         icon: Info,
         accent: "border-red-200 bg-red-50 text-red-700 dark:border-red-900/40 dark:bg-red-900/15 dark:text-red-300",
         rail: "bg-red-500",
-        label: "Système",
+        label: t("cl4_notifications.label_system"),
       };
     }
 
@@ -139,7 +139,7 @@ export default function NotificationsPage() {
         icon: notification.notification_type === "ORDER" ? Package : Bell,
         accent: "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/15 dark:text-amber-300",
         rail: "bg-amber-500",
-        label: "À relire",
+        label: t("cl4_notifications.label_to_review"),
       };
     }
 
@@ -147,7 +147,7 @@ export default function NotificationsPage() {
       icon: notification.notification_type === "ORDER" ? Package : CheckCircle2,
       accent: "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/40 dark:bg-emerald-900/15 dark:text-emerald-300",
       rail: "bg-emerald-500",
-      label: notification.is_read ? "Récent" : "Nouveau",
+      label: notification.is_read ? t("cl4_notifications.label_recent") : t("notifications.new_badge"),
     };
   };
   const getOrderTarget = (notification: NotificationCard) => {
@@ -326,7 +326,7 @@ export default function NotificationsPage() {
                         void deleteNotification(notification);
                       }}
                       className="flex h-9 w-9 items-center justify-center rounded-full text-gray-400 transition hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20"
-                      aria-label="Supprimer la notification"
+                      aria-label={t("cl4_notifications.aria_delete")}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -354,7 +354,7 @@ export default function NotificationsPage() {
                   type="button"
                   onClick={() => setSelectedNotification(null)}
                   className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-500 hover:bg-gray-200 dark:bg-gray-800"
-                  aria-label="Fermer"
+                  aria-label={t("common.close")}
                 >
                   <X size={18} />
                 </button>
@@ -372,7 +372,7 @@ export default function NotificationsPage() {
                 className="mt-5 inline-flex items-center justify-center gap-2 rounded-2xl border border-red-100 px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 dark:border-red-900/30 dark:hover:bg-red-900/20"
               >
                 <Trash2 size={16} />
-                Supprimer ce message
+                {t("cl4_notifications.delete_message")}
               </button>
               {selectedNotification.notification_type === "ORDER" && (
                 <div className="mt-6 grid gap-3 sm:grid-cols-2">
@@ -381,14 +381,14 @@ export default function NotificationsPage() {
                     onClick={() => navigate(getOrderTarget(selectedNotification))}
                     className="rounded-2xl bg-primary px-4 py-3 text-sm font-bold text-white hover:bg-primary-dark"
                   >
-                    Ouvrir la commande
+                    {t("cl4_notifications.open_order")}
                   </button>
                   <button
                     type="button"
                     onClick={() => navigate("/orders")}
                     className="rounded-2xl border border-orange-200 bg-white px-4 py-3 text-sm font-bold text-primary hover:bg-orange-50 dark:border-primary/30 dark:bg-gray-900"
                   >
-                    Mes commandes
+                    {t("cl4_notifications.my_orders")}
                   </button>
                 </div>
               )}

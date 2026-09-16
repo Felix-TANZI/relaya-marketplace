@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BarChart3,
   Coins,
@@ -59,10 +60,10 @@ interface PartnerPayout {
 
 type PeriodKey = "mois" | "trimestre" | "annee";
 
-const PERIODS: Array<{ key: PeriodKey; label: string }> = [
-  { key: "mois", label: "Ce mois" },
-  { key: "trimestre", label: "Ce trimestre" },
-  { key: "annee", label: "Cette année" },
+const PERIODS: Array<{ key: PeriodKey; labelKey: string }> = [
+  { key: "mois", labelKey: "rl2_reports.period_month" },
+  { key: "trimestre", labelKey: "rl2_reports.period_quarter" },
+  { key: "annee", labelKey: "rl2_reports.period_year" },
 ];
 
 /** Bareme operationnel : chaque colis remis au bon porteur credite 2 Avantages. */
@@ -128,7 +129,12 @@ function downloadCsv(filename: string, rows: Array<Array<string | number>>) {
  * Ouvre un document imprimable : le gerant enregistre en PDF depuis la boite
  * d'impression du navigateur, sans dependance externe.
  */
-function openPrintable(title: string, bodyHtml: string, onBlocked: () => void) {
+function openPrintable(
+  title: string,
+  bodyHtml: string,
+  onBlocked: () => void,
+  labels: { print: string; close: string; footerLine1: string; footerLine2: string },
+) {
   const printWindow = window.open("", "_blank", "width=980,height=1200");
   if (!printWindow) {
     onBlocked();
@@ -160,20 +166,21 @@ function openPrintable(title: string, bodyHtml: string, onBlocked: () => void) {
 </style></head>
 <body>
   <div class="bar"><span>${title}</span><span>
-    <button class="p" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
-    <button class="c" onclick="window.close()">Fermer</button>
+    <button class="p" onclick="window.print()">${labels.print}</button>
+    <button class="c" onclick="window.close()">${labels.close}</button>
   </span></div>
   <div style="height:44px"></div>
   ${bodyHtml}
   <div class="foot">
-    Document genere par BelivaY Point Relais — Partenaire independant.<br />
-    Piece justificative interne : conserver 10 ans (art. 19 AUDCIF OHADA). Reference DGI a rappeler sur toute declaration.
+    ${labels.footerLine1}<br />
+    ${labels.footerLine2}
   </div>
 </body></html>`);
   printWindow.document.close();
 }
 
 export default function RelayReports({ onError }: { onError: (error: unknown) => void }) {
+  const { t } = useTranslation();
   const [period, setPeriod] = useState<PeriodKey>("mois");
   const [parcels, setParcels] = useState<ReportParcel[]>([]);
   const [tariffs, setTariffs] = useState<RelayTariff[]>([]);
@@ -239,7 +246,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       const key = weekKey(date);
       if (!buckets.has(key)) {
         buckets.set(key, {
-          label: `Sem. ${isoWeek(date).week}`,
+          label: t("rl2_reports.week_label", { week: isoWeek(date).week }),
           sortKey: key,
           recus: 0,
           remis: 0,
@@ -288,19 +295,34 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       avantagesTotal: avantagesOperations + avantagesFormation,
       tarifManquant: remis > 0 && tariffBySize.size === 0,
     };
-  }, [avantagesFormation, parcels, period, tariffBySize]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [avantagesFormation, parcels, period, tariffBySize, t]);
 
-  const periodLabel = PERIODS.find((item) => item.key === period)?.label ?? "";
+  const periodLabel = t(PERIODS.find((item) => item.key === period)?.labelKey ?? "");
   const rangeLabel = `${report.start.toLocaleDateString("fr-FR")} → ${report.now.toLocaleDateString("fr-FR")}`;
   const stamp = new Date().toISOString().slice(0, 10);
-  const blocked = () => setNotice("Le navigateur a bloqué la fenêtre d'impression. Autorisez les pop-ups pour ce site puis relancez l'export.");
+  const blocked = () => setNotice(t("rl2_reports.popup_blocked"));
+
+  const printLabels = {
+    print: t("rl2_reports.print_button"),
+    close: t("rl2_reports.print_close"),
+    footerLine1: t("rl2_reports.print_footer_line1"),
+    footerLine2: t("rl2_reports.print_footer_line2"),
+  };
 
   const exportSyntheseCsv = () => {
     downloadCsv(`belivay-relais-synthese-${period}-${stamp}.csv`, [
-      ["# Synthèse point relais BelivaY"],
-      ["# Période", periodLabel, rangeLabel],
+      [t("rl2_reports.csv_synthese_comment")],
+      [t("rl2_reports.csv_period_comment"), periodLabel, rangeLabel],
       [],
-      ["Semaine", "Reçus", "Remis", "Taux (%)", "Revenus (FCFA)", "Avantages"],
+      [
+        t("rl2_reports.table_col_week"),
+        t("rl2_reports.table_col_received"),
+        t("rl2_reports.table_col_delivered"),
+        t("rl2_reports.csv_col_rate_pct"),
+        t("rl2_reports.csv_col_revenue_fcfa"),
+        t("rl2_reports.table_col_advantages"),
+      ],
       ...report.rows.map((row) => [
         row.label,
         row.recus,
@@ -310,8 +332,8 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
         row.avantages,
       ]),
       [],
-      ["Total", report.recus, report.remis, report.taux, Math.round(report.revenus), report.avantagesOperations],
-      ["Avantages formation (cumul)", avantagesFormation],
+      [t("rl2_reports.csv_total_label"), report.recus, report.remis, report.taux, Math.round(report.revenus), report.avantagesOperations],
+      [t("rl2_reports.csv_training_advantages_label"), avantagesFormation],
     ]);
   };
 
@@ -325,10 +347,19 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       .sort((a, b) => (a.received_at || "").localeCompare(b.received_at || ""));
 
     downloadCsv(`belivay-relais-activite-${period}-${stamp}.csv`, [
-      ["# Relevé d'activité détaillé — réceptions et retraits"],
-      ["# Période", periodLabel, rangeLabel],
+      [t("rl2_reports.csv_activite_comment")],
+      [t("rl2_reports.csv_period_comment"), periodLabel, rangeLabel],
       [],
-      ["Référence", "Slot", "Taille", "Statut", "Reçu le", "Remis le", "Retourné le", "Revenu (FCFA)"],
+      [
+        t("rl2_reports.table_col_reference"),
+        t("rl2_reports.csv_col_slot"),
+        t("rl2_reports.csv_col_size"),
+        t("rl2_reports.table_col_status"),
+        t("rl2_reports.csv_col_received_at"),
+        t("rl2_reports.csv_col_delivered_at"),
+        t("rl2_reports.csv_col_returned_at"),
+        t("rl2_reports.csv_col_revenue_fcfa"),
+      ],
       ...lignes.map((parcel) => [
         `BV-${parcel.order_id}`,
         parcel.slot_code || "—",
@@ -344,8 +375,8 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
 
   const documentHead = (titre: string) => `
     <div class="head">
-      <div><div class="brand">BelivaY</div><div class="muted">Point Relais · Partenaire indépendant</div></div>
-      <div style="text-align:right" class="muted">Édité le ${new Date().toLocaleString("fr-FR")}<br />Période : ${periodLabel} (${rangeLabel})</div>
+      <div><div class="brand">BelivaY</div><div class="muted">${t("rl2_reports.print_brand_sub")}</div></div>
+      <div style="text-align:right" class="muted">${t("rl2_reports.print_edited_on", { date: new Date().toLocaleString("fr-FR") })}<br />${t("rl2_reports.print_period_label", { period: periodLabel, range: rangeLabel })}</div>
     </div>
     <h1>${titre}</h1>`;
 
@@ -364,20 +395,21 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       .join("");
 
     openPrintable(
-      "Synthèse d'activité — Point Relais BelivaY",
-      `${documentHead("Synthèse d'activité")}
+      t("rl2_reports.synthese_doc_title"),
+      `${documentHead(t("rl2_reports.synthese_doc_h1"))}
       <div class="cards">
-        <div class="card"><span class="muted">Colis reçus</span><b>${report.recus}</b></div>
-        <div class="card"><span class="muted">Colis remis</span><b>${report.remis}</b></div>
-        <div class="card"><span class="muted">Taux de remise</span><b>${report.taux} %</b></div>
-        <div class="card"><span class="muted">Revenus</span><b>${xaf(report.revenus)}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_received")}</span><b>${report.recus}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_delivered")}</span><b>${report.remis}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_rate")}</span><b>${report.taux} %</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_revenue")}</span><b>${xaf(report.revenus)}</b></div>
       </div>
       <table>
-        <thead><tr><th>Semaine</th><th class="num">Reçus</th><th class="num">Remis</th><th class="num">Taux</th><th class="num">Revenus</th><th class="num">Avantages</th></tr></thead>
-        <tbody>${lignes || '<tr><td colspan="6">Aucune opération sur la période.</td></tr>'}</tbody>
-        <tfoot><tr><td>Total</td><td class="num">${report.recus}</td><td class="num">${report.remis}</td><td class="num">${report.taux} %</td><td class="num">${xaf(report.revenus)}</td><td class="num">${report.avantagesOperations}</td></tr></tfoot>
+        <thead><tr><th>${t("rl2_reports.table_col_week")}</th><th class="num">${t("rl2_reports.table_col_received")}</th><th class="num">${t("rl2_reports.table_col_delivered")}</th><th class="num">${t("rl2_reports.table_col_rate")}</th><th class="num">${t("rl2_reports.table_col_revenue")}</th><th class="num">${t("rl2_reports.table_col_advantages")}</th></tr></thead>
+        <tbody>${lignes || `<tr><td colspan="6">${t("rl2_reports.table_empty_period")}</td></tr>`}</tbody>
+        <tfoot><tr><td>${t("rl2_reports.csv_total_label")}</td><td class="num">${report.recus}</td><td class="num">${report.remis}</td><td class="num">${report.taux} %</td><td class="num">${xaf(report.revenus)}</td><td class="num">${report.avantagesOperations}</td></tr></tfoot>
       </table>`,
       blocked,
+      printLabels,
     );
   };
 
@@ -396,20 +428,21 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
     const totalVerse = payouts.filter((p) => p.status === "PAID").reduce((sum, p) => sum + (p.amount_xaf || 0), 0);
 
     openPrintable(
-      "Bordereau MoMo mensuel — Point Relais BelivaY",
-      `${documentHead("Bordereau de reversement Mobile Money")}
+      t("rl2_reports.bordereau_doc_title"),
+      `${documentHead(t("rl2_reports.bordereau_doc_h1"))}
       <div class="cards">
-        <div class="card"><span class="muted">Chiffre d'affaires période</span><b>${xaf(report.revenus)}</b></div>
-        <div class="card"><span class="muted">Déjà versé</span><b>${xaf(totalVerse)}</b></div>
-        <div class="card"><span class="muted">Montant dû</span><b>${xaf(due?.due_xaf ?? 0)}</b></div>
-        <div class="card"><span class="muted">Prochain cycle</span><b style="font-size:15px">${due?.next_settlement_cycle || "—"}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_ca_period")}</span><b>${xaf(report.revenus)}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_already_paid")}</span><b>${xaf(totalVerse)}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_amount_due")}</span><b>${xaf(due?.due_xaf ?? 0)}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_next_cycle")}</span><b style="font-size:15px">${due?.next_settlement_cycle || "—"}</b></div>
       </div>
       <table>
-        <thead><tr><th>Référence</th><th>Compte MoMo</th><th>Statut</th><th>Réglé le</th><th class="num">Montant</th></tr></thead>
-        <tbody>${lignes || '<tr><td colspan="5">Aucun reversement exécuté sur la période.</td></tr>'}</tbody>
-        <tfoot><tr><td colspan="4">Total versé</td><td class="num">${xaf(totalVerse)}</td></tr></tfoot>
+        <thead><tr><th>${t("rl2_reports.table_col_reference")}</th><th>${t("rl2_reports.table_col_momo_account")}</th><th>${t("rl2_reports.table_col_status")}</th><th>${t("rl2_reports.table_col_settled_at")}</th><th class="num">${t("rl2_reports.table_col_amount")}</th></tr></thead>
+        <tbody>${lignes || `<tr><td colspan="5">${t("rl2_reports.table_empty_payouts")}</td></tr>`}</tbody>
+        <tfoot><tr><td colspan="4">${t("rl2_reports.table_total_paid")}</td><td class="num">${xaf(totalVerse)}</td></tr></tfoot>
       </table>`,
       blocked,
+      printLabels,
     );
   };
 
@@ -421,42 +454,43 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
       .join("");
 
     openPrintable(
-      "Relevé Avantages — Point Relais BelivaY",
-      `${documentHead("Relevé des Avantages")}
+      t("rl2_reports.releve_doc_title"),
+      `${documentHead(t("rl2_reports.releve_doc_h1"))}
       <div class="cards">
-        <div class="card"><span class="muted">Avantages opérations</span><b>${report.avantagesOperations}</b></div>
-        <div class="card"><span class="muted">Avantages formation</span><b>${avantagesFormation}</b></div>
-        <div class="card"><span class="muted">Total période</span><b>${report.avantagesTotal}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_ops_advantages")}</span><b>${report.avantagesOperations}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_training_advantages")}</span><b>${avantagesFormation}</b></div>
+        <div class="card"><span class="muted">${t("rl2_reports.card_total_period")}</span><b>${report.avantagesTotal}</b></div>
       </div>
-      <p class="muted" style="margin-top:14px">Barème : ${AVANTAGES_PAR_COLIS} Avantages par colis remis au porteur du code valide. Les modules de formation validés créditent un bonus cumulatif.</p>
+      <p class="muted" style="margin-top:14px">${t("rl2_reports.bareme_note", { count: AVANTAGES_PAR_COLIS })}</p>
       <table>
-        <thead><tr><th>Semaine</th><th class="num">Colis remis</th><th class="num">Avantages</th></tr></thead>
-        <tbody>${lignes || '<tr><td colspan="3">Aucun Avantage gagné sur la période.</td></tr>'}</tbody>
-        <tfoot><tr><td>Sous-total opérations</td><td class="num">${report.remis}</td><td class="num">+${report.avantagesOperations}</td></tr></tfoot>
+        <thead><tr><th>${t("rl2_reports.table_col_week")}</th><th class="num">${t("rl2_reports.table_col_delivered_parcels")}</th><th class="num">${t("rl2_reports.table_col_advantages")}</th></tr></thead>
+        <tbody>${lignes || `<tr><td colspan="3">${t("rl2_reports.table_empty_advantages")}</td></tr>`}</tbody>
+        <tfoot><tr><td>${t("rl2_reports.table_subtotal_ops")}</td><td class="num">${report.remis}</td><td class="num">+${report.avantagesOperations}</td></tr></tfoot>
       </table>`,
       blocked,
+      printLabels,
     );
   };
 
   const cards: Array<{ label: string; value: string; hint: string; icon: typeof Package; filled: boolean }> = [
-    { label: "Colis reçus", value: String(report.recus), hint: "sur la période", icon: Package, filled: true },
-    { label: "Colis remis", value: String(report.remis), hint: `taux ${report.taux} %`, icon: PackageCheck, filled: true },
-    { label: "Revenus", value: Math.round(report.revenus).toLocaleString("fr-FR"), hint: "FCFA", icon: BarChart3, filled: false },
-    { label: "Avantages gagnés", value: String(report.avantagesTotal), hint: `dont ${avantagesFormation} formation`, icon: Coins, filled: true },
+    { label: t("rl2_reports.card_received"), value: String(report.recus), hint: t("rl2_reports.card_hint_period"), icon: Package, filled: true },
+    { label: t("rl2_reports.card_delivered"), value: String(report.remis), hint: t("rl2_reports.card_hint_rate", { rate: report.taux }), icon: PackageCheck, filled: true },
+    { label: t("rl2_reports.card_revenue"), value: Math.round(report.revenus).toLocaleString("fr-FR"), hint: t("rl2_reports.card_hint_fcfa"), icon: BarChart3, filled: false },
+    { label: t("rl2_reports.card_advantages_earned"), value: String(report.avantagesTotal), hint: t("rl2_reports.card_hint_training", { count: avantagesFormation }), icon: Coins, filled: true },
   ];
 
   const exportables: Array<{ icon: typeof FileText; titre: string; detail: string; action: () => void }> = [
-    { icon: FileText, titre: "Bordereau MoMo mensuel", detail: "PDF conforme DGI", action: exportBordereauMomo },
-    { icon: BarChart3, titre: "Relevé d'activité", detail: "CSV détaillé (réceptions/retraits)", action: exportActiviteCsv },
-    { icon: Coins, titre: "Relevé Avantages", detail: "PDF · gains et conversions", action: exportReleveAvantages },
+    { icon: FileText, titre: t("rl2_reports.export_bordereau_title"), detail: t("rl2_reports.export_bordereau_detail"), action: exportBordereauMomo },
+    { icon: BarChart3, titre: t("rl2_reports.export_activite_title"), detail: t("rl2_reports.export_activite_detail"), action: exportActiviteCsv },
+    { icon: Coins, titre: t("rl2_reports.export_avantages_title"), detail: t("rl2_reports.export_avantages_detail"), action: exportReleveAvantages },
   ];
 
   return (
     <div className="space-y-5">
       <ModuleHeader
         icon={FileChartColumn}
-        title="Rapports & export"
-        subtitle="Synthèse de votre activité · exports comptables et DGI"
+        title={t("rl2_reports.header_title")}
+        subtitle={t("rl2_reports.header_subtitle")}
         action={
           <div className="flex flex-wrap gap-2">
             <button
@@ -464,14 +498,14 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
               onClick={exportSyntheseCsv}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-sm font-black text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
             >
-              <Download size={15} strokeWidth={2.6} /> CSV
+              <Download size={15} strokeWidth={2.6} /> {t("rl2_reports.btn_csv")}
             </button>
             <button
               type="button"
               onClick={exportSynthesePdf}
               className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3.5 py-2 text-sm font-black text-white shadow-sm transition hover:bg-blue-700"
             >
-              <FileText size={15} strokeWidth={2.6} /> PDF
+              <FileText size={15} strokeWidth={2.6} /> {t("rl2_reports.btn_pdf")}
             </button>
           </div>
         }
@@ -495,7 +529,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
                 : "text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-100"
             }`}
           >
-            {item.label}
+            {t(item.labelKey)}
           </button>
         ))}
       </div>
@@ -526,20 +560,20 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
 
       {report.tarifManquant ? (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">
-          Aucune grille tarifaire n'est rattachée à ce point relais : les revenus restent à 0 tant que le contrat n'est pas chargé.
+          {t("rl2_reports.no_tariff_notice")}
         </div>
       ) : null}
 
       <Panel
         icon={BarChart3}
-        title="Détail par semaine"
+        title={t("rl2_reports.weekly_detail_title")}
         action={<StatusPill tone={report.rows.length > 0 ? "blue" : "slate"}>{periodLabel}</StatusPill>}
       >
         {loading ? (
-          <p className="text-sm font-semibold text-slate-500">Chargement des opérations…</p>
+          <p className="text-sm font-semibold text-slate-500">{t("rl2_reports.loading_operations")}</p>
         ) : report.rows.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-            Aucune opération enregistrée sur cette période.
+            {t("rl2_reports.empty_operations")}
           </div>
         ) : (
           <>
@@ -561,17 +595,17 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2">
                     <div className="rounded-xl bg-white p-2.5 dark:bg-slate-900">
-                      <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Reçus</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{t("rl2_reports.mobile_received_label")}</div>
                       <div className="mt-0.5 text-lg font-black text-slate-950 dark:text-white">{row.recus}</div>
                     </div>
                     <div className="rounded-xl bg-white p-2.5 dark:bg-slate-900">
-                      <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Remis</div>
+                      <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{t("rl2_reports.mobile_delivered_label")}</div>
                       <div className="mt-0.5 text-lg font-black text-slate-950 dark:text-white">{row.remis}</div>
                     </div>
                   </div>
                   <div className="mt-2 flex items-center justify-between gap-3 border-t border-slate-200 pt-2.5 dark:border-slate-700">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
-                      {row.avantages} <span className="text-amber-500">◉</span> avantages
+                      {row.avantages} <span className="text-amber-500">◉</span> {t("rl2_reports.advantages_suffix")}
                     </span>
                     <strong className="text-sm font-black text-slate-950 dark:text-white">{xaf(row.revenus)}</strong>
                   </div>
@@ -583,12 +617,12 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="text-[11px] font-black uppercase tracking-[0.12em] text-slate-500">
-                  <th className="pb-3">Semaine</th>
-                  <th className="pb-3 text-right">Reçus</th>
-                  <th className="pb-3 text-right">Remis</th>
-                  <th className="pb-3 text-center">Taux</th>
-                  <th className="pb-3 text-right">Revenus</th>
-                  <th className="pb-3 text-right">Avantages</th>
+                  <th className="pb-3">{t("rl2_reports.table_col_week")}</th>
+                  <th className="pb-3 text-right">{t("rl2_reports.table_col_received")}</th>
+                  <th className="pb-3 text-right">{t("rl2_reports.table_col_delivered")}</th>
+                  <th className="pb-3 text-center">{t("rl2_reports.table_col_rate")}</th>
+                  <th className="pb-3 text-right">{t("rl2_reports.table_col_revenue")}</th>
+                  <th className="pb-3 text-right">{t("rl2_reports.table_col_advantages")}</th>
                 </tr>
               </thead>
               <tbody>
@@ -618,7 +652,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
         )}
       </Panel>
 
-      <Panel icon={FileSpreadsheet} title="Documents exportables">
+      <Panel icon={FileSpreadsheet} title={t("rl2_reports.documents_title")}>
         <div className="grid gap-4 md:grid-cols-3">
           {exportables.map(({ icon: Icon, titre, detail, action }) => (
             <div key={titre} className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900">
@@ -631,7 +665,7 @@ export default function RelayReports({ onError }: { onError: (error: unknown) =>
                 disabled={loading}
                 className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-700 transition hover:bg-slate-100 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
               >
-                Télécharger
+                {t("rl2_reports.download_button")}
               </button>
             </div>
           ))}

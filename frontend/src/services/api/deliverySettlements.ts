@@ -17,6 +17,8 @@
 //  relais n'a pas. L'argent est la, il n'est pas encore a lui.
 // =============================================================================
 
+import type { TFunction } from "i18next";
+
 import { http } from "@/services/api/http";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,19 +218,22 @@ export function formatShortDate(
 
 export function formatPeriod(
   start: string | null, end: string | null, locale: Locale = "fr",
+  t?: TFunction,
 ): string {
   const a = start ? new Date(start) : null;
   const b = end ? new Date(end) : null;
   if (!a || !b || Number.isNaN(a.getTime()) || Number.isNaN(b.getTime())) {
     return "";
   }
-  const lien = locale === "en" ? "to" : "au";
+  const lien = t
+    ? t("misc1_delivery_settlements.period_join")
+    : (locale === "en" ? "to" : "au");
   return `${a.getDate()} ${lien} ${formatShortDate(end, locale)}`;
 }
 
 /** Une date informe ; un compte a rebours ENGAGE. */
 export function countdown(
-  value: string | null, locale: Locale = "fr",
+  value: string | null, locale: Locale = "fr", t?: TFunction,
 ): string {
   if (!value) return "";
   const cible = new Date(value);
@@ -241,6 +246,12 @@ export function countdown(
   const jours = Math.round(
     (cible.getTime() - aujourdhui.getTime()) / 86_400_000,
   );
+  if (t) {
+    if (jours < 0) return t("misc1_delivery_settlements.processing");
+    if (jours === 0) return t("misc1_delivery_settlements.today");
+    if (jours === 1) return t("misc1_delivery_settlements.tomorrow");
+    return t("misc1_delivery_settlements.in_days", { count: jours });
+  }
   if (jours < 0) return locale === "en" ? "being processed" : "en cours de traitement";
   if (jours === 0) return locale === "en" ? "today" : "aujourd'hui";
   if (jours === 1) return locale === "en" ? "tomorrow" : "demain";
@@ -249,8 +260,19 @@ export function countdown(
 
 /** Traduit un blocage technique en phrase comprehensible. */
 export function humanizeBlocker(
-  blocker: string, locale: Locale = "fr",
+  blocker: string, locale: Locale = "fr", t?: TFunction,
 ): string {
+  if (t) {
+    const reglesT: Array<[RegExp, string]> = [
+      [/kyc/i, t("misc1_delivery_settlements.blocker_kyc")],
+      [/refroidissement|cooling/i, t("misc1_delivery_settlements.blocker_cooling")],
+      [/suspendu|hold/i, t("misc1_delivery_settlements.blocker_suspended")],
+      [/numero|msisdn|operateur/i, t("misc1_delivery_settlements.blocker_no_number")],
+      [/montant|minimum/i, t("misc1_delivery_settlements.blocker_below_minimum")],
+    ];
+    const trouveT = reglesT.find(([motif]) => motif.test(blocker));
+    return trouveT ? trouveT[1] : blocker;
+  }
   const regles: Array<[RegExp, string, string]> = [
     [/kyc/i,
       "Vos pièces d'identité ne sont pas encore vérifiées.",
@@ -282,9 +304,24 @@ export function humanizeBlocker(
  * « echoue » serait faux, et le transporteur n'a de toute facon aucune
  * action a faire — la reconciliation tranchera.
  */
-export function payoutLabel(status: string, locale: Locale = "fr"): {
+export function payoutLabel(status: string, locale: Locale = "fr", t?: TFunction): {
   text: string; color: string;
 } {
+  if (t) {
+    const tableT: Record<string, { key: string; color: string }> = {
+      PAID: { key: "status_paid", color: "#10B981" },
+      PROCESSING: { key: "status_processing", color: "#F59E0B" },
+      APPROVED: { key: "status_approved", color: "#F59E0B" },
+      PENDING_APPROVAL: { key: "status_pending_approval", color: "#F59E0B" },
+      UNKNOWN: { key: "status_unknown", color: "#EF4444" },
+      FAILED: { key: "status_failed", color: "#EF4444" },
+      REJECTED: { key: "status_rejected", color: "#94A3B8" },
+      CANCELLED: { key: "status_cancelled", color: "#94A3B8" },
+    };
+    const trouveT = tableT[status];
+    if (!trouveT) return { text: status.toLowerCase(), color: "#94A3B8" };
+    return { text: t(`misc1_delivery_settlements.${trouveT.key}`), color: trouveT.color };
+  }
   const table: Record<string, { fr: string; en: string; color: string }> = {
     PAID: { fr: "versé", en: "paid", color: "#10B981" },
     PROCESSING: { fr: "en cours", en: "processing", color: "#F59E0B" },

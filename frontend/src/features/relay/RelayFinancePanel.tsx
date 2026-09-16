@@ -19,6 +19,7 @@
 // =============================================================================
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle, Banknote, CalendarCheck, ChevronRight, Info, Package,
   Smartphone,
@@ -40,6 +41,7 @@ interface Props {
 }
 
 export default function RelayFinancePanel({ onOpenKyc }: Props) {
+  const { t } = useTranslation();
   const [due, setDue] = useState<RelayAmountDue | null>(null);
   const [grille, setGrille] = useState<RelayTariffLine[]>([]);
   const [ajustements, setAjustements] = useState<RelayAdjustment[]>([]);
@@ -72,17 +74,17 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
         if (!monte) return;
         setErreur(exc instanceof Error
           ? exc.message
-          : "Impossible de charger vos finances pour le moment.");
+          : t("rl2_finance_panel.load_error"));
       })
       .finally(() => { if (monte) setChargement(false); });
 
     return () => { monte = false; };
-  }, []);
+  }, [t]);
 
   if (chargement) {
     return (
       <div style={carte}>
-        <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>Chargement…</p>
+        <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>{t("rl2_finance_panel.loading")}</p>
       </div>
     );
   }
@@ -91,10 +93,10 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
     return (
       <div style={carte}>
         <p style={{ fontSize: 15, color: "#020617", margin: 0, fontWeight: 800 }}>
-          Finances indisponibles
+          {t("rl2_finance_panel.unavailable_title")}
         </p>
         <p style={{ fontSize: 13, color: "#64748B", margin: "6px 0 0", lineHeight: 1.6 }}>
-          {erreur ?? "Aucun compte financier n'est rattaché à ce point relais."}
+          {erreur ?? t("rl2_finance_panel.no_account")}
         </p>
       </div>
     );
@@ -111,7 +113,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
   // Un gerant qui lit deux fois la meme phrase croit a un bug.
   // ─────────────────────────────────────────────────────────────────────
   const blocages = Array.from(
-    new Set(due.blockers.map(humaniserBlocage)),
+    new Set(due.blockers.map((b) => humaniserBlocage(b, t))),
   );
   const bloque = blocages.length > 0;
   // `due_xaf` est DEJA net : on reconstitue le brut pour que le detail se
@@ -136,8 +138,8 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
 
       {/* ═══ MONTANT DU ═══════════════════════════════════════════════ */}
       <div style={{ ...carte, marginBottom: 16 }}>
-        <p style={kicker}>REVERSEMENTS</p>
-        <p style={titre}>Finances MoMo</p>
+        <p style={kicker}>{t("rl2_finance_panel.kicker_settlements")}</p>
+        <p style={titre}>{t("rl2_finance_panel.title_momo")}</p>
 
         <div style={{
           display: "grid",
@@ -146,42 +148,42 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
         }}>
           <Tuile
             icone={<Banknote size={21} color="#1D4ED8" />}
-            label="BelivaY vous doit"
+            label={t("rl2_finance_panel.tile_owed_label")}
             valeur={nf(due.due_xaf)}
-            note="FCFA · après retenue"
+            note={t("rl2_finance_panel.tile_owed_note")}
           />
           <Tuile
             icone={<Package size={21} color="#64748B" />}
-            label="Colis rémunérés"
+            label={t("rl2_finance_panel.tile_parcels_label")}
             valeur={String(colisRemuneres)}
-            note="depuis vos remises"
+            note={t("rl2_finance_panel.tile_parcels_note")}
           />
           {bloque ? (
             <Tuile
               icone={<AlertTriangle size={21} color="#C2410C" />}
-              label="Prochain versement"
-              valeur="suspendu"
-              note="voir ci-dessous"
+              label={t("rl2_finance_panel.tile_next_payout_label")}
+              valeur={t("rl2_finance_panel.tile_next_payout_suspended")}
+              note={t("rl2_finance_panel.tile_next_payout_see_below")}
               petit
             />
           ) : (
             <Tuile
               icone={<CalendarCheck size={21} color="#1D4ED8" />}
-              label="Prochain versement"
-              valeur={formatLong(due.next_settlement_at) || "au seuil"}
-              note={compteARebours(due.next_settlement_at)
-                || "dès le minimum atteint"}
+              label={t("rl2_finance_panel.tile_next_payout_label")}
+              valeur={formatLong(due.next_settlement_at) || t("rl2_finance_panel.tile_next_payout_at_threshold")}
+              note={compteARebours(due.next_settlement_at, t)
+                || t("rl2_finance_panel.tile_next_payout_note_pending")}
               petit
               accentNote
             />
           )}
           <Tuile
             icone={<Smartphone size={21} color="#64748B" />}
-            label="Versé sur"
+            label={t("rl2_finance_panel.tile_paid_to_label")}
             valeur={versements[0]?.payee_msisdn_masked || "—"}
             note={versements[0]?.payee_operator
-              ? `${versements[0].payee_operator} Mobile Money`
-              : "numéro non enregistré"}
+              ? t("rl2_finance_panel.tile_paid_to_note_operator", { operator: versements[0].payee_operator })
+              : t("rl2_finance_panel.tile_paid_to_note_missing")}
             petit
           />
         </div>
@@ -196,11 +198,11 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
               fontSize: 11.5, color: "#64748B", margin: "0 0 12px",
               fontWeight: 700, letterSpacing: "0.05em",
             }}>
-              DÉTAIL DU MONTANT
+              {t("rl2_finance_panel.detail_heading")}
             </p>
-            <Ligne label="Colis remis, acquis" valeur={nf(acquis)} />
+            <Ligne label={t("rl2_finance_panel.detail_earned")} valeur={nf(acquis)} />
             <Ligne
-              label="Retenue"
+              label={t("rl2_finance_panel.detail_withheld")}
               valeur={`− ${nf(due.outstanding_debt_xaf)}`}
               rouge
             />
@@ -209,7 +211,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
               paddingTop: 10,
             }}>
               <span style={{ fontSize: 13.5, color: "#020617", fontWeight: 700 }}>
-                À verser
+                {t("rl2_finance_panel.detail_to_pay")}
               </span>
               <span style={{ fontSize: 16, color: "#020617", fontWeight: 900 }}>
                 {nf(due.due_xaf)}{" "}
@@ -233,7 +235,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
               <p style={{
                 fontSize: 15, color: "#7C2D12", margin: "0 0 5px", fontWeight: 800,
               }}>
-                Versement suspendu
+                {t("rl2_finance_panel.suspended_title")}
               </p>
               {blocages.map((b) => (
                 <p key={b} style={{
@@ -253,7 +255,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                     marginTop: 4,
                   }}
                 >
-                  Compléter mon dossier
+                  {t("rl2_finance_panel.complete_file_button")}
                 </button>
               )}
             </div>
@@ -264,11 +266,10 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
       {/* ═══ RETENUES ═════════════════════════════════════════════════ */}
       {ajustements.length > 0 && (
         <div style={{ ...carte, marginBottom: 16 }}>
-          <p style={{ ...kicker, color: "#B91C1C" }}>RETENUES</p>
-          <p style={titre}>Ce qui est déduit, et pourquoi</p>
+          <p style={{ ...kicker, color: "#B91C1C" }}>{t("rl2_finance_panel.kicker_deductions")}</p>
+          <p style={titre}>{t("rl2_finance_panel.deductions_title")}</p>
           <p style={sousTitre}>
-            Toute retenue porte son motif. Si l’un vous semble injustifié,
-            contactez l’administration BelivaY.
+            {t("rl2_finance_panel.deductions_subtitle")}
           </p>
 
           <div style={liste}>
@@ -300,8 +301,8 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                     <p style={{ fontSize: 12, color: "#94A3B8", margin: "4px 0 0" }}>
                       {a.category_label} · {formatCourt(a.created_at)}
                       {a.remaining_xaf > 0 && a.remaining_xaf !== a.amount_xaf
-                        && ` · reste ${nf(a.remaining_xaf)} à imputer`}
-                      {a.remaining_xaf === 0 && " · soldé"}
+                        && ` · ${t("rl2_finance_panel.remaining_to_apply", { amount: nf(a.remaining_xaf) })}`}
+                      {a.remaining_xaf === 0 && ` · ${t("rl2_finance_panel.settled")}`}
                     </p>
                   </div>
                   <span style={{
@@ -325,22 +326,20 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
             alignItems: "flex-start", gap: 16, flexWrap: "wrap",
           }}>
             <div>
-              <p style={kicker}>VOTRE CONTRAT</p>
-              <p style={{ ...titre, marginBottom: 0 }}>Grille tarifaire</p>
+              <p style={kicker}>{t("rl2_finance_panel.kicker_contract")}</p>
+              <p style={{ ...titre, marginBottom: 0 }}>{t("rl2_finance_panel.tariff_grid_title")}</p>
             </div>
             {contrat && (
               <span style={{
                 fontSize: 11.5, color: "#64748B", background: "#F1F5F9",
                 padding: "6px 13px", borderRadius: 999,
               }}>
-                Réf. {contrat}
+                {t("rl2_finance_panel.contract_ref", { ref: contrat })}
               </span>
             )}
           </div>
           <p style={{ ...sousTitre, marginTop: 6 }}>
-            Montant versé par colis remis, selon sa catégorie. Cette
-            rémunération vient de votre contrat — elle ne dépend pas des frais
-            de livraison payés par l’acheteur.
+            {t("rl2_finance_panel.tariff_grid_subtitle")}
           </p>
 
           <div style={liste}>
@@ -349,9 +348,9 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
               padding: "13px 18px", background: "#F8FAFC",
               borderBottom: "1px solid #E2E8F0",
             }}>
-              <span style={{ flex: 1, ...entete }}>CATÉGORIE</span>
-              <span style={{ width: 105, ...entete }}>TARIF</span>
-              <span style={{ width: 120, ...entete, textAlign: "right" }}>ORIGINE</span>
+              <span style={{ flex: 1, ...entete }}>{t("rl2_finance_panel.column_category")}</span>
+              <span style={{ width: 105, ...entete }}>{t("rl2_finance_panel.column_tariff")}</span>
+              <span style={{ width: 120, ...entete, textAlign: "right" }}>{t("rl2_finance_panel.column_origin")}</span>
             </div>
 
             {grille.map((l, i) => (
@@ -376,7 +375,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                       n'existe pas. */}
                   {!l.is_accepted && (
                     <p style={{ fontSize: 12, color: "#B91C1C", margin: "3px 0 0" }}>
-                      Vous ne recevez pas cette catégorie.
+                      {t("rl2_finance_panel.category_not_received")}
                     </p>
                   )}
                 </div>
@@ -389,12 +388,12 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                 </span>
                 <span style={{ width: 120, textAlign: "right" }}>
                   {!l.is_accepted ? (
-                    <Etiquette texte="refusé" fond="#FEE2E2" couleur="#991B1B" />
+                    <Etiquette texte={t("rl2_finance_panel.tag_refused")} fond="#FEE2E2" couleur="#991B1B" />
                   ) : l.is_negotiated ? (
-                    <Etiquette texte="négocié" fond="#D1FAE5" couleur="#065F46" />
+                    <Etiquette texte={t("rl2_finance_panel.tag_negotiated")} fond="#D1FAE5" couleur="#065F46" />
                   ) : (
                     <span style={{ fontSize: 12, color: "#64748B" }}>
-                      tarif général
+                      {t("rl2_finance_panel.tag_general_rate")}
                     </span>
                   )}
                 </span>
@@ -408,9 +407,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
           }}>
             <Info size={17} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 12.5, color: "#1E40AF", margin: 0, lineHeight: 1.6 }}>
-              Un tarif <b>négocié</b> vient d’un accord propre à votre point
-              relais et prime sur le tarif général. Pour modifier votre grille,
-              contactez l’administration BelivaY.
+              {t("rl2_finance_panel.negotiated_info")}
             </p>
           </div>
         </div>
@@ -418,14 +415,14 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
 
       {/* ═══ RELEVÉS ══════════════════════════════════════════════════ */}
       <div style={{ ...carte, marginBottom: 16 }}>
-        <p style={kicker}>RELEVÉS</p>
-        <p style={titre}>Mes règlements</p>
+        <p style={kicker}>{t("rl2_finance_panel.kicker_statements")}</p>
+        <p style={titre}>{t("rl2_finance_panel.statements_title")}</p>
         <p style={sousTitre}>
-          Chaque relevé regroupe les colis d’une période en un seul versement.
+          {t("rl2_finance_panel.statements_subtitle")}
         </p>
 
         {releves.length === 0 ? (
-          <Vide texte="Aucun règlement pour le moment. Votre premier relevé apparaîtra ici dès la fin du prochain cycle." />
+          <Vide texte={t("rl2_finance_panel.statements_empty")} />
         ) : (
           <div style={liste}>
             {releves.map((r, i) => (
@@ -449,8 +446,8 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                     {r.reference}
                   </p>
                   <p style={{ fontSize: 12, color: "#94A3B8", margin: "3px 0 0" }}>
-                    {formatPeriode(r.period_start, r.period_end)}
-                    {r.lines.length > 0 && ` · ${r.lines.length} colis`}
+                    {formatPeriode(r.period_start, r.period_end, t)}
+                    {r.lines.length > 0 && ` · ${t("rl2_finance_panel.parcels_count", { count: r.lines.length })}`}
                   </p>
                 </div>
                 <span style={{
@@ -459,7 +456,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                   fontWeight: r.payout?.settled_at ? 400 : 600,
                 }}>
                   {r.payout?.settled_at
-                    ? `versé le ${formatCourt(r.payout.settled_at)}`
+                    ? t("rl2_finance_panel.paid_on", { date: formatCourt(r.payout.settled_at) })
                     : r.status_label}
                 </span>
                 <span style={{
@@ -477,15 +474,15 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
 
       {/* ═══ VERSEMENTS ═══════════════════════════════════════════════ */}
       <div style={carte}>
-        <p style={kicker}>HISTORIQUE</p>
-        <p style={titre}>Versements reçus</p>
+        <p style={kicker}>{t("rl2_finance_panel.kicker_history")}</p>
+        <p style={titre}>{t("rl2_finance_panel.payouts_received_title")}</p>
 
         {versements.length === 0 ? (
-          <Vide texte="Aucun versement pour le moment. Ils apparaîtront ici avec leur montant, votre numéro et leur statut." />
+          <Vide texte={t("rl2_finance_panel.payouts_empty")} />
         ) : (
           <div style={liste}>
             {versements.map((v, i) => {
-              const etat = libellePayout(v.status);
+              const etat = libellePayout(v.status, t);
               const inconnu = v.status === "UNKNOWN";
               return (
                 <div
@@ -512,7 +509,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
                       {/* `UNKNOWN` n'est pas un echec : on ignore si l'argent
                           est parti, et le gerant n'a rien a faire. */}
                       {inconnu
-                        ? " · vérification en cours auprès de l’opérateur"
+                        ? ` · ${t("rl2_finance_panel.verification_pending")}`
                         : ` · ${v.payee_msisdn_masked} ${v.payee_operator}`}
                     </p>
                   </div>

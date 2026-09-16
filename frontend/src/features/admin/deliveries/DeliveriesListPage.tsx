@@ -2,6 +2,7 @@
 // Gestion complète des livreurs — admin BelivaY
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Truck, RefreshCw, Search, Plus, Edit2, Trash2,
   CheckCircle, XCircle, Wifi, WifiOff,
@@ -74,12 +75,12 @@ interface CourierFormData {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VEHICLE_CFG: Record<string, { label: string; emoji: string; color: string; bg: string }> = {
-  MOTORBIKE: { label: 'Moto',     emoji: '🏍️', color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
-  CAR:       { label: 'Voiture',  emoji: '🚗', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
-  BIKE:      { label: 'Vélo',     emoji: '🚲', color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
-  TRICYCLE:  { label: 'Tricycle', emoji: '🛺', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
-  VAN:       { label: 'Fourgon',  emoji: '🚐', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
+const VEHICLE_CFG: Record<string, { labelKey: string; emoji: string; color: string; bg: string }> = {
+  MOTORBIKE: { labelKey: 'ad6_del_list.vehicle_motorbike',     emoji: '🏍️', color: '#F47920', bg: 'rgba(244,121,32,0.12)' },
+  CAR:       { labelKey: 'ad6_del_list.vehicle_car',  emoji: '🚗', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)' },
+  BIKE:      { labelKey: 'ad6_del_list.vehicle_bike',     emoji: '🚲', color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+  TRICYCLE:  { labelKey: 'ad6_del_list.vehicle_tricycle', emoji: '🛺', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+  VAN:       { labelKey: 'ad6_del_list.vehicle_van',  emoji: '🚐', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)' },
 };
 
 const CITIES = [
@@ -104,6 +105,7 @@ const authH = () => ({
 
 export default function DeliveriesListPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -158,7 +160,7 @@ export default function DeliveriesListPage() {
       setCouriers(Array.isArray(data) ? data : []);
       setSosAlerts(sosData?.alerts ?? []);
     } catch {
-      toastRef.current('Erreur chargement des livreurs', 'error');
+      toastRef.current(t('ad6_del_list.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -187,9 +189,9 @@ export default function DeliveriesListPage() {
         body: JSON.stringify({ [field]: !c[field] }),
       });
       setCouriers(cs => cs.map(x => x.id === c.id ? { ...x, [field]: !x[field] } : x));
-      toastRef.current(`Statut mis à jour.`, 'success');
+      toastRef.current(t('ad6_del_list.toast_status_updated'), 'success');
     } catch {
-      toastRef.current('Erreur mise à jour statut.', 'error');
+      toastRef.current(t('ad6_del_list.toast_status_update_error'), 'error');
     }
   };
 
@@ -202,9 +204,9 @@ export default function DeliveriesListPage() {
         body: JSON.stringify({ status: newStatus }),
       });
       setSosAlerts(a => a.filter(x => x.id !== sos.id));
-      toastRef.current(`Alerte #${sos.id} marquée ${newStatus}.`, 'success');
+      toastRef.current(t('ad6_del_list.toast_sos_marked', { id: sos.id, status: newStatus }), 'success');
     } catch {
-      toastRef.current('Erreur résolution SOS.', 'error');
+      toastRef.current(t('ad6_del_list.toast_sos_resolve_error'), 'error');
     }
   };
 
@@ -238,7 +240,7 @@ export default function DeliveriesListPage() {
 
   const handleSubmit = async () => {
     if (!form.username || (!editTarget && !form.password) || !form.phone || !form.city) {
-      toastRef.current('Remplissez les champs obligatoires (*).', 'error');
+      toastRef.current(t('ad6_del_list.toast_fill_required'), 'error');
       return;
     }
     setSubmitting(true);
@@ -257,7 +259,7 @@ export default function DeliveriesListPage() {
         await http(`/api/auth/admin/couriers/${editTarget.id}/update/`, {
           method: 'PATCH', headers: authH(), body: JSON.stringify(payload),
         });
-        toastRef.current('Livreur mis à jour.', 'success');
+        toastRef.current(t('ad6_del_list.toast_courier_updated'), 'success');
       } else {
         await http('/api/auth/admin/couriers/create/', {
           method: 'POST', headers: authH(),
@@ -269,12 +271,12 @@ export default function DeliveriesListPage() {
             is_approved: form.is_approved,
           }),
         });
-        toastRef.current('Livreur créé.', 'success');
+        toastRef.current(t('ad6_del_list.toast_courier_created'), 'success');
       }
       setShowForm(false);
       load();
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message.slice(0, 150) : 'Erreur serveur.';
+      const msg = err instanceof Error ? err.message.slice(0, 150) : t('ad6_del_list.toast_server_error');
       toastRef.current(msg, 'error');
     } finally {
       setSubmitting(false);
@@ -290,11 +292,11 @@ export default function DeliveriesListPage() {
       await http(`/api/auth/admin/couriers/${deleteTarget.id}/`, {
         method: 'DELETE', headers: authH(),
       });
-      toastRef.current(`Livreur @${deleteTarget.username} supprimé.`, 'success');
+      toastRef.current(t('ad6_del_list.toast_courier_deleted', { username: deleteTarget.username }), 'success');
       setDeleteTarget(null);
       load();
     } catch {
-      toastRef.current('Erreur lors de la suppression.', 'error');
+      toastRef.current(t('ad6_del_list.toast_delete_error'), 'error');
     } finally {
       setDeleting(false);
     }
@@ -312,10 +314,10 @@ export default function DeliveriesListPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion des Livreurs
+            {t('ad6_del_list.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {total} livreur{total !== 1 ? 's' : ''} · {online} en ligne · Taux succès moyen :
+            {total} {t(total !== 1 ? 'ad6_del_list.courier_plural' : 'ad6_del_list.courier')} · {online} {t('ad6_del_list.online_suffix')} · {t('ad6_del_list.avg_success_rate')} :
             <strong style={{ color: '#10B981', marginLeft: 4 }}>{avgSuccess}%</strong>
           </p>
         </div>
@@ -325,7 +327,7 @@ export default function DeliveriesListPage() {
               className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12px] font-bold animate-pulse"
               style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444', border: '1.5px solid rgba(239,68,68,0.4)' }}>
               <AlertTriangle size={13} />
-              {openSOS} SOS ouverte{openSOS > 1 ? 's' : ''}
+              {openSOS} {t(openSOS > 1 ? 'ad6_del_list.sos_open_plural' : 'ad6_del_list.sos_open')}
             </button>
           )}
           <button onClick={() => load()}
@@ -334,7 +336,7 @@ export default function DeliveriesListPage() {
           </button>
           <button onClick={openCreate}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: T.red, color: '#fff', border: 'none', cursor: 'pointer' }}>
-            <Plus size={14} /> Nouveau livreur
+            <Plus size={14} /> {t('ad6_del_list.new_courier')}
           </button>
         </div>
       </div>
@@ -342,12 +344,12 @@ export default function DeliveriesListPage() {
       {/* ── KPIs ────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
-          { label: 'Total',       value: total,           accent: T.text,    icon: Users       },
-          { label: 'Approuvés',   value: approved,        accent: '#10B981', icon: CheckCircle },
-          { label: 'Actifs',      value: active,          accent: '#3B82F6', icon: Shield      },
-          { label: 'En ligne',    value: online,          accent: '#F47920', icon: Wifi        },
-          { label: 'Livraisons',  value: totalDeliveries, accent: '#8B5CF6', icon: Package     },
-          { label: 'Taux succès', value: `${avgSuccess}%`,accent: avgSuccess >= 85 ? '#10B981' : '#F59E0B', icon: Star },
+          { label: t('ad6_del_list.kpi_total'),       value: total,           accent: T.text,    icon: Users       },
+          { label: t('ad6_del_list.kpi_approved'),   value: approved,        accent: '#10B981', icon: CheckCircle },
+          { label: t('ad6_del_list.kpi_active'),      value: active,          accent: '#3B82F6', icon: Shield      },
+          { label: t('ad6_del_list.kpi_online'),    value: online,          accent: '#F47920', icon: Wifi        },
+          { label: t('ad6_del_list.kpi_deliveries'),  value: totalDeliveries, accent: '#8B5CF6', icon: Package     },
+          { label: t('ad6_del_list.kpi_success_rate'), value: `${avgSuccess}%`,accent: avgSuccess >= 85 ? '#10B981' : '#F59E0B', icon: Star },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -370,15 +372,15 @@ export default function DeliveriesListPage() {
           <div className="relative flex-1 min-w-[180px]">
             <Search size={13} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
             <input value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Nom, username, téléphone…"
+              placeholder={t('ad6_del_list.search_placeholder')}
               style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '9px 12px 9px 32px', fontSize: 12.5, outline: 'none' }} />
           </div>
           {[
-            { val: fApp,    set: setFApp,    opts: [['', 'Approbation'], ['true', 'Approuvés'], ['false', 'En attente']] },
-            { val: fAct,    set: setFAct,    opts: [['', 'Activité'], ['true', 'Actifs'], ['false', 'Inactifs']] },
-            { val: fOnline, set: setFOnline, opts: [['', 'Connexion'], ['true', 'En ligne'], ['false', 'Hors ligne']] },
-            { val: fVeh,    set: setFVeh,    opts: [['', 'Véhicule'], ...Object.entries(VEHICLE_CFG).map(([k, v]) => [k, `${v.emoji} ${v.label}` as string])] },
-            { val: fCity,   set: setFCity,   opts: [['', 'Ville'], ...CITIES.map(c => [c, c])] },
+            { val: fApp,    set: setFApp,    opts: [['', t('ad6_del_list.filter_approval')], ['true', t('ad6_del_list.filter_approved')], ['false', t('ad6_del_list.filter_pending')]] },
+            { val: fAct,    set: setFAct,    opts: [['', t('ad6_del_list.filter_activity')], ['true', t('ad6_del_list.filter_active')], ['false', t('ad6_del_list.filter_inactive')]] },
+            { val: fOnline, set: setFOnline, opts: [['', t('ad6_del_list.filter_connection')], ['true', t('ad6_del_list.filter_online')], ['false', t('ad6_del_list.filter_offline')]] },
+            { val: fVeh,    set: setFVeh,    opts: [['', t('ad6_del_list.filter_vehicle')], ...Object.entries(VEHICLE_CFG).map(([k, v]) => [k, `${v.emoji} ${t(v.labelKey)}` as string])] },
+            { val: fCity,   set: setFCity,   opts: [['', t('ad6_del_list.filter_city')], ...CITIES.map(c => [c, c])] },
           ].map(({ val, set, opts }, i) => (
             <select key={i} value={val} onChange={e => set(e.target.value)}
               style={{ background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }}>
@@ -388,7 +390,7 @@ export default function DeliveriesListPage() {
           {hasFilters && (
             <button onClick={() => { setSearch(''); setFApp(''); setFAct(''); setFOnline(''); setFVeh(''); setFCity(''); }}
               style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, color: T.muted, background: 'none', border: 'none', cursor: 'pointer' }}>
-              <X size={12} /> Reset
+              <X size={12} /> {t('ad6_del_list.reset')}
             </button>
           )}
         </div>
@@ -398,7 +400,7 @@ export default function DeliveriesListPage() {
       <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         {/* Header */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 110px 120px 90px 120px 140px 120px', padding: '10px 20px', borderBottom: `1px solid ${T.border}`, background: T.cardAlt, gap: 12 }}>
-          {['Livreur', 'Ville', 'Véhicule', 'Livr.', 'Succès', 'Statuts', 'Actions'].map((h, i) => (
+          {[t('ad6_del_list.th_courier'), t('ad6_del_list.th_city'), t('ad6_del_list.th_vehicle'), t('ad6_del_list.th_deliveries_short'), t('ad6_del_list.th_success'), t('ad6_del_list.th_statuses'), t('ad6_del_list.th_actions')].map((h, i) => (
             <span key={i} style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>{h}</span>
           ))}
         </div>
@@ -410,7 +412,7 @@ export default function DeliveriesListPage() {
         ) : couriers.length === 0 ? (
           <div className="flex flex-col items-center py-14 gap-3">
             <Truck size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun livreur trouvé</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad6_del_list.no_courier_found')}</p>
           </div>
         ) : (
           <div className="divide-y" style={{ borderColor: T.border }}>
@@ -451,7 +453,7 @@ export default function DeliveriesListPage() {
                         <span style={{ fontSize: 10.5, color: T.muted }}>· {c.phone}</span>
                       </div>
                       <p style={{ fontSize: 10.5, color: T.muted, marginTop: 1 }}>
-                        Inscrit le {fmtDate(c.created_at)}
+                        {t('ad6_del_list.registered_on', { date: fmtDate(c.created_at) })}
                       </p>
                     </div>
                   </div>
@@ -472,17 +474,17 @@ export default function DeliveriesListPage() {
                   {/* Véhicule */}
                   <div className="flex items-center gap-1.5">
                     <span style={{ fontSize: 15 }}>{vc.emoji}</span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: vc.color }}>{vc.label}</span>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: vc.color }}>{t(vc.labelKey)}</span>
                   </div>
 
                   {/* Livraisons */}
                   <div>
                     <p style={{ fontSize: 14, fontWeight: 800, color: T.text }}>{c.total_deliveries}</p>
                     {c.active_shipments > 0 && (
-                      <p style={{ fontSize: 10, color: '#F47920', fontWeight: 600 }}>{c.active_shipments} en cours</p>
+                      <p style={{ fontSize: 10, color: '#F47920', fontWeight: 600 }}>{t('ad6_del_list.in_progress_count', { count: c.active_shipments })}</p>
                     )}
                     {c.failed_deliveries > 0 && (
-                      <p style={{ fontSize: 10, color: '#EF4444' }}>{c.failed_deliveries} échoué{c.failed_deliveries > 1 ? 'es' : 'e'}</p>
+                      <p style={{ fontSize: 10, color: '#EF4444' }}>{t(c.failed_deliveries > 1 ? 'ad6_del_list.failed_plural' : 'ad6_del_list.failed', { count: c.failed_deliveries })}</p>
                     )}
                   </div>
 
@@ -503,18 +505,18 @@ export default function DeliveriesListPage() {
                   <div className="flex items-center gap-1.5 flex-wrap">
                     {/* Approuvé */}
                     <button onClick={() => toggleField(c, 'is_approved')}
-                      title={c.is_approved ? 'Révoquer l\'approbation' : 'Approuver ce livreur'}
+                      title={c.is_approved ? t('ad6_del_list.revoke_approval') : t('ad6_del_list.approve_courier')}
                       style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: c.is_approved ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.1)', border: `1px solid ${c.is_approved ? '#10B98140' : '#EF444430'}`, cursor: 'pointer' }}>
                       {c.is_approved ? <CheckCircle size={14} color="#10B981" /> : <XCircle size={14} color="#EF4444" />}
                     </button>
                     {/* Actif */}
                     <button onClick={() => toggleField(c, 'is_active')}
-                      title={c.is_active ? 'Désactiver' : 'Activer'}
+                      title={c.is_active ? t('ad6_del_list.deactivate') : t('ad6_del_list.activate')}
                       style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: c.is_active ? 'rgba(59,130,246,0.12)' : T.cardAlt, border: `1px solid ${c.is_active ? '#3B82F630' : T.border}`, cursor: 'pointer' }}>
                       <Shield size={13} color={c.is_active ? '#3B82F6' : T.muted} />
                     </button>
                     {/* En ligne (read-only) */}
-                    <div title={c.is_online ? 'En ligne (géré par le livreur)' : 'Hors ligne'}
+                    <div title={c.is_online ? t('ad6_del_list.online_managed_by_courier') : t('ad6_del_list.offline')}
                       style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: c.is_online ? 'rgba(16,185,129,0.1)' : T.cardAlt, border: `1px solid ${c.is_online ? '#10B98125' : T.border}` }}>
                       {c.is_online ? <Wifi size={13} color="#10B981" /> : <WifiOff size={13} color={T.muted} />}
                     </div>
@@ -523,14 +525,14 @@ export default function DeliveriesListPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-1.5">
                     <button onClick={() => openEdit(c)}
-                      title="Modifier"
+                      title={t('ad6_del_list.edit')}
                       style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}
                       onMouseEnter={e => ((e.currentTarget as HTMLElement).style.color = T.text)}
                       onMouseLeave={e => ((e.currentTarget as HTMLElement).style.color = T.muted)}>
                       <Edit2 size={12} />
                     </button>
                     <button onClick={() => setDeleteTarget(c)}
-                      title="Supprimer"
+                      title={t('ad6_del_list.delete')}
                       style={{ width: 30, height: 30, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer' }}>
                       <Trash2 size={12} />
                     </button>
@@ -555,10 +557,10 @@ export default function DeliveriesListPage() {
             <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: `1px solid ${T.border}` }}>
               <div>
                 <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: T.text }}>
-                  {editTarget ? `Modifier @${editTarget.username}` : 'Nouveau livreur'}
+                  {editTarget ? t('ad6_del_list.modal_edit_title', { username: editTarget.username }) : t('ad6_del_list.modal_create_title')}
                 </h2>
                 <p style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>
-                  {editTarget ? 'Modifiez les informations du livreur' : 'Créer un compte livreur BelivaY'}
+                  {editTarget ? t('ad6_del_list.modal_edit_subtitle') : t('ad6_del_list.modal_create_subtitle')}
                 </p>
               </div>
               <button onClick={() => setShowForm(false)} style={{ color: T.muted, background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -570,18 +572,18 @@ export default function DeliveriesListPage() {
             <div className="p-6 space-y-4">
 
               {/* Section compte */}
-              <p style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>Compte</p>
+              <p style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase', letterSpacing: '.08em' }}>{t('ad6_del_list.section_account')}</p>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
-                    Username <span style={{ color: T.red }}>*</span>
+                    {t('ad6_del_list.field_username')} <span style={{ color: T.red }}>*</span>
                   </label>
                   <input value={form.username} onChange={e => fld('username', e.target.value)}
                     disabled={!!editTarget} placeholder="jean_livreur"
                     style={{ width: '100%', background: editTarget ? T.border + '40' : T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none', opacity: editTarget ? 0.6 : 1 }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Email</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_del_list.field_email')}</label>
                   <input type="email" value={form.email} onChange={e => fld('email', e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
                 </div>
@@ -589,12 +591,12 @@ export default function DeliveriesListPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Prénom</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_del_list.field_first_name')}</label>
                   <input value={form.first_name} onChange={e => fld('first_name', e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Nom</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_del_list.field_last_name')}</label>
                   <input value={form.last_name} onChange={e => fld('last_name', e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
                 </div>
@@ -602,18 +604,18 @@ export default function DeliveriesListPage() {
 
               <div>
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
-                  {editTarget ? 'Nouveau mot de passe (vide = inchangé)' : <>Mot de passe <span style={{ color: T.red }}>*</span></>}
+                  {editTarget ? t('ad6_del_list.field_password_edit') : <>{t('ad6_del_list.field_password')} <span style={{ color: T.red }}>*</span></>}
                 </label>
                 <div className="relative">
                   <input type={showPassword ? 'text' : 'password'} value={form.password} onChange={e => fld('password', e.target.value)}
-                    placeholder={editTarget ? 'Laisser vide pour conserver' : 'Mot de passe'}
+                    placeholder={editTarget ? t('ad6_del_list.password_placeholder_edit') : t('ad6_del_list.password_placeholder')}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 40px 9px 12px', fontSize: 13, outline: 'none' }} />
                   <button
                     type="button"
                     onClick={() => setShowPassword((value) => !value)}
                     className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-lg"
                     style={{ color: T.muted }}
-                    aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                    aria-label={showPassword ? t('ad6_del_list.hide_password') : t('ad6_del_list.show_password')}
                   >
                     {showPassword ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
@@ -621,12 +623,12 @@ export default function DeliveriesListPage() {
               </div>
 
               {/* Section livraison */}
-              <p style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 8 }}>Livraison</p>
+              <p style={{ fontSize: 11, fontWeight: 800, color: T.muted, textTransform: 'uppercase', letterSpacing: '.08em', marginTop: 8 }}>{t('ad6_del_list.section_delivery')}</p>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
-                    Téléphone <span style={{ color: T.red }}>*</span>
+                    {t('ad6_del_list.field_phone')} <span style={{ color: T.red }}>*</span>
                   </label>
                   <input value={form.phone} onChange={e => fld('phone', e.target.value)}
                     placeholder="+237 6XX XXX XXX"
@@ -634,11 +636,11 @@ export default function DeliveriesListPage() {
                 </div>
                 <div>
                   <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
-                    Ville <span style={{ color: T.red }}>*</span>
+                    {t('ad6_del_list.field_city')} <span style={{ color: T.red }}>*</span>
                   </label>
                   <select value={form.city} onChange={e => fld('city', e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
-                    <option value="">-- Choisir --</option>
+                    <option value="">{t('ad6_del_list.choose_option')}</option>
                     {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -646,7 +648,7 @@ export default function DeliveriesListPage() {
 
               <div>
                 <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>
-                  Zones <span style={{ fontSize: 10.5, color: T.muted }}>(virgule-séparées)</span>
+                  {t('ad6_del_list.field_zones')} <span style={{ fontSize: 10.5, color: T.muted }}>{t('ad6_del_list.field_zones_hint')}</span>
                 </label>
                 <input value={form.zones} onChange={e => fld('zones', e.target.value)}
                   placeholder="Bastos, Melen, Nlongkak, Centre-ville"
@@ -655,16 +657,16 @@ export default function DeliveriesListPage() {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Type de véhicule</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_del_list.field_vehicle_type')}</label>
                   <select value={form.vehicle_type} onChange={e => fld('vehicle_type', e.target.value)}
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }}>
                     {Object.entries(VEHICLE_CFG).map(([k, v]) => (
-                      <option key={k} value={k}>{v.emoji} {v.label}</option>
+                      <option key={k} value={k}>{v.emoji} {t(v.labelKey)}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>N° CNI / pièce d'identité</label>
+                  <label style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_del_list.field_id_card')}</label>
                   <input value={form.id_card} onChange={e => fld('id_card', e.target.value)}
                     placeholder="CNI-1234567890"
                     style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '9px 12px', fontSize: 13, outline: 'none' }} />
@@ -677,7 +679,7 @@ export default function DeliveriesListPage() {
                   onChange={e => fld('is_approved', e.target.checked)}
                   style={{ width: 16, height: 16, accentColor: T.red, cursor: 'pointer' }} />
                 <label htmlFor="chk_approved" style={{ fontSize: 13, color: T.text, cursor: 'pointer' }}>
-                  Approuver immédiatement — le livreur peut recevoir des livraisons
+                  {t('ad6_del_list.approve_immediately')}
                 </label>
               </div>
             </div>
@@ -686,12 +688,12 @@ export default function DeliveriesListPage() {
             <div className="flex items-center justify-end gap-3 px-6 py-4" style={{ borderTop: `1px solid ${T.border}` }}>
               <button onClick={() => setShowForm(false)}
                 style={{ padding: '9px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                Annuler
+                {t('ad6_del_list.cancel')}
               </button>
               <button onClick={handleSubmit} disabled={submitting}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '9px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: T.red, color: '#fff', border: 'none', cursor: submitting ? 'not-allowed' : 'pointer', opacity: submitting ? 0.7 : 1 }}>
                 {submitting ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
-                {submitting ? 'Sauvegarde…' : editTarget ? 'Mettre à jour' : 'Créer le livreur'}
+                {submitting ? t('ad6_del_list.saving') : editTarget ? t('ad6_del_list.update') : t('ad6_del_list.create_courier')}
               </button>
             </div>
           </div>
@@ -709,30 +711,30 @@ export default function DeliveriesListPage() {
             <div className="flex items-center gap-3 mb-4">
               <Trash2 size={20} style={{ color: '#EF4444' }} />
               <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: T.text }}>
-                Supprimer ce livreur ?
+                {t('ad6_del_list.delete_modal_title')}
               </h3>
             </div>
             <p style={{ fontSize: 13.5, color: T.muted, lineHeight: 1.6, marginBottom: 8 }}>
-              Le compte <strong style={{ color: T.text }}>@{deleteTarget.username}</strong> et toutes ses données seront définitivement supprimés.
+              {t('ad6_del_list.delete_modal_desc_prefix')} <strong style={{ color: T.text }}>@{deleteTarget.username}</strong> {t('ad6_del_list.delete_modal_desc_suffix')}
             </p>
             {deleteTarget.total_deliveries > 0 && (
               <div className="flex items-center gap-2 p-2.5 rounded-lg mb-4"
                 style={{ background: 'rgba(245,158,11,0.1)', border: '1px solid rgba(245,158,11,0.3)' }}>
                 <AlertTriangle size={13} color="#F59E0B" />
                 <p style={{ fontSize: 12, color: '#F59E0B' }}>
-                  Ce livreur a {deleteTarget.total_deliveries} livraison{deleteTarget.total_deliveries > 1 ? 's' : ''} dans l'historique.
+                  {t(deleteTarget.total_deliveries > 1 ? 'ad6_del_list.delete_modal_has_deliveries_plural' : 'ad6_del_list.delete_modal_has_deliveries', { count: deleteTarget.total_deliveries })}
                 </p>
               </div>
             )}
             <div className="flex gap-3 mt-4">
               <button onClick={() => setDeleteTarget(null)}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                Annuler
+                {t('ad6_del_list.cancel')}
               </button>
               <button onClick={handleDelete} disabled={deleting}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 0', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', border: 'none', cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.7 : 1 }}>
                 {deleting ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                {deleting ? 'Suppression…' : 'Confirmer'}
+                {deleting ? t('ad6_del_list.deleting') : t('ad6_del_list.confirm')}
               </button>
             </div>
           </div>
@@ -756,9 +758,9 @@ export default function DeliveriesListPage() {
                 </div>
                 <div>
                   <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: T.text }}>
-                    Alertes SOS Actives
+                    {t('ad6_del_list.sos_modal_title')}
                   </h2>
-                  <p style={{ fontSize: 12, color: '#EF4444' }}>{sosAlerts.length} alerte{sosAlerts.length > 1 ? 's' : ''} non traitée{sosAlerts.length > 1 ? 's' : ''}</p>
+                  <p style={{ fontSize: 12, color: '#EF4444' }}>{t(sosAlerts.length > 1 ? 'ad6_del_list.sos_untreated_plural' : 'ad6_del_list.sos_untreated', { count: sosAlerts.length })}</p>
                 </div>
               </div>
               <button onClick={() => setShowSOS(false)} style={{ color: T.muted, background: 'none', border: 'none', cursor: 'pointer' }}>
@@ -770,7 +772,7 @@ export default function DeliveriesListPage() {
             <div className="divide-y p-4 space-y-3" style={{ borderColor: T.border }}>
               {sosAlerts.length === 0 ? (
                 <p style={{ fontSize: 13, color: T.muted, textAlign: 'center', padding: '16px 0' }}>
-                  Aucune alerte SOS ouverte.
+                  {t('ad6_del_list.sos_none_open')}
                 </p>
               ) : sosAlerts.map(sos => (
                 <div key={sos.id} className="rounded-xl p-4"
@@ -805,11 +807,11 @@ export default function DeliveriesListPage() {
                   <div className="flex items-center gap-2">
                     <button onClick={() => resolveSOSItem(sos, 'ACKNOWLEDGED')}
                       style={{ flex: 1, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 600, background: 'rgba(245,158,11,0.12)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)', cursor: 'pointer' }}>
-                      Prise en charge
+                      {t('ad6_del_list.sos_acknowledge')}
                     </button>
                     <button onClick={() => resolveSOSItem(sos, 'RESOLVED')}
                       style={{ flex: 1, padding: '7px 0', borderRadius: 8, fontSize: 12, fontWeight: 700, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)', cursor: 'pointer' }}>
-                      Résoudre
+                      {t('ad6_del_list.sos_resolve')}
                     </button>
                   </div>
                 </div>

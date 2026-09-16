@@ -6,6 +6,7 @@ import {
   useEffect, useState, useRef, useCallback,
   useMemo, memo,
 } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Store, Upload, Save, RefreshCw, Copy, Check, QrCode,
   Download, Phone, Mail, MapPin, Plus, Pencil, Trash2,
@@ -53,8 +54,9 @@ const T = {
 const TIER_COLORS: Record<string, string> = {
   BRONZE: '#CD7F32', SILVER: '#7C8490', GOLD: '#C8A000', DIAMOND: '#2563EB',
 };
-const TIER_LABELS: Record<string, string> = {
-  BRONZE: 'Bronze', SILVER: 'Argent', GOLD: 'Or', DIAMOND: 'Diamant',
+const TIER_LABEL_KEYS: Record<string, string> = {
+  BRONZE: 'sl1_shop.tier_bronze', SILVER: 'sl1_shop.tier_silver',
+  GOLD: 'sl1_shop.tier_gold', DIAMOND: 'sl1_shop.tier_diamond',
 };
 
 const inp: React.CSSProperties = {
@@ -88,11 +90,11 @@ interface ModRequest {
   created_at: string;
 }
 
-const SENSITIVE_FIELD_LABELS: Record<string, string> = {
-  business_name:        'Nom de la boutique',
-  business_description: 'Description',
-  city:                 'Ville',
-  address:              'Adresse',
+const SENSITIVE_FIELD_LABEL_KEYS: Record<string, string> = {
+  business_name:        'sl1_shop.field_business_name',
+  business_description: 'sl1_shop.field_business_description',
+  city:                 'sl1_shop.field_city',
+  address:              'sl1_shop.field_address',
 };
 
 const EMPTY_LOCATION: Location = {
@@ -253,6 +255,7 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
   locations: Location[];
   shopName: string;
 }) {
+  const { t } = useTranslation();
   const validLocs = locations.filter(l => l.latitude && l.longitude && l.is_active);
   if (validLocs.length === 0) return null;
 
@@ -279,10 +282,10 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
         </div>
         <div>
           <p className="font-bold text-[14px]" style={{ color: T.text }}>
-            Emplacements sur la carte
+            {t('sl1_shop.map_section_title')}
           </p>
           <p className="text-[11.5px]" style={{ color: T.mutedL }}>
-            {validLocs.length} emplacement{validLocs.length > 1 ? 's' : ''} localisé{validLocs.length > 1 ? 's' : ''}
+            {t(validLocs.length > 1 ? 'sl1_shop.locations_located_plural' : 'sl1_shop.locations_located', { count: validLocs.length })}
           </p>
         </div>
       </div>
@@ -324,7 +327,7 @@ const ShopLocationsMap = memo(function ShopLocationsMap({
                   )}
                   {loc.representative_name && (
                     <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}` }}>
-                      <p style={{ fontSize: 11, color: T.mutedL, marginBottom: 2 }}>Représentant</p>
+                      <p style={{ fontSize: 11, color: T.mutedL, marginBottom: 2 }}>{t('sl1_shop.representative_label')}</p>
                       <p style={{ fontSize: 12, fontWeight: 600, color: T.text }}>
                         {loc.representative_name}
                       </p>
@@ -355,6 +358,7 @@ function ModRequestModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [selectedFields, setSelectedFields] = useState<string[]>([]);
   const [newValues,  setNewValues]           = useState<Record<string, string>>({});
@@ -374,10 +378,10 @@ function ModRequestModal({
   };
 
   const handleSubmit = async () => {
-    if (!selectedFields.length) { showToast('Sélectionnez au moins un champ.', 'error'); return; }
-    if (!reason.trim())         { showToast('La justification est requise.', 'error'); return; }
+    if (!selectedFields.length) { showToast(t('sl1_shop.toast_select_field'), 'error'); return; }
+    if (!reason.trim())         { showToast(t('sl1_shop.toast_reason_required'), 'error'); return; }
     const empty = selectedFields.filter(f => !newValues[f]?.trim());
-    if (empty.length)           { showToast('Remplissez les nouvelles valeurs.', 'error'); return; }
+    if (empty.length)           { showToast(t('sl1_shop.toast_fill_values'), 'error'); return; }
 
     try {
       setSubmitting(true);
@@ -395,12 +399,12 @@ function ModRequestModal({
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || 'Erreur');
+      if (!res.ok) throw new Error(data.detail || t('sl1_shop.generic_error'));
 
-      showToast('Demande envoyée à BelivaY.', 'success');
+      showToast(t('sl1_shop.toast_request_sent'), 'success');
       onSuccess();
     } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : 'Erreur', 'error');
+      showToast(e instanceof Error ? e.message : t('sl1_shop.generic_error'), 'error');
     } finally { setSubmitting(false); }
   };
 
@@ -413,7 +417,7 @@ function ModRequestModal({
           style={{ background: T.white, borderBottom: `1px solid ${T.border}` }}>
           <p className="font-black text-[15px]" style={{ color: T.text }}>
             <Lock size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
-            Demander une modification
+            {t('sl1_shop.request_mod_title')}
           </p>
           <button type="button" onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: T.creamAlt }}>
@@ -425,20 +429,20 @@ function ModRequestModal({
           {pendingReq ? (
             <div className="rounded-xl p-4 space-y-2" style={{ background: T.amberL, border: `1px solid rgba(217,119,6,0.25)` }}>
               <p className="font-bold text-[13px] flex items-center gap-2" style={{ color: T.amber }}>
-                <AlertTriangle size={13}/> Demande en cours — #{pendingReq.id}
+                <AlertTriangle size={13}/> {t('sl1_shop.request_pending', { id: pendingReq.id })}
               </p>
               <p className="text-[12px]" style={{ color: T.muted }}>
-                Statut : <strong>{pendingReq.status}</strong>
-                {pendingReq.status === 'DOCS_REQUIRED' && ' — Des documents vous sont demandés.'}
+                {t('sl1_shop.status_label')} <strong>{pendingReq.status}</strong>
+                {pendingReq.status === 'DOCS_REQUIRED' && t('sl1_shop.docs_required_note')}
               </p>
               {pendingReq.admin_note && (
                 <p className="text-[12px] font-semibold" style={{ color: T.text }}>
-                  Note BelivaY : {pendingReq.admin_note}
+                  {t('sl1_shop.admin_note_label')} {pendingReq.admin_note}
                 </p>
               )}
               {pendingReq.required_docs.length > 0 && (
                 <div>
-                  <p className="text-[11.5px] font-semibold mb-1" style={{ color: T.muted }}>Documents demandés :</p>
+                  <p className="text-[11.5px] font-semibold mb-1" style={{ color: T.muted }}>{t('sl1_shop.docs_required_label')}</p>
                   <ul className="space-y-0.5">
                     {pendingReq.required_docs.map(d => (
                       <li key={d.id} className="text-[12px]" style={{ color: T.text }}>• {d.name}</li>
@@ -451,13 +455,15 @@ function ModRequestModal({
             <>
               <div className="rounded-xl p-4" style={{ background: T.blueL, border: `1px solid rgba(37,99,235,0.2)` }}>
                 <p className="text-[12.5px] leading-relaxed" style={{ color: T.blue }}>
-                  Ces informations sont liées à vos documents officiels et soumises à validation BelivaY selon la réglementation camerounaise.
+                  {t('sl1_shop.official_info_notice')}
                 </p>
               </div>
 
               <div className="space-y-3">
-                <p className="text-[12.5px] font-semibold" style={{ color: T.text }}>Champs à modifier</p>
-                {Object.entries(SENSITIVE_FIELD_LABELS).map(([field, label]) => (
+                <p className="text-[12.5px] font-semibold" style={{ color: T.text }}>{t('sl1_shop.fields_to_modify')}</p>
+                {Object.entries(SENSITIVE_FIELD_LABEL_KEYS).map(([field, labelKey]) => {
+                  const label = t(labelKey);
+                  return (
                   <div key={field}>
                     <label className="flex items-center gap-2.5 cursor-pointer">
                       <input type="checkbox" checked={selectedFields.includes(field)}
@@ -465,31 +471,32 @@ function ModRequestModal({
                         className="w-4 h-4 rounded" style={{ accentColor: T.orange }}/>
                       <span className="text-[13px] font-semibold" style={{ color: T.text }}>{label}</span>
                       <span className="text-[11.5px]" style={{ color: T.mutedL }}>
-                        Actuel : {(profile as unknown as Record<string, string>)[field] || '—'}
+                        {t('sl1_shop.current_value_label')} {(profile as unknown as Record<string, string>)[field] || '—'}
                       </span>
                     </label>
                     {selectedFields.includes(field) && (
                       <div className="mt-2 ml-6">
-                        <input value={newValues[field] || ''} placeholder={`Nouvelle valeur pour ${label}`}
+                        <input value={newValues[field] || ''} placeholder={t('sl1_shop.new_value_placeholder', { label })}
                           onChange={e => setNewValues(prev => ({ ...prev, [field]: e.target.value }))}
                           style={{ ...inp, fontSize: 13 }}/>
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
               </div>
 
               <div>
                 <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                  Justification <span style={{ color: T.red }}>*</span>
+                  {t('sl1_shop.justification_label')} <span style={{ color: T.red }}>*</span>
                 </label>
                 <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
-                  placeholder="Ex : Changement de dénomination sociale suite à enregistrement au RCCM…"
+                  placeholder={t('sl1_shop.justification_placeholder')}
                   style={{ ...inp, resize: 'none' }}/>
               </div>
 
               <div>
-                <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>Pièces jointes (optionnel)</p>
+                <p className="text-[12.5px] font-semibold mb-2" style={{ color: T.text }}>{t('sl1_shop.attachments_label')}</p>
                 <input type="file" ref={fileRef} className="hidden" multiple accept=".pdf,.jpg,.jpeg,.png"
                   onChange={e => {
                     const selected = Array.from(e.target.files || []);
@@ -498,7 +505,7 @@ function ModRequestModal({
                 <button type="button" onClick={() => fileRef.current?.click()}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[12.5px] font-semibold"
                   style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-                  <Paperclip size={13}/> Joindre des documents
+                  <Paperclip size={13}/> {t('sl1_shop.attach_documents')}
                 </button>
                 {files.length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-2">
@@ -516,8 +523,8 @@ function ModRequestModal({
                 className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[13.5px] text-white disabled:opacity-50"
                 style={{ background: T.orange }}>
                 {submitting
-                  ? <><RefreshCw size={13} className="animate-spin"/>Envoi…</>
-                  : <><Send size={13}/>Envoyer la demande</>}
+                  ? <><RefreshCw size={13} className="animate-spin"/>{t('sl1_shop.sending')}</>
+                  : <><Send size={13}/>{t('sl1_shop.send_request')}</>}
               </button>
             </>
           )}
@@ -547,6 +554,7 @@ function LocationModal({
   onClose: () => void;
   onSave: (data: Location) => void;
 }) {
+  const { t } = useTranslation();
   const [form, setForm]     = useState<Location>({ ...EMPTY_LOCATION, ...(initial || {}) });
   const [geoStatus, setGeoStatus] = useState<GeoStatus>(
     initial?.latitude && initial?.longitude ? 'found' : 'idle'
@@ -679,10 +687,10 @@ function LocationModal({
             </div>
             <div>
               <p className="font-black text-[15px]" style={{ color: T.text }}>
-                {initial?.id ? 'Modifier l\'emplacement' : 'Ajouter un emplacement'}
+                {initial?.id ? t('sl1_shop.edit_location_title') : t('sl1_shop.add_location_title')}
               </p>
               <p className="text-[11.5px]" style={{ color: T.mutedL }}>
-                Les coordonnées GPS permettent l'affichage sur la carte.
+                {t('sl1_shop.gps_hint')}
               </p>
             </div>
           </div>
@@ -699,27 +707,27 @@ function LocationModal({
           {/* ── SECTION : INFORMATIONS ─────────────────────────────────────── */}
           <div className="space-y-4">
             <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: T.mutedL }}>
-              Informations
+              {t('sl1_shop.section_info')}
             </p>
 
             {/* Nom */}
             <div>
               <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                Nom de l'emplacement <span style={{ color: T.red }}>*</span>
+                {t('sl1_shop.location_name_label')} <span style={{ color: T.red }}>*</span>
               </label>
               <input value={form.name} onChange={e => set('name', e.target.value)}
-                placeholder="Ex: Safara Mokolo" style={inp}/>
+                placeholder={t('sl1_shop.location_name_placeholder')} style={inp}/>
             </div>
 
             {/* Adresse avec bouton Localiser et indicateur */}
             <div>
               <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                Adresse complète <span style={{ color: T.red }}>*</span>
+                {t('sl1_shop.address_label')} <span style={{ color: T.red }}>*</span>
               </label>
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <input value={form.address} onChange={e => set('address', e.target.value)}
-                    placeholder="Marché Mokolo, Yaoundé, Cameroun"
+                    placeholder={t('sl1_shop.address_placeholder')}
                     style={{ ...inp, paddingRight: 36 }}/>
                   <div className="absolute right-3 top-1/2 -translate-y-1/2">
                     <GeoStatusIcon status={geoStatus}/>
@@ -731,31 +739,31 @@ function LocationModal({
                   {geoStatus === 'loading'
                     ? <Loader2 size={13} className="animate-spin"/>
                     : <Target size={13}/>}
-                  Localiser
+                  {t('sl1_shop.locate_button')}
                 </button>
               </div>
               {geoStatus === 'not_found' && (
                 <p className="text-[11.5px] mt-1.5 flex items-center gap-1" style={{ color: T.red }}>
-                  <XCircle size={12}/> Adresse introuvable. Cliquez sur la carte pour positionner manuellement.
+                  <XCircle size={12}/> {t('sl1_shop.address_not_found')}
                 </p>
               )}
               {geoStatus === 'found' && (
                 <p className="text-[11.5px] mt-1.5 flex items-center gap-1" style={{ color: T.green }}>
-                  <CheckCircle2 size={12}/> Position trouvée — glissez le marqueur pour ajuster.
+                  <CheckCircle2 size={12}/> {t('sl1_shop.position_found')}
                 </p>
               )}
             </div>
 
             <div>
               <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                Description d'accès <span style={{ color: T.red }}>*</span>
+                {t('sl1_shop.access_description_label')} <span style={{ color: T.red }}>*</span>
               </label>
               <textarea value={form.description} onChange={e => set('description', e.target.value)}
-                placeholder="Ex: portail orange derrière la pharmacie, 2e étage, appelez le responsable à l'arrivée"
+                placeholder={t('sl1_shop.access_description_placeholder')}
                 rows={3}
                 style={{ ...inp, minHeight: 84, resize: 'vertical', lineHeight: 1.5 }}/>
               <p className="text-[11.5px] mt-1.5" style={{ color: hasCoords || hasAccessDescription ? T.mutedL : T.red }}>
-                Pointez la boutique sur la carte ou ajoutez une description d'accès précise.
+                {t('sl1_shop.access_description_hint')}
               </p>
             </div>
 
@@ -763,13 +771,13 @@ function LocationModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                  Téléphone <span style={{ color: T.red }}>*</span>
+                  {t('sl1_shop.phone_label')} <span style={{ color: T.red }}>*</span>
                 </label>
                 <input value={form.phone} onChange={e => set('phone', e.target.value)}
                   placeholder="+237 6XX XXX XXX" style={inp}/>
               </div>
               <div>
-                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>Email</label>
+                <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>{t('sl1_shop.email_label')}</label>
                 <input value={form.email} onChange={e => set('email', e.target.value)}
                   placeholder="mokolo@boutique.cm" type="email" style={inp}/>
               </div>
@@ -782,12 +790,12 @@ function LocationModal({
           {/* ── SECTION : REPRÉSENTANT ─────────────────────────────────────── */}
           <div className="space-y-4">
             <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: T.mutedL }}>
-              Représentant sur place
+              {t('sl1_shop.section_representative')}
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                  Nom <span style={{ color: T.red }}>*</span>
+                  {t('sl1_shop.name_label')} <span style={{ color: T.red }}>*</span>
                 </label>
                 <input value={form.representative_name}
                   onChange={e => set('representative_name', e.target.value)}
@@ -795,7 +803,7 @@ function LocationModal({
               </div>
               <div>
                 <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                  Téléphone <span style={{ color: T.red }}>*</span>
+                  {t('sl1_shop.phone_label')} <span style={{ color: T.red }}>*</span>
                 </label>
                 <input value={form.representative_phone}
                   onChange={e => set('representative_phone', e.target.value)}
@@ -811,10 +819,10 @@ function LocationModal({
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-bold uppercase tracking-wider" style={{ color: T.mutedL }}>
-                Position sur la carte
+                {t('sl1_shop.section_map_position')}
               </p>
               <p className="text-[11px]" style={{ color: T.mutedL }}>
-                Requis si aucune description précise
+                {t('sl1_shop.map_required_hint')}
               </p>
             </div>
 
@@ -825,11 +833,11 @@ function LocationModal({
               {gpsStatus === 'loading'
                 ? <Loader2 size={14} className="animate-spin"/>
                 : <LocateFixed size={14}/>}
-              Utiliser ma position GPS actuelle
+              {t('sl1_shop.use_gps_button')}
             </button>
             {gpsStatus === 'not_found' && (
               <p className="text-[11.5px] flex items-center gap-1" style={{ color: T.red }}>
-                <XCircle size={12}/> Position indisponible — autorisez la géolocalisation ou positionnez manuellement sur la carte.
+                <XCircle size={12}/> {t('sl1_shop.gps_unavailable')}
               </p>
             )}
 
@@ -839,8 +847,8 @@ function LocationModal({
               <Navigation size={14} style={{ color: T.orange, flexShrink: 0 }}/>
               <p className="text-[12px]" style={{ color: T.muted }}>
                 {mapPosition
-                  ? 'Glissez le marqueur pour ajuster précisément la position.'
-                  : 'Cliquez sur la carte pour positionner votre emplacement.'}
+                  ? t('sl1_shop.drag_marker_hint')
+                  : t('sl1_shop.click_map_hint')}
               </p>
             </div>
 
@@ -856,8 +864,8 @@ function LocationModal({
                   onMapClick={handleMapClick}
                   draggableMarker={mapPosition ? {
                     position: mapPosition,
-                    title: form.name || 'Emplacement',
-                    subtitle: form.address || 'Glissez pour ajuster',
+                    title: form.name || t('sl1_shop.location_fallback_name'),
+                    subtitle: form.address || t('sl1_shop.drag_to_adjust'),
                     color: T.orange,
                     onDragEnd: handleMarkerDragEnd,
                   } : null}
@@ -883,8 +891,8 @@ function LocationModal({
                     >
                       <Popup>
                         <div style={{ fontFamily: 'system-ui', fontSize: 12 }}>
-                          <p style={{ fontWeight: 700, marginBottom: 4 }}>{form.name || 'Emplacement'}</p>
-                          <p style={{ color: T.muted }}>{form.address || 'Glissez pour ajuster'}</p>
+                          <p style={{ fontWeight: 700, marginBottom: 4 }}>{form.name || t('sl1_shop.location_fallback_name')}</p>
+                          <p style={{ color: T.muted }}>{form.address || t('sl1_shop.drag_to_adjust')}</p>
                         </div>
                       </Popup>
                     </DraggableMarker>
@@ -896,7 +904,7 @@ function LocationModal({
             {/* Coordonnées — affichées en lecture et modifiables */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.muted }}>Latitude</label>
+                <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.muted }}>{t('sl1_shop.latitude_label')}</label>
                 <input value={form.latitude} placeholder="3.848490" type="number" step="any"
                   onChange={e => {
                     set('latitude', e.target.value);
@@ -907,7 +915,7 @@ function LocationModal({
                   style={{ ...inp, fontSize: 12.5 }}/>
               </div>
               <div>
-                <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.muted }}>Longitude</label>
+                <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.muted }}>{t('sl1_shop.longitude_label')}</label>
                 <input value={form.longitude} placeholder="11.502075" type="number" step="any"
                   onChange={e => {
                     set('longitude', e.target.value);
@@ -919,7 +927,7 @@ function LocationModal({
               </div>
             </div>
             <p className="text-[11px]" style={{ color: T.mutedL }}>
-              Coordonnées auto-remplies via la carte. Modifiables manuellement si besoin.
+              {t('sl1_shop.coords_auto_hint')}
             </p>
           </div>
 
@@ -933,9 +941,9 @@ function LocationModal({
             <div className="flex items-center gap-3">
               <Star size={16} style={{ color: form.is_main ? T.orange : T.mutedL }} fill={form.is_main ? T.orange : 'none'}/>
               <div className="text-left">
-                <p className="text-[13px] font-bold" style={{ color: T.text }}>Centre principal</p>
+                <p className="text-[13px] font-bold" style={{ color: T.text }}>{t('sl1_shop.main_center_label')}</p>
                 <p className="text-[11px]" style={{ color: T.mutedL }}>
-                  Les autres emplacements deviennent automatiquement secondaires.
+                  {t('sl1_shop.main_center_hint')}
                 </p>
               </div>
             </div>
@@ -952,7 +960,7 @@ function LocationModal({
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] text-white transition-all disabled:opacity-40"
             style={{ background: T.orange, boxShadow: canSave ? '0 4px 16px rgba(244,121,32,0.4)' : 'none' }}>
             <Check size={15}/>
-            {initial?.id ? 'Enregistrer les modifications' : 'Ajouter cet emplacement'}
+            {initial?.id ? t('sl1_shop.save_changes') : t('sl1_shop.add_location_button')}
           </button>
         </div>
       </div>
@@ -963,6 +971,7 @@ function LocationModal({
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function SellerShopPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [loading,      setLoading]      = useState(true);
   const [saving,       setSaving]       = useState(false);
@@ -1006,9 +1015,9 @@ export default function SellerShopPage() {
       try { setModRequests(await http<ModRequest[]>('/api/vendors/mod-requests/')); } catch { /* pas bloquant */ }
     } catch (err) {
       console.error('load error:', err);
-      showToast('Erreur de chargement', 'error');
+      showToast(t('sl1_shop.toast_load_error'), 'error');
     } finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -1016,9 +1025,9 @@ export default function SellerShopPage() {
     try {
       setSaving(true);
       await vendorsApi.updateShop({ whatsapp_phone: whatsapp, is_online: isOnline } as Parameters<typeof vendorsApi.updateShop>[0]);
-      showToast('Boutique mise à jour', 'success');
+      showToast(t('sl1_shop.toast_shop_updated'), 'success');
       await load();
-    } catch { showToast('Erreur lors de la sauvegarde', 'error'); }
+    } catch { showToast(t('sl1_shop.toast_save_error'), 'error'); }
     finally { setSaving(false); }
   };
 
@@ -1027,8 +1036,8 @@ export default function SellerShopPage() {
       const compressedFile = await ensureImageUnderLimit(file);
       const res = await vendorsApi.uploadShopPhoto(compressedFile);
       setShop(p => p ? { ...p, photo_url: res.photo_url } : p);
-      showToast('Photo mise à jour', 'success');
-    } catch { showToast('Erreur upload photo', 'error'); }
+      showToast(t('sl1_shop.toast_photo_updated'), 'success');
+    } catch { showToast(t('sl1_shop.toast_photo_error'), 'error'); }
   };
 
   const handleBanner = async (file: File) => {
@@ -1036,15 +1045,15 @@ export default function SellerShopPage() {
       const compressedFile = await ensureImageUnderLimit(file);
       const res = await vendorsApi.uploadShopBanner(compressedFile);
       setShop(p => p ? { ...p, banner_url: res.banner_url } : p);
-      showToast('Bannière mise à jour', 'success');
-    } catch { showToast('Erreur upload bannière', 'error'); }
+      showToast(t('sl1_shop.toast_banner_updated'), 'success');
+    } catch { showToast(t('sl1_shop.toast_banner_error'), 'error'); }
   };
 
   const handleCopy = () => {
     const url = shop?.public_url || `https://belivay.com?ref=${shop?.shop_slug}`;
     navigator.clipboard.writeText(url);
     setCopied(true); setTimeout(() => setCopied(false), 2000);
-    showToast('Lien copié', 'success');
+    showToast(t('sl1_shop.toast_link_copied'), 'success');
   };
 
   const handleDownloadQR = () => {
@@ -1078,32 +1087,32 @@ export default function SellerShopPage() {
       // http() utilise API_BASE_URL → pointe bien vers Django (localhost:8000)
       if (data.id) {
         await http(`/api/vendors/locations/${data.id}/update/`, { method: 'PATCH', headers, body });
-        showToast('Emplacement mis à jour', 'success');
+        showToast(t('sl1_shop.toast_location_updated'), 'success');
       } else {
         await http('/api/vendors/locations/create/', { method: 'POST', headers, body });
-        showToast('Emplacement ajouté', 'success');
+        showToast(t('sl1_shop.toast_location_added'), 'success');
       }
       setLocModal({ open: false, data: null });
       await load();
     } catch (e) {
       console.error('handleSaveLocation error:', e);
-      showToast('Erreur lors de la sauvegarde', 'error');
+      showToast(t('sl1_shop.toast_save_error'), 'error');
     }
   };
 
   const handleDeleteLocation = async (id: number) => {
-    if (!window.confirm('Supprimer cet emplacement ?')) return;
+    if (!window.confirm(t('sl1_shop.confirm_delete_location'))) return;
     try {
       const token = localStorage.getItem('access_token');
       await http(`/api/vendors/locations/${id}/delete/`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-      showToast('Emplacement supprimé', 'success');
+      showToast(t('sl1_shop.toast_location_deleted'), 'success');
       await load();
     } catch (e) {
       console.error('handleDeleteLocation error:', e);
-      showToast('Erreur suppression', 'error');
+      showToast(t('sl1_shop.toast_delete_error'), 'error');
     }
   };
 
@@ -1125,14 +1134,14 @@ export default function SellerShopPage() {
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
             style={{ color: T.text }}>
-            <Store size={20} style={{ color: T.orange }}/> Ma Boutique
+            <Store size={20} style={{ color: T.orange }}/> {t('sl1_shop.page_title')}
           </h1>
-          <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>Configuration et présentation</p>
+          <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>{t('sl1_shop.page_subtitle')}</p>
         </div>
         <button type="button" onClick={handleSave} disabled={saving}
           className="flex items-center gap-1.5 px-5 py-2.5 rounded-xl text-[13px] font-bold text-white disabled:opacity-50"
           style={{ background: T.orange, boxShadow: '0 3px 10px rgba(244,121,32,0.35)' }}>
-          {saving ? <><RefreshCw size={13} className="animate-spin"/>Enregistrement…</> : <><Save size={13}/>Enregistrer</>}
+          {saving ? <><RefreshCw size={13} className="animate-spin"/>{t('sl1_shop.saving')}</> : <><Save size={13}/>{t('sl1_shop.save_button')}</>}
         </button>
       </div>
 
@@ -1143,15 +1152,15 @@ export default function SellerShopPage() {
           <AlertTriangle size={16} style={{ color: T.amber, flexShrink: 0, marginTop: 2 }}/>
           <div>
             <p className="font-bold text-[13px]" style={{ color: T.amber }}>
-              Demande de modification en cours — #{pendingModReq.id}
+              {t('sl1_shop.mod_request_pending', { id: pendingModReq.id })}
             </p>
             <p className="text-[12px] mt-0.5" style={{ color: T.muted }}>
-              Statut : <strong>{pendingModReq.status}</strong>
-              {pendingModReq.status === 'DOCS_REQUIRED' && ' — L\'admin vous demande des documents supplémentaires.'}
+              {t('sl1_shop.status_label')} <strong>{pendingModReq.status}</strong>
+              {pendingModReq.status === 'DOCS_REQUIRED' && t('sl1_shop.docs_required_admin_note')}
             </p>
             {pendingModReq.admin_note && (
               <p className="text-[12px] mt-1 font-semibold" style={{ color: T.text }}>
-                Note BelivaY : {pendingModReq.admin_note}
+                {t('sl1_shop.admin_note_label')} {pendingModReq.admin_note}
               </p>
             )}
           </div>
@@ -1162,12 +1171,12 @@ export default function SellerShopPage() {
       <div className="relative rounded-2xl overflow-hidden"
         style={{ height: 160, background: `linear-gradient(135deg, ${T.sidebar}, #2A1C0E)`, border: `1px solid ${T.border}` }}>
         {shop?.banner_url && (
-          <img src={shop.banner_url} alt="bannière" className="w-full h-full object-cover"
+          <img src={shop.banner_url} alt={t('sl1_shop.banner_alt')} className="w-full h-full object-cover"
             onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}/>
         )}
         {!shop?.banner_url && (
           <div className="w-full h-full flex items-center justify-center">
-            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.25)' }}>Aucune bannière — cliquez pour en ajouter une</p>
+            <p className="text-[13px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{t('sl1_shop.no_banner')}</p>
           </div>
         )}
         <input type="file" ref={bannerRef} className="hidden" accept="image/*"
@@ -1175,7 +1184,7 @@ export default function SellerShopPage() {
         <button type="button" onClick={() => bannerRef.current?.click()}
           className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-bold text-white"
           style={{ background: 'rgba(28,18,9,0.65)', backdropFilter: 'blur(4px)' }}>
-          <Upload size={12}/> Modifier la bannière
+          <Upload size={12}/> {t('sl1_shop.edit_banner')}
         </button>
       </div>
 
@@ -1185,7 +1194,7 @@ export default function SellerShopPage() {
           <div className="w-20 h-20 rounded-2xl overflow-hidden"
             style={{ border: `3px solid ${T.orange}`, background: T.creamAlt }}>
             {shop?.photo_url ? (
-              <img src={shop.photo_url} alt="photo boutique" className="w-full h-full object-cover"
+              <img src={shop.photo_url} alt={t('sl1_shop.shop_photo_alt')} className="w-full h-full object-cover"
                 onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}/>
             ) : (
               <div className="w-full h-full flex items-center justify-center">
@@ -1203,22 +1212,22 @@ export default function SellerShopPage() {
         </div>
         <div className="flex-1">
           <p className="font-black text-[18px]" style={{ color: T.text }}>
-            {shop?.business_name || 'Ma Boutique'}
+            {shop?.business_name || t('sl1_shop.default_shop_name')}
           </p>
           <div className="flex items-center gap-2 mt-1 flex-wrap">
             <span className="text-[12px] font-bold px-2.5 py-0.5 rounded-full"
               style={{ background: `${TIER_COLORS[tier]}20`, color: TIER_COLORS[tier] }}>
-              {TIER_LABELS[tier]}
+              {t(TIER_LABEL_KEYS[tier])}
             </span>
             <span className="text-[12px] font-semibold px-2.5 py-0.5 rounded-full"
               style={{ background: isOnline ? T.greenL : T.redL, color: isOnline ? T.green : T.red }}>
-              {isOnline ? 'En ligne' : 'Hors ligne'}
+              {isOnline ? t('sl1_shop.status_online') : t('sl1_shop.status_offline')}
             </span>
           </div>
         </div>
         <div className="flex items-center gap-2 pb-1">
           <span className="text-[12px]" style={{ color: T.muted }}>
-            {isOnline ? 'Active' : 'En pause'}
+            {isOnline ? t('sl1_shop.active_label') : t('sl1_shop.paused_label')}
           </span>
           <button type="button" onClick={() => setIsOnline(!isOnline)}
             className="w-11 h-6 rounded-full transition-all relative" style={{ background: isOnline ? T.green : T.border }}>
@@ -1240,19 +1249,19 @@ export default function SellerShopPage() {
               <Lock size={14} style={{ color: T.muted }}/>
             </div>
             <p className="font-bold text-[14px]" style={{ color: T.text }}>
-              Informations officielles
+              {t('sl1_shop.official_info_title')}
             </p>
           </div>
           <div className="px-5 py-5 space-y-4">
             <div className="rounded-xl p-3" style={{ background: T.blueL, border: `1px solid rgba(37,99,235,0.2)` }}>
               <p className="text-[12px]" style={{ color: T.blue }}>
-                Ces informations correspondent à vos documents officiels. Toute modification est soumise à validation BelivaY.
+                {t('sl1_shop.official_info_desc')}
               </p>
             </div>
-            {Object.entries(SENSITIVE_FIELD_LABELS).map(([field, label]) => (
+            {Object.entries(SENSITIVE_FIELD_LABEL_KEYS).map(([field, labelKey]) => (
               <div key={field} className="rounded-xl px-4 py-3"
                 style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
-                <p className="text-[11.5px] font-semibold mb-0.5" style={{ color: T.muted }}>{label}</p>
+                <p className="text-[11.5px] font-semibold mb-0.5" style={{ color: T.muted }}>{t(labelKey)}</p>
                 <p className="text-[13px] font-semibold" style={{ color: T.text }}>
                   {(shop as unknown as Record<string, string>)?.[field] || '—'}
                 </p>
@@ -1261,7 +1270,7 @@ export default function SellerShopPage() {
             <button type="button" onClick={() => setShowModModal(true)}
               className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl text-[13px] font-bold transition-all hover:opacity-80"
               style={{ background: T.orangeL, border: `1px solid ${T.orangeB}`, color: T.orange }}>
-              <Pencil size={13}/> Demander une modification
+              <Pencil size={13}/> {t('sl1_shop.request_mod_button')}
               <ChevronRight size={13}/>
             </button>
           </div>
@@ -1280,17 +1289,17 @@ export default function SellerShopPage() {
                 <Phone size={14} style={{ color: T.orange }}/>
               </div>
               <p className="font-bold text-[14px]" style={{ color: T.text }}>
-                Contact & disponibilité
+                {t('sl1_shop.contact_title')}
               </p>
             </div>
             <div className="px-5 py-5">
               <label className="text-[12.5px] font-semibold mb-1.5 block" style={{ color: T.text }}>
-                Téléphone WhatsApp
+                {t('sl1_shop.whatsapp_label')}
               </label>
               <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)}
                 placeholder="+237 6XX XXX XXX" style={inp}/>
               <p className="text-[11px] mt-1.5" style={{ color: T.mutedL }}>
-                Affiché sur votre page publique BelivaY.
+                {t('sl1_shop.whatsapp_hint')}
               </p>
             </div>
           </div>
@@ -1305,16 +1314,16 @@ export default function SellerShopPage() {
                 <QrCode size={14} style={{ color: T.orange }}/>
               </div>
               <p className="font-bold text-[14px]" style={{ color: T.text }}>
-                QR Code BelivaY
+                {t('sl1_shop.qr_title')}
               </p>
             </div>
             <div className="px-5 py-5">
               <p className="text-[12.5px] mb-4" style={{ color: T.muted }}>
-                Affichez ce code dans votre boutique physique. Vos clients scannent et accèdent directement à BelivaY.
+                {t('sl1_shop.qr_desc')}
               </p>
               <div className="flex items-center gap-4">
                 {qrDataUrl ? (
-                  <img src={qrDataUrl} alt="QR Code BelivaY" className="rounded-xl flex-shrink-0"
+                  <img src={qrDataUrl} alt={t('sl1_shop.qr_title')} className="rounded-xl flex-shrink-0"
                     style={{ width: 110, height: 110, border: `2px solid ${T.border}` }}/>
                 ) : (
                   <div className="w-28 h-28 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -1332,12 +1341,12 @@ export default function SellerShopPage() {
                     <button type="button" onClick={handleCopy}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold flex-1"
                       style={{ background: copied ? T.greenL : T.cream, border: `1px solid ${copied ? T.green : T.border}`, color: copied ? T.green : T.muted }}>
-                      {copied ? <><Check size={11}/>Copié</> : <><Copy size={11}/>Copier</>}
+                      {copied ? <><Check size={11}/>{t('sl1_shop.copied_label')}</> : <><Copy size={11}/>{t('sl1_shop.copy_label')}</>}
                     </button>
                     <button type="button" onClick={handleDownloadQR} disabled={!qrDataUrl}
                       className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-[12px] font-semibold flex-1"
                       style={{ background: T.orangeL, border: `1px solid ${T.orangeB}`, color: T.orange }}>
-                      <Download size={11}/>Télécharger
+                      <Download size={11}/>{t('sl1_shop.download_label')}
                     </button>
                   </div>
                 </div>
@@ -1362,10 +1371,10 @@ export default function SellerShopPage() {
               </div>
               <div>
                 <p className="font-bold text-[14px]" style={{ color: T.text }}>
-                  Nos emplacements
+                  {t('sl1_shop.our_locations_title')}
                 </p>
                 <p className="text-[11.5px]" style={{ color: T.muted }}>
-                  {locations.filter(l => l.is_active).length} emplacement{locations.filter(l => l.is_active).length > 1 ? 's' : ''} actif{locations.filter(l => l.is_active).length > 1 ? 's' : ''}
+                  {t(locations.filter(l => l.is_active).length > 1 ? 'sl1_shop.locations_active_plural' : 'sl1_shop.locations_active', { count: locations.filter(l => l.is_active).length })}
                 </p>
               </div>
             </div>
@@ -1396,12 +1405,12 @@ export default function SellerShopPage() {
                     {loc.is_main ? (
                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                         style={{ background: T.orangeB, color: T.orange }}>
-                        <Star size={9} fill={T.orange}/> Principal
+                        <Star size={9} fill={T.orange}/> {t('sl1_shop.main_badge')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
                         style={{ background: T.creamAlt, color: T.mutedL }}>
-                        Secondaire
+                        {t('sl1_shop.secondary_badge')}
                       </span>
                     )}
                   </div>
@@ -1443,7 +1452,7 @@ export default function SellerShopPage() {
                       style={{ background: T.creamAlt }}>
                       <p className="text-[10.5px] font-bold uppercase tracking-wider mb-1"
                         style={{ color: T.mutedL }}>
-                        Représentant
+                        {t('sl1_shop.representative_label')}
                       </p>
                       <div className="flex items-center justify-between gap-3">
                         <p className="font-semibold text-[12.5px]" style={{ color: T.text }}>
@@ -1465,7 +1474,7 @@ export default function SellerShopPage() {
                   {loc.latitude && loc.longitude && (
                     <p className="flex items-center gap-1 mt-2 text-[11px]" style={{ color: T.green }}>
                       <MapPin size={10}/>
-                      Visible sur la carte
+                      {t('sl1_shop.visible_on_map')}
                     </p>
                   )}
                 </div>
@@ -1486,16 +1495,16 @@ export default function SellerShopPage() {
           </div>
           <div className="flex-1">
             <p className="font-bold text-[14px]" style={{ color: T.text }}>
-              Emplacements physiques
+              {t('sl1_shop.physical_locations_title')}
             </p>
             <p className="text-[11.5px]" style={{ color: T.mutedL }}>
-              Requis pour que BelivaY valide votre boutique et puisse vous retrouver.
+              {t('sl1_shop.physical_locations_hint')}
             </p>
           </div>
           <button type="button" onClick={() => setLocModal({ open: true, data: null })}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12.5px] font-bold text-white"
             style={{ background: T.orange }}>
-            <Plus size={13}/> Ajouter
+            <Plus size={13}/> {t('sl1_shop.add_button')}
           </button>
         </div>
 
@@ -1505,8 +1514,8 @@ export default function SellerShopPage() {
               className="w-full flex flex-col items-center justify-center py-10 rounded-2xl transition-all hover:opacity-75"
               style={{ background: T.creamAlt, border: `2px dashed ${T.border}` }}>
               <MapPin size={28} className="mb-2" style={{ color: T.mutedL }}/>
-              <p className="text-[13px] font-semibold" style={{ color: T.muted }}>Boutique principale requise</p>
-              <p className="text-[12px] mt-0.5" style={{ color: T.mutedL }}>Ajoutez une adresse avec position carte ou description d'accès.</p>
+              <p className="text-[13px] font-semibold" style={{ color: T.muted }}>{t('sl1_shop.main_shop_required')}</p>
+              <p className="text-[12px] mt-0.5" style={{ color: T.mutedL }}>{t('sl1_shop.add_address_hint')}</p>
             </button>
           ) : (
             locations.map(loc => (
@@ -1528,12 +1537,12 @@ export default function SellerShopPage() {
                     {loc.is_main ? (
                       <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold"
                         style={{ background: T.orangeB, color: T.orange }}>
-                        <Star size={9} fill={T.orange}/> Principal
+                        <Star size={9} fill={T.orange}/> {t('sl1_shop.main_badge')}
                       </span>
                     ) : (
                       <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold"
                         style={{ background: T.creamAlt, color: T.mutedL }}>
-                        Secondaire
+                        {t('sl1_shop.secondary_badge')}
                       </span>
                     )}
                   </div>
@@ -1555,11 +1564,11 @@ export default function SellerShopPage() {
                       </span>
                     )}
                     {loc.representative_name && (
-                      <span>Repr. : {loc.representative_name}</span>
+                      <span>{t('sl1_shop.repr_short_label')} {loc.representative_name}</span>
                     )}
                     {loc.latitude && loc.longitude && (
                       <span className="flex items-center gap-1" style={{ color: T.green }}>
-                        <MapPin size={10}/>Localisé sur la carte
+                        <MapPin size={10}/>{t('sl1_shop.located_on_map')}
                       </span>
                     )}
                   </div>

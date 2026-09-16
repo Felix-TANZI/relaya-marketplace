@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Scale, Search, RefreshCw, Eye,
   ChevronLeft, ChevronRight, ChevronDown, X,
@@ -18,28 +19,28 @@ import { useToast } from '@/context/ToastContext';
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  OPEN:        { label: 'Ouvert',      color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
-  IN_PROGRESS: { label: 'En cours',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
-  RESOLVED:    { label: 'Résolu',     color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
-  CLOSED:      { label: 'Clôturé',    color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  OPEN:        { labelKey: 'ad5b_disputes_list.status_open',        color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
+  IN_PROGRESS: { labelKey: 'ad5b_disputes_list.status_in_progress', color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
+  RESOLVED:    { labelKey: 'ad5b_disputes_list.status_resolved',    color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
+  CLOSED:      { labelKey: 'ad5b_disputes_list.status_closed',      color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
 };
 
 const REASON_CFG: Record<string, string> = {
-  NOT_RECEIVED:    'Non reçu',
-  DAMAGED:         'Endommagé',
-  WRONG_ITEM:      'Mauvais article',
-  NOT_AS_DESCRIBED:'Non conforme',
-  REFUND_REQUEST:  'Demande remboursement',
-  OTHER:           'Autre',
+  NOT_RECEIVED:    'ad5b_disputes_list.reason_not_received',
+  DAMAGED:         'ad5b_disputes_list.reason_damaged',
+  WRONG_ITEM:      'ad5b_disputes_list.reason_wrong_item',
+  NOT_AS_DESCRIBED:'ad5b_disputes_list.reason_not_as_described',
+  REFUND_REQUEST:  'ad5b_disputes_list.reason_refund_request',
+  OTHER:           'ad5b_disputes_list.reason_other',
 };
 
-const RESOLUTION_CFG: Record<string, { label: string; color: string }> = {
-  REFUND:         { label: 'Remboursement',  color: '#10B981' },
-  EXCHANGE:       { label: 'Échange',        color: '#3B82F6' },
-  PARTIAL_REFUND: { label: 'Remb. partiel',  color: '#F59E0B' },
-  REJECTED:       { label: 'Rejeté',         color: '#EF4444' },
-  OTHER:          { label: 'Autre',          color: '#9CA3AF' },
+const RESOLUTION_CFG: Record<string, { labelKey: string; color: string }> = {
+  REFUND:         { labelKey: 'ad5b_disputes_list.resolution_refund',         color: '#10B981' },
+  EXCHANGE:       { labelKey: 'ad5b_disputes_list.resolution_exchange',       color: '#3B82F6' },
+  PARTIAL_REFUND: { labelKey: 'ad5b_disputes_list.resolution_partial_refund', color: '#F59E0B' },
+  REJECTED:       { labelKey: 'ad5b_disputes_list.resolution_rejected',       color: '#EF4444' },
+  OTHER:          { labelKey: 'ad5b_disputes_list.resolution_other',          color: '#9CA3AF' },
 };
 
 type SortKey    = 'id' | 'created_at' | 'messages_count';
@@ -61,18 +62,20 @@ const fmtDateTime = (d: string) =>
 // ─────────────────────────────────────────────────────────────────────────────
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation();
   const c = STATUS_CFG[status] ?? STATUS_CFG.OPEN;
   return (
     <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: c.bg, color: c.color, border: `1px solid ${c.color}40`, whiteSpace: 'nowrap' }}>
-      {c.label}
+      {t(c.labelKey)}
     </span>
   );
 }
 
 function ReasonBadge({ reason }: { reason: string }) {
+  const { t } = useTranslation();
   return (
     <span style={{ fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 4, background: 'rgba(139,92,246,0.12)', color: '#8B5CF6', whiteSpace: 'nowrap' }}>
-      {REASON_CFG[reason] ?? reason}
+      {REASON_CFG[reason] ? t(REASON_CFG[reason]) : reason}
     </span>
   );
 }
@@ -94,6 +97,7 @@ function SkeletonRow({ T }: { T: ReturnType<typeof useAdminTheme> }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function DisputesListPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
 
@@ -125,11 +129,11 @@ export default function DisputesListPage() {
       setDisputes(dList);
       if (dStats) setStats(dStats);
     } catch {
-      showToast('Erreur chargement des litiges', 'error');
+      showToast(t('ad5b_disputes_list.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [statusTab, reasonF, showToast]);
+  }, [statusTab, reasonF, showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -203,11 +207,11 @@ export default function DisputesListPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion Litiges
+            {t('ad5b_disputes_list.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {kpis.open > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{kpis.open} ouverts ·</span>}
-            {disputes.length.toLocaleString('fr-FR')} litiges au total
+            {kpis.open > 0 && <span style={{ color: T.red, fontWeight: 700, marginRight: 6 }}>{t('ad5b_disputes_list.subtitle_open', { count: kpis.open })}</span>}
+            {t('ad5b_disputes_list.subtitle_total', { n: disputes.length.toLocaleString('fr-FR') })}
           </p>
         </div>
         <button onClick={() => load()}
@@ -216,17 +220,17 @@ export default function DisputesListPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad5b_disputes_list.refresh')}</span>
         </button>
       </div>
 
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Total',        value: kpis.total,       accent: T.text,    onClick: () => setStatusTab('all') },
-          { label: 'Ouverts',      value: kpis.open,        accent: '#EF4444', onClick: () => setStatusTab('OPEN') },
-          { label: 'En cours',     value: kpis.in_progress, accent: '#F59E0B', onClick: () => setStatusTab('IN_PROGRESS') },
-          { label: 'Délai moy.',   value: `${kpis.avg_days.toFixed(1)}j`, accent: '#3B82F6', onClick: undefined },
+          { label: t('ad5b_disputes_list.kpi_total_label'),        value: kpis.total,       accent: T.text,    onClick: () => setStatusTab('all') },
+          { label: t('ad5b_disputes_list.kpi_open_label'),      value: kpis.open,        accent: '#EF4444', onClick: () => setStatusTab('OPEN') },
+          { label: t('ad5b_disputes_list.kpi_in_progress_label'),     value: kpis.in_progress, accent: '#F59E0B', onClick: () => setStatusTab('IN_PROGRESS') },
+          { label: t('ad5b_disputes_list.kpi_avg_delay_label'),   value: t('ad5b_disputes_list.kpi_avg_delay_value', { days: kpis.avg_days.toFixed(1) }), accent: '#3B82F6', onClick: undefined },
         ].map((k, i) => (
           <button key={i} onClick={() => { k.onClick?.(); setPage(1); }}
             className="rounded-2xl p-4 text-left w-full transition-all"
@@ -248,24 +252,24 @@ export default function DisputesListPage() {
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex gap-1 overflow-x-auto flex-shrink-0" style={{ scrollbarWidth: 'none' }}>
             {([
-              { key: 'all'         as StatusTab, label: 'Tous',      count: disputes.length },
-              { key: 'OPEN'        as StatusTab, label: 'Ouverts',   count: kpis.open },
-              { key: 'IN_PROGRESS' as StatusTab, label: 'En cours',  count: kpis.in_progress },
-              { key: 'RESOLVED'    as StatusTab, label: 'Résolus',   count: kpis.resolved },
-              { key: 'CLOSED'      as StatusTab, label: 'Clôturés',  count: disputes.filter(d => d.status === 'CLOSED').length },
-            ] as { key: StatusTab; label: string; count: number }[]).map(t => (
-              <button key={t.key}
-                onClick={() => { setStatusTab(t.key); setPage(1); }}
+              { key: 'all'         as StatusTab, label: t('ad5b_disputes_list.tab_all'),          count: disputes.length },
+              { key: 'OPEN'        as StatusTab, label: t('ad5b_disputes_list.tab_open'),         count: kpis.open },
+              { key: 'IN_PROGRESS' as StatusTab, label: t('ad5b_disputes_list.tab_in_progress'),  count: kpis.in_progress },
+              { key: 'RESOLVED'    as StatusTab, label: t('ad5b_disputes_list.tab_resolved'),     count: kpis.resolved },
+              { key: 'CLOSED'      as StatusTab, label: t('ad5b_disputes_list.tab_closed'),       count: disputes.filter(d => d.status === 'CLOSED').length },
+            ] as { key: StatusTab; label: string; count: number }[]).map(tab => (
+              <button key={tab.key}
+                onClick={() => { setStatusTab(tab.key); setPage(1); }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all"
                 style={{
-                  background: statusTab === t.key ? (t.key === 'OPEN' ? '#EF4444' : statusTab === t.key ? T.red : T.red) : 'transparent',
-                  color:      statusTab === t.key ? '#fff' : (STATUS_CFG[t.key]?.color ?? T.muted),
+                  background: statusTab === tab.key ? (tab.key === 'OPEN' ? '#EF4444' : statusTab === tab.key ? T.red : T.red) : 'transparent',
+                  color:      statusTab === tab.key ? '#fff' : (STATUS_CFG[tab.key]?.color ?? T.muted),
                 }}
-                onMouseEnter={e => { if (statusTab !== t.key) (e.currentTarget.style.color = T.text); }}
-                onMouseLeave={e => { if (statusTab !== t.key) (e.currentTarget.style.color = STATUS_CFG[t.key]?.color ?? T.muted); }}>
-                {t.label}
-                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusTab === t.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === t.key ? '#fff' : T.muted }}>
-                  {t.count}
+                onMouseEnter={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = T.text); }}
+                onMouseLeave={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = STATUS_CFG[tab.key]?.color ?? T.muted); }}>
+                {tab.label}
+                <span style={{ fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700, background: statusTab === tab.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === tab.key ? '#fff' : T.muted }}>
+                  {tab.count}
                 </span>
               </button>
             ))}
@@ -276,7 +280,7 @@ export default function DisputesListPage() {
           {/* Recherche */}
           <div className="relative w-full sm:w-56 flex-shrink-0">
             <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
-            <input type="text" placeholder="#ID, client, commande…"
+            <input type="text" placeholder={t('ad5b_disputes_list.search_placeholder')}
               onChange={e => handleSearch(e.target.value)}
               className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none"
               style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}` }}
@@ -293,12 +297,12 @@ export default function DisputesListPage() {
               onClick={() => setOpenDrop(openDrop === 'reason' ? null : 'reason')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap"
               style={{ background: reasonF !== 'all' ? T.red + '18' : T.cardAlt, color: reasonF !== 'all' ? T.red : T.muted, border: `1px solid ${reasonF !== 'all' ? T.red + '40' : T.border}` }}>
-              {reasonF === 'all' ? 'Raison' : REASON_CFG[reasonF] ?? reasonF} <ChevronDown size={11} />
+              {reasonF === 'all' ? t('ad5b_disputes_list.filter_reason_label') : (REASON_CFG[reasonF] ? t(REASON_CFG[reasonF]) : reasonF)} <ChevronDown size={11} />
             </button>
             <DropMenu show={openDrop === 'reason'}>
-              <DropItem label="Toutes raisons" active={reasonF === 'all'} onClick={() => { setReasonF('all'); setPage(1); }} />
+              <DropItem label={t('ad5b_disputes_list.filter_all_reasons')} active={reasonF === 'all'} onClick={() => { setReasonF('all'); setPage(1); }} />
               {Object.entries(REASON_CFG).map(([k, l]) => (
-                <DropItem key={k} label={l} active={reasonF === k} onClick={() => { setReasonF(k as ReasonFilter); setPage(1); }} />
+                <DropItem key={k} label={t(l)} active={reasonF === k} onClick={() => { setReasonF(k as ReasonFilter); setPage(1); }} />
               ))}
             </DropMenu>
           </div>
@@ -307,12 +311,12 @@ export default function DisputesListPage() {
             <button onClick={() => { setReasonF('all'); setPage(1); }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
               style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}>
-              <X size={11} /> Effacer
+              <X size={11} /> {t('ad5b_disputes_list.clear_filter')}
             </button>
           )}
 
           <p style={{ fontSize: 12, color: T.muted, marginLeft: 'auto' }}>
-            {sorted.length} résultat{sorted.length > 1 ? 's' : ''}
+            {t(sorted.length > 1 ? 'ad5b_disputes_list.results_count_plural' : 'ad5b_disputes_list.results_count', { count: sorted.length })}
           </p>
         </div>
       </div>
@@ -326,13 +330,13 @@ export default function DisputesListPage() {
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 {([
-                  { label: '#',          k: 'id'            as SortKey | null },
-                  { label: 'Client',     k: null },
-                  { label: 'Commande',   k: null },
-                  { label: 'Raison',     k: null },
-                  { label: 'Statut',     k: null },
-                  { label: 'Messages',   k: 'messages_count' as SortKey | null },
-                  { label: 'Ouvert le',  k: 'created_at'    as SortKey | null },
+                  { label: '#',                                     k: 'id'            as SortKey | null },
+                  { label: t('ad5b_disputes_list.col_client'),      k: null },
+                  { label: t('ad5b_disputes_list.col_order'),       k: null },
+                  { label: t('ad5b_disputes_list.col_reason'),      k: null },
+                  { label: t('ad5b_disputes_list.col_status'),      k: null },
+                  { label: t('ad5b_disputes_list.col_messages'),    k: 'messages_count' as SortKey | null },
+                  { label: t('ad5b_disputes_list.col_opened_at'),   k: 'created_at'    as SortKey | null },
                   { label: '',           k: null },
                 ] as { label: string; k: SortKey | null }[]).map((col, i) => (
                   <th key={i}
@@ -354,7 +358,7 @@ export default function DisputesListPage() {
                   ? <tr><td colSpan={8} style={{ padding: '60px 0', textAlign: 'center' }}>
                       <div className="flex flex-col items-center gap-3">
                         <Scale size={28} style={{ color: T.muted }} />
-                        <p style={{ fontSize: 14, color: T.muted }}>Aucun litige trouvé</p>
+                        <p style={{ fontSize: 14, color: T.muted }}>{t('ad5b_disputes_list.empty_state')}</p>
                       </div>
                     </td></tr>
                   : paginated.map((d, i) => (
@@ -385,7 +389,7 @@ export default function DisputesListPage() {
                           <StatusBadge status={d.status} />
                           {d.resolution && (
                             <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: RESOLUTION_CFG[d.resolution]?.color + '18', color: RESOLUTION_CFG[d.resolution]?.color }}>
-                              {RESOLUTION_CFG[d.resolution]?.label}
+                              {RESOLUTION_CFG[d.resolution] ? t(RESOLUTION_CFG[d.resolution].labelKey) : ''}
                             </span>
                           )}
                         </div>
@@ -424,7 +428,7 @@ export default function DisputesListPage() {
           ) : paginated.length === 0 ? (
             <div className="flex flex-col items-center py-16 gap-3">
               <Scale size={28} style={{ color: T.muted }} />
-              <p style={{ fontSize: 14, color: T.muted }}>Aucun litige</p>
+              <p style={{ fontSize: 14, color: T.muted }}>{t('ad5b_disputes_list.empty_mobile')}</p>
             </div>
           ) : (
             <div className="divide-y" style={{ borderColor: T.border }}>
@@ -441,17 +445,17 @@ export default function DisputesListPage() {
                   <div className="flex items-center gap-2 flex-wrap mb-3">
                     <ReasonBadge reason={d.reason} />
                     <Link to={`/admin/orders/${d.order}`} style={{ fontSize: 11, color: '#3B82F6', fontWeight: 600 }}>
-                      Cmd #{d.order}
+                      {t('ad5b_disputes_list.order_short', { id: d.order })}
                     </Link>
                     <span style={{ fontSize: 11, color: T.muted }}>
                       <MessageSquare size={10} style={{ display: 'inline', marginRight: 3 }} />
-                      {d.messages_count} msg
+                      {t('ad5b_disputes_list.messages_short', { count: d.messages_count })}
                     </span>
                   </div>
                   <Link to={`/admin/disputes/${d.id}`}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold w-fit"
                     style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                    <Eye size={12} /> Voir le litige
+                    <Eye size={12} /> {t('ad5b_disputes_list.view_dispute')}
                   </Link>
                 </div>
               ))}
@@ -463,7 +467,7 @@ export default function DisputesListPage() {
         {!loading && sorted.length > 0 && (
           <div className="flex items-center justify-between px-4 sm:px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad5b_disputes_list.rows_label')}</span>
               {PAGE_SIZES.map(s => (
                 <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                   className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -473,7 +477,7 @@ export default function DisputesListPage() {
               ))}
             </div>
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad5b_disputes_list.pagination_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, sorted.length), total: sorted.length })}
             </p>
             <div className="flex items-center gap-1">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

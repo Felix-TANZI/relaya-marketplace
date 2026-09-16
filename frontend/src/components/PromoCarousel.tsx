@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Slide {
@@ -25,6 +26,7 @@ export default function PromoCarousel({
   minHeightClass = "min-h-[180px]",
   roundedClass = "rounded-2xl",
 }: PromoCarouselProps) {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(0);
   const total = slides.length;
 
@@ -76,14 +78,14 @@ export default function PromoCarousel({
           <button
             onClick={(e) => { e.stopPropagation(); prev(); }}
             className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-all hover:bg-white/35"
-            aria-label="Précédent"
+            aria-label={t("home.carousel_prev")}
           >
             <ChevronLeft size={18} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); next(); }}
             className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-white/20 text-white backdrop-blur-sm transition-all hover:bg-white/35"
-            aria-label="Suivant"
+            aria-label={t("home.carousel_next")}
           >
             <ChevronRight size={18} />
           </button>
@@ -100,7 +102,7 @@ export default function PromoCarousel({
               className={`h-1.5 rounded-full transition-all duration-300 ${
                 i === current ? "w-5 bg-primary" : "w-1.5 bg-gray-200 dark:bg-gray-700"
               }`}
-              aria-label={`Slide ${i + 1}`}
+              aria-label={t("home.carousel_slide_n", { n: i + 1 })}
             />
           ))}
         </div>

@@ -4,6 +4,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   ArrowLeft, Calendar, CircleCheckBig, Clock, Download, RefreshCw, ShieldCheck, Wallet,
 } from 'lucide-react';
@@ -35,9 +36,9 @@ function coverOrders(wd: WithdrawalRequest, released: VendorOrder[]): VendorOrde
   return out;
 }
 
-function exportCSV(list: WithdrawalRequest[], shopName: string) {
+function exportCSV(list: WithdrawalRequest[], shopName: string, header: string) {
   const rows = [
-    'Référence,Date de traitement,Opérateur,Numéro,Brut (FCFA),Frais (FCFA),Reçu (FCFA),Statut',
+    header,
     ...list.map(w => [
       w.reference,
       fmtDate(w.processed_at ?? w.created_at),
@@ -57,6 +58,7 @@ function exportCSV(list: WithdrawalRequest[], shopName: string) {
 }
 
 export default function SellerSettlementsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [withdrawals, setWithdrawals] = useState<WithdrawalRequest[]>([]);
   const [orders, setOrders] = useState<VendorOrder[]>([]);
@@ -82,11 +84,11 @@ export default function SellerSettlementsPage() {
       const d = new Date();
       setToday({ year: d.getFullYear(), month: d.getMonth() });
     } catch {
-      showToast('Erreur de chargement', 'error');
+      showToast(t('sl4_settlements.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -141,18 +143,18 @@ export default function SellerSettlementsPage() {
       <Link to="/seller/payments">
         <button type="button" className="flex items-center gap-1.5 rounded-xl font-semibold transition-all"
           style={{ padding: '8px 13px', fontSize: 12.5, background: T.white, border: `1px solid ${T.border}`, color: T.muted }}>
-          <ArrowLeft size={14} />Paiements & Escrow
+          <ArrowLeft size={14} />{t('sl4_settlements.back_to_payments')}
         </button>
       </Link>
 
       <PageHead
-        kicker="Encaissements" kickerColor={T.green}
-        title="Mes règlements"
-        subtitle="Ce que BelivaY a réellement versé sur votre Mobile Money"
+        kicker={t('sl4_settlements.kicker')} kickerColor={T.green}
+        title={t('sl4_settlements.title')}
+        subtitle={t('sl4_settlements.subtitle')}
         actions={
           <>
-            <GhostBtn icon={<Download size={13} />} onClick={() => exportCSV(filtered, shopName)}>Relevé CSV</GhostBtn>
-            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>Actualiser</GhostBtn>
+            <GhostBtn icon={<Download size={13} />} onClick={() => exportCSV(filtered, shopName, t('sl4_settlements.csv_header'))}>{t('sl4_settlements.export_csv_button')}</GhostBtn>
+            <GhostBtn icon={<RefreshCw size={13} />} onClick={load}>{t('sl4_settlements.refresh')}</GhostBtn>
           </>
         }
       />
@@ -160,12 +162,12 @@ export default function SellerSettlementsPage() {
       <Hero gradient={HERO.green} blobColor="rgba(52,211,153,.55)">
         <div className="flex items-end justify-between gap-5 flex-wrap">
           <HeroAmount
-            kicker={range === 'month' ? 'Total réglé ce mois' : range === 'year' ? `Total réglé en ${today.year}` : 'Total réglé'}
+            kicker={range === 'month' ? t('sl4_settlements.kicker_total_month') : range === 'year' ? t('sl4_settlements.kicker_total_year', { year: today.year }) : t('sl4_settlements.kicker_total_all')}
             value={nf(stats.total)}
             note={
               stats.count === 0
-                ? 'Aucun règlement sur cette période'
-                : <>{stats.count} règlement{stats.count > 1 ? 's' : ''}{last ? <> · dernier le {fmtDate(last.processed_at ?? last.created_at)} pour <strong style={{ color: '#fff' }}>{nf(last.net_amount_xaf)} FCFA</strong></> : null}</>
+                ? t('sl4_settlements.no_settlement_period')
+                : <>{t(stats.count > 1 ? 'sl4_settlements.settlement_count_plural' : 'sl4_settlements.settlement_count', { count: stats.count })}{last ? <> {t('sl4_settlements.last_settlement_on', { date: fmtDate(last.processed_at ?? last.created_at) })} <strong style={{ color: '#fff' }}>{nf(last.net_amount_xaf)} FCFA</strong></> : null}</>
             }
           />
           {last && (
@@ -174,7 +176,7 @@ export default function SellerSettlementsPage() {
               <OperatorLogo provider={last.operator} size={36} />
               <span>
                 <span className="block font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.14em', color: 'rgba(255,255,255,.42)' }}>
-                  Compte crédité
+                  {t('sl4_settlements.account_credited_label')}
                 </span>
                 <span className="block font-bold mt-0.5" style={{ fontSize: 12.5, color: '#fff' }}>{last.phone_number}</span>
               </span>
@@ -184,25 +186,25 @@ export default function SellerSettlementsPage() {
       </Hero>
 
       <div className="grid gap-3" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(190px,1fr))' }}>
-        <StatCard icon={<CircleCheckBig size={17} />} value={nf(stats.total)} label="Total réglé" sub="Net reçu, frais déduits" color={T.green} bg={T.greenL} />
-        <StatCard icon={<Download size={17} />} value={String(stats.count)} label="Règlements" sub="Virements Mobile Money" color={T.blue} bg={T.blueL} />
-        <StatCard icon={<Wallet size={17} />} value={nf(stats.fees)} label="Frais cumulés" sub="Retenus par BelivaY" color={T.red} bg={T.redL} />
-        <StatCard icon={<Clock size={17} />} value={stats.delay} label="Délai moyen" sub="De la demande au crédit" color={T.amber} bg={T.amberL} />
+        <StatCard icon={<CircleCheckBig size={17} />} value={nf(stats.total)} label={t('sl4_settlements.kpi_total_label')} sub={t('sl4_settlements.kpi_total_sub')} color={T.green} bg={T.greenL} />
+        <StatCard icon={<Download size={17} />} value={String(stats.count)} label={t('sl4_settlements.kpi_count_label')} sub={t('sl4_settlements.kpi_count_sub')} color={T.blue} bg={T.blueL} />
+        <StatCard icon={<Wallet size={17} />} value={nf(stats.fees)} label={t('sl4_settlements.kpi_fees_label')} sub={t('sl4_settlements.kpi_fees_sub')} color={T.red} bg={T.redL} />
+        <StatCard icon={<Clock size={17} />} value={stats.delay} label={t('sl4_settlements.kpi_delay_label')} sub={t('sl4_settlements.kpi_delay_sub')} color={T.amber} bg={T.amberL} />
       </div>
 
       <Panel
         pad={false}
-        title="Historique des règlements"
-        sub="Dépliez une ligne pour voir les commandes couvertes par le versement"
+        title={t('sl4_settlements.history_panel_title')}
+        sub={t('sl4_settlements.history_panel_sub')}
         right={
           <div className="flex items-center gap-2 flex-wrap">
             <Calendar size={14} style={{ color: T.mutedL }} />
             <Tabs<Range>
               value={range} onChange={setRange} accent={T.green}
               items={[
-                { key: 'all',   label: 'Tous',     n: settled.length },
+                { key: 'all',   label: t('sl4_settlements.tab_all'),     n: settled.length },
                 { key: 'year',  label: String(today.year) },
-                { key: 'month', label: 'Ce mois' },
+                { key: 'month', label: t('sl4_settlements.tab_month') },
               ]}
             />
           </div>
@@ -212,14 +214,14 @@ export default function SellerSettlementsPage() {
           <div className="text-center" style={{ padding: '44px 20px' }}>
             <span className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-3"
               style={{ background: T.greenL, color: T.green }}><CircleCheckBig size={24} /></span>
-            <p className="font-bold" style={{ fontSize: 14, color: T.text }}>Aucun règlement pour l'instant</p>
+            <p className="font-bold" style={{ fontSize: 14, color: T.text }}>{t('sl4_settlements.empty_title')}</p>
             <p style={{ fontSize: 12, color: T.muted, marginTop: 4 }}>
-              Vos versements apparaîtront ici dès qu'une demande de retrait sera approuvée.
+              {t('sl4_settlements.empty_sub')}
             </p>
             <Link to="/seller/wallet">
               <button type="button" className="mt-4 rounded-xl font-bold text-white"
                 style={{ padding: '11px 18px', fontSize: 12.5, background: HERO.orange }}>
-                Demander un retrait
+                {t('sl4_settlements.request_withdrawal_button')}
               </button>
             </Link>
           </div>
@@ -234,22 +236,22 @@ export default function SellerSettlementsPage() {
                 <div className="flex-1" style={{ minWidth: 160 }}>
                   <p className="font-black" style={{ fontSize: 12.5, color: T.text }}>{w.reference}</p>
                   <p style={{ fontSize: 11, color: T.mutedL, marginTop: 2 }}>
-                    Traité le {fmtDate(w.processed_at ?? w.created_at)} · {w.phone_number}
+                    {t('sl4_settlements.processed_on', { date: fmtDate(w.processed_at ?? w.created_at), phone: w.phone_number })}
                   </p>
                 </div>
 
                 <div className="text-right flex-shrink-0" style={{ minWidth: 92 }}>
-                  <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>Brut</p>
+                  <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_settlements.column_gross')}</p>
                   <p className="font-semibold" style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{nf(w.amount_xaf)}</p>
                 </div>
                 <div className="text-right flex-shrink-0" style={{ minWidth: 92 }}>
                   <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: 'rgba(220,38,38,.7)' }}>
-                    Frais {parseFloat(String(w.fee_percent_snapshot)).toFixed(1)} %
+                    {t('sl4_settlements.column_fee', { rate: parseFloat(String(w.fee_percent_snapshot)).toFixed(1) })}
                   </p>
                   <p className="font-semibold" style={{ fontSize: 12.5, color: T.red, marginTop: 2 }}>− {nf(w.fee_amount_xaf)}</p>
                 </div>
                 <div className="text-right flex-shrink-0" style={{ minWidth: 112 }}>
-                  <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>Reçu</p>
+                  <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.1em', color: T.mutedL }}>{t('sl4_settlements.column_received')}</p>
                   <p className="font-black" style={{ fontSize: 15, color: T.green, marginTop: 2 }}>{nf(w.net_amount_xaf)}</p>
                 </div>
 
@@ -259,7 +261,7 @@ export default function SellerSettlementsPage() {
               <div className="flex items-center gap-2.5 flex-wrap mt-3 pt-3"
                 style={{ borderTop: `1px dashed ${T.border}` }}>
                 <span className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.12em', color: T.mutedL }}>
-                  Commandes couvertes
+                  {t('sl4_settlements.covered_orders_label')}
                 </span>
                 {(isOpen ? covered : covered.slice(0, 3)).map(o => (
                   <Link key={o.id} to={`/seller/orders/${o.id}`}>
@@ -270,13 +272,13 @@ export default function SellerSettlementsPage() {
                   </Link>
                 ))}
                 {covered.length === 0 && (
-                  <span style={{ fontSize: 10.5, color: T.mutedL }}>Rapprochement indisponible</span>
+                  <span style={{ fontSize: 10.5, color: T.mutedL }}>{t('sl4_settlements.reconciliation_unavailable')}</span>
                 )}
                 <span className="flex-1" />
                 {covered.length > 3 && (
                   <button type="button" onClick={() => setOpen(isOpen ? null : w.id)}
                     className="font-bold" style={{ fontSize: 11, color: T.orange }}>
-                    {isOpen ? 'Réduire' : `Voir les ${covered.length} commandes`}
+                    {isOpen ? t('sl4_settlements.collapse_button') : t('sl4_settlements.show_orders_button', { count: covered.length })}
                   </button>
                 )}
               </div>
@@ -286,8 +288,7 @@ export default function SellerSettlementsPage() {
       </Panel>
 
       <Note icon={<ShieldCheck size={15} />} tone="green">
-        Un règlement est définitif. La référence <strong style={{ color: T.text }}>BLV-WD-…</strong> vous sert de preuve
-        auprès de votre opérateur en cas de contestation. Conservez le relevé pour votre comptabilité.
+        {t('sl4_settlements.footer_note_before')} <strong style={{ color: T.text }}>BLV-WD-…</strong>{t('sl4_settlements.footer_note_after')}
       </Note>
     </div>
   );

@@ -3,6 +3,7 @@
 // KPIs commissions · Escrow · Retraits pendants · Chart 30j · Top vendeurs
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   DollarSign, TrendingUp, Lock, ArrowDownToLine,
@@ -91,6 +92,7 @@ function ChartTooltip({ active, payload, label, T }: {
 
 export default function FinancesPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
 
   const [stats,   setStats]   = useState<FinancesStats | null>(null);
@@ -105,7 +107,7 @@ export default function FinancesPage() {
       });
       setStats(data);
     } catch {
-      showToast('Erreur chargement des finances', 'error');
+      showToast(t('ad6_fin_finances.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
@@ -126,11 +128,11 @@ export default function FinancesPage() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
         <AlertCircle size={40} style={{ color: T.muted }} />
-        <p style={{ fontSize: 14, color: T.muted }}>Impossible de charger les finances</p>
+        <p style={{ fontSize: 14, color: T.muted }}>{t('ad6_fin_finances.load_error')}</p>
         <button onClick={() => load()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-semibold text-white"
           style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
-          <RefreshCw size={14} /> Réessayer
+          <RefreshCw size={14} /> {t('ad6_fin_finances.retry')}
         </button>
       </div>
     );
@@ -146,13 +148,13 @@ export default function FinancesPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Finances & Commissions
+            {t('ad6_fin_finances.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            Taux de commission actuel : <span style={{ color: T.red, fontWeight: 700 }}>{kpis.commission_rate}%</span>
+            {t('ad6_fin_finances.current_rate_prefix')} <span style={{ color: T.red, fontWeight: 700 }}>{kpis.commission_rate}%</span>
             {pending_withdrawals.length > 0 && (
               <span style={{ color: '#F59E0B', fontWeight: 700, marginLeft: 8 }}>
-                · {pending_withdrawals.length} retrait{pending_withdrawals.length > 1 ? 's' : ''} en attente
+                · {pending_withdrawals.length} {t(pending_withdrawals.length > 1 ? 'ad6_fin_finances.withdrawals_pending_plural' : 'ad6_fin_finances.withdrawals_pending')}
               </span>
             )}
           </p>
@@ -162,21 +164,21 @@ export default function FinancesPage() {
           style={{ background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
-          <RefreshCw size={13} /> Actualiser
+          <RefreshCw size={13} /> {t('ad6_fin_finances.refresh')}
         </button>
       </div>
 
       {/* ── KPI Cards (8) ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { label: 'Commissions totales',   value: fmtXaf(kpis.total_commission),           sub: `${kpis.commission_rate}% sur chaque vente`, accent: T.red,    icon: DollarSign  },
-          { label: 'Commissions ce mois',   value: fmtXaf(kpis.month_commission),           sub: `${fmtXaf(kpis.week_commission)} cette semaine`, accent: '#10B981', icon: TrendingUp  },
-          { label: 'GMV total',             value: fmtXaf(kpis.gmv_total),                 sub: `${fmtXaf(kpis.gmv_month)} ce mois`,         accent: '#3B82F6', icon: Store       },
-          { label: 'Escrow bloqué',         value: fmtXaf(kpis.escrow_blocked),             sub: 'fonds sécurisés en cours',                  accent: '#F59E0B', icon: Lock        },
-          { label: 'Retraits en attente',   value: fmtXaf(kpis.pending_withdrawals_amount), sub: `${kpis.pending_withdrawals_count} demande${kpis.pending_withdrawals_count > 1 ? 's' : ''}`, accent: kpis.pending_withdrawals_count > 0 ? '#EF4444' : T.muted, icon: ArrowDownToLine },
-          { label: 'Retraits approuvés',    value: fmtXaf(kpis.approved_withdrawals_total), sub: 'versés aux vendeurs',                        accent: '#10B981', icon: ArrowDownToLine },
-          { label: 'Marge nette estimée',   value: fmtXaf(kpis.total_commission - kpis.approved_withdrawals_total), sub: 'commissions - retraits approuvés', accent: '#8B5CF6', icon: Award },
-          { label: 'GMV ce mois',           value: fmtXaf(kpis.gmv_month),                 sub: 'volume brut ce mois',                       accent: '#06B6D4', icon: TrendingUp  },
+          { label: t('ad6_fin_finances.kpi_total_commissions'),   value: fmtXaf(kpis.total_commission),           sub: t('ad6_fin_finances.kpi_total_commissions_sub', { rate: kpis.commission_rate }), accent: T.red,    icon: DollarSign  },
+          { label: t('ad6_fin_finances.kpi_month_commissions'),   value: fmtXaf(kpis.month_commission),           sub: t('ad6_fin_finances.kpi_month_commissions_sub', { amount: fmtXaf(kpis.week_commission) }), accent: '#10B981', icon: TrendingUp  },
+          { label: t('ad6_fin_finances.kpi_gmv_total'),             value: fmtXaf(kpis.gmv_total),                 sub: t('ad6_fin_finances.kpi_gmv_total_sub', { amount: fmtXaf(kpis.gmv_month) }),         accent: '#3B82F6', icon: Store       },
+          { label: t('ad6_fin_finances.kpi_escrow_blocked'),         value: fmtXaf(kpis.escrow_blocked),             sub: t('ad6_fin_finances.kpi_escrow_blocked_sub'),                  accent: '#F59E0B', icon: Lock        },
+          { label: t('ad6_fin_finances.kpi_pending_withdrawals'),   value: fmtXaf(kpis.pending_withdrawals_amount), sub: t(kpis.pending_withdrawals_count > 1 ? 'ad6_fin_finances.kpi_pending_withdrawals_sub_plural' : 'ad6_fin_finances.kpi_pending_withdrawals_sub', { count: kpis.pending_withdrawals_count }), accent: kpis.pending_withdrawals_count > 0 ? '#EF4444' : T.muted, icon: ArrowDownToLine },
+          { label: t('ad6_fin_finances.kpi_approved_withdrawals'),    value: fmtXaf(kpis.approved_withdrawals_total), sub: t('ad6_fin_finances.kpi_approved_withdrawals_sub'),                        accent: '#10B981', icon: ArrowDownToLine },
+          { label: t('ad6_fin_finances.kpi_net_margin'),   value: fmtXaf(kpis.total_commission - kpis.approved_withdrawals_total), sub: t('ad6_fin_finances.kpi_net_margin_sub'), accent: '#8B5CF6', icon: Award },
+          { label: t('ad6_fin_finances.kpi_gmv_month'),           value: fmtXaf(kpis.gmv_month),                 sub: t('ad6_fin_finances.kpi_gmv_month_sub'),                       accent: '#06B6D4', icon: TrendingUp  },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -204,20 +206,20 @@ export default function FinancesPage() {
           <div className="flex items-start justify-between mb-4">
             <div>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>
-                Commissions & GMV — 30 jours
+                {t('ad6_fin_finances.chart_commissions_gmv_title')}
               </p>
               <p style={{ fontSize: 11.5, color: T.muted, marginTop: 2 }}>
-                Commissions perçues et volume brut quotidien
+                {t('ad6_fin_finances.chart_commissions_gmv_subtitle')}
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: T.red }} />
-                <span style={{ fontSize: 11, color: T.muted }}>Commission</span>
+                <span style={{ fontSize: 11, color: T.muted }}>{t('ad6_fin_finances.legend_commission')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 10, height: 10, borderRadius: 2, background: '#3B82F6' }} />
-                <span style={{ fontSize: 11, color: T.muted }}>GMV</span>
+                <span style={{ fontSize: 11, color: T.muted }}>{t('ad6_fin_finances.legend_gmv')}</span>
               </div>
             </div>
           </div>
@@ -237,8 +239,8 @@ export default function FinancesPage() {
               <XAxis dataKey="date" tickFormatter={fmtShort} tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
               <YAxis tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v === 0 ? '0' : `${Math.round(v / 1000)}k`} width={32} />
               <Tooltip content={(props) => <ChartTooltip {...props} T={T} />} />
-              <Area type="monotone" dataKey="gmv"        name="GMV"        stroke="#3B82F6" strokeWidth={1.5} fill="url(#gmvGrad)"  dot={false} />
-              <Area type="monotone" dataKey="commission" name="Commission" stroke={T.red}   strokeWidth={2}   fill="url(#commGrad)" dot={false} activeDot={{ r: 4, fill: T.red }} />
+              <Area type="monotone" dataKey="gmv"        name={t('ad6_fin_finances.legend_gmv')}        stroke="#3B82F6" strokeWidth={1.5} fill="url(#gmvGrad)"  dot={false} />
+              <Area type="monotone" dataKey="commission" name={t('ad6_fin_finances.legend_commission')} stroke={T.red}   strokeWidth={2}   fill="url(#commGrad)" dot={false} activeDot={{ r: 4, fill: T.red }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -246,15 +248,15 @@ export default function FinancesPage() {
         {/* Top vendeurs contributeurs — 1/3 */}
         <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Top contributeurs
+            {t('ad6_fin_finances.top_contributors_title')}
           </p>
           <p style={{ fontSize: 11.5, color: T.muted, marginBottom: 16 }}>
-            Par commissions générées
+            {t('ad6_fin_finances.top_contributors_subtitle')}
           </p>
 
           {top_vendors.length === 0 ? (
             <p style={{ fontSize: 13, color: T.muted, textAlign: 'center', padding: '20px 0' }}>
-              Aucune donnée
+              {t('ad6_fin_finances.no_data')}
             </p>
           ) : (
             <div className="space-y-3">
@@ -286,7 +288,7 @@ export default function FinancesPage() {
                     <div style={{ height: 4, background: T.border, borderRadius: 2, overflow: 'hidden' }}>
                       <div style={{ height: '100%', width: `${pct}%`, background: i === 0 ? T.red : '#3B82F6', borderRadius: 2, opacity: 1 - i * 0.1 }} />
                     </div>
-                    <p style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>GMV: {fmtXaf(v.total_gmv)}</p>
+                    <p style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>{t('ad6_fin_finances.gmv_label')}: {fmtXaf(v.total_gmv)}</p>
                   </Link>
                 );
               })}
@@ -298,7 +300,7 @@ export default function FinancesPage() {
       {/* ── BarChart commissions mensuel condensé ─────────────────────────── */}
       <div className="rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 16 }}>
-          Distribution quotidienne des commissions
+          {t('ad6_fin_finances.daily_distribution_title')}
         </p>
         <ResponsiveContainer width="100%" height={120}>
           <BarChart data={commissions_chart} margin={{ top: 0, right: 4, left: 0, bottom: 0 }}>
@@ -306,7 +308,7 @@ export default function FinancesPage() {
             <XAxis dataKey="date" tickFormatter={fmtShort} tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} interval={4} />
             <YAxis tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} tickFormatter={v => v === 0 ? '0' : `${Math.round(v / 1000)}k`} width={32} />
             <Tooltip content={(props) => <ChartTooltip {...props} T={T} />} />
-            <Bar dataKey="commission" name="Commission" fill={T.red} radius={[3, 3, 0, 0]} fillOpacity={0.85} />
+            <Bar dataKey="commission" name={t('ad6_fin_finances.legend_commission')} fill={T.red} radius={[3, 3, 0, 0]} fillOpacity={0.85} />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -318,7 +320,7 @@ export default function FinancesPage() {
           <div className="flex items-center gap-2">
             <ArrowDownToLine size={14} style={{ color: pending_withdrawals.length > 0 ? '#F59E0B' : T.muted }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-              Retraits vendeurs en attente
+              {t('ad6_fin_finances.pending_withdrawals_title')}
             </span>
             {pending_withdrawals.length > 0 && (
               <span style={{ fontSize: 11, fontWeight: 800, padding: '1px 7px', borderRadius: 6, background: 'rgba(245,158,11,0.15)', color: '#F59E0B' }}>
@@ -327,21 +329,21 @@ export default function FinancesPage() {
             )}
           </div>
           <Link to="/admin/vendors/withdrawals" style={{ fontSize: 11.5, fontWeight: 600, color: T.red }}>
-            Gérer tout →
+            {t('ad6_fin_finances.manage_all')}
           </Link>
         </div>
 
         {pending_withdrawals.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 gap-2">
             <ArrowDownToLine size={28} style={{ color: T.muted }} />
-            <p style={{ fontSize: 13, color: T.muted }}>Aucun retrait en attente</p>
+            <p style={{ fontSize: 13, color: T.muted }}>{t('ad6_fin_finances.no_pending_withdrawals')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                  {['Référence', 'Boutique', 'Opérateur', 'Numéro', 'Montant', 'Net', 'Demandé le'].map((h, i) => (
+                  {[t('ad6_fin_finances.th_reference'), t('ad6_fin_finances.th_shop'), t('ad6_fin_finances.th_operator'), t('ad6_fin_finances.th_number'), t('ad6_fin_finances.th_amount'), t('ad6_fin_finances.th_net'), t('ad6_fin_finances.th_requested_at')].map((h, i) => (
                     <th key={i} style={{ padding: '8px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>

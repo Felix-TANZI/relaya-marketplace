@@ -28,6 +28,8 @@
 //  ce qui est retenu, et quand le prochain versement partira.
 // =============================================================================
 
+import type { TFunction } from "i18next";
+
 import { http } from "@/services/api/http";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -241,7 +243,7 @@ export function formatSettlementDate(value: string | null): string {
  * Une date est une information ; un compte a rebours est un ENGAGEMENT.
  * C'est ce qui rend la promesse de BelivaY concrete pour un partenaire.
  */
-export function countdownLabel(value: string | null): string {
+export function countdownLabel(value: string | null, t: TFunction): string {
   if (!value) return "";
   const cible = new Date(value);
   if (Number.isNaN(cible.getTime())) return "";
@@ -254,10 +256,10 @@ export function countdownLabel(value: string | null): string {
     (cible.getTime() - aujourdhui.getTime()) / 86_400_000,
   );
 
-  if (jours < 0) return "en cours de traitement";
-  if (jours === 0) return "aujourd'hui";
-  if (jours === 1) return "demain";
-  return `dans ${jours} jours`;
+  if (jours < 0) return t("misc1_vendor_settlements.processing");
+  if (jours === 0) return t("misc1_vendor_settlements.today");
+  if (jours === 1) return t("misc1_vendor_settlements.tomorrow");
+  return t("misc1_vendor_settlements.in_days", { count: jours });
 }
 
 /**
@@ -266,16 +268,13 @@ export function countdownLabel(value: string | null): string {
  * Le message d'origine reste en repli : mieux vaut une phrase technique
  * qu'un partenaire sans explication.
  */
-export function humanizeBlocker(blocker: string): string {
+export function humanizeBlocker(blocker: string, t: TFunction): string {
   const regles: Array<[RegExp, string]> = [
-    [/kyc/i, "Vos pièces d'identité ne sont pas encore vérifiées."],
-    [/refroidissement|cooling/i,
-      "Votre numéro Mobile Money a changé récemment. "
-      + "Un délai de sécurité de 72 h s'applique."],
-    [/suspendu|hold/i, "Les versements sont suspendus sur votre compte."],
-    [/numero|msisdn/i, "Aucun numéro Mobile Money n'est enregistré."],
-    [/montant|minimum/i,
-      "Le montant dû n'atteint pas encore le minimum de versement."],
+    [/kyc/i, t("misc1_vendor_settlements.blocker_kyc")],
+    [/refroidissement|cooling/i, t("misc1_vendor_settlements.blocker_cooling")],
+    [/suspendu|hold/i, t("misc1_vendor_settlements.blocker_suspended")],
+    [/numero|msisdn/i, t("misc1_vendor_settlements.blocker_no_number")],
+    [/montant|minimum/i, t("misc1_vendor_settlements.blocker_below_minimum")],
   ];
   const trouve = regles.find(([motif]) => motif.test(blocker));
   return trouve ? trouve[1] : blocker;

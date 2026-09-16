@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Clock, Flame } from "lucide-react";
 import SectionBanner from "./SectionBanner";
 
@@ -28,6 +29,7 @@ function formatRemaining(targetTime: number) {
 }
 
 export default function FlashPromoBanner({ count, maxDiscount, endDates }: FlashPromoBannerProps) {
+  const { t } = useTranslation();
   const [remaining, setRemaining] = useState(PLACEHOLDER);
 
   /*
@@ -55,12 +57,12 @@ export default function FlashPromoBanner({ count, maxDiscount, endDates }: Flash
   return (
     <SectionBanner
       to="/promotions"
-      ariaLabel={`${count} promotions jusqu'à -${maxDiscount}%, voir la page promotions`}
-      title={`${count} promo${count > 1 ? "s" : ""} jusqu'à −${maxDiscount}%`}
+      ariaLabel={t("home.flash_promo_aria", { count, percent: maxDiscount })}
+      title={t(count > 1 ? "home.flash_promo_title_plural" : "home.flash_promo_title", { count, percent: maxDiscount })}
       subtitle={
         <span className="flex items-center gap-1.5 text-amber-100">
           <Clock size={14} />
-          Fin dans <span className="tabular-nums tracking-wide">{remaining}</span>
+          {t("home.flash_promo_ends_in")} <span className="tabular-nums tracking-wide">{remaining}</span>
         </span>
       }
       icon={Flame}

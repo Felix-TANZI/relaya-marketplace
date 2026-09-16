@@ -5,12 +5,14 @@
 // forcées, règle verrouillée n°11 : toute sortie forcée est journalisée).
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Gauge, PackageX, Clock3, PiggyBank } from 'lucide-react';
 import { adminApi, type SupervisionDashboard } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
 
 export default function SupervisionPage() {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const [data, setData] = useState<SupervisionDashboard | null>(null);
@@ -20,9 +22,9 @@ export default function SupervisionPage() {
     setLoading(true);
     adminApi.getSupervisionDashboard()
       .then(setData)
-      .catch(() => showToast('Chargement impossible.', 'error'))
+      .catch(() => showToast(t('ad5b_supervision.toast_load_error'), 'error'))
       .finally(() => setLoading(false));
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -37,15 +39,15 @@ export default function SupervisionPage() {
             <Gauge size={20} />
           </div>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 900, color: T.text, margin: 0 }}>Console de supervision</h1>
+            <h1 style={{ fontSize: 22, fontWeight: 900, color: T.text, margin: 0 }}>{t('ad5b_supervision.title')}</h1>
             <p style={{ fontSize: 13, fontWeight: 600, color: T.muted, margin: '2px 0 0' }}>
-              Deux listes : colis en retard, tournées non prises — plus le compteur de subvention par zone.
+              {t('ad5b_supervision.subtitle')}
             </p>
           </div>
         </div>
 
         {loading ? (
-          <div style={{ background: T.card, borderRadius: 16, padding: 32, textAlign: 'center', color: T.muted, fontWeight: 600 }}>Chargement…</div>
+          <div style={{ background: T.card, borderRadius: 16, padding: 32, textAlign: 'center', color: T.muted, fontWeight: 600 }}>{t('ad5b_supervision.loading')}</div>
         ) : !data ? null : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -54,22 +56,22 @@ export default function SupervisionPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <Clock3 size={16} color={T.red} />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: T.text, margin: 0 }}>
-                  Colis en retard ({data.late_shipments_count})
+                  {t('ad5b_supervision.late_shipments_title', { count: data.late_shipments_count })}
                 </h2>
               </div>
               {data.late_shipments.length === 0 ? (
-                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>Aucun colis en retard.</p>
+                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>{t('ad5b_supervision.no_late_shipments')}</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={thStyle}>Commande</th>
-                        <th style={thStyle}>Colis</th>
-                        <th style={thStyle}>Statut</th>
-                        <th style={thStyle}>Zone</th>
-                        <th style={thStyle}>Ville</th>
-                        <th style={thStyle}>Retard</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_order')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_shipment')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_status')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_zone')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_city')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_delay')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -84,7 +86,7 @@ export default function SupervisionPage() {
                           <td style={tdStyle}>{item.status}</td>
                           <td style={tdStyle}>{item.zone || '—'}</td>
                           <td style={tdStyle}>{item.city}</td>
-                          <td style={{ ...tdStyle, color: T.red, fontWeight: 800 }}>{item.hours_late} h</td>
+                          <td style={{ ...tdStyle, color: T.red, fontWeight: 800 }}>{t('ad5b_supervision.hours_unit', { count: item.hours_late })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -98,20 +100,20 @@ export default function SupervisionPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <PackageX size={16} color="#F59E0B" />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: T.text, margin: 0 }}>
-                  Tournées non prises — bourse aux courses ({data.unclaimed_tournees_count})
+                  {t('ad5b_supervision.unclaimed_tournees_title', { count: data.unclaimed_tournees_count })}
                 </h2>
               </div>
               {data.unclaimed_tournees.length === 0 ? (
-                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>Aucune tournée en attente sur la bourse.</p>
+                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>{t('ad5b_supervision.no_unclaimed_tournees')}</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={thStyle}>Zone</th>
-                        <th style={thStyle}>Ville</th>
-                        <th style={thStyle}>Colis</th>
-                        <th style={thStyle}>En attente depuis</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_zone')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_city')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_shipment')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_waiting_since')}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -120,7 +122,7 @@ export default function SupervisionPage() {
                           <td style={tdStyle}>{item.zone}</td>
                           <td style={tdStyle}>{item.city}</td>
                           <td style={tdStyle}>{item.colis_count}</td>
-                          <td style={{ ...tdStyle, color: '#F59E0B', fontWeight: 800 }}>{item.waiting_hours} h</td>
+                          <td style={{ ...tdStyle, color: '#F59E0B', fontWeight: 800 }}>{t('ad5b_supervision.hours_unit', { count: item.waiting_hours })}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -134,23 +136,23 @@ export default function SupervisionPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <PiggyBank size={16} color={T.text} />
                 <h2 style={{ fontSize: 15, fontWeight: 800, color: T.text, margin: 0 }}>
-                  Compteur de subvention par zone
+                  {t('ad5b_supervision.subsidy_title')}
                 </h2>
               </div>
               <p style={{ fontSize: 12, color: T.muted, marginTop: -4, marginBottom: 12 }}>
-                Sorties forcées (moins de 4 colis, 2 créneaux d'attente épuisés) — la perte est assumée et journalisée ici, jamais silencieuse.
+                {t('ad5b_supervision.subsidy_intro')}
               </p>
               {data.subsidy_by_zone.length === 0 ? (
-                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>Aucune sortie forcée enregistrée.</p>
+                <p style={{ fontSize: 13, color: T.muted, fontWeight: 600 }}>{t('ad5b_supervision.no_forced_exits')}</p>
               ) : (
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
                       <tr>
-                        <th style={thStyle}>Zone</th>
-                        <th style={thStyle}>Ville</th>
-                        <th style={thStyle}>Sorties forcées</th>
-                        <th style={thStyle}>Colis concernés</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_zone')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_city')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_forced_exits')}</th>
+                        <th style={thStyle}>{t('ad5b_supervision.col_affected_shipments')}</th>
                       </tr>
                     </thead>
                     <tbody>

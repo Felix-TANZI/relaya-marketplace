@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   Bot,
@@ -48,15 +49,15 @@ function normalize(value: string) {
     .replace(/[\u0300-\u036f]/g, "");
 }
 
-function getRouteLabel(pathname: string) {
-  if (pathname.startsWith("/catalog")) return "Catalogue";
-  if (pathname.startsWith("/cart")) return "Panier";
-  if (pathname.startsWith("/checkout")) return "Paiement";
-  if (pathname.startsWith("/orders")) return "Commandes";
-  if (pathname.startsWith("/wishlist")) return "Favoris";
-  if (pathname.startsWith("/profile")) return "Compte";
-  if (pathname.startsWith("/search")) return "Recherche";
-  return "Accueil";
+function getRouteLabel(pathname: string, t: (key: string) => string) {
+  if (pathname.startsWith("/catalog")) return t("cl5_assistant.route_catalog");
+  if (pathname.startsWith("/cart")) return t("cl5_assistant.route_cart");
+  if (pathname.startsWith("/checkout")) return t("cl5_assistant.route_checkout");
+  if (pathname.startsWith("/orders")) return t("cl5_assistant.route_orders");
+  if (pathname.startsWith("/wishlist")) return t("cl5_assistant.route_wishlist");
+  if (pathname.startsWith("/profile")) return t("cl5_assistant.route_profile");
+  if (pathname.startsWith("/search")) return t("cl5_assistant.route_search");
+  return t("cl5_assistant.route_home");
 }
 
 function getContextualPrompts(pathname: string) {
@@ -106,9 +107,10 @@ function hasProductIntent(prompt: string) {
 }
 
 export default function GlobalAssistant() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const viewportLabel = getRouteLabel(location.pathname);
+  const viewportLabel = getRouteLabel(location.pathname, t);
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -125,16 +127,15 @@ export default function GlobalAssistant() {
       {
         id: "assistant-intro",
         role: "assistant",
-        content:
-          "Salut, je suis là. Dis-moi ce que tu veux faire et je t’y amène : chercher un produit, retrouver une commande, comprendre un paiement, ou juste te débloquer dans l’app.",
+        content: t("cl5_assistant.intro_message"),
         actions: [
-          { label: "Accueil", onClick: () => navigate("/") },
-          { label: "Panier", onClick: () => navigate("/cart") },
-          { label: "Commandes", onClick: () => navigate("/orders") },
+          { label: t("cl5_assistant.action_home"), onClick: () => navigate("/") },
+          { label: t("cl5_assistant.action_cart"), onClick: () => navigate("/cart") },
+          { label: t("cl5_assistant.action_orders"), onClick: () => navigate("/orders") },
         ],
       },
     ]);
-  }, [navigate]);
+  }, [navigate, t]);
 
   useEffect(() => {
     if (isOpen) {
@@ -168,8 +169,8 @@ export default function GlobalAssistant() {
   }, []);
 
   const statusLabel = useMemo(
-    () => `Je suis avec toi sur ${viewportLabel}`,
-    [viewportLabel],
+    () => t("cl5_assistant.status_label", { route: viewportLabel }),
+    [viewportLabel, t],
   );
   const assistantLayer = location.pathname.startsWith("/search") ? "z-[45]" : "z-[80]";
 
@@ -221,7 +222,7 @@ export default function GlobalAssistant() {
     pushAssistantMessage({
       id: `assistant-${Date.now()}`,
       role: "assistant",
-      content: response.answer || "Je suis la. Reformule en precisant l'etape BelivaY qui te bloque.",
+      content: response.answer || t("cl5_assistant.remote_fallback"),
       products: suggestedProducts,
       actions: buildFollowUpActions(response.followUp),
       meta: response.model ? `${response.source ?? "assistant"} · ${response.model}` : undefined,
@@ -236,11 +237,11 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Salut. Je suis avec toi. Tu peux me dire les choses simplement : “ouvre mon panier”, “trouve un téléphone”, “je veux suivre ma commande”. Je m’occupe du chemin.",
+        content: t("cl5_assistant.greeting_message"),
         actions: [
-          { label: "Voir les produits", onClick: () => navigate("/catalog") },
-          { label: "Accueil", onClick: () => navigate("/") },
-          { label: "Visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+          { label: t("cl5_assistant.action_view_products"), onClick: () => navigate("/catalog") },
+          { label: t("cl5_assistant.action_home"), onClick: () => navigate("/") },
+          { label: t("cl5_assistant.action_tour"), onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
         ],
       });
       return;
@@ -251,11 +252,11 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "BelivaY fonctionne comme un achat accompagné : tu choisis un produit, tu le mets au panier, tu paies, puis tu suis la commande jusqu’à la livraison. Je peux te faire gagner du temps en t’ouvrant directement la bonne étape.",
+        content: t("cl5_assistant.how_it_works_message"),
         actions: [
-          { label: "Lancer la visite guidée", onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
-          { label: "Chercher un produit", onClick: () => navigate("/search") },
-          { label: "Voir les catégories", onClick: () => navigate("/categories") },
+          { label: t("cl5_assistant.action_start_tour"), onClick: () => { window.dispatchEvent(new Event("belivay-open-tutorial")); setIsOpen(false); } },
+          { label: t("cl5_assistant.action_search_product"), onClick: () => navigate("/search") },
+          { label: t("cl5_assistant.action_view_categories"), onClick: () => navigate("/categories") },
         ],
       });
       return;
@@ -274,7 +275,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "C’est fait, je t’ai ramené à l’accueil. De là, tu peux repartir vers les produits, les promos ou tes commandes.",
+        content: t("cl5_assistant.nav_home_message"),
       });
       return;
     }
@@ -285,7 +286,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voilà ton panier. Tu peux choisir les articles à payer, changer les quantités ou passer directement à la commande.",
+        content: t("cl5_assistant.nav_cart_message"),
       });
       return;
     }
@@ -296,7 +297,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert tes commandes. Regarde le statut en haut de chaque carte, puis ouvre une commande si tu veux le suivi ou les détails.",
+        content: t("cl5_assistant.nav_orders_message"),
       });
       return;
     }
@@ -307,7 +308,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici ton compte. C’est ici que tu retrouves tes infos, tes commandes et tes préférences.",
+        content: t("cl5_assistant.nav_profile_message"),
       });
       return;
     }
@@ -318,7 +319,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "J’ai ouvert tes favoris. Tu peux reprendre un produit mis de côté, l’ajouter au panier ou l’acheter maintenant.",
+        content: t("cl5_assistant.nav_wishlist_message"),
       });
       return;
     }
@@ -328,10 +329,10 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Dis-moi ce qui bloque et je t’oriente. Si tu veux parler à l’équipe, je peux aussi t’ouvrir l’aide ou la page contact.",
+        content: t("cl5_assistant.nav_help_message"),
         actions: [
-          { label: "Centre d'aide", onClick: () => navigate("/help") },
-          { label: "Nous contacter", onClick: () => navigate("/contact") },
+          { label: t("cl5_assistant.action_help_center"), onClick: () => navigate("/help") },
+          { label: t("cl5_assistant.action_contact_us"), onClick: () => navigate("/contact") },
         ],
       });
       return;
@@ -343,7 +344,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert les catégories. Choisis une famille de produits et l’app filtrera ce qui t’intéresse.",
+        content: t("cl5_assistant.nav_categories_message"),
       });
       return;
     }
@@ -354,7 +355,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "La recherche est prête. Tape le nom du produit, une catégorie ou un budget, et on réduit le choix.",
+        content: t("cl5_assistant.nav_search_message"),
       });
       return;
     }
@@ -364,7 +365,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "C’est parti, je lance la visite guidée. Elle va te montrer les points importants sans te perdre dans les menus.",
+        content: t("cl5_assistant.nav_tour_message"),
       });
       window.dispatchEvent(new Event("belivay-open-tutorial"));
       setIsOpen(false);
@@ -377,7 +378,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert les vendeurs. Tu peux comparer les boutiques par spécialité, fiabilité et produits disponibles.",
+        content: t("cl5_assistant.nav_vendors_message"),
       });
       return;
     }
@@ -388,7 +389,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Voici tes notifications. Les plus récentes et les messages importants ressortent visuellement pour que tu voies vite quoi traiter.",
+        content: t("cl5_assistant.nav_notifications_message"),
       });
       return;
     }
@@ -399,7 +400,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert la création de compte. Remplis les infos essentielles et tu pourras commander plus facilement.",
+        content: t("cl5_assistant.nav_register_message"),
       });
       return;
     }
@@ -408,7 +409,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert la connexion. Entre ton identifiant et ton mot de passe, puis tu reprends ton parcours.",
+        content: t("cl5_assistant.nav_login_message"),
       });
       return;
     }
@@ -418,7 +419,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "La langue se change depuis l’icône globe en haut. Tu peux passer de Français à English quand tu veux.",
+        content: t("cl5_assistant.nav_language_message"),
       });
       return;
     }
@@ -426,7 +427,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Le thème clair/sombre se règle avec l’icône lune ou soleil dans l’en-tête.",
+        content: t("cl5_assistant.nav_theme_message"),
       });
       return;
     }
@@ -437,7 +438,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Je t’ai ouvert l’espace pour devenir vendeur. Tu remplis ton dossier, puis BelivaY l’examine avant activation.",
+        content: t("cl5_assistant.nav_become_seller_message"),
       });
       return;
     }
@@ -453,7 +454,7 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: "Avec plaisir. Je reste là si tu veux continuer ou vérifier quelque chose avant d’acheter.",
+        content: t("cl5_assistant.nav_thanks_message"),
       });
       return;
     }
@@ -483,11 +484,10 @@ export default function GlobalAssistant() {
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content:
-          "Je n’ai pas réussi à aller au bout, mais je peux encore t’aider à reprendre la main. Choisis une option et on repart proprement.",
+        content: t("cl5_assistant.error_message"),
         actions: [
-          { label: "Centre d'aide", onClick: () => navigate("/help") },
-          { label: "Accueil", onClick: () => navigate("/") },
+          { label: t("cl5_assistant.action_help_center"), onClick: () => navigate("/help") },
+          { label: t("cl5_assistant.action_home"), onClick: () => navigate("/") },
         ],
       });
     } finally {
@@ -510,7 +510,7 @@ export default function GlobalAssistant() {
           type="button"
           onClick={() => setIsOpen((current) => !current)}
           className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-110 hover:bg-primary-dark"
-          aria-label="Ouvrir l'assistant BelivaY"
+          aria-label={t("cl5_assistant.open_assistant_aria")}
           data-tutorial="chatbot"
         >
           {isOpen ? <X size={20} /> : <Bot size={22} />}
@@ -530,10 +530,10 @@ export default function GlobalAssistant() {
               <div className="min-w-0">
                 <p className="inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-600 dark:bg-slate-900 dark:text-slate-300">
                   <Sparkles size={13} />
-                  Agent client
+                  {t("cl5_assistant.header_badge")}
                 </p>
                 <h2 className="mt-3 text-lg font-semibold text-slate-950 dark:text-white">
-                  Agent BelivaY
+                  {t("cl5_assistant.header_title")}
                 </h2>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
                   {statusLabel}
@@ -543,7 +543,7 @@ export default function GlobalAssistant() {
                 type="button"
                 onClick={() => setIsOpen(false)}
                 className="rounded-full p-2 text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-900 dark:hover:text-slate-200"
-                aria-label="Fermer l'assistant"
+                aria-label={t("cl5_assistant.close_assistant_aria")}
               >
                 <X size={18} />
               </button>
@@ -616,7 +616,7 @@ export default function GlobalAssistant() {
               <div className="flex justify-start">
                 <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-300">
                   <Loader2 size={16} className="animate-spin" />
-                  Je regarde ça…
+                  {t("cl5_assistant.loading_message")}
                 </div>
               </div>
             )}
@@ -650,7 +650,7 @@ export default function GlobalAssistant() {
                 htmlFor="belivay-assistant-message"
                 className="mb-1.5 block px-1 text-[11px] font-bold uppercase tracking-[0.12em] text-slate-600 dark:text-slate-300"
               >
-                Votre message
+                {t("cl5_assistant.message_label")}
               </label>
               <div className="flex items-end gap-2">
                 <div className="flex min-w-0 flex-1 items-start gap-2 rounded-xl bg-slate-50 px-3 py-2.5 dark:bg-slate-950">
@@ -676,7 +676,7 @@ export default function GlobalAssistant() {
                         }
                       }
                     }}
-                    placeholder="Dis-moi ce que tu veux faire…"
+                    placeholder={t("cl5_assistant.message_placeholder")}
                     className="min-h-[52px] max-h-28 w-full resize-none overflow-y-auto border-0 bg-transparent py-1 text-[15px] font-medium leading-6 text-slate-950 caret-primary outline-none ring-0 placeholder:font-normal placeholder:text-slate-500 focus:border-0 focus:outline-none focus:ring-0 dark:text-white dark:placeholder:text-slate-400"
                   />
                 </div>
@@ -685,7 +685,7 @@ export default function GlobalAssistant() {
                   type="submit"
                   disabled={isLoading || !message.trim()}
                   className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary text-white shadow-md transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:bg-slate-300 disabled:shadow-none dark:disabled:bg-slate-700"
-                  aria-label="Envoyer le message"
+                  aria-label={t("cl5_assistant.send_message_aria")}
                 >
                   <SendHorizonal size={17} />
                 </button>
@@ -702,7 +702,7 @@ export default function GlobalAssistant() {
                 className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 <Home size={13} />
-                Accueil
+                {t("cl5_assistant.action_home")}
               </button>
               <button
                 type="button"
@@ -713,7 +713,7 @@ export default function GlobalAssistant() {
                 className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 <Search size={13} />
-                Recherche
+                {t("cl5_assistant.route_search")}
               </button>
               <button
                 type="button"
@@ -724,7 +724,7 @@ export default function GlobalAssistant() {
                 className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 <ShoppingCart size={13} />
-                Panier
+                {t("cl5_assistant.action_cart")}
               </button>
               <button
                 type="button"
@@ -735,7 +735,7 @@ export default function GlobalAssistant() {
                 className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-3 py-1.5 font-medium text-slate-600 dark:bg-slate-900 dark:text-slate-300"
               >
                 <Compass size={13} />
-                Visite guidée
+                {t("cl5_assistant.action_tour")}
               </button>
             </div>
           </div>

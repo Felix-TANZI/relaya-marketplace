@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search, SlidersHorizontal, ChevronDown, ChevronUp,
   ArrowUpDown, Star, Tag, Package, Lightbulb,
@@ -10,18 +11,18 @@ import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
 
 type SortKey = "relevance" | "price_asc" | "price_desc" | "newest";
 
-const SORT_OPTIONS: { key: SortKey; label: string }[] = [
-  { key: "relevance", label: "Pertinence" },
-  { key: "price_asc", label: "Prix croissant" },
-  { key: "price_desc", label: "Prix décroissant" },
-  { key: "newest", label: "Plus récents" },
+const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
+  { key: "relevance", labelKey: "cl4_search.sort_relevance" },
+  { key: "price_asc", labelKey: "cl4_search.sort_price_asc" },
+  { key: "price_desc", labelKey: "cl4_search.sort_price_desc" },
+  { key: "newest", labelKey: "cl4_search.sort_newest" },
 ];
 
 const PRICE_PRESETS = [
-  { label: "Moins de 5 000 F", min: 0, max: 5000 },
-  { label: "5 000 – 15 000 F", min: 5000, max: 15000 },
-  { label: "15 000 – 50 000 F", min: 15000, max: 50000 },
-  { label: "Plus de 50 000 F", min: 50000, max: 9999999 },
+  { labelKey: "cl4_search.price_preset_under_5k", min: 0, max: 5000 },
+  { labelKey: "cl4_search.price_preset_5_15k", min: 5000, max: 15000 },
+  { labelKey: "cl4_search.price_preset_15_50k", min: 15000, max: 50000 },
+  { labelKey: "cl4_search.price_preset_over_50k", min: 50000, max: 9999999 },
 ];
 
 const LAST_SEARCH_STORAGE_KEY = "belivay_last_search";
@@ -48,6 +49,7 @@ function normalizeValue(value: string) {
 }
 
 export default function SearchPage() {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -206,10 +208,10 @@ export default function SearchPage() {
           >
             <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style={{ minWidth: "240px" }}>
               <div className="mb-4 flex items-center justify-between">
-                <span className="text-[13px] font-extrabold text-gray-900 dark:text-white">Filtres</span>
+                <span className="text-[13px] font-extrabold text-gray-900 dark:text-white">{t("cl4_search.filters_heading")}</span>
                 {activeFiltersCount > 0 && (
                   <button onClick={resetFilters} className="text-[11px] font-semibold text-primary hover:underline">
-                    Réinitialiser
+                    {t("cl4_search.reset")}
                   </button>
                 )}
               </div>
@@ -217,12 +219,12 @@ export default function SearchPage() {
               {/* Prix */}
               <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
                 <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                  <Tag size={13} /> Prix (FCFA)
+                  <Tag size={13} /> {t("cl4_search.price_fcfa")}
                 </p>
                 <div className="mb-2 flex gap-2">
                   <input
                     type="number"
-                    placeholder="Min"
+                    placeholder={t("cl4_search.min_placeholder") ?? undefined}
                     value={minPrice}
                     onChange={(e) => {
                       setMinPrice(e.target.value);
@@ -232,7 +234,7 @@ export default function SearchPage() {
                   />
                   <input
                     type="number"
-                    placeholder="Max"
+                    placeholder={t("cl4_search.max_placeholder") ?? undefined}
                     value={maxPrice}
                     onChange={(e) => {
                       setMaxPrice(e.target.value);
@@ -244,11 +246,11 @@ export default function SearchPage() {
                 <div className="flex flex-col gap-1">
                   {PRICE_PRESETS.map((p) => (
                     <button
-                      key={p.label}
+                      key={p.labelKey}
                       onClick={() => applyPricePreset(p.min, p.max)}
                       className="rounded-lg border border-gray-100 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-all hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-800 dark:text-gray-400 dark:hover:bg-primary/10"
                     >
-                      {p.label}
+                      {t(p.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -258,7 +260,7 @@ export default function SearchPage() {
               {categories.length > 0 && (
                 <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
                   <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                    <Package size={13} /> Catégorie
+                    <Package size={13} /> {t("cl4_search.category_heading")}
                   </p>
                   <div className="flex flex-col gap-0.5">
                     {categories.map((cat) => (
@@ -284,7 +286,7 @@ export default function SearchPage() {
               {/* Note minimale */}
               <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
                 <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                  <Star size={13} /> Note minimale
+                  <Star size={13} /> {t("cl4_search.min_rating_heading")}
                 </p>
                 <div className="flex gap-1">
                   {[1, 2, 3, 4, 5].map((n) => (
@@ -319,7 +321,7 @@ export default function SearchPage() {
                     className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${inStock ? "translate-x-4" : "translate-x-0.5"}`}
                   />
                 </div>
-                <span className="text-[12px] font-semibold text-gray-700 dark:text-gray-300">En stock uniquement</span>
+                <span className="text-[12px] font-semibold text-gray-700 dark:text-gray-300">{t("cl4_search.in_stock_only")}</span>
               </label>
             </div>
           </aside>
@@ -329,16 +331,16 @@ export default function SearchPage() {
             {lastSearch && (lastSearch.query || lastSearch.category) && (
               <div className="mb-4 rounded-xl border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
                 <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-primary">
-                  Dernière recherche
+                  {t("cl4_search.last_search_label")}
                 </p>
                 <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
                       {lastSearch.category ? `[${lastSearch.category}] ` : ""}
-                      {lastSearch.query || "Catégorie uniquement"}
+                      {lastSearch.query || t("cl4_search.category_only")}
                     </p>
                     <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(lastSearch.createdAt).toLocaleString("fr-FR")}
+                      {new Date(lastSearch.createdAt).toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")}
                     </p>
                   </div>
                   <button
@@ -346,7 +348,7 @@ export default function SearchPage() {
                     onClick={applyLastSearch}
                     className="rounded-lg bg-primary px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-orange-700"
                   >
-                    Reprendre
+                    {t("cl4_search.resume")}
                   </button>
                 </div>
               </div>
@@ -356,7 +358,7 @@ export default function SearchPage() {
             {!searched && (
               <div>
                 <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                  Recherches suggérées
+                  {t("cl4_search.suggested_searches")}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {categories.map((cat) => (
@@ -396,23 +398,23 @@ export default function SearchPage() {
                     <p className="text-[12.5px] font-semibold leading-relaxed text-[#8a5a2b] dark:text-orange-200">
                       {searchMeta.mode === "fuzzy" && (
                         <>
-                          Aucun article ne correspond exactement à{" "}
-                          <span className="font-extrabold">« {searchMeta.query} »</span>. Voici les
-                          articles dont l'orthographe s'en rapproche le plus.
+                          {t("cl4_search.fallback_fuzzy_prefix")}{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span>
+                          {t("cl4_search.fallback_fuzzy_suffix")}
                         </>
                       )}
                       {searchMeta.mode === "loose" && (
                         <>
-                          Aucun article ne réunit tous les mots de{" "}
-                          <span className="font-extrabold">« {searchMeta.query} »</span>. Voici ceux
-                          qui en contiennent une partie.
+                          {t("cl4_search.fallback_loose_prefix")}{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span>
+                          {t("cl4_search.fallback_loose_suffix")}
                         </>
                       )}
                       {searchMeta.mode === "related" && (
                         <>
-                          Nous n'avons pas encore{" "}
-                          <span className="font-extrabold">« {searchMeta.query} »</span> au catalogue.
-                          Voici le rayon le plus proche
+                          {t("cl4_search.fallback_related_prefix")}{" "}
+                          <span className="font-extrabold">« {searchMeta.query} »</span>{" "}
+                          {t("cl4_search.fallback_related_middle")}
                           {searchMeta.suggested_category && (
                             <>
                               {" "}:{" "}
@@ -431,8 +433,8 @@ export default function SearchPage() {
                   <div className="flex flex-wrap items-center gap-2">
                     <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-400">
                       <span className="font-extrabold text-gray-900 dark:text-white">{displayedProducts.length}</span>
-                      {" "}résultat{displayedProducts.length !== 1 ? "s" : ""} trouvé{displayedProducts.length !== 1 ? "s" : ""}
-                      {query && <> pour <span className="text-primary">"{query}"</span></>}
+                      {" "}{t(displayedProducts.length > 1 ? "cl4_search.results_found_plural" : "cl4_search.results_found")}
+                      {query && <> {t("cl4_search.results_for_prefix")} <span className="text-primary">"{query}"</span></>}
                     </p>
                     {selectedCategoryLabel && (
                       <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-primary">
@@ -452,7 +454,7 @@ export default function SearchPage() {
                       }`}
                     >
                       <SlidersHorizontal size={15} />
-                      <span className="hidden sm:inline">Filtres</span>
+                      <span className="hidden sm:inline">{t("cl4_search.filters_heading")}</span>
                       {activeFiltersCount > 0 && (
                         <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
                           {activeFiltersCount}
@@ -466,7 +468,7 @@ export default function SearchPage() {
                         className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-bold text-gray-700 transition-all hover:border-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                       >
                         <ArrowUpDown size={13} />
-                        {SORT_OPTIONS.find((o) => o.key === sort)?.label}
+                        {t(SORT_OPTIONS.find((o) => o.key === sort)?.labelKey ?? "")}
                         {sortOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                       {sortOpen && (
@@ -481,7 +483,7 @@ export default function SearchPage() {
                                   : "text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-800"
                               }`}
                             >
-                              {o.label}
+                              {t(o.labelKey)}
                             </button>
                           ))}
                         </div>
@@ -502,17 +504,17 @@ export default function SearchPage() {
                       <Search size={36} className="text-primary/60" />
                     </div>
                     <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      Aucun résultat trouvé
+                      {t("cl4_search.no_results_title")}
                     </p>
                     <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
-                      Essayez avec d'autres mots-clés ou réinitialisez les filtres.
+                      {t("cl4_search.no_results_desc")}
                     </p>
                     {activeFiltersCount > 0 && (
                       <button
                         onClick={resetFilters}
                         className="mt-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-orange-700"
                       >
-                        Réinitialiser les filtres
+                        {t("cl4_search.reset_filters_button")}
                       </button>
                     )}
                   </div>

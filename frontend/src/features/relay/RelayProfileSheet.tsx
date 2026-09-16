@@ -11,6 +11,7 @@
  * maintenir, comme pour RelaySidebarContent et le tiroir.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
   Building2,
@@ -73,114 +74,6 @@ export interface RelaySettingsProps {
   footer: string[];
 }
 
-const COPY = {
-  fr: {
-    title: "Paramètres",
-    subtitle: "Profil, sécurité, langue et application",
-    profileTitle: "Profil du Point Relais",
-    rows: {
-      name: "Raison sociale",
-      manager: "Gérant",
-      kind: "Type",
-      address: "Adresse",
-      zone: "Zone",
-      niu: "NIU / Patente",
-      rccm: "RCCM",
-      lease: "Bail",
-      since: "Membre depuis",
-    },
-    todo: "À compléter",
-    kind: "Point relais partenaire",
-    legalHint: "NIU, RCCM et bail sont collectés dans le dossier KYC : ils s'afficheront ici une fois validés par BelivaY.",
-    founder: "Partenaire Fondateur",
-    founderBody: "Pacte de proximité (50 premiers PR) : exclusivité 1 km · tarification figée.",
-    editProfile: "Modifier le profil",
-    securityTitle: "Sécurité",
-    twoFactor: "Double authentification (2FA)",
-    twoFactorHint: "Code à usage unique à chaque connexion sensible",
-    pin: "Code PIN de remise",
-    pinHint: "PIN requis pour valider un retrait",
-    darkTheme: "Thème sombre",
-    darkThemeHint: "Confort visuel en faible lumière",
-    language: "Langue",
-    languageHint: "Français / English",
-    otpSent: "Code envoyé à",
-    otpPlaceholder: "Code à 6 chiffres",
-    otpConfirm: "Activer la 2FA",
-    passwordPlaceholder: "Mot de passe actuel",
-    otpDisable: "Désactiver la 2FA",
-    twoFactorOn: "Double authentification activée.",
-    twoFactorOff: "Double authentification désactivée.",
-    cancel: "Annuler",
-    certTitle: "Point Relais Vérifié BelivaY",
-    certCaption: "Scannez pour vérifier l'authenticité",
-    certPending: "Certificat disponible dès la validation du KYC.",
-    appTitle: "Application",
-    pwaBody: "Installer l'app (PWA) sur votre téléphone ou tablette pour un accès hors-connexion rapide.",
-    pwaAction: "Installer l'application",
-    pwaUnavailable: "Déjà installée ou non proposée par ce navigateur.",
-    version: "Version",
-    compliance: "Conformité",
-    logout: "Se déconnecter",
-    changePhoto: "Changer la photo",
-    close: "Fermer",
-    sendFailed: "Envoi du code impossible.",
-    actionFailed: "Opération impossible.",
-  },
-  en: {
-    title: "Settings",
-    subtitle: "Profile, security, language and app",
-    profileTitle: "Relay point profile",
-    rows: {
-      name: "Legal name",
-      manager: "Manager",
-      kind: "Type",
-      address: "Address",
-      zone: "Area",
-      niu: "Tax ID",
-      rccm: "Trade register",
-      lease: "Lease",
-      since: "Member since",
-    },
-    todo: "To complete",
-    kind: "Partner relay point",
-    legalHint: "Tax ID, trade register and lease are collected in the KYC file: they appear here once BelivaY approves them.",
-    founder: "Founding partner",
-    founderBody: "Proximity pact (first 50 relay points): 1 km exclusivity · locked pricing.",
-    editProfile: "Edit profile",
-    securityTitle: "Security",
-    twoFactor: "Two-factor authentication (2FA)",
-    twoFactorHint: "One-time code on every sensitive sign-in",
-    pin: "Handover PIN",
-    pinHint: "PIN required to confirm a pickup",
-    darkTheme: "Dark theme",
-    darkThemeHint: "Easier on the eyes in low light",
-    language: "Language",
-    languageHint: "Français / English",
-    otpSent: "Code sent to",
-    otpPlaceholder: "6-digit code",
-    otpConfirm: "Enable 2FA",
-    passwordPlaceholder: "Current password",
-    otpDisable: "Disable 2FA",
-    twoFactorOn: "Two-factor authentication enabled.",
-    twoFactorOff: "Two-factor authentication disabled.",
-    cancel: "Cancel",
-    certTitle: "BelivaY verified relay point",
-    certCaption: "Scan to check authenticity",
-    certPending: "Certificate available once KYC is approved.",
-    appTitle: "Application",
-    pwaBody: "Install the app (PWA) on your phone or tablet for fast offline access.",
-    pwaAction: "Install the app",
-    pwaUnavailable: "Already installed, or not offered by this browser.",
-    version: "Version",
-    compliance: "Compliance",
-    logout: "Log out",
-    changePhoto: "Change photo",
-    close: "Close",
-    sendFailed: "Could not send the code.",
-    actionFailed: "Action failed.",
-  },
-};
 
 /** Carte de la feuille : meme cadre que `Panel`, mais compacte pour le mobile. */
 function Card({
@@ -311,7 +204,7 @@ export function RelaySettingsContent({
   onSuccess,
   footer,
 }: RelaySettingsProps) {
-  const t = COPY[locale];
+  const { t } = useTranslation();
   const [twoFactor, setTwoFactor] = useState(false);
   const [twoFactorBusy, setTwoFactorBusy] = useState(false);
   /** null = aucun formulaire ouvert ; sinon on attend un OTP ou un mot de passe. */
@@ -390,13 +283,13 @@ export function RelaySettingsContent({
       await http("/api/auth/2fa/send-code/", { method: "POST", body: JSON.stringify({ purpose: "2FA_ENABLE" }) });
       setTwoFactorStep("enable");
       setTwoFactorInput("");
-      onSuccess(`${t.otpSent} ${email}.`);
+      onSuccess(`${t("rl1_profile_sheet.otpSent")} ${email}.`);
     } catch (error) {
-      onError(error instanceof Error ? error.message : t.sendFailed);
+      onError(error instanceof Error ? error.message : t("rl1_profile_sheet.sendFailed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactor, email, onError, onSuccess, t.otpSent, t.sendFailed]);
+  }, [twoFactor, email, onError, onSuccess, t("rl1_profile_sheet.otpSent"), t("rl1_profile_sheet.sendFailed")]);
 
   const confirmTwoFactor = useCallback(async () => {
     const enabling = twoFactorStep === "enable";
@@ -416,43 +309,43 @@ export function RelaySettingsContent({
       setTwoFactor(enabling);
       setTwoFactorStep(null);
       setTwoFactorInput("");
-      onSuccess(enabling ? t.twoFactorOn : t.twoFactorOff);
+      onSuccess(enabling ? t("rl1_profile_sheet.twoFactorOn") : t("rl1_profile_sheet.twoFactorOff"));
     } catch (error) {
-      onError(error instanceof Error ? error.message : t.actionFailed);
+      onError(error instanceof Error ? error.message : t("rl1_profile_sheet.actionFailed"));
     } finally {
       setTwoFactorBusy(false);
     }
-  }, [twoFactorStep, twoFactorInput, onError, onSuccess, t.twoFactorOn, t.twoFactorOff, t.actionFailed]);
+  }, [twoFactorStep, twoFactorInput, onError, onSuccess, t("rl1_profile_sheet.twoFactorOn"), t("rl1_profile_sheet.twoFactorOff"), t("rl1_profile_sheet.actionFailed")]);
 
   const install = useCallback(async () => {
     if (!installEvent) {
-      onError(t.pwaUnavailable);
+      onError(t("rl1_profile_sheet.pwaUnavailable"));
       return;
     }
     await installEvent.prompt();
     const { outcome } = await installEvent.userChoice;
     if (outcome === "accepted") setInstallEvent(null);
-  }, [installEvent, onError, t.pwaUnavailable]);
+  }, [installEvent, onError, t("rl1_profile_sheet.pwaUnavailable")]);
 
   const membership = formatMembership(profile.memberSince, locale);
   const zone = [profile.city, ...profile.zones].filter(Boolean).join(" · ");
 
   return (
     <div className="space-y-4">
-      <Card icon={Building2} title={t.profileTitle}>
+      <Card icon={Building2} title={t("rl1_profile_sheet.profileTitle")}>
         <div>
-          <Row label={t.rows.name} value={profile.name} />
-          <Row label={t.rows.manager} value={profile.manager} />
-          <Row label={t.rows.kind} value={t.kind} />
-          <Row label={t.rows.address} value={profile.address} />
-          <Row label={t.rows.zone} value={zone || t.todo} muted={!zone} />
+          <Row label={t("rl1_profile_sheet.rows.name")} value={profile.name} />
+          <Row label={t("rl1_profile_sheet.rows.manager")} value={profile.manager} />
+          <Row label={t("rl1_profile_sheet.rows.kind")} value={t("rl1_profile_sheet.kind")} />
+          <Row label={t("rl1_profile_sheet.rows.address")} value={profile.address} />
+          <Row label={t("rl1_profile_sheet.rows.zone")} value={zone || t("rl1_profile_sheet.todo")} muted={!zone} />
           {/* Champs juridiques encore portes par le dossier KYC et non par le
               profil : on les montre a leur place definitive plutot que de les
               cacher, pour que le gerant sache ce qu'il reste a fournir. */}
-          <Row label={t.rows.niu} value={t.todo} muted />
-          <Row label={t.rows.rccm} value={t.todo} muted />
-          <Row label={t.rows.lease} value={t.todo} muted />
-          <Row label={t.rows.since} value={membership || t.todo} muted={!membership} />
+          <Row label={t("rl1_profile_sheet.rows.niu")} value={t("rl1_profile_sheet.todo")} muted />
+          <Row label={t("rl1_profile_sheet.rows.rccm")} value={t("rl1_profile_sheet.todo")} muted />
+          <Row label={t("rl1_profile_sheet.rows.lease")} value={t("rl1_profile_sheet.todo")} muted />
+          <Row label={t("rl1_profile_sheet.rows.since")} value={membership || t("rl1_profile_sheet.todo")} muted={!membership} />
         </div>
 
         <button
@@ -461,7 +354,7 @@ export function RelaySettingsContent({
           className="mt-3 flex w-full items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3 text-left transition active:scale-[.99] dark:border-blue-900 dark:bg-blue-950/40"
         >
           <Info size={15} className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" />
-          <span className="text-[12px] font-semibold leading-snug text-blue-950/80 dark:text-blue-100/80">{t.legalHint}</span>
+          <span className="text-[12px] font-semibold leading-snug text-blue-950/80 dark:text-blue-100/80">{t("rl1_profile_sheet.legalHint")}</span>
           <ChevronRight size={15} className="mt-0.5 flex-shrink-0 text-blue-400" />
         </button>
 
@@ -472,7 +365,7 @@ export function RelaySettingsContent({
         >
           <Medal size={15} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-400" />
           <span className="text-[12px] font-semibold leading-snug text-amber-950/85 dark:text-amber-100/85">
-            <strong className="font-black">{t.founder}</strong> — {t.founderBody}
+            <strong className="font-black">{t("rl1_profile_sheet.founder")}</strong> — {t("rl1_profile_sheet.founderBody")}
           </span>
           <ChevronRight size={15} className="mt-0.5 flex-shrink-0 text-amber-500" />
         </button>
@@ -482,13 +375,13 @@ export function RelaySettingsContent({
           onClick={() => onNavigate("capacite")}
           className="tap-target mt-3 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-[13px] font-black text-slate-700 transition active:scale-[.98] hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
         >
-          {t.editProfile}
+          {t("rl1_profile_sheet.editProfile")}
         </button>
       </Card>
 
-      <Card icon={ShieldCheck} title={t.securityTitle}>
-        <SettingRow title={t.twoFactor} hint={t.twoFactorHint}>
-          <Toggle checked={twoFactor} onChange={startTwoFactor} label={t.twoFactor} busy={twoFactorBusy} />
+      <Card icon={ShieldCheck} title={t("rl1_profile_sheet.securityTitle")}>
+        <SettingRow title={t("rl1_profile_sheet.twoFactor")} hint={t("rl1_profile_sheet.twoFactorHint")}>
+          <Toggle checked={twoFactor} onChange={startTwoFactor} label={t("rl1_profile_sheet.twoFactor")} busy={twoFactorBusy} />
         </SettingRow>
 
         {twoFactorStep ? (
@@ -499,7 +392,7 @@ export function RelaySettingsContent({
               type={twoFactorStep === "enable" ? "text" : "password"}
               inputMode={twoFactorStep === "enable" ? "numeric" : undefined}
               autoComplete={twoFactorStep === "enable" ? "one-time-code" : "current-password"}
-              placeholder={twoFactorStep === "enable" ? t.otpPlaceholder : t.passwordPlaceholder}
+              placeholder={twoFactorStep === "enable" ? t("rl1_profile_sheet.otpPlaceholder") : t("rl1_profile_sheet.passwordPlaceholder")}
               className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 outline-none dark:border-blue-800 dark:bg-slate-900 dark:text-white"
             />
             <div className="mt-2 flex gap-2">
@@ -509,28 +402,28 @@ export function RelaySettingsContent({
                 disabled={twoFactorBusy || twoFactorInput.trim().length < 4}
                 className="flex-1 rounded-lg bg-blue-600 px-3 py-2 text-[13px] font-black text-white disabled:opacity-50"
               >
-                {twoFactorStep === "enable" ? t.otpConfirm : t.otpDisable}
+                {twoFactorStep === "enable" ? t("rl1_profile_sheet.otpConfirm") : t("rl1_profile_sheet.otpDisable")}
               </button>
               <button
                 type="button"
                 onClick={() => setTwoFactorStep(null)}
                 className="rounded-lg border border-blue-200 px-3 py-2 text-[13px] font-black text-blue-700 dark:border-blue-800 dark:text-blue-200"
               >
-                {t.cancel}
+                {t("rl1_profile_sheet.cancel")}
               </button>
             </div>
           </div>
         ) : null}
 
-        <SettingRow title={t.pin} hint={t.pinHint}>
-          <Toggle checked={pinRequired} onChange={togglePin} label={t.pin} />
+        <SettingRow title={t("rl1_profile_sheet.pin")} hint={t("rl1_profile_sheet.pinHint")}>
+          <Toggle checked={pinRequired} onChange={togglePin} label={t("rl1_profile_sheet.pin")} />
         </SettingRow>
 
-        <SettingRow title={t.darkTheme} hint={t.darkThemeHint}>
-          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t.darkTheme} />
+        <SettingRow title={t("rl1_profile_sheet.darkTheme")} hint={t("rl1_profile_sheet.darkThemeHint")}>
+          <Toggle checked={theme === "dark"} onChange={onToggleTheme} label={t("rl1_profile_sheet.darkTheme")} />
         </SettingRow>
 
-        <SettingRow title={t.language} hint={t.languageHint}>
+        <SettingRow title={t("rl1_profile_sheet.language")} hint={t("rl1_profile_sheet.languageHint")}>
           <div className="flex flex-shrink-0 overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
             {(["fr", "en"] as const).map((code) => (
               <button
@@ -563,7 +456,7 @@ export function RelaySettingsContent({
         </div>
         <h3 className="mt-3 flex items-center justify-center gap-1.5 text-[15px] font-black text-slate-950 dark:text-white">
           <BadgeCheck size={16} className="flex-shrink-0 text-blue-600 dark:text-blue-300" />
-          {t.certTitle}
+          {t("rl1_profile_sheet.certTitle")}
         </h3>
         <p className="mt-1 text-[12px] font-semibold text-slate-500 dark:text-slate-400">
           {profile.name}
@@ -571,17 +464,17 @@ export function RelaySettingsContent({
         </p>
         {qrDataUrl ? (
           <>
-            <img src={qrDataUrl} alt={t.certCaption} className="mx-auto mt-4 h-36 w-36 rounded-xl bg-white p-1.5" />
-            <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t.certCaption}</p>
+            <img src={qrDataUrl} alt={t("rl1_profile_sheet.certCaption")} className="mx-auto mt-4 h-36 w-36 rounded-xl bg-white p-1.5" />
+            <p className="mt-2 text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t("rl1_profile_sheet.certCaption")}</p>
           </>
         ) : (
           <p className="mt-4 rounded-xl border border-dashed border-blue-200 p-4 text-[12px] font-semibold text-blue-900/70 dark:border-blue-800 dark:text-blue-100/70">
-            {t.certPending}
+            {t("rl1_profile_sheet.certPending")}
           </p>
         )}
         <label className="tap-target mt-4 inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-4 py-2 text-[13px] font-black text-blue-700 transition active:scale-95 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">
           <Camera size={15} />
-          {t.changePhoto}
+          {t("rl1_profile_sheet.changePhoto")}
           <input
             type="file"
             accept="image/jpeg,image/png,image/webp"
@@ -595,10 +488,10 @@ export function RelaySettingsContent({
         </label>
       </section>
 
-      <Card icon={Smartphone} title={t.appTitle}>
+      <Card icon={Smartphone} title={t("rl1_profile_sheet.appTitle")}>
         <div className="flex items-start gap-2 rounded-xl border border-blue-100 bg-blue-50 p-3 dark:border-blue-900 dark:bg-blue-950/40">
           <Download size={15} className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" />
-          <p className="text-[12px] font-semibold leading-snug text-blue-950/80 dark:text-blue-100/80">{t.pwaBody}</p>
+          <p className="text-[12px] font-semibold leading-snug text-blue-950/80 dark:text-blue-100/80">{t("rl1_profile_sheet.pwaBody")}</p>
         </div>
         <button
           type="button"
@@ -607,19 +500,19 @@ export function RelaySettingsContent({
           className="tap-target mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-[13px] font-black text-white transition active:scale-[.98] disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500"
         >
           <Smartphone size={15} />
-          {t.pwaAction}
+          {t("rl1_profile_sheet.pwaAction")}
         </button>
         {!installEvent ? (
-          <p className="mt-1.5 text-center text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t.pwaUnavailable}</p>
+          <p className="mt-1.5 text-center text-[11px] font-semibold text-slate-400 dark:text-slate-500">{t("rl1_profile_sheet.pwaUnavailable")}</p>
         ) : null}
 
         <div className="mt-3">
-          <Row label={t.version} value={footer[0] || "—"} />
+          <Row label={t("rl1_profile_sheet.version")} value={footer[0] || "—"} />
           <div className="flex items-start justify-between gap-4 py-2.5">
-            <span className="flex-shrink-0 text-[13px] font-semibold text-slate-500 dark:text-slate-400">{t.compliance}</span>
+            <span className="flex-shrink-0 text-[13px] font-semibold text-slate-500 dark:text-slate-400">{t("rl1_profile_sheet.compliance")}</span>
             <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
               <CheckCircle2 size={12} />
-              ANTIC · OHADA · Anonymat V5
+              {t("rl1_profile_sheet.compliance_badge")}
             </span>
           </div>
         </div>
@@ -630,7 +523,7 @@ export function RelaySettingsContent({
           className="tap-target mt-2 flex w-full items-center justify-center gap-2 rounded-xl border border-red-100 bg-red-50 px-4 py-2.5 text-[13px] font-black text-red-700 transition active:scale-[.98] hover:bg-red-100 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300"
         >
           <LogOut size={15} />
-          {t.logout}
+          {t("rl1_profile_sheet.logout")}
         </button>
       </Card>
 
@@ -656,7 +549,7 @@ export default function RelayProfileSheet({
   ...content
 }: RelaySettingsProps & { open: boolean; onClose: () => void }) {
   const panelRef = useRef<HTMLDivElement>(null);
-  const t = COPY[content.locale];
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (!open) return;
@@ -681,7 +574,7 @@ export default function RelayProfileSheet({
       <button
         type="button"
         tabIndex={open ? 0 : -1}
-        aria-label={t.close}
+        aria-label={t("rl1_profile_sheet.close")}
         onClick={onClose}
         className={`absolute inset-0 h-full w-full cursor-default bg-slate-950/60 backdrop-blur-sm transition-opacity duration-300 ${
           open ? "opacity-100" : "opacity-0"
@@ -691,7 +584,7 @@ export default function RelayProfileSheet({
       <div
         role="dialog"
         aria-modal={open ? true : undefined}
-        aria-label={t.title}
+        aria-label={t("rl1_profile_sheet.title")}
         /* Fermee, la feuille reste montee pour s'animer ; `inert` la sort de
            l'ordre de tabulation le temps qu'elle est hors de l'ecran. */
         inert={!open}
@@ -705,14 +598,14 @@ export default function RelayProfileSheet({
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
               <Settings2 size={20} strokeWidth={2.4} className="flex-shrink-0 text-blue-700 dark:text-blue-300" />
-              {t.title}
+              {t("rl1_profile_sheet.title")}
             </h2>
-            <p className="mt-0.5 truncate text-[12px] font-semibold text-slate-500 dark:text-slate-400">{t.subtitle}</p>
+            <p className="mt-0.5 truncate text-[12px] font-semibold text-slate-500 dark:text-slate-400">{t("rl1_profile_sheet.subtitle")}</p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label={t.close}
+            aria-label={t("rl1_profile_sheet.close")}
             className="tap-target -mr-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-500 transition active:scale-90 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800"
           >
             <X size={20} />

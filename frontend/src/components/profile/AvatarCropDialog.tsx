@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Crop, Move, UploadCloud, X, ZoomIn } from 'lucide-react';
 import { authApi, type User } from '@/services/api/auth';
 import { setStoredProfileAvatar } from '@/lib/profileAvatar';
@@ -13,10 +14,10 @@ type Props = {
 const VIEW_SIZE = 320;
 const OUTPUT_SIZE = 512;
 
-function formatBytes(bytes: number) {
-  if (bytes < 1024) return `${bytes} o`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} Ko`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} Mo`;
+function formatBytes(bytes: number, t: (key: string, opts?: Record<string, unknown>) => string) {
+  if (bytes < 1024) return t('misc1_avatar_crop.size_bytes', { count: bytes });
+  if (bytes < 1024 * 1024) return t('misc1_avatar_crop.size_kilobytes', { count: Math.round(bytes / 1024) });
+  return t('misc1_avatar_crop.size_megabytes', { count: (bytes / (1024 * 1024)).toFixed(1) });
 }
 
 async function loadImage(url: string) {
@@ -31,6 +32,7 @@ async function cropAndCompress(
   zoom: number,
   offsetX: number,
   offsetY: number,
+  t: (key: string) => string,
 ) {
   const image = await loadImage(sourceUrl);
   const baseScale = Math.max(VIEW_SIZE / image.naturalWidth, VIEW_SIZE / image.naturalHeight);
@@ -53,17 +55,18 @@ async function cropAndCompress(
   canvas.width = OUTPUT_SIZE;
   canvas.height = OUTPUT_SIZE;
   const context = canvas.getContext('2d');
-  if (!context) throw new Error("Votre navigateur ne peut pas préparer cette image.");
+  if (!context) throw new Error(t('misc1_avatar_crop.browser_cannot_prepare_image'));
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = 'high';
   context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, OUTPUT_SIZE, OUTPUT_SIZE);
 
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/webp', 0.78));
-  if (!blob) throw new Error("Impossible de compresser l'image.");
+  if (!blob) throw new Error(t('misc1_avatar_crop.compress_error'));
   return new File([blob], `avatar-${Date.now()}.webp`, { type: 'image/webp' });
 }
 
 export default function AvatarCropDialog({ file, accent = '#F47920', onClose, onUploaded }: Props) {
+  const { t } = useTranslation();
   const [sourceUrl, setSourceUrl] = useState('');
   const [dimensions, setDimensions] = useState({ width: 1, height: 1 });
   const [zoom, setZoom] = useState(1);
@@ -83,8 +86,8 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
     if (!sourceUrl) return;
     loadImage(sourceUrl).then((image) => {
       setDimensions({ width: image.naturalWidth, height: image.naturalHeight });
-    }).catch(() => setError("Ce fichier image ne peut pas être lu."));
-  }, [sourceUrl]);
+    }).catch(() => setError(t('misc1_avatar_crop.image_read_error')));
+  }, [sourceUrl, t]);
 
   const baseScale = Math.max(VIEW_SIZE / dimensions.width, VIEW_SIZE / dimensions.height);
   const scale = baseScale * zoom;
@@ -96,15 +99,15 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
     setError('');
     setProgress(1);
     try {
-      if (!sourceUrl) throw new Error("La prévisualisation n'est pas encore prête.");
-      const compressed = await cropAndCompress(sourceUrl, zoom, offsetX, offsetY);
+      if (!sourceUrl) throw new Error(t('misc1_avatar_crop.preview_not_ready'));
+      const compressed = await cropAndCompress(sourceUrl, zoom, offsetX, offsetY, t);
       setCompressedSize(compressed.size);
       const user = await authApi.uploadAvatar(compressed, setProgress);
       setStoredProfileAvatar(user.avatar_url || null);
       window.dispatchEvent(new Event('belivay-avatar-updated'));
       onUploaded(user);
     } catch (uploadError) {
-      setError(uploadError instanceof Error ? uploadError.message : "L'envoi a échoué.");
+      setError(uploadError instanceof Error ? uploadError.message : t('misc1_avatar_crop.upload_failed'));
       setProgress(0);
     } finally {
       setBusy(false);
@@ -112,14 +115,14 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4" role="dialog" aria-modal="true" aria-label="Rogner la photo de profil">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/65 p-4" role="dialog" aria-modal="true" aria-label={t('misc1_avatar_crop.dialog_aria_label')}>
       <div className="w-full max-w-[760px] overflow-hidden rounded-lg bg-white shadow-2xl dark:bg-gray-950">
         <header className="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-800">
           <div>
-            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-950 dark:text-white"><Crop size={19} style={{ color: accent }} /> Modifier la photo</h2>
-            <p className="mt-1 text-xs text-gray-500">Rognez puis compressez la photo avant son transfert.</p>
+            <h2 className="flex items-center gap-2 text-lg font-bold text-gray-950 dark:text-white"><Crop size={19} style={{ color: accent }} /> {t('misc1_avatar_crop.edit_photo_title')}</h2>
+            <p className="mt-1 text-xs text-gray-500">{t('misc1_avatar_crop.edit_photo_subtitle')}</p>
           </div>
-          <button type="button" onClick={onClose} disabled={busy} className="grid h-9 w-9 place-items-center rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label="Fermer"><X size={19} /></button>
+          <button type="button" onClick={onClose} disabled={busy} className="grid h-9 w-9 place-items-center rounded-md text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800" aria-label={t('common.close')}><X size={19} /></button>
         </header>
 
         <div className="grid gap-5 p-5 md:grid-cols-[340px_1fr]">
@@ -127,7 +130,7 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
             <div className="relative h-[320px] w-[320px] overflow-hidden rounded-full bg-gray-900 shadow-inner">
               <img
                 src={sourceUrl}
-                alt="Aperçu à rogner"
+                alt={t('misc1_avatar_crop.preview_alt')}
                 draggable={false}
                 className="absolute left-1/2 top-1/2 max-w-none select-none"
                 style={{
@@ -142,27 +145,27 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
 
           <div className="space-y-4">
             <div>
-              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><ZoomIn size={16} /> Zoom</span><span>{zoom.toFixed(1)}×</span></label>
+              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><ZoomIn size={16} /> {t('misc1_avatar_crop.zoom_label')}</span><span>{zoom.toFixed(1)}×</span></label>
               <input type="range" min="1" max="3" step="0.05" value={zoom} onChange={(event) => setZoom(Number(event.target.value))} className="w-full" style={{ accentColor: accent }} />
             </div>
             <div>
-              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><Move size={16} /> Position horizontale</span><span>{offsetX}</span></label>
+              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><Move size={16} /> {t('misc1_avatar_crop.horizontal_position_label')}</span><span>{offsetX}</span></label>
               <input type="range" min="-100" max="100" value={offsetX} onChange={(event) => setOffsetX(Number(event.target.value))} className="w-full" style={{ accentColor: accent }} />
             </div>
             <div>
-              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><Move size={16} /> Position verticale</span><span>{offsetY}</span></label>
+              <label className="mb-2 flex items-center justify-between text-sm font-semibold text-gray-800 dark:text-gray-200"><span className="flex items-center gap-2"><Move size={16} /> {t('misc1_avatar_crop.vertical_position_label')}</span><span>{offsetY}</span></label>
               <input type="range" min="-100" max="100" value={offsetY} onChange={(event) => setOffsetY(Number(event.target.value))} className="w-full" style={{ accentColor: accent }} />
             </div>
 
             <div className="rounded-md border border-gray-200 bg-gray-50 p-3 text-xs text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-              <div className="flex justify-between"><span>Fichier original</span><strong>{formatBytes(file.size)}</strong></div>
-              <div className="mt-1 flex justify-between"><span>Format final</span><strong>WebP · 512 × 512</strong></div>
-              {compressedSize !== null && <div className="mt-1 flex justify-between text-green-700 dark:text-green-400"><span>Taille transférée</span><strong>{formatBytes(compressedSize)}</strong></div>}
+              <div className="flex justify-between"><span>{t('misc1_avatar_crop.original_file_label')}</span><strong>{formatBytes(file.size, t)}</strong></div>
+              <div className="mt-1 flex justify-between"><span>{t('misc1_avatar_crop.final_format_label')}</span><strong>{t('misc1_avatar_crop.final_format_value')}</strong></div>
+              {compressedSize !== null && <div className="mt-1 flex justify-between text-green-700 dark:text-green-400"><span>{t('misc1_avatar_crop.transferred_size_label')}</span><strong>{formatBytes(compressedSize, t)}</strong></div>}
             </div>
 
             {busy && (
               <div aria-live="polite">
-                <div className="mb-1 flex justify-between text-xs font-semibold text-gray-700 dark:text-gray-300"><span>{progress < 5 ? 'Compression…' : 'Transfert vers votre profil…'}</span><span>{progress}%</span></div>
+                <div className="mb-1 flex justify-between text-xs font-semibold text-gray-700 dark:text-gray-300"><span>{progress < 5 ? t('misc1_avatar_crop.compressing') : t('misc1_avatar_crop.uploading')}</span><span>{progress}%</span></div>
                 <div className="h-2 overflow-hidden rounded bg-gray-200 dark:bg-gray-800"><div className="h-full transition-[width] duration-200" style={{ width: `${progress}%`, background: accent }} /></div>
               </div>
             )}
@@ -171,8 +174,8 @@ export default function AvatarCropDialog({ file, accent = '#F47920', onClose, on
         </div>
 
         <footer className="flex justify-end gap-3 border-t border-gray-200 px-5 py-4 dark:border-gray-800">
-          <button type="button" onClick={onClose} disabled={busy} className="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200">Annuler</button>
-          <button type="button" onClick={submit} disabled={busy || !!error || !sourceUrl} className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50" style={{ background: accent }}><UploadCloud size={17} />{busy ? 'Transfert…' : 'Rogner et enregistrer'}</button>
+          <button type="button" onClick={onClose} disabled={busy} className="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 disabled:opacity-50 dark:border-gray-700 dark:text-gray-200">{t('common.cancel')}</button>
+          <button type="button" onClick={submit} disabled={busy || !!error || !sourceUrl} className="inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-bold text-white disabled:opacity-50" style={{ background: accent }}><UploadCloud size={17} />{busy ? t('misc1_avatar_crop.transferring') : t('misc1_avatar_crop.crop_and_save')}</button>
         </footer>
       </div>
     </div>

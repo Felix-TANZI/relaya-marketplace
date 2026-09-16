@@ -20,6 +20,7 @@
 // =============================================================================
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   AlertTriangle, CheckCircle2, Clock3, Lock, WalletCards,
 } from "lucide-react";
@@ -45,6 +46,7 @@ interface Props {
 export default function DeliverySettlementsPanel({
   locale, onOpenSettings,
 }: Props) {
+  const { t } = useTranslation();
   const [due, setDue] = useState<DeliveryAmountDue | null>(null);
   const [escrow, setEscrow] = useState<DeliveryEscrowHold[]>([]);
   const [adjustments, setAdjustments] = useState<DeliveryAdjustment[]>([]);
@@ -77,20 +79,18 @@ export default function DeliverySettlementsPanel({
         if (!mounted) return;
         setError(exc instanceof Error
           ? exc.message
-          : locale === "en"
-            ? "Unable to load settlements right now."
-            : "Impossible de charger vos règlements pour le moment.");
+          : t("do1_settlements_panel.error_load_failed"));
       })
       .finally(() => { if (mounted) setLoading(false); });
 
     return () => { mounted = false; };
-  }, [locale]);
+  }, [locale, t]);
 
   if (loading) {
     return (
       <Card>
         <p style={{ fontSize: 13, color: "#64748B", margin: 0 }}>
-          {locale === "en" ? "Loading…" : "Chargement…"}
+          {t("do1_settlements_panel.loading")}
         </p>
       </Card>
     );
@@ -100,12 +100,10 @@ export default function DeliverySettlementsPanel({
     return (
       <Card>
         <p style={{ fontSize: 15, color: "#020617", margin: 0, fontWeight: 800 }}>
-          {locale === "en" ? "Settlements unavailable" : "Règlements indisponibles"}
+          {t("do1_settlements_panel.unavailable_title")}
         </p>
         <p style={{ fontSize: 13, color: "#64748B", margin: "6px 0 0", lineHeight: 1.6 }}>
-          {error ?? (locale === "en"
-            ? "No financial account is linked to this organization yet."
-            : "Aucun compte financier n'est encore rattaché à cette organisation.")}
+          {error ?? t("do1_settlements_panel.unavailable_body_default")}
         </p>
       </Card>
     );
@@ -114,7 +112,7 @@ export default function DeliverySettlementsPanel({
   const blockers = Array.from(
     // Dedupliquer APRES traduction : le backend renvoie deux blocages
     // distincts — numero et operateur — qui se traduisent pareil.
-    new Set(due.blockers.map((b) => humanizeBlocker(b, locale))),
+    new Set(due.blockers.map((b) => humanizeBlocker(b, locale, t))),
   );
   const blocked = blockers.length > 0;
 
@@ -140,41 +138,36 @@ export default function DeliverySettlementsPanel({
         <Metric
           icon={<WalletCards className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />}
           value={nf(due.due_xaf)}
-          title={locale === "en" ? "To settle" : "À régler"}
-          body={locale === "en"
-            ? "Proven deliveries, after deductions."
-            : "Livraisons prouvées, après retenue."}
+          title={t("do1_settlements_panel.to_settle_title")}
+          body={t("do1_settlements_panel.to_settle_body")}
         />
         <Metric
           icon={<CheckCircle2 className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />}
           value={nf(paidTotal)}
-          title={locale === "en" ? "Paid" : "Payé"}
+          title={t("do1_settlements_panel.paid_title")}
           body={lastPaid
-            ? (locale === "en"
-              ? `Last on ${formatShortDate(lastPaid.settled_at, locale)} to ${lastPaid.payee_msisdn_masked}.`
-              : `Dernier le ${formatShortDate(lastPaid.settled_at, locale)} sur ${lastPaid.payee_msisdn_masked}.`)
-            : (locale === "en"
-              ? "No payout received yet."
-              : "Aucun versement reçu à ce jour.")}
+            ? t("do1_settlements_panel.paid_body_last", {
+              date: formatShortDate(lastPaid.settled_at, locale),
+              msisdn: lastPaid.payee_msisdn_masked,
+            })
+            : t("do1_settlements_panel.paid_body_none")}
         />
         {blocked ? (
           <Metric
             icon={<AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />}
-            value={locale === "en" ? "suspended" : "suspendu"}
-            title={locale === "en" ? "Next payout" : "Prochaine échéance"}
-            body={locale === "en" ? "See details below." : "Voir le détail ci-dessous."}
+            value={t("do1_settlements_panel.next_payout_suspended_value")}
+            title={t("do1_settlements_panel.next_payout_title")}
+            body={t("do1_settlements_panel.next_payout_suspended_body")}
             small
           />
         ) : (
           <Metric
             icon={<Clock3 className="h-5 w-5 text-cyan-700 dark:text-cyan-300" />}
             value={formatLongDate(due.next_settlement_at, locale)
-              || (locale === "en" ? "on threshold" : "au seuil")}
-            title={locale === "en" ? "Next payout" : "Prochaine échéance"}
-            body={countdown(due.next_settlement_at, locale)
-              || (locale === "en"
-                ? "As soon as the minimum is reached."
-                : "Dès que le minimum sera atteint.")}
+              || t("do1_settlements_panel.next_payout_on_threshold")}
+            title={t("do1_settlements_panel.next_payout_title")}
+            body={countdown(due.next_settlement_at, locale, t)
+              || t("do1_settlements_panel.next_payout_waiting_minimum")}
             small
             accent
           />
@@ -182,10 +175,8 @@ export default function DeliverySettlementsPanel({
         <Metric
           icon={<Lock className="h-5 w-5 text-slate-400" />}
           value={nf(notYetMine)}
-          title={locale === "en" ? "Not yours yet" : "Pas encore acquis"}
-          body={locale === "en"
-            ? "Awaiting delivery proof or frozen."
-            : "En attente de preuve ou gelé."}
+          title={t("do1_settlements_panel.not_yours_yet_title")}
+          body={t("do1_settlements_panel.not_yours_yet_body")}
         />
       </section>
 
@@ -202,7 +193,7 @@ export default function DeliverySettlementsPanel({
             <AlertTriangle className="h-5 w-5 shrink-0 text-amber-700" style={{ marginTop: 2 }} />
             <div style={{ flex: 1 }}>
               <p style={{ fontSize: 15, color: "#7C2D12", margin: "0 0 5px", fontWeight: 800 }}>
-                {locale === "en" ? "Payout suspended" : "Versement suspendu"}
+                {t("do1_settlements_panel.payout_suspended_title")}
               </p>
               {blockers.map((b) => (
                 <p key={b} style={{
@@ -222,7 +213,7 @@ export default function DeliverySettlementsPanel({
                     marginTop: 4,
                   }}
                 >
-                  {locale === "en" ? "Complete my file" : "Compléter mon dossier"}
+                  {t("do1_settlements_panel.complete_file_button")}
                 </button>
               )}
             </div>
@@ -236,20 +227,19 @@ export default function DeliverySettlementsPanel({
           un litige. */}
       {due.outstanding_debt_xaf > 0 && (
         <PanelBox
-          kicker={locale === "en" ? "Breakdown" : "Détail"}
-          title={locale === "en" ? "How the amount is built" : "Composition du montant"}
+          kicker={t("do1_settlements_panel.breakdown_kicker")}
+          title={t("do1_settlements_panel.breakdown_title")}
         >
           <div style={{
             border: "1px solid #E2E8F0", borderRadius: 14,
             padding: "16px 18px", background: "#F8FAFC",
           }}>
             <Row
-              label={locale === "en"
-                ? "Proven deliveries, acquired" : "Livraisons prouvées, acquises"}
+              label={t("do1_settlements_panel.breakdown_acquired_label")}
               value={nf(acquired)}
             />
             <Row
-              label={locale === "en" ? "Deduction" : "Retenue"}
+              label={t("do1_settlements_panel.breakdown_deduction_label")}
               value={`− ${nf(due.outstanding_debt_xaf)}`}
               red
             />
@@ -257,7 +247,7 @@ export default function DeliverySettlementsPanel({
               display: "flex", justifyContent: "space-between", paddingTop: 10,
             }}>
               <span style={{ fontSize: 13, color: "#020617", fontWeight: 800 }}>
-                {locale === "en" ? "To be paid" : "À verser"}
+                {t("do1_settlements_panel.breakdown_to_pay_label")}
               </span>
               <span style={{ fontSize: 16, color: "#020617", fontWeight: 900 }}>
                 {nf(due.due_xaf)}{" "}
@@ -271,14 +261,9 @@ export default function DeliverySettlementsPanel({
       {/* ═══ EN ATTENTE DE PREUVE ═══════════════════════════════════════ */}
       {pending.length > 0 && (
         <PanelBox
-          kicker={locale === "en" ? "Awaiting proof" : "En attente de preuve"}
-          title={locale === "en"
-            ? "Deliveries not acquired yet" : "Livraisons non encore acquises"}
-          lead={locale === "en"
-            ? "These amounts become yours once delivery proof is validated. "
-              + "This is not your money yet."
-            : "Ces montants vous reviendront dès la validation de la preuve "
-              + "de livraison. Ce n'est pas encore votre argent."}
+          kicker={t("do1_settlements_panel.awaiting_proof_kicker")}
+          title={t("do1_settlements_panel.awaiting_proof_title")}
+          lead={t("do1_settlements_panel.awaiting_proof_lead")}
         >
           <List>
             {pending.map((h, i) => {
@@ -313,7 +298,7 @@ export default function DeliverySettlementsPanel({
                         ───────────────────────────────────────────────── */}
                     <p style={{ fontSize: 13, color: "#020617", margin: 0, fontWeight: 800 }}>
                       {h.order_id
-                        ? `${locale === "en" ? "Order" : "Commande"} #${h.order_id}`
+                        ? t("do1_settlements_panel.order_ref", { id: h.order_id })
                         : h.reference}
                     </p>
                     <p style={{
@@ -321,18 +306,16 @@ export default function DeliverySettlementsPanel({
                       color: frozen ? "#B91C1C" : "#94A3B8",
                     }}>
                       {frozen
-                        ? h.frozen_reason || (locale === "en"
-                          ? "Frozen by an open dispute" : "Gelé par un litige en cours")
+                        ? h.frozen_reason || t("do1_settlements_panel.frozen_reason_default")
                         : scheduled && h.release_at
                           // La date de liberation vaut mieux que celle de
                           // creation : c'est le jour ou l'argent devient sien.
-                          ? `${locale === "en" ? "Available on" : "Disponible le"} ${
-                            formatShortDate(h.release_at, locale)}`
+                          ? t("do1_settlements_panel.available_on", { date: formatShortDate(h.release_at, locale) })
                           : `${formatShortDate(h.created_at, locale)} · ${h.status_label}`}
                       {/* La commission est prelevee sur SA part : il a le
                           droit de savoir. */}
                       {!frozen && h.commission_xaf > 0
-                        && ` · ${locale === "en" ? "fee" : "commission"} ${nf(h.commission_xaf)}`}
+                        && ` · ${t("do1_settlements_panel.commission_label")} ${nf(h.commission_xaf)}`}
                     </p>
                   </div>
                   {/* ─────────────────────────────────────────────────
@@ -349,10 +332,10 @@ export default function DeliverySettlementsPanel({
                     fontWeight: frozen || scheduled ? 700 : 400,
                   }}>
                     {frozen
-                      ? (locale === "en" ? "frozen" : "gelé")
+                      ? t("do1_settlements_panel.status_frozen")
                       : scheduled
-                        ? (locale === "en" ? "release scheduled" : "libération programmée")
-                        : (locale === "en" ? "proof awaited" : "preuve attendue")}
+                        ? t("do1_settlements_panel.status_release_scheduled")
+                        : t("do1_settlements_panel.status_proof_awaited")}
                   </span>
                   <span style={{
                     width: 80, textAlign: "right", fontSize: 15,
@@ -370,14 +353,9 @@ export default function DeliverySettlementsPanel({
       {/* ═══ RETENUES ═══════════════════════════════════════════════════ */}
       {adjustments.length > 0 && (
         <PanelBox
-          kicker={locale === "en" ? "Deductions" : "Retenues"}
-          title={locale === "en"
-            ? "What is deducted, and why" : "Ce qui est déduit, et pourquoi"}
-          lead={locale === "en"
-            ? "Every deduction carries its reason. Contact BelivaY if one "
-              + "seems unjustified."
-            : "Toute retenue porte son motif. Contactez BelivaY si l'un vous "
-              + "semble injustifié."}
+          kicker={t("do1_settlements_panel.deductions_kicker")}
+          title={t("do1_settlements_panel.deductions_title")}
+          lead={t("do1_settlements_panel.deductions_lead")}
         >
           <List>
             {adjustments.map((a, i) => {
@@ -407,9 +385,9 @@ export default function DeliverySettlementsPanel({
                     <p style={{ fontSize: 11.5, color: "#94A3B8", margin: "4px 0 0" }}>
                       {a.category_label} · {formatShortDate(a.created_at, locale)}
                       {a.remaining_xaf > 0 && a.remaining_xaf !== a.amount_xaf
-                        && ` · ${locale === "en" ? "remaining" : "reste"} ${nf(a.remaining_xaf)}`}
+                        && ` · ${t("do1_settlements_panel.remaining_label")} ${nf(a.remaining_xaf)}`}
                       {a.remaining_xaf === 0
-                        && ` · ${locale === "en" ? "settled" : "soldé"}`}
+                        && ` · ${t("do1_settlements_panel.settled_label")}`}
                     </p>
                   </div>
                   <span style={{
@@ -427,16 +405,12 @@ export default function DeliverySettlementsPanel({
 
       {/* ═══ RAPPROCHEMENT ══════════════════════════════════════════════ */}
       <PanelBox
-        kicker={locale === "en" ? "Reconciliation" : "Rapprochement"}
-        title={locale === "en" ? "Settlement history" : "Historique des règlements"}
+        kicker={t("do1_settlements_panel.reconciliation_kicker")}
+        title={t("do1_settlements_panel.reconciliation_title")}
       >
         {settlements.length === 0 && payouts.length === 0 ? (
           <Empty>
-            {locale === "en"
-              ? "No settlement yet. Rows will show the period, amount, "
-                + "payout method, status and transaction reference."
-              : "Aucun règlement pour le moment. Les lignes afficheront "
-                + "période, montant, moyen de paiement, statut et référence."}
+            {t("do1_settlements_panel.reconciliation_empty")}
           </Empty>
         ) : (
           <List>
@@ -459,10 +433,10 @@ export default function DeliverySettlementsPanel({
                     {s.reference}
                   </p>
                   <p style={{ fontSize: 11.5, color: "#94A3B8", margin: "3px 0 0" }}>
-                    {formatPeriod(s.period_start, s.period_end, locale)}
+                    {formatPeriod(s.period_start, s.period_end, locale, t)}
                     {s.lines.length > 0 && ` · ${s.lines.length} ${
-                      locale === "en" ? "deliveries" : "livraisons"}`}
-                    {s.payout && ` · ${locale === "en" ? "ref." : "réf."} ${s.payout.reference}`}
+                      t("do1_settlements_panel.deliveries_suffix")}`}
+                    {s.payout && ` · ${t("do1_settlements_panel.ref_prefix")} ${s.payout.reference}`}
                   </p>
                 </div>
                 <span style={{
@@ -471,8 +445,7 @@ export default function DeliverySettlementsPanel({
                   fontWeight: s.payout?.settled_at ? 400 : 700,
                 }}>
                   {s.payout?.settled_at
-                    ? `${locale === "en" ? "paid on" : "versé le"} ${
-                      formatShortDate(s.payout.settled_at, locale)}`
+                    ? t("do1_settlements_panel.paid_on", { date: formatShortDate(s.payout.settled_at, locale) })
                     : s.status_label}
                 </span>
                 <span style={{
@@ -489,7 +462,7 @@ export default function DeliverySettlementsPanel({
             {payouts
               .filter((p) => p.status === "UNKNOWN" || p.status === "FAILED")
               .map((p, i, arr) => {
-                const label = payoutLabel(p.status, locale);
+                const label = payoutLabel(p.status, locale, t);
                 return (
                   <li
                     key={p.reference}
@@ -513,9 +486,7 @@ export default function DeliverySettlementsPanel({
                             l'argent est parti, et le partenaire n'a rien
                             a faire. */}
                         {p.status === "UNKNOWN"
-                          && ` · ${locale === "en"
-                            ? "being checked with the operator"
-                            : "vérification en cours auprès de l'opérateur"}`}
+                          && ` · ${t("do1_settlements_panel.being_checked")}`}
                       </p>
                     </div>
                     <span style={{

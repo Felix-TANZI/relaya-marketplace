@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import type { PortalLoginController } from './usePortalLogin';
 
@@ -27,6 +28,7 @@ function FacebookGlyph() {
  * les endpoints existent, il suffit de remplacer onClick par le handler.
  */
 export default function SocialAuthRow({ ctl, accent }: { ctl: PortalLoginController; accent: string }) {
+  const { t } = useTranslation();
   const tile = 'flex h-12 items-center justify-center rounded border border-gray-200 bg-white transition hover:border-[--tile-accent] dark:border-white/10 dark:bg-white/5';
 
   return (
@@ -47,19 +49,19 @@ export default function SocialAuthRow({ ctl, accent }: { ctl: PortalLoginControl
       <div className="grid grid-cols-2 gap-3">
         <button
           type="button"
-          onClick={() => ctl.showToast('Connexion Apple bientôt disponible.', 'error')}
+          onClick={() => ctl.showToast(t('cl6_social_auth.apple_coming_soon'), 'error')}
           className={tile}
           style={{ '--tile-accent': accent } as React.CSSProperties}
-          aria-label="Continuer avec Apple"
+          aria-label={t('cl6_social_auth.continue_with_apple')}
         >
           <AppleGlyph />
         </button>
         <button
           type="button"
-          onClick={() => ctl.showToast('Connexion Facebook bientôt disponible.', 'error')}
+          onClick={() => ctl.showToast(t('cl6_social_auth.facebook_coming_soon'), 'error')}
           className={tile}
           style={{ '--tile-accent': accent } as React.CSSProperties}
-          aria-label="Continuer avec Facebook"
+          aria-label={t('cl6_social_auth.continue_with_facebook')}
         >
           <FacebookGlyph />
         </button>

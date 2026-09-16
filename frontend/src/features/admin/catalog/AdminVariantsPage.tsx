@@ -10,6 +10,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, ExternalLink, Package,
   Filter, ChevronDown, Store, Calendar, DollarSign,
@@ -43,10 +44,10 @@ const STATUS_COLORS: Record<string, string> = {
   REJECTED: "#DC2626",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  APPROVED: "Approuvé",
-  REJECTED: "Rejeté",
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  PENDING: "ad3_variants.status_pending",
+  APPROVED: "ad3_variants.status_approved",
+  REJECTED: "ad3_variants.status_rejected",
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -82,6 +83,7 @@ const vendorFullName = (o: AdminVariantOffer) => {
 
 export default function AdminVariantsPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
 
@@ -127,7 +129,7 @@ export default function AdminVariantsPage() {
       setVariants(data);
       setSelectedIds(new Set());
     } catch {
-      showToast("Erreur chargement des variants", "error");
+      showToast(t("ad3_variants.toast_error_load"), "error");
     } finally {
       setLoading(false);
     }
@@ -162,53 +164,53 @@ export default function AdminVariantsPage() {
   const handleApprove = async (v: AdminVariant) => {
     try {
       await adminApi.approveVariant(v.id);
-      showToast(`Variant ${v.sku} approuvé`, "success");
+      showToast(t("ad3_variants.toast_variant_approved", { sku: v.sku }), "success");
       load();
-    } catch { showToast("Erreur approbation", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_approve"), "error"); }
   };
 
   const handleReject = async (v: AdminVariant) => {
     const ok = await confirm({
-      title: "Rejeter ce variant ?",
-      message: `Le variant ${v.sku} sera rejeté. Les offres rattachées ne seront pas automatiquement rejetées.`,
+      title: t("ad3_variants.confirm_reject_title"),
+      message: t("ad3_variants.confirm_reject_message", { sku: v.sku }),
       type: "warning",
     });
     if (!ok) return;
     try {
       await adminApi.rejectVariant(v.id);
-      showToast(`Variant ${v.sku} rejeté`, "success");
+      showToast(t("ad3_variants.toast_variant_rejected", { sku: v.sku }), "success");
       load();
-    } catch { showToast("Erreur rejet", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_reject"), "error"); }
   };
 
   const handleBulkApprove = async () => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `Approuver ${selectedIds.size} variant(s) ?`,
-      message: "Cette action est immédiate.",
+      title: t("ad3_variants.confirm_bulk_approve_title", { count: selectedIds.size }),
+      message: t("ad3_variants.confirm_immediate_message"),
       type: "info",
     });
     if (!ok) return;
     try {
       const res = await adminApi.bulkApproveVariants(Array.from(selectedIds));
-      showToast(`${res.approved_count} variant(s) approuvé(s)`, "success");
+      showToast(t("ad3_variants.toast_bulk_approved", { count: res.approved_count }), "success");
       load();
-    } catch { showToast("Erreur bulk approve", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_bulk_approve"), "error"); }
   };
 
   const handleBulkReject = async () => {
     if (selectedIds.size === 0) return;
     const ok = await confirm({
-      title: `Rejeter ${selectedIds.size} variant(s) ?`,
-      message: "Cette action est immédiate.",
+      title: t("ad3_variants.confirm_bulk_reject_title", { count: selectedIds.size }),
+      message: t("ad3_variants.confirm_immediate_message"),
       type: "warning",
     });
     if (!ok) return;
     try {
       const res = await adminApi.bulkRejectVariants(Array.from(selectedIds));
-      showToast(`${res.rejected_count} variant(s) rejeté(s)`, "success");
+      showToast(t("ad3_variants.toast_bulk_rejected", { count: res.rejected_count }), "success");
       load();
-    } catch { showToast("Erreur bulk reject", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_bulk_reject"), "error"); }
   };
 
   // ── Sélection ───────────────────────────────────────────────────────
@@ -237,19 +239,19 @@ export default function AdminVariantsPage() {
     if (parentCatId) {
       const p = categoryTree.find((c) => c.id === parentCatId);
       list.push({
-        label: `Catégorie : ${p?.name ?? "?"}`,
+        label: t("ad3_variants.filter_chip_category", { name: p?.name ?? "?" }),
         onRemove: () => { setParentCatId(null); setSubCatId(null); },
       });
     }
     if (subCatId) {
       const s = availableSubCats.find((c) => c.id === subCatId);
       list.push({
-        label: `Sous-catégorie : ${s?.name ?? "?"}`,
+        label: t("ad3_variants.filter_chip_subcategory", { name: s?.name ?? "?" }),
         onRemove: () => setSubCatId(null),
       });
     }
     return list;
-  }, [parentCatId, subCatId, categoryTree, availableSubCats]);
+  }, [parentCatId, subCatId, categoryTree, availableSubCats, t]);
 
   const resetFilters = () => {
     setSearch(""); setParentCatId(null); setSubCatId(null); setShowFilters(false);
@@ -347,6 +349,7 @@ function Header({ T, counts, loading, onRefresh }: {
   T: AdminTokens; counts: { all: number; PENDING: number };
   loading: boolean; onRefresh: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-start justify-between gap-4 flex-wrap">
       <div>
@@ -354,18 +357,18 @@ function Header({ T, counts, loading, onRefresh }: {
           fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
           color: T.text, marginBottom: 4,
         }}>
-          Modération Variants
+          {t("ad3_variants.title")}
         </h1>
         <p style={{ fontSize: 13, color: T.muted }}>
           {counts.PENDING > 0 && (
             <>
               <strong style={{ color: STATUS_COLORS.PENDING }}>
-                {counts.PENDING} variant{counts.PENDING > 1 ? "s" : ""} en attente
+                {t(counts.PENDING > 1 ? "ad3_variants.pending_summary_plural" : "ad3_variants.pending_summary", { count: counts.PENDING })}
               </strong>
               {" · "}
             </>
           )}
-          {counts.all} au total dans le catalogue BelivaY
+          {t("ad3_variants.total_in_catalog", { count: counts.all })}
         </p>
       </div>
       <button onClick={onRefresh} style={{
@@ -375,7 +378,7 @@ function Header({ T, counts, loading, onRefresh }: {
         border: `1px solid ${T.border}`, cursor: "pointer",
       }}>
         <RefreshCw size={12} className={loading ? "animate-spin" : ""} />
-        Actualiser
+        {t("ad3_variants.refresh")}
       </button>
     </div>
   );
@@ -389,11 +392,12 @@ function TabsBar({ T, tab, setTab, counts }: {
   T: AdminTokens; tab: StatusTab; setTab: (t: StatusTab) => void;
   counts: { all: number; PENDING: number; APPROVED: number; REJECTED: number };
 }) {
+  const { t } = useTranslation();
   const tabs: { key: StatusTab; label: string; color: string }[] = [
-    { key: "PENDING", label: STATUS_LABELS.PENDING, color: STATUS_COLORS.PENDING },
-    { key: "all", label: "Tous", color: "#6B7280" },
-    { key: "APPROVED", label: STATUS_LABELS.APPROVED, color: STATUS_COLORS.APPROVED },
-    { key: "REJECTED", label: STATUS_LABELS.REJECTED, color: STATUS_COLORS.REJECTED },
+    { key: "PENDING", label: t(STATUS_LABEL_KEYS.PENDING), color: STATUS_COLORS.PENDING },
+    { key: "all", label: t("ad3_variants.tab_all"), color: "#6B7280" },
+    { key: "APPROVED", label: t(STATUS_LABEL_KEYS.APPROVED), color: STATUS_COLORS.APPROVED },
+    { key: "REJECTED", label: t(STATUS_LABEL_KEYS.REJECTED), color: STATUS_COLORS.REJECTED },
   ];
   return (
     <div className="flex items-center gap-2 flex-wrap">
@@ -434,6 +438,7 @@ function Toolbar({
   activeFiltersCount: number; selectedCount: number;
   onBulkApprove: () => void; onBulkReject: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-3 flex-wrap">
       <div style={{ position: "relative", flex: 1, minWidth: 240 }}>
@@ -443,7 +448,7 @@ function Toolbar({
         }} />
         <input
           type="text" value={search} onChange={(e) => setSearch(e.target.value)}
-          placeholder="SKU, fiche, valeur d'axe..."
+          placeholder={t("ad3_variants.search_placeholder")}
           style={{
             width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
             fontSize: 12.5, background: T.input, color: T.text,
@@ -460,7 +465,7 @@ function Toolbar({
         border: `1px solid ${activeFiltersCount > 0 ? T.red + "40" : T.border}`,
         cursor: "pointer",
       }}>
-        <Filter size={12} /> Filtres
+        <Filter size={12} /> {t("ad3_variants.filters")}
         {activeFiltersCount > 0 && (
           <span style={{
             background: T.red, color: "#fff", padding: "1px 8px",
@@ -475,20 +480,20 @@ function Toolbar({
       {selectedCount > 0 && (
         <>
           <span style={{ fontSize: 12, color: T.muted, whiteSpace: "nowrap" }}>
-            {selectedCount} sélectionné{selectedCount > 1 ? "s" : ""}
+            {t(selectedCount > 1 ? "ad3_variants.selected_count_plural" : "ad3_variants.selected_count", { count: selectedCount })}
           </span>
           <button onClick={onBulkApprove} style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "8px 12px", borderRadius: 10, fontSize: 12, fontWeight: 700,
             background: STATUS_COLORS.APPROVED, color: "#fff",
             border: "none", cursor: "pointer",
-          }}><Check size={12} /> Approuver</button>
+          }}><Check size={12} /> {t("ad3_variants.approve")}</button>
           <button onClick={onBulkReject} style={{
             display: "flex", alignItems: "center", gap: 6,
             padding: "8px 12px", borderRadius: 10, fontSize: 12, fontWeight: 700,
             background: STATUS_COLORS.REJECTED, color: "#fff",
             border: "none", cursor: "pointer",
-          }}><X size={12} /> Rejeter</button>
+          }}><X size={12} /> {t("ad3_variants.reject")}</button>
         </>
       )}
     </div>
@@ -508,6 +513,7 @@ function FiltersPanel({
   subCatId: number | null; setSubCatId: (id: number | null) => void;
   availableSubCats: CategoryTreeNode[]; onReset: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       background: T.card, borderRadius: 12, border: `1px solid ${T.border}`,
@@ -518,7 +524,7 @@ function FiltersPanel({
         <label style={{
           fontSize: 10.5, fontWeight: 700, color: T.muted,
           textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6,
-        }}>Catégorie parente</label>
+        }}>{t("ad3_variants.parent_category_label")}</label>
         <select
           value={parentCatId ?? ""}
           onChange={(e) => {
@@ -531,7 +537,7 @@ function FiltersPanel({
             outline: "none",
           }}
         >
-          <option value="">Toutes les catégories</option>
+          <option value="">{t("ad3_variants.all_categories")}</option>
           {categoryTree.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -542,7 +548,7 @@ function FiltersPanel({
         <label style={{
           fontSize: 10.5, fontWeight: 700, color: T.muted,
           textTransform: "uppercase", letterSpacing: "0.05em", display: "block", marginBottom: 6,
-        }}>Sous-catégorie</label>
+        }}>{t("ad3_variants.subcategory_label")}</label>
         <select
           value={subCatId ?? ""}
           onChange={(e) => setSubCatId(e.target.value ? Number(e.target.value) : null)}
@@ -553,7 +559,7 @@ function FiltersPanel({
             outline: "none", opacity: !parentCatId ? 0.5 : 1,
           }}
         >
-          <option value="">Toutes les sous-catégories</option>
+          <option value="">{t("ad3_variants.all_subcategories")}</option>
           {availableSubCats.map((c) => (
             <option key={c.id} value={c.id}>{c.name}</option>
           ))}
@@ -564,7 +570,7 @@ function FiltersPanel({
         padding: "9px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
         background: T.cardAlt, color: T.muted,
         border: `1px solid ${T.border}`, cursor: "pointer", whiteSpace: "nowrap",
-      }}>Réinitialiser</button>
+      }}>{t("ad3_variants.reset")}</button>
     </div>
   );
 }
@@ -584,6 +590,7 @@ function VariantsTable({
   onDetail: (id: number) => void;
   onApprove: (v: AdminVariant) => void; onReject: (v: AdminVariant) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       background: T.card, borderRadius: 16, border: `1px solid ${T.border}`,
@@ -592,12 +599,12 @@ function VariantsTable({
       {loading ? (
         <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
           <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t("ad3_variants.loading")}
         </div>
       ) : variants.length === 0 ? (
         <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
           <Package size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-          <p style={{ fontSize: 13 }}>Aucun variant dans cet état.</p>
+          <p style={{ fontSize: 13 }}>{t("ad3_variants.empty_state")}</p>
         </div>
       ) : (
         <div style={{ overflowX: "auto" }}>
@@ -609,13 +616,13 @@ function VariantsTable({
                     checked={selectedIds.size === variants.length && variants.length > 0}
                     onChange={onToggleAll} />
                 </th>
-                <TH>Fiche produit</TH>
-                <TH>Configuration</TH>
-                <TH>SKU</TH>
-                <TH>Offres</TH>
-                <TH>Buy Box</TH>
-                <TH>Statut</TH>
-                <TH>Actions</TH>
+                <TH>{t("ad3_variants.col_product")}</TH>
+                <TH>{t("ad3_variants.col_configuration")}</TH>
+                <TH>{t("ad3_variants.col_sku")}</TH>
+                <TH>{t("ad3_variants.col_offers")}</TH>
+                <TH>{t("ad3_variants.col_buybox")}</TH>
+                <TH>{t("ad3_variants.col_status")}</TH>
+                <TH>{t("ad3_variants.col_actions")}</TH>
               </tr>
             </thead>
             <tbody>
@@ -660,6 +667,7 @@ function VariantRow({
   onToggle: () => void; onDetail: () => void;
   onApprove: () => void; onReject: () => void;
 }) {
+  const { t } = useTranslation();
   const isPending = variant.moderation_status === "PENDING";
 
   return (
@@ -716,7 +724,7 @@ function VariantRow({
         </div>
         {variant.offers_pending_count > 0 && (
           <div style={{ fontSize: 10, color: STATUS_COLORS.PENDING, marginTop: 2 }}>
-            {variant.offers_pending_count} en attente
+            {t("ad3_variants.n_pending", { count: variant.offers_pending_count })}
           </div>
         )}
       </td>
@@ -736,18 +744,18 @@ function VariantRow({
       {/* Actions */}
       <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 6 }}>
-          <button onClick={onDetail} title="Détails" style={{
+          <button onClick={onDetail} title={t("ad3_variants.details")} style={{
             padding: "6px 8px", borderRadius: 8, background: T.cardAlt,
             color: T.text, border: `1px solid ${T.border}`, cursor: "pointer",
           }}><Eye size={12} /></button>
           {isPending && (
             <>
-              <button onClick={onApprove} title="Approuver" style={{
+              <button onClick={onApprove} title={t("ad3_variants.approve")} style={{
                 padding: "6px 8px", borderRadius: 8,
                 background: STATUS_COLORS.APPROVED + "18", color: STATUS_COLORS.APPROVED,
                 border: `1px solid ${STATUS_COLORS.APPROVED}44`, cursor: "pointer",
               }}><Check size={12} /></button>
-              <button onClick={onReject} title="Rejeter" style={{
+              <button onClick={onReject} title={t("ad3_variants.reject")} style={{
                 padding: "6px 8px", borderRadius: 8,
                 background: STATUS_COLORS.REJECTED + "18", color: STATUS_COLORS.REJECTED,
                 border: `1px solid ${STATUS_COLORS.REJECTED}44`, cursor: "pointer",
@@ -769,6 +777,7 @@ function VariantConfigChips({ axes, colorDict, T, size = "md" }: {
   colorDict: Record<string, ColorDictionaryEntry>;
   T: AdminTokens; size?: "sm" | "md" | "lg";
 }) {
+  const { t } = useTranslation();
   const chipSize = size === "sm" ? 22 : size === "lg" ? 32 : 26;
   const fontSize = size === "sm" ? 10.5 : size === "lg" ? 13 : 11.5;
   const padY = size === "sm" ? 3 : size === "lg" ? 6 : 4;
@@ -777,7 +786,7 @@ function VariantConfigChips({ axes, colorDict, T, size = "md" }: {
   if (axes.length === 0) {
     return (
       <span style={{ fontSize: 11, color: T.mutedL, fontStyle: "italic" }}>
-        mono-variant
+        {t("ad3_variants.mono_variant")}
       </span>
     );
   }
@@ -795,7 +804,7 @@ function VariantConfigChips({ axes, colorDict, T, size = "md" }: {
           const label = entry?.name ?? String(value);
           return (
             <div key={axis.slug}
-              title={`${axis.name} : ${label}`}
+              title={t("ad3_variants.axis_tooltip", { name: axis.name, value: label })}
               style={{
                 display: "flex", alignItems: "center", gap: 4,
               }}
@@ -819,7 +828,7 @@ function VariantConfigChips({ axes, colorDict, T, size = "md" }: {
         // SELECT / NUMBER / TEXT → pill badge
         return (
           <div key={axis.slug}
-            title={`${axis.name} : ${value}${axis.unit ? " " + axis.unit : ""}`}
+            title={t("ad3_variants.axis_tooltip", { name: axis.name, value: `${value}${axis.unit ? " " + axis.unit : ""}` })}
             style={{
               display: "inline-flex", alignItems: "center", gap: 3,
               padding: `${padY}px ${padX}px`, borderRadius: 8,
@@ -843,8 +852,9 @@ function VariantConfigChips({ axes, colorDict, T, size = "md" }: {
 function StatusBadge({ status, size = "md" }: {
   status: "PENDING" | "APPROVED" | "REJECTED"; size?: "sm" | "md";
 }) {
+  const { t } = useTranslation();
   const color = STATUS_COLORS[status];
-  const label = STATUS_LABELS[status];
+  const label = t(STATUS_LABEL_KEYS[status]);
   const pad = size === "sm" ? "2px 8px" : "3px 10px";
   const fs = size === "sm" ? 9.5 : 10.5;
   return (
@@ -898,6 +908,7 @@ function VariantDetailModal({
   onSelectSibling: (id: number) => void;
 }) {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [detail, setDetail] = useState<AdminVariantDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -914,18 +925,18 @@ function VariantDetailModal({
         setDetail(d);
         if (modalRef.current) modalRef.current.scrollTop = 0;
       })
-      .catch(() => showToast("Erreur chargement détail", "error"))
+      .catch(() => showToast(t("ad3_variants.toast_error_detail"), "error"))
       .finally(() => setLoading(false));
-  }, [variantId, showToast]);
+  }, [variantId, showToast, t]);
 
   const doApprove = async () => {
     if (!detail) return;
     setBusy("approve");
     try {
       await adminApi.approveVariant(detail.id, reason);
-      showToast("Variant approuvé", "success");
+      showToast(t("ad3_variants.toast_approved"), "success");
       onModerated();
-    } catch { showToast("Erreur approbation", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_approve"), "error"); }
     finally { setBusy(null); }
   };
 
@@ -934,9 +945,9 @@ function VariantDetailModal({
     setBusy("reject");
     try {
       await adminApi.rejectVariant(detail.id, reason);
-      showToast("Variant rejeté", "success");
+      showToast(t("ad3_variants.toast_rejected"), "success");
       onModerated();
-    } catch { showToast("Erreur rejet", "error"); }
+    } catch { showToast(t("ad3_variants.toast_error_reject"), "error"); }
     finally { setBusy(null); }
   };
 
@@ -957,11 +968,11 @@ function VariantDetailModal({
         {loading ? (
           <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
             <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-            Chargement...
+            {t("ad3_variants.loading")}
           </div>
         ) : !detail ? (
           <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
-            Détail introuvable.
+            {t("ad3_variants.detail_not_found")}
           </div>
         ) : (
           <>
@@ -986,6 +997,7 @@ function VariantDetailModal({
 function ModalHeader({ detail, T, onClose }: {
   detail: AdminVariantDetail; T: AdminTokens; onClose: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       padding: "24px 28px", borderBottom: `1px solid ${T.border}`,
@@ -1016,7 +1028,7 @@ function ModalHeader({ detail, T, onClose }: {
             }}>{detail.sku}</code>
             <StatusBadge status={detail.moderation_status} />
             <span style={{ fontSize: 11, color: T.mutedL }}>
-              créé le {fmtDate(detail.created_at)}
+              {t("ad3_variants.created_on", { date: fmtDate(detail.created_at) })}
             </span>
           </div>
         </div>
@@ -1034,6 +1046,7 @@ function ModalBody({ detail, colorDict, T, onSelectSibling }: {
   detail: AdminVariantDetail; colorDict: Record<string, ColorDictionaryEntry>;
   T: AdminTokens; onSelectSibling: (id: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       display: "grid", gridTemplateColumns: "260px 1fr", gap: 24,
@@ -1043,7 +1056,7 @@ function ModalBody({ detail, colorDict, T, onSelectSibling }: {
       <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
         <MasterThumb src={detail.master_primary_image} T={T} size={260} />
 
-        <ModalSection title="Configuration" icon={Layers} T={T}>
+        <ModalSection title={t("ad3_variants.section_configuration")} icon={Layers} T={T}>
           <VariantConfigChips axes={detail.axes_resolved} colorDict={colorDict} T={T} size="lg" />
         </ModalSection>
 
@@ -1053,18 +1066,18 @@ function ModalBody({ detail, colorDict, T, onSelectSibling }: {
       {/* Colonne droite : siblings + offres + historique */}
       <div style={{ display: "flex", flexDirection: "column", gap: 20, minWidth: 0 }}>
         {detail.sibling_variants.length > 0 && (
-          <ModalSection title={`Autres variants de cette fiche (${detail.sibling_variants.length})`}
+          <ModalSection title={t("ad3_variants.section_other_variants", { count: detail.sibling_variants.length })}
             icon={TrendingUp} T={T}>
             <SiblingsList siblings={detail.sibling_variants} colorDict={colorDict} T={T}
               onSelect={onSelectSibling} />
           </ModalSection>
         )}
 
-        <ModalSection title={`Offres rattachées (${detail.offers.length})`}
+        <ModalSection title={t("ad3_variants.section_offers", { count: detail.offers.length })}
           icon={Store} T={T}>
           {detail.offers.length === 0 ? (
             <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-              Aucune offre encore rattachée à ce variant.
+              {t("ad3_variants.no_offers")}
             </div>
           ) : (
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -1076,12 +1089,12 @@ function ModalBody({ detail, colorDict, T, onSelectSibling }: {
         </ModalSection>
 
         {detail.moderated_at && (
-          <ModalSection title="Historique de modération" icon={Calendar} T={T}>
+          <ModalSection title={t("ad3_variants.section_moderation_history")} icon={Calendar} T={T}>
             <div style={{ fontSize: 12.5, color: T.text }}>
-              {STATUS_LABELS[detail.moderation_status]} par{" "}
+              {t(STATUS_LABEL_KEYS[detail.moderation_status])} {t("ad3_variants.by")}{" "}
               <strong>{detail.moderated_by_username ?? "—"}</strong>{" "}
               <span style={{ color: T.muted }}>
-                le {fmtDateTime(detail.moderated_at)}
+                {t("ad3_variants.on_date", { date: fmtDateTime(detail.moderated_at) })}
               </span>
             </div>
             {detail.moderation_reason && (
@@ -1089,7 +1102,7 @@ function ModalBody({ detail, colorDict, T, onSelectSibling }: {
                 marginTop: 8, padding: 12, background: T.cardAlt, borderRadius: 10,
                 fontSize: 12.5, color: T.text, borderLeft: `3px solid ${T.muted}`,
               }}>
-                <em>« {detail.moderation_reason} »</em>
+                <em>{t("ad3_variants.quoted", { text: detail.moderation_reason })}</em>
               </div>
             )}
           </ModalSection>
@@ -1125,6 +1138,7 @@ function ModalSection({ title, icon: Icon, T, children }: {
 function StatsGrid({ stats, T }: {
   stats: AdminVariantDetail["stats"]; T: AdminTokens;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       background: T.cardAlt, borderRadius: 12,
@@ -1133,16 +1147,16 @@ function StatsGrid({ stats, T }: {
       <div style={{
         fontSize: 10.5, fontWeight: 700, color: T.muted,
         textTransform: "uppercase", marginBottom: 12, letterSpacing: "0.06em",
-      }}>Statistiques</div>
+      }}>{t("ad3_variants.stats_title")}</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-        <StatBox label="Offres approuvées" value={String(stats.approved_offers)}
-          sublabel={stats.pending_offers > 0 ? `${stats.pending_offers} en attente` : undefined}
+        <StatBox label={t("ad3_variants.stat_approved_offers")} value={String(stats.approved_offers)}
+          sublabel={stats.pending_offers > 0 ? t("ad3_variants.n_pending", { count: stats.pending_offers }) : undefined}
           color={STATUS_COLORS.APPROVED} T={T} />
-        <StatBox label="Stock total"
+        <StatBox label={t("ad3_variants.stat_total_stock")}
           value={stats.total_stock.toLocaleString("fr-FR")} T={T} />
-        <StatBox label="Prix min" value={fmtXAF(stats.price_min_xaf)} T={T} />
-        <StatBox label="Prix max" value={fmtXAF(stats.price_max_xaf)} T={T} />
+        <StatBox label={t("ad3_variants.stat_price_min")} value={fmtXAF(stats.price_min_xaf)} T={T} />
+        <StatBox label={t("ad3_variants.stat_price_max")} value={fmtXAF(stats.price_max_xaf)} T={T} />
       </div>
     </div>
   );
@@ -1211,6 +1225,7 @@ function SiblingsList({ siblings, colorDict, T, onSelect }: {
 // ═════════════════════════════════════════════════════════════════════════════
 
 function OfferCard({ offer, T }: { offer: AdminVariantOffer; T: AdminTokens }) {
+  const { t } = useTranslation();
   const fullName = vendorFullName(offer);
 
   return (
@@ -1303,7 +1318,7 @@ function OfferCard({ offer, T }: { offer: AdminVariantOffer; T: AdminTokens }) {
               }}>{offer.condition_name}</span>
             )}
             <span style={{ fontSize: 11, color: T.muted }}>
-              Stock : <strong style={{ color: T.text }}>{offer.stock_quantity}</strong>
+              {t("ad3_variants.stock_colon")} <strong style={{ color: T.text }}>{offer.stock_quantity}</strong>
             </span>
           </div>
 
@@ -1314,7 +1329,7 @@ function OfferCard({ offer, T }: { offer: AdminVariantOffer; T: AdminTokens }) {
               fontSize: 12, color: T.text, borderLeft: `3px solid ${T.orange}`,
               fontStyle: "italic",
             }}>
-              « {offer.seller_note} »
+              {t("ad3_variants.quoted", { text: offer.seller_note })}
             </div>
           )}
 
@@ -1335,7 +1350,7 @@ function OfferCard({ offer, T }: { offer: AdminVariantOffer; T: AdminTokens }) {
                   textDecoration: "none",
                 }}
               >
-                Voir vendeur <ExternalLink size={10} />
+                {t("ad3_variants.view_vendor")} <ExternalLink size={10} />
               </Link>
             )}
           </div>
@@ -1354,6 +1369,7 @@ function ModalActions({ T, reason, setReason, busy, onApprove, onReject }: {
   busy: "approve" | "reject" | null;
   onApprove: () => void; onReject: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div style={{
       padding: "20px 28px", borderTop: `1px solid ${T.border}`,
@@ -1365,11 +1381,11 @@ function ModalActions({ T, reason, setReason, busy, onApprove, onReject }: {
         display: "flex", alignItems: "center", gap: 6, marginBottom: 8,
       }}>
         <AlertCircle size={11} />
-        Commentaire de modération (optionnel)
+        {t("ad3_variants.moderation_comment_label")}
       </label>
       <textarea
         value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
-        placeholder="Motif d'approbation ou rejet — sera visible dans l'historique..."
+        placeholder={t("ad3_variants.moderation_comment_placeholder")}
         style={{
           width: "100%", padding: 12, borderRadius: 10, fontSize: 13,
           background: T.input, border: `1px solid ${T.inputBorder}`,
@@ -1384,13 +1400,13 @@ function ModalActions({ T, reason, setReason, busy, onApprove, onReject }: {
           background: STATUS_COLORS.REJECTED, color: "#fff", border: "none",
           cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
           display: "flex", alignItems: "center", gap: 6,
-        }}><X size={14} /> Rejeter le variant</button>
+        }}><X size={14} /> {t("ad3_variants.reject_variant")}</button>
         <button onClick={onApprove} disabled={busy !== null} style={{
           padding: "11px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700,
           background: STATUS_COLORS.APPROVED, color: "#fff", border: "none",
           cursor: busy ? "not-allowed" : "pointer", opacity: busy ? 0.6 : 1,
           display: "flex", alignItems: "center", gap: 6,
-        }}><Check size={14} /> Approuver le variant</button>
+        }}><Check size={14} /> {t("ad3_variants.approve_variant")}</button>
       </div>
     </div>
   );

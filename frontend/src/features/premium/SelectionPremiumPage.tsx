@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Baby, Dumbbell, Flame, Footprints, Gift, House, Laptop, PackageSearch,
   RefreshCw, ShieldCheck, Shirt, ShoppingBasket, Smartphone, Sparkles, Star, Tag, Truck,
@@ -18,12 +19,12 @@ const HEART_RATING = 4.5;
 
 type SortKey = "rating" | "pertinence" | "discount" | "price-asc" | "price-desc";
 
-const SORT_OPTIONS: { value: SortKey; label: string }[] = [
-  { value: "rating", label: "Top rated" },
-  { value: "pertinence", label: "Pertinence" },
-  { value: "discount", label: "Plus fortes remises" },
-  { value: "price-asc", label: "Prix croissant" },
-  { value: "price-desc", label: "Prix décroissant" },
+const SORT_OPTIONS: { value: SortKey; labelKey: string }[] = [
+  { value: "rating", labelKey: "cl7_selection_premium.sort_top_rated" },
+  { value: "pertinence", labelKey: "cl7_selection_premium.sort_relevance" },
+  { value: "discount", labelKey: "cl7_selection_premium.sort_discount" },
+  { value: "price-asc", labelKey: "cl7_selection_premium.sort_price_asc" },
+  { value: "price-desc", labelKey: "cl7_selection_premium.sort_price_desc" },
 ];
 
 const CATEGORY_ICONS: Record<string, LucideIcon> = {
@@ -34,40 +35,43 @@ const CATEGORY_ICONS: Record<string, LucideIcon> = {
 
 interface SectionDef {
   key: "hearts" | "deals" | "month";
-  title: string;
+  titleKey: string;
   icon: LucideIcon;
   iconClass: string;
-  subtitle: string;
-  chip: string;
+  subtitleKey: string;
+  subtitleParams?: Record<string, number>;
+  chipKey: string;
   chipClass: string;
 }
 
 const SECTIONS: SectionDef[] = [
   {
     key: "hearts",
-    title: "Nos Coups de Cœur",
+    titleKey: "cl7_selection_premium.section_hearts_title",
     icon: Star,
     iconClass: "text-amber-500",
-    subtitle: `Notés ${HEART_RATING} étoiles et plus par les acheteurs`,
-    chip: "Top noté",
+    subtitleKey: "cl7_selection_premium.section_hearts_subtitle",
+    subtitleParams: { rating: HEART_RATING },
+    chipKey: "cl7_selection_premium.chip_top_rated",
     chipClass: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-500/15 dark:text-amber-300",
   },
   {
     key: "deals",
-    title: "Meilleures Affaires",
+    titleKey: "cl7_selection_premium.section_deals_title",
     icon: Flame,
     iconClass: "animate-flame-flicker text-[#F47920]",
-    subtitle: `Bien notés et remisés d'au moins ${MIN_DISCOUNT} %`,
-    chip: "Meilleur prix",
+    subtitleKey: "cl7_selection_premium.section_deals_subtitle",
+    subtitleParams: { discount: MIN_DISCOUNT },
+    chipKey: "cl7_selection_premium.chip_best_price",
     chipClass: "bg-orange-50 text-[#C85E14] ring-orange-200 dark:bg-orange-500/15 dark:text-orange-300",
   },
   {
     key: "month",
-    title: "Sélection du Mois",
+    titleKey: "cl7_selection_premium.section_month_title",
     icon: Gift,
     iconClass: "text-violet-500",
-    subtitle: "Le reste de la sélection, recommandé par la communauté",
-    chip: "Recommandé",
+    subtitleKey: "cl7_selection_premium.section_month_subtitle",
+    chipKey: "cl7_selection_premium.chip_recommended",
     chipClass: "bg-violet-50 text-violet-700 ring-violet-200 dark:bg-violet-500/15 dark:text-violet-300",
   },
 ];
@@ -87,6 +91,7 @@ function priceOf(product: Product): number {
 /* ────────────────────────────────── Page ────────────────────────────────── */
 
 export default function SelectionPremiumPage() {
+  const { t } = useTranslation();
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [usingMockProducts, setUsingMockProducts] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -187,10 +192,10 @@ export default function SelectionPremiumPage() {
 
   /* Tuiles : deux chiffres du catalogue, deux garanties — tons pf-stat o/a/b/p. */
   const heroTiles: { value: string; label: string; tone: string; icon: LucideIcon }[] = [
-    { value: `${stats.count}`, label: "Produits", tone: "o", icon: Tag },
-    { value: stats.rating ? `${stats.rating.toFixed(1)}+` : "—", label: "Note moy.", tone: "a", icon: Star },
-    { value: "100%", label: "Escrow", tone: "b", icon: ShieldCheck },
-    { value: "24–72h", label: "Livraison", tone: "p", icon: Truck },
+    { value: `${stats.count}`, label: t("cl7_selection_premium.stat_products"), tone: "o", icon: Tag },
+    { value: stats.rating ? `${stats.rating.toFixed(1)}+` : "—", label: t("cl7_selection_premium.stat_rating"), tone: "a", icon: Star },
+    { value: "100%", label: t("cl7_selection_premium.stat_escrow"), tone: "b", icon: ShieldCheck },
+    { value: "24–72h", label: t("cl7_selection_premium.stat_delivery"), tone: "p", icon: Truck },
   ];
 
   const pillStyle = (active: boolean): CSSProperties => ({
@@ -211,13 +216,13 @@ export default function SelectionPremiumPage() {
         <section className="pf-ident pf-anim">
           <div className="pf-avatar"><Sparkles size={26} /></div>
           <div style={{ flex: 1, minWidth: 0, position: "relative", zIndex: 1 }}>
-            <div className="pf-name">Sélection Premium BelivaY</div>
+            <div className="pf-name">{t("cl7_selection_premium.header_title")}</div>
             <div className="pf-meta">
-              <span><ShieldCheck size={13} /> Vendeurs certifiés</span>
-              <span><RefreshCw size={13} /> Mis à jour aujourd'hui</span>
+              <span><ShieldCheck size={13} /> {t("cl7_selection_premium.header_meta_certified")}</span>
+              <span><RefreshCw size={13} /> {t("cl7_selection_premium.header_meta_updated")}</span>
             </div>
           </div>
-          <span className="pf-chip"><ShieldCheck size={14} /> Escrow sécurisé</span>
+          <span className="pf-chip"><ShieldCheck size={14} /> {t("cl7_selection_premium.header_chip_escrow")}</span>
         </section>
 
         {/* ═══ Tuiles stats (pf-stat o/a/b/p) ═══ */}
@@ -240,7 +245,7 @@ export default function SelectionPremiumPage() {
         <section style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 20 }}>
           <div style={{ flex: 1, display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
             <button type="button" onClick={() => setCategorySlug("all")} style={pillStyle(categorySlug === "all")}>
-              <Sparkles size={11} /> Tout
+              <Sparkles size={11} /> {t("cl7_selection_premium.filter_all")}
             </button>
             {categories.map((category) => {
               const Icon = CATEGORY_ICONS[category.slug] ?? Tag;
@@ -254,14 +259,14 @@ export default function SelectionPremiumPage() {
           </div>
           <label style={{ ...pillStyle(false), paddingRight: 6, cursor: "default" }}>
             <Star size={11} style={{ color: "var(--pf-accent)" }} fill="currentColor" />
-            <span className="sr-only">Trier la sélection</span>
+            <span className="sr-only">{t("cl7_selection_premium.sort_aria_label")}</span>
             <select
               value={sort}
               onChange={(event) => setSort(event.target.value as SortKey)}
               style={{ background: "transparent", border: "none", outline: "none", color: "var(--pf-text2)", fontSize: "11.5px", fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
             >
               {SORT_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
+                <option key={option.value} value={option.value}>{t(option.labelKey)}</option>
               ))}
             </select>
           </label>
@@ -278,12 +283,12 @@ export default function SelectionPremiumPage() {
           <div className="pf-card pf-anim" style={{ marginTop: 20 }}>
             <div className="pf-empty">
               <span className="pf-empty-ic"><PackageSearch size={26} /></span>
-              <p className="pf-empty-t">Aucun article ne remplit encore les critères</p>
+              <p className="pf-empty-t">{t("cl7_selection_premium.empty_title")}</p>
               <p className="pf-sub" style={{ maxWidth: 460, margin: "6px auto 0" }}>
-                La sélection retient les articles notés {MIN_RATING} étoiles ou remisés d'au moins {MIN_DISCOUNT} %. Elle se remplira à mesure que les commandes sont notées.
+                {t("cl7_selection_premium.empty_description", { minRating: MIN_RATING, minDiscount: MIN_DISCOUNT })}
               </p>
               <Link to="/catalog" className="pf-btn-ghost" style={{ marginTop: 14, display: "inline-flex" }}>
-                Parcourir tout le catalogue
+                {t("cl7_selection_premium.browse_catalog")}
               </Link>
             </div>
           </div>
@@ -297,10 +302,10 @@ export default function SelectionPremiumPage() {
                 <header style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginBottom: 14 }}>
                   <Icon size={17} className={section.iconClass} />
                   <h2 style={{ fontSize: 15.5, fontWeight: 800, letterSpacing: "-.01em", color: "var(--pf-text)" }}>
-                    {section.title}
+                    {t(section.titleKey)}
                   </h2>
                   <span style={{ fontSize: 11.5, color: "var(--pf-muted)" }}>
-                    · {section.subtitle} · {products.length} article{products.length > 1 ? "s" : ""}
+                    · {t(section.subtitleKey, section.subtitleParams)} · {t(products.length > 1 ? "cl7_selection_premium.article_count_plural" : "cl7_selection_premium.article_count", { count: products.length })}
                   </span>
                 </header>
                 <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3 xl:grid-cols-5">
@@ -308,7 +313,7 @@ export default function SelectionPremiumPage() {
                     <div key={product.id} className="flex flex-col gap-1.5">
                       <span className={`inline-flex w-fit items-center gap-1 rounded-full px-2.5 py-0.5 text-[9.5px] font-black uppercase tracking-[0.1em] ring-1 ${section.chipClass}`}>
                         <Icon size={9} />
-                        {section.chip}
+                        {t(section.chipKey)}
                       </span>
                       <ProductCard product={product} showPromo compact isMock={usingMockProducts} />
                     </div>

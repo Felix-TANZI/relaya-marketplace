@@ -103,14 +103,14 @@ export type EscrowKey =
   | 'PENDING' | 'BLOCKED' | 'RELEASE_PENDING' | 'RELEASED'
   | 'REFUNDED' | 'PARTIAL_REFUNDED' | 'DISPUTED';
 
-export const ESCROW: Record<EscrowKey, { label: string; color: string; bg: string }> = {
-  PENDING:          { label: 'Non payé',        color: T.muted,  bg: T.creamAlt },
-  BLOCKED:          { label: 'En escrow',       color: T.amber,  bg: T.amberL   },
-  RELEASE_PENDING:  { label: 'Libération 24 h', color: T.blue,   bg: T.blueL    },
-  RELEASED:         { label: 'Libéré',          color: T.green,  bg: T.greenL   },
-  REFUNDED:         { label: 'Remboursé',       color: T.blue,   bg: T.blueL    },
-  PARTIAL_REFUNDED: { label: 'Remb. partiel',   color: T.amber,  bg: T.amberL   },
-  DISPUTED:         { label: 'Litige',          color: T.red,    bg: T.redL     },
+export const ESCROW: Record<EscrowKey, { labelKey: string; color: string; bg: string }> = {
+  PENDING:          { labelKey: 'vendor_shared.escrow_pending',          color: T.muted,  bg: T.creamAlt },
+  BLOCKED:          { labelKey: 'vendor_shared.escrow_blocked',          color: T.amber,  bg: T.amberL   },
+  RELEASE_PENDING:  { labelKey: 'vendor_shared.escrow_release_pending',  color: T.blue,   bg: T.blueL    },
+  RELEASED:         { labelKey: 'vendor_shared.escrow_released',        color: T.green,  bg: T.greenL   },
+  REFUNDED:         { labelKey: 'vendor_shared.escrow_refunded',        color: T.blue,   bg: T.blueL    },
+  PARTIAL_REFUNDED: { labelKey: 'vendor_shared.escrow_partial_refunded',color: T.amber,  bg: T.amberL   },
+  DISPUTED:         { labelKey: 'vendor_shared.escrow_disputed',        color: T.red,    bg: T.redL     },
 };
 
 export const WITHDRAWAL: Record<string, { color: string; bg: string }> = {

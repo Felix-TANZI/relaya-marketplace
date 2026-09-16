@@ -3,6 +3,7 @@
 // Arborescence parent/enfants, création, renommage, toggle actif/inactif, suppression
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Tag, Plus, RefreshCw, Trash2, Edit2, Check,
   X, ChevronDown, ChevronRight, ToggleLeft, ToggleRight,
@@ -61,6 +62,7 @@ function CategoryRow({
   acting:      number | null;
   T:           ReturnType<typeof useAdminTheme>;
 }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(depth === 0);
   const [editing,  setEditing]  = useState(false);
   const [name,     setName]     = useState(cat.name);
@@ -125,12 +127,12 @@ function CategoryRow({
             </span>
             {!cat.is_active && (
               <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4, background: 'rgba(156,163,175,0.15)', color: '#9CA3AF', flexShrink: 0 }}>
-                Inactif
+                {t('ad5a_categories.inactive_badge')}
               </span>
             )}
             {(cat.products_count !== undefined && cat.products_count > 0) && (
               <span style={{ fontSize: 10.5, color: T.muted, flexShrink: 0 }}>
-                {cat.products_count} produit{cat.products_count > 1 ? 's' : ''}
+                {t(cat.products_count > 1 ? 'ad5a_categories.product_count_plural' : 'ad5a_categories.product_count', { count: cat.products_count })}
               </span>
             )}
           </div>
@@ -144,7 +146,7 @@ function CategoryRow({
               <button onClick={() => onAddChild(cat.id)}
                 className="w-6 h-6 rounded-md flex items-center justify-center"
                 style={{ background: 'rgba(59,130,246,0.1)', color: '#3B82F6' }}
-                title="Ajouter une sous-catégorie">
+                title={t('ad5a_categories.add_subcategory_title')}>
                 <Plus size={11} />
               </button>
             )}
@@ -202,19 +204,20 @@ function AddForm({
   onCancel:   () => void;
   T:          ReturnType<typeof useAdminTheme>;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState('');
 
   return (
     <div className="p-4 rounded-2xl flex items-center gap-3" style={{ background: T.cardAlt, border: `1px solid ${T.red}40` }}>
       <Tag size={14} style={{ color: T.red, flexShrink: 0 }} />
       <div className="flex-1 min-w-0">
-        {parentName && <p style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>Sous-catégorie de : <strong>{parentName}</strong></p>}
+        {parentName && <p style={{ fontSize: 11, color: T.muted, marginBottom: 4 }}>{t('ad5a_categories.subcategory_of')}<strong>{parentName}</strong></p>}
         <input
           autoFocus
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter' && name.trim()) onAdd(name.trim(), parentId); if (e.key === 'Escape') onCancel(); }}
-          placeholder={parentId ? 'Nom de la sous-catégorie…' : 'Nom de la catégorie…'}
+          placeholder={parentId ? t('ad5a_categories.placeholder_subcategory_name') : t('ad5a_categories.placeholder_category_name')}
           className="w-full px-3 py-2 rounded-xl text-[13px] outline-none"
           style={{ background: T.input, color: T.text, border: `1px solid ${T.red}` }}
         />
@@ -223,7 +226,7 @@ function AddForm({
         disabled={!name.trim()}
         className="flex items-center gap-1 px-4 py-2 rounded-xl text-[12.5px] font-semibold text-white flex-shrink-0"
         style={{ background: name.trim() ? 'linear-gradient(135deg,#DC2626,#991B1B)' : T.border }}>
-        <Check size={13} /> Créer
+        <Check size={13} /> {t('ad5a_categories.create_button')}
       </button>
       <button onClick={onCancel}
         className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
@@ -239,6 +242,7 @@ function AddForm({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CategoriesPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -270,7 +274,7 @@ export default function CategoriesPage() {
 
       setCategories(loaded);
     } catch {
-      showToast('Erreur chargement des catégories', 'error');
+      showToast(t('ad5a_categories.toast_load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -289,10 +293,10 @@ export default function CategoriesPage() {
         method: 'POST', headers: authHeader(),
         body: JSON.stringify({ name, slug: slugify(name), parent: parentId, is_active: true }),
       });
-      showToast('Catégorie créée', 'success');
+      showToast(t('ad5a_categories.toast_create_success'), 'success');
       setAddForm(null);
       await load();
-    } catch { showToast('Erreur création', 'error'); }
+    } catch { showToast(t('ad5a_categories.toast_create_error'), 'error'); }
   };
 
   const handleToggle = async (id: number, active: boolean) => {
@@ -303,7 +307,7 @@ export default function CategoriesPage() {
         body: JSON.stringify({ is_active: active }),
       });
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad5a_categories.toast_generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -314,28 +318,28 @@ export default function CategoriesPage() {
         method: 'PATCH', headers: authHeader(),
         body: JSON.stringify({ name, slug: slugify(name) }),
       });
-      showToast('Renommée', 'success');
+      showToast(t('ad5a_categories.toast_rename_success'), 'success');
       await load();
-    } catch { showToast('Erreur renommage', 'error'); }
+    } catch { showToast(t('ad5a_categories.toast_rename_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const handleDelete = async (cat: Category) => {
     const childrenCount = children(cat.id).length;
     const ok = await confirm({
-      title:       `Supprimer "${cat.name}" ?`,
+      title:       t('ad5a_categories.confirm_delete_title', { name: cat.name }),
       message:     childrenCount > 0
-        ? `Cette catégorie contient ${childrenCount} sous-catégorie(s). Elles seront également supprimées.`
-        : 'Cette action est irréversible.',
-      type:        'danger', confirmText: 'Supprimer', cancelText: 'Annuler',
+        ? t('ad5a_categories.confirm_delete_with_children', { count: childrenCount })
+        : t('ad5a_categories.confirm_delete_simple'),
+      type:        'danger', confirmText: t('ad5a_categories.confirm_delete_confirm_text'), cancelText: t('ad5a_categories.confirm_delete_cancel_text'),
     });
     if (!ok) return;
     setActing(cat.id);
     try {
       await http(`/api/catalog/categories/${cat.id}/`, { method: 'DELETE', headers: authHeader() });
-      showToast('Catégorie supprimée', 'success');
+      showToast(t('ad5a_categories.toast_delete_success'), 'success');
       await load();
-    } catch { showToast('Impossible de supprimer — des produits utilisent cette catégorie', 'error'); }
+    } catch { showToast(t('ad5a_categories.toast_delete_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -347,11 +351,11 @@ export default function CategoriesPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Catégories & Sous-catégories
+            {t('ad5a_categories.page_title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {roots.length} catégorie{roots.length > 1 ? 's' : ''} principale{roots.length > 1 ? 's' : ''} ·{' '}
-            {categories.filter(c => c.parent).length} sous-catégorie{categories.filter(c => c.parent).length > 1 ? 's' : ''}
+            {t(roots.length > 1 ? 'ad5a_categories.category_count_plural' : 'ad5a_categories.category_count', { count: roots.length })}{' · '}
+            {t(categories.filter(c => c.parent).length > 1 ? 'ad5a_categories.subcategory_count_plural' : 'ad5a_categories.subcategory_count', { count: categories.filter(c => c.parent).length })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -364,7 +368,7 @@ export default function CategoriesPage() {
             onClick={() => setAddForm({ parentId: null, parentName: '' })}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white"
             style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
-            <Plus size={14} /> Nouvelle catégorie
+            <Plus size={14} /> {t('ad5a_categories.new_category')}
           </button>
         </div>
       </div>
@@ -384,8 +388,8 @@ export default function CategoriesPage() {
       <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
           <Tag size={14} style={{ color: T.red }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Arborescence du catalogue</span>
-          <span style={{ fontSize: 11.5, color: T.muted, marginLeft: 4 }}>— passez la souris sur une ligne pour voir les actions</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad5a_categories.tree_header')}</span>
+          <span style={{ fontSize: 11.5, color: T.muted, marginLeft: 4 }}>{t('ad5a_categories.tree_hint')}</span>
         </div>
 
         {loading ? (
@@ -396,11 +400,11 @@ export default function CategoriesPage() {
         ) : roots.length === 0 ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <Tag size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucune catégorie</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad5a_categories.no_categories')}</p>
             <button onClick={() => setAddForm({ parentId: null, parentName: '' })}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[13px] font-semibold text-white"
               style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}>
-              <Plus size={13} /> Créer la première catégorie
+              <Plus size={13} /> {t('ad5a_categories.create_first_category')}
             </button>
           </div>
         ) : (
@@ -430,8 +434,7 @@ export default function CategoriesPage() {
       <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(59,130,246,0.06)', border: '1px solid rgba(59,130,246,0.2)' }}>
         <Tag size={15} style={{ color: '#3B82F6', flexShrink: 0, marginTop: 1 }} />
         <p style={{ fontSize: 12.5, color: T.muted, lineHeight: 1.6 }}>
-          Désactiver une catégorie la masque du catalogue public mais ne supprime pas ses produits.
-          La suppression est bloquée si des produits utilisent encore la catégorie.
+          {t('ad5a_categories.info_banner')}
         </p>
       </div>
     </div>

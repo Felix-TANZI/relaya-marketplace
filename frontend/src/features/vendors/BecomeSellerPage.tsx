@@ -70,16 +70,16 @@ export default function BecomeSellerPage() {
           <div className="mx-auto mt-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             <Store size={26} />
           </div>
-          <h1 className="mt-5 text-2xl font-extrabold text-gray-950 dark:text-white">Vous êtes déjà vendeur</h1>
+          <h1 className="mt-5 text-2xl font-extrabold text-gray-950 dark:text-white">{t('sl1_become_seller.already_seller_title')}</h1>
           <p className="mx-auto mt-3 max-w-[420px] text-sm leading-7 text-gray-600 dark:text-gray-300">
-            Le formulaire vendeur n'est plus affiché parce que votre boutique BelivaY est active.
+            {t('sl1_become_seller.already_seller_desc')}
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link to="/seller/dashboard" className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-lg shadow-primary/20 transition hover:bg-primary-dark">
-              Ouvrir l'espace vendeur
+              {t('sl1_become_seller.open_seller_space')}
             </Link>
             <Link to="/profile" className="inline-flex items-center justify-center rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-bold text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
-              Retour au profil
+              {t('sl1_become_seller.back_to_profile')}
             </Link>
           </div>
         </section>

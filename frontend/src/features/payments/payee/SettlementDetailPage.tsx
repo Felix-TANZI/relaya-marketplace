@@ -2,6 +2,7 @@
 // Le detail d'un releve — un document que le partenaire peut verifier.
 
 import { useNavigate, useParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useSettlement } from '../hooks/useSettlements';
 import EmptyState from '../shared/EmptyState';
@@ -19,6 +20,7 @@ interface SettlementDetailPageProps {
 export default function SettlementDetailPage({
   basePath = '/seller',
 }: SettlementDetailPageProps) {
+  const { t } = useTranslation();
   const { reference = '' } = useParams<{ reference: string }>();
   const navigate = useNavigate();
   const { data: lot, loading, error } = useSettlement(reference);
@@ -26,7 +28,7 @@ export default function SettlementDetailPage({
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('sl2_payee_settlements.loading')}</span>
       </div>
     );
   }
@@ -35,8 +37,8 @@ export default function SettlementDetailPage({
     return (
       <EmptyState
         icon="file-off"
-        title="Relevé introuvable"
-        description={error ?? 'Ce relevé n’existe pas ou ne vous concerne pas.'}
+        title={t('sl2_payee_settlements.not_found_title')}
+        description={error ?? t('sl2_payee_settlements.not_found_description')}
       />
     );
   }
@@ -55,7 +57,7 @@ export default function SettlementDetailPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Mes règlements
+        {t('sl2_payee_settlements.page_title')}
       </button>
 
       <div style={{
@@ -72,8 +74,7 @@ export default function SettlementDetailPage({
             <TransactionReference value={lot.reference} size={14} />
             <p style={{ fontSize: 12, margin: '3px 0 0', color: FT.muted }}>
               {formatPeriod(lot.period_start, lot.period_end)}
-              {lot.lines.length > 0 && ` · ${lot.lines.length} commande${
-                lot.lines.length > 1 ? 's' : ''}`}
+              {lot.lines.length > 0 && ` · ${t(lot.lines.length > 1 ? 'sl2_payee_settlements.orders_count_plural' : 'sl2_payee_settlements.orders_count', { count: lot.lines.length })}`}
             </p>
           </div>
           <div style={{ textAlign: 'right' }}>
@@ -81,7 +82,7 @@ export default function SettlementDetailPage({
             <div style={{ marginTop: 5 }}>
               {lot.payout?.settled_at ? (
                 <span style={{ fontSize: 11.5, color: FT.muted }}>
-                  versé le {formatShortDate(lot.payout.settled_at)}
+                  {t('sl2_payee_settlements.paid_on', { date: formatShortDate(lot.payout.settled_at) })}
                 </span>
               ) : (
                 <StatusBadge
@@ -112,7 +113,7 @@ export default function SettlementDetailPage({
         }}>
           <div>
             <p style={{ fontSize: 12.5, margin: 0, color: FT.muted }}>
-              Versé sur
+              {t('sl2_payee_settlements.paid_to')}
             </p>
             <p style={{
               fontSize: 13.5, margin: '3px 0 0',

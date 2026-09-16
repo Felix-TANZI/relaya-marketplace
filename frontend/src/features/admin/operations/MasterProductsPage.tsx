@@ -10,6 +10,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Search, Check, X, RefreshCw, Eye, Edit3, Trash2, Package,
   ExternalLink, Filter, ChevronDown, BadgeCheck, ImageIcon,
@@ -34,10 +35,10 @@ const STATUS_COLORS: Record<string, string> = {
   REJECTED: "#DC2626",
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: "En attente",
-  APPROVED: "Approuvé",
-  REJECTED: "Rejeté",
+const STATUS_LABEL_KEYS: Record<string, string> = {
+  PENDING: "ad5a_master_products.status_pending",
+  APPROVED: "ad5a_master_products.status_approved",
+  REJECTED: "ad5a_master_products.status_rejected",
 };
 
 // ═════════════════════════════════════════════════════════════════════════════
@@ -45,6 +46,7 @@ const STATUS_LABELS: Record<string, string> = {
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function MasterProductsPage() {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -71,7 +73,7 @@ export default function MasterProductsPage() {
       if (search.trim()) filters.search = search.trim();
       setMasters(await adminApi.listMasters(filters));
     } catch {
-      showToast("Erreur chargement des fiches", "error");
+      showToast(t('ad5a_master_products.toast_load_error'), "error");
     } finally { setLoading(false); }
   }, [tab, search, showToast]);
 
@@ -116,19 +118,19 @@ export default function MasterProductsPage() {
     if (parentCatId) {
       const p = parentCategories.find((c) => c.id === parentCatId);
       list.push({
-        label: `Catégorie : ${p?.name ?? "?"}`,
+        label: t('ad5a_master_products.filter_category', { name: p?.name ?? "?" }),
         onRemove: () => { setParentCatId(null); setSubCatId(null); },
       });
     }
     if (subCatId) {
       const s = availableSubCats.find((c) => c.id === subCatId);
       list.push({
-        label: `Sous-catégorie : ${s?.name ?? "?"}`,
+        label: t('ad5a_master_products.filter_subcategory', { name: s?.name ?? "?" }),
         onRemove: () => setSubCatId(null),
       });
     }
     return list;
-  }, [parentCatId, subCatId, parentCategories, availableSubCats]);
+  }, [parentCatId, subCatId, parentCategories, availableSubCats, t]);
 
   // ── Actions ─────────────────────────────────────────────────────────
   const openDetail = (id: number) => setDetailId(id);
@@ -136,32 +138,32 @@ export default function MasterProductsPage() {
     try {
       const d = await adminApi.getMasterDetail(id);
       setEditItem(d);
-    } catch { showToast("Erreur", "error"); }
+    } catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
 
   const handleApprove = async (m: AdminMaster) => {
-    try { await adminApi.approveMaster(m.id); showToast(`${m.title} approuvée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.approveMaster(m.id); showToast(t('ad5a_master_products.toast_approved', { title: m.title }), "success"); load(); }
+    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const handleReject = async (m: AdminMaster) => {
     const ok = await confirm({
-      title: `Rejeter '${m.title}' ?`,
-      message: "La fiche ne sera plus visible côté acheteur.",
+      title: t('ad5a_master_products.confirm_reject_title', { title: m.title }),
+      message: t('ad5a_master_products.confirm_reject_message'),
       type: "warning",
     });
     if (!ok) return;
-    try { await adminApi.rejectMaster(m.id); showToast(`${m.title} rejetée`, "success"); load(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.rejectMaster(m.id); showToast(t('ad5a_master_products.toast_rejected', { title: m.title }), "success"); load(); }
+    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const handleDelete = async (m: AdminMaster) => {
     const ok = await confirm({
-      title: `Supprimer '${m.title}' ?`,
-      message: `Cette action est définitive. ${m.variants_count > 0 || m.offers_count > 0 ? "⚠️ La fiche a des variants/offres attachés." : ""}`,
+      title: t('ad5a_master_products.confirm_delete_title', { title: m.title }),
+      message: `${t('ad5a_master_products.confirm_delete_message')} ${m.variants_count > 0 || m.offers_count > 0 ? t('ad5a_master_products.confirm_delete_warning_attached') : ""}`,
       type: "warning",
     });
     if (!ok) return;
-    try { await adminApi.deleteMaster(m.id); showToast("Fiche supprimée", "success"); load(); setDetailId(null); }
-    catch { showToast("Erreur suppression", "error"); }
+    try { await adminApi.deleteMaster(m.id); showToast(t('ad5a_master_products.toast_deleted'), "success"); load(); setDetailId(null); }
+    catch { showToast(t('ad5a_master_products.toast_delete_error'), "error"); }
   };
 
   return (
@@ -172,16 +174,16 @@ export default function MasterProductsPage() {
           <h1 style={{
             fontFamily: "'Syne', sans-serif", fontSize: 24, fontWeight: 800,
             color: T.text, marginBottom: 4,
-          }}>Fiches Maîtres</h1>
+          }}>{t('ad5a_master_products.page_title')}</h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {counts.PENDING > 0 && (
               <>
                 <strong style={{ color: STATUS_COLORS.PENDING }}>
-                  {counts.PENDING} en attente
+                  {t('ad5a_master_products.pending_count', { count: counts.PENDING })}
                 </strong>{" · "}
               </>
             )}
-            {counts.all} fiche{counts.all > 1 ? "s" : ""} au total
+            {t(counts.all > 1 ? 'ad5a_master_products.total_count_plural' : 'ad5a_master_products.total_count', { count: counts.all })}
           </p>
         </div>
         <button onClick={load} style={{
@@ -190,7 +192,7 @@ export default function MasterProductsPage() {
           background: T.cardAlt, color: T.muted,
           border: `1px solid ${T.border}`, cursor: "pointer",
         }}>
-          <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> Actualiser
+          <RefreshCw size={12} className={loading ? "animate-spin" : ""} /> {t('ad5a_master_products.refresh')}
         </button>
       </div>
 
@@ -198,7 +200,7 @@ export default function MasterProductsPage() {
       <div className="flex items-center gap-2 flex-wrap">
         {(["all", "PENDING", "APPROVED", "REJECTED"] as StatusTab[]).map((k) => {
           const isActive = tab === k;
-          const label = k === "all" ? "Toutes" : STATUS_LABELS[k];
+          const label = k === "all" ? t('ad5a_master_products.tab_all') : t(STATUS_LABEL_KEYS[k]);
           const count = counts[k];
           const color = k === "all" ? "#6B7280" : STATUS_COLORS[k];
           return (
@@ -228,7 +230,7 @@ export default function MasterProductsPage() {
             color: T.muted, pointerEvents: "none",
           }} />
           <input value={search} onChange={(e) => setSearch(e.target.value)}
-            placeholder="Titre ou marque..."
+            placeholder={t('ad5a_master_products.search_placeholder')}
             style={{
               width: "100%", padding: "10px 12px 10px 34px", borderRadius: 10,
               fontSize: 12.5, background: T.input, color: T.text,
@@ -245,7 +247,7 @@ export default function MasterProductsPage() {
           border: `1px solid ${activeFilters.length > 0 ? T.red + "40" : T.border}`,
           cursor: "pointer",
         }}>
-          <Filter size={12} /> Filtres
+          <Filter size={12} /> {t('ad5a_master_products.filters')}
           {activeFilters.length > 0 && (
             <span style={{
               background: T.red, color: "#fff", padding: "1px 8px",
@@ -270,7 +272,7 @@ export default function MasterProductsPage() {
               fontSize: 10.5, fontWeight: 700, color: T.muted,
               textTransform: "uppercase", letterSpacing: "0.05em",
               display: "block", marginBottom: 6,
-            }}>Catégorie parente</label>
+            }}>{t('ad5a_master_products.filter_parent_category_label')}</label>
             <select value={parentCatId ?? ""}
               onChange={(e) => {
                 const v = e.target.value ? Number(e.target.value) : null;
@@ -282,7 +284,7 @@ export default function MasterProductsPage() {
                 border: `1px solid ${T.inputBorder}`, outline: "none",
               }}
             >
-              <option value="">Toutes</option>
+              <option value="">{t('ad5a_master_products.filter_all_option')}</option>
               {parentCategories.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -293,7 +295,7 @@ export default function MasterProductsPage() {
               fontSize: 10.5, fontWeight: 700, color: T.muted,
               textTransform: "uppercase", letterSpacing: "0.05em",
               display: "block", marginBottom: 6,
-            }}>Sous-catégorie</label>
+            }}>{t('ad5a_master_products.filter_subcategory_label')}</label>
             <select value={subCatId ?? ""}
               onChange={(e) => setSubCatId(e.target.value ? Number(e.target.value) : null)}
               disabled={!parentCatId}
@@ -304,7 +306,7 @@ export default function MasterProductsPage() {
                 opacity: !parentCatId ? 0.5 : 1,
               }}
             >
-              <option value="">Toutes</option>
+              <option value="">{t('ad5a_master_products.filter_all_option')}</option>
               {availableSubCats.map((c) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -314,7 +316,7 @@ export default function MasterProductsPage() {
             padding: "9px 14px", borderRadius: 10, fontSize: 12, fontWeight: 600,
             background: T.cardAlt, color: T.muted,
             border: `1px solid ${T.border}`, cursor: "pointer",
-          }}>Réinitialiser</button>
+          }}>{t('ad5a_master_products.filter_reset')}</button>
         </div>
       )}
 
@@ -347,26 +349,26 @@ export default function MasterProductsPage() {
         {loading ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <RefreshCw size={20} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-            Chargement...
+            {t('ad5a_master_products.loading')}
           </div>
         ) : filtered.length === 0 ? (
           <div style={{ padding: 40, textAlign: "center", color: T.muted }}>
             <Package size={32} style={{ margin: "0 auto 12px", opacity: 0.4 }} />
-            <p style={{ fontSize: 13 }}>Aucune fiche dans ces filtres.</p>
+            <p style={{ fontSize: 13 }}>{t('ad5a_master_products.no_masters')}</p>
           </div>
         ) : (
           <div style={{ overflowX: "auto" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", minWidth: 1000 }}>
               <thead>
                 <tr style={{ background: T.cardAlt, borderBottom: `1px solid ${T.border}` }}>
-                  <TH>Fiche</TH>
-                  <TH>Catégorie</TH>
-                  <TH>Marque</TH>
-                  <TH>Axes de variante</TH>
-                  <TH>Variants</TH>
-                  <TH>Offres</TH>
-                  <TH>Statut</TH>
-                  <TH>Actions</TH>
+                  <TH>{t('ad5a_master_products.th_master')}</TH>
+                  <TH>{t('ad5a_master_products.th_category')}</TH>
+                  <TH>{t('ad5a_master_products.th_brand')}</TH>
+                  <TH>{t('ad5a_master_products.th_variant_axes')}</TH>
+                  <TH>{t('ad5a_master_products.th_variants')}</TH>
+                  <TH>{t('ad5a_master_products.th_offers')}</TH>
+                  <TH>{t('ad5a_master_products.th_status')}</TH>
+                  <TH>{t('ad5a_master_products.th_actions')}</TH>
                 </tr>
               </thead>
               <tbody>
@@ -429,6 +431,7 @@ function MasterRow({
   onDetail: () => void; onEdit: () => void;
   onApprove: () => void; onReject: () => void; onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const isPending = master.moderation_status === "PENDING";
   return (
     <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.card }}>
@@ -474,12 +477,12 @@ function MasterRow({
 
       <td style={{ padding: "12px 16px", minWidth: 180 }}>
         {master.axes_resolved.length === 0 ? (
-          <span style={{ fontSize: 11, color: T.mutedL, fontStyle: "italic" }}>mono-variant</span>
+          <span style={{ fontSize: 11, color: T.mutedL, fontStyle: "italic" }}>{t('ad5a_master_products.mono_variant')}</span>
         ) : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
             {master.axes_resolved.map((ax) => (
               <span key={ax.slug}
-                title={ax.found ? `${ax.name} (${ax.values_type})` : `Axe orphelin : ${ax.slug}`}
+                title={ax.found ? `${ax.name} (${ax.values_type})` : t('ad5a_master_products.orphan_axis', { slug: ax.slug })}
                 style={{
                   fontSize: 10, fontWeight: 700, padding: "2px 7px", borderRadius: 6,
                   background: ax.found ? T.red + "15" : "#F59E0B15",
@@ -518,24 +521,24 @@ function MasterRow({
           background: STATUS_COLORS[master.moderation_status] + "18",
           color: STATUS_COLORS[master.moderation_status],
           textTransform: "uppercase", letterSpacing: "0.03em",
-        }}>{STATUS_LABELS[master.moderation_status]}</span>
+        }}>{t(STATUS_LABEL_KEYS[master.moderation_status])}</span>
       </td>
 
       <td style={{ padding: "12px 16px" }}>
         <div style={{ display: "flex", gap: 4 }}>
-          <ActionBtn onClick={onDetail} title="Détails" T={T}><Eye size={12} /></ActionBtn>
-          <ActionBtn onClick={onEdit} title="Modifier" T={T}><Edit3 size={12} /></ActionBtn>
+          <ActionBtn onClick={onDetail} title={t('ad5a_master_products.action_details')} T={T}><Eye size={12} /></ActionBtn>
+          <ActionBtn onClick={onEdit} title={t('ad5a_master_products.action_edit')} T={T}><Edit3 size={12} /></ActionBtn>
           {isPending && (
             <>
-              <ActionBtn onClick={onApprove} title="Approuver" T={T} color={STATUS_COLORS.APPROVED}>
+              <ActionBtn onClick={onApprove} title={t('ad5a_master_products.action_approve')} T={T} color={STATUS_COLORS.APPROVED}>
                 <Check size={12} />
               </ActionBtn>
-              <ActionBtn onClick={onReject} title="Rejeter" T={T} color={STATUS_COLORS.REJECTED}>
+              <ActionBtn onClick={onReject} title={t('ad5a_master_products.action_reject')} T={T} color={STATUS_COLORS.REJECTED}>
                 <X size={12} />
               </ActionBtn>
             </>
           )}
-          <ActionBtn onClick={onDelete} title="Supprimer" T={T} color="#DC2626">
+          <ActionBtn onClick={onDelete} title={t('ad5a_master_products.action_delete')} T={T} color="#DC2626">
             <Trash2 size={12} />
           </ActionBtn>
         </div>
@@ -559,6 +562,7 @@ function ActionBtn({ onClick, title, T, color, children }: {
 }
 
 function BrandCell({ master, T }: { master: AdminMaster; T: AdminTokens }) {
+  const { t } = useTranslation();
   // Priorité au brand_fk (Phase 1.2), sinon fallback sur brand texte legacy
   if (master.brand_fk_name) {
     return (
@@ -596,8 +600,8 @@ function BrandCell({ master, T }: { master: AdminMaster; T: AdminTokens }) {
         <span style={{
           fontSize: 9, color: "#F59E0B", background: "#F59E0B18",
           padding: "1px 5px", borderRadius: 4, fontWeight: 700,
-        }} title="Marque en texte libre — devrait être lié à une Brand canonique">
-          LEGACY
+        }} title={t('ad5a_master_products.legacy_brand_title')}>
+          {t('ad5a_master_products.legacy_badge')}
         </span>
       </div>
     );
@@ -617,6 +621,7 @@ function MasterDetailModal({
   onEdit: (d: AdminMasterDetail) => void;
   onApproved: () => void; onRejected: () => void; onDeleted: () => void;
 }) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
   const { confirm } = useConfirm();
@@ -627,35 +632,35 @@ function MasterDetailModal({
     let cancelled = false;
     adminApi.getMasterDetail(masterId)
       .then((d) => { if (!cancelled) setDetail(d); })
-      .catch(() => { if (!cancelled) showToast("Erreur chargement", "error"); })
+      .catch(() => { if (!cancelled) showToast(t('ad5a_master_products.toast_load_detail_error'), "error"); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
-  }, [masterId, showToast]);
+  }, [masterId, showToast, t]);
 
   const doApprove = async () => {
     if (!detail) return;
-    try { await adminApi.approveMaster(detail.id); showToast("Approuvée", "success"); onApproved(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.approveMaster(detail.id); showToast(t('ad5a_master_products.toast_approved_short'), "success"); onApproved(); }
+    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const doReject = async () => {
     if (!detail) return;
     const ok = await confirm({
-      title: `Rejeter '${detail.title}' ?`, message: "La fiche ne sera plus visible.",
+      title: t('ad5a_master_products.confirm_reject_title', { title: detail.title }), message: t('ad5a_master_products.confirm_reject_message_short'),
       type: "warning",
     });
     if (!ok) return;
-    try { await adminApi.rejectMaster(detail.id); showToast("Rejetée", "success"); onRejected(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.rejectMaster(detail.id); showToast(t('ad5a_master_products.toast_rejected_short'), "success"); onRejected(); }
+    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
   const doDelete = async () => {
     if (!detail) return;
     const ok = await confirm({
-      title: `Supprimer '${detail.title}' ?`, message: "Action définitive.",
+      title: t('ad5a_master_products.confirm_delete_title', { title: detail.title }), message: t('ad5a_master_products.confirm_delete_message_short'),
       type: "warning",
     });
     if (!ok) return;
-    try { await adminApi.deleteMaster(detail.id); showToast("Supprimée", "success"); onDeleted(); }
-    catch { showToast("Erreur", "error"); }
+    try { await adminApi.deleteMaster(detail.id); showToast(t('ad5a_master_products.toast_deleted_short'), "success"); onDeleted(); }
+    catch { showToast(t('ad5a_master_products.toast_generic_error'), "error"); }
   };
 
   return (
@@ -663,7 +668,7 @@ function MasterDetailModal({
       {loading || !detail ? (
         <div style={{ padding: 60, textAlign: "center", color: T.muted }}>
           <RefreshCw size={24} className="animate-spin" style={{ margin: "0 auto 12px" }} />
-          Chargement...
+          {t('ad5a_master_products.loading')}
         </div>
       ) : (
         <>
@@ -695,10 +700,10 @@ function MasterDetailModal({
                     background: STATUS_COLORS[detail.moderation_status] + "18",
                     color: STATUS_COLORS[detail.moderation_status],
                     textTransform: "uppercase", letterSpacing: "0.03em",
-                  }}>{STATUS_LABELS[detail.moderation_status]}</span>
+                  }}>{t(STATUS_LABEL_KEYS[detail.moderation_status])}</span>
                   {detail.moderated_by_username && (
                     <span style={{ fontSize: 11, color: T.mutedL }}>
-                      par @{detail.moderated_by_username}
+                      {t('ad5a_master_products.moderated_by', { username: detail.moderated_by_username })}
                     </span>
                   )}
                 </div>
@@ -739,7 +744,7 @@ function MasterDetailModal({
                 </div>
               )}
               <div style={{ marginTop: 14 }}>
-                <div style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: "uppercase", marginBottom: 6 }}>Marque</div>
+                <div style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: "uppercase", marginBottom: 6 }}>{t('ad5a_master_products.section_brand')}</div>
                 <BrandCell master={detail} T={T} />
               </div>
             </div>
@@ -747,17 +752,17 @@ function MasterDetailModal({
             {/* Right col : description + axes + variants + offers */}
             <div style={{ display: "flex", flexDirection: "column", gap: 18, minWidth: 0 }}>
               {detail.description && (
-                <Section title="Description" T={T}>
+                <Section title={t('ad5a_master_products.section_description')} T={T}>
                   <p style={{ fontSize: 13, color: T.text, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
                     {detail.description}
                   </p>
                 </Section>
               )}
 
-              <Section title="Axes de variante" T={T}>
+              <Section title={t('ad5a_master_products.section_variant_axes')} T={T}>
                 {detail.axes_resolved.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-                    Fiche mono-variant (aucun axe).
+                    {t('ad5a_master_products.mono_variant_no_axis')}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -779,10 +784,10 @@ function MasterDetailModal({
                 )}
               </Section>
 
-              <Section title={`Variants (${detail.variants.length})`} T={T}>
+              <Section title={t('ad5a_master_products.section_variants', { count: detail.variants.length })} T={T}>
                 {detail.variants.length === 0 ? (
                   <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-                    Aucun variant créé.
+                    {t('ad5a_master_products.no_variants')}
                   </div>
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 200, overflowY: "auto" }}>
@@ -801,13 +806,13 @@ function MasterDetailModal({
                           </code>
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          <span style={{ fontSize: 11, color: T.muted }}>{v.offers_count} offre(s)</span>
+                          <span style={{ fontSize: 11, color: T.muted }}>{t('ad5a_master_products.offers_count', { count: v.offers_count })}</span>
                           <span style={{
                             display: "inline-block", padding: "2px 8px", borderRadius: 20,
                             fontSize: 10, fontWeight: 700,
                             background: STATUS_COLORS[v.moderation_status] + "18",
                             color: STATUS_COLORS[v.moderation_status],
-                          }}>{STATUS_LABELS[v.moderation_status]}</span>
+                          }}>{t(STATUS_LABEL_KEYS[v.moderation_status])}</span>
                         </div>
                       </div>
                     ))}
@@ -815,10 +820,10 @@ function MasterDetailModal({
                 )}
               </Section>
 
-              <Section title={`Offres (${detail.offers_count})`} T={T}>
+              <Section title={t('ad5a_master_products.section_offers', { count: detail.offers_count })} T={T}>
                 <div style={{ fontSize: 13, color: T.text }}>
                   <strong>{detail.active_offers_count}</strong>
-                  <span style={{ color: T.muted, marginLeft: 4 }}>approuvées et actives</span>
+                  <span style={{ color: T.muted, marginLeft: 4 }}>{t('ad5a_master_products.offers_active_approved')}</span>
                 </div>
               </Section>
             </div>
@@ -832,21 +837,21 @@ function MasterDetailModal({
           }}>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => onEdit(detail)} style={btnStyle(T.text, T.card, T)}>
-                <Edit3 size={13} /> Modifier
+                <Edit3 size={13} /> {t('ad5a_master_products.action_edit')}
               </button>
               {detail.moderation_status === "PENDING" && (
                 <>
                   <button onClick={doApprove} style={btnStyle(STATUS_COLORS.APPROVED, T.card, T, true)}>
-                    <Check size={13} /> Approuver
+                    <Check size={13} /> {t('ad5a_master_products.action_approve')}
                   </button>
                   <button onClick={doReject} style={btnStyle(STATUS_COLORS.REJECTED, T.card, T, true)}>
-                    <X size={13} /> Rejeter
+                    <X size={13} /> {t('ad5a_master_products.action_reject')}
                   </button>
                 </>
               )}
             </div>
             <button onClick={doDelete} style={btnStyle("#DC2626", T.card, T)}>
-              <Trash2 size={13} /> Supprimer
+              <Trash2 size={13} /> {t('ad5a_master_products.action_delete')}
             </button>
           </div>
         </>
@@ -864,6 +869,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
   categories: Category[];
   onClose: () => void; onSaved: () => void;
 }) {
+  const { t } = useTranslation();
   const T = useAdminTheme();
   const { showToast } = useToast();
 
@@ -923,7 +929,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
 
   const handleSubmit = async () => {
     if (!form.title || form.title.trim().length < 2) {
-      showToast("Titre requis", "warning"); return;
+      showToast(t('ad5a_master_products.toast_title_required'), "warning"); return;
     }
     setBusy(true);
     try {
@@ -935,10 +941,10 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         variant_axes: form.variant_axes,
       };
       await adminApi.updateMaster(master.id, payload);
-      showToast("Fiche mise à jour", "success");
+      showToast(t('ad5a_master_products.toast_updated'), "success");
       onSaved();
     } catch (err: unknown) {
-      const msg = (err as { detail?: string })?.detail ?? "Erreur";
+      const msg = (err as { detail?: string })?.detail ?? t('ad5a_master_products.toast_generic_error');
       showToast(msg, "error");
     } finally { setBusy(false); }
   };
@@ -956,7 +962,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         display: "flex", justifyContent: "space-between", alignItems: "center",
       }}>
         <h2 style={{ fontSize: 18, fontWeight: 800, color: T.text, margin: 0 }}>
-          Modifier {master.title}
+          {t('ad5a_master_products.edit_modal_title', { title: master.title })}
         </h2>
         <button onClick={onClose} style={{
           padding: 6, borderRadius: 8, background: T.card, border: `1px solid ${T.border}`,
@@ -965,18 +971,18 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
       </div>
 
       <div style={{ padding: "22px 26px", display: "flex", flexDirection: "column", gap: 16 }}>
-        <FormField label="Titre *" T={T}>
+        <FormField label={t('ad5a_master_products.field_title')} T={T}>
           <input value={form.title ?? ""} onChange={(e) => setForm({ ...form, title: e.target.value })}
             style={inputStyle(T)} />
         </FormField>
 
-        <FormField label="Description" T={T}>
+        <FormField label={t('ad5a_master_products.field_description')} T={T}>
           <textarea value={form.description ?? ""}
             onChange={(e) => setForm({ ...form, description: e.target.value })}
             rows={4} style={{ ...inputStyle(T), resize: "vertical" }} />
         </FormField>
 
-        <FormField label="Catégorie" T={T}>
+        <FormField label={t('ad5a_master_products.field_category')} T={T}>
           <select value={form.category ?? ""}
             onChange={(e) => setForm({ ...form, category: Number(e.target.value) })}
             style={inputStyle(T)}>
@@ -989,7 +995,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         </FormField>
 
         {/* Brand autocomplete */}
-        <FormField label="Marque canonique (brand_fk)" T={T}>
+        <FormField label={t('ad5a_master_products.field_brand')} T={T}>
           <div style={{ position: "relative" }}>
             {selectedBrand ? (
               <div style={{
@@ -1022,7 +1028,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
                 <input value={brandSearch}
                   onChange={(e) => { setBrandSearch(e.target.value); setShowBrandDropdown(true); }}
                   onFocus={() => setShowBrandDropdown(true)}
-                  placeholder="Rechercher une marque..."
+                  placeholder={t('ad5a_master_products.brand_search_placeholder')}
                   style={inputStyle(T)} />
                 {showBrandDropdown && brandOptions.length > 0 && (
                   <div style={{
@@ -1065,10 +1071,10 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         </FormField>
 
         {/* Variant axes multi-select */}
-        <FormField label={`Axes de variante (${(form.variant_axes ?? []).length} sélectionné${(form.variant_axes ?? []).length > 1 ? "s" : ""})`} T={T}>
+        <FormField label={t((form.variant_axes ?? []).length > 1 ? 'ad5a_master_products.field_variant_axes_plural' : 'ad5a_master_products.field_variant_axes', { count: (form.variant_axes ?? []).length })} T={T}>
           {availableAxes.length === 0 ? (
             <div style={{ fontSize: 12, color: T.muted, fontStyle: "italic" }}>
-              Aucun attribut AXE disponible pour cette catégorie.
+              {t('ad5a_master_products.no_axes_available')}
             </div>
           ) : (
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1089,7 +1095,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
                       <span style={{
                         fontSize: 8, fontWeight: 700, opacity: 0.8,
                         background: "rgba(255,255,255,0.2)", padding: "1px 4px", borderRadius: 3,
-                      }}>UNIV</span>
+                      }}>{t('ad5a_master_products.universal_badge')}</span>
                     )}
                   </button>
                 );
@@ -1104,8 +1110,7 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
             }}>
               <AlertTriangle size={13} color="#F59E0B" style={{ flexShrink: 0, marginTop: 1 }} />
               <div style={{ fontSize: 11.5, color: T.text }}>
-                Changer les axes est bloqué car <strong>{master.variants.length} variant(s)</strong> existent.
-                Supprime-les d'abord.
+                {t('ad5a_master_products.axes_change_blocked', { count: master.variants.length })}
               </div>
             </div>
           )}
@@ -1117,11 +1122,11 @@ function MasterEditModal({ master, categories, onClose, onSaved }: {
         background: T.cardAlt, borderRadius: "0 0 20px 20px",
         display: "flex", gap: 8, justifyContent: "flex-end",
       }}>
-        <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>Annuler</button>
+        <button onClick={onClose} style={btnStyle(T.text, T.card, T)}>{t('ad5a_master_products.cancel')}</button>
         <button onClick={handleSubmit} disabled={busy}
           style={{ ...btnStyle(T.red, T.card, T, true), opacity: busy ? 0.6 : 1 }}>
           {busy ? <RefreshCw size={13} className="animate-spin" /> : <Check size={13} />}
-          Enregistrer
+          {t('ad5a_master_products.save')}
         </button>
       </div>
     </ModalShell>

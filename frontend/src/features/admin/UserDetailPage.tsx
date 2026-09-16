@@ -9,6 +9,7 @@ import {
   Store, ShoppingCart, Package, CheckCircle, XCircle,
   Clock, AlertTriangle, ExternalLink,
 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { adminApi, type AdminUserDetail } from '@/services/api/admin';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
 import { useToast } from '@/context/ToastContext';
@@ -42,6 +43,7 @@ function InfoRow({ label, value, T }: { label: string; value: React.ReactNode; T
 export default function UserDetailPage() {
   const { id }        = useParams<{ id: string }>();
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const navigate      = useNavigate();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -73,12 +75,12 @@ export default function UserDetailPage() {
         is_superuser: data.is_superuser,
       });
     } catch {
-      toastRef.current('Utilisateur introuvable', 'error');
+      toastRef.current(t('ad1_user_detail.not_found_error'), 'error');
       navigate('/admin/users');
     } finally {
       setLoading(false);
     }
-  }, [id, navigate]);
+  }, [id, navigate, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -87,49 +89,49 @@ export default function UserDetailPage() {
     setSaving(true);
     try {
       await adminApi.updateUser(user.id, form);
-      showToast('Profil mis à jour', 'success');
+      showToast(t('ad1_user_detail.profile_updated'), 'success');
       setEditing(false);
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_user_detail.generic_error'), 'error'); }
     finally  { setSaving(false); }
   };
 
   const handleBan = async () => {
     if (!user) return;
-    const reason = window.prompt('Raison du bannissement :');
+    const reason = window.prompt(t('ad1_user_detail.ban_reason_prompt'));
     if (!reason?.trim()) return;
     setActing(true);
     try {
       await adminApi.banUser(user.id, reason.trim());
-      showToast('Utilisateur banni', 'success');
+      showToast(t('ad1_user_detail.ban_success'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_user_detail.generic_error'), 'error'); }
     finally  { setActing(false); }
   };
 
   const handleUnban = async () => {
     if (!user) return;
-    const ok = await confirm({ title: `Débannir @${user.username} ?`, message: 'L\'accès sera restauré.', type: 'warning', confirmText: 'Débannir', cancelText: 'Annuler' });
+    const ok = await confirm({ title: t('ad1_user_detail.unban_confirm_title', { username: user.username }), message: t('ad1_user_detail.unban_confirm_message'), type: 'warning', confirmText: t('ad1_user_detail.unban_button'), cancelText: t('ad1_user_detail.cancel_button') });
     if (!ok) return;
     setActing(true);
     try {
       await adminApi.unbanUser(user.id);
-      showToast('Utilisateur débanni', 'success');
+      showToast(t('ad1_user_detail.unban_success'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_user_detail.generic_error'), 'error'); }
     finally  { setActing(false); }
   };
 
   const handleDelete = async () => {
     if (!user) return;
-    const ok = await confirm({ title: `Supprimer @${user.username} ?`, message: 'Cette action est irréversible.', type: 'danger', confirmText: 'Supprimer', cancelText: 'Annuler' });
+    const ok = await confirm({ title: t('ad1_user_detail.delete_confirm_title', { username: user.username }), message: t('ad1_user_detail.delete_confirm_message'), type: 'danger', confirmText: t('ad1_user_detail.delete_button'), cancelText: t('ad1_user_detail.cancel_button') });
     if (!ok) return;
     setActing(true);
     try {
       await adminApi.deleteUser(user.id);
-      showToast('Utilisateur supprimé', 'success');
+      showToast(t('ad1_user_detail.delete_success'), 'success');
       navigate('/admin/users');
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad1_user_detail.generic_error'), 'error'); }
     finally  { setActing(false); }
   };
 
@@ -153,7 +155,7 @@ export default function UserDetailPage() {
   if (!user) return null;
 
   const isBanned    = user.profile?.is_banned ?? false;
-  const roleName    = user.is_superuser ? 'Super Admin' : user.is_staff ? 'Staff' : user.vendor_profile ? 'Vendeur' : 'Acheteur';
+  const roleName    = user.is_superuser ? t('ad1_user_detail.role_super_admin') : user.is_staff ? t('ad1_user_detail.role_staff') : user.vendor_profile ? t('ad1_user_detail.role_vendor') : t('ad1_user_detail.role_buyer');
   const roleColor   = user.is_superuser ? '#EF4444' : user.is_staff ? '#8B5CF6' : user.vendor_profile ? '#F47920' : '#6B7280';
   const avatarBg    = user.is_superuser ? 'linear-gradient(135deg,#EF4444,#B91C1C)' : user.is_staff ? 'linear-gradient(135deg,#8B5CF6,#6D28D9)' : user.vendor_profile ? 'linear-gradient(135deg,#F47920,#C2590A)' : 'linear-gradient(135deg,#374151,#1F2937)';
 
@@ -168,7 +170,7 @@ export default function UserDetailPage() {
             style={{ color: T.muted }}
             onMouseEnter={e => (e.currentTarget.style.color = T.text)}
             onMouseLeave={e => (e.currentTarget.style.color = T.muted)}>
-            <ArrowLeft size={14} /> Utilisateurs
+            <ArrowLeft size={14} /> {t('ad1_user_detail.breadcrumb_users')}
           </Link>
           <ChevronRight size={12} style={{ color: T.muted }} />
           <span style={{ fontSize: 12.5, fontWeight: 600, color: T.text }}>@{user.username}</span>
@@ -179,26 +181,26 @@ export default function UserDetailPage() {
               <button onClick={() => setEditing(true)}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                <Edit2 size={13} /> Modifier
+                <Edit2 size={13} /> {t('ad1_user_detail.edit_button')}
               </button>
               {isBanned ? (
                 <button onClick={handleUnban} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                   style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                  <ShieldOff size={13} /> Débannir
+                  <ShieldOff size={13} /> {t('ad1_user_detail.unban_button')}
                 </button>
               ) : !user.is_superuser && (
                 <button onClick={handleBan} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                   style={{ background: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.3)' }}>
-                  <Shield size={13} /> Bannir
+                  <Shield size={13} /> {t('ad1_user_detail.ban_button')}
                 </button>
               )}
               {!user.is_superuser && (
                 <button onClick={handleDelete} disabled={acting}
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                   style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                  <Trash2 size={13} /> Supprimer
+                  <Trash2 size={13} /> {t('ad1_user_detail.delete_button')}
                 </button>
               )}
             </>
@@ -208,12 +210,12 @@ export default function UserDetailPage() {
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold text-white"
                 style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
                 {saving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
-                Sauvegarder
+                {t('ad1_user_detail.save_button')}
               </button>
               <button onClick={() => { setEditing(false); }}
                 className="px-3 py-2 rounded-xl text-[12px] font-semibold"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                Annuler
+                {t('ad1_user_detail.cancel_button')}
               </button>
             </>
           )}
@@ -225,7 +227,7 @@ export default function UserDetailPage() {
         <div className="flex items-start gap-3 p-4 rounded-2xl" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)' }}>
           <AlertTriangle size={18} style={{ color: '#EF4444', flexShrink: 0, marginTop: 1 }} />
           <div>
-            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>Compte banni</p>
+            <p style={{ fontSize: 13.5, fontWeight: 700, color: '#EF4444' }}>{t('ad1_user_detail.banned_account_title')}</p>
             {user.profile?.ban_reason && <p style={{ fontSize: 12.5, color: T.muted, marginTop: 2 }}>{user.profile?.ban_reason}</p>}
           </div>
         </div>
@@ -262,33 +264,33 @@ export default function UserDetailPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <User size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Informations personnelles</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_user_detail.personal_info_title')}</span>
             </div>
             <div className="p-5">
               {editing ? (
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Prénom</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad1_user_detail.label_first_name')}</label>
                       <input type="text" value={form.first_name} onChange={e => setForm(f => ({...f, first_name: e.target.value}))} style={inp}
                         onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                     </div>
                     <div>
-                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Nom</label>
+                      <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad1_user_detail.label_last_name')}</label>
                       <input type="text" value={form.last_name} onChange={e => setForm(f => ({...f, last_name: e.target.value}))} style={inp}
                         onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                     </div>
                   </div>
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Email</label>
+                    <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad1_user_detail.label_email')}</label>
                     <input type="email" value={form.email} onChange={e => setForm(f => ({...f, email: e.target.value}))} style={inp}
                       onFocus={e => (e.target.style.borderColor = T.red)} onBlur={e => (e.target.style.borderColor = T.inputBorder)} />
                   </div>
                   <div className="flex items-center gap-6 flex-wrap pt-2">
                     {([
-                      { key: 'is_active'    as keyof typeof form, label: 'Compte actif' },
-                      { key: 'is_staff'     as keyof typeof form, label: 'Staff admin' },
-                      { key: 'is_superuser' as keyof typeof form, label: 'Super admin' },
+                      { key: 'is_active'    as keyof typeof form, label: t('ad1_user_detail.label_active_account') },
+                      { key: 'is_staff'     as keyof typeof form, label: t('ad1_user_detail.label_staff_admin') },
+                      { key: 'is_superuser' as keyof typeof form, label: t('ad1_user_detail.label_super_admin') },
                     ]).map(({ key, label }) => (
                       <label key={key} className="flex items-center gap-2 cursor-pointer">
                         <div
@@ -303,19 +305,19 @@ export default function UserDetailPage() {
                 </div>
               ) : (
                 <div>
-                  <InfoRow label="Prénom" value={user.first_name || '—'} T={T} />
-                  <InfoRow label="Nom" value={user.last_name || '—'} T={T} />
-                  <InfoRow label="Email" value={user.email} T={T} />
-                  <InfoRow label="Username" value={`@${user.username}`} T={T} />
-                  <InfoRow label="Inscrit le" value={fmtDate(user.date_joined)} T={T} />
-                  <InfoRow label="Dernière connexion" value={fmtDate(user.last_login)} T={T} />
-                  <InfoRow label="Compte actif" value={user.is_active ? <CheckCircle size={15} style={{color:'#10B981'}} /> : <XCircle size={15} style={{color:'#EF4444'}} />} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_first_name')} value={user.first_name || '—'} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_last_name')} value={user.last_name || '—'} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_email')} value={user.email} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_username')} value={`@${user.username}`} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_joined')} value={fmtDate(user.date_joined)} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_last_login')} value={fmtDate(user.last_login)} T={T} />
+                  <InfoRow label={t('ad1_user_detail.label_active_account')} value={user.is_active ? <CheckCircle size={15} style={{color:'#10B981'}} /> : <XCircle size={15} style={{color:'#EF4444'}} />} T={T} />
                   <div className="flex items-start justify-between pt-2.5">
-                    <span style={{ fontSize: 12.5, color: T.muted }}>Permissions</span>
+                    <span style={{ fontSize: 12.5, color: T.muted }}>{t('ad1_user_detail.label_permissions')}</span>
                     <div className="flex items-center gap-1.5 flex-wrap justify-end">
-                      {user.is_superuser && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>Super Admin</span>}
-                      {user.is_staff && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(139,92,246,0.12)', color: '#8B5CF6' }}>Staff</span>}
-                      {!user.is_superuser && !user.is_staff && <span style={{ fontSize: 10.5, color: T.muted }}>Utilisateur standard</span>}
+                      {user.is_superuser && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(239,68,68,0.12)', color: '#EF4444' }}>{t('ad1_user_detail.role_super_admin')}</span>}
+                      {user.is_staff && <span style={{ fontSize: 10.5, fontWeight: 700, padding: '2px 7px', borderRadius: 5, background: 'rgba(139,92,246,0.12)', color: '#8B5CF6' }}>{t('ad1_user_detail.role_staff')}</span>}
+                      {!user.is_superuser && !user.is_staff && <span style={{ fontSize: 10.5, color: T.muted }}>{t('ad1_user_detail.standard_user')}</span>}
                     </div>
                   </div>
                 </div>
@@ -328,7 +330,7 @@ export default function UserDetailPage() {
             <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
               <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
                 <Clock size={14} style={{ color: T.red }} />
-                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Activité récente</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_user_detail.activity_title')}</span>
               </div>
               <div className="divide-y" style={{ borderColor: T.border }}>
                 {user.activity_logs.slice(0, 8).map((log: typeof user.activity_logs[0], i: number) => (
@@ -351,10 +353,10 @@ export default function UserDetailPage() {
 
           {/* Statistiques */}
           <div className="rounded-2xl p-5 space-y-4" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-            <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text }}>Statistiques</p>
+            <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text }}>{t('ad1_user_detail.stats_title')}</p>
             {[
-              { icon: ShoppingCart, label: 'Commandes',      value: user.stats?.total_orders ?? 0,      color: '#8B5CF6' },
-              { icon: Package,      label: 'Montant dépensé', value: fmtXaf(user.stats?.total_spent), color: '#10B981' },
+              { icon: ShoppingCart, label: t('ad1_user_detail.stat_orders'),      value: user.stats?.total_orders ?? 0,      color: '#8B5CF6' },
+              { icon: Package,      label: t('ad1_user_detail.stat_spent'), value: fmtXaf(user.stats?.total_spent), color: '#10B981' },
             ].map((s, i) => {
               const Icon = s.icon;
               return (
@@ -377,29 +379,29 @@ export default function UserDetailPage() {
               <div className="flex items-center justify-between px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: 'rgba(244,121,32,0.05)' }}>
                 <div className="flex items-center gap-2">
                   <Store size={14} style={{ color: '#F47920' }} />
-                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Profil Vendeur</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad1_user_detail.vendor_profile_title')}</span>
                 </div>
                 <Link to={`/admin/vendors/${user.vendor_profile.id}`}
                   className="flex items-center gap-1 text-[11.5px] font-semibold" style={{ color: '#F47920' }}>
-                  Voir <ExternalLink size={10} />
+                  {t('ad1_user_detail.view_link')} <ExternalLink size={10} />
                 </Link>
               </div>
               <div className="p-5">
-                <InfoRow label="Boutique" value={<span style={{ color: '#F47920', fontWeight: 600 }}>{user.vendor_profile.business_name}</span>} T={T} />
-                <InfoRow label="Statut" value={user.vendor_profile.status} T={T} />
+                <InfoRow label={t('ad1_user_detail.label_shop')} value={<span style={{ color: '#F47920', fontWeight: 600 }}>{user.vendor_profile.business_name}</span>} T={T} />
+                <InfoRow label={t('ad1_user_detail.label_status')} value={user.vendor_profile.status} T={T} />
               </div>
             </div>
           )}
 
           {/* Accès rapide */}
           <div className="rounded-2xl p-4 space-y-2" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-            <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>Accès rapide</p>
+            <p style={{ fontSize: 12.5, fontWeight: 700, color: T.text, marginBottom: 8 }}>{t('ad1_user_detail.quick_access_title')}</p>
             <Link to={`/admin/orders?user=${user.id}`}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl w-full text-[12.5px] font-semibold transition-all"
               style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
               onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text; }}
               onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; }}>
-              <ShoppingCart size={14} /> Voir ses commandes
+              <ShoppingCart size={14} /> {t('ad1_user_detail.view_orders_link')}
             </Link>
             {user.vendor_profile && (
               <Link to={`/admin/catalogue?vendor=${user.vendor_profile.id}`}
@@ -407,7 +409,7 @@ export default function UserDetailPage() {
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = T.text; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = T.muted; }}>
-                <Package size={14} /> Voir ses produits
+                <Package size={14} /> {t('ad1_user_detail.view_products_link')}
               </Link>
             )}
           </div>

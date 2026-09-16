@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, Clock, Lock, BarChart2, RefreshCw,
   CheckCircle, Scale, MessageSquare, Paperclip, Send,
@@ -35,30 +36,35 @@ const T = {
 type TabFilter = 'all' | 'urgent' | 'mediation' | 'closed';
 
 // ── Onglets avec icônes ──────────────────────────────────────────────────────
-const TABS: { key: TabFilter; label: string; Icon: React.FC<{ size?: number }> }[] = [
-  { key: 'all',       label: 'Tous',          Icon: ListFilter    },
-  { key: 'urgent',    label: 'À traiter',     Icon: BadgeAlert    },
-  { key: 'mediation', label: 'En médiation',  Icon: Hourglass     },
-  { key: 'closed',    label: 'Clôturés',      Icon: ShieldCheck   },
+const TABS: { key: TabFilter; labelKey: string; Icon: React.FC<{ size?: number }> }[] = [
+  { key: 'all',       labelKey: 'sl4_disputes.tab_all',       Icon: ListFilter    },
+  { key: 'urgent',    labelKey: 'sl4_disputes.tab_urgent',    Icon: BadgeAlert    },
+  { key: 'mediation', labelKey: 'sl4_disputes.tab_mediation', Icon: Hourglass     },
+  { key: 'closed',    labelKey: 'sl4_disputes.tab_closed',    Icon: ShieldCheck   },
 ];
 
 const REASON_LABELS: Record<string, string> = {
-  DEFECT: 'Produit défectueux', WRONG: 'Mauvais produit reçu',
-  MISSING: 'Produit non reçu',  DAMAGED: 'Produit endommagé', OTHER: 'Autre motif',
+  DEFECT: 'sl4_disputes.reason_defect', WRONG: 'sl4_disputes.reason_wrong',
+  MISSING: 'sl4_disputes.reason_missing',  DAMAGED: 'sl4_disputes.reason_damaged', OTHER: 'sl4_disputes.reason_other',
 };
 
 const REPLY_OPTIONS: {
-  key: VendorReplyType; label: string; desc: string; color: string; bg: string;
+  key: VendorReplyType; labelKey: string; descKey: string; color: string; bg: string;
 }[] = [
-  { key: 'ACCEPT',     label: 'Accepter le remboursement', color: T.green, bg: T.greenL,
-    desc: "Vous reconnaissez le problème et acceptez le remboursement. BelivaY libérera les fonds à l'acheteur." },
-  { key: 'CONTEST',    label: 'Contester le litige',        color: T.red,   bg: T.redL,
-    desc: 'Vous estimez que la plainte est injustifiée. Joignez des preuves pour appuyer votre position.' },
-  { key: 'COMPROMISE', label: 'Proposer un compromis',      color: T.amber, bg: T.amberL,
-    desc: 'Vous proposez un remboursement partiel. Indiquez le montant et votre explication.' },
+  { key: 'ACCEPT',     labelKey: 'sl4_disputes.reply_accept_label', color: T.green, bg: T.greenL,
+    descKey: 'sl4_disputes.reply_accept_desc' },
+  { key: 'CONTEST',    labelKey: 'sl4_disputes.reply_contest_label',        color: T.red,   bg: T.redL,
+    descKey: 'sl4_disputes.reply_contest_desc' },
+  { key: 'COMPROMISE', labelKey: 'sl4_disputes.reply_compromise_label',      color: T.amber, bg: T.amberL,
+    descKey: 'sl4_disputes.reply_compromise_desc' },
 ];
 
 // ─── HELPERS ─────────────────────────────────────────────────────────────────
+
+const STEP_LABEL_KEYS = [
+  'sl4_disputes.step_received', 'sl4_disputes.step_your_reply',
+  'sl4_disputes.step_mediation', 'sl4_disputes.step_decision',
+] as const;
 
 function calcStep(d: VendorDisputeListItem | VendorDisputeDetail): number {
   if (['RESOLVED','CLOSED'].includes(d.status)) return 4;
@@ -85,41 +91,43 @@ function StepDot({ done, active, label, num }: {
 }
 
 function DeadlineBar({ h }: { h: number }) {
+  const { t } = useTranslation();
   const pct = Math.min(100, Math.round((1 - h / 72) * 100));
   return (
     <div className="rounded-xl p-3" style={{ background: T.redL, border: `1px solid ${T.redB}` }}>
       <div className="flex items-center justify-between mb-2">
         <span className="flex items-center gap-1.5 text-[11.5px] font-bold" style={{ color: '#991B1B' }}>
-          <Timer size={12}/> Délai de réponse
+          <Timer size={12}/> {t('sl4_disputes.deadline_label')}
         </span>
-        <span className="text-[12.5px] font-black" style={{ color: T.red }}>{h}h restantes</span>
+        <span className="text-[12.5px] font-black" style={{ color: T.red }}>{t('sl4_disputes.hours_remaining', { count: h })}</span>
       </div>
       <div className="h-1.5 rounded-full" style={{ background: 'rgba(220,38,38,0.15)' }}>
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: h <= 12 ? T.red : T.amber }}/>
       </div>
       <p className="text-[10.5px] mt-1" style={{ color: '#991B1B' }}>
-        Sans réponse → BelivaY décide automatiquement en faveur de l'acheteur.
+        {t('sl4_disputes.deadline_warning')}
       </p>
     </div>
   );
 }
 
 function StatusBadge({ d }: { d: VendorDisputeListItem }) {
+  const { t } = useTranslation();
   if (!d.vendor_contacted)
     return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.amberL, color: T.amber }}>
-      <HelpCircle size={10}/> En attente d'examen
+      <HelpCircle size={10}/> {t('sl4_disputes.status_awaiting_review')}
     </span>;
   if (['OPEN','IN_PROGRESS'].includes(d.status) && !d.vendor_replied)
     return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full animate-pulse" style={{ background: T.redL, color: T.red }}>
-      <BadgeAlert size={10}/> Réponse requise
+      <BadgeAlert size={10}/> {t('sl4_disputes.status_reply_required')}
     </span>;
   if (d.status === 'IN_PROGRESS' && d.vendor_replied)
     return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.blueL, color: T.blue }}>
-      <Hourglass size={10}/> En médiation
+      <Hourglass size={10}/> {t('sl4_disputes.status_mediation')}
     </span>;
   if (d.status === 'RESOLVED')
     return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.greenL, color: T.green }}>
-      <ShieldCheck size={10}/> Résolu
+      <ShieldCheck size={10}/> {t('sl4_disputes.status_resolved')}
     </span>;
   return <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full" style={{ background: T.creamAlt, color: T.muted }}>
     <CheckCircle size={10}/> {d.status_display}
@@ -131,6 +139,7 @@ function StatusBadge({ d }: { d: VendorDisputeListItem }) {
 function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
   dispute: VendorDisputeDetail; onClose: () => void; onRefresh: () => void;
 }) {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const step = calcStep(dispute);
   const isResolved = ['RESOLVED','CLOSED'].includes(dispute.status);
@@ -151,16 +160,16 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
   useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [dispute.messages.length]);
 
   const handleReply = async () => {
-    if (!replyType || replyText.trim().length < 20) { showToast('Explication trop courte (min 20 caractères).','error'); return; }
-    if (replyType === 'COMPROMISE' && !replyAmt) { showToast('Indiquez le montant proposé.','error'); return; }
+    if (!replyType || replyText.trim().length < 20) { showToast(t('sl4_disputes.toast_explanation_too_short'),'error'); return; }
+    if (replyType === 'COMPROMISE' && !replyAmt) { showToast(t('sl4_disputes.toast_amount_required'),'error'); return; }
     try {
       setSubmitting(true);
       await vendorsApi.submitDisputeReply(dispute.id, {
         reply_type: replyType, reply_text: replyText,
         proposed_amount: replyAmt ? parseInt(replyAmt,10) : undefined,
       });
-      showToast('Réponse enregistrée.','success'); onRefresh();
-    } catch { showToast('Erreur lors de la soumission.','error'); }
+      showToast(t('sl4_disputes.toast_reply_saved'),'success'); onRefresh();
+    } catch { showToast(t('sl4_disputes.toast_submit_error'),'error'); }
     finally { setSubmitting(false); }
   };
 
@@ -170,21 +179,21 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
       setSendingMsg(true);
       await vendorsApi.sendDisputeMessage(dispute.id, chatMsg.trim());
       setChatMsg(''); onRefresh();
-    } catch { showToast("Erreur d'envoi.",'error'); }
+    } catch { showToast(t('sl4_disputes.toast_send_error'),'error'); }
     finally { setSendingMsg(false); }
   };
 
   const handleUpload = async (file: File, desc?: string) => {
     if (!pendingEvidenceRequest) {
-      showToast("Aucune demande de preuve n'est en attente.", 'error');
+      showToast(t('sl4_disputes.toast_no_pending_evidence_request'), 'error');
       return;
     }
     try {
       setUploading(true);
       const compressedFile = await ensureImageUnderLimit(file);
       await vendorsApi.uploadDisputeEvidence(dispute.id, pendingEvidenceRequest.id, compressedFile, desc);
-      showToast('Pièce jointe ajoutée.','success'); onRefresh();
-    } catch { showToast("Erreur lors de l'upload.",'error'); }
+      showToast(t('sl4_disputes.toast_evidence_added'),'success'); onRefresh();
+    } catch { showToast(t('sl4_disputes.toast_upload_error'),'error'); }
     finally { setUploading(false); }
   };
 
@@ -198,10 +207,10 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
           <div>
             <p className="font-black text-[15px]" style={{ color: T.text }}>
               <Gavel size={14} className="inline mr-1.5 mb-0.5" style={{ color: T.orange }}/>
-              Litige #{dispute.id} — {dispute.order_ref}
+              {t('sl4_disputes.dispute_header', { id: dispute.id, ref: dispute.order_ref })}
             </p>
             <p className="text-[12px]" style={{ color: T.muted }}>
-              {REASON_LABELS[dispute.reason] ?? dispute.reason} · {fmtDate(dispute.created_at)}
+              {t(REASON_LABELS[dispute.reason] ?? dispute.reason)} · {fmtDate(dispute.created_at)}
             </p>
           </div>
           <button type="button" onClick={onClose}
@@ -214,8 +223,8 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
           {/* Stepper */}
           <div className="flex items-start relative">
             <div className="absolute top-3.5 left-0 right-0 h-[2px]" style={{ background: T.border }}/>
-            {(['Litige reçu','Votre réponse','Médiation','Décision'] as const).map((label, i) => (
-              <StepDot key={i} num={i+1} label={label} done={i+1 < step} active={i+1 === step}/>
+            {STEP_LABEL_KEYS.map((labelKey, i) => (
+              <StepDot key={i} num={i+1} label={t(labelKey)} done={i+1 < step} active={i+1 === step}/>
             ))}
           </div>
 
@@ -227,13 +236,13 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
           {/* Plainte acheteur */}
           <div className="rounded-xl p-4" style={{ background: T.cream, border: `1px solid ${T.border}` }}>
             <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide mb-2" style={{ color: T.muted }}>
-              <BookOpen size={11}/> Plainte de l'acheteur
+              <BookOpen size={11}/> {t('sl4_disputes.buyer_complaint_title')}
             </p>
             <p className="text-[12.5px] font-semibold mb-1" style={{ color: T.red }}>
-              Motif : {REASON_LABELS[dispute.reason] ?? dispute.reason}
+              {t('sl4_disputes.reason_label', { reason: t(REASON_LABELS[dispute.reason] ?? dispute.reason) })}
             </p>
             <p className="text-[13px] leading-relaxed" style={{ color: T.text }}>{dispute.description}</p>
-            <p className="text-[11px] mt-2" style={{ color: T.mutedL }}>Fonds en jeu : <strong>{fmtXAF(dispute.vendor_escrow_amount)}</strong></p>
+            <p className="text-[11px] mt-2" style={{ color: T.mutedL }}>{t('sl4_disputes.funds_at_stake_label')} <strong>{fmtXAF(dispute.vendor_escrow_amount)}</strong></p>
           </div>
 
           {/* Formulaire réponse */}
@@ -242,11 +251,11 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
               <div className="px-4 py-3" style={{ background: T.orangeL }}>
                 <p className="flex items-center gap-1.5 font-bold text-[13px]" style={{ color: T.orange }}>
                   <MessagesSquare size={13}/>
-                  {dispute.vendor_replied ? 'Votre réponse enregistrée' : 'Votre réponse formelle'}
+                  {dispute.vendor_replied ? t('sl4_disputes.your_reply_saved') : t('sl4_disputes.your_formal_reply')}
                 </p>
                 {dispute.vendor_replied && dispute.vendor_reply_type && (
                   <p className="text-[11.5px] mt-0.5" style={{ color: T.muted }}>
-                    {REPLY_OPTIONS.find(r => r.key === dispute.vendor_reply_type)?.label}
+                    {t(REPLY_OPTIONS.find(r => r.key === dispute.vendor_reply_type)?.labelKey ?? '')}
                     {dispute.vendor_proposed_amount ? ` — ${fmtXAF(dispute.vendor_proposed_amount)}` : ''}
                   </p>
                 )}
@@ -264,17 +273,17 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                         {replyType===opt.key && <div className="w-2 h-2 rounded-full" style={{ background: opt.color }}/>}
                       </div>
                       <div>
-                        <p className="text-[12.5px] font-bold" style={{ color: opt.color }}>{opt.label}</p>
-                        {replyType===opt.key && <p className="text-[11.5px] mt-0.5" style={{ color: T.muted }}>{opt.desc}</p>}
+                        <p className="text-[12.5px] font-bold" style={{ color: opt.color }}>{t(opt.labelKey)}</p>
+                        {replyType===opt.key && <p className="text-[11.5px] mt-0.5" style={{ color: T.muted }}>{t(opt.descKey)}</p>}
                       </div>
                     </button>
                   ))}
                 </div>
                 {replyType === 'COMPROMISE' && (
                   <div>
-                    <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.text }}>Montant proposé (FCFA)</label>
+                    <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.text }}>{t('sl4_disputes.proposed_amount_label')}</label>
                     <input type="number" value={replyAmt} min={1} disabled={dispute.vendor_replied}
-                      onChange={e => setReplyAmt(e.target.value)} placeholder="Ex : 15 000"
+                      onChange={e => setReplyAmt(e.target.value)} placeholder={t('sl4_disputes.proposed_amount_placeholder')}
                       className="w-full rounded-xl px-4 py-2.5 text-[14px] font-bold outline-none"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}/>
                   </div>
@@ -282,11 +291,11 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                 {replyType && (
                   <div>
                     <label className="text-[12px] font-semibold mb-1 block" style={{ color: T.text }}>
-                      Votre explication <span style={{ color: T.red }}>*</span>
+                      {t('sl4_disputes.your_explanation_label')} <span style={{ color: T.red }}>*</span>
                     </label>
                     <textarea value={replyText} disabled={dispute.vendor_replied} rows={4}
                       onChange={e => setReplyText(e.target.value)}
-                      placeholder="Décrivez clairement votre position… (min 20 caractères)"
+                      placeholder={t('sl4_disputes.explanation_placeholder')}
                       className="w-full rounded-xl px-4 py-3 text-[13px] outline-none resize-none"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}/>
                     <p className="text-[10.5px] mt-0.5 text-right" style={{ color: T.mutedL }}>{replyText.length}/5000</p>
@@ -295,12 +304,12 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                 {!dispute.vendor_replied && pendingEvidenceRequest && (
                   <>
                     <input type="file" ref={fileRefForm} className="hidden" accept="image/*,.pdf"
-                      onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f,'Preuve formulaire'); e.target.value=''; }}/>
+                      onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f, t('sl4_disputes.evidence_desc_form')); e.target.value=''; }}/>
                     <button type="button" onClick={() => fileRefForm.current?.click()} disabled={uploading}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
                       {uploading ? <RefreshCw size={12} className="animate-spin"/> : <Paperclip size={12}/>}
-                      Répondre à la demande de preuve
+                      {t('sl4_disputes.respond_evidence_request_button')}
                     </button>
                     <p className="text-[11.5px]" style={{ color: T.muted }}>{pendingEvidenceRequest.instructions}</p>
                   </>
@@ -312,7 +321,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                         className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-[11px] font-semibold"
                         style={{ background: T.blueL, color: T.blue, border: `1px solid ${T.border}` }}>
                         {ev.file_url.endsWith('.pdf') ? <FileText size={11}/> : <ImageIcon size={11}/>}
-                        {ev.description || `Pièce ${ev.id}`}
+                        {ev.description || t('sl4_disputes.evidence_fallback_label', { id: ev.id })}
                         <ExternalLink size={9}/>
                       </a>
                     ))}
@@ -323,7 +332,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                     disabled={!replyType || replyText.trim().length < 20 || submitting}
                     className="w-full flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[13.5px] text-white disabled:opacity-50"
                     style={{ background: T.orange }}>
-                    {submitting ? <><RefreshCw size={13} className="animate-spin"/>Soumission…</> : <><Send size={13}/>Soumettre ma réponse</>}
+                    {submitting ? <><RefreshCw size={13} className="animate-spin"/>{t('sl4_disputes.submitting')}</> : <><Send size={13}/>{t('sl4_disputes.submit_reply_button')}</>}
                   </button>
                 )}
               </div>
@@ -334,11 +343,11 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
           {isResolved && dispute.resolution_note && (
             <div className="rounded-xl p-4" style={{ background: T.greenL, border: `1px solid ${T.greenB}` }}>
               <p className="flex items-center gap-1.5 font-bold text-[13px] mb-1" style={{ color: T.green }}>
-                <ShieldCheck size={13}/> Litige résolu
+                <ShieldCheck size={13}/> {t('sl4_disputes.dispute_resolved_title')}
               </p>
               <p className="text-[12.5px]" style={{ color: T.text }}>{dispute.resolution_note}</p>
               {dispute.refund_amount_xaf && (
-                <p className="text-[12px] mt-1" style={{ color: T.muted }}>Remboursement acheteur : {fmtXAF(dispute.refund_amount_xaf)}</p>
+                <p className="text-[12px] mt-1" style={{ color: T.muted }}>{t('sl4_disputes.buyer_refund_label')} {fmtXAF(dispute.refund_amount_xaf)}</p>
               )}
             </div>
           )}
@@ -348,18 +357,18 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
             <div className="rounded-xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
               <div className="px-4 py-3 flex items-center gap-2" style={{ background: T.creamAlt, borderBottom: `1px solid ${T.border}` }}>
                 <MessagesSquare size={14} style={{ color: T.muted }}/>
-                <p className="font-bold text-[13px]" style={{ color: T.text }}>Discussion avec Admin BelivaY</p>
+                <p className="font-bold text-[13px]" style={{ color: T.text }}>{t('sl4_disputes.chat_title')}</p>
               </div>
               <div className="px-4 py-4 space-y-3 max-h-64 overflow-y-auto" style={{ background: T.cream }}>
                 {dispute.messages.length === 0
-                  ? <p className="text-center text-[12px]" style={{ color: T.mutedL }}>Aucun message pour l'instant.</p>
+                  ? <p className="text-center text-[12px]" style={{ color: T.mutedL }}>{t('sl4_disputes.no_messages_yet')}</p>
                   : dispute.messages.map(msg => {
                       const isV = msg.sender_role === 'VENDOR';
                       return (
                         <div key={msg.id} className={`flex ${isV ? 'justify-end' : 'justify-start'}`}>
                           <div className="max-w-[80%] space-y-0.5">
                             <p className="text-[10px] font-semibold px-1" style={{ color: T.muted, textAlign: isV?'right':'left' }}>
-                              {isV ? 'Vous' : msg.sender_display}
+                              {isV ? t('sl4_disputes.you_label') : msg.sender_display}
                             </p>
                             <div className="px-3 py-2 text-[12.5px] leading-relaxed"
                               style={{ background: isV?T.orange:T.white, color: isV?T.white:T.text,
@@ -380,14 +389,14 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                   <div className="flex gap-2 items-end">
                     <textarea value={chatMsg} rows={2} onChange={e => setChatMsg(e.target.value)}
                       onKeyDown={e => { if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); handleSend(); } }}
-                      placeholder="Écrivez un message à l'admin…"
+                      placeholder={t('sl4_disputes.chat_placeholder')}
                       className="flex-1 rounded-xl px-3 py-2 text-[13px] outline-none resize-none"
                       style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.text }}/>
                     <div className="flex flex-col gap-1.5">
                       {pendingEvidenceRequest && <>
                         <input type="file" ref={fileRefChat} className="hidden" accept="image/*,.pdf"
-                          onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f,'Pièce jointe chat'); e.target.value=''; }}/>
-                        <button type="button" title="Répondre à la demande de preuve" onClick={() => fileRefChat.current?.click()} disabled={uploading}
+                          onChange={e => { const f=e.target.files?.[0]; if(f) handleUpload(f, t('sl4_disputes.evidence_desc_chat')); e.target.value=''; }}/>
+                        <button type="button" title={t('sl4_disputes.respond_evidence_request_button')} onClick={() => fileRefChat.current?.click()} disabled={uploading}
                           className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: T.creamAlt, border: `1px solid ${T.border}` }}>
                           {uploading ? <RefreshCw size={13} className="animate-spin" style={{color:T.muted}}/> : <Paperclip size={13} style={{color:T.muted}}/>}
                         </button>
@@ -399,7 +408,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
                       </button>
                     </div>
                   </div>
-                  <p className="text-[10px]" style={{ color: T.mutedL }}>Entrée pour envoyer · Shift+Entrée pour nouvelle ligne</p>
+                  <p className="text-[10px]" style={{ color: T.mutedL }}>{t('sl4_disputes.chat_hint')}</p>
                 </div>
               )}
             </div>
@@ -408,7 +417,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
           <Link to={`/seller/orders/${dispute.order}`}
             className="flex items-center justify-between px-4 py-3 rounded-xl text-[12.5px] font-semibold"
             style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-            Voir la commande {dispute.order_ref}
+            {t('sl4_disputes.view_order_button', { ref: dispute.order_ref })}
             <ChevronRight size={14}/>
           </Link>
         </div>
@@ -420,6 +429,7 @@ function DisputeDetailPanel({ dispute, onClose, onRefresh }: {
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function SellerDisputesPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [disputes,      setDisputes]      = useState<VendorDisputeListItem[]>([]);
   const [loading,       setLoading]       = useState(true);
@@ -429,15 +439,15 @@ export default function SellerDisputesPage() {
 
   const load = useCallback(async () => {
     try { setLoading(true); setDisputes(await vendorsApi.getDisputes()); }
-    catch { showToast('Erreur de chargement','error'); }
+    catch { showToast(t('sl4_disputes.toast_load_error'),'error'); }
     finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
   const openDetail = async (d: VendorDisputeListItem) => {
     try { setLoadingDetail(true); setSelected(await vendorsApi.getDisputeDetail(d.id)); }
-    catch { showToast('Erreur de chargement','error'); }
+    catch { showToast(t('sl4_disputes.toast_load_error'),'error'); }
     finally { setLoadingDetail(false); }
   };
 
@@ -484,16 +494,16 @@ export default function SellerDisputesPage() {
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
             style={{ color: T.text }}>
-            <Gavel size={20} style={{ color: T.orange }}/> Litiges reçus
+            <Gavel size={20} style={{ color: T.orange }}/> {t('sl4_disputes.page_title')}
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
-            Contestations acheteurs · Messagerie admin · Médiation
+            {t('sl4_disputes.page_subtitle')}
           </p>
         </div>
         <button type="button" onClick={load}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold"
           style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-          <RefreshCw size={13}/> Actualiser
+          <RefreshCw size={13}/> {t('sl4_disputes.refresh')}
         </button>
       </div>
 
@@ -505,17 +515,17 @@ export default function SellerDisputesPage() {
             <AlertTriangle size={18} style={{ color: T.red, flexShrink: 0 }}/>
             <div>
               <p className="font-bold text-[13.5px]" style={{ color: '#991B1B' }}>
-                Action requise : {urgent.length} litige{urgent.length>1?'s':''} en attente de votre réponse
+                {t(urgent.length > 1 ? 'sl4_disputes.action_required_plural' : 'sl4_disputes.action_required', { count: urgent.length })}
               </p>
               <p className="text-[12px]" style={{ color: T.red }}>
-                Sans réponse dans le délai imparti, BelivaY tranchera en faveur de l'acheteur.
+                {t('sl4_disputes.urgent_alert_sub')}
               </p>
             </div>
           </div>
           <button type="button" onClick={() => setTab('urgent')}
             className="px-4 py-2 rounded-xl text-[12.5px] font-bold text-white flex-shrink-0"
             style={{ background: T.red }}>
-            Voir maintenant
+            {t('sl4_disputes.view_now_button')}
           </button>
         </div>
       )}
@@ -523,10 +533,10 @@ export default function SellerDisputesPage() {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {[
-          { ico: <Scale size={16}/>,     color: actifs.length>0?T.red:T.green,   bg: actifs.length>0?T.redL:T.greenL,   val: String(actifs.length),   label: 'Litiges actifs'        },
-          { ico: <Clock size={16}/>,     color: minH!==null?T.red:T.muted,       bg: minH!==null?T.redL:T.creamAlt,     val: minH!==null?`${minH}h`:'—', label: 'Délai le plus court'  },
-          { ico: <Lock size={16}/>,      color: fondsRisque>0?T.amber:T.muted,   bg: fondsRisque>0?T.amberL:T.creamAlt, val: fmtXAF(fondsRisque),     label: 'Fonds bloqués'        },
-          { ico: <BarChart2 size={16}/>, color: tauxFav>=70?T.green:tauxFav>=40?T.amber:T.red, bg: tauxFav>=70?T.greenL:tauxFav>=40?T.amberL:T.redL, val: `${tauxFav}%`, label: 'Résolutions favorables' },
+          { ico: <Scale size={16}/>,     color: actifs.length>0?T.red:T.green,   bg: actifs.length>0?T.redL:T.greenL,   val: String(actifs.length),   label: t('sl4_disputes.kpi_active_label')        },
+          { ico: <Clock size={16}/>,     color: minH!==null?T.red:T.muted,       bg: minH!==null?T.redL:T.creamAlt,     val: minH!==null?`${minH}h`:'—', label: t('sl4_disputes.kpi_shortest_delay_label')  },
+          { ico: <Lock size={16}/>,      color: fondsRisque>0?T.amber:T.muted,   bg: fondsRisque>0?T.amberL:T.creamAlt, val: fmtXAF(fondsRisque),     label: t('sl4_disputes.kpi_blocked_funds_label')        },
+          { ico: <BarChart2 size={16}/>, color: tauxFav>=70?T.green:tauxFav>=40?T.amber:T.red, bg: tauxFav>=70?T.greenL:tauxFav>=40?T.amberL:T.redL, val: `${tauxFav}%`, label: t('sl4_disputes.kpi_favorable_resolutions_label') },
         ].map((kpi,i) => (
           <div key={i} className="rounded-2xl p-4 flex flex-col gap-2"
             style={{ background: T.white, border: `1px solid ${T.border}`, boxShadow: '0 1px 4px rgba(28,18,9,0.06)' }}>
@@ -544,7 +554,7 @@ export default function SellerDisputesPage() {
           Pas de fond orange plein — fidèle à l'HTML vendeur de référence.
       ─────────────────────────────────────────────────────────────────────── */}
       <div className="flex gap-2 flex-wrap">
-        {TABS.map(({ key, label, Icon }) => {
+        {TABS.map(({ key, labelKey, Icon }) => {
           const active = tab === key;
           return (
             <button key={key} type="button" onClick={() => setTab(key)}
@@ -555,7 +565,7 @@ export default function SellerDisputesPage() {
                 border:      active ? `1.5px solid ${T.orange}` : `1px solid ${T.border}`,
               }}>
               <Icon size={13}/>
-              {label}
+              {t(labelKey)}
               {counts[key] > 0 && (
                 <span className="text-[10px] font-black px-1.5 py-0.5 rounded-full"
                   style={{ background: active ? T.orangeB : T.creamAlt, color: active ? T.orange : T.muted }}>
@@ -572,10 +582,10 @@ export default function SellerDisputesPage() {
         <div className="rounded-2xl py-16 text-center" style={{ background: T.white, border: `1px solid ${T.border}` }}>
           <p className="text-4xl mb-3">{disputes.length===0?'🕊️':'✅'}</p>
           <p className="font-bold text-[16px] mb-1" style={{ color: T.text }}>
-            {disputes.length===0 ? 'Aucun litige reçu' : 'Aucun litige dans ce filtre'}
+            {disputes.length===0 ? t('sl4_disputes.empty_none_received') : t('sl4_disputes.empty_no_match_filter')}
           </p>
           <p className="text-[13px]" style={{ color: T.muted }}>
-            {disputes.length===0 ? 'Excellent ! Continuez à soigner la qualité de vos produits.' : 'Essayez un autre filtre.'}
+            {disputes.length===0 ? t('sl4_disputes.empty_none_received_sub') : t('sl4_disputes.empty_try_other_filter')}
           </p>
         </div>
       ) : (
@@ -597,36 +607,36 @@ export default function SellerDisputesPage() {
                 <div className="px-5 py-4 space-y-3">
                   <div className="flex items-start relative">
                     <div className="absolute top-3.5 left-0 right-0 h-[2px]" style={{ background: T.border }}/>
-                    {(['Litige reçu','Votre réponse','Médiation','Décision'] as const).map((label,i) => (
-                      <StepDot key={i} num={i+1} label={label} done={i+1<stp} active={i+1===stp}/>
+                    {STEP_LABEL_KEYS.map((labelKey,i) => (
+                      <StepDot key={i} num={i+1} label={t(labelKey)} done={i+1<stp} active={i+1===stp}/>
                     ))}
                   </div>
                   {isUrgent && d.hours_remaining <= 48 && <DeadlineBar h={d.hours_remaining}/>}
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-[12.5px] font-semibold" style={{ color: T.text }}>
-                        {REASON_LABELS[d.reason] ?? d.reason}
+                        {t(REASON_LABELS[d.reason] ?? d.reason)}
                       </p>
                       <p className="text-[12px] mt-0.5 line-clamp-2" style={{ color: T.muted }}>{d.description}</p>
                     </div>
                     <div className="text-right flex-shrink-0">
                       <p className="font-black text-[14px]" style={{ color: T.text }}>{fmtXAF(d.vendor_escrow_amount)}</p>
-                      <p className="text-[10.5px]" style={{ color: T.mutedL }}>En escrow</p>
+                      <p className="text-[10.5px]" style={{ color: T.mutedL }}>{t('sl4_disputes.in_escrow_label')}</p>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       {d.unread_messages > 0 && (
                         <span className="flex items-center gap-1 text-[11px] font-bold" style={{ color: T.blue }}>
-                          <MessageSquare size={11}/>{d.unread_messages} message{d.unread_messages>1?'s':''}
+                          <MessageSquare size={11}/>{t(d.unread_messages > 1 ? 'sl4_disputes.unread_messages_plural' : 'sl4_disputes.unread_messages', { count: d.unread_messages })}
                         </span>
                       )}
                       {d.assigned_admin_name && (
-                        <span className="text-[11px]" style={{ color: T.muted }}>Suivi par {d.assigned_admin_name}</span>
+                        <span className="text-[11px]" style={{ color: T.muted }}>{t('sl4_disputes.followed_by', { name: d.assigned_admin_name })}</span>
                       )}
                     </div>
                     <span className="text-[11px] font-semibold flex items-center gap-1" style={{ color: T.orange }}>
-                      Voir le détail <ChevronRight size={12}/>
+                      {t('sl4_disputes.view_detail')} <ChevronRight size={12}/>
                     </span>
                   </div>
                 </div>
@@ -640,14 +650,14 @@ export default function SellerDisputesPage() {
       <div className="rounded-2xl p-5" style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <p className="flex items-center gap-2 font-bold text-[14px] mb-4"
           style={{ color: '#991B1B' }}>
-          <BookOpen size={15}/> Vos droits & obligations en cas de litige
+          <BookOpen size={15}/> {t('sl4_disputes.rights_title')}
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {[
-            { icon: <Timer size={12}/>,       title: 'Vos délais',              items: ['Réponse vendeur : 72h max',"Sans réponse → décision auto en faveur de l'acheteur",'Médiation BelivaY : 48h après votre réponse','Décision finale irrévocable sous 7 jours'] },
-            { icon: <Paperclip size={12}/>,    title: 'Preuves acceptées',       items: ['Photos produit avant expédition',"Bon de livraison signé par l'acheteur",'Captures conversations WhatsApp','Numéro de suivi de colis'] },
-            { icon: <Lock size={12}/>,         title: 'Impact sur vos fonds',    items: ['Fonds bloqués en Escrow pendant la procédure','Remboursement déduit de vos prochains versements','Décision favorable → libération immédiate'] },
-            { icon: <ShieldCheck size={12}/>,  title: 'Conseils préventifs',     items: ['Photographiez chaque produit avant expédition','Exigez toujours une signature à la livraison','Décrivez précisément vos produits (taille, couleur)',"Répondez aux questions avant l'expédition"] },
+            { icon: <Timer size={12}/>,       title: t('sl4_disputes.rights_delays_title'),              items: [t('sl4_disputes.rights_delays_item1'), t('sl4_disputes.rights_delays_item2'), t('sl4_disputes.rights_delays_item3'), t('sl4_disputes.rights_delays_item4')] },
+            { icon: <Paperclip size={12}/>,    title: t('sl4_disputes.rights_evidence_title'),       items: [t('sl4_disputes.rights_evidence_item1'), t('sl4_disputes.rights_evidence_item2'), t('sl4_disputes.rights_evidence_item3'), t('sl4_disputes.rights_evidence_item4')] },
+            { icon: <Lock size={12}/>,         title: t('sl4_disputes.rights_funds_title'),    items: [t('sl4_disputes.rights_funds_item1'), t('sl4_disputes.rights_funds_item2'), t('sl4_disputes.rights_funds_item3')] },
+            { icon: <ShieldCheck size={12}/>,  title: t('sl4_disputes.rights_tips_title'),     items: [t('sl4_disputes.rights_tips_item1'), t('sl4_disputes.rights_tips_item2'), t('sl4_disputes.rights_tips_item3'), t('sl4_disputes.rights_tips_item4')] },
           ].map((s,i) => (
             <div key={i}>
               <p className="flex items-center gap-1.5 font-bold text-[12px] mb-2" style={{ color: T.text }}>

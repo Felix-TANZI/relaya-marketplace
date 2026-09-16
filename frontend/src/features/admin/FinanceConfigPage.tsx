@@ -19,6 +19,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ChartPie, CheckCircle2, Clock, GitPullRequest, Lock,
   Plug, Receipt, RefreshCw, Send, Shield, Store, X,
@@ -88,9 +89,9 @@ function fmtDate(valeur: string | null): string {
     : d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function fmtValeur(valeur: unknown): string {
+function fmtValeur(valeur: unknown, t: (key: string) => string): string {
   if (valeur === null || valeur === undefined || valeur === '') return '—';
-  if (typeof valeur === 'boolean') return valeur ? 'oui' : 'non';
+  if (typeof valeur === 'boolean') return valeur ? t('ad6_finance_config.yes') : t('ad6_finance_config.no');
   if (typeof valeur === 'number') return valeur.toLocaleString('fr-FR');
   if (Array.isArray(valeur)) return valeur.length ? valeur.join(', ') : '—';
   if (typeof valeur === 'object') return JSON.stringify(valeur);
@@ -98,10 +99,10 @@ function fmtValeur(valeur: unknown): string {
 }
 
 /** `min_payout_xaf` → « Min payout xaf ». Lisible sans dictionnaire. */
-function fmtChamp(nom: string): string {
+function fmtChamp(nom: string, t: (key: string) => string): string {
   const propre = nom
-    .replace(/_xaf$/, ' (FCFA)')
-    .replace(/_hours$/, ' (heures)')
+    .replace(/_xaf$/, ` (${t('ad6_finance_config.suffix_xaf')})`)
+    .replace(/_hours$/, ` (${t('ad6_finance_config.suffix_hours')})`)
     .replace(/_pct$|_percent$/, ' (%)')
     .replace(/_/g, ' ');
   return propre.charAt(0).toUpperCase() + propre.slice(1);
@@ -111,6 +112,7 @@ function fmtChamp(nom: string): string {
 
 export default function FinanceConfigPage() {
   const T = useAdminTheme();
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   const [overview, setOverview] = useState<Overview | null>(null);
@@ -133,7 +135,7 @@ export default function FinanceConfigPage() {
       setOverview(o);
       setRequests(r);
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : 'Chargement impossible.');
+      setError(exc instanceof Error ? exc.message : t('ad6_finance_config.load_impossible'));
     } finally {
       setLoading(false);
     }
@@ -148,11 +150,11 @@ export default function FinanceConfigPage() {
       await api.post(
         `/api/payments/v2/admin/config/requests/${reference}/approve/`, {},
       );
-      setNotice('Demande approuvée. Le réglage est appliqué.');
+      setNotice(t('ad6_finance_config.approve_success'));
       await load();
     } catch (exc) {
       // Le message du serveur, TEL QUEL.
-      setError(exc instanceof Error ? exc.message : "L'approbation a échoué.");
+      setError(exc instanceof Error ? exc.message : t('ad6_finance_config.approve_error'));
     } finally {
       setBusy(false);
     }
@@ -160,7 +162,7 @@ export default function FinanceConfigPage() {
 
   const reject = async (reference: string) => {
     if (!rejectReason.trim()) {
-      setError('Le motif du rejet est obligatoire.');
+      setError(t('ad6_finance_config.reject_reason_required'));
       return;
     }
     setBusy(true);
@@ -170,12 +172,12 @@ export default function FinanceConfigPage() {
         `/api/payments/v2/admin/config/requests/${reference}/reject/`,
         { reason: rejectReason.trim() },
       );
-      setNotice('Demande rejetée.');
+      setNotice(t('ad6_finance_config.reject_success'));
       setRejecting(null);
       setRejectReason('');
       await load();
     } catch (exc) {
-      setError(exc instanceof Error ? exc.message : 'Le rejet a échoué.');
+      setError(exc instanceof Error ? exc.message : t('ad6_finance_config.reject_error'));
     } finally {
       setBusy(false);
     }
@@ -193,11 +195,10 @@ export default function FinanceConfigPage() {
             fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800,
             color: T.text, marginBottom: 4,
           }}>
-            Configuration financière
+            {t('ad6_finance_config.title')}
           </h1>
           <p style={{ fontSize: 12.5, color: T.muted }}>
-            Huit réglages gouvernent l’argent. Aucun ne se modifie sans
-            l’accord d’un tiers.
+            {t('ad6_finance_config.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -214,7 +215,7 @@ export default function FinanceConfigPage() {
               fontWeight: 700, background: T.redB, color: T.red,
               border: `1px solid ${T.border}`,
             }}>
-              {pending.length} demande{pending.length > 1 ? 's' : ''} en attente
+              {t(pending.length > 1 ? 'ad6_finance_config.pending_requests_plural' : 'ad6_finance_config.pending_requests', { count: pending.length })}
             </span>
           )}
         </div>
@@ -240,9 +241,9 @@ export default function FinanceConfigPage() {
       )}
 
       {/* ── Les huit réglages ───────────────────────────────────────── */}
-      <Section title="Réglages actifs" icon={Shield} T={T}>
+      <Section title={t('ad6_finance_config.active_settings')} icon={Shield} T={T}>
         {loading && !overview ? (
-          <p style={{ fontSize: 12.5, color: T.muted }}>Chargement…</p>
+          <p style={{ fontSize: 12.5, color: T.muted }}>{t('ad6_finance_config.loading')}</p>
         ) : (
           <div style={{ margin: '-20px', overflow: 'hidden' }}>
             {(overview?.sections ?? []).map((s, i, tout) => {
@@ -299,11 +300,10 @@ export default function FinanceConfigPage() {
       </Section>
 
       {/* ── Demandes de changement ──────────────────────────────────── */}
-      <Section title="Demandes de changement" icon={GitPullRequest} T={T}>
+      <Section title={t('ad6_finance_config.change_requests')} icon={GitPullRequest} T={T}>
         {requests.length === 0 ? (
           <p style={{ fontSize: 12.5, color: T.mutedL }}>
-            Aucune demande. Les modifications de configuration apparaîtront ici
-            en attente d’approbation.
+            {t('ad6_finance_config.no_requests')}
           </p>
         ) : (
           requests.slice(0, 10).map((r) => (
@@ -326,12 +326,12 @@ export default function FinanceConfigPage() {
                     {r.target_model} · {r.target_key || 'nouveau'}
                   </p>
                   <p style={{ fontSize: 12, color: T.muted, margin: '4px 0 0', lineHeight: 1.55 }}>
-                    Par <b style={{ color: T.text }}>{r.requested_by}</b> le{' '}
+                    {t('ad6_finance_config.requested_by_prefix')} <b style={{ color: T.text }}>{r.requested_by}</b> {t('ad6_finance_config.requested_by_on')}{' '}
                     {fmtDate(r.requested_at)} — « {r.justification} »
                   </p>
                   {r.rejection_reason && (
                     <p style={{ fontSize: 11.5, color: T.red, margin: '6px 0 0' }}>
-                      Rejetée — {r.rejection_reason}
+                      {t('ad6_finance_config.rejected_prefix')} — {r.rejection_reason}
                     </p>
                   )}
                 </div>
@@ -351,14 +351,14 @@ export default function FinanceConfigPage() {
                       <div key={champ} className="flex justify-between items-baseline"
                         style={{ padding: '4px 0' }}>
                         <span style={{ fontSize: 11.5, color: T.mutedL }}>
-                          {fmtChamp(champ)}
+                          {fmtChamp(champ, t)}
                         </span>
                         <span style={{ fontSize: 12, color: T.text }}>
                           <span style={{ color: T.red, textDecoration: 'line-through' }}>
-                            {fmtValeur(paire.from)}
+                            {fmtValeur(paire.from, t)}
                           </span>
                           {' → '}
-                          <b>{fmtValeur(paire.to)}</b>
+                          <b>{fmtValeur(paire.to, t)}</b>
                         </span>
                       </div>
                     );
@@ -378,15 +378,15 @@ export default function FinanceConfigPage() {
                   {!r.can_approve ? (
                     <p style={{ fontSize: 11.5, color: T.red, margin: 0 }}>
                       {r.is_mine
-                        ? 'Vous ne pouvez pas approuver votre propre demande.'
-                        : 'Approbation non disponible.'}
+                        ? t('ad6_finance_config.cannot_approve_own')
+                        : t('ad6_finance_config.approval_unavailable')}
                     </p>
                   ) : rejecting === r.reference ? (
                     <div className="space-y-2">
                       <input
                         value={rejectReason}
                         onChange={(e) => setRejectReason(e.target.value)}
-                        placeholder="Motif du rejet…"
+                        placeholder={t('ad6_finance_config.reject_reason_placeholder')}
                         style={{
                           width: '100%', background: T.card, color: T.text,
                           border: `1px solid ${T.border}`, borderRadius: 10,
@@ -395,22 +395,22 @@ export default function FinanceConfigPage() {
                       />
                       <div className="flex gap-2 justify-end">
                         <Btn T={T} onClick={() => { setRejecting(null); setRejectReason(''); }}>
-                          Annuler
+                          {t('ad6_finance_config.cancel')}
                         </Btn>
                         <Btn T={T} danger disabled={busy}
                           onClick={() => { void reject(r.reference); }}>
-                          Confirmer le rejet
+                          {t('ad6_finance_config.confirm_reject')}
                         </Btn>
                       </div>
                     </div>
                   ) : (
                     <div className="flex gap-2 justify-end">
                       <Btn T={T} onClick={() => setRejecting(r.reference)}>
-                        <X size={12} /> Rejeter
+                        <X size={12} /> {t('ad6_finance_config.reject')}
                       </Btn>
                       <Btn T={T} ok disabled={busy}
                         onClick={() => { void approve(r.reference); }}>
-                        <CheckCircle2 size={12} /> Approuver
+                        <CheckCircle2 size={12} /> {t('ad6_finance_config.approve')}
                       </Btn>
                     </div>
                   )}
@@ -432,9 +432,7 @@ export default function FinanceConfigPage() {
         }}>
           <AlertTriangle size={16} style={{ color: '#FBBF24', flexShrink: 0, marginTop: 1 }} />
           <p style={{ fontSize: 12.5, color: '#FBBF24', margin: 0, lineHeight: 1.6 }}>
-            Certains réglages portent des valeurs de test. Elles conviennent en
-            développement, mais un encaissement de 1 FCFA coûterait plus en
-            frais qu’il ne rapporte. À revoir avant la mise en production.
+            {t('ad6_finance_config.test_values_warning')}
           </p>
         </div>
       )}

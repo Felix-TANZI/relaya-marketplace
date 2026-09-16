@@ -32,16 +32,11 @@ const fmtDate = (d: string) =>
 const fmtDateTime = (d: string) =>
   new Date(d).toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-function greetingByHour(lang: string) {
+function greetingByHour(t: (key: string) => string) {
   const h = new Date().getHours();
-  if (lang === 'en') {
-    if (h < 12) return 'Good morning';
-    if (h < 18) return 'Good afternoon';
-    return 'Good evening';
-  }
-  if (h < 12) return 'Bonjour';
-  if (h < 18) return 'Bon après-midi';
-  return 'Bonsoir';
+  if (h < 12) return t('ad1_dashboard.greeting_morning');
+  if (h < 18) return t('ad1_dashboard.greeting_afternoon');
+  return t('ad1_dashboard.greeting_evening');
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,18 +52,18 @@ function DashboardHeader({
   refreshing: boolean;
 }) {
   const { user }      = useAuth();
-  const { i18n }      = useTranslation();
+  const { t, i18n }   = useTranslation();
   const lang          = i18n.language;
-  const greeting      = greetingByHour(lang);
+  const greeting      = greetingByHour(t);
   const displayName   = user?.first_name || user?.username || 'Admin';
 
   // Alertes critiques
-  const alerts: { label: string; count: number; href: string }[] = [];
+  const alerts: { labelKey: string; count: number; href: string }[] = [];
   if (stats) {
     if (stats.pending_vendors > 0)
-      alerts.push({ label: lang === 'en' ? 'vendors pending' : 'vendeurs en attente', count: stats.pending_vendors, href: '/admin/vendors/kyc' });
+      alerts.push({ labelKey: 'ad1_dashboard.alert_vendors_pending', count: stats.pending_vendors, href: '/admin/vendors/kyc' });
     if (stats.failed_payments > 0)
-      alerts.push({ label: lang === 'en' ? 'failed payments' : 'paiements échoués', count: stats.failed_payments, href: '/admin/orders' });
+      alerts.push({ labelKey: 'ad1_dashboard.alert_failed_payments', count: stats.failed_payments, href: '/admin/orders' });
   }
 
   // Date longue
@@ -157,7 +152,7 @@ function DashboardHeader({
                       {analytics.total_revenue_growth >= 0 ? '+' : ''}{analytics.total_revenue_growth.toFixed(1)}%
                     </span>
                     <span style={{ fontSize: 10, color: 'rgba(249,250,251,0.35)', fontWeight: 500 }}>
-                      {lang === 'en' ? 'vs last mo.' : 'vs mois préc.'}
+                      {t('ad1_dashboard.vs_last_month')}
                     </span>
                   </div>
                 )}
@@ -181,7 +176,7 @@ function DashboardHeader({
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.15)')}
           >
             <RefreshCw size={11} className={refreshing ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">{lang === 'en' ? 'Refresh' : 'Actualiser'}</span>
+            <span className="hidden sm:inline">{t('ad1_dashboard.refresh')}</span>
           </button>
         </div>
 
@@ -192,25 +187,25 @@ function DashboardHeader({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
           {[
             {
-              label: lang === 'en' ? 'Revenue today' : "Revenus aujourd'hui",
+              label: t('ad1_dashboard.stat_revenue_today'),
               value: fmtXaf(stats?.revenue_today ?? 0),
               icon: DollarSign,
               color: '#10B981',
             },
             {
-              label: lang === 'en' ? 'Total orders' : 'Commandes totales',
+              label: t('ad1_dashboard.stat_total_orders'),
               value: fmt(stats?.total_orders ?? 0),
               icon: ShoppingCart,
               color: '#3B82F6',
             },
             {
-              label: lang === 'en' ? 'Active vendors' : 'Vendeurs actifs',
+              label: t('ad1_dashboard.stat_active_vendors'),
               value: fmt(stats?.approved_vendors ?? 0),
               icon: Store,
               color: '#8B5CF6',
             },
             {
-              label: lang === 'en' ? 'Users' : 'Utilisateurs',
+              label: t('ad1_dashboard.stat_users'),
               value: fmt(stats?.total_users ?? 0),
               icon: Users,
               color: '#F59E0B',
@@ -260,7 +255,7 @@ function DashboardHeader({
                 onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.15)')}
               >
                 <Bell size={11} style={{ flexShrink: 0 }} />
-                <span>{a.count} {a.label}</span>
+                <span>{t(a.labelKey, { count: a.count })}</span>
                 <ArrowUpRight size={11} style={{ flexShrink: 0 }} />
               </Link>
             ))}
@@ -272,7 +267,7 @@ function DashboardHeader({
           <div className="flex items-center gap-2">
             <CheckCircle size={13} style={{ color: '#10B981' }} />
             <span style={{ fontSize: 12, color: 'rgba(249,250,251,0.4)', fontWeight: 500 }}>
-              {lang === 'en' ? 'Everything is in order — no urgent alerts' : 'Tout est en ordre — aucune alerte urgente'}
+              {t('ad1_dashboard.all_clear')}
             </span>
           </div>
         )}
@@ -397,7 +392,7 @@ function ActivityRow({ item, T }: { item: AdminAnalytics['recent_activity'][0]; 
 export default function AdminDashboardPage() {
   const { showToast }  = useToast();
   const T              = useAdminTheme();
-  const { i18n }       = useTranslation();
+  const { t, i18n }    = useTranslation();
   const lang           = i18n.language;
 
   const [stats,      setStats]     = useState<AdminDashboardStats | null>(null);
@@ -412,12 +407,12 @@ export default function AdminDashboardPage() {
       setStats(s);
       setAnalytics(a);
     } catch {
-      showToast('Erreur chargement dashboard', 'error');
+      showToast(t('ad1_dashboard.toast_load_error'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -442,17 +437,17 @@ export default function AdminDashboardPage() {
         <div className="rounded-2xl p-10 text-center max-w-sm w-full" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <AlertCircle size={40} style={{ color: '#DC2626', margin: '0 auto 16px' }} />
           <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 18, fontWeight: 800, color: T.text, marginBottom: 8 }}>
-            {lang === 'en' ? 'Loading error' : 'Erreur de chargement'}
+            {t('ad1_dashboard.loading_error')}
           </p>
           <p style={{ fontSize: 13, color: T.muted, marginBottom: 24 }}>
-            {lang === 'en' ? 'Unable to load statistics.' : 'Impossible de charger les statistiques.'}
+            {t('ad1_dashboard.unable_to_load')}
           </p>
           <button
             onClick={() => load()}
             className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-white text-sm font-semibold mx-auto"
             style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)' }}
           >
-            <RefreshCw size={14} /> {lang === 'en' ? 'Retry' : 'Réessayer'}
+            <RefreshCw size={14} /> {t('ad1_dashboard.retry')}
           </button>
         </div>
       </div>
@@ -467,11 +462,11 @@ export default function AdminDashboardPage() {
   }));
 
   const pieData = [
-    { name: lang === 'en' ? 'Pending'    : 'En attente',  value: stats.pending_orders,    color: '#F59E0B' },
-    { name: lang === 'en' ? 'Processing' : 'En cours',    value: stats.processing_orders, color: '#3B82F6' },
-    { name: lang === 'en' ? 'Shipped'    : 'Expédié',     value: stats.shipped_orders,    color: '#8B5CF6' },
-    { name: lang === 'en' ? 'Delivered'  : 'Livré',       value: stats.delivered_orders,  color: '#10B981' },
-    { name: lang === 'en' ? 'Cancelled'  : 'Annulé',      value: stats.cancelled_orders,  color: '#EF4444' },
+    { name: t('ad1_dashboard.status_pending'),    value: stats.pending_orders,    color: '#F59E0B' },
+    { name: t('ad1_dashboard.status_processing'), value: stats.processing_orders, color: '#3B82F6' },
+    { name: t('ad1_dashboard.status_shipped'),    value: stats.shipped_orders,    color: '#8B5CF6' },
+    { name: t('ad1_dashboard.status_delivered'),  value: stats.delivered_orders,  color: '#10B981' },
+    { name: t('ad1_dashboard.status_cancelled'),  value: stats.cancelled_orders,  color: '#EF4444' },
   ].filter(d => d.value > 0);
 
   const cardBg   = T.card;
@@ -491,30 +486,30 @@ export default function AdminDashboardPage() {
       {/* ── KPIs Revenus ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label={lang === 'en' ? 'Total revenue' : 'Revenu total'}
+          label={t('ad1_dashboard.kpi_total_revenue')}
           value={fmtXaf(stats.revenue_total)}
           trend={{ value: analytics.total_revenue_growth }}
           icon={DollarSign}
           accent="#DC2626"
         />
         <KpiCard
-          label={lang === 'en' ? "Today's revenue" : "Revenus aujourd'hui"}
+          label={t('ad1_dashboard.kpi_today_revenue')}
           value={fmtXaf(stats.revenue_today)}
-          sub={lang === 'en' ? 'paid orders' : 'commandes payées'}
+          sub={t('ad1_dashboard.kpi_paid_orders_sub')}
           icon={TrendingUp}
           accent="#10B981"
         />
         <KpiCard
-          label={lang === 'en' ? 'This week' : 'Cette semaine'}
+          label={t('ad1_dashboard.kpi_this_week')}
           value={fmtXaf(stats.revenue_week)}
-          sub={lang === 'en' ? 'last 7 days' : '7 derniers jours'}
+          sub={t('ad1_dashboard.kpi_last_7_days')}
           icon={Activity}
           accent="#3B82F6"
         />
         <KpiCard
-          label={lang === 'en' ? 'This month' : 'Ce mois'}
+          label={t('ad1_dashboard.kpi_this_month')}
           value={fmtXaf(stats.revenue_month)}
-          sub={lang === 'en' ? 'last 30 days' : '30 derniers jours'}
+          sub={t('ad1_dashboard.kpi_last_30_days')}
           icon={Award}
           accent="#8B5CF6"
         />
@@ -523,33 +518,33 @@ export default function AdminDashboardPage() {
       {/* ── KPIs Entités ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label={lang === 'en' ? 'Users' : 'Utilisateurs'}
+          label={t('ad1_dashboard.kpi_users')}
           value={fmt(stats.total_users)}
-          sub={`+${stats.new_users_today} ${lang === 'en' ? 'today' : "aujourd'hui"}`}
+          sub={t('ad1_dashboard.today_count', { count: stats.new_users_today })}
           icon={Users}
           accent="#06B6D4"
           href="/admin/customers"
         />
         <KpiCard
-          label={lang === 'en' ? 'Vendors' : 'Vendeurs'}
+          label={t('ad1_dashboard.kpi_vendors')}
           value={fmt(stats.total_vendors)}
-          sub={`${stats.pending_vendors} ${lang === 'en' ? 'pending' : 'en attente'}`}
+          sub={t('ad1_dashboard.pending_count', { count: stats.pending_vendors })}
           icon={Store}
           accent="#F59E0B"
           href="/admin/vendors"
         />
         <KpiCard
-          label={lang === 'en' ? 'Products' : 'Produits'}
+          label={t('ad1_dashboard.kpi_products')}
           value={fmt(stats.total_products)}
-          sub={`${stats.active_products} ${lang === 'en' ? 'active' : 'actifs'}`}
+          sub={t('ad1_dashboard.active_count', { count: stats.active_products })}
           icon={Package}
           accent="#8B5CF6"
           href="/admin/catalogue"
         />
         <KpiCard
-          label={lang === 'en' ? 'Orders' : 'Commandes'}
+          label={t('ad1_dashboard.kpi_orders')}
           value={fmt(stats.total_orders)}
-          sub={`${stats.pending_orders} ${lang === 'en' ? 'pending' : 'en attente'}`}
+          sub={t('ad1_dashboard.pending_count', { count: stats.pending_orders })}
           icon={ShoppingCart}
           accent="#DC2626"
           href="/admin/orders"
@@ -564,15 +559,15 @@ export default function AdminDashboardPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: T.text }}>
-                {lang === 'en' ? 'Revenue — last 30 days' : 'Revenus — 30 derniers jours'}
+                {t('ad1_dashboard.chart_revenue_title')}
               </p>
               <p style={{ fontSize: 12, color: T.muted, marginTop: 2 }}>
-                {lang === 'en' ? 'Paid orders only' : 'Commandes payées uniquement'}
+                {t('ad1_dashboard.chart_paid_only')}
               </p>
             </div>
             <div className="text-right">
               <p style={{ fontSize: 11, color: T.muted, fontWeight: 600 }}>
-                {lang === 'en' ? 'Average basket' : 'Panier moyen'}
+                {t('ad1_dashboard.chart_avg_basket')}
               </p>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: '#DC2626' }}>
                 {fmtXaf(analytics.average_order_value)}
@@ -599,10 +594,10 @@ export default function AdminDashboardPage() {
         {/* Pie statuts commandes */}
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 15, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            {lang === 'en' ? 'Order statuses' : 'Statuts commandes'}
+            {t('ad1_dashboard.order_statuses_title')}
           </p>
           <p style={{ fontSize: 12, color: T.muted, marginBottom: 16 }}>
-            {fmt(stats.total_orders)} {lang === 'en' ? 'total' : 'au total'}
+            {t('ad1_dashboard.total_count', { n: fmt(stats.total_orders) })}
           </p>
           <ResponsiveContainer width="100%" height={140}>
             <PieChart>
@@ -636,16 +631,16 @@ export default function AdminDashboardPage() {
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <div className="flex items-center justify-between mb-4">
             <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>
-              {lang === 'en' ? 'Top Products' : 'Top Produits'}
+              {t('ad1_dashboard.top_products_title')}
             </p>
             <Link to="/admin/catalogue" style={{ fontSize: 11.5, color: '#DC2626', fontWeight: 700 }}>
-              {lang === 'en' ? 'See all' : 'Voir tout'}
+              {t('ad1_dashboard.see_all')}
             </Link>
           </div>
           <div className="space-y-3">
             {analytics.top_products.length === 0 && (
               <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '12px 0' }}>
-                {lang === 'en' ? 'No data' : 'Aucune donnée'}
+                {t('ad1_dashboard.no_data')}
               </p>
             )}
             {analytics.top_products.map((p, i) => (
@@ -661,7 +656,7 @@ export default function AdminDashboardPage() {
                 </span>
                 <div className="flex-1 min-w-0">
                   <p style={{ fontSize: 12, fontWeight: 600, color: T.text }} className="truncate">{p.product_title}</p>
-                  <p style={{ fontSize: 11, color: T.muted }}>{fmt(p.total_quantity)} {lang === 'en' ? 'units' : 'unités'}</p>
+                  <p style={{ fontSize: 11, color: T.muted }}>{t('ad1_dashboard.units_count', { n: fmt(p.total_quantity) })}</p>
                 </div>
                 <p style={{ fontSize: 12, fontWeight: 700, color: '#10B981', flexShrink: 0 }}>{fmtXaf(p.total_revenue)}</p>
               </div>
@@ -673,16 +668,16 @@ export default function AdminDashboardPage() {
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <div className="flex items-center justify-between mb-4">
             <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>
-              {lang === 'en' ? 'Top Vendors' : 'Top Vendeurs'}
+              {t('ad1_dashboard.top_vendors_title')}
             </p>
             <Link to="/admin/vendors" style={{ fontSize: 11.5, color: '#DC2626', fontWeight: 700 }}>
-              {lang === 'en' ? 'See all' : 'Voir tout'}
+              {t('ad1_dashboard.see_all')}
             </Link>
           </div>
           <div className="space-y-3">
             {analytics.top_vendors.length === 0 && (
               <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '12px 0' }}>
-                {lang === 'en' ? 'No data' : 'Aucune donnée'}
+                {t('ad1_dashboard.no_data')}
               </p>
             )}
             {analytics.top_vendors.map((v, i) => (
@@ -698,7 +693,7 @@ export default function AdminDashboardPage() {
                     {v.business_name || v.vendor_name}
                   </p>
                   <p style={{ fontSize: 11, color: T.muted }}>
-                    {fmt(v.total_orders)} {lang === 'en' ? 'orders' : 'commandes'}
+                    {t('ad1_dashboard.orders_count', { n: fmt(v.total_orders) })}
                   </p>
                 </div>
                 <p style={{ fontSize: 12, fontWeight: 700, color: '#10B981', flexShrink: 0 }}>{fmtXaf(v.total_revenue)}</p>
@@ -710,12 +705,12 @@ export default function AdminDashboardPage() {
         {/* Activité récente */}
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            {lang === 'en' ? 'Recent Activity' : 'Activité récente'}
+            {t('ad1_dashboard.recent_activity_title')}
           </p>
           <div className="overflow-y-auto" style={{ maxHeight: 320 }}>
             {analytics.recent_activity.length === 0 && (
               <p style={{ fontSize: 12, color: T.muted, textAlign: 'center', padding: '20px 0' }}>
-                {lang === 'en' ? 'No activity' : 'Aucune activité'}
+                {t('ad1_dashboard.no_activity')}
               </p>
             )}
             {analytics.recent_activity.map((item, i) => (
@@ -731,7 +726,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <div className="flex items-center justify-between mb-3">
             <p style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              {lang === 'en' ? 'Conversion' : 'Conversion'}
+              {t('ad1_dashboard.conversion_title')}
             </p>
             <Percent size={14} style={{ color: '#F59E0B' }} />
           </div>
@@ -739,14 +734,14 @@ export default function AdminDashboardPage() {
             {analytics.conversion_rate.toFixed(1)}%
           </p>
           <p style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
-            {lang === 'en' ? 'paid / total orders' : 'commandes payées / total'}
+            {t('ad1_dashboard.conversion_sub')}
           </p>
         </div>
 
         <div className="rounded-2xl p-5" style={{ background: cardBg, border: `1px solid ${cardBord}` }}>
           <div className="flex items-center justify-between mb-3">
             <p style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              {lang === 'en' ? 'Paid' : 'Payées'}
+              {t('ad1_dashboard.paid_title')}
             </p>
             <CheckCircle size={14} style={{ color: '#10B981' }} />
           </div>
@@ -754,7 +749,7 @@ export default function AdminDashboardPage() {
             {fmt(stats.paid_orders)}
           </p>
           <p style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
-            {fmt(stats.unpaid_orders)} {lang === 'en' ? 'unpaid' : 'impayées'}
+            {t('ad1_dashboard.unpaid_count', { n: fmt(stats.unpaid_orders) })}
           </p>
         </div>
 
@@ -765,7 +760,7 @@ export default function AdminDashboardPage() {
           }}>
             <div className="flex items-center justify-between mb-3">
               <p style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-                {lang === 'en' ? 'KYC pending' : 'KYC en attente'}
+                {t('ad1_dashboard.kyc_pending_title')}
               </p>
               <Clock size={14} style={{ color: stats.pending_vendors > 0 ? '#DC2626' : T.muted }} />
             </div>
@@ -776,7 +771,7 @@ export default function AdminDashboardPage() {
               {fmt(stats.pending_vendors)}
             </p>
             <p style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
-              {stats.approved_vendors} {lang === 'en' ? 'approved' : 'approuvés'}
+              {t('ad1_dashboard.approved_count', { count: stats.approved_vendors })}
             </p>
           </div>
         </Link>
@@ -787,7 +782,7 @@ export default function AdminDashboardPage() {
         }}>
           <div className="flex items-center justify-between mb-3">
             <p style={{ fontSize: 11.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
-              {lang === 'en' ? 'Payment errors' : 'Échecs paiement'}
+              {t('ad1_dashboard.payment_errors_title')}
             </p>
             <XCircle size={14} style={{ color: stats.failed_payments > 0 ? '#EF4444' : T.muted }} />
           </div>
@@ -798,7 +793,7 @@ export default function AdminDashboardPage() {
             {fmt(stats.failed_payments)}
           </p>
           <p style={{ fontSize: 11.5, color: T.muted, marginTop: 4 }}>
-            {lang === 'en' ? 'failed transactions' : 'transactions échouées'}
+            {t('ad1_dashboard.failed_transactions')}
           </p>
         </div>
 

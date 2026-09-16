@@ -1,19 +1,21 @@
 // frontend/src/features/vendors/EscrowPipeline.tsx
 // Ces blocs se posent SUR un hero sombre : toutes les couleurs sont des alphas
 // de blanc, aucun token clair n'y a sa place.
+import { useTranslation } from 'react-i18next';
 import { nf } from './vendorTheme';
 
 export type Leg = { label: string; amount: number; meta: string; color: string; pct: number };
 
 export function EscrowPipeline({ legs, total }: { legs: Leg[]; total: number }) {
+  const { t } = useTranslation();
   return (
     <div className="relative mt-6 pt-5" style={{ borderTop: '1px solid rgba(255,255,255,.1)' }}>
       <div className="flex items-center justify-between mb-3 gap-3 flex-wrap">
         <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.18em', color: 'rgba(255,255,255,.4)' }}>
-          Le chemin de vos fonds
+          {t('sl2_escrow_pipeline.title')}
         </p>
         <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,.4)' }}>
-          Total en circulation <strong style={{ color: '#fff' }}>{nf(total)} FCFA</strong>
+          {t('sl2_escrow_pipeline.total_in_circulation')} <strong style={{ color: '#fff' }}>{nf(total)} FCFA</strong>
         </p>
       </div>
 

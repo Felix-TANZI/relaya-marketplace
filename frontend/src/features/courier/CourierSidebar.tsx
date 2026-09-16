@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import {
-  COURIER_GROUP_LABELS,
+  COURIER_GROUP_LABEL_KEYS,
   COURIER_GROUP_ORDER,
   COURIER_NAV_ITEMS,
   type CourierTab,
@@ -48,6 +49,7 @@ export function CourierSidebarContent({
   courier,
   footer,
 }: CourierSidebarProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="rounded-[14px] border border-emerald-500/15 bg-emerald-500/5 p-4">
@@ -63,7 +65,7 @@ export function CourierSidebarContent({
           {courier.city} · {courier.vehicle}
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-emerald-500/15 pt-3 text-[11px]">
-          <span className="text-[#8B949E]">Statut</span>
+          <span className="text-[#8B949E]">{t("cr1_sidebar.status_label")}</span>
           <span className="flex items-center gap-2 font-bold text-white">
             {courier.status}
             {/* Pastille d'etat : verte en ligne, grise hors ligne. C'est le
@@ -84,7 +86,7 @@ export function CourierSidebarContent({
           return (
             <div key={group}>
               <div className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.16em] text-[#8B949E]">
-                {COURIER_GROUP_LABELS[group]}
+                {t(COURIER_GROUP_LABEL_KEYS[group])}
               </div>
               <div>
                 {items.map((item) => {
@@ -104,7 +106,7 @@ export function CourierSidebarContent({
                       }`}
                     >
                       <Icon size={16} className="flex-shrink-0" />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      <span className="min-w-0 flex-1 truncate">{t(item.labelKey)}</span>
                       {badge ? (
                         <span
                           className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br ${item.accent} px-1.5 text-[10px] font-black text-white shadow-[0_2px_8px_rgba(0,0,0,.45)] ring-1 ring-white/20`}
@@ -122,7 +124,7 @@ export function CourierSidebarContent({
                     className="mb-1 flex w-full items-center gap-3 rounded-[12px] px-4 py-3 text-left text-[13px] font-semibold text-red-300 transition hover:bg-red-500/10 hover:text-red-200"
                   >
                     <LogOut size={16} className="flex-shrink-0" />
-                    <span className="min-w-0 flex-1 truncate">Se deconnecter</span>
+                    <span className="min-w-0 flex-1 truncate">{t("cr1_sidebar.logout")}</span>
                   </button>
                 ) : null}
               </div>

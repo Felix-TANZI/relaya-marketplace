@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
   Building2,
@@ -57,96 +58,96 @@ interface RelayOnboardingProps {
 
 interface StepDefinition {
   key: string;
-  label: string;
+  labelKey: string;
   icon: typeof IdCard;
   /** Couleur de l'icone quand l'etape n'est ni faite ni active. */
   tone: string;
-  title: string;
-  subtitle: string;
-  sectionLabel: string;
+  titleKey: string;
+  subtitleKey: string;
+  sectionLabelKey: string;
 }
 
 const STEPS: StepDefinition[] = [
   {
     key: "kyc",
-    label: "Vérification d'identité (KYC)",
+    labelKey: "rl1_onboarding.step_kyc_label",
     icon: IdCard,
     tone: "text-blue-600 dark:text-blue-300",
-    title: "Étape 1 — Vérification d'identité (KYC)",
-    subtitle: "CNI + cross-check ANTIC, patente, RCCM, bail commercial.",
-    sectionLabel: "Pièces requises",
+    titleKey: "rl1_onboarding.step_kyc_title",
+    subtitleKey: "rl1_onboarding.step_kyc_subtitle",
+    sectionLabelKey: "rl1_onboarding.step_kyc_section_label",
   },
   {
     key: "caution",
-    label: "Sans caution",
+    labelKey: "rl1_onboarding.step_caution_label",
     icon: ShieldCheck,
     tone: "text-blue-600 dark:text-blue-300",
-    title: "Étape 2 — Sans caution",
-    subtitle: "Aucun dépôt requis · vérification KYC + Trust Score.",
-    sectionLabel: "Niveaux (sans caution · KYC + Trust Score)",
+    titleKey: "rl1_onboarding.step_caution_title",
+    subtitleKey: "rl1_onboarding.step_caution_subtitle",
+    sectionLabelKey: "rl1_onboarding.step_caution_section_label",
   },
   {
     key: "convention",
-    label: "Signature de la convention",
+    labelKey: "rl1_onboarding.step_convention_label",
     icon: PenLine,
     tone: "text-amber-600 dark:text-amber-300",
-    title: "Étape 3 — Signature de la convention",
-    subtitle: "Règlement PR + convention partenariat (signature électronique).",
-    sectionLabel: "Convention de partenariat",
+    titleKey: "rl1_onboarding.step_convention_title",
+    subtitleKey: "rl1_onboarding.step_convention_subtitle",
+    sectionLabelKey: "rl1_onboarding.step_convention_section_label",
   },
   {
     key: "activation",
-    label: "Validation Admin & activation",
+    labelKey: "rl1_onboarding.step_activation_label",
     icon: CheckCircle2,
     tone: "text-emerald-600 dark:text-emerald-300",
-    title: "Étape 4 — Validation Admin & activation",
-    subtitle: "Visite physique 48 h + formation 2 h obligatoire.",
-    sectionLabel: "Validation & activation",
+    titleKey: "rl1_onboarding.step_activation_title",
+    subtitleKey: "rl1_onboarding.step_activation_subtitle",
+    sectionLabelKey: "rl1_onboarding.step_activation_section_label",
   },
 ];
 
 interface RequiredPiece {
   key: string;
   icon: typeof IdCard;
-  label: string;
-  note: string;
+  labelKey: string;
+  noteKey: string | null;
   /** Type de document envoye au serveur, ou null si la piece est deduite du profil. */
   documentType: string | null;
 }
 
 const REQUIRED_PIECES: RequiredPiece[] = [
-  { key: "cni", icon: IdCard, label: "CNI du gérant", note: "cross-check ANTIC obligatoire", documentType: "MANAGER_ID" },
-  { key: "patente", icon: FileText, label: "Patente commerciale CMR", note: "à jour", documentType: "BUSINESS_LICENSE" },
-  { key: "rccm", icon: Landmark, label: "RCCM du commerce", note: "", documentType: "RCCM" },
-  { key: "bail", icon: Building2, label: "Bail commercial ou titre de propriété", note: "", documentType: "LEASE" },
+  { key: "cni", icon: IdCard, labelKey: "rl1_onboarding.piece_cni_label", noteKey: "rl1_onboarding.piece_cni_note", documentType: "MANAGER_ID" },
+  { key: "patente", icon: FileText, labelKey: "rl1_onboarding.piece_patente_label", noteKey: "rl1_onboarding.piece_patente_note", documentType: "BUSINESS_LICENSE" },
+  { key: "rccm", icon: Landmark, labelKey: "rl1_onboarding.piece_rccm_label", noteKey: null, documentType: "RCCM" },
+  { key: "bail", icon: Building2, labelKey: "rl1_onboarding.piece_bail_label", noteKey: null, documentType: "LEASE" },
   {
     key: "photos",
     icon: Camera,
-    label: "Photos du local",
-    note: "extérieur (enseigne) + intérieur (stockage)",
+    labelKey: "rl1_onboarding.piece_photos_label",
+    noteKey: "rl1_onboarding.piece_photos_note",
     documentType: "PREMISES_PHOTOS",
   },
-  { key: "geo", icon: MapPin, label: "Géolocalisation", note: "le local est à l'adresse déclarée", documentType: null },
-  { key: "casier", icon: Scale, label: "Casier judiciaire", note: "bulletin n°3", documentType: "CRIMINAL_RECORD" },
+  { key: "geo", icon: MapPin, labelKey: "rl1_onboarding.piece_geo_label", noteKey: "rl1_onboarding.piece_geo_note", documentType: null },
+  { key: "casier", icon: Scale, labelKey: "rl1_onboarding.piece_casier_label", noteKey: "rl1_onboarding.piece_casier_note", documentType: "CRIMINAL_RECORD" },
 ];
 
-const LEVELS: Array<[string, string]> = [
-  ["Starter · 1–30 colis simultanés", "Sans caution"],
-  ["Confirmé · 31–100 colis", "Sans caution"],
-  ["Premium · 101+ colis", "Sans caution"],
+const LEVELS: Array<{ levelKey: string; cautionKey: string }> = [
+  { levelKey: "rl1_onboarding.level_starter", cautionKey: "rl1_onboarding.no_deposit" },
+  { levelKey: "rl1_onboarding.level_confirmed", cautionKey: "rl1_onboarding.no_deposit" },
+  { levelKey: "rl1_onboarding.level_premium", cautionKey: "rl1_onboarding.no_deposit" },
 ];
 
 const ACTIVATION_ROWS: Array<[typeof Search, string, string]> = [
-  [Search, "Validation Admin BelivaY", "SLA 48 h · visite physique surprise"],
-  [GraduationCap, "Formation initiale", "2 h obligatoire (réception, CNI, sécurité)"],
-  [BadgeCheck, "Activation du compte", "ouverture immédiate après validation"],
+  [Search, "rl1_onboarding.activation_admin_label", "rl1_onboarding.activation_admin_detail"],
+  [GraduationCap, "rl1_onboarding.activation_training_label", "rl1_onboarding.activation_training_detail"],
+  [BadgeCheck, "rl1_onboarding.activation_account_label", "rl1_onboarding.activation_account_detail"],
 ];
 
 const PACT_BENEFITS: Array<[typeof Target, string, string, string]> = [
-  [Target, "Exclusivité 1 km", "rayon protégé pendant 12 mois", "text-rose-600 dark:text-rose-400"],
-  [Gem, "Zéro caution", "aucun dépôt requis, accès 100 % gratuit", "text-emerald-600 dark:text-emerald-400"],
-  [Store, "Subvention installation", "kit enseigne + étagères de stockage", "text-indigo-600 dark:text-indigo-400"],
-  [Lock, "Tarification figée", "grille garantie 12 mois, non révisable", "text-blue-600 dark:text-blue-400"],
+  [Target, "rl1_onboarding.pact_exclusivity_title", "rl1_onboarding.pact_exclusivity_body", "text-rose-600 dark:text-rose-400"],
+  [Gem, "rl1_onboarding.pact_deposit_title", "rl1_onboarding.pact_deposit_body", "text-emerald-600 dark:text-emerald-400"],
+  [Store, "rl1_onboarding.pact_subsidy_title", "rl1_onboarding.pact_subsidy_body", "text-indigo-600 dark:text-indigo-400"],
+  [Lock, "rl1_onboarding.pact_pricing_title", "rl1_onboarding.pact_pricing_body", "text-blue-600 dark:text-blue-400"],
 ];
 
 const STORAGE_KEY = "belivay.relay.onboarding";
@@ -188,6 +189,7 @@ function writeStoredStep(state: OnboardingState) {
 }
 
 export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps) {
+  const { t } = useTranslation();
   const alreadyApproved = relay.status === "APPROVED";
   const stored = useMemo(readStoredStep, []);
   const [step, setStep] = useState(alreadyApproved ? STEPS.length - 1 : stored.step);
@@ -224,14 +226,14 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
     if (!piece.documentType) {
       const located = Boolean(relay.address?.trim());
       return located
-        ? { done: true, label: "Adresse déclarée", tone: "emerald" }
-        : { done: false, label: "À renseigner", tone: "amber" };
+        ? { done: true, label: t("rl1_onboarding.status_address_declared"), tone: "emerald" }
+        : { done: false, label: t("rl1_onboarding.status_to_fill"), tone: "amber" };
     }
     const document = documents.find((item) => item.document_type === piece.documentType);
-    if (!document) return { done: false, label: "À envoyer", tone: "slate" };
-    if (document.status === "APPROVED") return { done: true, label: "Validé", tone: "emerald" };
-    if (document.status === "REJECTED") return { done: false, label: "Rejeté", tone: "red" };
-    return { done: true, label: "En vérification", tone: "amber" };
+    if (!document) return { done: false, label: t("rl1_onboarding.status_to_send"), tone: "slate" };
+    if (document.status === "APPROVED") return { done: true, label: t("rl1_onboarding.status_validated"), tone: "emerald" };
+    if (document.status === "REJECTED") return { done: false, label: t("rl1_onboarding.status_rejected"), tone: "red" };
+    return { done: true, label: t("rl1_onboarding.status_in_review"), tone: "amber" };
   };
 
   const piecesDone = REQUIRED_PIECES.filter((piece) => pieceState(piece).done).length;
@@ -248,10 +250,10 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
       body.append("file", compressed);
       await http<ComplianceDocument>("/api/auth/compliance-documents/", { method: "POST", body });
       await loadDocuments();
-      setNotice({ tone: "success", text: `${piece.label} envoyé pour vérification BelivaY.` });
+      setNotice({ tone: "success", text: t("rl1_onboarding.upload_success", { label: t(piece.labelKey) }) });
     } catch (error) {
       onError(error);
-      setNotice({ tone: "error", text: `L'envoi de « ${piece.label} » a échoué. Réessayez.` });
+      setNotice({ tone: "error", text: t("rl1_onboarding.upload_error", { label: t(piece.labelKey) }) });
     } finally {
       setBusy(false);
     }
@@ -260,7 +262,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
   /** Verrou d'etape : on ne passe pas la convention sans signature manuscrite. */
   const blockedReason = (() => {
     if (alreadyApproved) return null;
-    if (step === 2 && !signature && !signed) return "Signez la convention pour continuer.";
+    if (step === 2 && !signature && !signed) return t("rl1_onboarding.sign_to_continue");
     return null;
   })();
 
@@ -308,11 +310,11 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
       markValidated(STEPS.length - 1);
       setNotice({
         tone: "success",
-        text: "Dossier transmis. BelivaY planifie la visite physique sous 48 h, puis la formation initiale de 2 h.",
+        text: t("rl1_onboarding.finalize_success"),
       });
     } catch (error) {
       onError(error);
-      setNotice({ tone: "error", text: "Le dossier n'a pas pu être transmis. Réessayez dans un instant." });
+      setNotice({ tone: "error", text: t("rl1_onboarding.finalize_error") });
     } finally {
       setBusy(false);
     }
@@ -328,8 +330,8 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
     <div className="space-y-5">
       <ModuleHeader
         icon={FileText}
-        title="Inscription & cycle de vie"
-        subtitle="Le parcours pour devenir Point Relais partenaire BelivaY"
+        title={t("rl1_onboarding.header_title")}
+        subtitle={t("rl1_onboarding.header_subtitle")}
       />
 
       <div className="flex items-start gap-4 rounded-2xl border border-blue-200 bg-white p-5 dark:border-blue-900 dark:bg-slate-900">
@@ -337,9 +339,9 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
           <Store size={20} strokeWidth={2.4} />
         </span>
         <div className="min-w-0">
-          <h3 className="font-black text-slate-950 dark:text-white">Devenez partenaire indépendant BelivaY</h3>
+          <h3 className="font-black text-slate-950 dark:text-white">{t("rl1_onboarding.intro_title")}</h3>
           <p className="mt-1 text-sm font-semibold leading-6 text-slate-500 dark:text-slate-400">
-            Une nouvelle source de revenus pour votre commerce de quartier — 4 étapes, validation sous 48 h.
+            {t("rl1_onboarding.intro_subtitle")}
           </p>
         </div>
       </div>
@@ -347,21 +349,20 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
       {alreadyApproved ? (
         <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
           <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0" />
-          Votre point relais est déjà validé et activé par BelivaY. Ce parcours reste consultable comme référence du cycle de vie
-          partenaire.
+          {t("rl1_onboarding.already_approved_notice")}
         </div>
       ) : null}
 
       <Panel
         icon={ClipboardList}
-        title="Parcours d'inscription"
+        title={t("rl1_onboarding.journey_title")}
         action={
           <div className="flex items-center gap-2">
             <StatusPill tone={doneCount > 0 ? "emerald" : "slate"}>
-              {doneCount}/{STEPS.length} validée{doneCount > 1 ? "s" : ""}
+              {t(doneCount > 1 ? "rl1_onboarding.steps_done_plural" : "rl1_onboarding.steps_done", { count: doneCount, total: STEPS.length })}
             </StatusPill>
             <StatusPill tone="blue">
-              Étape {step + 1} / {STEPS.length}
+              {t("rl1_onboarding.step_counter", { current: step + 1, total: STEPS.length })}
             </StatusPill>
           </div>
         }
@@ -387,7 +388,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                     type="button"
                     onClick={() => !alreadyApproved && setStep(index)}
                     aria-current={index === step ? "step" : undefined}
-                    aria-label={`${definition.label}${done ? " (validée)" : ""}`}
+                    aria-label={done ? t("rl1_onboarding.step_aria_done", { label: t(definition.labelKey) }) : t(definition.labelKey)}
                     className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition duration-300 ${
                       done
                         ? "bg-emerald-500 text-white shadow-[0_8px_16px_-8px_rgba(16,185,129,.9)]"
@@ -405,11 +406,11 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                   />
                 </div>
                 <span className="mt-2 px-1 text-center text-xs font-semibold leading-5 text-slate-600 dark:text-slate-300">
-                  {definition.label}
+                  {t(definition.labelKey)}
                 </span>
                 {done ? (
                   <span className="mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-emerald-600 dark:text-emerald-400">
-                    Validée
+                    {t("rl1_onboarding.validated_badge")}
                   </span>
                 ) : null}
               </li>
@@ -418,12 +419,12 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
         </ol>
       </Panel>
 
-      <Panel icon={CurrentIcon} title={current.title}>
-        <p className="-mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{current.subtitle}</p>
+      <Panel icon={CurrentIcon} title={t(current.titleKey)}>
+        <p className="-mt-2 text-sm font-semibold text-slate-500 dark:text-slate-400">{t(current.subtitleKey)}</p>
 
         <div className="my-5 flex items-center gap-3">
           <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{current.sectionLabel}</span>
+          <span className="text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{t(current.sectionLabelKey)}</span>
           <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
@@ -439,17 +440,17 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                 >
                   <span className="flex min-w-0 items-center gap-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
                     <Icon size={17} strokeWidth={2.3} className={`flex-shrink-0 ${state.done ? "text-emerald-600" : "text-slate-400"}`} />
-                    {piece.label}
+                    {t(piece.labelKey)}
                   </span>
                   <span className="flex items-center gap-2.5">
-                    {piece.note ? (
-                      <span className="text-sm font-black text-slate-950 dark:text-white">{piece.note}</span>
+                    {piece.noteKey ? (
+                      <span className="text-sm font-black text-slate-950 dark:text-white">{t(piece.noteKey)}</span>
                     ) : null}
                     <StatusPill tone={state.tone}>{state.label}</StatusPill>
                     {piece.documentType && !alreadyApproved ? (
                       <label className="cursor-pointer rounded-xl border border-blue-200 bg-white px-3 py-1.5 text-xs font-black text-blue-700 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">
                         <UploadCloud size={13} strokeWidth={2.6} className="mr-1 inline" />
-                        {state.done ? "Remplacer" : "Envoyer"}
+                        {state.done ? t("rl1_onboarding.replace_document") : t("rl1_onboarding.send_document")}
                         <input
                           type="file"
                           accept=".pdf,.jpg,.jpeg,.png,.webp"
@@ -470,30 +471,30 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                   : "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100"
               }`}
             >
-              {piecesDone}/{REQUIRED_PIECES.length} pièces fournies.{" "}
+              {t("rl1_onboarding.pieces_provided_count", { done: piecesDone, total: REQUIRED_PIECES.length })}{" "}
               {kycComplete
-                ? "Dossier KYC complet : BelivaY lance le cross-check ANTIC."
-                : "Les pièces manquantes peuvent être envoyées à tout moment, y compris après cette étape."}
+                ? t("rl1_onboarding.kyc_complete_notice")
+                : t("rl1_onboarding.kyc_incomplete_notice")}
             </div>
           </div>
         ) : null}
 
         {step === 1 ? (
           <div>
-            {LEVELS.map(([level, caution]) => (
+            {LEVELS.map((level) => (
               <div
-                key={level}
+                key={level.levelKey}
                 className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-3.5 last:border-b-0 dark:border-slate-800"
               >
-                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{level}</span>
-                <span className="text-sm font-black text-slate-950 dark:text-white">{caution}</span>
+                <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{t(level.levelKey)}</span>
+                <span className="text-sm font-black text-slate-950 dark:text-white">{t(level.cautionKey)}</span>
               </div>
             ))}
             <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
               <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
               <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
-                Aucune caution n'est demandée. La sécurité repose sur la vérification{" "}
-                <strong className="font-black">KYC + Trust Score</strong> — accès 100 % gratuit.
+                {t("rl1_onboarding.no_deposit_prefix")}{" "}
+                <strong className="font-black">{t("rl1_onboarding.no_deposit_bold")}</strong> {t("rl1_onboarding.no_deposit_suffix")}
               </p>
             </div>
           </div>
@@ -504,14 +505,13 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
             <div className="flex items-start gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
               <PenLine size={17} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-300" />
               <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
-                Vous signez électroniquement le <strong className="font-black">Règlement Point Relais</strong> et la{" "}
-                <strong className="font-black">convention de partenariat</strong>. Engagement clé : remise des colis exclusivement
-                au porteur du code valide.
+                {t("rl1_onboarding.sign_prefix")} <strong className="font-black">{t("rl1_onboarding.sign_bold1")}</strong> {t("rl1_onboarding.sign_middle")}{" "}
+                <strong className="font-black">{t("rl1_onboarding.sign_bold2")}</strong> {t("rl1_onboarding.sign_suffix")}
               </p>
             </div>
             <div className="mt-5">
               <SignaturePad
-                label="Signature du gérant"
+                label={t("rl1_onboarding.manager_signature_label")}
                 onChange={(dataUrl) => {
                   setSignature(dataUrl);
                   if (dataUrl) setNotice(null);
@@ -521,7 +521,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
             </div>
             {signed && !signature ? (
               <p className="mt-3 text-xs font-black uppercase tracking-[0.12em] text-emerald-600">
-                Convention déjà signée lors d'une session précédente.
+                {t("rl1_onboarding.already_signed_notice")}
               </p>
             ) : null}
           </div>
@@ -529,16 +529,16 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
 
         {step === 3 ? (
           <div>
-            {ACTIVATION_ROWS.map(([Icon, label, detail]) => (
+            {ACTIVATION_ROWS.map(([Icon, labelKey, detailKey]) => (
               <div
-                key={label}
+                key={labelKey}
                 className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 py-3.5 last:border-b-0 dark:border-slate-800"
               >
                 <span className="flex items-center gap-2.5 text-sm font-semibold text-slate-600 dark:text-slate-300">
                   <Icon size={17} strokeWidth={2.3} className="flex-shrink-0 text-slate-400" />
-                  {label}
+                  {t(labelKey)}
                 </span>
-                <span className="text-sm font-black text-slate-950 dark:text-white">{detail}</span>
+                <span className="text-sm font-black text-slate-950 dark:text-white">{t(detailKey)}</span>
               </div>
             ))}
           </div>
@@ -563,7 +563,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
             disabled={step === 0}
             className="rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
           >
-            ← Précédent
+            {t("rl1_onboarding.previous_button")}
           </button>
 
           {step < STEPS.length - 1 ? (
@@ -572,7 +572,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
               onClick={next}
               className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(37,99,235,.9)] transition hover:bg-blue-700"
             >
-              Étape suivante →
+              {t("rl1_onboarding.next_button")}
             </button>
           ) : (
             <button
@@ -582,7 +582,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
               className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(5,150,105,.9)] transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Check size={15} strokeWidth={3} />
-              {submitted ? "Inscription finalisée" : busy ? "Transmission…" : "Finaliser l'inscription"}
+              {submitted ? t("rl1_onboarding.finalized_label") : busy ? t("rl1_onboarding.submitting_label") : t("rl1_onboarding.finalize_button")}
             </button>
           )}
         </div>
@@ -590,21 +590,21 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
 
       <Panel
         icon={Medal}
-        title="Pacte de proximité — 50 premiers PR"
+        title={t("rl1_onboarding.pact_title")}
         action={
           <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-xs font-black text-white shadow-sm">
-            Partenaire Fondateur
+            {t("rl1_onboarding.founding_partner_badge")}
           </span>
         }
       >
         <div className="grid gap-4 md:grid-cols-2">
-          {PACT_BENEFITS.map(([Icon, title, body, tone]) => (
-            <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+          {PACT_BENEFITS.map(([Icon, titleKey, bodyKey, tone]) => (
+            <div key={titleKey} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
               <h3 className="flex items-center gap-2 font-black text-slate-950 dark:text-white">
                 <Icon size={17} strokeWidth={2.4} className={`flex-shrink-0 ${tone}`} />
-                {title}
+                {t(titleKey)}
               </h3>
-              <p className="mt-1.5 pl-6 text-sm font-semibold text-slate-500 dark:text-slate-400">{body}</p>
+              <p className="mt-1.5 pl-6 text-sm font-semibold text-slate-500 dark:text-slate-400">{t(bodyKey)}</p>
             </div>
           ))}
         </div>

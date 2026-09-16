@@ -3,6 +3,7 @@
 // Vue globale des tiers BRONZE→DIAMOND + classement + seuils
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { Award, RefreshCw, ExternalLink, TrendingUp } from 'lucide-react';
 import { useAdminTheme } from '@/hooks/useAdminTheme';
@@ -35,28 +36,28 @@ interface CertStats {
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TIER_CFG: Record<string, {
-  label: string; threshold: number; color: string; bg: string;
-  gradient: string; benefits: string[];
+  labelKey: string; threshold: number; color: string; bg: string;
+  gradient: string; benefitKeys: string[];
 }> = {
   BRONZE:  {
-    label: 'Bronze', threshold: 0,    color: '#CD7F32', bg: 'rgba(205,127,50,0.12)',
+    labelKey: 'ad4_certifications.tier.bronze', threshold: 0,    color: '#CD7F32', bg: 'rgba(205,127,50,0.12)',
     gradient: 'linear-gradient(135deg,#CD7F32,#8B5E2D)',
-    benefits: ['Accès au catalogue', 'QR Code boutique', 'Support standard'],
+    benefitKeys: ['ad4_certifications.benefit.catalog_access', 'ad4_certifications.benefit.qr_code', 'ad4_certifications.benefit.standard_support'],
   },
   SILVER:  {
-    label: 'Argent', threshold: 500,  color: '#8B909A', bg: 'rgba(139,144,154,0.12)',
+    labelKey: 'ad4_certifications.tier.silver', threshold: 500,  color: '#8B909A', bg: 'rgba(139,144,154,0.12)',
     gradient: 'linear-gradient(135deg,#8B909A,#5A5F6A)',
-    benefits: ['Badge Argent', 'Commission -1%', '2 boosts/mois'],
+    benefitKeys: ['ad4_certifications.benefit.silver_badge', 'ad4_certifications.benefit.commission_minus_1', 'ad4_certifications.benefit.boosts_2_per_month'],
   },
   GOLD:    {
-    label: 'Or',     threshold: 1000, color: '#C8A000', bg: 'rgba(200,160,0,0.12)',
+    labelKey: 'ad4_certifications.tier.gold',     threshold: 1000, color: '#C8A000', bg: 'rgba(200,160,0,0.12)',
     gradient: 'linear-gradient(135deg,#C8A000,#8B6E00)',
-    benefits: ['Badge Or', 'Commission -2%', '5 boosts/mois', 'Mise en avant'],
+    benefitKeys: ['ad4_certifications.benefit.gold_badge', 'ad4_certifications.benefit.commission_minus_2', 'ad4_certifications.benefit.boosts_5_per_month', 'ad4_certifications.benefit.highlighted'],
   },
   DIAMOND: {
-    label: 'Diamant',threshold: 2000, color: '#2563EB', bg: 'rgba(37,99,235,0.12)',
+    labelKey: 'ad4_certifications.tier.diamond',threshold: 2000, color: '#2563EB', bg: 'rgba(37,99,235,0.12)',
     gradient: 'linear-gradient(135deg,#2563EB,#1D4ED8)',
-    benefits: ['Badge Diamant', 'Commission -3%', 'Boosts illimités', 'VIP 24/7'],
+    benefitKeys: ['ad4_certifications.benefit.diamond_badge', 'ad4_certifications.benefit.commission_minus_3', 'ad4_certifications.benefit.unlimited_boosts', 'ad4_certifications.benefit.vip_24_7'],
   },
 };
 
@@ -76,6 +77,7 @@ const authHeader = () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function CertificationsPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
@@ -96,7 +98,7 @@ export default function CertificationsPage() {
       setStats(data.stats);
       setVendors(data.vendors);
     } catch {
-      toastRef.current('Erreur chargement des certifications', 'error');
+      toastRef.current(t('ad4_certifications.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -116,10 +118,10 @@ export default function CertificationsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Certifications Vendeurs
+            {t('ad4_certifications.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {stats ? `${stats.total_approved} boutiques approuvées · ${stats.avg_points.toFixed(0)} pts en moyenne` : '—'}
+            {stats ? t('ad4_certifications.summary', { approved: stats.total_approved, avg: stats.avg_points.toFixed(0) }) : '—'}
           </p>
         </div>
         <button onClick={() => load()}
@@ -128,7 +130,7 @@ export default function CertificationsPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad4_certifications.refresh')}</span>
         </button>
       </div>
 
@@ -152,13 +154,13 @@ export default function CertificationsPage() {
                 <Award size={18} style={{ color: '#fff' }} />
               </div>
               <p style={{ fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 4 }}>
-                {cfg.label}
+                {t(cfg.labelKey)}
               </p>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: loading ? T.muted : T.text, lineHeight: 1, marginBottom: 6 }}>
                 {loading ? '—' : count}
               </p>
               <p style={{ fontSize: 10.5, color: cfg.color, fontWeight: 600 }}>
-                ≥ {cfg.threshold} pts
+                {t('ad4_certifications.threshold_pts', { count: cfg.threshold })}
               </p>
             </button>
           );
@@ -169,13 +171,13 @@ export default function CertificationsPage() {
       <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
           <TrendingUp size={14} style={{ color: T.red }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Seuils & Avantages par tier</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad4_certifications.thresholds_title')}</span>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full" style={{ borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                {['Tier', 'Seuil minimum', 'Avantages inclus', 'Vendeurs actifs'].map((h, i) => (
+                {[t('ad4_certifications.col_tier'), t('ad4_certifications.col_min_threshold'), t('ad4_certifications.col_benefits'), t('ad4_certifications.col_active_vendors')].map((h, i) => (
                   <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                     {h}
                   </th>
@@ -197,19 +199,19 @@ export default function CertificationsPage() {
                           style={{ background: cfg.gradient }}>
                           <Award size={14} style={{ color: '#fff' }} />
                         </div>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: cfg.color }}>{cfg.label}</span>
+                        <span style={{ fontSize: 13, fontWeight: 800, color: cfg.color }}>{t(cfg.labelKey)}</span>
                       </div>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-                        {cfg.threshold === 0 ? 'Gratuit' : `${cfg.threshold} pts`}
+                        {cfg.threshold === 0 ? t('ad4_certifications.free') : t('ad4_certifications.threshold_pts', { count: cfg.threshold })}
                       </span>
                     </td>
                     <td style={{ padding: '12px 16px' }}>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {cfg.benefits.map((b, j) => (
+                        {cfg.benefitKeys.map((bKey, j) => (
                           <span key={j} style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 5, background: cfg.bg, color: cfg.color }}>
-                            {b}
+                            {t(bKey)}
                           </span>
                         ))}
                       </div>
@@ -234,13 +236,13 @@ export default function CertificationsPage() {
           <div className="flex items-center gap-2">
             <Award size={14} style={{ color: T.red }} />
             <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>
-              Classement {filterTier !== 'all' ? TIER_CFG[filterTier]?.label : 'tous tiers'}
+              {t('ad4_certifications.ranking_title', { tier: filterTier !== 'all' ? t(TIER_CFG[filterTier]?.labelKey) : t('ad4_certifications.all_tiers') })}
             </span>
             <span style={{ fontSize: 11, color: T.muted }}>({filtered.length})</span>
           </div>
           {filterTier !== 'all' && (
             <button onClick={() => setFilterTier('all')} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>
-              Voir tous
+              {t('ad4_certifications.see_all')}
             </button>
           )}
         </div>
@@ -253,14 +255,14 @@ export default function CertificationsPage() {
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center py-16 gap-3">
             <Award size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun vendeur dans ce tier</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad4_certifications.no_vendor_in_tier')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                  {['#', 'Boutique', 'Tier', 'Points', 'Ville', ''].map((h, i) => (
+                  {['#', t('ad4_certifications.col_shop'), t('ad4_certifications.col_tier'), t('ad4_certifications.col_points'), t('ad4_certifications.col_city'), ''].map((h, i) => (
                     <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                       {h}
                     </th>
@@ -294,7 +296,7 @@ export default function CertificationsPage() {
                             style={{ background: cfg?.gradient }}>
                             <Award size={12} style={{ color: '#fff' }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: cfg?.color }}>{cfg?.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: cfg?.color }}>{cfg ? t(cfg.labelKey) : v.certification_tier}</span>
                         </div>
                       </td>
                       {/* Points */}
@@ -302,7 +304,7 @@ export default function CertificationsPage() {
                         <span style={{ fontSize: 14, fontWeight: 800, color: cfg?.color }}>
                           {v.total_points.toLocaleString('fr-FR')}
                         </span>
-                        <span style={{ fontSize: 11, color: T.muted, marginLeft: 3 }}>pts</span>
+                        <span style={{ fontSize: 11, color: T.muted, marginLeft: 3 }}>{t('ad4_certifications.pts_suffix')}</span>
                       </td>
                       {/* Ville */}
                       <td style={{ padding: '12px 14px', fontSize: 12.5, color: T.muted }}>{v.city || '—'}</td>

@@ -2,6 +2,7 @@
 // Gestion des retraits vendeurs — admin BelivaY
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   ArrowDownToLine, RefreshCw,CheckCircle,
@@ -38,11 +39,11 @@ type StatusFilter = 'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:   { label: 'En attente',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
-  APPROVED:  { label: 'Approuvé',   color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
-  REJECTED:  { label: 'Rejeté',     color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
-  CANCELLED: { label: 'Annulé',     color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:   { labelKey: 'ad4_withdrawals.status.pending',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
+  APPROVED:  { labelKey: 'ad4_withdrawals.status.approved',  color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
+  REJECTED:  { labelKey: 'ad4_withdrawals.status.rejected',  color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
+  CANCELLED: { labelKey: 'ad4_withdrawals.status.cancelled', color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ const authHeader = () => ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function WithdrawalsPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
 
@@ -83,7 +85,7 @@ export default function WithdrawalsPage() {
       const data = await http<Withdrawal[]>(url, { headers: authHeader() });
       setWithdrawals(data);
     } catch {
-      showToast('Erreur chargement des retraits', 'error');
+      showToast(t('ad4_withdrawals.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -109,17 +111,17 @@ export default function WithdrawalsPage() {
         method: 'POST', headers: authHeader(),
         body: JSON.stringify({ admin_note: approveNote }),
       });
-      showToast(`Retrait ${approveModal.reference} approuvé`, 'success');
+      showToast(t('ad4_withdrawals.approved_toast', { reference: approveModal.reference }), 'success');
       setApproveModal(null);
       setApproveNote('');
       await load();
-    } catch { showToast('Erreur lors de l\'approbation', 'error'); }
+    } catch { showToast(t('ad4_withdrawals.approve_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const handleReject = async () => {
     if (!rejectModal || !rejectReason.trim()) {
-      showToast('Le motif de rejet est requis', 'error');
+      showToast(t('ad4_withdrawals.reject_reason_required'), 'error');
       return;
     }
     setActing(rejectModal.id);
@@ -128,20 +130,20 @@ export default function WithdrawalsPage() {
         method: 'POST', headers: authHeader(),
         body: JSON.stringify({ reason: rejectReason }),
       });
-      showToast(`Retrait ${rejectModal.reference} rejeté`, 'success');
+      showToast(t('ad4_withdrawals.rejected_toast', { reference: rejectModal.reference }), 'success');
       setRejectModal(null);
       setRejectReason('');
       await load();
-    } catch { showToast('Erreur lors du rejet', 'error'); }
+    } catch { showToast(t('ad4_withdrawals.reject_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const tabs: { key: StatusFilter; label: string }[] = [
-    { key: 'PENDING',   label: 'En attente' },
-    { key: 'APPROVED',  label: 'Approuvés'  },
-    { key: 'REJECTED',  label: 'Rejetés'    },
-    { key: 'CANCELLED', label: 'Annulés'    },
-    { key: 'all',       label: 'Tous'       },
+    { key: 'PENDING',   label: t('ad4_withdrawals.tab_pending') },
+    { key: 'APPROVED',  label: t('ad4_withdrawals.tab_approved')  },
+    { key: 'REJECTED',  label: t('ad4_withdrawals.tab_rejected')    },
+    { key: 'CANCELLED', label: t('ad4_withdrawals.tab_cancelled')    },
+    { key: 'all',       label: t('ad4_withdrawals.tab_all')       },
   ];
 
   const inp: React.CSSProperties = {
@@ -160,15 +162,15 @@ export default function WithdrawalsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Demandes de Retrait
+            {t('ad4_withdrawals.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {counts.PENDING > 0 && (
               <span style={{ color: '#F59E0B', fontWeight: 700, marginRight: 6 }}>
-                {counts.PENDING} en attente de traitement ·
+                {t('ad4_withdrawals.pending_count', { count: counts.PENDING })} ·
               </span>
             )}
-            Validation manuelle des retraits Mobile Money vendeurs
+            {t('ad4_withdrawals.subtitle')}
           </p>
         </div>
         <button onClick={() => load()}
@@ -177,27 +179,27 @@ export default function WithdrawalsPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad4_withdrawals.refresh')}</span>
         </button>
       </div>
 
       {/* ── Tabs ─────────────────────────────────────────────────────────── */}
       <div className="rounded-2xl p-3 flex gap-1 overflow-x-auto" style={{ background: T.card, border: `1px solid ${T.border}`, scrollbarWidth: 'none' }}>
-        {tabs.map(t => (
-          <button key={t.key}
-            onClick={() => setStatusTab(t.key)}
+        {tabs.map(tab => (
+          <button key={tab.key}
+            onClick={() => setStatusTab(tab.key)}
             className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold whitespace-nowrap transition-all"
             style={{
-              background: statusTab === t.key
-                ? t.key === 'PENDING' ? '#F59E0B' : t.key === 'APPROVED' ? '#10B981' : t.key === 'REJECTED' ? '#EF4444' : T.red
+              background: statusTab === tab.key
+                ? tab.key === 'PENDING' ? '#F59E0B' : tab.key === 'APPROVED' ? '#10B981' : tab.key === 'REJECTED' ? '#EF4444' : T.red
                 : 'transparent',
-              color: statusTab === t.key ? '#fff' : T.muted,
+              color: statusTab === tab.key ? '#fff' : T.muted,
             }}
-            onMouseEnter={e => { if (statusTab !== t.key) (e.currentTarget.style.color = T.text); }}
-            onMouseLeave={e => { if (statusTab !== t.key) (e.currentTarget.style.color = T.muted); }}>
-            {t.label}
-            <span style={{ fontSize: 10.5, padding: '1px 6px', borderRadius: 999, fontWeight: 700, background: statusTab === t.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === t.key ? '#fff' : T.muted }}>
-              {counts[t.key]}
+            onMouseEnter={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = T.text); }}
+            onMouseLeave={e => { if (statusTab !== tab.key) (e.currentTarget.style.color = T.muted); }}>
+            {tab.label}
+            <span style={{ fontSize: 10.5, padding: '1px 6px', borderRadius: 999, fontWeight: 700, background: statusTab === tab.key ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: statusTab === tab.key ? '#fff' : T.muted }}>
+              {counts[tab.key]}
             </span>
           </button>
         ))}
@@ -213,7 +215,7 @@ export default function WithdrawalsPage() {
         ) : withdrawals.length === 0 ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <ArrowDownToLine size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun retrait {statusTab !== 'all' ? STATUS_CFG[statusTab]?.label.toLowerCase() : ''}</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad4_withdrawals.no_withdrawals', { status: statusTab !== 'all' ? t(STATUS_CFG[statusTab]?.labelKey ?? '').toLowerCase() : '' })}</p>
           </div>
         ) : (
           <>
@@ -222,7 +224,7 @@ export default function WithdrawalsPage() {
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                    {['Référence', 'Boutique', 'Opérateur', 'Numéro', 'Montant demandé', 'Frais', 'Net à verser', 'Statut', 'Demandé le', ''].map((h, i) => (
+                    {[t('ad4_withdrawals.col_reference'), t('ad4_withdrawals.col_shop'), t('ad4_withdrawals.col_operator'), t('ad4_withdrawals.col_number'), t('ad4_withdrawals.col_amount_requested'), t('ad4_withdrawals.col_fee'), t('ad4_withdrawals.col_net_to_pay'), t('ad4_withdrawals.col_status'), t('ad4_withdrawals.col_requested_on'), ''].map((h, i) => (
                       <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                         {h}
                       </th>
@@ -263,7 +265,7 @@ export default function WithdrawalsPage() {
                       <td style={{ padding: '12px 14px' }}>
                         <div>
                           <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: STATUS_CFG[w.status]?.bg, color: STATUS_CFG[w.status]?.color }}>
-                            {STATUS_CFG[w.status]?.label}
+                            {t(STATUS_CFG[w.status]?.labelKey ?? '')}
                           </span>
                           {w.admin_note && w.status !== 'PENDING' && (
                             <p style={{ fontSize: 10.5, color: T.muted, marginTop: 3, maxWidth: 140 }} className="truncate" title={w.admin_note}>{w.admin_note}</p>
@@ -277,12 +279,12 @@ export default function WithdrawalsPage() {
                             <button onClick={() => setApproveModal(w)} disabled={acting === w.id}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
                               style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                              <CheckCircle size={12} /> Approuver
+                              <CheckCircle size={12} /> {t('ad4_withdrawals.action_approve')}
                             </button>
                             <button onClick={() => setRejectModal(w)} disabled={acting === w.id}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
                               style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                              <XCircle size={12} /> Rejeter
+                              <XCircle size={12} /> {t('ad4_withdrawals.action_reject')}
                             </button>
                           </div>
                         )}
@@ -306,26 +308,26 @@ export default function WithdrawalsPage() {
                       <p style={{ fontSize: 13, fontWeight: 600, color: '#F47920', marginTop: 2 }}>{w.business_name}</p>
                     </div>
                     <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: STATUS_CFG[w.status]?.bg, color: STATUS_CFG[w.status]?.color, flexShrink: 0 }}>
-                      {STATUS_CFG[w.status]?.label}
+                      {t(STATUS_CFG[w.status]?.labelKey ?? '')}
                     </span>
                   </div>
                   <div className="flex items-center gap-3 flex-wrap mb-3">
                     <span style={{ fontSize: 11, color: T.muted }}>
                       {w.operator === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money'} · {w.phone_number}
                     </span>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#10B981' }}>Net: {fmtXaf(w.net_amount_xaf)}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#10B981' }}>{t('ad4_withdrawals.net_amount', { value: fmtXaf(w.net_amount_xaf) })}</span>
                   </div>
                   {w.status === 'PENDING' && (
                     <div className="flex gap-2">
                       <button onClick={() => setApproveModal(w)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold flex-1 justify-center"
                         style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                        <CheckCircle size={12} /> Approuver
+                        <CheckCircle size={12} /> {t('ad4_withdrawals.action_approve')}
                       </button>
                       <button onClick={() => setRejectModal(w)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold flex-1 justify-center"
                         style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                        <XCircle size={12} /> Rejeter
+                        <XCircle size={12} /> {t('ad4_withdrawals.action_reject')}
                       </button>
                     </div>
                   )}
@@ -341,15 +343,15 @@ export default function WithdrawalsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setApproveModal(null)}>
           <div className="rounded-2xl p-6 w-full max-w-md" style={{ background: T.card, border: `1px solid rgba(16,185,129,0.3)` }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: '#10B981', marginBottom: 4 }}>
-              Approuver le retrait
+              {t('ad4_withdrawals.approve_modal_title')}
             </h2>
             <p style={{ fontSize: 13, color: T.muted, marginBottom: 16 }}>
-              Confirmez que vous avez effectué le virement de <strong style={{ color: T.text }}>{fmtXaf(approveModal.net_amount_xaf)}</strong> vers {approveModal.phone_number} via {approveModal.operator === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money'}.
+              {t('ad4_withdrawals.approve_modal_message_prefix')} <strong style={{ color: T.text }}>{fmtXaf(approveModal.net_amount_xaf)}</strong> {t('ad4_withdrawals.approve_modal_message_suffix', { phone: approveModal.phone_number, operator: approveModal.operator === 'MTN_MOMO' ? 'MTN MoMo' : 'Orange Money' })}
             </p>
             <div className="mb-4">
-              <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Note de confirmation (optionnel)</label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad4_withdrawals.confirmation_note_label')}</label>
               <input type="text" value={approveNote} onChange={e => setApproveNote(e.target.value)}
-                placeholder="Ex : Virement effectué le 28/04/2026 ref: XXXX"
+                placeholder={t('ad4_withdrawals.confirmation_note_placeholder')}
                 style={inp}
                 onFocus={e => (e.target.style.borderColor = '#10B981')}
                 onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
@@ -359,12 +361,12 @@ export default function WithdrawalsPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white flex-1 justify-center"
                 style={{ background: 'linear-gradient(135deg,#10B981,#059669)' }}>
                 {acting === approveModal.id ? <RefreshCw size={13} className="animate-spin" /> : <CheckCircle size={13} />}
-                Confirmer l'approbation
+                {t('ad4_withdrawals.confirm_approval')}
               </button>
               <button onClick={() => setApproveModal(null)}
                 className="px-4 py-2.5 rounded-xl text-[13px] font-semibold"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                Annuler
+                {t('ad4_withdrawals.cancel')}
               </button>
             </div>
           </div>
@@ -376,15 +378,15 @@ export default function WithdrawalsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.6)' }} onClick={() => setRejectModal(null)}>
           <div className="rounded-2xl p-6 w-full max-w-md" style={{ background: T.card, border: `1px solid rgba(239,68,68,0.3)` }} onClick={e => e.stopPropagation()}>
             <h2 style={{ fontFamily: "'Syne',sans-serif", fontSize: 17, fontWeight: 800, color: '#EF4444', marginBottom: 4 }}>
-              Rejeter le retrait
+              {t('ad4_withdrawals.reject_modal_title')}
             </h2>
             <p style={{ fontSize: 13, color: T.muted, marginBottom: 16 }}>
-              Retrait <strong style={{ color: T.text }}>{rejectModal.reference}</strong> — {fmtXaf(rejectModal.amount_xaf)} — {rejectModal.business_name}
+              {t('ad4_withdrawals.withdrawal_label')} <strong style={{ color: T.text }}>{rejectModal.reference}</strong> — {fmtXaf(rejectModal.amount_xaf)} — {rejectModal.business_name}
             </p>
             <div className="mb-4">
-              <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>Motif de rejet <span style={{ color: '#EF4444' }}>*</span></label>
+              <label style={{ fontSize: 12, fontWeight: 600, color: T.muted, display: 'block', marginBottom: 6 }}>{t('ad4_withdrawals.reject_reason_label')} <span style={{ color: '#EF4444' }}>*</span></label>
               <textarea value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={3}
-                placeholder="Ex : Numéro de téléphone invalide / Solde insuffisant / Documents manquants"
+                placeholder={t('ad4_withdrawals.reject_reason_placeholder')}
                 style={{ ...inp, resize: 'none' }}
                 onFocus={e => (e.target.style.borderColor = '#EF4444')}
                 onBlur={e  => (e.target.style.borderColor = T.inputBorder)} />
@@ -394,12 +396,12 @@ export default function WithdrawalsPage() {
                 className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white flex-1 justify-center"
                 style={{ background: 'linear-gradient(135deg,#DC2626,#991B1B)', opacity: rejectReason.trim() ? 1 : 0.5 }}>
                 {acting === rejectModal.id ? <RefreshCw size={13} className="animate-spin" /> : <XCircle size={13} />}
-                Confirmer le rejet
+                {t('ad4_withdrawals.confirm_rejection')}
               </button>
               <button onClick={() => setRejectModal(null)}
                 className="px-4 py-2.5 rounded-xl text-[13px] font-semibold"
                 style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}>
-                Annuler
+                {t('ad4_withdrawals.cancel')}
               </button>
             </div>
           </div>

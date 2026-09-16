@@ -5,6 +5,7 @@
 // quarante versements a besoin de lignes, pas de vignettes.
 
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import EmptyState from './EmptyState';
 import { FT } from './tokens';
@@ -30,21 +31,28 @@ interface FinanceTableProps<T> {
 
 export default function FinanceTable<T>({
   columns, rows, rowKey, loading = false, onRowClick,
-  emptyTitle = 'Rien à afficher',
+  emptyTitle,
   emptyDescription,
 }: FinanceTableProps<T>) {
+  const { t } = useTranslation();
+
   if (loading) {
     return (
       <div style={{ padding: '2.5rem', textAlign: 'center' }}>
         <span style={{ fontSize: 13, color: 'var(--text-muted, #B4B2A9)' }}>
-          Chargement…
+          {t('pm2_shared_table.loading')}
         </span>
       </div>
     );
   }
 
   if (rows.length === 0) {
-    return <EmptyState title={emptyTitle} description={emptyDescription} />;
+    return (
+      <EmptyState
+        title={emptyTitle ?? t('pm2_shared_table.empty_title')}
+        description={emptyDescription}
+      />
+    );
   }
 
   return (

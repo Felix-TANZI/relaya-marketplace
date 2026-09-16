@@ -118,116 +118,15 @@ interface ComplianceDocument {
   file_url: string | null;
 }
 
-const relayCopy = {
-  fr: {
-    groups: {
-      pilotage: "Pilotage",
-      operations: "Opérations",
-      qualite: "Qualité",
-      gestion: "Gestion",
-      risque: "Risque",
-      compte: "Compte",
-    } satisfies Record<RelayNavGroup, string>,
-    tabs: {
-      dashboard: "Tableau de bord",
-      reception: "Réception colis",
-      stock: "Colis en stock",
-      retrait: "Retrait acheteur",
-      historique: "Historique 30 j",
-      notifications: "Notifications",
-      trust: "Trust Score PR",
-      avis: "Avis acheteurs",
-      niveaux: "Niveaux PR",
-      formation: "Formation",
-      finances: "Finances MoMo",
-      rapports: "Rapports & export",
-      capacite: "Capacité & horaires",
-      reseau: "Réseau partenaires",
-      fermeture: "Fermeture exceptionnelle",
-      litiges: "Litiges",
-      kyc: "Documents KYC",
-      inscription: "Inscription & cycle de vie",
-      messagerie: "Messagerie support",
-      aide: "Aide & support",
-      parametres: "Paramètres",
-      tokens: "Relais Tokens",
-    } satisfies Record<RelayTab, string>,
-    space: "Espace gérant point relais",
-    brand: "Point relais",
-    brandKicker: "Point relais · Partenaire",
-    footer: [
-      "BelivaY Point Relais v1.0 — Juillet 2026",
-      "Partenaire Indépendant · ANTIC · OHADA",
-      "Anonymat V5 ch.1",
-    ],
-    profile: "Profil",
-    openProfile: "Ouvrir le profil",
-    logout: "Se déconnecter",
-    close: "Fermer",
-    emptyArrivals: "Aucune arrivée livreur connectée pour le moment.",
-    emptyActivity: "Aucune activité opérationnelle connectée pour le moment.",
-    emptyStock: "Aucun colis en stock connecté pour le moment.",
-    dev: "En dev",
-  },
-  en: {
-    groups: {
-      pilotage: "Overview",
-      operations: "Operations",
-      qualite: "Quality",
-      gestion: "Management",
-      risque: "Risk",
-      compte: "Account",
-    } satisfies Record<RelayNavGroup, string>,
-    tabs: {
-      dashboard: "Dashboard",
-      reception: "Parcel reception",
-      stock: "Stored parcels",
-      retrait: "Buyer pickup",
-      historique: "History 30 d",
-      notifications: "Notifications",
-      trust: "Relay trust score",
-      avis: "Buyer reviews",
-      niveaux: "Relay levels",
-      formation: "Training",
-      finances: "MoMo finances",
-      rapports: "Reports & export",
-      capacite: "Capacity & hours",
-      reseau: "Partner network",
-      fermeture: "Exceptional closure",
-      litiges: "Disputes",
-      kyc: "KYC documents",
-      inscription: "Onboarding & lifecycle",
-      messagerie: "Support inbox",
-      aide: "Help & support",
-      parametres: "Settings",
-      tokens: "Relay tokens",
-    } satisfies Record<RelayTab, string>,
-    space: "Relay point manager workspace",
-    brand: "Relay point",
-    brandKicker: "Relay point · Partner",
-    footer: [
-      "BelivaY Relay Point v1.0 — July 2026",
-      "Independent partner · ANTIC · OHADA",
-      "Anonymity V5 ch.1",
-    ],
-    profile: "Profile",
-    openProfile: "Open profile",
-    logout: "Log out",
-    close: "Close",
-    emptyArrivals: "No courier arrival connected yet.",
-    emptyActivity: "No operational activity connected yet.",
-    emptyStock: "No stored parcel connected yet.",
-    dev: "In dev",
-  },
-};
+const RELAY_NAV_GROUPS: RelayNavGroup[] = ["pilotage", "operations", "qualite", "gestion", "risque", "compte"];
 
 const history: Array<[string, string, string, string]> = [];
 
-const training = [
-  ["Réception & garde des colis", "Obligatoire", "Scan QR, contrôle colis, photos et transfert de responsabilité."],
-  ["Vérification CNI et code retrait", "Obligatoire", "Remise uniquement après code valide et contrôle d'identité si requis."],
-  ["Sécurité du stockage", "Recommandé", "Classement par slot, anonymat vendeur et protection contre les pertes."],
-  ["Gestion litige & médiateur", "Recommandé", "Escalade J+7, retour vendeur ou arbitrage BelivaY."],
+const training: Array<{ titleKey: string; tagKey: string; bodyKey: string }> = [
+  { titleKey: "rl1_point_page.training_reception_title", tagKey: "rl1_point_page.training_mandatory", bodyKey: "rl1_point_page.training_reception_body" },
+  { titleKey: "rl1_point_page.training_id_title", tagKey: "rl1_point_page.training_mandatory", bodyKey: "rl1_point_page.training_id_body" },
+  { titleKey: "rl1_point_page.training_storage_title", tagKey: "rl1_point_page.training_recommended", bodyKey: "rl1_point_page.training_storage_body" },
+  { titleKey: "rl1_point_page.training_dispute_title", tagKey: "rl1_point_page.training_recommended", bodyKey: "rl1_point_page.training_dispute_body" },
 ];
 
 function dataUrlToBlob(dataUrl: string): Blob {
@@ -249,10 +148,11 @@ function precisionTone(score: number): "emerald" | "amber" | "red" {
 }
 
 function PrecisionHint({ precision }: { precision?: Partial<LocationPrecisionResult> }) {
+  const { t } = useTranslation();
   if (!precision || typeof precision.precisionScore !== "number") return null;
   return (
     <div className="mt-2 flex flex-wrap items-center gap-2">
-      <StatusPill tone={precisionTone(precision.precisionScore)}>Précision {precision.precisionScore}/100</StatusPill>
+      <StatusPill tone={precisionTone(precision.precisionScore)}>{t("rl1_point_page.precision_score", { score: precision.precisionScore })}</StatusPill>
       {precision.driverHint ? <span className="text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">{precision.driverHint}</span> : null}
     </div>
   );
@@ -260,7 +160,7 @@ function PrecisionHint({ precision }: { precision?: Partial<LocationPrecisionRes
 
 export default function RelayPointPage() {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [tab, setTabState] = useState<RelayTab>(getInitialRelayTab);
@@ -300,8 +200,19 @@ export default function RelayPointPage() {
   const [supportBody, setSupportBody] = useState("");
   const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
-  const ui = relayCopy[locale];
-  const activeLabel = ui.tabs[tab] ?? ui.brand;
+  const tabLabels = useMemo(
+    () => Object.fromEntries(RELAY_TABS.map((tabId) => [tabId, t(`rl1_point_page.tabs.${tabId}`)])) as Record<RelayTab, string>,
+    [t],
+  );
+  const groupLabels = useMemo(
+    () => Object.fromEntries(RELAY_NAV_GROUPS.map((group) => [group, t(`rl1_point_page.groups.${group}`)])) as Record<RelayNavGroup, string>,
+    [t],
+  );
+  const footerLines = useMemo(
+    () => [t("rl1_point_page.footer_line1"), t("rl1_point_page.footer_line2"), t("rl1_point_page.footer_line3")],
+    [t],
+  );
+  const activeLabel = tabLabels[tab] ?? t("rl1_point_page.brand");
   const relayAccount = user?.relay_point_profile;
   useEffect(() => {
     setAvatarUrl(user?.avatar_url || "");
@@ -340,13 +251,13 @@ export default function RelayPointPage() {
         .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status))
         .map((parcel) => ({
           ref: `BV-${parcel.order_id}`,
-          slot: parcel.slot_code || "A definir",
+          slot: parcel.slot_code || t("rl1_point_page.slot_to_define"),
           buyer: anonymizedBuyerRef(parcel),
           age: parcel.received_at ? new Date(parcel.received_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR") : "-",
-          status: parcel.status === "STORED" ? (locale === "en" ? "Stored" : "Stocke") : parcel.status,
+          status: parcel.status === "STORED" ? t("rl1_point_page.status_stored") : parcel.status,
           tone: "emerald" as const,
         })),
-    [locale, relayParcels],
+    [locale, relayParcels, t],
   );
 
   const arrivals = useMemo<RelayArrival[]>(
@@ -360,11 +271,11 @@ export default function RelayPointPage() {
           internalRef: `BV-${parcel.order_id}`,
           courierRef: parcel.courier_ref || "",
           vehicleLabel: parcel.courier_vehicle_label || "",
-          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+          sizeLabel: parcel.parcel_size_label || t("rl1_point_page.size_not_specified"),
           buyerRef: anonymizedBuyerRef(parcel),
           pickupCode: parcel.pickup_code || "",
         })),
-    [relayParcels],
+    [relayParcels, t],
   );
 
   const suggestedSlot = useMemo(() => {
@@ -410,31 +321,37 @@ export default function RelayPointPage() {
   const isSuspended = relayAccount?.status === "SUSPENDED";
   const hasCapacity = Number(relayAccount?.storage_capacity || 0) > 0;
   const hasHours = Boolean(relayAccount?.opening_hours?.trim());
-  const operationalStatus = isSuspended
-    ? "Suspendu"
+  const operationalStatusCode: "SUSPENDED" | "OPEN" | "CONFIGURING" = isSuspended
+    ? "SUSPENDED"
     : isKycApproved && hasCapacity && hasHours
-      ? "Ouvert"
-      : "En configuration";
+      ? "OPEN"
+      : "CONFIGURING";
+  const operationalStatus = t(`rl1_point_page.status_${operationalStatusCode.toLowerCase()}`);
   const readiness = [
-    ["KYC BelivaY", isKycApproved, isKycApproved ? "Validé" : "À valider par BelivaY"],
-    ["Capacité", hasCapacity, hasCapacity ? `${relayAccount?.storage_capacity} places déclarées` : "Nombre de places à déclarer"],
-    ["Horaires", hasHours, hasHours ? relayAccount?.opening_hours || "" : "Jours et créneaux à définir"],
+    [t("rl1_point_page.readiness_kyc_label"), isKycApproved, isKycApproved ? t("rl1_point_page.status_validated") : t("rl1_point_page.readiness_kyc_pending")],
+    [
+      t("rl1_point_page.readiness_capacity_label"),
+      hasCapacity,
+      hasCapacity ? t("rl1_point_page.readiness_capacity_declared", { count: relayAccount?.storage_capacity }) : t("rl1_point_page.readiness_capacity_pending"),
+    ],
+    [t("rl1_point_page.readiness_hours_label"), hasHours, hasHours ? relayAccount?.opening_hours || "" : t("rl1_point_page.readiness_hours_pending")],
   ] as const;
   const kycItems = [
-    ["Pièce d'identité du gérant", isKycApproved ? "Vérifié" : "À envoyer", "CNI ou passeport du responsable opérationnel."],
-    ["Registre ou preuve d'activité", isKycApproved ? "Vérifié" : "À envoyer", "Document permettant d'identifier le point de dépôt."],
-    ["Numéro MoMo de reversement", isKycApproved ? "Vérifié" : "À configurer", "Compte utilisé pour les paiements hebdomadaires."],
-    ["Photos du local", isKycApproved ? "Vérifié" : "À envoyer", "Entrée, espace de stockage et zone de remise client."],
-    ["Validation physique BelivaY", isKycApproved ? "Validée" : "À planifier", "Contrôle terrain avant ouverture opérationnelle."],
+    [t("rl1_point_page.kyc_manager_id_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_manager_id_body")],
+    [t("rl1_point_page.kyc_activity_record_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_activity_record_body")],
+    [t("rl1_point_page.kyc_payout_account_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_configure"), t("rl1_point_page.kyc_payout_account_body")],
+    [t("rl1_point_page.kyc_premises_photos_label"), isKycApproved ? t("rl1_point_page.status_verified") : t("rl1_point_page.status_to_send"), t("rl1_point_page.kyc_premises_photos_body")],
+    [t("rl1_point_page.kyc_field_validation_label"), isKycApproved ? t("rl1_point_page.status_validated") : t("rl1_point_page.status_to_plan"), t("rl1_point_page.kyc_field_validation_body")],
   ] as const;
 
   const relayProfile = {
-    name: relayAccount?.name || "Point relais BelivaY",
-    manager: relayAccount?.manager_name || user?.first_name || user?.username || "Gerant",
-    city: relayAccount?.city || "Ville a definir",
-    address: relayAccount?.address || "Adresse a completer",
-    hours: relayAccount?.opening_hours || "Horaires a completer",
+    name: relayAccount?.name || t("rl1_point_page.default_relay_name"),
+    manager: relayAccount?.manager_name || user?.first_name || user?.username || t("rl1_point_page.default_manager_name"),
+    city: relayAccount?.city || t("rl1_point_page.default_city"),
+    address: relayAccount?.address || t("rl1_point_page.default_address"),
+    hours: relayAccount?.opening_hours || t("rl1_point_page.default_hours"),
     status: operationalStatus,
+    statusCode: operationalStatusCode,
     trust: trustScore,
     capacityUsed: parcels.length,
     capacityMax: relayAccount?.storage_capacity || 0,
@@ -452,7 +369,7 @@ export default function RelayPointPage() {
   };
   const capacityPct = Math.round((relayProfile.capacityUsed / relayProfile.capacityMax) * 100);
   const safeCapacityPct = Number.isFinite(capacityPct) ? capacityPct : 0;
-  const statusTone = relayProfile.status === "Ouvert" ? "emerald" : relayProfile.status === "Suspendu" ? "red" : "amber";
+  const statusTone = relayProfile.statusCode === "OPEN" ? "emerald" : relayProfile.statusCode === "SUSPENDED" ? "red" : "amber";
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
   const changeLanguage = (next: "fr" | "en") => void i18n.changeLanguage(next);
   const handleLogout = () => {
@@ -477,8 +394,8 @@ export default function RelayPointPage() {
   // declenchent leurs chargements sur cette fonction, elle ne doit pas changer
   // a chaque rendu du portail.
   const showOperationError = useCallback((error: unknown) => {
-    setOperationMessage({ tone: "error", text: error instanceof Error ? error.message : "Impossible de terminer cette action." });
-  }, []);
+    setOperationMessage({ tone: "error", text: error instanceof Error ? error.message : t("rl1_point_page.generic_error") });
+  }, [t]);
 
   const showOperationSuccess = useCallback((text: string) => {
     setOperationMessage({ tone: "success", text });
@@ -504,8 +421,8 @@ export default function RelayPointPage() {
       setOperationMessage({
         tone: "success",
         text: slotCode
-          ? `Colis réceptionné et placé en stock au slot ${slotCode}.`
-          : "Colis réceptionné, tracé et placé en stock.",
+          ? t("rl1_point_page.receive_success_with_slot", { slot: slotCode })
+          : t("rl1_point_page.receive_success"),
       });
       await refreshRelayData();
       return true;
@@ -528,7 +445,7 @@ export default function RelayPointPage() {
       form.append("note", note);
       form.append("file", photo, photo.name || "refus.jpg");
       await http("/api/shipping/relay-point/refuse/", { method: "POST", body: form });
-      setOperationMessage({ tone: "success", text: "Colis refusé et signalé — la logistique BelivaY reprend la main." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.refuse_success") });
       await refreshRelayData();
       return true;
     } catch (error) {
@@ -544,25 +461,28 @@ export default function RelayPointPage() {
       (item) => ["RECEIVED", "STORED"].includes(item.status) && item.pickup_code.toUpperCase() === pickupCode.toUpperCase(),
     );
     if (!parcel) {
-      setOperationMessage({ tone: "error", text: "Aucun colis en stock ne correspond à ce code de retrait." });
+      setOperationMessage({ tone: "error", text: t("rl1_point_page.pickup_no_match") });
       return;
     }
     if (parcel.authorized_pickup_name) {
       const confirmed = window.confirm(
-        `Ce client a autorisé ${parcel.authorized_pickup_name}${parcel.authorized_pickup_phone ? ` (${parcel.authorized_pickup_phone})` : ""} à retirer ce colis à sa place.\n\nVérifiez l'identité de la personne présente au guichet avant de continuer.`,
+        t("rl1_point_page.pickup_third_party_confirm", {
+          name: parcel.authorized_pickup_name,
+          phone: parcel.authorized_pickup_phone ? ` (${parcel.authorized_pickup_phone})` : "",
+        }),
       );
       if (!confirmed) return;
       if (!pickupIdReference.trim()) {
-        setOperationMessage({ tone: "error", text: "Retrait par un tiers : renseignez sa pièce d'identité (type + numéro) avant de valider." });
+        setOperationMessage({ tone: "error", text: t("rl1_point_page.pickup_third_party_id_required") });
         return;
       }
     }
     if (!pickupPhoto) {
-      setOperationMessage({ tone: "error", text: "Prenez une photo de la remise avant de valider (point de garde strict, synchro immédiate requise)." });
+      setOperationMessage({ tone: "error", text: t("rl1_point_page.pickup_photo_required") });
       return;
     }
     if (!pickupSignature) {
-      setOperationMessage({ tone: "error", text: "Faites signer le client avant de valider (contrôle au retrait : code + pièce d'identité + photo + signature)." });
+      setOperationMessage({ tone: "error", text: t("rl1_point_page.pickup_signature_required") });
       return;
     }
     setOperationBusy(true);
@@ -593,7 +513,7 @@ export default function RelayPointPage() {
           picked_up_by_id_reference: pickupIdReference.trim(),
         }),
       });
-      setOperationMessage({ tone: "success", text: `Retrait de la commande BV-${parcel.order_id} confirmé.` });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.pickup_success", { orderId: parcel.order_id }) });
       setPickupCode("");
       setPickupPhoto(null);
       setPickupIdReference("");
@@ -616,7 +536,7 @@ export default function RelayPointPage() {
         method: "POST",
         body: JSON.stringify({ order_id: orderId }),
       });
-      setOperationMessage({ tone: "success", text: `Retour de la commande #${orderId} confirmé — direction inspection.` });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.return_success", { orderId }) });
       setReturnOrderNumber("");
     } catch (error) {
       showOperationError(error);
@@ -630,7 +550,7 @@ export default function RelayPointPage() {
     setOperationMessage(null);
     try {
       await http("/api/auth/relay-point/profile/", { method: "PATCH", body: JSON.stringify(payload) });
-      setOperationMessage({ tone: "success", text: "Configuration du point relais enregistrée." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.settings_saved") });
       window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
       showOperationError(error);
@@ -649,7 +569,7 @@ export default function RelayPointPage() {
       });
       setSupportSubject("");
       setSupportBody("");
-      setOperationMessage({ tone: "success", text: "Demande transmise au support BelivaY." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.support_message_sent") });
     } catch (error) {
       showOperationError(error);
     } finally {
@@ -668,7 +588,7 @@ export default function RelayPointPage() {
     try {
       await http<ComplianceDocument>("/api/auth/compliance-documents/", { method: "POST", body });
       await refreshRelayData();
-      setOperationMessage({ tone: "success", text: "Document envoyé pour vérification BelivaY." });
+      setOperationMessage({ tone: "success", text: t("rl1_point_page.document_sent") });
     } catch (error) {
       showOperationError(error);
     } finally {
@@ -685,10 +605,10 @@ export default function RelayPointPage() {
           flottaison. En 2x2 le gerant les embrasse d'un seul regard. */}
       <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
         {[
-          ["Arrivees a confirmer", arrivals.length.toString(), PackagePlus, "Scan QR + preuves"],
-          ["Colis en stock", parcels.length.toString(), PackageCheck, "Slots anonymisés"],
-          ["Capacite", `${relayProfile.capacityUsed}/${relayProfile.capacityMax}`, Warehouse, `${safeCapacityPct}% utilise`],
-          [ui.tabs.tokens, ui.dev, BadgeCheck, locale === "en" ? "Module pending" : "Module en cours"],
+          [t("rl1_point_page.stat_arrivals_label"), arrivals.length.toString(), PackagePlus, t("rl1_point_page.stat_arrivals_sub")],
+          [t("rl1_point_page.stat_stock_label"), parcels.length.toString(), PackageCheck, t("rl1_point_page.stat_stock_sub")],
+          [t("rl1_point_page.stat_capacity_label"), `${relayProfile.capacityUsed}/${relayProfile.capacityMax}`, Warehouse, t("rl1_point_page.stat_capacity_sub", { percent: safeCapacityPct })],
+          [tabLabels.tokens, t("rl1_point_page.dev"), BadgeCheck, t("rl1_point_page.module_pending")],
         ].map(([label, value, Icon, sub]) => (
           <article key={label as string} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
             {/* Libelle et icone sur la meme ligne : a demi-largeur, une pastille
@@ -709,14 +629,14 @@ export default function RelayPointPage() {
 
       <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
         <Panel
-          kicker="Arrivees prevues"
-          title="Livreurs en approche"
-          action={<button onClick={() => setTab("reception")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">Receptionner</button>}
+          kicker={t("rl1_point_page.upcoming_arrivals_kicker")}
+          title={t("rl1_point_page.couriers_approaching_title")}
+          action={<button onClick={() => setTab("reception")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">{t("rl1_point_page.receive_button")}</button>}
         >
           <div className="space-y-3">
             {arrivals.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-                {ui.emptyArrivals}
+                {t("rl1_point_page.empty_arrivals")}
               </div>
             ) : arrivals.map((arrival) => (
               <div key={arrival.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
@@ -727,19 +647,19 @@ export default function RelayPointPage() {
                   <div>
                     <div className="font-black text-slate-950 dark:text-white">{arrival.internalRef} · {arrival.sizeLabel}</div>
                     <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {arrival.courierRef || "Livreur à assigner"}{arrival.vehicleLabel ? ` · ${arrival.vehicleLabel}` : ""}
+                      {arrival.courierRef || t("rl1_point_page.courier_to_assign")}{arrival.vehicleLabel ? ` · ${arrival.vehicleLabel}` : ""}
                     </div>
                   </div>
                 </div>
                 <button onClick={() => setTab("reception")} className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700">
-                  Scanner QR
+                  {t("rl1_point_page.scan_qr_short")}
                 </button>
               </div>
             ))}
           </div>
         </Panel>
 
-        <Panel kicker="Trust & revenus" title="Performance point relais">
+        <Panel kicker={t("rl1_point_page.trust_revenue_kicker")} title={t("rl1_point_page.performance_title")}>
           <div className="flex items-center gap-5">
             <div className="flex h-28 w-28 flex-shrink-0 items-center justify-center rounded-full border-[10px] border-blue-100 bg-white dark:border-blue-950 dark:bg-slate-900">
               <div className="text-center">
@@ -748,13 +668,12 @@ export default function RelayPointPage() {
               </div>
             </div>
             <div className="min-w-0 flex-1">
-              <StatusPill tone={relayProfile.trust > 0 ? "blue" : "slate"}>{relayProfile.trust > 0 ? "Score public acheteur" : "Score en attente de données"}</StatusPill>
+              <StatusPill tone={relayProfile.trust > 0 ? "blue" : "slate"}>{relayProfile.trust > 0 ? t("rl1_point_page.public_buyer_score") : t("rl1_point_page.score_pending_data")}</StatusPill>
               <p className="mt-3 text-sm leading-6 text-slate-600">
-                Le Trust Score dépend de la ponctualité, de la sécurité du stockage, des retraits sans litige et de la satisfaction acheteur.
-                Il reste à 0 tant que BelivaY n'a pas assez d'opérations réelles pour le calculer.
+                {t("rl1_point_page.trust_score_explainer")}
               </p>
               <button onClick={() => setTab("trust")} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">
-                Voir le detail <ChevronRight size={16} />
+                {t("rl1_point_page.see_detail")} <ChevronRight size={16} />
               </button>
             </div>
           </div>
@@ -762,20 +681,20 @@ export default function RelayPointPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-        <Panel kicker="Workflow guichet" title="Actions attendues">
+        <Panel kicker={t("rl1_point_page.counter_workflow_kicker")} title={t("rl1_point_page.expected_actions_title")}>
           <div className="space-y-3">
             {[
-              ["1", "Reception livreur", "Scanner la mission, controler l'etat du colis, prendre les preuves.", QrCode],
-              ["2", "Stockage anonyme", "Attribuer un slot sans exposer le vendeur ni le détail client inutile.", Warehouse],
-              ["3", "Retrait acheteur", "Vérifier le code de retrait et la pièce d'identité si BelivaY l'exige.", KeyRound],
-              ["4", "Litige J+7", "Remonter tout colis bloque, endommage ou non retire.", Scale],
+              ["1", t("rl1_point_page.workflow_step1_title"), t("rl1_point_page.workflow_step1_body"), QrCode],
+              ["2", t("rl1_point_page.workflow_step2_title"), t("rl1_point_page.workflow_step2_body"), Warehouse],
+              ["3", t("rl1_point_page.workflow_step3_title"), t("rl1_point_page.workflow_step3_body"), KeyRound],
+              ["4", t("rl1_point_page.workflow_step4_title"), t("rl1_point_page.workflow_step4_body"), Scale],
             ].map(([step, title, body, Icon]) => (
               <div key={step as string} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300">
                   <Icon size={18} />
                 </div>
                 <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">Etape {step as string}</div>
+                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">{t("rl1_point_page.step_label", { step: step as string })}</div>
                   <div className="font-black text-slate-950 dark:text-white">{title as string}</div>
                   <div className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</div>
                 </div>
@@ -784,11 +703,11 @@ export default function RelayPointPage() {
           </div>
         </Panel>
 
-        <Panel kicker="Activite recente" title="Journal operationnel">
+        <Panel kicker={t("rl1_point_page.recent_activity_kicker")} title={t("rl1_point_page.operational_log_title")}>
           <div className="grid gap-3">
             {history.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
-                {ui.emptyActivity}
+                {t("rl1_point_page.empty_activity")}
               </div>
             ) : history.map(([time, action, ref, detail]) => (
               <div key={`${time}-${ref}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -819,10 +738,10 @@ export default function RelayPointPage() {
 
   const renderStock = () => (
     <div className="space-y-5">
-      <Panel kicker="Stock anonyme" title="Colis en stock">
+      <Panel kicker={t("rl1_point_page.anonymous_stock_kicker")} title={t("rl1_point_page.stock_title")}>
         <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-blue-950">Capacite utilisee</span>
+            <span className="text-sm font-bold text-blue-950">{t("rl1_point_page.capacity_used_label")}</span>
             <strong className="text-sm text-blue-700">{safeCapacityPct}%</strong>
           </div>
           <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
@@ -831,10 +750,10 @@ export default function RelayPointPage() {
         </div>
         <div className="grid gap-3 md:hidden">
           {parcelsLoading ? (
-            <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-semibold text-blue-900">Chargement des colis...</div>
+            <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-semibold text-blue-900">{t("rl1_point_page.loading_parcels")}</div>
           ) : parcels.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-              {ui.emptyStock}
+              {t("rl1_point_page.empty_stock")}
             </div>
           ) : parcels.map((parcel) => (
             <article key={parcel.ref} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -847,15 +766,15 @@ export default function RelayPointPage() {
               </div>
               <div className="mt-4 grid grid-cols-2 gap-2">
                 <div className="rounded-2xl bg-white p-3 dark:bg-slate-900">
-                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Slot</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{t("rl1_point_page.slot_column")}</div>
                   <div className="mt-1 font-black text-slate-950 dark:text-white">{parcel.slot}</div>
                 </div>
                 <div className="rounded-2xl bg-white p-3 dark:bg-slate-900">
-                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Recu</div>
+                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">{t("rl1_point_page.received_column")}</div>
                   <div className="mt-1 font-black text-slate-950 dark:text-white">{parcel.age}</div>
                 </div>
               </div>
-              <button onClick={() => setTab("retrait")} className="mt-3 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">Passer au retrait</button>
+              <button onClick={() => setTab("retrait")} className="mt-3 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">{t("rl1_point_page.go_to_pickup")}</button>
             </article>
           ))}
         </div>
@@ -863,19 +782,19 @@ export default function RelayPointPage() {
           <table className="min-w-[760px] w-full text-left text-sm">
             <thead className="text-xs uppercase tracking-[0.12em] text-slate-400">
               <tr>
-                <th className="py-3">Reference</th>
-                <th>Slot</th>
-                <th>Acheteur</th>
-                <th>Delai</th>
-                <th>Statut</th>
-                <th className="text-right">Action</th>
+                <th className="py-3">{t("rl1_point_page.table_reference")}</th>
+                <th>{t("rl1_point_page.table_slot")}</th>
+                <th>{t("rl1_point_page.table_buyer")}</th>
+                <th>{t("rl1_point_page.table_delay")}</th>
+                <th>{t("rl1_point_page.table_status")}</th>
+                <th className="text-right">{t("rl1_point_page.table_action")}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {parcels.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="py-8 text-center text-sm font-semibold text-slate-500">
-                    {ui.emptyStock}
+                    {t("rl1_point_page.empty_stock")}
                   </td>
                 </tr>
               ) : parcels.map((parcel) => (
@@ -886,7 +805,7 @@ export default function RelayPointPage() {
                   <td>{parcel.age}</td>
                   <td><StatusPill tone={parcel.tone as "emerald" | "amber" | "red"}>{parcel.status}</StatusPill></td>
                   <td className="text-right">
-                    <button onClick={() => setTab("retrait")} className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-700">Retrait</button>
+                    <button onClick={() => setTab("retrait")} className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-700">{t("rl1_point_page.pickup_short")}</button>
                   </td>
                 </tr>
               ))}
@@ -899,9 +818,9 @@ export default function RelayPointPage() {
 
   const renderRetrait = () => (
     <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-      <Panel kicker="Retrait acheteur" title="Code de retrait">
+      <Panel kicker={t("rl1_point_page.buyer_pickup_kicker")} title={t("rl1_point_page.pickup_code_title")}>
         <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Code a 6 chiffres</label>
+          <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">{t("rl1_point_page.six_digit_code_label")}</label>
           <input
             value={pickupCode}
             onChange={(event) => setPickupCode(event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6))}
@@ -910,7 +829,7 @@ export default function RelayPointPage() {
           />
           <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-600">
             <Camera size={16} />
-            {pickupPhoto ? "Photo prête" : "Photo de la remise (obligatoire)"}
+            {pickupPhoto ? t("rl1_point_page.photo_ready") : t("rl1_point_page.handover_photo_required")}
             <input
               type="file"
               accept="image/*"
@@ -927,13 +846,13 @@ export default function RelayPointPage() {
             return (
               <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
                 <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-                  Retrait par un tiers — {matched.authorized_pickup_name}
+                  {t("rl1_point_page.third_party_pickup", { name: matched.authorized_pickup_name })}
                 </p>
-                <label className="mt-2 block text-xs font-bold text-slate-600">Pièce d'identité présentée (type + numéro)</label>
+                <label className="mt-2 block text-xs font-bold text-slate-600">{t("rl1_point_page.id_document_presented_label")}</label>
                 <input
                   value={pickupIdReference}
                   onChange={(event) => setPickupIdReference(event.target.value)}
-                  placeholder="Ex : CNI n° 1234567890"
+                  placeholder={t("rl1_point_page.id_document_placeholder")}
                   className="mt-1 w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-amber-500"
                 />
               </div>
@@ -941,8 +860,8 @@ export default function RelayPointPage() {
           })()}
           <div className="mt-4">
             <SignaturePad
-              label="Signature du client"
-              hint="Contrôle au retrait : code + pièce d'identité + photo + signature"
+              label={t("rl1_point_page.client_signature_label")}
+              hint={t("rl1_point_page.pickup_control_hint")}
               onChange={setPickupSignature}
               disabled={operationBusy}
             />
@@ -953,29 +872,29 @@ export default function RelayPointPage() {
             disabled={operationBusy || pickupCode.length !== 6 || !pickupPhoto || !pickupSignature}
             className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45"
           >
-            {operationBusy ? "Vérification..." : "Vérifier et remettre"}
+            {operationBusy ? t("rl1_point_page.verifying") : t("rl1_point_page.verify_and_handover")}
           </button>
         </div>
         <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-          <label className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Dépôt d'un retour acheteur</label>
-          <p className="mt-1 text-xs text-emerald-800/80">Un client vient déposer un colis retourné (retour approuvé par le vendeur).</p>
+          <label className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">{t("rl1_point_page.return_deposit_label")}</label>
+          <p className="mt-1 text-xs text-emerald-800/80">{t("rl1_point_page.return_deposit_hint")}</p>
           <input
             value={returnOrderNumber}
             onChange={(event) => setReturnOrderNumber(event.target.value.replace(/\D/g, ""))}
             className="mt-3 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-center text-lg font-black tracking-wide outline-none focus:border-emerald-500"
-            placeholder="Numéro de commande (ex: 128)"
+            placeholder={t("rl1_point_page.order_number_placeholder")}
           />
           <button type="button" onClick={receiveReturn} disabled={operationBusy || !returnOrderNumber.trim()} className="mt-3 w-full rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
-            {operationBusy ? "Vérification..." : "Confirmer le dépôt"}
+            {operationBusy ? t("rl1_point_page.verifying") : t("rl1_point_page.confirm_deposit")}
           </button>
         </div>
       </Panel>
-      <Panel kicker="Procedure de remise" title="Verification avant sortie">
+      <Panel kicker={t("rl1_point_page.handover_procedure_kicker")} title={t("rl1_point_page.pre_exit_check_title")}>
         <div className="grid gap-3 md:grid-cols-3">
           {[
-            ["Code retrait", "Correspondance exacte avec le colis.", KeyRound],
-            ["Identité", "Contrôle CNI si requis par BelivaY.", IdCard],
-            ["Photo remise", "Preuve de remise avant clôture.", Camera],
+            [t("rl1_point_page.pickup_code_check_title"), t("rl1_point_page.pickup_code_check_body"), KeyRound],
+            [t("rl1_point_page.identity_check_title"), t("rl1_point_page.identity_check_body"), IdCard],
+            [t("rl1_point_page.handover_photo_check_title"), t("rl1_point_page.handover_photo_check_body"), Camera],
           ].map(([title, body, Icon]) => (
             <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
               <Icon className="text-blue-700" size={22} />
@@ -991,30 +910,28 @@ export default function RelayPointPage() {
   const renderTrust = () => <RelayTrust onError={showOperationError} />;
 
   const renderTokens = () => (
-    <Panel kicker="Relais Tokens" title="Module en cours de developpement">
+    <Panel kicker={t("rl1_point_page.tokens_kicker")} title={t("rl1_point_page.module_in_development_title")}>
       <div className="rounded-3xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
           <BadgeCheck size={30} />
         </div>
-        <h3 className="mt-5 text-2xl font-black text-blue-950">Relais Tokens en cours de developpement</h3>
+        <h3 className="mt-5 text-2xl font-black text-blue-950">{t("rl1_point_page.tokens_in_development_title")}</h3>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-blue-950/70">
-          La logique de tokens point relais sera activee plus tard. Pour la phase actuelle, BelivaY conserve le module visible,
-          mais aucun solde fictif n'est affiche.
+          {t("rl1_point_page.tokens_in_development_body")}
         </p>
       </div>
     </Panel>
   );
 
   const renderNiveaux = () => (
-    <Panel kicker="Niveaux PR" title="Module en cours de developpement">
+    <Panel kicker={t("rl1_point_page.levels_kicker")} title={t("rl1_point_page.module_in_development_title")}>
       <div className="rounded-3xl border border-dashed border-blue-300 bg-blue-50 p-8 text-center">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white text-blue-700 shadow-sm">
           <Layers3 size={30} />
         </div>
-        <h3 className="mt-5 text-2xl font-black text-blue-950">Niveaux PR en cours de developpement</h3>
+        <h3 className="mt-5 text-2xl font-black text-blue-950">{t("rl1_point_page.levels_in_development_title")}</h3>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-7 text-blue-950/70">
-          La vue finale prevoit des paliers Starter, Confirme et Premium avec quotas, remuneration et avantages.
-          Pour la phase actuelle, BelivaY n'active pas encore cette logique.
+          {t("rl1_point_page.levels_in_development_body")}
         </p>
       </div>
     </Panel>
@@ -1030,31 +947,31 @@ export default function RelayPointPage() {
   );
 
   const renderCapacite = () => (
-    <Panel kicker="Capacite & horaires" title="Disponibilite du point relais">
+    <Panel kicker={t("rl1_point_page.capacity_hours_kicker")} title={t("rl1_point_page.availability_title")}>
       <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
           <Warehouse className="text-blue-700 dark:text-blue-300" />
-          <div className="mt-3 font-black text-slate-950 dark:text-white">Stockage par slots</div>
+          <div className="mt-3 font-black text-slate-950 dark:text-white">{t("rl1_point_page.slot_storage_title")}</div>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {relayProfile.capacityUsed} colis stockés sur {relayProfile.capacityMax} places. La capacité doit être déclarée avant ouverture.
+            {t("rl1_point_page.slot_storage_body", { used: relayProfile.capacityUsed, max: relayProfile.capacityMax })}
           </p>
           <div className="mt-4 h-3 overflow-hidden rounded-full bg-white dark:bg-slate-900">
             <div className={`h-full ${safeCapacityPct > 85 ? "bg-amber-500" : "bg-blue-600"}`} style={{ width: `${safeCapacityPct}%` }} />
           </div>
           <div className="mt-4 flex gap-2">
             <input value={capacityInput} onChange={(event) => setCapacityInput(event.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder={`${relayProfile.capacityMax || 50}`} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-4 py-2 font-bold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
-            <button type="button" disabled={operationBusy || !capacityInput} onClick={() => void updateRelaySettings({ storage_capacity: Number(capacityInput) })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">Enregistrer</button>
+            <button type="button" disabled={operationBusy || !capacityInput} onClick={() => void updateRelaySettings({ storage_capacity: Number(capacityInput) })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{t("rl1_point_page.save")}</button>
           </div>
         </div>
         <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
           <Clock3 className="text-blue-700 dark:text-blue-300" />
-          <div className="mt-3 font-black text-slate-950 dark:text-white">Horaires d'accueil</div>
+          <div className="mt-3 font-black text-slate-950 dark:text-white">{t("rl1_point_page.opening_hours_title")}</div>
           <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {relayProfile.hours}. Les horaires alimentent la sélection côté acheteur et les tournées livreur.
+            {t("rl1_point_page.opening_hours_body", { hours: relayProfile.hours })}
           </p>
           <div className="mt-4 flex gap-2">
             <input value={hoursInput} onChange={(event) => setHoursInput(event.target.value)} placeholder={relayProfile.hours} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
-            <button type="button" disabled={operationBusy || !hoursInput.trim()} onClick={() => void updateRelaySettings({ opening_hours: hoursInput.trim() })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">Enregistrer</button>
+            <button type="button" disabled={operationBusy || !hoursInput.trim()} onClick={() => void updateRelaySettings({ opening_hours: hoursInput.trim() })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{t("rl1_point_page.save")}</button>
           </div>
         </div>
       </div>
@@ -1073,19 +990,19 @@ export default function RelayPointPage() {
   );
 
   const renderLitiges = () => (
-    <Panel kicker="Risque & mediation" title="Litiges Point Relais">
+    <Panel kicker={t("rl1_point_page.risk_mediation_kicker")} title={t("rl1_point_page.disputes_title")}>
       <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-3">
           {relayDisputes.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
               <div className="flex items-start gap-3">
                 <Scale className="mt-0.5 text-blue-700 dark:text-blue-300" size={20} />
-                <div><div className="font-black text-slate-950 dark:text-white">Aucun litige ouvert</div><p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Les dossiers liés aux colis traités par ce point relais apparaîtront ici.</p></div>
+                <div><div className="font-black text-slate-950 dark:text-white">{t("rl1_point_page.no_open_dispute_title")}</div><p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{t("rl1_point_page.no_open_dispute_body")}</p></div>
               </div>
             </div>
           ) : relayDisputes.map((dispute) => (
             <article key={dispute.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-              <div className="flex items-center justify-between gap-3"><strong className="text-amber-950 dark:text-amber-100">{dispute.ref} · Commande #{dispute.order_id}</strong><StatusPill tone="amber">{dispute.status_display}</StatusPill></div>
+              <div className="flex items-center justify-between gap-3"><strong className="text-amber-950 dark:text-amber-100">{t("rl1_point_page.dispute_order_ref", { ref: dispute.ref, orderId: dispute.order_id })}</strong><StatusPill tone="amber">{dispute.status_display}</StatusPill></div>
               <p className="mt-2 text-sm font-bold text-amber-900 dark:text-amber-200">{dispute.reason_display}</p>
               <p className="mt-1 text-sm leading-6 text-amber-900/75 dark:text-amber-100/75">{dispute.description}</p>
               {dispute.delivery_address ? (
@@ -1097,9 +1014,9 @@ export default function RelayPointPage() {
         </div>
         <div className="grid gap-3">
           {[
-            ["Rappel J+6", "Notifier le client avant bascule litige.", Bell],
-            ["Escalade J+7", "Créer un dossier avec preuves, historique et photos.", AlertTriangle],
-            ["Décision", "Retour livreur vers vendeur ou arbitrage BelivaY.", FileText],
+            [t("rl1_point_page.reminder_j6_title"), t("rl1_point_page.reminder_j6_body"), Bell],
+            [t("rl1_point_page.escalation_j7_title"), t("rl1_point_page.escalation_j7_body"), AlertTriangle],
+            [t("rl1_point_page.decision_title"), t("rl1_point_page.decision_body"), FileText],
           ].map(([title, body, Icon]) => (
             <div key={title as string} className="flex gap-3 rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
               <Icon className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
@@ -1117,7 +1034,7 @@ export default function RelayPointPage() {
   const renderSimple = (kind: RelayTab) => {
     if (kind === "kyc") {
       return (
-        <Panel kicker="Conformité" title="Documents KYC du point relais">
+        <Panel kicker={t("rl1_point_page.compliance_kicker")} title={t("rl1_point_page.kyc_documents_title")}>
           <div className="grid gap-4 lg:grid-cols-[1fr_0.85fr]">
             <div className="space-y-3">
               {kycItems.map(([title, status, body], index) => {
@@ -1127,11 +1044,11 @@ export default function RelayPointPage() {
                 <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <strong className="text-slate-950 dark:text-white">{title}</strong>
-                    <StatusPill tone={status === "Vérifié" || status === "Validée" ? "emerald" : "amber"}>{status}</StatusPill>
+                    <StatusPill tone={isKycApproved ? "emerald" : "amber"}>{status}</StatusPill>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
                   <label className="mt-3 inline-flex cursor-pointer items-center rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">
-                    {uploaded ? `Envoyé · ${uploaded.status}` : "Envoyer le document"}
+                    {uploaded ? t("rl1_point_page.document_uploaded_status", { status: uploaded.status }) : t("rl1_point_page.send_document")}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" disabled={operationBusy} className="sr-only" onChange={(event) => void uploadRelayDocument(documentType, event.target.files?.[0])} />
                   </label>
                 </div>
@@ -1140,10 +1057,9 @@ export default function RelayPointPage() {
             </div>
             <div className="hidden rounded-2xl border border-blue-100 bg-blue-50 p-5 dark:border-blue-900 dark:bg-blue-950/40 lg:block">
               <FileCheck2 className="text-blue-700 dark:text-blue-300" />
-              <h3 className="mt-4 font-black text-blue-950 dark:text-blue-50">Règle d'ouverture BelivaY</h3>
+              <h3 className="mt-4 font-black text-blue-950 dark:text-blue-50">{t("rl1_point_page.opening_rule_title")}</h3>
               <p className="mt-2 text-sm leading-7 text-blue-950/75 dark:text-blue-100/80">
-                Le point relais ne doit être visible comme ouvert que si le KYC est validé, la capacité est déclarée et les horaires sont définis.
-                Ces trois prérequis protègent les colis, les clients et le réseau de livraison.
+                {t("rl1_point_page.opening_rule_body")}
               </p>
             </div>
           </div>
@@ -1156,9 +1072,9 @@ export default function RelayPointPage() {
       const pickedUpCount = relayParcels.filter((parcel) => parcel.status === "PICKED_UP").length;
       const returnedCount = relayParcels.filter((parcel) => parcel.status.startsWith("RETURNED_")).length;
       return (
-        <Panel kicker="Traçabilité" title="Historique opérationnel">
+        <Panel kicker={t("rl1_point_page.traceability_kicker")} title={t("rl1_point_page.operational_history_title")}>
           <div className="mb-4 grid gap-3 md:grid-cols-4">
-            {["Aujourd'hui", "7 jours", "30 jours", "Tous statuts"].map((filter) => (
+            {[t("rl1_point_page.filter_today"), t("rl1_point_page.filter_7_days"), t("rl1_point_page.filter_30_days"), t("rl1_point_page.filter_all_statuses")].map((filter) => (
               <button key={filter} className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-black text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100">
                 {filter}
               </button>
@@ -1166,19 +1082,19 @@ export default function RelayPointPage() {
           </div>
           <div className="grid gap-4 lg:grid-cols-[0.9fr_1.1fr]">
             <div className="space-y-3">
-              {relayParcels.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800">Aucune opération enregistrée.</div> : relayParcels.map((parcel) => (
+              {relayParcels.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800">{t("rl1_point_page.no_operations_recorded")}</div> : relayParcels.map((parcel) => (
                 <article key={parcel.id} className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                   <div className="flex items-center justify-between gap-3"><strong className="text-slate-950 dark:text-white">BV-{parcel.order_id}</strong><StatusPill tone={parcel.status === "PICKED_UP" ? "emerald" : parcel.status.startsWith("RETURNED_") ? "amber" : "blue"}>{parcel.status}</StatusPill></div>
-                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">Slot {parcel.slot_code || "non défini"} · mise à jour {new Date(parcel.updated_at).toLocaleString("fr-FR")}</p>
+                  <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{t("rl1_point_page.slot_updated_at", { slot: parcel.slot_code || t("rl1_point_page.slot_undefined"), date: new Date(parcel.updated_at).toLocaleString(locale === "en" ? "en-US" : "fr-FR") })}</p>
                 </article>
               ))}
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              {[["Réceptions", receivedCount], ["Retraits", pickedUpCount], ["Retours", returnedCount], ["Litiges", relayDisputes.length]].map(([label, value]) => (
+              {[[t("rl1_point_page.stat_receptions"), receivedCount], [t("rl1_point_page.stat_pickups"), pickedUpCount], [t("rl1_point_page.stat_returns"), returnedCount], [t("rl1_point_page.stat_disputes"), relayDisputes.length]].map(([label, value]) => (
                 <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
                   <div className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-400">{label}</div>
                   <div className="mt-2 text-2xl font-black text-slate-950 dark:text-white">{value}</div>
-                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Calculé depuis les opérations enregistrées.</p>
+                  <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{t("rl1_point_page.computed_from_operations")}</p>
                 </div>
               ))}
             </div>
@@ -1189,12 +1105,12 @@ export default function RelayPointPage() {
 
     if (kind === "aide") {
       return (
-        <Panel kicker="Support" title="Aide & support BelivaY">
+        <Panel kicker={t("rl1_point_page.support_kicker")} title={t("rl1_point_page.help_support_title")}>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              [HelpCircle, "Consignes rapides", "Réception, stockage, retrait et litige J+7 résumés pour le guichet."],
-              [MessageSquareText, "Contacter BelivaY", "Créer une demande support avec référence colis et photos."],
-              [ShieldCheck, "Médiation", "Demander l'arbitrage BelivaY lorsqu'un retour ou remboursement est contesté."],
+              [HelpCircle, t("rl1_point_page.help_quick_guide_title"), t("rl1_point_page.help_quick_guide_body")],
+              [MessageSquareText, t("rl1_point_page.help_contact_title"), t("rl1_point_page.help_contact_body")],
+              [ShieldCheck, t("rl1_point_page.help_mediation_title"), t("rl1_point_page.help_mediation_body")],
             ].map(([Icon, title, body]) => (
               <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
                 <Icon className="text-blue-700 dark:text-blue-300" />
@@ -1204,9 +1120,9 @@ export default function RelayPointPage() {
             ))}
           </div>
           <div className="mt-5 grid gap-2 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/30 sm:grid-cols-[.8fr_1.2fr_auto] sm:items-end">
-            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">Objet<input value={supportSubject} onChange={(event) => setSupportSubject(event.target.value)} placeholder="Colis, retrait, litige..." className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
-            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">Message<textarea value={supportBody} onChange={(event) => setSupportBody(event.target.value)} placeholder="Décrivez la situation avec la référence du colis" className="mt-2 min-h-20 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
-            <button type="button" onClick={sendRelaySupportMessage} disabled={operationBusy || supportSubject.trim().length < 3 || supportBody.trim().length < 10} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:opacity-50">Envoyer</button>
+            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">{t("rl1_point_page.support_subject_label")}<input value={supportSubject} onChange={(event) => setSupportSubject(event.target.value)} placeholder={t("rl1_point_page.support_subject_placeholder")} className="mt-2 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
+            <label className="text-xs font-black uppercase tracking-[0.12em] text-blue-900 dark:text-blue-100">{t("rl1_point_page.support_message_label")}<textarea value={supportBody} onChange={(event) => setSupportBody(event.target.value)} placeholder={t("rl1_point_page.support_message_placeholder")} className="mt-2 min-h-20 w-full rounded-xl border border-blue-200 bg-white px-3 py-2.5 text-sm font-normal normal-case text-slate-900 outline-none dark:bg-slate-900 dark:text-white" /></label>
+            <button type="button" onClick={sendRelaySupportMessage} disabled={operationBusy || supportSubject.trim().length < 3 || supportBody.trim().length < 10} className="rounded-xl bg-blue-600 px-4 py-3 text-sm font-black text-white disabled:opacity-50">{t("rl1_point_page.send")}</button>
           </div>
         </Panel>
       );
@@ -1214,9 +1130,9 @@ export default function RelayPointPage() {
 
     if (kind === "notifications") {
       return (
-        <Panel kicker="Alertes" title="Notifications opérationnelles">
+        <Panel kicker={t("rl1_point_page.alerts_kicker")} title={t("rl1_point_page.operational_notifications_title")}>
           <div className="space-y-3">
-            {notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm font-semibold text-slate-500">Aucune notification.</div> : notifications.map((notification) => (
+            {notifications.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-200 p-5 text-sm font-semibold text-slate-500">{t("rl1_point_page.no_notification")}</div> : notifications.map((notification) => (
               <div key={notification.id} className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex gap-3">
                   <Bell className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
@@ -1227,7 +1143,7 @@ export default function RelayPointPage() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <StatusPill tone="slate">{notification.notification_type}</StatusPill>
-                  <StatusPill tone={notification.is_read ? "emerald" : "amber"}>{notification.is_read ? "Lu" : "Non lu"}</StatusPill>
+                  <StatusPill tone={notification.is_read ? "emerald" : "amber"}>{notification.is_read ? t("rl1_point_page.read_status") : t("rl1_point_page.unread_status")}</StatusPill>
                 </div>
               </div>
             ))}
@@ -1238,17 +1154,17 @@ export default function RelayPointPage() {
 
     if (kind === "formation") {
       return (
-        <Panel kicker="Formation" title="Modules point relais">
+        <Panel kicker={t("rl1_point_page.training_kicker")} title={t("rl1_point_page.training_modules_title")}>
           <div className="grid gap-4 md:grid-cols-2">
-            {training.map(([title, tag, body]) => (
-              <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
+            {training.map((module) => (
+              <div key={module.titleKey} className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <BookOpen className="text-blue-700 dark:text-blue-300" />
-                  <StatusPill tone={tag === "Obligatoire" ? "amber" : "slate"}>{tag as string}</StatusPill>
+                  <StatusPill tone={module.tagKey === "rl1_point_page.training_mandatory" ? "amber" : "slate"}>{t(module.tagKey)}</StatusPill>
                 </div>
-                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{title as string}</h3>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-                <button className="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">Ouvrir le module</button>
+                <h3 className="mt-4 font-black text-slate-950 dark:text-white">{t(module.titleKey)}</h3>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{t(module.bodyKey)}</p>
+                <button className="mt-4 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">{t("rl1_point_page.open_module")}</button>
               </div>
             ))}
           </div>
@@ -1257,9 +1173,9 @@ export default function RelayPointPage() {
     }
 
     return (
-      <Panel kicker="Point relais" title={ui.tabs[kind] ?? ui.brand}>
+      <Panel kicker={t("rl1_point_page.brand")} title={tabLabels[kind] ?? t("rl1_point_page.brand")}>
         <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm leading-7 text-slate-600 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-          Cette section n'est pas encore configurée pour le point relais.
+          {t("rl1_point_page.section_not_configured")}
         </div>
       </Panel>
     );
@@ -1297,7 +1213,7 @@ export default function RelayPointPage() {
     },
     onError: showOperationError,
     onSuccess: showOperationSuccess,
-    footer: ui.footer,
+    footer: footerLines,
   };
 
   const content = {
@@ -1332,11 +1248,11 @@ export default function RelayPointPage() {
           activeTab={tab}
           onSelect={setTab}
           onLogout={handleLogout}
-          labels={ui.tabs}
-          groupLabels={ui.groups}
+          labels={tabLabels}
+          groupLabels={groupLabels}
           badges={navBadges}
-          brandKicker={ui.brandKicker}
-          logoutLabel={ui.logout}
+          brandKicker={t("rl1_point_page.brand_kicker")}
+          logoutLabel={t("rl1_point_page.logout")}
           profile={{
             name: relayProfile.name,
             status: relayProfile.status,
@@ -1344,7 +1260,7 @@ export default function RelayPointPage() {
             trust: relayProfile.trust,
             avatarUrl: avatarUrl || undefined,
           }}
-          footer={ui.footer}
+          footer={footerLines}
         />
 
         <section className="min-w-0 flex-1">
@@ -1360,7 +1276,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                aria-label={ui.space}
+                aria-label={t("rl1_point_page.space")}
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
                 className="tap-target relative -ml-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
@@ -1380,7 +1296,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setTab("dashboard")}
-                aria-label={ui.tabs.dashboard}
+                aria-label={tabLabels.dashboard}
                 className="flex min-w-0 flex-shrink items-center rounded-xl px-1 py-1 transition active:scale-95"
               >
                 <img src="/belivay-logo-relay-point.png" alt="BelivaY" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />
@@ -1391,7 +1307,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setTab("notifications")}
-                aria-label={ui.tabs.notifications}
+                aria-label={tabLabels.notifications}
                 className="tap-target relative flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <Bell size={19} />
@@ -1405,7 +1321,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                aria-label={theme === "dark" ? t("rl1_point_page.light_mode") : t("rl1_point_page.dark_mode")}
                 className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
@@ -1414,7 +1330,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={switchLanguage}
-                aria-label="Changer de langue"
+                aria-label={t("rl1_point_page.change_language")}
                 className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl px-1 text-xs font-black text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 {locale === "fr" ? "FR" : "EN"}
@@ -1423,7 +1339,7 @@ export default function RelayPointPage() {
               <button
                 type="button"
                 onClick={() => setProfileSheetOpen(true)}
-                aria-label={ui.openProfile}
+                aria-label={t("rl1_point_page.open_profile")}
                 aria-haspopup="dialog"
                 aria-expanded={profileSheetOpen}
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-black text-white ring-1 ring-blue-300/40 shadow-[0_2px_10px_rgba(37,99,235,.45)] transition active:scale-90"
@@ -1439,7 +1355,7 @@ export default function RelayPointPage() {
             {/* Titre de l'ecran : sorti du bandeau pour lui laisser toute sa
                 largeur, il garde sa place de repere de navigation. */}
             <div className="mt-2 min-w-0 lg:hidden">
-              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">{ui.space}</p>
+              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">{t("rl1_point_page.space")}</p>
               <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{activeLabel}</h1>
             </div>
 
@@ -1448,14 +1364,14 @@ export default function RelayPointPage() {
                 <button
                   type="button"
                   onClick={goBack}
-                  aria-label={locale === "en" ? "Back" : "Retour"}
-                  title={locale === "en" ? "Back" : "Retour"}
+                  aria-label={t("rl1_point_page.back")}
+                  title={t("rl1_point_page.back")}
                   className="tap-target inline-flex flex-shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition active:scale-90 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                 >
                   <ArrowLeft size={18} />
                 </button>
                 <div className="min-w-0">
-                  <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300 sm:text-[11px] sm:tracking-[0.18em]">{ui.space}</p>
+                  <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300 sm:text-[11px] sm:tracking-[0.18em]">{t("rl1_point_page.space")}</p>
                   <h1 className="truncate text-[17px] font-black leading-tight tracking-tight sm:mt-1 sm:text-2xl">{activeLabel}</h1>
                 </div>
               </div>
@@ -1467,7 +1383,7 @@ export default function RelayPointPage() {
                   aria-haspopup="dialog"
                   aria-expanded={profileSheetOpen}
                   className="tap-target flex items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
-                  title={ui.profile}
+                  title={t("rl1_point_page.profile")}
                 >
                   {avatarUrl ? <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" /> : <UserCircle size={17} />}
                   <span className="hidden max-w-[140px] truncate sm:inline">{user?.username || relayProfile.manager}</span>
@@ -1480,7 +1396,7 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={switchLanguage}
                   className="hidden h-10 min-w-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 lg:inline-flex"
-                  title="Changer de langue"
+                  title={t("rl1_point_page.change_language")}
                 >
                   {locale === "fr" ? "FR" : "EN"}
                 </button>
@@ -1488,7 +1404,7 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={toggleTheme}
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 lg:inline-flex"
-                  title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                  title={theme === "dark" ? t("rl1_point_page.light_mode") : t("rl1_point_page.dark_mode")}
                 >
                   {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
@@ -1496,13 +1412,13 @@ export default function RelayPointPage() {
                   type="button"
                   onClick={handleLogout}
                   className="hidden h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100 lg:inline-flex"
-                  title="Se deconnecter"
+                  title={t("rl1_point_page.logout")}
                 >
                   <LogOut size={17} />
                 </button>
                 <div className="hidden flex-wrap items-center gap-2 xl:flex">
                   <StatusPill tone={statusTone}>{relayProfile.status}</StatusPill>
-                  <StatusPill tone="blue">{relayProfile.capacityUsed}/{relayProfile.capacityMax} places</StatusPill>
+                  <StatusPill tone="blue">{t("rl1_point_page.places_count", { used: relayProfile.capacityUsed, max: relayProfile.capacityMax })}</StatusPill>
                   <StatusPill tone="slate">{relayProfile.hours}</StatusPill>
                 </div>
               </div>
@@ -1516,7 +1432,7 @@ export default function RelayPointPage() {
                 <StatusPill tone={statusTone}>{relayProfile.status}</StatusPill>
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
-                {relayProfile.capacityUsed}/{relayProfile.capacityMax} places
+                {t("rl1_point_page.places_count", { used: relayProfile.capacityUsed, max: relayProfile.capacityMax })}
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
                 {relayProfile.hours}
@@ -1532,15 +1448,14 @@ export default function RelayPointPage() {
             {operationMessage ? (
               <div className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-bold ${operationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{operationMessage.text}</span>
-                <button type="button" onClick={() => setOperationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title="Fermer"><X size={16} /></button>
+                <button type="button" onClick={() => setOperationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title={t("rl1_point_page.close")}><X size={16} /></button>
               </div>
             ) : null}
             <div className="mb-5 hidden rounded-2xl border border-blue-100 bg-blue-50 p-4 lg:block">
               <div className="flex items-start gap-3">
                 <LockKeyhole className="mt-0.5 flex-shrink-0 text-blue-700" size={20} />
                 <p className="text-sm leading-6 text-blue-950/75">
-                  Interface point relais conforme a la vision BelivaY : anonymat vendeur, preuves de transfert, stockage par slot,
-                  code de retrait, litiges J+7, Trust Score public et finances MoMo. Les niveaux PR restent volontairement en developpement.
+                  {t("rl1_point_page.interface_compliance_notice")}
                 </p>
               </div>
             </div>
@@ -1559,9 +1474,9 @@ export default function RelayPointPage() {
           setDrawerOpen(false);
           setTab(next);
         }}
-        labels={ui.tabs}
+        labels={tabLabels}
         badges={navBadges}
-        navLabel={ui.space}
+        navLabel={t("rl1_point_page.space")}
       />
 
       <RelayDrawer
@@ -1573,11 +1488,11 @@ export default function RelayPointPage() {
           setTab(next);
         }}
         onLogout={handleLogout}
-        labels={ui.tabs}
-        groupLabels={ui.groups}
+        labels={tabLabels}
+        groupLabels={groupLabels}
         badges={navBadges}
-        brandKicker={ui.brandKicker}
-        logoutLabel={ui.logout}
+        brandKicker={t("rl1_point_page.brand_kicker")}
+        logoutLabel={t("rl1_point_page.logout")}
         profile={{
           name: relayProfile.name,
           status: relayProfile.status,
@@ -1585,9 +1500,9 @@ export default function RelayPointPage() {
           trust: relayProfile.trust,
           avatarUrl: avatarUrl || undefined,
         }}
-        footer={ui.footer}
-        title={ui.space}
-        closeLabel={ui.close}
+        footer={footerLines}
+        title={t("rl1_point_page.space")}
+        closeLabel={t("rl1_point_page.close")}
       />
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
@@ -1603,7 +1518,7 @@ export default function RelayPointPage() {
           onUploaded={(updatedUser) => {
             setAvatarUrl(updatedUser.avatar_url || "");
             setAvatarFile(null);
-            setOperationMessage({ tone: "success", text: locale === "en" ? "Profile photo updated." : "Photo de profil mise à jour." });
+            setOperationMessage({ tone: "success", text: t("rl1_point_page.avatar_updated") });
           }}
         />
       ) : null}

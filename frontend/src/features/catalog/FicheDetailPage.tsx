@@ -3,6 +3,7 @@
 // Colonne droite : achat, réassurance, spécifications et avis.
 
 import { useEffect, useState, type ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { recordProductView } from '@/lib/recentlyViewed';
 import Seo from '@/components/seo/Seo';
@@ -26,27 +27,27 @@ import RelatedProductsSection from '@/components/catalog/RelatedProductsSection'
 
 function fmtXAF(n: number) { return n.toLocaleString('fr-FR').replace(/[\u202f\u00a0]/g, ' ') + ' FCFA'; }
 
-/** Les quatre garanties affichées en damier sous les boutons d'achat. */
-const GUARANTEES: { icon: LucideIcon; tint: string; color: string; label: string; sub: string }[] = [
-  { icon: Lock, tint: '#eef2ff', color: '#4338CA', label: 'Paiement sécurisé', sub: 'MoMo, Orange, Visa' },
-  { icon: ShieldCheck, tint: '#fff1e6', color: '#C85E14', label: 'Escrow BelivaY', sub: "Argent bloqué jusqu'à réception" },
-  { icon: RotateCcw, tint: '#e8f1fe', color: '#2563EB', label: 'Retour 7 jours', sub: 'Remboursement sous 72h' },
-  { icon: MessageSquare, tint: '#eef2f7', color: '#334155', label: 'Support 7j/7', sub: 'WhatsApp · Email' },
+/** Les quatre garanties affichées en damier sous les boutons d'achat (clés i18n, résolues au rendu). */
+const GUARANTEES: { icon: LucideIcon; tint: string; color: string; labelKey: string; subKey: string }[] = [
+  { icon: Lock, tint: '#eef2ff', color: '#4338CA', labelKey: 'product_detail.guarantee_payment_label', subKey: 'product_detail.guarantee_payment_sub' },
+  { icon: ShieldCheck, tint: '#fff1e6', color: '#C85E14', labelKey: 'product_detail.guarantee_escrow_label', subKey: 'product_detail.guarantee_escrow_sub' },
+  { icon: RotateCcw, tint: '#e8f1fe', color: '#2563EB', labelKey: 'product_detail.guarantee_return_label', subKey: 'product_detail.guarantee_return_sub' },
+  { icon: MessageSquare, tint: '#eef2f7', color: '#334155', labelKey: 'product_detail.guarantee_support_label', subKey: 'product_detail.guarantee_support_sub' },
 ];
 
-/** Les quatre pastilles compactes, juste au-dessus des boutons. */
-const QUICK_CHIPS: { icon: LucideIcon; color: string; label: string }[] = [
-  { icon: Lock, color: 'text-indigo-600', label: 'Paiement sécurisé' },
-  { icon: RotateCcw, color: 'text-blue-600', label: 'Retour 7 jours' },
-  { icon: Zap, color: 'text-amber-500', label: 'Livraison 24–72h' },
-  { icon: BadgeCheck, color: 'text-emerald-600', label: 'Vendeur certifié' },
+/** Les quatre pastilles compactes, juste au-dessus des boutons (clés i18n). */
+const QUICK_CHIPS: { icon: LucideIcon; color: string; labelKey: string }[] = [
+  { icon: Lock, color: 'text-indigo-600', labelKey: 'product_detail.guarantee_payment_label' },
+  { icon: RotateCcw, color: 'text-blue-600', labelKey: 'product_detail.guarantee_return_label' },
+  { icon: Zap, color: 'text-amber-500', labelKey: 'product_detail.chip_delivery' },
+  { icon: BadgeCheck, color: 'text-emerald-600', labelKey: 'product_detail.chip_certified_seller' },
 ];
 
-const WHY_LINES = [
-  "Sélectionné par l'équipe BelivaY",
-  'Vendeur certifié BelivaY',
-  'Qualité garantie ou remboursé 7j',
-  'Livraison suivie SMS',
+const WHY_LINE_KEYS = [
+  'product_detail.why_line_1',
+  'product_detail.why_line_2',
+  'product_detail.why_line_3',
+  'product_detail.why_line_4',
 ];
 
 function Panel({ children, className = '' }: { children: ReactNode; className?: string }) {
@@ -69,15 +70,17 @@ function Stars({ value, size = 14 }: { value: number; size?: number }) {
 }
 
 function StockBadge({ inStock }: { inStock: boolean }) {
+  const { t } = useTranslation();
   return (
     <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${inStock ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-300' : 'bg-red-50 text-red-600 dark:bg-red-900/20'}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${inStock ? 'bg-green-500' : 'bg-red-500'}`} />
-      {inStock ? 'En stock' : 'Rupture de stock'}
+      {inStock ? t('product_detail.in_stock') : t('product_detail.out_of_stock')}
     </span>
   );
 }
 
 function ReviewItem({ r }: { r: ProductReview }) {
+  const { t, i18n } = useTranslation();
   const initial = (r.user_first_name || r.user_name || '?').charAt(0).toUpperCase();
   return (
     <div className="rounded-xl border border-gray-200/80 p-4 dark:border-gray-700">
@@ -85,18 +88,19 @@ function ReviewItem({ r }: { r: ProductReview }) {
         <div className="flex min-w-0 items-center gap-2">
           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">{initial}</div>
           <span className="truncate text-sm font-semibold text-gray-800 dark:text-gray-100">{r.user_first_name || r.user_name}</span>
-          {r.is_verified_purchase && <span className="inline-flex flex-shrink-0 items-center gap-1 text-[10px] text-green-600"><BadgeCheck size={11} /> Achat vérifié</span>}
+          {r.is_verified_purchase && <span className="inline-flex flex-shrink-0 items-center gap-1 text-[10px] text-green-600"><BadgeCheck size={11} /> {t('product_detail.verified_purchase')}</span>}
         </div>
         <Stars value={r.rating} size={12} />
       </div>
       {r.title && <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">{r.title}</p>}
       <p className="mt-0.5 text-sm text-gray-600 dark:text-gray-300">{r.comment}</p>
-      <p className="mt-2 text-[11px] text-gray-400">{new Date(r.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+      <p className="mt-2 text-[11px] text-gray-400">{new Date(r.created_at).toLocaleDateString(i18n.language === 'fr' ? 'fr-FR' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
     </div>
   );
 }
 
 function ReviewsModal({ offer, reviews, onClose }: { offer: MasterOffer; reviews: ProductReview[]; onClose: () => void }) {
+  const { t } = useTranslation();
   const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -108,7 +112,7 @@ function ReviewsModal({ offer, reviews, onClose }: { offer: MasterOffer; reviews
               ? <img src={offer.real_image} alt="" className="h-10 w-10 rounded-lg object-cover" />
               : <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700"><ShoppingBag size={16} className="text-gray-300" /></div>}
             <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">Avis de l'offre</p>
+              <p className="text-sm font-bold text-gray-900 dark:text-white">{t('product_detail.offer_reviews')}</p>
               <p className="text-xs text-gray-400">{fmtXAF(offer.price_final)}{offer.condition ? ` · ${offer.condition}` : ''}</p>
             </div>
           </div>
@@ -117,7 +121,7 @@ function ReviewsModal({ offer, reviews, onClose }: { offer: MasterOffer; reviews
         <div className="px-5 py-4">
           <div className="mb-4 flex items-center gap-3">
             <span className="text-3xl font-black text-gray-900 dark:text-white">{avg.toFixed(1)}</span>
-            <div><Stars value={avg} size={16} /><p className="mt-0.5 text-xs text-gray-400">{reviews.length} avis</p></div>
+            <div><Stars value={avg} size={16} /><p className="mt-0.5 text-xs text-gray-400">{t('product_detail.reviews_verified', { count: reviews.length })}</p></div>
           </div>
           <div className="space-y-3">{reviews.map(r => <ReviewItem key={r.id} r={r} />)}</div>
         </div>
@@ -142,6 +146,7 @@ function FicheMiniCard({ fiche }: { fiche: MasterFicheCard }) {
 }
 
 function FicheCarousel({ title, fiches, seeAllTo }: { title: string; fiches: MasterFicheCard[]; seeAllTo?: string }) {
+  const { t } = useTranslation();
   const PER_PAGE = 7;
   const MAX_PAGES = 9;
   const [page, setPage] = useState(0);
@@ -159,7 +164,7 @@ function FicheCarousel({ title, fiches, seeAllTo }: { title: string; fiches: Mas
           </h2>
           {seeAllTo && (
             <Link to={seeAllTo} className="mt-1 inline-flex items-center gap-1 text-[12px] font-bold text-primary hover:underline">
-              Voir tous <ChevronRight size={13} />
+              {t('product_detail.see_all')} <ChevronRight size={13} />
             </Link>
           )}
         </div>
@@ -186,6 +191,7 @@ function FicheCarousel({ title, fiches, seeAllTo }: { title: string; fiches: Mas
 
 /** Monté seulement quand la fiche est chargée : l'état initial peut donc lire le stockage. */
 function FavoriteButton({ productId }: { productId: number }) {
+  const { t } = useTranslation();
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(productId));
 
   useEffect(() => {
@@ -205,7 +211,7 @@ function FavoriteButton({ productId }: { productId: number }) {
       }`}
     >
       <Heart size={16} className="text-red-500" fill={isFavorite ? 'currentColor' : 'none'} />
-      {isFavorite ? 'Retiré des favoris' : 'Ajouter aux favoris'}
+      {isFavorite ? t('product_detail.removed_from_favorites') : t('product_detail.add_to_favorites')}
     </button>
   );
 }
@@ -216,6 +222,7 @@ function FavoriteButton({ productId }: { productId: number }) {
  * L'horloge n'est lue que dans l'effet, jamais pendant le rendu.
  */
 function PromoCountdown() {
+  const { t } = useTranslation();
   const [remaining, setRemaining] = useState('--:--:--');
 
   useEffect(() => {
@@ -240,13 +247,14 @@ function PromoCountdown() {
       style={{ background: 'linear-gradient(96deg,#DC2626 0%,#EF4444 55%,#F97316 100%)' }}
     >
       <Clock size={15} />
-      Offre expire dans
+      {t('product_detail.offer_expires_in')}
       <span className="rounded-lg bg-black/20 px-2.5 py-0.5 tabular-nums tracking-wide">{remaining}</span>
     </div>
   );
 }
 
 export default function FicheDetailPage() {
+  const { t } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
@@ -368,8 +376,8 @@ export default function FicheDetailPage() {
     return (
       <div className="w-full py-20 text-center">
         <ShoppingBag size={40} className="mx-auto mb-3 text-gray-300" />
-        <p className="mb-3 text-gray-500">Produit introuvable.</p>
-        <Link to="/catalog" className="inline-block rounded-xl bg-primary px-5 py-2.5 font-semibold text-white">Explorer le catalogue</Link>
+        <p className="mb-3 text-gray-500">{t('product_detail.not_found')}</p>
+        <Link to="/catalog" className="inline-block rounded-xl bg-primary px-5 py-2.5 font-semibold text-white">{t('product_detail.explore_catalog')}</Link>
       </div>
     );
   }
@@ -411,7 +419,7 @@ export default function FicheDetailPage() {
 
   const addOffer = (offer: MasterOffer, quantity = 1) => {
     addItem({ id: offer.id, master_id: master.id, name: master.title, price: offer.price_final, quantity, image: heroImage ?? undefined });
-    showToast('Ajouté au panier', 'success');
+    showToast(t('product_detail.added_to_cart'), 'success');
   };
   const buyNow = (offer: MasterOffer) => { addOffer(offer, qty); navigate('/cart'); };
 
@@ -422,8 +430,8 @@ export default function FicheDetailPage() {
       return;
     }
     navigator.clipboard?.writeText(url).then(
-      () => showToast('Lien copié', 'success'),
-      () => showToast('Copie impossible', 'error'),
+      () => showToast(t('product_detail.link_copied'), 'success'),
+      () => showToast(t('product_detail.link_copy_failed'), 'error'),
     );
   };
 
@@ -485,7 +493,7 @@ export default function FicheDetailPage() {
         title={master.brand ? `${master.title} — ${master.brand}` : master.title}
         description={
           descriptionSeo ||
-          `${master.title} disponible sur BelivaY. Paiement Mobile Money securise, livraison au Cameroun.`
+          t('product_detail.seo_fallback_desc', { title: master.title })
         }
         path={`/product/${master.slug}`}
         image={master.primary_image ?? undefined}
@@ -514,7 +522,7 @@ export default function FicheDetailPage() {
                 <div className="relative flex min-w-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-[#fff6ee] via-white to-[#fff1e2] dark:border-gray-700 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                   {heroImage && !imgError
                     ? <img src={heroImage} alt={master.title} onError={() => setImgError(true)} className="h-full max-h-[420px] w-full object-contain p-4" />
-                    : <div className="flex flex-col items-center gap-2 py-20 text-gray-300 dark:text-gray-600"><ShoppingBag size={52} strokeWidth={1.5} /><span className="text-xs font-medium">Image à venir</span></div>}
+                    : <div className="flex flex-col items-center gap-2 py-20 text-gray-300 dark:text-gray-600"><ShoppingBag size={52} strokeWidth={1.5} /><span className="text-xs font-medium">{t('product_detail.image_coming')}</span></div>}
 
                   {onPromo && (
                     <span className="absolute left-3 top-3 rounded-full bg-red-50 px-3 py-1 text-[12px] font-black text-red-600 ring-1 ring-red-100">
@@ -522,7 +530,7 @@ export default function FicheDetailPage() {
                     </span>
                   )}
                   <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-emerald-500 px-2.5 py-1 text-[11px] font-black text-white shadow-sm">
-                    <BadgeCheck size={12} /> Certifié
+                    <BadgeCheck size={12} /> {t('product_detail.certified')}
                   </span>
                 </div>
               </div>
@@ -534,13 +542,13 @@ export default function FicheDetailPage() {
                 <BadgeCheck size={18} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="text-[13.5px] font-extrabold text-gray-900 dark:text-white">Vendu par un vendeur certifié BelivaY</p>
+                <p className="text-[13.5px] font-extrabold text-gray-900 dark:text-white">{t('product_detail.sold_by_certified')}</p>
                 <p className="mt-0.5 text-[12px] text-gray-500 dark:text-gray-400">
-                  Identité vérifiée · Escrow garanti · Retour 7j
+                  {t('product_detail.identity_verified')}
                 </p>
               </div>
               <span className="inline-flex flex-shrink-0 items-center gap-1 rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-black text-amber-800">
-                <Trophy size={11} /> {sellerTier ?? "Certifié"}
+                <Trophy size={11} /> {sellerTier ?? t('product_detail.certified')}
               </span>
             </Panel>
 
@@ -548,27 +556,27 @@ export default function FicheDetailPage() {
               to="/contact"
               className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-white px-4 py-2.5 text-[12.5px] font-bold text-primary transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/5 dark:bg-gray-800"
             >
-              <MessageCircle size={14} /> Poser une question sur ce produit
+              <MessageCircle size={14} /> {t('product_detail.ask_question')}
             </Link>
 
             {/* Description */}
             <Panel className="p-5">
               <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-gray-900 dark:text-white">
                 <MessageSquare size={16} className="text-gray-400" />
-                Description du produit
+                {t('product_detail.description_title')}
               </h2>
 
               <p className="mt-3 whitespace-pre-line text-[13px] leading-relaxed text-gray-600 dark:text-gray-300">
-                {master.description || shortDesc || 'Aucune description fournie pour ce produit.'}
+                {master.description || shortDesc || t('product_detail.no_description')}
               </p>
 
               <div className="mt-4 rounded-xl border border-[#fbe3cb] bg-[#fff8f0] p-4 dark:border-gray-700 dark:bg-gray-900/40">
-                <p className="text-[12.5px] font-black text-[#C85E14]">✨ Pourquoi choisir ce produit ?</p>
+                <p className="text-[12.5px] font-black text-[#C85E14]">{t('product_detail.why_choose_title')}</p>
                 <ul className="mt-2.5 flex flex-col gap-2">
-                  {WHY_LINES.map(line => (
-                    <li key={line} className="flex items-center gap-2 text-[12.5px] font-semibold text-[#8a5a2b] dark:text-amber-200">
+                  {WHY_LINE_KEYS.map(key => (
+                    <li key={key} className="flex items-center gap-2 text-[12.5px] font-semibold text-[#8a5a2b] dark:text-amber-200">
                       <BadgeCheck size={14} className="flex-shrink-0 text-emerald-500" />
-                      {line}
+                      {t(key)}
                     </li>
                   ))}
                 </ul>
@@ -580,7 +588,7 @@ export default function FicheDetailPage() {
               <Panel className="p-5">
                 <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-gray-900 dark:text-white">
                   <HelpCircle size={16} className="text-gray-400" />
-                  Questions fréquentes
+                  {t('product_detail.faq_title')}
                 </h2>
                 <div className="mt-3 flex flex-col gap-2">
                   {buyBox.faq.map((entry, index) => (
@@ -603,7 +611,7 @@ export default function FicheDetailPage() {
           <div className="space-y-3.5 lg:col-span-7">
             {/* Fil d'Ariane */}
             <nav className="flex flex-wrap items-center gap-1.5 text-[12px] text-gray-400">
-              <Link to="/" className="hover:text-primary">Accueil</Link>
+              <Link to="/" className="hover:text-primary">{t('product_detail.home')}</Link>
               {master.category && (
                 <>
                   <ChevronRight size={12} />
@@ -617,18 +625,18 @@ export default function FicheDetailPage() {
             {/* Pastilles de confiance */}
             <div className="flex flex-wrap gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11.5px] font-bold text-emerald-700 ring-1 ring-emerald-100 dark:bg-emerald-500/15 dark:text-emerald-300 dark:ring-emerald-500/20">
-                <BadgeCheck size={12} /> Certifié BelivaY
+                <BadgeCheck size={12} /> {t('product_detail.certified_belivay')}
               </span>
               <span className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 px-2.5 py-1.5 text-[11.5px] font-bold text-blue-700 ring-1 ring-blue-100 dark:bg-blue-500/15 dark:text-blue-300 dark:ring-blue-500/20">
-                <Lock size={12} /> Escrow
+                <Lock size={12} /> {t('product_detail.escrow')}
               </span>
               {onPromo && (
                 <span className="inline-flex items-center gap-1.5 rounded-lg bg-red-50 px-2.5 py-1.5 text-[11.5px] font-bold text-red-600 ring-1 ring-red-100 dark:bg-red-500/15 dark:text-red-300 dark:ring-red-500/20">
-                  Promo −{buyBox?.discount_percent}%
+                  {t('product_detail.promo_percent', { percent: buyBox?.discount_percent })}
                 </span>
               )}
               <span className="inline-flex items-center gap-1.5 rounded-lg bg-sky-50 px-2.5 py-1.5 text-[11.5px] font-bold text-sky-700 ring-1 ring-sky-100 dark:bg-sky-500/15 dark:text-sky-300 dark:ring-sky-500/20">
-                <RotateCcw size={12} /> Retour 7j
+                <RotateCcw size={12} /> {t('product_detail.return_7d')}
               </span>
             </div>
 
@@ -639,7 +647,7 @@ export default function FicheDetailPage() {
             {/* Sélecteur de variant */}
             {masterAxes && masterAxes.variant_axes_resolved.length > 0 && variants.length > 0 && (
               <Panel className="p-4">
-                <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">Configuration</h3>
+                <h3 className="mb-3 text-sm font-bold text-gray-900 dark:text-white">{t('product_detail.configuration')}</h3>
                 <VariantSelector
                   axes={masterAxes.variant_axes_resolved}
                   variants={variants}
@@ -651,7 +659,7 @@ export default function FicheDetailPage() {
 
             {hasVariantAxes && selectedVariantId && !buyBox && (
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                Aucune offre disponible pour cette configuration. Choisis une autre combinaison ou reviens plus tard.
+                {t('product_detail.no_offer_for_config')}
               </div>
             )}
 
@@ -674,20 +682,20 @@ export default function FicheDetailPage() {
                 <div className="flex items-center gap-2">
                   <Stars value={avgRating || 5} />
                   <span className="text-[12.5px] text-gray-500 dark:text-gray-400">
-                    {bbReviews.length ? `${bbReviews.length} avis vérifiés` : 'Nouveau sur BelivaY'}
+                    {bbReviews.length ? t('product_detail.reviews_verified', { count: bbReviews.length }) : t('product_detail.new_on_belivay')}
                   </span>
                 </div>
 
                 {/* Livraison */}
                 <p className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-2.5 text-[12.5px] text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
                   <Truck size={14} className="flex-shrink-0" />
-                  Livraison <strong>aujourd'hui</strong> possible si vous commandez maintenant
+                  {t('product_detail.delivery_today')}
                 </p>
 
                 {/* Stock */}
                 <div className="flex flex-wrap items-center gap-3">
                   <StockBadge inStock={inStock} />
-                  <span className="text-[12px] text-gray-400">· {buyBox.stock_quantity} disponibles</span>
+                  <span className="text-[12px] text-gray-400">· {t('product_detail.available_count', { count: buyBox.stock_quantity })}</span>
                   <span className="h-1.5 w-32 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-700">
                     <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${stockRatio}%` }} />
                   </span>
@@ -696,7 +704,7 @@ export default function FicheDetailPage() {
                 {/* Quantité */}
                 <Panel className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <span className="text-[13px] font-bold text-gray-700 dark:text-gray-200">Quantité :</span>
+                    <span className="text-[13px] font-bold text-gray-700 dark:text-gray-200">{t('product_detail.quantity_label')}</span>
                     <div className="flex items-center rounded-xl border border-gray-200 dark:border-gray-700">
                       <button onClick={() => setQty(q => Math.max(1, q - 1))} className="p-2.5 text-gray-500 hover:text-primary"><Minus size={15} /></button>
                       <span className="w-10 text-center text-sm font-bold">{qty}</span>
@@ -711,9 +719,9 @@ export default function FicheDetailPage() {
                   {QUICK_CHIPS.map(chip => {
                     const Icon = chip.icon;
                     return (
-                      <span key={chip.label} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
+                      <span key={chip.labelKey} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-[11.5px] font-bold text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200">
                         <Icon size={12} className={chip.color} />
-                        {chip.label}
+                        {t(chip.labelKey)}
                       </span>
                     );
                   })}
@@ -722,31 +730,31 @@ export default function FicheDetailPage() {
                 {/* Boutons */}
                 <button onClick={() => addOffer(buyBox, qty)} disabled={!inStock}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-[14px] font-black text-white shadow-[0_10px_26px_rgba(244,121,32,.28)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary-dark disabled:translate-y-0 disabled:opacity-50">
-                  <ShoppingCart size={17} /> Ajouter au panier
+                  <ShoppingCart size={17} /> {t('product_detail.add_to_cart')}
                 </button>
 
                 <button onClick={() => buyNow(buyBox)} disabled={!inStock}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#0b1220] py-3.5 text-[14px] font-black text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#1a2438] disabled:translate-y-0 disabled:opacity-50">
-                  <Zap size={16} className="text-amber-300" /> Acheter maintenant
+                  <Zap size={16} className="text-amber-300" /> {t('product_detail.buy_now')}
                 </button>
 
                 <FavoriteButton productId={master.id} />
 
                 <button onClick={share}
                   className="flex w-full items-center justify-center gap-2 rounded-xl bg-gray-100 py-2.5 text-[12.5px] font-bold text-gray-600 transition-colors duration-200 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300">
-                  <Link2 size={14} /> Partager
+                  <Link2 size={14} /> {t('product_detail.share')}
                 </button>
 
                 <button
-                  onClick={() => showToast('Alerte enregistrée', { description: 'Nous vous préviendrons si le prix de cet article baisse.', type: 'success' })}
+                  onClick={() => showToast(t('product_detail.price_alert_saved'), { description: t('product_detail.price_alert_desc'), type: 'success' })}
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3 text-[13px] font-black text-amber-900 transition-transform duration-200 hover:-translate-y-0.5"
                   style={{ background: 'linear-gradient(96deg,#FDE68A,#FCD34D)' }}
                 >
-                  <Bell size={15} /> M'alerter si le prix baisse
+                  <Bell size={15} /> {t('product_detail.alert_price_drop')}
                 </button>
               </>
             ) : (
-              <Panel className="p-5 text-center text-sm text-gray-500">Aucune offre disponible pour le moment.</Panel>
+              <Panel className="p-5 text-center text-sm text-gray-500">{t('product_detail.no_offer_available')}</Panel>
             )}
 
             {/* Autres vendeurs */}
@@ -761,9 +769,9 @@ export default function FicheDetailPage() {
                     <ShoppingCart size={16} className="text-gray-400" />
                     <span>
                       <span className="block text-[13.5px] font-extrabold text-gray-900 dark:text-white">
-                        Autres vendeurs <span className="text-primary">({otherOffers.length})</span>
+                        {t('product_detail.other_sellers')} <span className="text-primary">({otherOffers.length})</span>
                       </span>
-                      <span className="block text-[11.5px] text-gray-400">autres offres pour ce produit</span>
+                      <span className="block text-[11.5px] text-gray-400">{t('product_detail.other_offers_for_product')}</span>
                     </span>
                   </span>
                   <ChevronDown size={18} className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${showOffers ? 'rotate-180' : ''}`} />
@@ -773,7 +781,7 @@ export default function FicheDetailPage() {
                   <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-700">
                     {conditions.length > 0 && (
                       <div className="mb-3 flex flex-wrap gap-2">
-                        <button onClick={() => setCondFilter('all')} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${condFilter === 'all' ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-500 hover:border-primary/40 dark:border-gray-700'}`}>Tous les états</button>
+                        <button onClick={() => setCondFilter('all')} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${condFilter === 'all' ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-500 hover:border-primary/40 dark:border-gray-700'}`}>{t('product_detail.all_conditions')}</button>
                         {conditions.map(c => (
                           <button key={c} onClick={() => setCondFilter(c)} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${condFilter === c ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-500 hover:border-primary/40 dark:border-gray-700'}`}>{c}</button>
                         ))}
@@ -792,11 +800,11 @@ export default function FicheDetailPage() {
                             <div className="min-w-0 flex-1">
                               <p className="text-[13.5px] font-extrabold text-gray-900 dark:text-white">{fmtXAF(o.price_final)}</p>
                               <p className="truncate text-[11.5px] text-gray-400">
-                                {o.condition ? `${o.condition} · ` : ''}{o.seller_note || 'Vendeur BelivaY'}
+                                {o.condition ? `${o.condition} · ` : ''}{o.seller_note || t('product_detail.default_seller_note')}
                               </p>
                               {oReviews.length > 0 && (
                                 <button onClick={() => setReviewModalOffer(o)} className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline">
-                                  <MessageSquare size={11} /> {oReviews.length} avis
+                                  <MessageSquare size={11} /> {t('product_detail.reviews_verified', { count: oReviews.length })}
                                 </button>
                               )}
                             </div>
@@ -805,13 +813,13 @@ export default function FicheDetailPage() {
 
                             <button onClick={() => addOffer(o, 1)} disabled={o.stock_quantity <= 0}
                               className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-primary px-3.5 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-white disabled:opacity-50">
-                              <ShoppingCart size={13} /> Ajouter
+                              <ShoppingCart size={13} /> {t('product_detail.add_short')}
                             </button>
                           </div>
                         );
                       })}
                       {filteredOffers.length === 0 && (
-                        <p className="py-3 text-sm text-gray-400">Aucune offre pour cet état.</p>
+                        <p className="py-3 text-sm text-gray-400">{t('product_detail.no_offer_for_condition')}</p>
                       )}
                     </div>
                   </div>
@@ -824,13 +832,13 @@ export default function FicheDetailPage() {
               {GUARANTEES.map(g => {
                 const Icon = g.icon;
                 return (
-                  <article key={g.label} className="flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white p-3 transition-transform duration-200 hover:-translate-y-0.5 dark:border-gray-700 dark:bg-gray-800">
+                  <article key={g.labelKey} className="flex items-center gap-3 rounded-xl border border-gray-200/80 bg-white p-3 transition-transform duration-200 hover:-translate-y-0.5 dark:border-gray-700 dark:bg-gray-800">
                     <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg" style={{ background: g.tint, color: g.color }}>
                       <Icon size={16} />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-[12.5px] font-extrabold leading-tight text-gray-900 dark:text-white">{g.label}</p>
-                      <p className="truncate text-[11.5px] text-gray-400">{g.sub}</p>
+                      <p className="text-[12.5px] font-extrabold leading-tight text-gray-900 dark:text-white">{t(g.labelKey)}</p>
+                      <p className="truncate text-[11.5px] text-gray-400">{t(g.subKey)}</p>
                     </div>
                   </article>
                 );
@@ -840,7 +848,7 @@ export default function FicheDetailPage() {
             {/* Spécifications / Avis */}
             <Panel className="p-4 sm:p-5">
               <div className="flex gap-5 border-b border-gray-100 dark:border-gray-700">
-                {([['specs', 'Spécifications'], ['reviews', `Avis (${bbReviews.length})`]] as const).map(([key, label]) => (
+                {([['specs', t('product_detail.specs_tab')], ['reviews', t('product_detail.reviews_tab_count', { count: bbReviews.length })]] as const).map(([key, label]) => (
                   <button
                     key={key}
                     type="button"
@@ -858,28 +866,28 @@ export default function FicheDetailPage() {
                 <div className="mt-1 divide-y divide-gray-100 dark:divide-gray-700">
                   {([
                     [
-                      'Vendeur',
+                      t('product_detail.spec_seller'),
                       <span className="text-[#2563EB]">
-                        Vendeur certifié BelivaY{sellerTier ? ` · ${sellerTier}` : ''}
+                        {t('product_detail.sold_by_certified')}{sellerTier ? ` · ${sellerTier}` : ''}
                       </span>,
                     ],
-                    ['Catégorie', master.category?.name || '—'],
+                    [t('product_detail.spec_category'), master.category?.name || '—'],
                     [
-                      'Note',
+                      t('product_detail.spec_rating'),
                       bbReviews.length ? (
                         <span className="inline-flex items-center gap-1.5">
                           <Stars value={avgRating} size={13} />
                           ({avgRating.toFixed(1)}/5)
                         </span>
                       ) : (
-                        'Pas encore noté'
+                        t('product_detail.not_rated_yet')
                       ),
                     ],
-                    ['Stock', inStock ? `${buyBox?.stock_quantity} disponibles` : 'Indisponible'],
-                    ['État', buyBox?.condition || '—'],
-                    ['Livraison', '24 – 72h · Cameroun & CEMAC'],
-                    ['Retour', '7 jours gratuits'],
-                    ['Garantie Escrow', <span className="inline-flex items-center gap-1.5 text-emerald-600"><BadgeCheck size={13} />Incluse</span>],
+                    [t('product_detail.spec_stock'), inStock ? t('product_detail.available_count', { count: buyBox?.stock_quantity }) : t('product_detail.unavailable')],
+                    [t('product_detail.spec_condition'), buyBox?.condition || '—'],
+                    [t('product_detail.spec_delivery'), t('product_detail.delivery_value')],
+                    [t('product_detail.spec_return'), t('product_detail.return_value')],
+                    [t('product_detail.spec_escrow'), <span className="inline-flex items-center gap-1.5 text-emerald-600"><BadgeCheck size={13} />{t('product_detail.included')}</span>],
                   ] as [string, ReactNode][]).map(([k, v]) => (
                     <div key={k} className="grid grid-cols-[130px_1fr] gap-3 py-3">
                       <span className="text-[12.5px] font-bold text-gray-700 dark:text-gray-300">{k}</span>
@@ -890,14 +898,14 @@ export default function FicheDetailPage() {
               ) : bbReviews.length === 0 ? (
                 <div className="mt-4 rounded-xl border border-dashed border-gray-200 p-8 text-center dark:border-gray-700">
                   <Star size={28} className="mx-auto mb-2 text-gray-300" />
-                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">Aucun avis pour le moment</p>
-                  <p className="mt-1 text-xs text-gray-400">Soyez le premier à donner votre avis après votre achat.</p>
+                  <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">{t('product_detail.no_reviews_yet')}</p>
+                  <p className="mt-1 text-xs text-gray-400">{t('product_detail.be_first_review')}</p>
                 </div>
               ) : (
                 <>
                   <div className="mb-4 mt-4 flex items-center gap-4 border-b border-gray-100 pb-4 dark:border-gray-700">
                     <span className="text-4xl font-black text-gray-900 dark:text-white">{avgRating.toFixed(1)}</span>
-                    <div><Stars value={avgRating} size={18} /><p className="mt-1 text-xs text-gray-400">{bbReviews.length} avis vérifiés</p></div>
+                    <div><Stars value={avgRating} size={18} /><p className="mt-1 text-xs text-gray-400">{t('product_detail.reviews_verified', { count: bbReviews.length })}</p></div>
                   </div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">{bbReviews.map(r => <ReviewItem key={r.id} r={r} />)}</div>
                 </>
@@ -908,11 +916,11 @@ export default function FicheDetailPage() {
 
         {/* SIMILAIRES + RECOMMANDATIONS */}
         <FicheCarousel
-          title="Produits similaires"
+          title={t('product_detail.similar_products')}
           fiches={similar}
           seeAllTo={master.category ? `/categorie/${master.category.slug}` : '/catalog'}
         />
-        <FicheCarousel title="Vous aimeriez aussi" fiches={recos} />
+        <FicheCarousel title={t('product_detail.you_may_like')} fiches={recos} />
 
         {/* ════ Related Products Section ════ */}
         {master && (

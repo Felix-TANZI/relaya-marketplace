@@ -9,6 +9,8 @@
 // l'abonnement, échéance — vit donc ici, à un seul endroit, prête à être
 // rebranchée sur le backend en remplaçant read/write.
 
+import type { TFunction } from "i18next";
+
 const STORAGE_KEY = "belivay_account";
 export const ACCOUNT_UPDATED_EVENT = "belivay-account-updated";
 
@@ -200,9 +202,11 @@ export interface DepositInput {
  * Déclare un dépôt Mobile Money. Le montant reste « en attente » jusqu'à la
  * confirmation de l'opérateur, matérialisée ici par le délai de crédit annoncé.
  */
-export function createBelivayDeposit(input: DepositInput): BelivayDeposit {
+export function createBelivayDeposit(input: DepositInput, t: TFunction): BelivayDeposit {
   if (!Number.isFinite(input.amountXaf) || input.amountXaf < MIN_DEPOSIT_XAF) {
-    throw new Error(`Le dépôt minimum est de ${MIN_DEPOSIT_XAF.toLocaleString("fr-FR")} FCFA.`);
+    throw new Error(t("misc1_belivay_account.min_deposit_error", {
+      amount: `${MIN_DEPOSIT_XAF.toLocaleString("fr-FR")} FCFA`,
+    }));
   }
 
   const now = Date.now();
@@ -226,15 +230,20 @@ export function createBelivayDeposit(input: DepositInput): BelivayDeposit {
  * Règle un mois d'abonnement depuis le solde disponible. Lève si le solde ne
  * couvre pas le plan — c'est le point qui rend le dépôt nécessaire.
  */
-export function payBelivaySubscription(planId: Exclude<BelivayPlanId, "FREE">): BelivayCharge {
+export function payBelivaySubscription(
+  planId: Exclude<BelivayPlanId, "FREE">,
+  t: TFunction,
+): BelivayCharge {
   const plan = BELIVAY_PLANS.find((candidate) => candidate.id === planId);
-  if (!plan) throw new Error("Plan inconnu.");
+  if (!plan) throw new Error(t("misc1_belivay_account.unknown_plan_error"));
 
   const account = getBelivayAccount();
   if (account.availableXaf < plan.priceXaf) {
     const missing = plan.priceXaf - account.availableXaf;
     throw new Error(
-      `Solde insuffisant : il manque ${missing.toLocaleString("fr-FR")} FCFA. Faites un dépôt d'abord.`,
+      t("misc1_belivay_account.insufficient_balance_error", {
+        amount: `${missing.toLocaleString("fr-FR")} FCFA`,
+      }),
     );
   }
 

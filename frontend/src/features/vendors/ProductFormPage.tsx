@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { ensureImagesUnderLimit } from "@/lib/imageCompression";
 import {
   ArrowLeft,
@@ -85,6 +86,7 @@ function fmtXAF(n: number) {
 
 // Timer countdown promo
 function PromoCountdown({ end }: { end: string }) {
+  const { t } = useTranslation();
   const [r, setR] = useState<{ d: number; h: number; m: number } | null>(null);
   useEffect(() => {
     const upd = () => {
@@ -106,7 +108,7 @@ function PromoCountdown({ end }: { end: string }) {
   if (!r)
     return (
       <span className="text-[11px]" style={{ color: T.red }}>
-        Promotion expirée
+        {t("sl3_product_form.promo_expired")}
       </span>
     );
   return (
@@ -114,7 +116,7 @@ function PromoCountdown({ end }: { end: string }) {
       className="inline-flex items-center gap-1 text-[11.5px] font-bold"
       style={{ color: T.amber }}
     >
-      <Clock size={11} /> Fin dans {r.d > 0 ? `${r.d}j ` : ""}
+      <Clock size={11} /> {t("sl3_product_form.promo_ends_in")} {r.d > 0 ? `${r.d}j ` : ""}
       {r.h}h {r.m}m
     </span>
   );
@@ -252,10 +254,8 @@ function categoryId(category: ProductFormItem["category"]) {
   return typeof category === "number" ? category : category.id;
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error
-    ? error.message
-    : "Erreur lors de la sauvegarde";
+function getErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
 }
 
 function toDateTimeLocal(date: Date) {
@@ -264,6 +264,7 @@ function toDateTimeLocal(date: Date) {
 }
 
 function defaultCampaignForm(
+  t: (key: string, opts?: Record<string, unknown>) => string,
   productTitle = "",
   referencePrice = 0,
 ): CampaignForm {
@@ -272,7 +273,9 @@ function defaultCampaignForm(
   const ref = referencePrice > 0 ? referencePrice : "";
   return {
     campaignType: "FLASH",
-    title: productTitle ? `Flash Deal - ${productTitle}` : "Flash Deal BelivaY",
+    title: productTitle
+      ? t("sl3_product_form.default_flash_title_named", { title: productTitle })
+      : t("sl3_product_form.default_flash_title_generic"),
     startsAt: toDateTimeLocal(starts),
     endsAt: toDateTimeLocal(ends),
     referencePrice: String(ref),
@@ -285,6 +288,7 @@ function defaultCampaignForm(
 // ─── PAGE PRINCIPALE ──────────────────────────────────────────────────────────
 
 export default function ProductFormPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -324,7 +328,7 @@ export default function ProductFormPage() {
   const proRef = useRef<HTMLInputElement>(null);
   const [requestCampaign, setRequestCampaign] = useState(false);
   const [campaignForm, setCampaignForm] = useState<CampaignForm>(() =>
-    defaultCampaignForm(),
+    defaultCampaignForm(t),
   );
 
   // ── Nouveaux états (Catégorie enrichie + Marque + Variant) ──
@@ -376,7 +380,7 @@ export default function ProductFormPage() {
           const prods = await vendorsApi.getProducts();
           const p = prods.find((x) => x.id === parseInt(id));
           if (!p) {
-            showToast("Produit introuvable", "error");
+            showToast(t("sl3_product_form.toast_product_not_found"), "error");
             navigate("/seller/products");
             return;
           }
@@ -436,13 +440,13 @@ export default function ProductFormPage() {
           setAttrVals(ea);
         }
       } catch {
-        showToast("Erreur de chargement", "error");
+        showToast(t("sl3_product_form.toast_load_error"), "error");
       } finally {
         setLoading(false);
       }
     };
     init();
-  }, [id, isEdit, navigate, showToast]);
+  }, [id, isEdit, navigate, showToast, t]);
 
   // Charger la liste des états actifs (pour le menu déroulant)
   useEffect(() => {
@@ -574,7 +578,7 @@ export default function ProductFormPage() {
       await vendorsApi.deleteImage(parseInt(id!), imgId);
       setImages((prev) => prev.filter((i) => i.id !== imgId));
     } catch {
-      showToast("Erreur suppression image", "error");
+      showToast(t("sl3_product_form.toast_image_delete_error"), "error");
     }
   };
   const setPrimary = async (imgId: number) => {
@@ -584,7 +588,7 @@ export default function ProductFormPage() {
         prev.map((i) => ({ ...i, is_primary: i.id === imgId })),
       );
     } catch {
-      showToast("Erreur image principale", "error");
+      showToast(t("sl3_product_form.toast_primary_image_error"), "error");
     }
   };
 
@@ -605,7 +609,7 @@ export default function ProductFormPage() {
     setRequestCampaign(next);
     if (next) {
       const ref = compare > price ? compare : price;
-      setCampaignForm(defaultCampaignForm(title.trim(), ref));
+      setCampaignForm(defaultCampaignForm(t, title.trim(), ref));
     }
   };
 
@@ -618,8 +622,8 @@ export default function ProductFormPage() {
       if (key === "campaignType") {
         next.title =
           value === "FLASH"
-            ? `Flash Deal - ${title.trim() || "Produit BelivaY"}`
-            : `Promotion - ${title.trim() || "Produit BelivaY"}`;
+            ? t("sl3_product_form.default_flash_title_named", { title: title.trim() || t("sl3_product_form.default_product_name") })
+            : t("sl3_product_form.default_promo_title_named", { title: title.trim() || t("sl3_product_form.default_product_name") });
         if (value === "REGULAR" && !next.stockReserved)
           next.stockReserved = "0";
         if (value === "FLASH" && (parseInt(next.stockReserved, 10) || 0) < 5)
@@ -635,34 +639,34 @@ export default function ProductFormPage() {
 
     // Mode : il faut une fiche choisie, sinon passer en "nouveau produit"
     if (!isEdit && masterMode === "existing" && !selectedMaster)
-      e.master = "Recherchez et choisissez un produit, ou créez-en un nouveau.";
+      e.master = t("sl3_product_form.err_master_required");
 
     // Champs FICHE — uniquement quand on les affiche
     if (showFicheFields) {
-      if (!title.trim()) e.title = "Le titre est requis.";
-      if (!parentCatId) e.parentCatId = "Veuillez sélectionner une catégorie.";
+      if (!title.trim()) e.title = t("sl3_product_form.err_title_required");
+      if (!parentCatId) e.parentCatId = t("sl3_product_form.err_category_required");
       if (!shortDesc.trim())
-        e.shortDesc = "La description courte est requise.";
+        e.shortDesc = t("sl3_product_form.err_short_desc_required");
       else if (!isEdit && shortDesc.trim().length < 10)
-        e.shortDesc = "Description courte requise (min 10 caractères).";
+        e.shortDesc = t("sl3_product_form.err_short_desc_min");
       if (!description.trim())
-        e.description = "La description complète est requise.";
+        e.description = t("sl3_product_form.err_description_required");
       else if (!isEdit && description.trim().length < 20)
-        e.description = "Description complète requise (min 20 caractères).";
+        e.description = t("sl3_product_form.err_description_min");
       for (const attr of attributes) {
         if (attr.is_required && !attrVals[attr.id]?.length)
-          e[`attr_${attr.id}`] = `"${attr.name}" est obligatoire.`;
+          e[`attr_${attr.id}`] = t("sl3_product_form.err_attr_required", { name: attr.name });
       }
     }
 
     // Champs OFFRE — dans tous les cas
-    if (!priceXaf || price < 100) e.priceXaf = "Prix minimum : 100 FCFA.";
+    if (!priceXaf || price < 100) e.priceXaf = t("sl3_product_form.err_price_min");
     if (compare && compare <= price)
-      e.compareAt = "Le prix barré doit être supérieur au prix de vente.";
+      e.compareAt = t("sl3_product_form.err_compare_at");
     const sq = parseInt(stockQty, 10);
-    if (isNaN(sq) || sq < 0) e.stockQty = "Stock invalide.";
-    if (!stockThreshold.trim()) e.threshold = "Seuil alerte stock requis.";
-    else if (parseInt(stockThreshold, 10) < 0) e.threshold = "Seuil invalide.";
+    if (isNaN(sq) || sq < 0) e.stockQty = t("sl3_product_form.err_stock_invalid");
+    if (!stockThreshold.trim()) e.threshold = t("sl3_product_form.err_threshold_required");
+    else if (parseInt(stockThreshold, 10) < 0) e.threshold = t("sl3_product_form.err_threshold_invalid");
 
     if (requestCampaign) {
       const starts = campaignForm.startsAt
@@ -673,29 +677,27 @@ export default function ProductFormPage() {
       const promo = parseInt(campaignForm.promoPrice, 10);
       const reserved = parseInt(campaignForm.stockReserved, 10) || 0;
       if (!campaignForm.title.trim())
-        e.campaignTitle = "Titre de campagne requis.";
+        e.campaignTitle = t("sl3_product_form.err_campaign_title_required");
       if (!starts || Number.isNaN(starts.getTime()))
-        e.campaignStartsAt = "Début invalide.";
+        e.campaignStartsAt = t("sl3_product_form.err_campaign_start_invalid");
       if (!ends || Number.isNaN(ends.getTime()))
-        e.campaignEndsAt = "Fin invalide.";
+        e.campaignEndsAt = t("sl3_product_form.err_campaign_end_invalid");
       if (starts && ends && ends <= starts)
-        e.campaignEndsAt = "La fin doit être après le début.";
+        e.campaignEndsAt = t("sl3_product_form.err_campaign_end_after_start");
       if (!ref || ref < price)
-        e.campaignReferencePrice =
-          "Le prix de référence doit être au moins égal au prix produit.";
+        e.campaignReferencePrice = t("sl3_product_form.err_campaign_reference_price");
       if (!promo || promo >= ref)
-        e.campaignPromoPrice =
-          "Le prix promo doit être inférieur au prix de référence.";
+        e.campaignPromoPrice = t("sl3_product_form.err_campaign_promo_price");
       if (campaignForm.campaignType === "FLASH") {
         const duration =
           starts && ends ? (ends.getTime() - starts.getTime()) / 3_600_000 : 0;
         const discount = ref > promo ? Math.round((1 - promo / ref) * 100) : 0;
         if (duration < 2 || duration > 48)
-          e.campaignEndsAt = "Un Flash Deal doit durer entre 2h et 48h.";
+          e.campaignEndsAt = t("sl3_product_form.err_campaign_duration");
         if (reserved < 5)
-          e.campaignStockReserved = "Minimum 5 unités réservées.";
+          e.campaignStockReserved = t("sl3_product_form.err_campaign_stock_reserved");
         if (discount < 15 || discount > 70)
-          e.campaignPromoPrice = "Remise Flash Deal attendue : 15% à 70%.";
+          e.campaignPromoPrice = t("sl3_product_form.err_campaign_discount_range");
       }
     }
     setErrors(e);
@@ -705,7 +707,7 @@ export default function ProductFormPage() {
   // ── Soumission ─────────────────────────────────────────────────────────────
   const handleSubmit = async () => {
     if (!validate()) {
-      showToast("Corrigez les erreurs avant de continuer.", "error");
+      showToast(t("sl3_product_form.toast_fix_errors"), "error");
       return;
     }
     try {
@@ -735,7 +737,7 @@ export default function ProductFormPage() {
 
         if (missingAxes.length > 0) {
           setVariantResolutionError(
-            `Axes manquants : ${missingAxes.join(", ")}. Complète tous les axes du variant avant de sauvegarder.`,
+            t("sl3_product_form.err_missing_axes", { axes: missingAxes.join(", ") }),
           );
           setSaving(false);
           return;
@@ -763,14 +765,14 @@ export default function ProductFormPage() {
 
           if (result.created) {
             showToast(
-              "Nouveau variant créé — en attente de validation admin.",
+              t("sl3_product_form.toast_variant_created"),
               "info",
             );
           }
         } catch (err) {
-          const msg = err instanceof Error ? err.message : "Erreur inconnue";
+          const msg = err instanceof Error ? err.message : t("sl3_product_form.err_unknown");
           setVariantResolutionError(
-            `Impossible de résoudre le variant : ${msg}`,
+            t("sl3_product_form.err_variant_resolution", { msg }),
           );
           setSaving(false);
           return;
@@ -828,17 +830,17 @@ export default function ProductFormPage() {
             i === 0 && images.length === 0,
           );
         } catch {
-          showToast("Une photo réelle n'a pas pu être envoyée", "error");
+          showToast(t("sl3_product_form.toast_real_photo_upload_error"), "error");
         }
       }
 
       // Images PRO de la fiche — uniquement à la création d'un nouveau produit
       if (!isEdit && masterMode === "new" && masterId) {
-        for (const t of proImgs) {
+        for (const proImg of proImgs) {
           try {
-            await vendorsApi.uploadMasterImage(masterId, t.file);
+            await vendorsApi.uploadMasterImage(masterId, proImg.file);
           } catch {
-            showToast("Une image de fiche n'a pas pu être envoyée", "error");
+            showToast(t("sl3_product_form.toast_sheet_image_upload_error"), "error");
           }
         }
       }
@@ -859,15 +861,18 @@ export default function ProductFormPage() {
       }
       showToast(
         requestCampaign
-          ? `${isEdit ? "Produit mis à jour" : "Produit créé"} — demande ${campaignForm.campaignType === "FLASH" ? "Flash Deal" : "promotion"} envoyée à validation`
+          ? t("sl3_product_form.toast_saved_with_campaign", {
+              action: isEdit ? t("sl3_product_form.toast_product_updated") : t("sl3_product_form.toast_product_created"),
+              campaignType: campaignForm.campaignType === "FLASH" ? t("sl3_product_form.flash_deal_term") : t("sl3_product_form.promotion_term"),
+            })
           : isEdit
-            ? "Produit mis à jour"
-            : "Produit créé — en attente de modération",
+            ? t("sl3_product_form.toast_product_updated")
+            : t("sl3_product_form.toast_product_created_pending"),
         "success",
       );
       navigate("/seller/products");
     } catch (e: unknown) {
-      showToast(getErrorMessage(e), "error");
+      showToast(getErrorMessage(e, t("sl3_product_form.err_save_generic")), "error");
     } finally {
       setSaving(false);
     }
@@ -900,12 +905,12 @@ export default function ProductFormPage() {
             className="font-black text-[20px]"
             style={{ color: T.text }}
           >
-            {isEdit ? "Modifier le produit" : "Nouveau produit"}
+            {isEdit ? t("sl3_product_form.heading_edit") : t("sl3_product_form.heading_new")}
           </h1>
           <p className="text-[12px]" style={{ color: T.muted }}>
             {isEdit
-              ? "Modifiez et enregistrez."
-              : "Soumis à modération BelivaY · SLA 48h"}
+              ? t("sl3_product_form.subheading_edit")
+              : t("sl3_product_form.subheading_new")}
           </p>
         </div>
       </div>
@@ -915,14 +920,14 @@ export default function ProductFormPage() {
         <div className="lg:col-span-2 space-y-5">
           {/* PRODUIT — recherche d'abord */}
           {!isEdit && (
-            <Section title="Produit" icon={<Tag size={15} />} accent>
+            <Section title={t("sl3_product_form.section_product")} icon={<Tag size={15} />} accent>
               {masterMode === "existing" ? (
                 <div className="space-y-2">
                   <Field
-                    label="Rechercher le produit"
+                    label={t("sl3_product_form.label_search_product")}
                     required
                     error={errors.master}
-                    hint="Vérifiez d'abord si le produit existe déjà avant d'en créer un nouveau."
+                    hint={t("sl3_product_form.hint_search_product")}
                   >
                     <input
                       value={masterQuery}
@@ -930,14 +935,14 @@ export default function ProductFormPage() {
                         setMasterQuery(e.target.value);
                         setSelectedMaster(null);
                       }}
-                      placeholder="Ex : iPhone 15 Pro 128 Go"
+                      placeholder={t("sl3_product_form.placeholder_search_product")}
                       style={errors.master ? iErr : iBase}
                     />
                   </Field>
 
                   {masterLoading && (
                     <p className="text-[11px]" style={{ color: T.mutedL }}>
-                      Recherche…
+                      {t("sl3_product_form.searching")}
                     </p>
                   )}
 
@@ -987,7 +992,7 @@ export default function ProductFormPage() {
                         className="text-[11.5px] font-semibold"
                         style={{ color: T.green }}
                       >
-                        Produit choisi : {selectedMaster.title}
+                        {t("sl3_product_form.product_chosen", { title: selectedMaster.title })}
                       </p>
                     </div>
                   )}
@@ -998,7 +1003,7 @@ export default function ProductFormPage() {
                     masterResults.length === 0 && (
                       <div className="space-y-2 pt-1">
                         <p className="text-[11.5px]" style={{ color: T.muted }}>
-                          Aucun produit trouvé pour « {masterQuery.trim()} ».
+                          {t("sl3_product_form.no_product_found", { query: masterQuery.trim() })}
                         </p>
                         <button
                           type="button"
@@ -1010,7 +1015,7 @@ export default function ProductFormPage() {
                             background: T.orangeL,
                           }}
                         >
-                          <Plus size={14} /> Créer un nouveau produit
+                          <Plus size={14} /> {t("sl3_product_form.create_new_product")}
                         </button>
                       </div>
                     )}
@@ -1029,8 +1034,7 @@ export default function ProductFormPage() {
                       className="text-[12px] font-semibold"
                       style={{ color: T.orange }}
                     >
-                      Nouveau produit — une fiche sera créée (validation
-                      requise).
+                      {t("sl3_product_form.new_product_notice")}
                     </p>
                   </div>
                   <button
@@ -1039,7 +1043,7 @@ export default function ProductFormPage() {
                     className="text-[11.5px] font-semibold flex-shrink-0"
                     style={{ color: T.muted }}
                   >
-                    ← Recherche
+                    {t("sl3_product_form.back_to_search")}
                   </button>
                 </div>
               )}
@@ -1050,12 +1054,9 @@ export default function ProductFormPage() {
           {selectedMaster &&
             masterAxes &&
             masterAxes.variant_axes_resolved.length > 0 && (
-              <Section title="Configuration du variant" icon={<span>🎯</span>}>
+              <Section title={t("sl3_product_form.section_variant_config")} icon={<span>🎯</span>}>
                 <p className="text-[12.5px]" style={{ color: T.muted }}>
-                  Cette fiche accepte plusieurs variantes. Précise les
-                  caractéristiques exactes de l'article que tu vends. Un variant
-                  identique sera réutilisé s'il existe, sinon un nouveau sera
-                  créé (soumis à validation admin).
+                  {t("sl3_product_form.variant_config_desc")}
                 </p>
                 <div className="space-y-4">
                   {masterAxes.variant_axes_resolved.map((axis) => (
@@ -1098,35 +1099,35 @@ export default function ProductFormPage() {
             <>
               {/* INFOS GÉNÉRALES */}
               <Section
-                title="Informations générales"
+                title={t("sl3_product_form.section_general_info")}
                 icon={<Package size={15} />}
               >
                 <Field
-                  label="Titre du produit"
+                  label={t("sl3_product_form.label_title")}
                   required
                   error={errors.title}
-                  hint={`${title.length}/200`}
+                  hint={t("sl3_product_form.hint_char_count", { count: title.length, max: 200 })}
                 >
                   <input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     maxLength={200}
-                    placeholder="Ex : Robe Wax Ankara Premium"
+                    placeholder={t("sl3_product_form.placeholder_title")}
                     style={errors.title ? iErr : iBase}
                   />
                 </Field>
                 <Field
-                  label="Description courte"
+                  label={t("sl3_product_form.label_short_desc")}
                   required
                   error={errors.shortDesc}
-                  hint={`${shortDesc.length}/300 · Affichée dans les aperçus`}
+                  hint={t("sl3_product_form.hint_short_desc", { count: shortDesc.length, max: 300 })}
                 >
                   <textarea
                     value={shortDesc}
                     onChange={(e) => setShortDesc(e.target.value)}
                     maxLength={300}
                     rows={2}
-                    placeholder="Ex : Robe en wax authentique, coupe évasée, toutes tailles disponibles."
+                    placeholder={t("sl3_product_form.placeholder_short_desc")}
                     style={
                       errors.shortDesc
                         ? { ...iErr, resize: "none" }
@@ -1135,7 +1136,7 @@ export default function ProductFormPage() {
                   />
                 </Field>
                 <Field
-                  label="Description complète"
+                  label={t("sl3_product_form.label_description")}
                   required
                   error={errors.description}
                 >
@@ -1143,7 +1144,7 @@ export default function ProductFormPage() {
                     value={description}
                     onChange={(e) => setDesc(e.target.value)}
                     rows={6}
-                    placeholder="Matière, taille, entretien, garantie, particularités…"
+                    placeholder={t("sl3_product_form.placeholder_description")}
                     style={
                       errors.description
                         ? { ...iErr, resize: "vertical", minHeight: 120 }
@@ -1155,8 +1156,8 @@ export default function ProductFormPage() {
                 {/* Marque via registre (mode "new master" uniquement) */}
                 {masterMode === "new" && (
                   <Field
-                    label="Marque"
-                    hint="Choisis dans le registre BelivaY ou propose une nouvelle marque."
+                    label={t("sl3_product_form.label_brand")}
+                    hint={t("sl3_product_form.hint_brand")}
                   >
                     <BrandAutocomplete
                       value={selectedBrand}
@@ -1168,28 +1169,27 @@ export default function ProductFormPage() {
               </Section>
 
               {/* FAQ PRODUIT — compense l'absence de messagerie directe acheteur-vendeur */}
-              <Section title="FAQ produit" icon={<HelpCircle size={15} />}>
+              <Section title={t("sl3_product_form.section_faq")} icon={<HelpCircle size={15} />}>
                 <p style={{ fontSize: 12.5, color: T.muted, marginTop: -4, marginBottom: 12 }}>
-                  Anticipez les questions des acheteurs : il n'y a pas de chat direct avec eux,
-                  une FAQ complète évite les hésitations à l'achat.
+                  {t("sl3_product_form.faq_desc")}
                 </p>
                 {faq.map((entry, index) => (
                   <div key={index} style={{ marginBottom: 12, padding: 12, borderRadius: 12, border: `1px solid ${T.border}` }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>Question {index + 1}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: T.muted }}>{t("sl3_product_form.faq_question_number", { number: index + 1 })}</span>
                       <button
                         type="button"
                         onClick={() => setFaq((cur) => cur.filter((_, i) => i !== index))}
                         style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", color: T.red, fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                       >
-                        <Trash2 size={13} /> Retirer
+                        <Trash2 size={13} /> {t("sl3_product_form.remove")}
                       </button>
                     </div>
                     <input
                       value={entry.question}
                       onChange={(e) => setFaq((cur) => cur.map((it, i) => (i === index ? { ...it, question: e.target.value } : it)))}
                       maxLength={300}
-                      placeholder="Ex : Ce produit est-il garanti ?"
+                      placeholder={t("sl3_product_form.placeholder_faq_question")}
                       style={{ ...iBase, marginBottom: 8 }}
                     />
                     <textarea
@@ -1197,7 +1197,7 @@ export default function ProductFormPage() {
                       onChange={(e) => setFaq((cur) => cur.map((it, i) => (i === index ? { ...it, answer: e.target.value } : it)))}
                       maxLength={2000}
                       rows={2}
-                      placeholder="Réponse claire et complète."
+                      placeholder={t("sl3_product_form.placeholder_faq_answer")}
                       style={{ ...iBase, resize: "vertical" }}
                     />
                   </div>
@@ -1207,13 +1207,13 @@ export default function ProductFormPage() {
                   onClick={() => setFaq((cur) => [...cur, { question: "", answer: "" }])}
                   style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: `1px dashed ${T.border}`, borderRadius: 10, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, color: T.orange, cursor: "pointer" }}
                 >
-                  <Plus size={14} /> Ajouter une question
+                  <Plus size={14} /> {t("sl3_product_form.add_question")}
                 </button>
               </Section>
 
               {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}
-              <Section title="Catégorie & Attributs" icon={<Tag size={15} />}>
-                <Field label="Catégorie" required error={errors.category}>
+              <Section title={t("sl3_product_form.section_category_attrs")} icon={<Tag size={15} />}>
+                <Field label={t("sl3_product_form.label_category")} required error={errors.category}>
                   <CategoryTreePicker
                     value={selectedCategoryNode?.id ?? null}
                     onChange={(id, node) => {
@@ -1237,9 +1237,7 @@ export default function ProductFormPage() {
                         className="mt-2 text-[11px]"
                         style={{ color: T.orange }}
                       >
-                        Catégorie Electronics — le rattachement à une fiche
-                        existante activera la gestion des variantes (couleur /
-                        stockage / etc.).
+                        {t("sl3_product_form.electronics_category_hint")}
                       </p>
                     )}
                 </Field>
@@ -1247,8 +1245,8 @@ export default function ProductFormPage() {
                 {/* Sous-catégorie — visible seulement si le parent a des enfants */}
                 {parentCatId && subCats.length > 0 && (
                   <Field
-                    label="Sous-catégorie"
-                    hint="Optionnel. Choisissez une sous-catégorie pour plus de précision."
+                    label={t("sl3_product_form.label_subcategory")}
+                    hint={t("sl3_product_form.hint_subcategory")}
                   >
                     <div
                       className="flex items-center gap-2 mb-1.5"
@@ -1256,12 +1254,9 @@ export default function ProductFormPage() {
                     >
                       <ChevronRight size={12} />
                       <span className="text-[11.5px] font-semibold">
-                        Sous-catégories de «{" "}
-                        {
-                          parentCats.find((c) => c.id === parseInt(parentCatId))
-                            ?.name
-                        }{" "}
-                        »
+                        {t("sl3_product_form.subcategories_of", {
+                          name: parentCats.find((c) => c.id === parseInt(parentCatId))?.name,
+                        })}
                       </span>
                     </div>
                     <div className="flex flex-wrap gap-2">
@@ -1276,7 +1271,7 @@ export default function ProductFormPage() {
                           color: !subCatId ? T.text : T.muted,
                         }}
                       >
-                        Catégorie principale
+                        {t("sl3_product_form.main_category")}
                       </button>
                       {subCats.map((c) => (
                         <button
@@ -1310,8 +1305,7 @@ export default function ProductFormPage() {
                       className="flex items-center gap-1.5 text-[11.5px] font-semibold"
                       style={{ color: T.muted }}
                     >
-                      <Info size={11} /> Attributs définis par BelivaY pour
-                      cette catégorie
+                      <Info size={11} /> {t("sl3_product_form.attrs_defined_by_belivay")}
                     </p>
                     {attributes.map((attr) => (
                       <Field
@@ -1358,7 +1352,7 @@ export default function ProductFormPage() {
                   >
                     <Info size={12} style={{ color: T.mutedL }} />
                     <p className="text-[12px]" style={{ color: T.muted }}>
-                      Aucun attribut défini pour cette catégorie pour l'instant.
+                      {t("sl3_product_form.no_attrs_defined")}
                     </p>
                   </div>
                 )}
@@ -1367,22 +1361,21 @@ export default function ProductFormPage() {
               {/* IMAGES PRO DE LA FICHE — seulement en création d'un nouveau produit */}
               {!isEdit && masterMode === "new" && (
                 <Section
-                  title="Images du produit (vitrine)"
+                  title={t("sl3_product_form.section_showcase_images")}
                   icon={<ImageIcon size={15} />}
                 >
                   <p className="text-[12px]" style={{ color: T.muted }}>
-                    Images mises en avant sur la fiche, vues par les acheteurs.
-                    Min. 1 · Max. 6.
+                    {t("sl3_product_form.showcase_images_desc")}
                   </p>
                   <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-                    {proImgs.map((t, i) => (
+                    {proImgs.map((img, i) => (
                       <div
                         key={i}
                         className="relative aspect-square rounded-xl overflow-hidden"
                         style={{ border: `1px solid ${T.border}` }}
                       >
                         <img
-                          src={t.preview}
+                          src={img.preview}
                           alt=""
                           className="w-full h-full object-cover"
                         />
@@ -1417,7 +1410,7 @@ export default function ProductFormPage() {
                             className="text-[10px]"
                             style={{ color: T.mutedL }}
                           >
-                            Ajouter
+                            {t("sl3_product_form.add")}
                           </span>
                         </button>
                       </>
@@ -1430,12 +1423,11 @@ export default function ProductFormPage() {
 
           {/* PHOTOS */}
           <Section
-            title="Photos réelles de votre article"
+            title={t("sl3_product_form.section_real_photos")}
             icon={<ImageIcon size={15} />}
           >
             <p className="text-[12px]" style={{ color: T.muted }}>
-              Vos vraies photos de l'article — utilisées par l'admin pour
-              vérifier l'offre. Min. 1 · Max. 6.
+              {t("sl3_product_form.real_photos_desc")}
             </p>
             <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
               {images.map((img) => (
@@ -1458,7 +1450,7 @@ export default function ProductFormPage() {
                       className="absolute top-1 left-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full"
                       style={{ background: T.orange, color: T.white }}
                     >
-                      Principale
+                      {t("sl3_product_form.primary")}
                     </div>
                   )}
                   <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-1">
@@ -1469,7 +1461,7 @@ export default function ProductFormPage() {
                         className="text-[9px] px-1.5 py-0.5 rounded-lg font-bold"
                         style={{ background: T.orange, color: T.white }}
                       >
-                        Principale
+                        {t("sl3_product_form.primary")}
                       </button>
                     )}
                     <button
@@ -1483,14 +1475,14 @@ export default function ProductFormPage() {
                   </div>
                 </div>
               ))}
-              {tempImgs.map((t, i) => (
+              {tempImgs.map((img, i) => (
                 <div
                   key={i}
                   className="relative aspect-square rounded-xl overflow-hidden"
                   style={{ border: `1px solid ${T.border}` }}
                 >
                   <img
-                    src={t.preview}
+                    src={img.preview}
                     alt=""
                     className="w-full h-full object-cover"
                   />
@@ -1522,7 +1514,7 @@ export default function ProductFormPage() {
                   >
                     <Upload size={18} style={{ color: T.mutedL }} />
                     <span className="text-[10px]" style={{ color: T.mutedL }}>
-                      Ajouter
+                      {t("sl3_product_form.add")}
                     </span>
                   </button>
                 </>
@@ -1534,12 +1526,12 @@ export default function ProductFormPage() {
         {/* ── COLONNE DROITE (1/3) ── */}
         <div className="space-y-5">
           {/* PRIX & STOCK */}
-          <Section title="Prix & Stock" icon={<DollarSign size={15} />} accent>
+          <Section title={t("sl3_product_form.section_price_stock")} icon={<DollarSign size={15} />} accent>
             <Field
-              label="Prix de vente"
+              label={t("sl3_product_form.label_sale_price")}
               required
               error={errors.priceXaf}
-              hint="Prix final payé par l'acheteur"
+              hint={t("sl3_product_form.hint_sale_price")}
             >
               <div className="relative">
                 <input
@@ -1563,12 +1555,12 @@ export default function ProductFormPage() {
             </Field>
 
             <Field
-              label="Prix barré (avant promo)"
+              label={t("sl3_product_form.label_compare_at")}
               error={errors.compareAt}
               hint={
                 discPct > 0
-                  ? `Réduction : -${discPct}%`
-                  : "Laissez vide si pas de promotion"
+                  ? t("sl3_product_form.hint_discount", { pct: discPct })
+                  : t("sl3_product_form.hint_compare_at_empty")
               }
             >
               <div className="relative">
@@ -1605,15 +1597,15 @@ export default function ProductFormPage() {
                     -{discPct}%
                   </span>
                   <span className="text-[11.5px]" style={{ color: T.muted }}>
-                    Économie : {fmtXAF(compare - price)}
+                    {t("sl3_product_form.savings", { amount: fmtXAF(compare - price) })}
                   </span>
                 </div>
               )}
             </Field>
 
             <Field
-              label="Fin de promotion"
-              hint="Timer affiché sur la fiche produit"
+              label={t("sl3_product_form.label_promo_end")}
+              hint={t("sl3_product_form.hint_promo_end")}
             >
               <input
                 type="date"
@@ -1630,29 +1622,29 @@ export default function ProductFormPage() {
 
             <div className="h-px" style={{ background: T.border }} />
 
-            <Field label="Stock disponible" required error={errors.stockQty}>
+            <Field label={t("sl3_product_form.label_stock_qty")} required error={errors.stockQty}>
               <input
                 type="number"
                 value={stockQty}
                 onChange={(e) => setStockQty(e.target.value)}
                 min={0}
-                placeholder="Ex : 12"
+                placeholder={t("sl3_product_form.placeholder_stock_qty")}
                 style={errors.stockQty ? iErr : iBase}
               />
             </Field>
 
             <Field
-              label="Seuil alerte stock"
+              label={t("sl3_product_form.label_threshold")}
               required
               error={errors.threshold}
-              hint="En dessous de ce nombre, une alerte s'affiche dans votre espace"
+              hint={t("sl3_product_form.hint_threshold")}
             >
               <input
                 type="number"
                 value={stockThreshold}
                 onChange={(e) => setThreshold(e.target.value)}
                 min={0}
-                placeholder="Ex : 3"
+                placeholder={t("sl3_product_form.placeholder_threshold")}
                 style={errors.threshold ? iErr : iBase}
               />
             </Field>
@@ -1660,15 +1652,15 @@ export default function ProductFormPage() {
             <div className="h-px" style={{ background: T.border }} />
 
             <Field
-              label="État du produit"
-              hint="Dans quel état est l'article que vous vendez ?"
+              label={t("sl3_product_form.label_condition")}
+              hint={t("sl3_product_form.hint_condition")}
             >
               <select
                 value={conditionId}
                 onChange={(e) => setConditionId(e.target.value)}
                 style={iBase}
               >
-                <option value="">— Choisir —</option>
+                <option value="">{t("sl3_product_form.option_choose")}</option>
                 {conditions.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
@@ -1678,14 +1670,14 @@ export default function ProductFormPage() {
             </Field>
 
             <Field
-              label="Note vendeur"
-              hint="Ex : garantie 6 mois, accessoires inclus…"
+              label={t("sl3_product_form.label_seller_note")}
+              hint={t("sl3_product_form.hint_seller_note")}
             >
               <textarea
                 value={sellerNote}
                 onChange={(e) => setSellerNote(e.target.value)}
                 rows={2}
-                placeholder="Information visible par l'acheteur sur votre offre."
+                placeholder={t("sl3_product_form.placeholder_seller_note")}
                 style={{ ...iBase, resize: "none" }}
               />
             </Field>
@@ -1697,10 +1689,10 @@ export default function ProductFormPage() {
                   className="text-[12.5px] font-semibold"
                   style={{ color: T.text }}
                 >
-                  Produit actif
+                  {t("sl3_product_form.label_product_active")}
                 </p>
                 <p className="text-[11px]" style={{ color: T.mutedL }}>
-                  Visible dans le catalogue
+                  {t("sl3_product_form.hint_product_active")}
                 </p>
               </div>
               <button
@@ -1718,17 +1710,17 @@ export default function ProductFormPage() {
           </Section>
 
           {/* CAMPAGNE BELIVAY */}
-          <Section title="Campagne BelivaY" icon={<Zap size={15} />}>
+          <Section title={t("sl3_product_form.section_campaign")} icon={<Zap size={15} />}>
             <div className="flex items-center justify-between py-1">
               <div>
                 <p
                   className="text-[12.5px] font-semibold"
                   style={{ color: T.text }}
                 >
-                  Demander un Flash Deal
+                  {t("sl3_product_form.request_flash_deal")}
                 </p>
                 <p className="text-[11px]" style={{ color: T.mutedL }}>
-                  La demande sera vérifiée par l'admin avant affichage client.
+                  {t("sl3_product_form.campaign_admin_review_notice")}
                 </p>
               </div>
               <button
@@ -1748,10 +1740,10 @@ export default function ProductFormPage() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { value: "FLASH" as const, label: "Flash Deal", icon: Zap },
+                    { value: "FLASH" as const, labelKey: "sl3_product_form.flash_deal_term", icon: Zap },
                     {
                       value: "REGULAR" as const,
-                      label: "Promotion",
+                      labelKey: "sl3_product_form.promotion_term",
                       icon: Percent,
                     },
                   ].map((option) => {
@@ -1772,14 +1764,14 @@ export default function ProductFormPage() {
                         }}
                       >
                         <Icon size={12} />
-                        {option.label}
+                        {t(option.labelKey)}
                       </button>
                     );
                   })}
                 </div>
 
                 <Field
-                  label="Titre campagne"
+                  label={t("sl3_product_form.label_campaign_title")}
                   required
                   error={errors.campaignTitle}
                 >
@@ -1793,7 +1785,7 @@ export default function ProductFormPage() {
                 </Field>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <Field label="Début" required error={errors.campaignStartsAt}>
+                  <Field label={t("sl3_product_form.label_campaign_start")} required error={errors.campaignStartsAt}>
                     <input
                       type="datetime-local"
                       value={campaignForm.startsAt}
@@ -1804,7 +1796,7 @@ export default function ProductFormPage() {
                     />
                   </Field>
                   <Field
-                    label="Fin"
+                    label={t("sl3_product_form.label_campaign_end")}
                     required
                     error={errors.campaignEndsAt}
                     hint={
@@ -1827,7 +1819,7 @@ export default function ProductFormPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <Field
-                    label="Prix référence"
+                    label={t("sl3_product_form.label_campaign_reference_price")}
                     required
                     error={errors.campaignReferencePrice}
                   >
@@ -1853,12 +1845,12 @@ export default function ProductFormPage() {
                     </div>
                   </Field>
                   <Field
-                    label="Prix promo"
+                    label={t("sl3_product_form.label_campaign_promo_price")}
                     required
                     error={errors.campaignPromoPrice}
                     hint={
                       campaignDiscountPct > 0
-                        ? `Remise : -${campaignDiscountPct}%`
+                        ? t("sl3_product_form.hint_discount", { pct: campaignDiscountPct })
                         : undefined
                     }
                   >
@@ -1887,10 +1879,10 @@ export default function ProductFormPage() {
 
                 {campaignForm.campaignType === "FLASH" && (
                   <Field
-                    label="Stock réservé"
+                    label={t("sl3_product_form.label_campaign_stock_reserved")}
                     required
                     error={errors.campaignStockReserved}
-                    hint="Minimum 5 unités pour un Flash Deal."
+                    hint={t("sl3_product_form.hint_campaign_stock_reserved")}
                   >
                     <input
                       type="number"
@@ -1916,12 +1908,11 @@ export default function ProductFormPage() {
                     className="text-[11.5px] leading-relaxed"
                     style={{ color: T.muted }}
                   >
-                    Statut envoyé :{" "}
+                    {t("sl3_product_form.campaign_status_sent")}{" "}
                     <strong style={{ color: T.orange }}>
-                      en attente admin
+                      {t("sl3_product_form.campaign_status_pending_admin")}
                     </strong>
-                    . Après validation, la campagne apparaîtra dans Flash Deals
-                    et Promotions pendant sa période active.
+                    . {t("sl3_product_form.campaign_status_after_validation")}
                   </p>
                 </div>
               </div>
@@ -1929,22 +1920,22 @@ export default function ProductFormPage() {
           </Section>
 
           {/* RÉCAPITULATIF */}
-          <Section title="Récapitulatif" icon={<BarChart2 size={15} />}>
+          <Section title={t("sl3_product_form.section_summary")} icon={<BarChart2 size={15} />}>
             <div className="space-y-2.5">
               {[
                 {
-                  label: "Prix de vente",
+                  label: t("sl3_product_form.summary_sale_price"),
                   value: price > 0 ? fmtXAF(price) : "—",
                   color: T.text,
                 },
                 {
-                  label: `Commission BelivaY (${commission}%)`,
+                  label: t("sl3_product_form.summary_commission", { rate: commission }),
                   value:
                     price > 0 ? `-${fmtXAF((price * commission) / 100)}` : "—",
                   color: T.red,
                 },
                 {
-                  label: "Vous recevrez",
+                  label: t("sl3_product_form.summary_you_receive"),
                   value: price > 0 ? fmtXAF(net) : "—",
                   color: T.green,
                 },
@@ -1966,8 +1957,7 @@ export default function ProductFormPage() {
                 className="text-[11px] leading-relaxed"
                 style={{ color: T.mutedL }}
               >
-                Versé 24h après confirmation acheteur ou 48h auto (Escrow
-                BelivaY).
+                {t("sl3_product_form.escrow_payout_notice")}
               </p>
             </div>
 
@@ -1984,12 +1974,12 @@ export default function ProductFormPage() {
               {saving ? (
                 <>
                   <RefreshCw size={14} className="animate-spin" />
-                  Enregistrement…
+                  {t("sl3_product_form.saving")}
                 </>
               ) : (
                 <>
                   <Save size={14} />
-                  {isEdit ? "Enregistrer" : "Créer le produit"}
+                  {isEdit ? t("sl3_product_form.save_edit") : t("sl3_product_form.create_product")}
                 </>
               )}
             </button>
@@ -1998,7 +1988,7 @@ export default function ProductFormPage() {
               className="block text-center text-[12.5px] font-semibold mt-2"
               style={{ color: T.muted }}
             >
-              Annuler
+              {t("sl3_product_form.cancel")}
             </Link>
           </Section>
         </div>

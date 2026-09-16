@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Capacitor } from '@capacitor/core';
 import AppDownloadBanner from '@/components/AppDownloadBanner';
 import {
@@ -63,18 +64,18 @@ const C = {
 };
 
 const PLANS = [
-  { id: 'gratuit',  name: 'Gratuit',  price: 0,    commission: 20, color: '#7C6E5A' },
-  { id: 'starter',  name: 'Starter',  price: 4900, commission: 18, color: '#2563EB' },
-  { id: 'pro',      name: 'Pro',      price: 9900, commission: 10, color: '#7C3AED' },
-  { id: 'business', name: 'Business', price: 24900,commission: 7,  color: '#D97706' },
+  { id: 'gratuit',  nameKey: 'sl1_dashboard.plan_free',     price: 0,    commission: 20, color: '#7C6E5A' },
+  { id: 'starter',  nameKey: 'sl1_dashboard.plan_starter',  price: 4900, commission: 18, color: '#2563EB' },
+  { id: 'pro',      nameKey: 'sl1_dashboard.plan_pro',      price: 9900, commission: 10, color: '#7C3AED' },
+  { id: 'business', nameKey: 'sl1_dashboard.plan_business', price: 24900,commission: 7,  color: '#D97706' },
 ] as const;
 
-const FULFILL: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:    { label: 'À confirmer',    color: C.amber,  bg: C.amberL },
-  PROCESSING: { label: 'En préparation', color: C.blue,   bg: C.blueL  },
-  SHIPPED:    { label: 'Prêt',           color: C.violet, bg: C.violetL},
-  DELIVERED:  { label: 'Livré',          color: C.green,  bg: C.greenL },
-  CANCELLED:  { label: 'Annulé',         color: C.red,    bg: C.redL   },
+const FULFILL: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:    { labelKey: 'sl1_dashboard.fulfill_pending',    color: C.amber,  bg: C.amberL },
+  PROCESSING: { labelKey: 'sl1_dashboard.fulfill_processing', color: C.blue,   bg: C.blueL  },
+  SHIPPED:    { labelKey: 'sl1_dashboard.fulfill_shipped',    color: C.violet, bg: C.violetL},
+  DELIVERED:  { labelKey: 'sl1_dashboard.fulfill_delivered',  color: C.green,  bg: C.greenL },
+  CANCELLED:  { labelKey: 'sl1_dashboard.fulfill_cancelled',  color: C.red,    bg: C.redL   },
 };
 
 const GOAL_KEY = 'belivay_seller_goal';
@@ -88,8 +89,8 @@ function fmtXAF(n: number): string {
   if (n >= 1_000) return Math.round(n / 1_000) + ' K';
   return Math.round(n).toLocaleString('fr-FR');
 }
-function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
+function fmtDate(iso: string, locale: string = 'fr-FR'): string {
+  return new Date(iso).toLocaleDateString(locale, { day: '2-digit', month: 'short' });
 }
 function orderRef(id: number): string { return `#BLV-${String(id).padStart(5, '0')}`; }
 function loadGoal(): number { const s = localStorage.getItem(GOAL_KEY); return s ? parseInt(s, 10) : 500_000; }
@@ -138,6 +139,7 @@ function Pill({ label, color, bg }: { label: string; color: string; bg: string }
 
 // Section header
 function SHead({ icon, title, to }: { icon: React.ReactNode; title: string; to?: string }) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center justify-between px-5 py-4" style={{ borderBottom: `1px solid ${C.border}` }}>
       <div className="flex items-center gap-2.5">
@@ -151,7 +153,7 @@ function SHead({ icon, title, to }: { icon: React.ReactNode; title: string; to?:
       </div>
       {to && (
         <Link to={to} className="text-[12px] font-bold flex items-center gap-1 hover:underline" style={{ color: C.orange }}>
-          Tout voir <ChevronRight size={12} />
+          {t('sl1_dashboard.see_all')} <ChevronRight size={12} />
         </Link>
       )}
     </div>
@@ -205,13 +207,14 @@ function Ring({ pct, size = 84, stroke = 8 }: { pct: number; size?: number; stro
 function BarItem({
   bar, max, active, onEnter, onLeave,
 }: { bar: ChartBar; max: number; active: boolean; onEnter: () => void; onLeave: () => void }) {
+  const { t } = useTranslation();
   const pct = max > 0 ? (bar.value / max) * 100 : 0;
   return (
     <div className="flex-1 flex flex-col items-center gap-1.5 relative min-w-0">
       {active && bar.value > 0 && (
         <div className="absolute -top-10 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap text-[9.5px] font-bold text-white rounded-xl px-2.5 py-1.5 pointer-events-none"
           style={{ background: C.orange, boxShadow: `0 4px 12px rgba(244,121,32,0.4)` }}>
-          {fmtXAF(bar.value)} · {bar.orders} cmd
+          {fmtXAF(bar.value)} · {bar.orders} {t('sl1_dashboard.orders_abbr')}
         </div>
       )}
       <div className="w-full rounded-xl overflow-hidden flex items-end cursor-pointer"
@@ -257,6 +260,7 @@ function HCell({ intensity, tooltip }: { intensity: number; tooltip: string }) {
 
 
 function PlanSim({ totalRevenue }: { totalRevenue: number }) {
+  const { t } = useTranslation();
   const [sel, setSel] = useState<string>('gratuit');
   const plan = PLANS.find(p => p.id === sel) ?? PLANS[0];
   const net  = Math.round(totalRevenue * (1 - plan.commission / 100));
@@ -264,7 +268,7 @@ function PlanSim({ totalRevenue }: { totalRevenue: number }) {
   return (
     <div className="mt-5 pt-4" style={{ borderTop: `1px solid ${C.border}` }}>
       <p className="text-[9.5px] font-black uppercase tracking-[0.16em] mb-3" style={{ color: C.mutedL }}>
-        Simuler un autre plan
+        {t('sl1_dashboard.plan_sim_title')}
       </p>
       <div className="grid grid-cols-4 gap-2 mb-4">
         {PLANS.map(p => (
@@ -276,19 +280,19 @@ function PlanSim({ totalRevenue }: { totalRevenue: number }) {
             }}>
             <p className="text-[11.5px] font-extrabold"
               style={{ color: sel === p.id ? p.color : C.muted }}>
-              {p.name}
+              {t(p.nameKey)}
             </p>
             <p className="text-[9.5px] mt-0.5" style={{ color: C.mutedL }}>
-              {p.price === 0 ? 'Gratuit' : `${(p.price / 1000).toFixed(1)}K/m`}
+              {p.price === 0 ? t('sl1_dashboard.plan_free') : `${(p.price / 1000).toFixed(1)}K/m`}
             </p>
           </button>
         ))}
       </div>
       <div className="grid grid-cols-3 gap-2">
         {[
-          { l: 'CA estimé', v: `${fmtXAF(net)} XAF`, color: C.orange },
-          { l: 'Commission', v: `${plan.commission}%`, color: plan.color },
-          { l: 'Économie', v: save > 0 ? `+${fmtXAF(save)} XAF` : '—', color: C.green },
+          { l: t('sl1_dashboard.sim_revenue_label'), v: `${fmtXAF(net)} XAF`, color: C.orange },
+          { l: t('sl1_dashboard.sim_commission_label'), v: `${plan.commission}%`, color: plan.color },
+          { l: t('sl1_dashboard.sim_savings_label'), v: save > 0 ? `+${fmtXAF(save)} XAF` : '—', color: C.green },
         ].map(s => (
           <div key={s.l} className="rounded-xl p-3 text-center" style={{ background: C.cream }}>
             <p className="text-[9px] font-bold uppercase tracking-wide mb-1" style={{ color: C.mutedL }}>{s.l}</p>
@@ -307,6 +311,8 @@ function PlanSim({ totalRevenue }: { totalRevenue: number }) {
 
 
 export default function SellerDashboardPage() {
+  const { t, i18n } = useTranslation();
+  const dateLocale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
   const navigate = useNavigate();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -350,9 +356,9 @@ export default function SellerDashboardPage() {
       }
     } catch (e: unknown) {
       if (e instanceof Error && e.message?.includes('404')) navigate('/become-seller');
-      else if (!silent) showToast('Erreur de chargement', 'error');
+      else if (!silent) showToast(t('sl1_dashboard.toast_load_error'), 'error');
     } finally { setLoading(false); setRefresh(false); }
-  }, [navigate, showToast]);
+  }, [navigate, showToast, t]);
 
   const loadChart = useCallback(async (p: ChartPeriod) => {
     try { setChartLoad(true); const r = await vendorChartApi.getChartData(p); setChartData(r.data); }
@@ -365,9 +371,9 @@ export default function SellerDashboardPage() {
   useEffect(() => { if (editGoal && goalRef.current) goalRef.current.focus(); }, [editGoal]);
 
   const delProduct = async (id: number) => {
-    if (!confirm('Supprimer ce produit ?')) return;
-    try { await vendorsApi.deleteProduct(id); setProducts(p => p.filter(x => x.id !== id)); showToast('Supprimé', 'success'); }
-    catch { showToast('Erreur', 'error'); }
+    if (!confirm(t('sl1_dashboard.confirm_delete_product'))) return;
+    try { await vendorsApi.deleteProduct(id); setProducts(p => p.filter(x => x.id !== id)); showToast(t('sl1_dashboard.toast_deleted'), 'success'); }
+    catch { showToast(t('sl1_dashboard.toast_error'), 'error'); }
   };
 
   const commitGoal = () => {
@@ -379,7 +385,7 @@ export default function SellerDashboardPage() {
   const shareShop = async () => {
     const url = `${window.location.origin}/shop/${profile?.id ?? ''}`;
     if (navigator.share) await navigator.share({ title: profile?.business_name, url }).catch(() => null);
-    else { await navigator.clipboard.writeText(url); showToast('Lien copié !', 'success'); }
+    else { await navigator.clipboard.writeText(url); showToast(t('sl1_dashboard.toast_link_copied'), 'success'); }
   };
 
   //  ÉTATS APPROBATION 
@@ -391,7 +397,7 @@ export default function SellerDashboardPage() {
       <button onClick={() => loadData()}
         className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-white text-sm font-bold"
         style={{ background: C.orange }}>
-        <RefreshCw size={13} />Réessayer
+        <RefreshCw size={13} />{t('sl1_dashboard.retry')}
       </button>
     </div>
   );
@@ -403,16 +409,16 @@ export default function SellerDashboardPage() {
       </div>
       <div>
         <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>
-          Demande en cours d'examen
+          {t('sl1_dashboard.pending_title')}
         </h2>
         <p className="text-sm max-w-xs leading-relaxed" style={{ color: C.muted }}>
-          Notre équipe examine votre candidature pour <strong style={{ color: C.text }}>{profile.business_name}</strong>. Délai : 24–48h ouvrées.
+          {t('sl1_dashboard.pending_desc_before')}<strong style={{ color: C.text }}>{profile.business_name}</strong>{t('sl1_dashboard.pending_desc_after')}
         </p>
       </div>
       <button onClick={() => loadData(true)} disabled={refreshing}
         className="flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-semibold transition-all"
         style={{ background: C.white, border: `1px solid ${C.border}`, color: C.muted }}>
-        <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />Actualiser
+        <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />{t('sl1_dashboard.refresh')}
       </button>
     </div>
   );
@@ -423,15 +429,15 @@ export default function SellerDashboardPage() {
         <XCircle size={28} style={{ color: C.red }} />
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>Demande refusée</h2>
+        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>{t('sl1_dashboard.rejected_title')}</h2>
         <p className="text-sm max-w-xs" style={{ color: C.muted }}>
-          La candidature pour <strong style={{ color: C.text }}>{profile.business_name}</strong> n'a pas été retenue.
+          {t('sl1_dashboard.rejected_desc_before')}<strong style={{ color: C.text }}>{profile.business_name}</strong> {t('sl1_dashboard.rejected_desc_after')}
         </p>
       </div>
       <a href="mailto:support@belivay.cm"
         className="px-5 py-2.5 rounded-2xl text-white text-sm font-bold"
         style={{ background: C.orange }}>
-        Contacter le support
+        {t('sl1_dashboard.contact_support')}
       </a>
     </div>
   );
@@ -442,13 +448,13 @@ export default function SellerDashboardPage() {
         <AlertCircle size={28} style={{ color: C.amber }} />
       </div>
       <div>
-        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>Boutique suspendue</h2>
+        <h2 className="text-xl font-bold mb-2" style={{ color: C.text }}>{t('sl1_dashboard.suspended_title')}</h2>
         <p className="text-sm max-w-xs" style={{ color: C.muted }}>
-          <strong style={{ color: C.text }}>{profile.business_name}</strong> est temporairement suspendue.
+          <strong style={{ color: C.text }}>{profile.business_name}</strong> {t('sl1_dashboard.suspended_desc_after')}
         </p>
       </div>
       <a href="mailto:support@belivay.cm" className="px-5 py-2.5 rounded-2xl text-white text-sm font-bold" style={{ background: C.orange }}>
-        Contacter le support
+        {t('sl1_dashboard.contact_support')}
       </a>
     </div>
   );
@@ -484,15 +490,15 @@ export default function SellerDashboardPage() {
   const evo = h1 > 0 ? Math.round(((h2 - h1) / h1) * 100) : null;
 
   const firstName = user?.first_name || profile.business_name;
-  const today = new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+  const today = new Date().toLocaleDateString(dateLocale, { weekday: 'long', day: 'numeric', month: 'long' });
 
   const milestones = [
-    { label: 'Boutique créée',  done: true,           icon: BadgeCheck },
-    { label: 'Premier produit', done: totalProds > 0, icon: Package },
-    { label: '1ère vente',      done: totalOrds > 0,  icon: TrendingUp },
-    { label: '1er avis',        done: reviewCount > 0,icon: Star },
-    { label: '1er Boost',       done: false,          icon: Zap },
-    { label: 'Plan Pro',        done: false,          icon: Award },
+    { label: t('sl1_dashboard.milestone_shop_created'),  done: true,           icon: BadgeCheck },
+    { label: t('sl1_dashboard.milestone_first_product'), done: totalProds > 0, icon: Package },
+    { label: t('sl1_dashboard.milestone_first_sale'),    done: totalOrds > 0,  icon: TrendingUp },
+    { label: t('sl1_dashboard.milestone_first_review'),  done: reviewCount > 0,icon: Star },
+    { label: t('sl1_dashboard.milestone_first_boost'),   done: false,          icon: Zap },
+    { label: t('sl1_dashboard.milestone_pro_plan'),      done: false,          icon: Award },
   ];
 
   return (
@@ -518,14 +524,14 @@ export default function SellerDashboardPage() {
             <div className="flex flex-shrink-0 items-center gap-1.5 px-2.5 py-1 rounded-full sm:px-3"
               style={{ background: 'rgba(244,121,32,0.2)', border: '1px solid rgba(244,121,32,0.3)' }}>
               <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: C.orange }} />
-              <span className="text-[10px] font-bold sm:text-[10.5px]" style={{ color: C.orange }}>Plan Gratuit</span>
+              <span className="text-[10px] font-bold sm:text-[10.5px]" style={{ color: C.orange }}>{t('sl1_dashboard.badge_plan_free')}</span>
             </div>
           </div>
 
           {/* Greeting */}
           <h1 className="text-[21px] font-black text-white leading-tight mb-4 sm:text-[30px] sm:mb-5"
             style={{ letterSpacing: '-0.5px' }}>
-            Bonjour, {firstName}
+            {t('sl1_dashboard.greeting', { name: firstName })}
           </h1>
 
           {/* CA mensuel — la metrique que le vendeur vient chercher en premier.
@@ -535,7 +541,7 @@ export default function SellerDashboardPage() {
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.12em] mb-1 sm:text-[10.5px]"
               style={{ color: 'rgba(244,121,32,0.7)' }}>
-              CA mensuel
+              {t('sl1_dashboard.monthly_revenue_kicker')}
             </p>
             <p className="flex flex-wrap items-baseline gap-x-1.5 text-[34px] font-black leading-none text-white sm:text-[52px]">
               {fmtXAF(monthlyRev)}
@@ -550,7 +556,7 @@ export default function SellerDashboardPage() {
                   color: s.revenue_trend >= 0 ? '#4ADE80' : '#F87171',
                 }}>
                 {s.revenue_trend >= 0 ? <ArrowUpRight size={11} /> : <ArrowDownRight size={11} />}
-                {Math.abs(s.revenue_trend)}% vs mois préc.
+                {t('sl1_dashboard.vs_last_month', { value: Math.abs(s.revenue_trend) })}
               </span>
             )}
           </div>
@@ -562,20 +568,20 @@ export default function SellerDashboardPage() {
             <div className="rounded-2xl px-3.5 py-3"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
               <p className="text-[9.5px] font-bold uppercase tracking-widest mb-1 sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                Commandes
+                {t('sl1_dashboard.orders_label')}
               </p>
               <p className="text-[24px] font-black leading-none text-white sm:text-[26px]">{monthlyOrds}</p>
               {pendingOrds > 0 && (
                 <span className="inline-block mt-1.5 text-[10px] font-bold px-2 py-0.5 rounded-full"
                   style={{ background: C.amberL, color: C.amber }}>
-                  {pendingOrds} en attente
+                  {t('sl1_dashboard.orders_pending', { count: pendingOrds })}
                 </span>
               )}
             </div>
             <div className="rounded-2xl px-3.5 py-3"
               style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.10)' }}>
               <p className="text-[9.5px] font-bold uppercase tracking-widest mb-1 sm:text-[10px]" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                Clients uniques
+                {t('sl1_dashboard.unique_customers_label')}
               </p>
               <p className="text-[24px] font-black leading-none text-white sm:text-[26px]">
                 {uniqueCust > 0 ? uniqueCust : '—'}
@@ -589,13 +595,13 @@ export default function SellerDashboardPage() {
             <Link to="/seller/products/new"
               className="flex flex-1 items-center justify-center gap-2 px-4 py-3 rounded-2xl font-bold text-white text-[13px] transition-all active:scale-[.97] sm:flex-none sm:px-5 sm:py-2.5 sm:hover:-translate-y-px"
               style={{ background: C.orange, boxShadow: `0 4px 18px rgba(244,121,32,0.5)` }}>
-              <Plus size={16} />Ajouter un produit
+              <Plus size={16} />{t('sl1_dashboard.add_product')}
             </Link>
             <button onClick={() => loadData(true)} disabled={refreshing}
               className="flex flex-shrink-0 items-center justify-center gap-2 px-4 py-3 rounded-2xl font-semibold text-[13px] transition-all active:scale-[.97] sm:py-2.5"
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)', border: '1px solid rgba(255,255,255,0.12)' }}>
               <RefreshCw size={13} className={refreshing ? 'animate-spin' : ''} />
-              Actualiser
+              {t('sl1_dashboard.refresh')}
             </button>
           </div>
         </div>
@@ -606,12 +612,12 @@ export default function SellerDashboardPage() {
         <div className="px-5 sm:px-8 py-2.5 sm:py-3 flex items-center gap-3"
           style={{ background: 'rgba(0,0,0,0.2)', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
           <span className="min-w-0 flex-1 truncate text-[10.5px] font-medium sm:text-[11px]" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {totalProds} produit{totalProds > 1 ? 's' : ''} · 20% commission · 0 boost
+            {t(totalProds > 1 ? 'sl1_dashboard.plan_summary_line_plural' : 'sl1_dashboard.plan_summary_line', { count: totalProds })}
           </span>
           <Link to="/seller/plans"
             className="flex flex-shrink-0 items-center gap-1 text-[11px] font-bold hover:underline sm:text-[11.5px]"
             style={{ color: C.orange }}>
-            Passer au Pro <ArrowUpRight size={11} />
+            {t('sl1_dashboard.upgrade_to_pro')} <ArrowUpRight size={11} />
           </Link>
         </div>
       </div>
@@ -654,16 +660,16 @@ export default function SellerDashboardPage() {
           <Sparkles size={20} className="text-purple-300 flex-shrink-0 relative" />
           <div className="flex-1 min-w-0 relative">
             <p className="text-[13.5px] font-bold text-white" style={{  }}>
-              Débloquez le Plan Pro · 7 jours gratuits
+              {t('sl1_dashboard.pro_banner_title')}
             </p>
             <p className="text-[11px] mt-0.5" style={{ color: 'rgba(196,181,253,0.65)' }}>
-              Commission 10% · Analytics IA · 3 boosts inclus · Support 24h/7j
+              {t('sl1_dashboard.pro_banner_desc')}
             </p>
           </div>
           <Link to="/seller/plans"
             className="flex-shrink-0 px-3.5 py-2 rounded-xl text-[11.5px] font-bold text-white whitespace-nowrap relative"
             style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.2)' }}>
-            Voir les plans
+            {t('sl1_dashboard.view_plans')}
           </Link>
           <button onClick={() => setShowBanner(false)}
             className="relative w-7 h-7 rounded-lg flex items-center justify-center text-white/60 hover:text-white hover:bg-white/15 transition-all flex-shrink-0">
@@ -676,33 +682,33 @@ export default function SellerDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
         {[
           {
-            label: 'CA mensuel',
+            label: t('sl1_dashboard.monthly_revenue_kicker'),
             value: `${fmtXAF(monthlyRev)} FCFA`,
-            sub: avgOrder > 0 ? `${fmtXAF(avgOrder)} FCFA panier moy.` : undefined,
+            sub: avgOrder > 0 ? t('sl1_dashboard.avg_order_sub', { amount: `${fmtXAF(avgOrder)} FCFA` }) : undefined,
             trend: s?.revenue_trend ?? null,
             accentColor: C.orange,
             accentBg: C.orangeL,
           },
           {
-            label: 'Commandes',
+            label: t('sl1_dashboard.orders_label'),
             value: `${monthlyOrds}`,
-            sub: pendingOrds > 0 ? `${pendingOrds} en attente` : `${totalOrds} au total`,
+            sub: pendingOrds > 0 ? t('sl1_dashboard.orders_pending', { count: pendingOrds }) : t('sl1_dashboard.orders_total', { count: totalOrds }),
             subWarn: pendingOrds > 0,
             trend: s?.orders_trend ?? null,
             accentColor: C.green,
             accentBg: C.greenL,
           },
           {
-            label: 'Clients uniques',
+            label: t('sl1_dashboard.unique_customers_label'),
             value: uniqueCust > 0 ? String(uniqueCust) : '—',
-            sub: totalSales > 0 ? `${totalSales} unités vendues` : undefined,
+            sub: totalSales > 0 ? t('sl1_dashboard.units_sold', { count: totalSales }) : undefined,
             accentColor: C.blue,
             accentBg: C.blueL,
           },
           {
-            label: 'Note boutique',
+            label: t('sl1_dashboard.shop_rating_label'),
             value: shopRating !== null ? `${shopRating}/5` : '—',
-            sub: reviewCount > 0 ? `${reviewCount} avis clients` : `${totalSales} ventes totales`,
+            sub: reviewCount > 0 ? t('sl1_dashboard.reviews_count', { count: reviewCount }) : t('sl1_dashboard.total_sales', { count: totalSales }),
             accentColor: C.amber,
             accentBg: C.amberL,
           },
@@ -748,12 +754,12 @@ export default function SellerDashboardPage() {
       {/*  ACTIONS RAPIDES  */}
       <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
         {[
-          { label: 'Ajouter produit', to: '/seller/products/new', primary: true },
-          { label: `Commandes${pendingOrds > 0 ? ` (${pendingOrds})` : ''}`, to: '/seller/orders' },
-          { label: 'Paiements',  to: '/seller/payments' },
-          { label: 'Litiges',    to: '/seller/disputes' },
-          { label: `Avis${reviewCount > 0 ? ` (${reviewCount})` : ''}`, to: '/seller/shop' },
-          { label: 'Booster',    to: '/seller/boost' },
+          { label: t('sl1_dashboard.action_add_product'), to: '/seller/products/new', primary: true },
+          { label: `${t('sl1_dashboard.orders_label')}${pendingOrds > 0 ? ` (${pendingOrds})` : ''}`, to: '/seller/orders' },
+          { label: t('sl1_dashboard.action_payments'),  to: '/seller/payments' },
+          { label: t('sl1_dashboard.action_disputes'),    to: '/seller/disputes' },
+          { label: `${t('sl1_dashboard.action_reviews')}${reviewCount > 0 ? ` (${reviewCount})` : ''}`, to: '/seller/shop' },
+          { label: t('sl1_dashboard.action_boost'),    to: '/seller/boost' },
         ].map((btn, i) => (
           <Link key={i} to={btn.to}
             className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12.5px] font-semibold whitespace-nowrap flex-shrink-0 transition-all hover:-translate-y-px"
@@ -767,18 +773,18 @@ export default function SellerDashboardPage() {
         <button onClick={shareShop}
           className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12.5px] font-semibold whitespace-nowrap flex-shrink-0 transition-all hover:-translate-y-px"
           style={{ background: C.white, border: `1px solid ${C.border}`, color: C.muted }}>
-          <Share2 size={14} />Partager boutique
+          <Share2 size={14} />{t('sl1_dashboard.share_shop')}
         </button>
       </div>
 
       {/* Plan chips */}
       <div className="flex gap-2 flex-wrap">
         {[
-          { label: `${totalProds} produit${totalProds > 1 ? 's' : ''}`, ok: true },
-          { label: '20% commission', ok: false },
-          { label: '0 boost',        ok: false },
-          { label: 'Analytics IA',   locked: true },
-          { label: 'Heatmap',        locked: true },
+          { label: t(totalProds > 1 ? 'sl1_dashboard.chip_products_plural' : 'sl1_dashboard.chip_products', { count: totalProds }), ok: true },
+          { label: t('sl1_dashboard.chip_commission'), ok: false },
+          { label: t('sl1_dashboard.chip_boost'),        ok: false },
+          { label: t('sl1_dashboard.chip_analytics_ai'),   locked: true },
+          { label: t('sl1_dashboard.chip_heatmap'),        locked: true },
         ].map((chip, i) => (
           <span key={i} className="flex items-center gap-1 text-[11px] font-semibold rounded-full px-3 py-1"
             style={chip.locked
@@ -801,7 +807,7 @@ export default function SellerDashboardPage() {
             <div className="flex items-center gap-2">
               <Target size={14} style={{ color: C.orange }} />
               <span className="font-bold text-[13.5px]" style={{ color: C.text }}>
-                Objectif mensuel
+                {t('sl1_dashboard.goal_title')}
               </span>
             </div>
             {editGoal ? (
@@ -819,7 +825,7 @@ export default function SellerDashboardPage() {
               <button onClick={() => { setGoalInput(String(goal)); setEditGoal(true); }}
                 className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-[11px] font-medium transition-all"
                 style={{ background: C.cream, color: C.muted }}>
-                <Pencil size={10} />Modifier
+                <Pencil size={10} />{t('sl1_dashboard.edit')}
               </button>
             )}
           </div>
@@ -839,17 +845,17 @@ export default function SellerDashboardPage() {
                 {fmtXAF(monthlyRev)} FCFA
               </p>
               <p className="text-[10.5px] mb-2" style={{ color: C.muted }}>
-                sur {fmtXAF(goal)} FCFA visés
+                {t('sl1_dashboard.goal_target', { amount: `${fmtXAF(goal)} FCFA` })}
               </p>
               {goalPct < 100 && (
                 <p className="text-[10px]" style={{ color: C.muted }}>
-                  Encore <strong style={{ color: C.text }}>{fmtXAF(Math.max(0, goal - monthlyRev))} FCFA</strong>
+                  {t('sl1_dashboard.goal_remaining_label')} <strong style={{ color: C.text }}>{fmtXAF(Math.max(0, goal - monthlyRev))} FCFA</strong>
                 </p>
               )}
               {goalPct >= 100 && (
                 <span className="inline-flex items-center gap-1 text-[11px] font-bold rounded-full px-2.5 py-1"
                   style={{ background: C.greenL, color: C.green }}>
-                  <CheckCircle size={10} />Objectif atteint !
+                  <CheckCircle size={10} />{t('sl1_dashboard.goal_reached')}
                 </span>
               )}
             </div>
@@ -862,20 +868,20 @@ export default function SellerDashboardPage() {
             style={{ background: C.blueL, border: '1px solid rgba(37,99,235,0.15)' }}>
             <CreditCard size={15} style={{ color: C.blue }} className="flex-shrink-0" />
             <p className="text-[12px] font-medium flex-1" style={{ color: '#1E40AF' }}>
-              Passez au plan <strong>Starter</strong> pour réduire votre commission 20% → 18% et accéder aux boosts.
+              {t('sl1_dashboard.upgrade_tip_before')}<strong>{t('sl1_dashboard.plan_starter')}</strong>{t('sl1_dashboard.upgrade_tip_after')}
             </p>
             <Link to="/seller/plans"
               className="flex-shrink-0 px-3 py-1.5 rounded-xl text-[11px] font-bold whitespace-nowrap"
               style={{ background: C.white, border: '1px solid rgba(37,99,235,0.2)', color: C.blue }}>
-              Voir les plans
+              {t('sl1_dashboard.view_plans')}
             </Link>
           </div>
 
           {/* Stats rapides */}
           <div className="grid grid-cols-2 gap-3 flex-1">
             {[
-              { label: 'Taux livraison', value: `${fulfRate}%`, ok: fulfRate >= 80 },
-              { label: 'Taux retour',   value: `${returnRate}%`, ok: returnRate <= 5 },
+              { label: t('sl1_dashboard.fulfillment_rate_short'), value: `${fulfRate}%`, ok: fulfRate >= 80 },
+              { label: t('sl1_dashboard.return_rate_short'),   value: `${returnRate}%`, ok: returnRate <= 5 },
             ].map((stat, i) => (
               <Card key={i} className="p-4">
                 <div className="flex items-center gap-1.5 mb-2">
@@ -900,14 +906,14 @@ export default function SellerDashboardPage() {
                 <BarChart2 size={15} style={{ color: C.orange }} />
               </div>
               <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
-                Revenus
+                {t('sl1_dashboard.revenue_chart_title')}
               </p>
             </div>
             {chartData.length > 0 && (
               <div className="flex items-center gap-3 ml-10 text-[10.5px] flex-wrap" style={{ color: C.mutedL }}>
-                <span>Total: <strong style={{ color: C.orange }}>{fmtXAF(chartTotal)} FCFA</strong></span>
+                <span>{t('sl1_dashboard.chart_total')} <strong style={{ color: C.orange }}>{fmtXAF(chartTotal)} FCFA</strong></span>
                 <span>·</span>
-                <span>Moy: <strong style={{ color: C.muted }}>{fmtXAF(chartAvg)} FCFA</strong></span>
+                <span>{t('sl1_dashboard.chart_avg')} <strong style={{ color: C.muted }}>{fmtXAF(chartAvg)} FCFA</strong></span>
                 {evo !== null && (
                   <>
                     <span>·</span>
@@ -929,7 +935,7 @@ export default function SellerDashboardPage() {
                   color: period === p ? '#fff' : C.muted,
                   borderLeft: i > 0 ? `1px solid ${C.border}` : 'none',
                 }}>
-                {p === '7d' ? '7j' : p === '30d' ? '30j' : '12m'}
+                {p === '7d' ? t('sl1_dashboard.period_7d') : p === '30d' ? t('sl1_dashboard.period_30d') : t('sl1_dashboard.period_12m')}
               </button>
             ))}
           </div>
@@ -944,7 +950,7 @@ export default function SellerDashboardPage() {
         ) : chartData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-[110px] gap-2">
             <BarChart2 size={24} style={{ color: C.border }} />
-            <p className="text-[12px]" style={{ color: C.mutedL }}>Aucune vente sur cette période</p>
+            <p className="text-[12px]" style={{ color: C.mutedL }}>{t('sl1_dashboard.no_sales_period')}</p>
           </div>
         ) : (
           <div className="flex items-end gap-1.5">
@@ -966,20 +972,20 @@ export default function SellerDashboardPage() {
           </div>
           <div>
             <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
-              Heatmap ventes
+              {t('sl1_dashboard.heatmap_title')}
             </p>
-            <p className="text-[10.5px]" style={{ color: C.mutedL }}>Activité sur les 30 derniers jours</p>
+            <p className="text-[10.5px]" style={{ color: C.mutedL }}>{t('sl1_dashboard.heatmap_subtitle')}</p>
           </div>
         </div>
 
         <p className="text-[9.5px] font-black uppercase tracking-[0.14em] mb-2" style={{ color: C.mutedL }}>
-          Jours de la semaine
+          {t('sl1_dashboard.heatmap_days_label')}
         </p>
         {heatD.length > 0 ? (
           <div className="grid grid-cols-7 gap-2 mb-5">
             {heatD.map(d => (
               <div key={d.day} className="flex flex-col items-center gap-1.5">
-                <HCell intensity={d.intensity} tooltip={`${d.day} · ${fmtXAF(d.revenue)} XAF · ${d.orders} cmd`} />
+                <HCell intensity={d.intensity} tooltip={`${d.day} · ${fmtXAF(d.revenue)} XAF · ${d.orders} ${t('sl1_dashboard.orders_abbr')}`} />
                 <span className="text-[9px] font-medium" style={{ color: C.mutedL }}>{d.day}</span>
               </div>
             ))}
@@ -987,24 +993,24 @@ export default function SellerDashboardPage() {
         ) : <Bone h="h-8" r="rounded-xl" />}
 
         <p className="text-[9.5px] font-black uppercase tracking-[0.14em] mb-2" style={{ color: C.mutedL }}>
-          Heures (0h → 23h)
+          {t('sl1_dashboard.heatmap_hours_label')}
         </p>
         {heatH.length > 0 ? (
           <div className="grid gap-1 mb-3" style={{ gridTemplateColumns: 'repeat(12,1fr)' }}>
             {heatH.map(h => (
-              <HCell key={h.hour} intensity={h.intensity} tooltip={`${h.hour}h · ${fmtXAF(h.revenue)} XAF · ${h.orders} cmd`} />
+              <HCell key={h.hour} intensity={h.intensity} tooltip={`${h.hour}h · ${fmtXAF(h.revenue)} XAF · ${h.orders} ${t('sl1_dashboard.orders_abbr')}`} />
             ))}
           </div>
         ) : <Bone h="h-5" />}
 
         <div className="flex items-center gap-2">
-          <span className="text-[9px]" style={{ color: C.mutedL }}>Faible</span>
+          <span className="text-[9px]" style={{ color: C.mutedL }}>{t('sl1_dashboard.heat_low')}</span>
           <div className="flex gap-1">
             {[0, 0.2, 0.4, 0.65, 0.85, 1].map((v, i) => (
               <div key={i} className="w-5 h-3 rounded-sm" style={{ background: heatColor(v) }} />
             ))}
           </div>
-          <span className="text-[9px]" style={{ color: C.mutedL }}>Fort</span>
+          <span className="text-[9px]" style={{ color: C.mutedL }}>{t('sl1_dashboard.heat_high')}</span>
         </div>
       </Card>
 
@@ -1012,11 +1018,11 @@ export default function SellerDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 sm:gap-4">
         {/* Alertes stock */}
         <Card className="overflow-hidden">
-          <SHead icon={<TriangleAlert size={14} />} title="Alertes stock" to="/seller/products" />
+          <SHead icon={<TriangleAlert size={14} />} title={t('sl1_dashboard.stock_alerts_title')} to="/seller/products" />
           {lowItems.length === 0 ? (
             <div className="py-8 text-center">
               <CheckCircle size={22} style={{ color: C.green }} className="mx-auto mb-2" />
-              <p className="text-[12px]" style={{ color: C.muted }}>Tous les stocks sont OK</p>
+              <p className="text-[12px]" style={{ color: C.muted }}>{t('sl1_dashboard.stock_all_ok')}</p>
             </div>
           ) : lowItems.slice(0, 5).map(item => (
             <div key={item.id} className="flex items-center gap-3 px-5 py-3"
@@ -1030,13 +1036,13 @@ export default function SellerDashboardPage() {
               <div className="flex-1 min-w-0">
                 <p className="text-[12.5px] font-semibold truncate" style={{ color: C.text }}>{item.title}</p>
                 <p className="text-[10.5px]" style={{ color: C.muted }}>
-                  {item.stock_quantity === 0 ? 'Rupture de stock' : `${item.stock_quantity} unité${item.stock_quantity > 1 ? 's' : ''} restante${item.stock_quantity > 1 ? 's' : ''}`}
+                  {item.stock_quantity === 0 ? t('sl1_dashboard.out_of_stock') : t(item.stock_quantity > 1 ? 'sl1_dashboard.units_remaining_plural' : 'sl1_dashboard.units_remaining', { count: item.stock_quantity })}
                 </p>
               </div>
               <Link to={`/seller/products/${item.id}/edit`}
                 className="flex-shrink-0 px-2.5 py-1.5 rounded-xl text-[10.5px] font-bold transition-all"
                 style={{ background: C.cream, border: `1px solid ${C.border}`, color: C.muted }}>
-                Réappro.
+                {t('sl1_dashboard.restock_short')}
               </Link>
             </div>
           ))}
@@ -1044,13 +1050,13 @@ export default function SellerDashboardPage() {
 
         {/* Performance rapide */}
         <Card className="overflow-hidden">
-          <SHead icon={<TrendingUp size={14} />} title="Performance rapide" />
+          <SHead icon={<TrendingUp size={14} />} title={t('sl1_dashboard.performance_title')} />
           <div className="px-5 py-2">
             {[
-              { label: 'Taux de livraison', sub: 'Commandes livrées vs payées', value: `${fulfRate}%`,  ok: fulfRate >= 80 },
-              { label: 'Taux de retour',   sub: 'Remboursements',               value: `${returnRate}%`, ok: returnRate <= 5 },
-              { label: 'Satisfaction',     sub: reviewCount > 0 ? `${reviewCount} avis clients` : 'Aucun avis encore', value: shopRating !== null ? `${shopRating}/5` : '—', ok: shopRating !== null && shopRating >= 4 },
-              { label: 'Panier moyen',     sub: 'Valeur moyenne par commande',  value: avgOrder > 0 ? `${fmtXAF(avgOrder)} XAF` : '—', ok: avgOrder > 10_000 },
+              { label: t('sl1_dashboard.fulfillment_rate_full'), sub: t('sl1_dashboard.fulfillment_rate_sub'), value: `${fulfRate}%`,  ok: fulfRate >= 80 },
+              { label: t('sl1_dashboard.return_rate_full'),   sub: t('sl1_dashboard.return_rate_sub'),               value: `${returnRate}%`, ok: returnRate <= 5 },
+              { label: t('sl1_dashboard.satisfaction_label'),     sub: reviewCount > 0 ? t('sl1_dashboard.reviews_count', { count: reviewCount }) : t('sl1_dashboard.no_reviews_yet'), value: shopRating !== null ? `${shopRating}/5` : '—', ok: shopRating !== null && shopRating >= 4 },
+              { label: t('sl1_dashboard.avg_cart_label'),     sub: t('sl1_dashboard.avg_cart_sub'),  value: avgOrder > 0 ? `${fmtXAF(avgOrder)} XAF` : '—', ok: avgOrder > 10_000 },
             ].map((row, i, arr) => (
               <div key={i} className="flex items-center justify-between py-3"
                 style={i < arr.length - 1 ? { borderBottom: `1px solid ${C.border}` } : {}}>
@@ -1076,15 +1082,15 @@ export default function SellerDashboardPage() {
 
         {/* Commandes récentes */}
         <Card className="overflow-hidden">
-          <SHead icon={<ShoppingBag size={14} />} title="Dernières commandes" to="/seller/orders" />
+          <SHead icon={<ShoppingBag size={14} />} title={t('sl1_dashboard.recent_orders_title')} to="/seller/orders" />
           {orders.slice(0, 5).length === 0 ? (
-            <div className="py-8 text-center"><p className="text-[12px]" style={{ color: C.muted }}>Aucune commande pour l'instant</p></div>
+            <div className="py-8 text-center"><p className="text-[12px]" style={{ color: C.muted }}>{t('sl1_dashboard.no_orders_yet')}</p></div>
           ) : orders.slice(0, 5).map(order => {
             const pName  = order.items?.[0]?.product_title ?? `Commande ${order.id}`;
             const pImg   = order.items?.[0]?.product_image ?? null;
             const vTotal = order.vendor_net_amount ?? Number(order.total_xaf);
             const fSt    = order.fulfillment_status ?? 'PENDING';
-            const badge  = FULFILL[fSt] ?? { label: fSt, color: C.muted, bg: C.cream };
+            const badge  = FULFILL[fSt] ? { label: t(FULFILL[fSt].labelKey), color: FULFILL[fSt].color, bg: FULFILL[fSt].bg } : { label: fSt, color: C.muted, bg: C.cream };
             return (
               <div key={order.id} className="flex items-center gap-3 px-5 py-3"
                 style={{ borderBottom: `1px solid ${C.border}` }}>
@@ -1094,7 +1100,7 @@ export default function SellerDashboardPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[12.5px] font-semibold" style={{ color: C.text }}>{orderRef(order.id)}</p>
-                  <p className="text-[10.5px] truncate" style={{ color: C.muted }}>{pName} · {fmtDate(order.created_at)}</p>
+                  <p className="text-[10.5px] truncate" style={{ color: C.muted }}>{pName} · {fmtDate(order.created_at, dateLocale)}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1 flex-shrink-0">
                   <Pill label={badge.label} color={badge.color} bg={badge.bg} />
@@ -1109,9 +1115,9 @@ export default function SellerDashboardPage() {
 
         {/* Top produits */}
         <Card className="overflow-hidden">
-          <SHead icon={<TrendingUp size={14} />} title="Top produits" to="/seller/products" />
+          <SHead icon={<TrendingUp size={14} />} title={t('sl1_dashboard.top_products_title')} to="/seller/products" />
           {topProds.length === 0 ? (
-            <div className="py-8 text-center"><p className="text-[12px]" style={{ color: C.muted }}>Aucune vente enregistrée</p></div>
+            <div className="py-8 text-center"><p className="text-[12px]" style={{ color: C.muted }}>{t('sl1_dashboard.no_sales_recorded')}</p></div>
           ) : topProds.map((p, rank) => {
             const barPct = topProds[0].revenue > 0 ? (p.revenue / topProds[0].revenue) * 100 : 0;
             const rankColors = [C.orange, C.violet, C.mutedL];
@@ -1133,7 +1139,7 @@ export default function SellerDashboardPage() {
                       <div className="h-full rounded-full"
                         style={{ width: `${barPct}%`, background: `linear-gradient(90deg,${C.orange},${C.orangeD})` }} />
                     </div>
-                    <span className="text-[9.5px] flex-shrink-0" style={{ color: C.mutedL }}>{p.sales_count} ventes</span>
+                    <span className="text-[9.5px] flex-shrink-0" style={{ color: C.mutedL }}>{t('sl1_dashboard.sales_count', { count: p.sales_count })}</span>
                   </div>
                 </div>
                 <p className="text-[13px] font-extrabold flex-shrink-0" style={{ color: C.orange }}>
@@ -1153,7 +1159,7 @@ export default function SellerDashboardPage() {
               <Package size={14} style={{ color: C.orange }} />
             </div>
             <span className="font-bold text-[14.5px]" style={{ color: C.text }}>
-              Mes produits
+              {t('sl1_dashboard.my_products_title')}
             </span>
             <span className="text-[10px] font-black text-white rounded-full px-2 py-0.5"
               style={{ background: C.orange }}>
@@ -1161,17 +1167,17 @@ export default function SellerDashboardPage() {
             </span>
           </div>
           <Link to="/seller/products" className="text-[12px] font-bold flex items-center gap-1 hover:underline" style={{ color: C.orange }}>
-            Tout voir <ChevronRight size={12} />
+            {t('sl1_dashboard.see_all')} <ChevronRight size={12} />
           </Link>
         </div>
         {products.slice(0, 5).length === 0 ? (
           <div className="py-10 text-center">
             <Package size={24} style={{ color: C.border }} className="mx-auto mb-3" />
-            <p className="text-[12px] mb-4" style={{ color: C.muted }}>Aucun produit pour l'instant</p>
+            <p className="text-[12px] mb-4" style={{ color: C.muted }}>{t('sl1_dashboard.no_products_yet')}</p>
             <Link to="/seller/products/new"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12.5px] font-bold text-white"
               style={{ background: C.orange }}>
-              <Plus size={14} />Créer mon premier produit
+              <Plus size={14} />{t('sl1_dashboard.create_first_product')}
             </Link>
           </div>
         ) : (
@@ -1179,7 +1185,7 @@ export default function SellerDashboardPage() {
             <table className="w-full">
               <thead>
                 <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-                  {['Produit', 'Prix', 'Stock', 'Statut', ''].map((h, i) => (
+                  {[t('sl1_dashboard.th_product'), t('sl1_dashboard.th_price'), t('sl1_dashboard.th_stock'), t('sl1_dashboard.th_status'), ''].map((h, i) => (
                     <th key={i} className={`py-3 px-4 text-[10px] font-black uppercase tracking-[0.12em] ${i === 4 ? 'text-right' : 'text-left'}`}
                       style={{ color: C.mutedL }}>
                       {h}
@@ -1225,7 +1231,7 @@ export default function SellerDashboardPage() {
                           style={p.is_active
                             ? { background: C.greenL, color: C.green }
                             : { background: C.cream, color: C.muted }}>
-                          {p.is_active ? 'Actif' : 'Inactif'}
+                          {p.is_active ? t('sl1_dashboard.status_active') : t('sl1_dashboard.status_inactive')}
                         </span>
                       </td>
                       <td className="py-3 px-4">
@@ -1265,7 +1271,7 @@ export default function SellerDashboardPage() {
               <Star size={14} style={{ color: C.amber }} />
             </div>
             <p className="font-bold text-[14.5px]" style={{ color: C.text }}>
-              Avis clients
+              {t('sl1_dashboard.customer_reviews_title')}
             </p>
           </div>
           <div className="flex items-center gap-5">
@@ -1280,12 +1286,12 @@ export default function SellerDashboardPage() {
                     : { color: C.border, fill: C.border }} />
                 ))}
               </div>
-              <p className="text-[10.5px] mt-1" style={{ color: C.muted }}>{reviewCount} avis</p>
+              <p className="text-[10.5px] mt-1" style={{ color: C.muted }}>{t('sl1_dashboard.reviews_short', { count: reviewCount })}</p>
             </div>
             <Link to="/seller/shop"
               className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[12px] font-semibold transition-all"
               style={{ background: C.cream, border: `1px solid ${C.border}`, color: C.muted }}>
-              <Store size={13} />Voir ma boutique
+              <Store size={13} />{t('sl1_dashboard.view_my_shop')}
             </Link>
           </div>
         </Card>

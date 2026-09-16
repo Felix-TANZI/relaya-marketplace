@@ -3,6 +3,7 @@
 // Liste + approbation manuelle des souscriptions en attente
 
 import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import {
   CreditCard, RefreshCw, CheckCircle, XCircle,
@@ -39,11 +40,11 @@ interface Subscription {
 
 type StatusFilter = 'all' | 'PENDING' | 'ACTIVE' | 'EXPIRED' | 'CANCELLED';
 
-const STATUS_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:   { label: 'En attente',  color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
-  ACTIVE:    { label: 'Actif',       color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
-  EXPIRED:   { label: 'Expiré',      color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
-  CANCELLED: { label: 'Annulé',      color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
+const STATUS_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:   { labelKey: 'ad4_subscriptions.status.pending',   color: '#F59E0B', bg: 'rgba(245,158,11,0.12)'  },
+  ACTIVE:    { labelKey: 'ad4_subscriptions.status.active',    color: '#10B981', bg: 'rgba(16,185,129,0.12)'  },
+  EXPIRED:   { labelKey: 'ad4_subscriptions.status.expired',   color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+  CANCELLED: { labelKey: 'ad4_subscriptions.status.cancelled', color: '#EF4444', bg: 'rgba(239,68,68,0.12)'   },
 };
 
 const PLAN_CFG: Record<string, { color: string }> = {
@@ -67,6 +68,7 @@ const authHeader = () => ({
 });
 
 export default function SubscriptionsPage() {
+  const { t }          = useTranslation();
   const T             = useAdminTheme();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
@@ -87,7 +89,7 @@ export default function SubscriptionsPage() {
       const data = await http<Subscription[]>(url, { headers: authHeader() });
       setSubs(data);
     } catch {
-      showToast('Erreur chargement des abonnements', 'error');
+      showToast(t('ad4_subscriptions.load_error'), 'error');
     } finally {
       setLoading(false);
     }
@@ -108,42 +110,42 @@ export default function SubscriptionsPage() {
 
   const handleApprove = async (sub: Subscription) => {
     const ok = await confirm({
-      title:       `Approuver l'abonnement ${sub.plan_name} ?`,
-      message:     `Le plan sera activé pour ${sub.business_name}. Confirmez que le paiement de ${fmtXaf(sub.amount_paid_xaf)} a bien été reçu.`,
-      type:        'warning', confirmText: 'Approuver & Activer', cancelText: 'Annuler',
+      title:       t('ad4_subscriptions.confirm_approve_title', { plan: sub.plan_name }),
+      message:     t('ad4_subscriptions.confirm_approve_message', { business: sub.business_name, amount: fmtXaf(sub.amount_paid_xaf) }),
+      type:        'warning', confirmText: t('ad4_subscriptions.confirm_approve_cta'), cancelText: t('ad4_subscriptions.confirm_cancel'),
     });
     if (!ok) return;
     setActing(sub.id);
     try {
       await http(`/api/vendors/admin/subscriptions/${sub.id}/approve/`, { method: 'POST', headers: authHeader() });
-      showToast(`Abonnement ${sub.plan_name} activé`, 'success');
+      showToast(t('ad4_subscriptions.approved_toast', { plan: sub.plan_name }), 'success');
       await load();
-    } catch { showToast('Erreur lors de l\'approbation', 'error'); }
+    } catch { showToast(t('ad4_subscriptions.approve_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const handleReject = async (sub: Subscription) => {
     const ok = await confirm({
-      title:       `Rejeter cet abonnement ?`,
-      message:     `La souscription ${sub.reference} sera annulée.`,
-      type:        'danger', confirmText: 'Rejeter', cancelText: 'Annuler',
+      title:       t('ad4_subscriptions.confirm_reject_title'),
+      message:     t('ad4_subscriptions.confirm_reject_message', { reference: sub.reference }),
+      type:        'danger', confirmText: t('ad4_subscriptions.action_reject'), cancelText: t('ad4_subscriptions.confirm_cancel'),
     });
     if (!ok) return;
     setActing(sub.id);
     try {
       await http(`/api/vendors/admin/subscriptions/${sub.id}/reject/`, { method: 'POST', headers: authHeader() });
-      showToast('Abonnement rejeté', 'success');
+      showToast(t('ad4_subscriptions.rejected_toast'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad4_subscriptions.generic_error'), 'error'); }
     finally  { setActing(null); }
   };
 
   const tabs: { key: StatusFilter; label: string }[] = [
-    { key: 'PENDING',   label: 'En attente' },
-    { key: 'ACTIVE',    label: 'Actifs'     },
-    { key: 'EXPIRED',   label: 'Expirés'    },
-    { key: 'CANCELLED', label: 'Annulés'    },
-    { key: 'all',       label: 'Tous'       },
+    { key: 'PENDING',   label: t('ad4_subscriptions.tab_pending') },
+    { key: 'ACTIVE',    label: t('ad4_subscriptions.tab_active')     },
+    { key: 'EXPIRED',   label: t('ad4_subscriptions.tab_expired')    },
+    { key: 'CANCELLED', label: t('ad4_subscriptions.tab_cancelled')    },
+    { key: 'all',       label: t('ad4_subscriptions.tab_all')       },
   ];
 
   return (
@@ -152,15 +154,15 @@ export default function SubscriptionsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Abonnements Vendeurs
+            {t('ad4_subscriptions.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {counts.PENDING > 0 && (
               <span style={{ color: '#F59E0B', fontWeight: 700, marginRight: 6 }}>
-                {counts.PENDING} en attente d'approbation ·
+                {t('ad4_subscriptions.pending_approval_count', { count: counts.PENDING })} ·
               </span>
             )}
-            Validation manuelle des souscriptions aux plans
+            {t('ad4_subscriptions.subtitle')}
           </p>
         </div>
         <button onClick={() => load()}
@@ -169,26 +171,26 @@ export default function SubscriptionsPage() {
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.18)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}>
           <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-          <span className="hidden sm:inline">Actualiser</span>
+          <span className="hidden sm:inline">{t('ad4_subscriptions.refresh')}</span>
         </button>
       </div>
 
       {/* Tabs */}
       <div className="rounded-2xl p-3 flex gap-1 overflow-x-auto" style={{ background: T.card, border: `1px solid ${T.border}`, scrollbarWidth: 'none' }}>
-        {tabs.map(t => {
-          const cfg = STATUS_CFG[t.key];
-          const active = statusF === t.key;
+        {tabs.map(tab => {
+          const cfg = STATUS_CFG[tab.key];
+          const active = statusF === tab.key;
           return (
-            <button key={t.key}
-              onClick={() => { setStatusF(t.key); setPage(1); }}
+            <button key={tab.key}
+              onClick={() => { setStatusF(tab.key); setPage(1); }}
               className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold whitespace-nowrap transition-all"
               style={{
                 background: active ? (cfg?.color ?? T.red) : 'transparent',
                 color:      active ? '#fff' : T.muted,
               }}>
-              {t.label}
+              {tab.label}
               <span style={{ fontSize: 10.5, padding: '1px 6px', borderRadius: 999, fontWeight: 700, background: active ? 'rgba(255,255,255,0.25)' : T.cardAlt, color: active ? '#fff' : T.muted }}>
-                {counts[t.key]}
+                {counts[tab.key]}
               </span>
             </button>
           );
@@ -205,7 +207,7 @@ export default function SubscriptionsPage() {
         ) : subs.length === 0 ? (
           <div className="flex flex-col items-center py-20 gap-3">
             <CreditCard size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucun abonnement {statusF !== 'all' ? STATUS_CFG[statusF]?.label?.toLowerCase() : ''}</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad4_subscriptions.no_subscriptions', { status: statusF !== 'all' ? t(STATUS_CFG[statusF]?.labelKey ?? '').toLowerCase() : '' })}</p>
           </div>
         ) : (
           <>
@@ -214,7 +216,7 @@ export default function SubscriptionsPage() {
               <table className="w-full" style={{ borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
-                    {['Référence', 'Boutique', 'Plan', 'Cycle', 'Montant', 'Opérateur', 'Statut', 'Expire le', ''].map((h, i) => (
+                    {[t('ad4_subscriptions.col_reference'), t('ad4_subscriptions.col_shop'), t('ad4_subscriptions.col_plan'), t('ad4_subscriptions.col_cycle'), t('ad4_subscriptions.col_amount'), t('ad4_subscriptions.col_operator'), t('ad4_subscriptions.col_status'), t('ad4_subscriptions.col_expires'), ''].map((h, i) => (
                       <th key={i} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                         {h}
                       </th>
@@ -241,14 +243,14 @@ export default function SubscriptionsPage() {
                         <div className="flex items-center gap-1.5">
                           <div style={{ width: 8, height: 8, borderRadius: '50%', background: PLAN_CFG[s.plan_code]?.color ?? '#9CA3AF' }} />
                           <span style={{ fontSize: 12.5, fontWeight: 700, color: PLAN_CFG[s.plan_code]?.color ?? T.text }}>{s.plan_name}</span>
-                          {s.is_trial && <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>ESSAI</span>}
+                          {s.is_trial && <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>{t('ad4_subscriptions.trial_badge')}</span>}
                         </div>
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: 12.5, color: T.muted }}>
-                        {s.billing_cycle === 'MONTHLY' ? 'Mensuel' : s.billing_cycle === 'ANNUAL' ? 'Annuel' : 'Essai'}
+                        {s.billing_cycle === 'MONTHLY' ? t('ad4_subscriptions.cycle_monthly') : s.billing_cycle === 'ANNUAL' ? t('ad4_subscriptions.cycle_annual') : t('ad4_subscriptions.cycle_trial')}
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: 13, fontWeight: 700, color: T.text, whiteSpace: 'nowrap' }}>
-                        {s.amount_paid_xaf > 0 ? fmtXaf(s.amount_paid_xaf) : <span style={{ color: '#10B981' }}>Gratuit</span>}
+                        {s.amount_paid_xaf > 0 ? fmtXaf(s.amount_paid_xaf) : <span style={{ color: '#10B981' }}>{t('ad4_subscriptions.free')}</span>}
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         {s.operator ? (
@@ -259,7 +261,7 @@ export default function SubscriptionsPage() {
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: STATUS_CFG[s.sub_status]?.bg, color: STATUS_CFG[s.sub_status]?.color }}>
-                          {STATUS_CFG[s.sub_status]?.label}
+                          {t(STATUS_CFG[s.sub_status]?.labelKey ?? '')}
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', fontSize: 11.5, color: T.muted, whiteSpace: 'nowrap' }}>
@@ -272,7 +274,7 @@ export default function SubscriptionsPage() {
                               className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold"
                               style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
                               {acting === s.id ? <RefreshCw size={11} className="animate-spin" /> : <CheckCircle size={12} />}
-                              Approuver
+                              {t('ad4_subscriptions.action_approve')}
                             </button>
                             <button onClick={() => handleReject(s)} disabled={acting === s.id}
                               className="w-7 h-7 rounded-lg flex items-center justify-center"
@@ -305,25 +307,25 @@ export default function SubscriptionsPage() {
                       </Link>
                     </div>
                     <span style={{ fontSize: 10.5, fontWeight: 800, padding: '2px 8px', borderRadius: 6, background: STATUS_CFG[s.sub_status]?.bg, color: STATUS_CFG[s.sub_status]?.color, flexShrink: 0 }}>
-                      {STATUS_CFG[s.sub_status]?.label}
+                      {t(STATUS_CFG[s.sub_status]?.labelKey ?? '')}
                     </span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap mb-2">
                     <span style={{ fontSize: 12.5, fontWeight: 700, color: PLAN_CFG[s.plan_code]?.color }}>{s.plan_name}</span>
-                    {s.is_trial && <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>ESSAI</span>}
-                    <span style={{ fontSize: 12, color: T.muted }}>{s.amount_paid_xaf > 0 ? fmtXaf(s.amount_paid_xaf) : 'Gratuit'}</span>
+                    {s.is_trial && <span style={{ fontSize: 9.5, fontWeight: 700, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.12)', color: '#10B981' }}>{t('ad4_subscriptions.trial_badge')}</span>}
+                    <span style={{ fontSize: 12, color: T.muted }}>{s.amount_paid_xaf > 0 ? fmtXaf(s.amount_paid_xaf) : t('ad4_subscriptions.free')}</span>
                   </div>
                   {s.sub_status === 'PENDING' && !s.is_trial && (
                     <div className="flex gap-2">
                       <button onClick={() => handleApprove(s)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold flex-1 justify-center"
                         style={{ background: 'rgba(16,185,129,0.1)', color: '#10B981', border: '1px solid rgba(16,185,129,0.3)' }}>
-                        <CheckCircle size={12} /> Approuver
+                        <CheckCircle size={12} /> {t('ad4_subscriptions.action_approve')}
                       </button>
                       <button onClick={() => handleReject(s)}
                         className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[12px] font-semibold flex-1 justify-center"
                         style={{ background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)' }}>
-                        <XCircle size={12} /> Rejeter
+                        <XCircle size={12} /> {t('ad4_subscriptions.action_reject')}
                       </button>
                     </div>
                   )}
@@ -335,7 +337,7 @@ export default function SubscriptionsPage() {
             {subs.length > pageSize && (
               <div className="flex items-center justify-between px-5 py-3 flex-wrap gap-3" style={{ borderTop: `1px solid ${T.border}` }}>
                 <div className="flex items-center gap-2">
-                  <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+                  <span style={{ fontSize: 12, color: T.muted }}>{t('ad4_subscriptions.rows_label')}</span>
                   {PAGE_SIZES.map(s => (
                     <button key={s} onClick={() => { setPageSize(s); setPage(1); }}
                       className="w-8 h-7 rounded-lg text-[12px] font-semibold"
@@ -345,7 +347,7 @@ export default function SubscriptionsPage() {
                   ))}
                 </div>
                 <p style={{ fontSize: 12, color: T.muted }}>
-                  {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, subs.length)} sur {subs.length}
+                  {t('ad4_subscriptions.pagination_range', { start: (page - 1) * pageSize + 1, end: Math.min(page * pageSize, subs.length), total: subs.length })}
                 </p>
                 <div className="flex items-center gap-1">
                   <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

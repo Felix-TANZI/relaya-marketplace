@@ -2,6 +2,7 @@
 // Performance des livreurs — classement, métriques, tendances
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   TrendingUp, RefreshCw, Star, Award, Package,
   XCircle, Bike, Trophy,
@@ -37,19 +38,19 @@ interface CourierPerf {
 // CONFIG
 // ─────────────────────────────────────────────────────────────────────────────
 
-const VEHICLE_LABELS: Record<string, string> = {
-  MOTORBIKE: '🏍️ Moto',
-  CAR:       '🚗 Voiture',
-  BIKE:      '🚲 Vélo',
-  TRICYCLE:  '🛺 Tricycle',
-  VAN:       '🚐 Fourgon',
+const VEHICLE_LABEL_KEYS: Record<string, string> = {
+  MOTORBIKE: 'ad6_del_performance.vehicle_motorbike',
+  CAR:       'ad6_del_performance.vehicle_car',
+  BIKE:      'ad6_del_performance.vehicle_bike',
+  TRICYCLE:  'ad6_del_performance.vehicle_tricycle',
+  VAN:       'ad6_del_performance.vehicle_van',
 };
 
 const BADGE_CFG = [
-  { min: 95, label: 'Elite',    color: '#C8A000', icon: Trophy   },
-  { min: 80, label: 'Expert',   color: '#8B5CF6', icon: Award    },
-  { min: 60, label: 'Confirmé', color: '#3B82F6', icon: Star     },
-  { min: 0,  label: 'Débutant', color: '#6B7280', icon: Package  },
+  { min: 95, labelKey: 'ad6_del_performance.badge_elite',    color: '#C8A000', icon: Trophy   },
+  { min: 80, labelKey: 'ad6_del_performance.badge_expert',   color: '#8B5CF6', icon: Award    },
+  { min: 60, labelKey: 'ad6_del_performance.badge_confirmed', color: '#3B82F6', icon: Star     },
+  { min: 0,  labelKey: 'ad6_del_performance.badge_beginner', color: '#6B7280', icon: Package  },
 ];
 
 const getBadge = (rate: number) =>
@@ -68,6 +69,7 @@ const authH = () => ({
 
 export default function DeliveriesPerformancePage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -81,11 +83,11 @@ export default function DeliveriesPerformancePage() {
       const data = await http<CourierPerf[]>('/api/auth/admin/couriers/', { headers: authH() });
       setCouriers(Array.isArray(data) ? data : []);
     } catch {
-      toastRef.current('Erreur chargement performance', 'error');
+      toastRef.current(t('ad6_del_performance.toast_error_load'), 'error');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -97,7 +99,7 @@ export default function DeliveriesPerformancePage() {
   // Données graphique livraisons par véhicule
   const byVehicle = Object.entries(
     couriers.reduce<Record<string, number>>((acc, c) => {
-      const k = VEHICLE_LABELS[c.vehicle_type] ?? c.vehicle_type;
+      const k = VEHICLE_LABEL_KEYS[c.vehicle_type] ? t(VEHICLE_LABEL_KEYS[c.vehicle_type]) : c.vehicle_type;
       acc[k] = (acc[k] ?? 0) + c.total_deliveries;
       return acc;
     }, {})
@@ -123,25 +125,25 @@ export default function DeliveriesPerformancePage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Performance Livreurs
+            {t('ad6_del_performance.title')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
-            {ranked.length} livreurs avec activité · {totalDeliveries.toLocaleString('fr-FR')} livraisons au total
+            {t('ad6_del_performance.subtitle', { count: ranked.length, total: totalDeliveries.toLocaleString('fr-FR') })}
           </p>
         </div>
         <button onClick={() => load()}
           style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)', cursor: 'pointer' }}>
-          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Actualiser
+          <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('ad6_del_performance.refresh')}
         </button>
       </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total livraisons',  value: totalDeliveries,              accent: '#8B5CF6', icon: Package   },
-          { label: 'Échouées',          value: totalFailed,                  accent: '#EF4444', icon: XCircle   },
-          { label: 'Taux succès global',value: `${globalSuccessRate}%`,      accent: globalSuccessRate >= 80 ? '#10B981' : '#F59E0B', icon: TrendingUp },
-          { label: 'Gains cumulés',     value: fmtXaf(totalEarnings),        accent: '#10B981', icon: Award     },
+          { label: t('ad6_del_performance.kpi_total_deliveries'),  value: totalDeliveries,              accent: '#8B5CF6', icon: Package   },
+          { label: t('ad6_del_performance.kpi_failed'),          value: totalFailed,                  accent: '#EF4444', icon: XCircle   },
+          { label: t('ad6_del_performance.kpi_global_success_rate'),value: `${globalSuccessRate}%`,      accent: globalSuccessRate >= 80 ? '#10B981' : '#F59E0B', icon: TrendingUp },
+          { label: t('ad6_del_performance.kpi_total_earnings'),     value: fmtXaf(totalEarnings),        accent: '#10B981', icon: Award     },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -163,7 +165,7 @@ export default function DeliveriesPerformancePage() {
 
         {/* Jauge taux succès global */}
         <div className="rounded-2xl p-5 flex flex-col items-center justify-center" style={{ background: T.card, border: `1px solid ${T.border}` }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 16, alignSelf: 'flex-start' }}>Taux succès global</p>
+          <p style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 16, alignSelf: 'flex-start' }}>{t('ad6_del_performance.global_success_rate')}</p>
           <div style={{ position: 'relative', width: 160, height: 80 }}>
             <ResponsiveContainer width="100%" height={160}>
               <RadialBarChart cx="50%" cy="100%" innerRadius="70%" outerRadius="100%"
@@ -175,7 +177,7 @@ export default function DeliveriesPerformancePage() {
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 28, fontWeight: 900, color: gaugeData[0].fill, lineHeight: 1 }}>
                 {globalSuccessRate}%
               </p>
-              <p style={{ fontSize: 11, color: T.muted }}>sur {totalDeliveries + totalFailed} courses</p>
+              <p style={{ fontSize: 11, color: T.muted }}>{t('ad6_del_performance.out_of_rides', { count: totalDeliveries + totalFailed })}</p>
             </div>
           </div>
         </div>
@@ -184,11 +186,11 @@ export default function DeliveriesPerformancePage() {
         <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
           <div className="flex items-center gap-2 mb-4">
             <Bike size={14} style={{ color: T.red }} />
-            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Livraisons par véhicule</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_del_performance.deliveries_by_vehicle')}</span>
           </div>
           {byVehicle.length === 0 ? (
             <div className="flex items-center justify-center" style={{ height: 130 }}>
-              <p style={{ fontSize: 13, color: T.muted }}>Aucune donnée</p>
+              <p style={{ fontSize: 13, color: T.muted }}>{t('ad6_del_performance.no_data')}</p>
             </div>
           ) : (
             <ResponsiveContainer width="100%" height={130}>
@@ -197,7 +199,7 @@ export default function DeliveriesPerformancePage() {
                 <YAxis tick={{ fontSize: 11, fill: T.muted }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12 }}
-                  formatter={(v: number | undefined) => [v ?? 0, 'livraisons']} />
+                  formatter={(v: number | undefined) => [v ?? 0, t('ad6_del_performance.deliveries_unit')]} />
                 <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {byVehicle.map((_, i) => (
                     <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -213,8 +215,8 @@ export default function DeliveriesPerformancePage() {
       <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
         <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
           <Trophy size={14} style={{ color: T.red }} />
-          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Classement par performance</span>
-          <span style={{ fontSize: 11, color: T.muted }}>({ranked.length} livreurs avec activité)</span>
+          <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_del_performance.ranking_title')}</span>
+          <span style={{ fontSize: 11, color: T.muted }}>({t('ad6_del_performance.active_couriers_count', { count: ranked.length })})</span>
         </div>
 
         {loading ? (
@@ -224,14 +226,14 @@ export default function DeliveriesPerformancePage() {
         ) : ranked.length === 0 ? (
           <div className="flex flex-col items-center py-12 gap-2">
             <TrendingUp size={32} style={{ color: T.muted }} />
-            <p style={{ fontSize: 14, color: T.muted }}>Aucune livraison enregistrée</p>
+            <p style={{ fontSize: 14, color: T.muted }}>{t('ad6_del_performance.no_delivery_recorded')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full" style={{ borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ background: T.cardAlt, borderBottom: `1px solid ${T.border}` }}>
-                  {['#', 'Livreur', 'Badge', 'Ville', 'Véhicule', 'Livraisons', 'Échoués', 'Taux succès', 'Gains estimés'].map((h, i) => (
+                  {['#', t('ad6_del_performance.th_courier'), t('ad6_del_performance.th_badge'), t('ad6_del_performance.th_city'), t('ad6_del_performance.th_vehicle'), t('ad6_del_performance.th_deliveries'), t('ad6_del_performance.th_failed'), t('ad6_del_performance.th_success_rate'), t('ad6_del_performance.th_estimated_earnings')].map((h, i) => (
                     <th key={i} style={{ padding: '10px 16px', textAlign: 'left', fontSize: 10.5, fontWeight: 700, color: T.muted, textTransform: 'uppercase', letterSpacing: '.04em', whiteSpace: 'nowrap' }}>
                       {h}
                     </th>
@@ -272,13 +274,13 @@ export default function DeliveriesPerformancePage() {
                       <td style={{ padding: '12px 16px' }}>
                         <div className="flex items-center gap-1.5">
                           <BadgeIcon size={13} style={{ color: badge.color }} />
-                          <span style={{ fontSize: 12, fontWeight: 700, color: badge.color }}>{badge.label}</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: badge.color }}>{t(badge.labelKey)}</span>
                         </div>
                       </td>
                       {/* Ville */}
                       <td style={{ padding: '12px 16px', fontSize: 12.5, color: T.text }}>{c.city || '—'}</td>
                       {/* Véhicule */}
-                      <td style={{ padding: '12px 16px', fontSize: 12, color: T.muted }}>{VEHICLE_LABELS[c.vehicle_type] ?? c.vehicle_type}</td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: T.muted }}>{VEHICLE_LABEL_KEYS[c.vehicle_type] ? t(VEHICLE_LABEL_KEYS[c.vehicle_type]) : c.vehicle_type}</td>
                       {/* Livraisons */}
                       <td style={{ padding: '12px 16px' }}>
                         <span style={{ fontSize: 14, fontWeight: 800, color: T.text }}>{c.total_deliveries}</span>
@@ -318,7 +320,7 @@ export default function DeliveriesPerformancePage() {
           <div className="flex items-center gap-2 px-5 py-3" style={{ borderTop: `1px solid ${T.border}`, background: T.cardAlt }}>
             <Package size={12} style={{ color: T.muted }} />
             <p style={{ fontSize: 12, color: T.muted }}>
-              {couriers.filter(c => c.total_deliveries === 0).length} livreur{couriers.filter(c => c.total_deliveries === 0).length !== 1 ? 's' : ''} sans livraison enregistrée (non affiché{couriers.filter(c => c.total_deliveries === 0).length !== 1 ? 's' : ''} dans le classement)
+              {t(couriers.filter(c => c.total_deliveries === 0).length !== 1 ? 'ad6_del_performance.no_activity_note_plural' : 'ad6_del_performance.no_activity_note', { count: couriers.filter(c => c.total_deliveries === 0).length })}
             </p>
           </div>
         )}

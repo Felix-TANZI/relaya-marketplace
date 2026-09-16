@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, LoaderCircle, Phone, ShieldCheck, Smartphone, WalletCards } from "lucide-react";
 import { http } from "@/services/api/http";
 import { CAMEROON, detectOperator, formatNational, isValidNationalNumber, toE164, toNationalNumber } from "@/lib/phone";
@@ -19,25 +20,12 @@ type PayoutAccount = {
   dev_code?: string;
 };
 
-const ROLE_LABEL: Record<PayoutOwnerRole, string> = {
-  VENDOR: "vendeur",
-  COURIER: "livreur",
-  DELIVERY_ORGANIZATION: "organisation de livraison",
-  RELAY_POINT: "point relais",
-};
-
 const OPERATOR_LABEL: Record<string, string> = {
   MTN_MOMO: "MTN MoMo",
   ORANGE_MONEY: "Orange Money",
   MTN: "MTN MoMo",
   ORANGE: "Orange Money",
 };
-
-function statusLabel(status: PayoutAccount["status"]) {
-  if (status === "VERIFIED") return "Vérifié";
-  if (status === "DISABLED") return "Désactivé";
-  return "Code requis";
-}
 
 export function PayoutAccountVerificationCard({
   ownerRole,
@@ -48,6 +36,20 @@ export function PayoutAccountVerificationCard({
   accent?: string;
   surfaceClassName?: string;
 }) {
+  const { t } = useTranslation();
+  const ROLE_LABEL: Record<PayoutOwnerRole, string> = {
+    VENDOR: t("misc1_payout_verification.role_vendor"),
+    COURIER: t("misc1_payout_verification.role_courier"),
+    DELIVERY_ORGANIZATION: t("misc1_payout_verification.role_delivery_organization"),
+    RELAY_POINT: t("misc1_payout_verification.role_relay_point"),
+  };
+
+  function statusLabel(status: PayoutAccount["status"]) {
+    if (status === "VERIFIED") return t("misc1_payout_verification.status_verified");
+    if (status === "DISABLED") return t("misc1_payout_verification.status_disabled");
+    return t("misc1_payout_verification.status_code_required");
+  }
+
   const [accounts, setAccounts] = useState<PayoutAccount[]>([]);
   const [phone, setPhone] = useState("");
   const [label, setLabel] = useState("");
@@ -76,7 +78,7 @@ export function PayoutAccountVerificationCard({
       setAccounts(roleAccounts);
       setPendingAccount(roleAccounts.find((account) => account.status === "PENDING_VERIFICATION") ?? null);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Impossible de charger les comptes de versement.");
+      setMessage(error instanceof Error ? error.message : t("misc1_payout_verification.load_error"));
     } finally {
       setLoading(false);
     }
@@ -89,7 +91,7 @@ export function PayoutAccountVerificationCard({
 
   const requestCode = async () => {
     if (!isValidNationalNumber(national, CAMEROON)) {
-      setMessage("Entrez un numéro camerounais valide avant de demander le code.");
+      setMessage(t("misc1_payout_verification.invalid_number_error"));
       return;
     }
     setSaving(true);
@@ -100,7 +102,7 @@ export function PayoutAccountVerificationCard({
         body: JSON.stringify({
           owner_role: ownerRole,
           phone: toE164(national),
-          label: label.trim() || `Compte ${roleLabel}`,
+          label: label.trim() || t("misc1_payout_verification.default_label", { role: roleLabel }),
           is_primary: true,
         }),
       });
@@ -108,10 +110,10 @@ export function PayoutAccountVerificationCard({
       setAccounts((current) => [account, ...current.filter((item) => item.id !== account.id)]);
       setCode(account.dev_code ?? "");
       setMessage(account.dev_code
-        ? `Code envoyé. En local/test, code: ${account.dev_code}`
-        : "Code envoyé. Saisissez le code reçu pour activer ce numéro.");
+        ? t("misc1_payout_verification.code_sent_dev", { code: account.dev_code })
+        : t("misc1_payout_verification.code_sent"));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Impossible d'envoyer le code.");
+      setMessage(error instanceof Error ? error.message : t("misc1_payout_verification.send_code_error"));
     } finally {
       setSaving(false);
     }
@@ -119,7 +121,7 @@ export function PayoutAccountVerificationCard({
 
   const verifyCode = async () => {
     if (!pendingAccount || code.trim().length < 4) {
-      setMessage("Saisissez le code reçu avant de valider.");
+      setMessage(t("misc1_payout_verification.enter_code_error"));
       return;
     }
     setVerifying(true);
@@ -133,9 +135,9 @@ export function PayoutAccountVerificationCard({
       setPendingAccount(null);
       setReplacing(false);
       setCode("");
-      setMessage("Numéro vérifié. BelivaY peut maintenant l'utiliser pour les versements.");
+      setMessage(t("misc1_payout_verification.number_verified"));
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Code invalide ou expiré.");
+      setMessage(error instanceof Error ? error.message : t("misc1_payout_verification.invalid_or_expired_code"));
     } finally {
       setVerifying(false);
     }
@@ -147,15 +149,15 @@ export function PayoutAccountVerificationCard({
         <div>
           <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em]" style={{ color: accent }}>
             <WalletCards size={15} />
-            Versements BelivaY
+            {t("misc1_payout_verification.header_kicker")}
           </div>
-          <h3 className="mt-2 text-lg font-black">Compte d'encaissement vérifié</h3>
+          <h3 className="mt-2 text-lg font-black">{t("misc1_payout_verification.header_title")}</h3>
           <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300">
-            Avant qu'un {roleLabel} puisse recevoir l'argent envoyé par BelivaY, le numéro Mobile Money doit être confirmé par code.
+            {t("misc1_payout_verification.header_description", { role: roleLabel })}
           </p>
         </div>
         <div className="rounded-full px-3 py-1 text-xs font-black" style={{ background: `${accent}18`, color: accent }}>
-          {loading ? "Chargement" : verifiedAccount ? "Actif" : "À vérifier"}
+          {loading ? t("misc1_payout_verification.status_loading") : verifiedAccount ? t("misc1_payout_verification.status_active") : t("misc1_payout_verification.status_to_verify")}
         </div>
       </div>
 
@@ -168,7 +170,7 @@ export function PayoutAccountVerificationCard({
                 {OPERATOR_LABEL[verifiedAccount.operator] ?? verifiedAccount.operator} · {verifiedAccount.masked_phone}
               </p>
               <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-200">
-                {statusLabel(verifiedAccount.status)} · Compte principal
+                {statusLabel(verifiedAccount.status)} · {t("misc1_payout_verification.primary_account")}
               </p>
             </div>
           </div>
@@ -179,11 +181,11 @@ export function PayoutAccountVerificationCard({
               setReplacing(true);
               setPhone("");
               setLabel("");
-              setMessage("Ajoutez un nouveau numéro si vous souhaitez remplacer le compte actuel.");
+              setMessage(t("misc1_payout_verification.replace_hint"));
             }}
             className="rounded-xl border border-emerald-200 bg-white px-3 py-2 text-xs font-black text-emerald-700 dark:border-emerald-800 dark:bg-slate-950 dark:text-emerald-200"
           >
-            Remplacer
+            {t("misc1_payout_verification.replace_button")}
           </button>
         </div>
       ) : null}
@@ -192,7 +194,7 @@ export function PayoutAccountVerificationCard({
         <div className="mt-5 grid gap-4 lg:grid-cols-[1fr_0.8fr]">
           <div className="space-y-3">
             <label className="block text-xs font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
-              Numéro Mobile Money à vérifier
+              {t("misc1_payout_verification.phone_label")}
             </label>
             <div className="relative">
               <span className="pointer-events-none absolute left-3 top-1/2 flex -translate-y-1/2 items-center gap-1 text-sm font-black text-slate-500">
@@ -206,14 +208,14 @@ export function PayoutAccountVerificationCard({
                 style={{ borderColor: isPhoneValid ? "#E2E8F0" : "#DC2626" }}
               />
               <span className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-slate-200 px-2 py-1 text-[11px] font-black text-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {operator?.name ?? "Opérateur"}
+                {operator?.name ?? t("misc1_payout_verification.operator_placeholder")}
               </span>
             </div>
-            {!isPhoneValid ? <p className="text-xs font-semibold text-red-600">Numéro camerounais invalide ou opérateur non reconnu.</p> : null}
+            {!isPhoneValid ? <p className="text-xs font-semibold text-red-600">{t("misc1_payout_verification.invalid_number_hint")}</p> : null}
             <input
               value={label}
               onChange={(event) => setLabel(event.target.value)}
-              placeholder={`Ex: Versement ${roleLabel}`}
+              placeholder={t("misc1_payout_verification.label_placeholder", { role: roleLabel })}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-semibold outline-none dark:border-slate-800 dark:bg-slate-950"
             />
             <button
@@ -224,17 +226,17 @@ export function PayoutAccountVerificationCard({
               style={{ background: accent }}
             >
               {saving ? <LoaderCircle size={16} className="animate-spin" /> : <Smartphone size={16} />}
-              Demander le code
+              {t("misc1_payout_verification.request_code_button")}
             </button>
           </div>
 
           <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-950">
             <div className="flex items-center gap-2 text-sm font-black">
               <ShieldCheck size={17} style={{ color: accent }} />
-              Vérification du code
+              {t("misc1_payout_verification.code_verification_heading")}
             </div>
             <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-300">
-              Le numéro reste bloqué tant que le code n'est pas confirmé.
+              {t("misc1_payout_verification.code_verification_note")}
             </p>
             <input
               value={code}
@@ -251,7 +253,7 @@ export function PayoutAccountVerificationCard({
               style={{ background: accent }}
             >
               {verifying ? <LoaderCircle size={16} className="animate-spin" /> : <Phone size={16} />}
-              Valider le numéro
+              {t("misc1_payout_verification.validate_number_button")}
             </button>
           </div>
         </div>

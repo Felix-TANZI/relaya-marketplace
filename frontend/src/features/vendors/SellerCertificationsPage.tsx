@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { Award, RefreshCw, Star, TrendingUp, ShoppingBag, Clock, Shield, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { vendorsApi, type CertificationData, type CertificationTierInfo } from '@/services/api/vendors';
 import { useToast } from '@/context/ToastContext';
 
@@ -37,6 +38,7 @@ const HOW_ICONS: Record<string, React.ComponentType<React.ComponentProps<typeof 
 };
 
 function TierCard({ tier, isCurrent }: { tier: CertificationTierInfo; isCurrent: boolean }) {
+  const { t } = useTranslation();
   const colors = TIER_COLORS[tier.code] || TIER_COLORS.BRONZE;
   return (
     <div className="rounded-2xl p-5 space-y-3 transition-all"
@@ -54,19 +56,19 @@ function TierCard({ tier, isCurrent }: { tier: CertificationTierInfo; isCurrent:
               {tier.label}
             </p>
             <p className="text-[11px]" style={{ color: T.muted }}>
-              {tier.threshold === 0 ? 'Dès le départ' : `À partir de ${tier.threshold} pts`}
+              {tier.threshold === 0 ? t('sl2_certifications.from_the_start') : t('sl2_certifications.from_points', { points: tier.threshold })}
             </p>
           </div>
         </div>
         {isCurrent && (
           <span className="text-[11px] font-bold px-2.5 py-1 rounded-full"
             style={{ background: colors.bg, color: colors.text }}>
-            Niveau actuel
+            {t('sl2_certifications.current_level')}
           </span>
         )}
         {!tier.is_unlocked && (
           <span className="text-[11px] px-2.5 py-1 rounded-full" style={{ background: T.creamAlt, color: T.muted }}>
-            Verrouillé
+            {t('sl2_certifications.locked')}
           </span>
         )}
       </div>
@@ -83,15 +85,16 @@ function TierCard({ tier, isCurrent }: { tier: CertificationTierInfo; isCurrent:
 }
 
 export default function SellerCertificationsPage() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [data,    setData]    = useState<CertificationData | null>(null);
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(async () => {
     try { setLoading(true); setData(await vendorsApi.getCertifications()); }
-    catch { showToast('Erreur de chargement', 'error'); }
+    catch { showToast(t('sl2_certifications.loading_error'), 'error'); }
     finally { setLoading(false); }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -113,16 +116,16 @@ export default function SellerCertificationsPage() {
         <div>
           <h1 className="flex items-center gap-2 font-black text-[22px]"
             style={{ color: T.text }}>
-            <Award size={20} style={{ color: T.orange }}/> Certifications BelivaY
+            <Award size={20} style={{ color: T.orange }}/> {t('sl2_certifications.page_title')}
           </h1>
           <p className="text-[13px] mt-0.5" style={{ color: T.muted }}>
-            Progressez pour débloquer visibilité et avantages
+            {t('sl2_certifications.page_subtitle')}
           </p>
         </div>
         <button type="button" onClick={load}
           className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-[12.5px] font-semibold"
           style={{ background: T.cream, border: `1px solid ${T.border}`, color: T.muted }}>
-          <RefreshCw size={13}/> Actualiser
+          <RefreshCw size={13}/> {t('sl2_certifications.refresh')}
         </button>
       </div>
 
@@ -137,13 +140,13 @@ export default function SellerCertificationsPage() {
                 {data.current_tier_label}
               </p>
               <p className="text-[13px]" style={{ color: T.muted }}>
-                {data.total_points} points accumulés
+                {t('sl2_certifications.points_accumulated', { count: data.total_points })}
               </p>
             </div>
           </div>
           {data.next_tier && (
             <div className="flex items-center gap-2 text-[12.5px]" style={{ color: T.muted }}>
-              <span>{data.points_remaining} pts pour atteindre</span>
+              <span>{t('sl2_certifications.points_to_reach', { count: data.points_remaining })}</span>
               <span className="text-xl">{TIER_ICONS[data.next_tier]}</span>
               <span className="font-bold" style={{ color: TIER_COLORS[data.next_tier]?.text }}>
                 {data.next_tier_label}
@@ -163,9 +166,9 @@ export default function SellerCertificationsPage() {
                 }}/>
             </div>
             <div className="flex justify-between mt-1.5 text-[11px]" style={{ color: T.mutedL }}>
-              <span>{data.total_points} pts</span>
+              <span>{t('sl2_certifications.points_short', { count: data.total_points })}</span>
               <span className="font-bold" style={{ color: tierColors.text }}>{data.progress_pct}%</span>
-              <span>{data.next_threshold} pts</span>
+              <span>{t('sl2_certifications.points_short', { count: data.next_threshold })}</span>
             </div>
           </div>
         )}
@@ -176,7 +179,7 @@ export default function SellerCertificationsPage() {
         style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.cream, borderBottom: `1px solid ${T.border}` }}>
           <p className="font-bold text-[14px]" style={{ color: T.text }}>
-            Détail de vos points
+            {t('sl2_certifications.points_detail')}
           </p>
         </div>
         <div className="divide-y" style={{ borderColor: T.border }}>
@@ -184,13 +187,13 @@ export default function SellerCertificationsPage() {
             <div key={key} className="flex items-center justify-between px-5 py-3.5">
               <p className="text-[12.5px]" style={{ color: T.muted }}>{val.detail}</p>
               <span className="font-bold text-[13px]" style={{ color: val.points > 0 ? T.green : T.mutedL }}>
-                +{val.points} pts
+                {t('sl2_certifications.points_gain', { count: val.points })}
               </span>
             </div>
           ))}
           <div className="flex items-center justify-between px-5 py-3.5" style={{ background: T.orangeL }}>
-            <p className="font-bold text-[13.5px]" style={{ color: T.text }}>Total</p>
-            <span className="font-black text-[16px]" style={{ color: T.orange }}>{data.total_points} pts</span>
+            <p className="font-bold text-[13.5px]" style={{ color: T.text }}>{t('sl2_certifications.total')}</p>
+            <span className="font-black text-[16px]" style={{ color: T.orange }}>{t('sl2_certifications.points_short', { count: data.total_points })}</span>
           </div>
         </div>
       </div>
@@ -198,7 +201,7 @@ export default function SellerCertificationsPage() {
       {/* GRILLE DES TIERS */}
       <div>
         <h2 className="font-bold text-[15px] mb-4" style={{ color: T.text }}>
-          Niveaux de certification
+          {t('sl2_certifications.certification_levels')}
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {data.tiers.map(tier => (
@@ -212,7 +215,7 @@ export default function SellerCertificationsPage() {
         style={{ background: T.white, border: `1px solid ${T.border}` }}>
         <div className="px-5 py-4" style={{ background: T.orangeL, borderBottom: `1px solid ${T.orangeB}` }}>
           <p className="font-bold text-[14px]" style={{ color: T.orange }}>
-            Comment gagner des points ?
+            {t('sl2_certifications.how_to_earn_title')}
           </p>
         </div>
         <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-3">

@@ -1,6 +1,7 @@
 // frontend/src/features/vendors/orderUtils.ts
 // Utilitaires pour l'export CSV et la génération de factures HTML imprimables.
 
+import type { TFunction } from 'i18next';
 import type { VendorOrder } from '@/services/api/vendors';
 
 // ─────────────────────────────────────────────
@@ -19,38 +20,47 @@ export function orderRef(id: number): string {
   return `BLV-${String(id).padStart(5, '0')}`;
 }
 
-const FULFILL_LABELS: Record<string, string> = {
-  PENDING:    'Confirmée',
-  PROCESSING: 'En préparation',
-  SHIPPED:    'Prête',
-  DELIVERED:  'Livrée',
-  CANCELLED:  'Annulée',
+const FULFILL_LABEL_KEYS: Record<string, string> = {
+  PENDING:    'cl7_order_utils.fulfillment_pending',
+  PROCESSING: 'cl7_order_utils.fulfillment_processing',
+  SHIPPED:    'cl7_order_utils.fulfillment_shipped',
+  DELIVERED:  'cl7_order_utils.fulfillment_delivered',
+  CANCELLED:  'cl7_order_utils.fulfillment_cancelled',
 };
-const PAYMENT_LABELS: Record<string, string> = {
-  PENDING:  'En attente',
-  PAID:     'Payée',
-  FAILED:   'Échouée',
-  REFUNDED: 'Remboursée',
+const PAYMENT_LABEL_KEYS: Record<string, string> = {
+  PENDING:  'cl7_order_utils.payment_pending',
+  PAID:     'cl7_order_utils.payment_paid',
+  FAILED:   'cl7_order_utils.payment_failed',
+  REFUNDED: 'cl7_order_utils.payment_refunded',
 };
+
+function fulfillLabel(status: string, t: TFunction): string {
+  const key = FULFILL_LABEL_KEYS[status];
+  return key ? t(key) : status;
+}
+function paymentLabel(status: string, t: TFunction): string {
+  const key = PAYMENT_LABEL_KEYS[status];
+  return key ? t(key) : status;
+}
 
 // ─────────────────────────────────────────────
 // EXPORT CSV
 // ─────────────────────────────────────────────
 
-export function exportOrdersCSV(orders: VendorOrder[], shopName: string): void {
+export function exportOrdersCSV(orders: VendorOrder[], shopName: string, t: TFunction): void {
   const header = [
-    'Référence',
-    'Date',
-    'Client',
-    'Téléphone',
-    'Ville',
-    'Adresse',
-    'Statut livraison',
-    'Statut paiement',
-    'Articles',
-    'Sous-total (FCFA)',
-    'Livraison (FCFA)',
-    'Total vendeur (FCFA)',
+    t('cl7_order_utils.csv_col_reference'),
+    t('cl7_order_utils.csv_col_date'),
+    t('cl7_order_utils.csv_col_customer'),
+    t('cl7_order_utils.csv_col_phone'),
+    t('cl7_order_utils.csv_col_city'),
+    t('cl7_order_utils.csv_col_address'),
+    t('cl7_order_utils.csv_col_delivery_status'),
+    t('cl7_order_utils.csv_col_payment_status'),
+    t('cl7_order_utils.csv_col_items'),
+    `${t('cl7_order_utils.csv_col_subtotal')} (FCFA)`,
+    `${t('cl7_order_utils.csv_col_delivery_fee')} (FCFA)`,
+    `${t('cl7_order_utils.csv_col_vendor_total')} (FCFA)`,
   ];
 
   const rows = orders.map(o => {
@@ -65,8 +75,8 @@ export function exportOrdersCSV(orders: VendorOrder[], shopName: string): void {
       o.customer_phone ?? '',
       o.city,
       o.address ?? '',
-      FULFILL_LABELS[o.fulfillment_status] ?? o.fulfillment_status,
-      PAYMENT_LABELS[o.payment_status] ?? o.payment_status,
+      fulfillLabel(o.fulfillment_status, t),
+      paymentLabel(o.payment_status, t),
       articles,
       Math.round(o.subtotal_xaf ?? 0),
       Math.round(o.delivery_fee_xaf ?? 0),
@@ -82,7 +92,7 @@ export function exportOrdersCSV(orders: VendorOrder[], shopName: string): void {
   };
 
   const csv = [
-    `# Commandes — ${shopName} — ${new Date().toLocaleDateString('fr-FR')}`,
+    `# ${t('cl7_order_utils.csv_title_prefix')} — ${shopName} — ${new Date().toLocaleDateString('fr-FR')}`,
     header.map(escape).join(','),
     ...rows.map(r => r.map(escape).join(',')),
   ].join('\n');
@@ -101,7 +111,7 @@ export function exportOrdersCSV(orders: VendorOrder[], shopName: string): void {
 // print-color-adjust: exact force les couleurs en PDF/impression.
 // ─────────────────────────────────────────────
 
-export function openInvoice(orders: VendorOrder[], shopName: string): void {
+export function openInvoice(orders: VendorOrder[], shopName: string, t: TFunction): void {
 
   // ── Génère le HTML d'une facture individuelle ──
   const buildInvoice = (o: VendorOrder, isLast: boolean): string => {
@@ -121,12 +131,12 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
       </tr>`).join('');
 
     const statusPayHtml = isPaid
-      ? `<span class="badge badge-green">Paiement : ${PAYMENT_LABELS[o.payment_status] ?? o.payment_status}</span>`
-      : `<span class="badge badge-amber">Paiement : ${PAYMENT_LABELS[o.payment_status] ?? o.payment_status}</span>`;
+      ? `<span class="badge badge-green">${t('cl7_order_utils.invoice_label_payment')} : ${paymentLabel(o.payment_status, t)}</span>`
+      : `<span class="badge badge-amber">${t('cl7_order_utils.invoice_label_payment')} : ${paymentLabel(o.payment_status, t)}</span>`;
 
     const statusFulHtml = isDone
-      ? `<span class="badge badge-green">Livraison : ${FULFILL_LABELS[o.fulfillment_status] ?? o.fulfillment_status}</span>`
-      : `<span class="badge badge-orange">Livraison : ${FULFILL_LABELS[o.fulfillment_status] ?? o.fulfillment_status}</span>`;
+      ? `<span class="badge badge-green">${t('cl7_order_utils.invoice_label_delivery')} : ${fulfillLabel(o.fulfillment_status, t)}</span>`
+      : `<span class="badge badge-orange">${t('cl7_order_utils.invoice_label_delivery')} : ${fulfillLabel(o.fulfillment_status, t)}</span>`;
 
     return `
     <div class="invoice${isLast ? '' : ' page-break'}">
@@ -143,9 +153,9 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
         </div>
         <!-- Droite : facture info -->
         <div class="header-info">
-          <div class="facture-label">FACTURE</div>
+          <div class="facture-label">${t('cl7_order_utils.invoice_label')}</div>
           <div class="facture-ref">${orderRef(o.id)}</div>
-          <div class="facture-date">Date : ${fmtDate(o.created_at)}</div>
+          <div class="facture-date">${t('cl7_order_utils.invoice_date_prefix')} : ${fmtDate(o.created_at)}</div>
         </div>
       </div>
 
@@ -155,14 +165,14 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
       <!-- ══ PARTIES ══ -->
       <div class="parties">
         <div class="party">
-          <div class="party-label">VENDEUR</div>
+          <div class="party-label">${t('cl7_order_utils.invoice_vendor_label')}</div>
           <div class="party-name">${shopName}</div>
           <div class="party-detail">BelivaY Marketplace</div>
           <div class="party-detail">belivay.com</div>
         </div>
         <div class="party-divider"></div>
         <div class="party">
-          <div class="party-label">CLIENT</div>
+          <div class="party-label">${t('cl7_order_utils.invoice_client_label')}</div>
           <div class="party-name">${o.customer_name}</div>
           ${o.customer_phone ? `<div class="party-detail">${o.customer_phone}</div>` : ''}
           <div class="party-detail">${o.city}${o.address ? `, ${o.address}` : ''}</div>
@@ -179,10 +189,10 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
       <table class="table">
         <thead>
           <tr>
-            <th class="th-left">PRODUIT</th>
-            <th class="th-center">QTÉ</th>
-            <th class="th-right">PRIX UNIT.</th>
-            <th class="th-right">TOTAL</th>
+            <th class="th-left">${t('cl7_order_utils.invoice_col_product')}</th>
+            <th class="th-center">${t('cl7_order_utils.invoice_col_qty')}</th>
+            <th class="th-right">${t('cl7_order_utils.invoice_col_unit_price')}</th>
+            <th class="th-right">${t('cl7_order_utils.invoice_col_total')}</th>
           </tr>
         </thead>
         <tbody>${rowsHtml}</tbody>
@@ -191,27 +201,27 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
       <!-- ══ TOTAUX ══ -->
       <div class="totals">
         <div class="total-row">
-          <span class="total-label">Sous-total</span>
+          <span class="total-label">${t('cl7_order_utils.invoice_subtotal_label')}</span>
           <span class="total-val">${Math.round(subtotal).toLocaleString('fr-FR')} FCFA</span>
         </div>
         <div class="total-row">
-          <span class="total-label">Frais de livraison</span>
-          <span class="total-val">${delivery === 0 ? 'Offerts' : Math.round(delivery).toLocaleString('fr-FR') + ' FCFA'}</span>
+          <span class="total-label">${t('cl7_order_utils.invoice_delivery_fee_label')}</span>
+          <span class="total-val">${delivery === 0 ? t('cl7_order_utils.invoice_free_label') : Math.round(delivery).toLocaleString('fr-FR') + ' FCFA'}</span>
         </div>
         <div class="total-grand">
-          <span class="grand-label">TOTAL</span>
+          <span class="grand-label">${t('cl7_order_utils.invoice_grand_total_label')}</span>
           <span class="grand-val">${Math.round(total).toLocaleString('fr-FR')} FCFA</span>
         </div>
       </div>
 
       <!-- ══ NOTE CLIENT ══ -->
-      ${o.note ? `<div class="note"><strong>Note client :</strong> ${o.note}</div>` : ''}
+      ${o.note ? `<div class="note"><strong>${t('cl7_order_utils.invoice_customer_note_label')} :</strong> ${o.note}</div>` : ''}
 
       <!-- ══ PIED DE PAGE ══ -->
       <div class="footer">
-        <span>Merci pour votre commande sur BelivaY !</span>
+        <span>${t('cl7_order_utils.invoice_thank_you')}</span>
         <span>belivay.com · support@belivay.cm</span>
-        <span>Document généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>${t('cl7_order_utils.invoice_generated_on', { date: new Date().toLocaleDateString('fr-FR'), time: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) })}</span>
       </div>
     </div>`;
   };
@@ -222,7 +232,7 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>Factures — ${shopName}</title>
+  <title>${t('cl7_order_utils.invoices_title_prefix')} — ${shopName}</title>
   <style>
     /* ── RESET ── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -531,12 +541,12 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
   <div class="print-bar">
     <span class="print-bar-title">
       ${orders.length === 1
-        ? `Facture — ${orderRef(orders[0].id)} · ${shopName}`
-        : `${orders.length} factures · ${shopName}`}
+        ? `${t('cl7_order_utils.invoice_single_title', { ref: orderRef(orders[0].id), shopName })}`
+        : `${t('cl7_order_utils.invoice_multiple_title', { count: orders.length, shopName })}`}
     </span>
     <div>
-      <button class="btn-print" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
-      <button class="btn-close" onclick="window.close()">Fermer</button>
+      <button class="btn-print" onclick="window.print()">${t('cl7_order_utils.print_button')}</button>
+      <button class="btn-close" onclick="window.close()">${t('cl7_order_utils.close_button')}</button>
     </div>
   </div>
 
@@ -571,14 +581,14 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
   const title = document.createElement('span');
   title.style.cssText = 'color:white;font-size:13px;font-weight:600;font-family:inherit;';
   title.textContent = orders.length === 1
-    ? `Facture — ${orderRef(orders[0].id)} · ${shopName}`
-    : `${orders.length} factures · ${shopName}`;
+    ? t('cl7_order_utils.invoice_single_title', { ref: orderRef(orders[0].id), shopName })
+    : t('cl7_order_utils.invoice_multiple_title', { count: orders.length, shopName });
 
   const btnGroup = document.createElement('div');
   btnGroup.style.cssText = 'display:flex;gap:8px;';
 
   const btnPrint = document.createElement('button');
-  btnPrint.textContent = 'Imprimer / Enregistrer en PDF';
+  btnPrint.textContent = t('cl7_order_utils.print_button');
   btnPrint.style.cssText = [
     'background:#F47920', 'color:white', 'border:none',
     'padding:9px 22px', 'border-radius:10px',
@@ -587,7 +597,7 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
   ].join(';');
 
   const btnClose = document.createElement('button');
-  btnClose.textContent = 'Fermer';
+  btnClose.textContent = t('cl7_order_utils.close_button');
   btnClose.style.cssText = [
     'background:transparent', 'color:rgba(255,255,255,0.65)',
     'border:1px solid rgba(255,255,255,0.25)',
@@ -604,7 +614,7 @@ export function openInvoice(orders: VendorOrder[], shopName: string): void {
   // iframe pour le contenu de la facture
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'flex:1;width:100%;border:none;background:#EBEBEB;';
-  iframe.setAttribute('title', 'Facture BelivaY');
+  iframe.setAttribute('title', t('cl7_order_utils.iframe_title'));
 
   // Assembler
   overlay.appendChild(bar);

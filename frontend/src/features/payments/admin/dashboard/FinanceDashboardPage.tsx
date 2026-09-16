@@ -10,6 +10,7 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { useFinanceDashboard } from '../../hooks/useFinanceDashboard';
 import EmptyState from '../../shared/EmptyState';
@@ -66,13 +67,14 @@ function Point({ color, children }: {
 export default function FinanceDashboardPage({
   basePath = '/admin/finance',
 }: FinanceDashboardPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { data, loading, error, reload } = useFinanceDashboard();
 
   if (loading) {
     return (
       <div style={{ padding: '3rem', textAlign: 'center' }}>
-        <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+        <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_dashboard.loading')}</span>
       </div>
     );
   }
@@ -81,8 +83,8 @@ export default function FinanceDashboardPage({
     return (
       <EmptyState
         icon="alert-circle"
-        title="Impossible d'afficher le centre financier"
-        description={error ?? 'Réessayez dans un instant.'}
+        title={t('pm1_dashboard.error_title')}
+        description={error ?? t('pm1_dashboard.error_fallback')}
       />
     );
   }
@@ -93,47 +95,52 @@ export default function FinanceDashboardPage({
 
   const navigation: NavEntry[] = [
     {
-      icon: 'credit-card', label: 'Paiements', path: '/intents',
-      count: `${activity.intents_total} sur 7 j`,
+      icon: 'credit-card', label: t('pm1_dashboard.nav_payments'), path: '/intents',
+      count: t('pm1_dashboard.nav_count_last_7d', { count: activity.intents_total }),
     },
     {
-      icon: 'lock', label: 'Séquestres', path: '/escrow',
-      count: `${Object.values(data.escrow.by_status)
-        .reduce((somme, v) => somme + v.count, 0)} au total`,
+      icon: 'lock', label: t('pm1_dashboard.nav_escrows'), path: '/escrow',
+      count: t('pm1_dashboard.nav_count_total', {
+        count: Object.values(data.escrow.by_status)
+          .reduce((somme, v) => somme + v.count, 0),
+      }),
     },
     {
-      icon: 'send', label: 'Versements', path: '/payouts',
+      icon: 'send', label: t('pm1_dashboard.nav_payouts'), path: '/payouts',
       count: settlements.awaiting_approval > 0
-        ? `${settlements.awaiting_approval} à approuver`
+        ? t('pm1_dashboard.nav_count_to_approve', { count: settlements.awaiting_approval })
         : '—',
       urgent: settlements.awaiting_approval > 0,
     },
     {
-      icon: 'arrow-back-up', label: 'Remboursements', path: '/refunds',
+      icon: 'arrow-back-up', label: t('pm1_dashboard.nav_refunds'), path: '/refunds',
       count: '—',
     },
     {
-      icon: 'adjustments', label: 'Ajustements', path: '/adjustments',
+      icon: 'adjustments', label: t('pm1_dashboard.nav_adjustments'), path: '/adjustments',
       count: '—',
     },
     {
-      icon: 'scale', label: 'Réconciliation', path: '/reconciliation',
+      icon: 'scale', label: t('pm1_dashboard.nav_reconciliation'), path: '/reconciliation',
       count: integrity.discrepancies.open_total > 0
-        ? `${integrity.discrepancies.open_total} écart${
-          integrity.discrepancies.open_total > 1 ? 's' : ''}`
+        ? t(integrity.discrepancies.open_total > 1
+          ? 'pm1_dashboard.nav_count_gap_plural'
+          : 'pm1_dashboard.nav_count_gap', { count: integrity.discrepancies.open_total })
         : '—',
       urgent: integrity.discrepancies.critical_open > 0,
     },
     {
-      icon: 'shield-check', label: 'Risque', path: '/risk', count: '—',
+      icon: 'shield-check', label: t('pm1_dashboard.nav_risk'), path: '/risk', count: '—',
     },
     {
-      icon: 'clock-play', label: 'Ordonnanceur', path: '/scheduler',
-      count: enRetard > 0 ? `${enRetard} en retard` : `${aJour} à jour`,
+      icon: 'clock-play', label: t('pm1_dashboard.nav_scheduler'), path: '/scheduler',
+      count: enRetard > 0
+        ? t('pm1_dashboard.nav_count_late', { count: enRetard })
+        : t('pm1_dashboard.nav_count_up_to_date', { count: aJour }),
       urgent: scheduler.critical_alerts.length > 0,
     },
     {
-      icon: 'settings', label: 'Configuration', path: '/configuration',
+      icon: 'settings', label: t('pm1_dashboard.nav_configuration'), path: '/configuration',
       count: '—',
     },
   ];
@@ -149,7 +156,7 @@ export default function FinanceDashboardPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Centre financier
+            {t('pm1_dashboard.title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
             {new Date(data.generated_at).toLocaleString('fr-FR', {
@@ -163,7 +170,7 @@ export default function FinanceDashboardPage({
             onClick={() => navigate(`${basePath}/analytics`)}
             style={{ fontSize: 12.5, padding: '7px 14px' }}
           >
-            Pilotage
+            {t('pm1_dashboard.analytics_link')}
           </button>
           <button
             type="button"
@@ -175,7 +182,7 @@ export default function FinanceDashboardPage({
               aria-hidden="true"
               style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
             />
-            Actualiser
+            {t('pm1_dashboard.refresh')}
           </button>
         </div>
       </div>
@@ -194,16 +201,16 @@ export default function FinanceDashboardPage({
         gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))',
         gap: 12, marginBottom: '1.5rem',
       }}>
-        <Carte title="Intégrité">
+        <Carte title={t('pm1_dashboard.card_integrity')}>
           <Point color={integrity.trial_balance === 0 ? FT.green : FT.red}>
             {integrity.trial_balance === 0
-              ? 'Balance équilibrée'
-              : `Balance : écart de ${formatXaf(integrity.trial_balance)}`}
+              ? t('pm1_dashboard.balance_ok')
+              : t('pm1_dashboard.balance_gap', { amount: formatXaf(integrity.trial_balance) })}
           </Point>
           <Point color={integrity.invariants_ok ? FT.green : FT.red}>
             {integrity.invariants_ok
-              ? 'Invariants respectés'
-              : `${integrity.violations.length} invariant(s) violé(s)`}
+              ? t('pm1_dashboard.invariants_ok')
+              : t('pm1_dashboard.invariants_violated', { count: integrity.violations.length })}
           </Point>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <span aria-hidden="true" style={{
@@ -213,18 +220,18 @@ export default function FinanceDashboardPage({
             }} />
             <span style={{ fontSize: 13, color: FT.muted }}>
               {integrity.discrepancies.open_total === 0
-                ? 'Aucun écart ouvert'
-                : `${integrity.discrepancies.open_total} écart(s) ouvert(s)`}
+                ? t('pm1_dashboard.no_open_gaps')
+                : t('pm1_dashboard.open_gaps_count', { count: integrity.discrepancies.open_total })}
             </span>
           </div>
         </Carte>
 
-        <Carte title="Ordonnanceur">
+        <Carte title={t('pm1_dashboard.card_scheduler')}>
           <Point color={aJour > 0 ? FT.green : FT.faint}>
-            {aJour} tâche{aJour > 1 ? 's' : ''} à jour
+            {t(aJour > 1 ? 'pm1_dashboard.tasks_up_to_date_plural' : 'pm1_dashboard.tasks_up_to_date', { count: aJour })}
           </Point>
           <Point color={enRetard > 0 ? FT.amber : FT.faint}>
-            {enRetard} en retard
+            {t('pm1_dashboard.tasks_late', { count: enRetard })}
           </Point>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <span aria-hidden="true" style={{
@@ -234,19 +241,18 @@ export default function FinanceDashboardPage({
             }} />
             <span style={{ fontSize: 13, color: FT.muted }}>
               {scheduler.never_run
-                ? 'jamais exécuté'
-                : `${scheduler.critical_alerts.length} alerte(s) critique(s)`}
+                ? t('pm1_dashboard.never_run')
+                : t('pm1_dashboard.critical_alerts_count', { count: scheduler.critical_alerts.length })}
             </span>
           </div>
         </Carte>
 
-        <Carte title={`${activity.period_days} derniers jours`}>
+        <Carte title={t('pm1_dashboard.card_period', { days: activity.period_days })}>
           <div style={{ marginBottom: 3 }}>
             <Money value={activity.collected_xaf} size={24} />
           </div>
           <p style={{ fontSize: 11.5, margin: '0 0 12px', color: FT.faint }}>
-            encaissés · {activity.intents_total} paiement
-            {activity.intents_total > 1 ? 's' : ''}
+            {t(activity.intents_total > 1 ? 'pm1_dashboard.collected_meta_plural' : 'pm1_dashboard.collected_meta', { count: activity.intents_total })}
           </p>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
             <span aria-hidden="true" style={{
@@ -255,7 +261,7 @@ export default function FinanceDashboardPage({
               flexShrink: 0,
             }} />
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              {activity.pending} en attente de confirmation
+              {t('pm1_dashboard.pending_confirmation', { count: activity.pending })}
             </span>
           </div>
         </Carte>
@@ -265,7 +271,7 @@ export default function FinanceDashboardPage({
         fontSize: 11, margin: '0 0 10px', letterSpacing: '0.08em',
         textTransform: 'uppercase', color: FT.faint,
       }}>
-        Navigation du centre
+        {t('pm1_dashboard.nav_section_title')}
       </p>
       <SectionNav entries={navigation} basePath={basePath} />
     </div>

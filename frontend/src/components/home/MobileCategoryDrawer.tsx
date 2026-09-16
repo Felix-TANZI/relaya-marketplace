@@ -21,7 +21,7 @@ interface MobileCategoryDrawerProps {
 export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }: MobileCategoryDrawerProps) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   /* Le fond ne défile pas pendant que le tiroir est ouvert. */
   useEffect(() => {
@@ -61,24 +61,24 @@ export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }:
       <button
         type="button"
         onClick={onClose}
-        aria-label="Fermer le menu des catégories"
+        aria-label={t("header.close_categories_menu")}
         className="absolute inset-0 h-full w-full bg-gray-900/45 backdrop-blur-[2px]"
       />
 
       <aside
         role="dialog"
-        aria-label="Catégories"
+        aria-label={t("header_nav.categories")}
         className="animate-drawer-in absolute inset-y-0 left-0 flex w-[86%] max-w-[340px] flex-col bg-white shadow-[0_0_60px_rgba(15,23,42,.28)] dark:bg-gray-900"
       >
         {/* Le titre démarre sous l'encoche : rien ne vient plus le rogner. */}
         <header className="flex items-center gap-2 border-b border-[#f5e3d7] bg-[#fff7ef] px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] dark:border-gray-800 dark:bg-gray-950">
           <ShoppingBag size={20} className="text-primary" fill="currentColor" />
-          <h2 className="text-[17px] font-black tracking-tight text-primary">Catégories</h2>
+          <h2 className="text-[17px] font-black tracking-tight text-primary">{t("header_nav.categories")}</h2>
 
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t("header.close")}
             className="ml-auto flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-500 shadow-sm transition hover:text-primary dark:bg-gray-800 dark:text-gray-300"
           >
             <X size={18} />
@@ -140,7 +140,7 @@ export default function MobileCategoryDrawer({ open, onClose, extraLinks = [] }:
             className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-[#f7f8fa] py-2.5 text-[12.5px] font-bold text-gray-700 transition hover:bg-[#fff0e0] hover:text-primary dark:bg-gray-800 dark:text-gray-200"
           >
             {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
-            {theme === "dark" ? "Mode clair" : "Mode sombre"}
+            {theme === "dark" ? t("header.light_mode") : t("header.dark_mode")}
           </button>
 
           <button

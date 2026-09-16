@@ -65,6 +65,8 @@ const CLOSED_ORDER_STATUSES = [
   "REFUNDED",
 ];
 
+/* Valeurs métier envoyées telles quelles en `category_label` — pas de traduction
+   ici, ce sont des filtres comparés côté recherche, pas de la copie d'interface. */
 const SEARCH_FILTER_CATEGORIES = [
   "Accessoires",
   "Alimentation",
@@ -209,7 +211,7 @@ export default function Header() {
      profil. Les stores émettent un événement, le header n'a rien à sonder. */
   useEffect(() => {
     const sync = () => {
-      setUnreadMessages(getUnreadSupportCount());
+      setUnreadMessages(getUnreadSupportCount(t));
       setWalletBalance(getBelivayAccount().availableXaf);
     };
 
@@ -223,7 +225,7 @@ export default function Header() {
       window.removeEventListener(ACCOUNT_UPDATED_EVENT, sync);
       window.removeEventListener("storage", sync);
     };
-  }, []);
+  }, [t]);
 
   /* Le nombre de commandes en cours n'est chargé qu'à l'ouverture du menu :
      inutile d'appeler l'API sur chaque page pour une pastille repliée. */
@@ -352,13 +354,13 @@ export default function Header() {
   const userInitials = getUserInitials(user);
   const clientNavItems = [
     { label: t("header_nav.home"), to: "/", icon: House, tone: "text-primary" },
-    { label: "Promos", to: "/promotions", icon: Tag, tone: "text-primary", promo: true },
+    { label: t("header_nav.promos_short"), to: "/promotions", icon: Tag, tone: "text-primary", promo: true },
     { label: t("header_nav.orders"), to: "/orders", icon: Package, tone: "text-primary" },
     { label: t("header_nav.favorites"), to: "/wishlist", icon: Heart, tone: "text-red-500" },
-    { label: "Compte", to: "/profile", icon: User, tone: "text-gray-600 dark:text-gray-300" },
-    { label: "Sélection", to: "/selection-premium", icon: Star, tone: "text-amber-500" },
-    { label: "Abonnements", to: "/premium", icon: Gem, tone: "text-primary" },
-    { label: "À propos", to: "/about", icon: Info, tone: "text-blue-500" },
+    { label: t("header_nav.account_short"), to: "/profile", icon: User, tone: "text-gray-600 dark:text-gray-300" },
+    { label: t("header_nav.selection"), to: "/selection-premium", icon: Star, tone: "text-amber-500" },
+    { label: t("header_nav.subscriptions"), to: "/premium", icon: Gem, tone: "text-primary" },
+    { label: t("header_nav.about"), to: "/about", icon: Info, tone: "text-blue-500" },
   ];
 
   /*
@@ -381,74 +383,74 @@ export default function Header() {
   const userMenuSections: { title?: string; items: UserMenuEntry[] }[] = [
     {
       items: [
-        { label: "Mon Compte", to: "/profile", icon: User },
+        { label: t("header_nav.my_account"), to: "/profile", icon: User },
         {
-          label: "Mes Commandes",
+          label: t("header_nav.my_orders"),
           to: "/orders",
           icon: Package,
-          badge: activeOrdersCount > 0 ? `${activeOrdersCount} en cours` : undefined,
+          badge: activeOrdersCount > 0 ? t("header.orders_in_progress", { count: activeOrdersCount }) : undefined,
         },
         {
-          label: "Mes Favoris",
+          label: t("header_nav.my_favorites"),
           to: "/wishlist",
           icon: Heart,
           badge: favoritesCount > 0 ? String(favoritesCount) : undefined,
         },
         {
-          label: "Messages",
+          label: t("header_nav.messages"),
           to: "/profile?panel=messages",
           icon: MessageSquare,
           badge: unreadMessages > 0 ? String(unreadMessages) : undefined,
         },
         {
-          label: "Mon Compte BelivaY",
+          label: t("header_nav.belivay_account"),
           to: "/profile?panel=compte-belivay",
           icon: Wallet,
-          note: walletBalance > 0 ? formatXaf(walletBalance) : "Wallet",
+          note: walletBalance > 0 ? formatXaf(walletBalance) : t("header.wallet"),
           tone: "accent",
         },
       ],
     },
     {
-      title: "Mon activité",
+      title: t("header_nav.my_activity"),
       items: [
         {
-          label: "Notifications",
+          label: t("header_nav.notifications"),
           to: "/notifications",
           icon: Bell,
           badge: notifCount > 0 ? String(notifCount) : undefined,
         },
         {
-          label: "Fidélité",
+          label: t("header_nav.loyalty"),
           to: "/profile?panel=fidelite",
           icon: Award,
-          note: `${(user?.loyalty_points ?? 0).toLocaleString("fr-FR")} pts`,
+          note: t("header.points_suffix", { points: (user?.loyalty_points ?? 0).toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US") }),
         },
-        { label: "Parrainage", to: "/profile?panel=parrain", icon: Gift },
-        { label: "Ventes flash", to: "/flash-deals", icon: Tag },
+        { label: t("header_nav.referral"), to: "/profile?panel=parrain", icon: Gift },
+        { label: t("header_nav.flash_sales"), to: "/flash-deals", icon: Tag },
       ],
     },
     {
-      title: "Paramètres du compte",
+      title: t("header_nav.account_settings"),
       items: [
-        { label: "Mes adresses", to: "/profile?panel=adresses", icon: MapPin },
-        { label: "Moyens de paiement", to: "/profile?panel=paiements", icon: CreditCard },
-        { label: "Sécurité", to: "/profile?panel=securite", icon: Shield },
-        { label: "Réglages", to: "/profile?panel=reglages", icon: Settings },
+        { label: t("header_nav.addresses"), to: "/profile?panel=adresses", icon: MapPin },
+        { label: t("header_nav.payment_methods"), to: "/profile?panel=paiements", icon: CreditCard },
+        { label: t("header_nav.security"), to: "/profile?panel=securite", icon: Shield },
+        { label: t("header_nav.settings"), to: "/profile?panel=reglages", icon: Settings },
       ],
     },
     {
-      title: "Plus",
+      title: t("header_nav.more"),
       items: [
-        { label: "Abonnement BelivaY+", to: "/premium", icon: Gem, tone: "accent" },
+        { label: t("header_nav.belivay_plus"), to: "/premium", icon: Gem, tone: "accent" },
         {
-          label: user?.is_vendor ? "Espace vendeur" : "Devenir vendeur",
+          label: user?.is_vendor ? t("header_nav.seller_space") : t("header_nav.become_vendor"),
           to: user?.is_vendor ? "/seller/dashboard" : "/profile?panel=vendeur",
           icon: Store,
         },
-        { label: "Centre d'aide", to: "/help", icon: CircleHelp },
+        { label: t("header_nav.help_center"), to: "/help", icon: CircleHelp },
         {
-          label: "Support WhatsApp",
+          label: t("header_nav.whatsapp_support"),
           to: "https://wa.me/237689002812",
           icon: MessageSquare,
           external: true,
@@ -466,7 +468,7 @@ export default function Header() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen(true)}
-            aria-label="Ouvrir les categories"
+            aria-label={t("header.open_categories")}
             aria-expanded={mobileMenuOpen}
             className="-ml-1 flex-shrink-0 rounded-lg p-1.5 text-text-light transition-all hover:bg-bg-light dark:text-text-dark dark:hover:bg-bg-dark-alt lg:hidden"
           >
@@ -474,7 +476,7 @@ export default function Header() {
           </button>
 
           {/* Logo */}
-          <Link to="/" className="flex items-center flex-shrink-0" aria-label="Accueil BelivaY">
+          <Link to="/" className="flex items-center flex-shrink-0" aria-label={t("header.home_aria")}>
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
@@ -517,8 +519,8 @@ export default function Header() {
               <button
                 type="button"
                 onClick={() => setSearchFilterOpen((open) => !open)}
-                title="Filtres"
-                aria-label="Ouvrir les filtres"
+                title={t("header.filters")}
+                aria-label={t("header.open_filters")}
                 style={{
                   padding: "0 12px",
                   background: searchBarStyles.sideButtonBg,
@@ -548,7 +550,7 @@ export default function Header() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleSearchKey}
                 placeholder={t("header.search_placeholder") || "Rechercher votre produit"}
-                aria-label="Rechercher"
+                aria-label={t("header.search")}
                 className="placeholder:text-gray-400 dark:placeholder:text-gray-500"
                 style={{
                   flex: 1,
@@ -565,8 +567,8 @@ export default function Header() {
               {/* Voice search button */}
               <button
                 onClick={handleVoiceSearch}
-                title="Recherche vocale"
-                aria-label="Recherche vocale"
+                title={t("header.voice_search")}
+                aria-label={t("header.voice_search")}
                 style={{
                   padding: "0 8px",
                   background: "transparent",
@@ -588,7 +590,7 @@ export default function Header() {
               {/* Orange search button */}
               <button
                 onClick={handleSearch}
-                aria-label="Lancer la recherche"
+                aria-label={t("header.run_search")}
                 style={{
                   width: "44px",
                   background: "#F47920",
@@ -610,7 +612,7 @@ export default function Header() {
             {searchFilterOpen && (
               <div className="absolute left-0 right-0 top-[calc(100%+7px)] z-50 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
                 <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                  Catégories
+                  {t("header_nav.categories")}
                 </div>
                 <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                   {SEARCH_FILTER_CATEGORIES.map((category) => {
@@ -667,7 +669,7 @@ export default function Header() {
                 connexion plutôt que de disparaître et de déséquilibrer le header. */}
             <Link
               to={user ? "/notifications" : "/login"}
-              aria-label={user ? "Notifications" : "Se connecter pour voir les notifications"}
+              aria-label={user ? t("header_nav.notifications") : t("header.login_to_see_notifications")}
               onClick={() => {
                 if (!user) return;
                 setNotifCount(0);
@@ -887,7 +889,7 @@ export default function Header() {
                 <div className="hidden lg:flex items-center gap-2">
                   <Link to="/become-seller">
                     <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
-                      Vendre sur BelivaY
+                      {t("header.sell_on_belivay")}
                     </button>
                   </Link>
                   <Link to="/login">
@@ -972,7 +974,7 @@ export default function Header() {
           {searchFilterOpen && (
             <div className="mt-2 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
               <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                Catégories
+                {t("header_nav.categories")}
               </div>
               <div className="grid grid-cols-2 gap-1 px-2 pb-2">
                 {SEARCH_FILTER_CATEGORIES.map((category) => {
@@ -1018,7 +1020,7 @@ export default function Header() {
                 <Icon
                   size={14}
                   className={`flex-shrink-0 ${item.tone}`}
-                  fill={item.label === "Sélection" || item.label === t("header_nav.favorites") ? "currentColor" : "none"}
+                  fill={item.label === t("header_nav.selection") || item.label === t("header_nav.favorites") ? "currentColor" : "none"}
                 />
                 {item.label}
                 {item.promo && maxPromo > 0 ? (
@@ -1041,13 +1043,13 @@ export default function Header() {
         open={mobileMenuOpen}
         onClose={() => setMobileMenuOpen(false)}
         extraLinks={[
-          { label: "Promotions", to: "/promotions" },
-          { label: "Selection Premium", to: "/selection-premium" },
-          { label: "Abonnements BelivaY", to: "/premium" },
-          { label: "Mes commandes", to: "/orders" },
-          { label: "Devenir Vendeur", to: "/become-seller" },
-          { label: "A propos", to: "/about" },
-          { label: "Aide", to: "/help" },
+          { label: t("header_nav.promotions"), to: "/promotions" },
+          { label: t("header_nav.selection_premium"), to: "/selection-premium" },
+          { label: t("header_nav.belivay_subscriptions"), to: "/premium" },
+          { label: t("header_nav.my_orders"), to: "/orders" },
+          { label: t("header_nav.become_seller"), to: "/become-seller" },
+          { label: t("header_nav.about"), to: "/about" },
+          { label: t("header_nav.help"), to: "/help" },
         ]}
       />
     </header>

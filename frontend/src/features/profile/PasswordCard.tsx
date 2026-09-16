@@ -3,11 +3,13 @@
 // Aucune révélation du mot de passe (les champs restent masqués) pour raison de sécurité.
 
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { Lock, ShieldCheck } from 'lucide-react';
 import { http } from '@/services/api/http';
 import { useToast } from '@/context/ToastContext';
 
-function scorePassword(pw: string): { score: number; label: string; color: string } {
+function scorePassword(pw: string, t: TFunction): { score: number; label: string; color: string } {
   let score = 0;
   if (pw.length >= 8) score++;
   if (pw.length >= 12) score++;
@@ -15,12 +17,18 @@ function scorePassword(pw: string): { score: number; label: string; color: strin
   if (/\d/.test(pw)) score++;
   if (/[^A-Za-z0-9]/.test(pw)) score++;
   const s = Math.min(Math.max(score - 1, 0), 3);
-  const labels = ['Faible', 'Moyen', 'Bon', 'Excellent'];
+  const labels = [
+    t('cl7_password_card.strength_weak'),
+    t('cl7_password_card.strength_medium'),
+    t('cl7_password_card.strength_good'),
+    t('cl7_password_card.strength_excellent'),
+  ];
   const colors = ['#dc2626', '#f59e0b', '#16a34a', '#16a34a'];
   return { score: s, label: labels[s], color: colors[s] };
 }
 
 export default function PasswordCard() {
+  const { t } = useTranslation();
   const { showToast } = useToast();
   const [open, setOpen] = useState(false);
   const [oldPwd, setOldPwd] = useState('');
@@ -28,7 +36,7 @@ export default function PasswordCard() {
   const [newPwd2, setNewPwd2] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const strength = useMemo(() => scorePassword(newPwd), [newPwd]);
+  const strength = useMemo(() => scorePassword(newPwd, t), [newPwd, t]);
 
   const reset = () => {
     setOldPwd('');
@@ -38,15 +46,15 @@ export default function PasswordCard() {
 
   const submit = async () => {
     if (!oldPwd || !newPwd || !newPwd2) {
-      showToast('Remplissez tous les champs.', 'error');
+      showToast(t('cl7_password_card.fill_fields_error'), 'error');
       return;
     }
     if (newPwd !== newPwd2) {
-      showToast('Les nouveaux mots de passe ne correspondent pas.', 'error');
+      showToast(t('cl7_password_card.mismatch_error'), 'error');
       return;
     }
     if (newPwd.length < 8) {
-      showToast('Le mot de passe doit faire au moins 8 caractères.', 'error');
+      showToast(t('cl7_password_card.min_length_error'), 'error');
       return;
     }
     setSaving(true);
@@ -55,11 +63,11 @@ export default function PasswordCard() {
         method: 'POST',
         body: JSON.stringify({ old_password: oldPwd, new_password: newPwd, new_password2: newPwd2 }),
       });
-      showToast('Mot de passe modifié avec succès.', 'success');
+      showToast(t('cl7_password_card.success'), 'success');
       reset();
       setOpen(false);
     } catch {
-      showToast('Échec : vérifiez votre mot de passe actuel.', 'error');
+      showToast(t('cl7_password_card.error'), 'error');
     } finally {
       setSaving(false);
     }
@@ -76,8 +84,8 @@ export default function PasswordCard() {
             <Lock size={17} />
           </span>
           <div>
-            <div className="font-bold text-[#111827] dark:text-white">Mot de passe</div>
-            <div className="text-[12px] text-[#9ca3af]">Modifiez votre mot de passe de connexion.</div>
+            <div className="font-bold text-[#111827] dark:text-white">{t('cl7_password_card.title')}</div>
+            <div className="text-[12px] text-[#9ca3af]">{t('cl7_password_card.subtitle')}</div>
           </div>
         </div>
         {!open && (
@@ -86,7 +94,7 @@ export default function PasswordCard() {
             onClick={() => setOpen(true)}
             className="flex-shrink-0 rounded-[10px] border border-[#e5e7eb] bg-white/60 px-4 py-2 text-[12.5px] font-bold text-[#4b5563] transition hover:border-[#f47920] hover:text-[#f47920] dark:border-gray-700 dark:bg-white/5 dark:text-gray-300"
           >
-            Modifier
+            {t('cl7_password_card.edit_button')}
           </button>
         )}
       </div>
@@ -100,7 +108,7 @@ export default function PasswordCard() {
             autoComplete="off"
             readOnly
             onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
-            placeholder="Mot de passe actuel"
+            placeholder={t('cl7_password_card.current_password_placeholder')}
             className={inputCls}
           />
 
@@ -111,7 +119,7 @@ export default function PasswordCard() {
             autoComplete="off"
             readOnly
             onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
-            placeholder="Nouveau mot de passe"
+            placeholder={t('cl7_password_card.new_password_placeholder')}
             className={inputCls}
           />
 
@@ -139,7 +147,7 @@ export default function PasswordCard() {
             autoComplete="off"
             readOnly
             onFocus={(e) => e.currentTarget.removeAttribute('readonly')}
-            placeholder="Confirmer le nouveau mot de passe"
+            placeholder={t('cl7_password_card.confirm_password_placeholder')}
             className={inputCls}
           />
 
@@ -151,7 +159,7 @@ export default function PasswordCard() {
               className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-br from-[#ff9d4d] to-[#f4610f] px-4 py-2.5 text-[12.5px] font-bold text-white shadow-[0_8px_20px_rgba(244,97,15,.34)] transition hover:brightness-105 disabled:opacity-50"
             >
               <ShieldCheck size={14} />
-              {saving ? 'Modification…' : 'Mettre à jour'}
+              {saving ? t('cl7_password_card.saving') : t('cl7_password_card.update_button')}
             </button>
             <button
               type="button"
@@ -161,7 +169,7 @@ export default function PasswordCard() {
               }}
               className="rounded-[10px] px-3 py-2.5 text-[12.5px] font-bold text-[#9ca3af] transition hover:text-[#4b5563]"
             >
-              Annuler
+              {t('cl7_password_card.cancel')}
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@
 // Logs Système — BelivaY Admin
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Terminal, RefreshCw, Search, Filter, Trash2,
   AlertCircle, AlertTriangle, Info, Bug,
@@ -66,15 +67,15 @@ const LEVEL_CFG: Record<string, {
   CRITICAL: { label: 'CRITICAL', color: '#7C3AED', bg: 'rgba(124,58,237,0.12)', terminal: '#D2A8FF', icon: Zap           },
 };
 
-const SERVICE_LABELS: Record<string, string> = {
-  api:      'API Backend',
-  auth:     'Authentification',
-  payments: 'Paiements',
-  email:    'Email',
-  orders:   'Commandes',
-  catalog:  'Catalogue',
-  vendors:  'Vendeurs',
-  system:   'Système',
+const SERVICE_LABEL_KEYS: Record<string, string> = {
+  api:      'ad6_sys_logs.service_api',
+  auth:     'ad6_sys_logs.service_auth',
+  payments: 'ad6_sys_logs.service_payments',
+  email:    'ad6_sys_logs.service_email',
+  orders:   'ad6_sys_logs.service_orders',
+  catalog:  'ad6_sys_logs.service_catalog',
+  vendors:  'ad6_sys_logs.service_vendors',
+  system:   'ad6_sys_logs.service_system',
 };
 
 // Indicateur de santé par service : aucun ERROR dans les 24h = healthy
@@ -82,7 +83,7 @@ const SERVICE_HEALTH_COLOR = (errors: number) =>
   errors === 0 ? '#10B981' : errors < 5 ? '#F59E0B' : '#EF4444';
 
 const LEVELS   = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] as const;
-const SERVICES = Object.keys(SERVICE_LABELS);
+const SERVICES = Object.keys(SERVICE_LABEL_KEYS);
 const PAGE_SIZES = [50, 100, 200] as const;
 const AUTO_REFRESH_INTERVAL = 30_000;
 
@@ -105,6 +106,7 @@ const fmtHour = (h: string) => h.slice(11, 16); // HH:MM
 
 export default function LogsPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const toastRef      = useRef(showToast);
   useEffect(() => { toastRef.current = showToast; });
@@ -149,7 +151,7 @@ export default function LogsPage() {
       setData(result);
       setCountdown(30);
     } catch {
-      if (!silent) toastRef.current('Erreur chargement des logs', 'error');
+      if (!silent) toastRef.current(t('ad6_sys_logs.toast_error_load'), 'error');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -198,7 +200,7 @@ export default function LogsPage() {
       setShowClear(false);
       load(false);
     } catch {
-      toastRef.current('Erreur lors de la suppression', 'error');
+      toastRef.current(t('ad6_sys_logs.toast_delete_error'), 'error');
     } finally {
       setClearing(false);
     }
@@ -211,7 +213,7 @@ export default function LogsPage() {
        `"${l.message.replace(/"/g, '""')}"`,
        l.ip_address ?? '', l.user_id ?? '', l.lineno ?? ''].join(';')
     );
-    const csv  = `ID;Date;Level;Service;Logger;Message;IP;User;Ligne\n${rows.join('\n')}`;
+    const csv  = `${t('ad6_sys_logs.csv_headers')}\n${rows.join('\n')}`;
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -229,7 +231,7 @@ export default function LogsPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Logs Système
+            {t('ad6_sys_logs.title')}
           </h1>
           <div className="flex items-center gap-3 flex-wrap">
             {/* Indicateur santé */}
@@ -237,11 +239,11 @@ export default function LogsPage() {
               style={{ background: systemHealthy ? 'rgba(16,185,129,0.12)' : systemDegraded ? 'rgba(245,158,11,0.12)' : 'rgba(239,68,68,0.12)', border: `1px solid ${systemHealthy ? 'rgba(16,185,129,0.3)' : systemDegraded ? 'rgba(245,158,11,0.3)' : 'rgba(239,68,68,0.3)'}` }}>
               <div style={{ width: 6, height: 6, borderRadius: '50%', background: systemHealthy ? '#10B981' : systemDegraded ? '#F59E0B' : '#EF4444', animation: !systemHealthy ? 'pulse 1.5s ease-in-out infinite' : 'none' }} />
               <span style={{ fontSize: 11, fontWeight: 700, color: systemHealthy ? '#10B981' : systemDegraded ? '#F59E0B' : '#EF4444' }}>
-                {systemHealthy ? 'Système opérationnel' : systemDegraded ? 'Dégradé' : 'Incidents en cours'}
+                {systemHealthy ? t('ad6_sys_logs.status_operational') : systemDegraded ? t('ad6_sys_logs.status_degraded') : t('ad6_sys_logs.status_incidents')}
               </span>
             </div>
             <span style={{ fontSize: 12.5, color: T.muted }}>
-              {data ? `${data.total.toLocaleString('fr-FR')} entrées au total` : '—'}
+              {data ? t('ad6_sys_logs.entries_total', { n: data.total.toLocaleString('fr-FR') }) : '—'}
             </span>
           </div>
         </div>
@@ -250,19 +252,19 @@ export default function LogsPage() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[12px] font-semibold"
             style={{ background: autoRefresh ? 'rgba(16,185,129,0.12)' : T.cardAlt, color: autoRefresh ? '#10B981' : T.muted, border: `1px solid ${autoRefresh ? 'rgba(16,185,129,0.3)' : T.border}` }}>
             <Activity size={12} />
-            {autoRefresh ? `Auto · ${countdown}s` : 'Auto OFF'}
+            {autoRefresh ? t('ad6_sys_logs.auto_on', { countdown }) : t('ad6_sys_logs.auto_off')}
           </button>
           <button onClick={exportCSV} disabled={!data || data.logs.length === 0}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-            <Download size={12} /> Export CSV
+            <Download size={12} /> {t('ad6_sys_logs.export_csv')}
           </button>
           <button onClick={() => setShowClear(true)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(239,68,68,0.08)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer' }}>
-            <Trash2 size={12} /> Purger
+            <Trash2 size={12} /> {t('ad6_sys_logs.purge')}
           </button>
           <button onClick={() => load(false)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: 'rgba(220,38,38,0.1)', color: T.red, border: '1px solid rgba(220,38,38,0.25)', cursor: 'pointer' }}>
-            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> Actualiser
+            <RefreshCw size={12} className={loading ? 'animate-spin' : ''} /> {t('ad6_sys_logs.refresh')}
           </button>
         </div>
       </div>
@@ -270,11 +272,11 @@ export default function LogsPage() {
       {/* KPIs 24h */}
       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         {[
-          { label: 'Total 24h',    value: data?.kpis.total_24h,    accent: T.text,    icon: Terminal,       sub: undefined },
-          { label: 'Erreurs 24h',  value: data?.kpis.errors_24h,   accent: '#EF4444', icon: AlertCircle,    sub: `${errorRate}% du trafic` },
-          { label: 'Warnings',     value: data?.kpis.warnings_24h, accent: '#F59E0B', icon: AlertTriangle,  sub: undefined },
-          { label: 'Info',         value: data?.kpis.info_24h,     accent: '#3B82F6', icon: Info,           sub: undefined },
-          { label: 'Taux erreur',  value: `${errorRate}%`,         accent: errorRate > 5 ? '#EF4444' : '#10B981', icon: TrendingUp, sub: errorRate > 5 ? 'Attention' : 'Normal' },
+          { label: t('ad6_sys_logs.kpi_total_24h'),    value: data?.kpis.total_24h,    accent: T.text,    icon: Terminal,       sub: undefined },
+          { label: t('ad6_sys_logs.kpi_errors_24h'),  value: data?.kpis.errors_24h,   accent: '#EF4444', icon: AlertCircle,    sub: t('ad6_sys_logs.kpi_errors_24h_sub', { rate: errorRate }) },
+          { label: t('ad6_sys_logs.kpi_warnings'),     value: data?.kpis.warnings_24h, accent: '#F59E0B', icon: AlertTriangle,  sub: undefined },
+          { label: t('ad6_sys_logs.kpi_info'),         value: data?.kpis.info_24h,     accent: '#3B82F6', icon: Info,           sub: undefined },
+          { label: t('ad6_sys_logs.kpi_error_rate'),  value: `${errorRate}%`,         accent: errorRate > 5 ? '#EF4444' : '#10B981', icon: TrendingUp, sub: errorRate > 5 ? t('ad6_sys_logs.rate_attention') : t('ad6_sys_logs.rate_normal') },
         ].map((k, i) => {
           const Icon = k.icon;
           return (
@@ -300,7 +302,7 @@ export default function LogsPage() {
           <div className="lg:col-span-2 rounded-2xl p-5" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Activité 24h</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_sys_logs.activity_24h')}</span>
             </div>
             {data.by_hour && data.by_hour.length > 0 ? (
               <ResponsiveContainer width="100%" height={140}>
@@ -321,14 +323,14 @@ export default function LogsPage() {
                   <Tooltip
                     contentStyle={{ background: T.card, border: `1px solid ${T.border}`, borderRadius: 10, fontSize: 12 }}
                     formatter={(v: number | undefined, n: string | undefined) => [v ?? 0, n ?? '']} />
-                  <Area type="monotone" dataKey="errors"   stroke="#EF4444" strokeWidth={2} fill="url(#errGrad)"  dot={false} name="Erreurs" />
-                  <Area type="monotone" dataKey="warnings" stroke="#F59E0B" strokeWidth={1.5} fill="url(#warnGrad)" dot={false} name="Warnings" />
-                  <Area type="monotone" dataKey="info"     stroke="#3B82F6" strokeWidth={1} fill="none" dot={false} name="Info" />
+                  <Area type="monotone" dataKey="errors"   stroke="#EF4444" strokeWidth={2} fill="url(#errGrad)"  dot={false} name={t('ad6_sys_logs.chart_errors')} />
+                  <Area type="monotone" dataKey="warnings" stroke="#F59E0B" strokeWidth={1.5} fill="url(#warnGrad)" dot={false} name={t('ad6_sys_logs.kpi_warnings')} />
+                  <Area type="monotone" dataKey="info"     stroke="#3B82F6" strokeWidth={1} fill="none" dot={false} name={t('ad6_sys_logs.kpi_info')} />
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex items-center justify-center" style={{ height: 140 }}>
-                <p style={{ fontSize: 13, color: T.muted }}>Aucune donnée d'activité</p>
+                <p style={{ fontSize: 13, color: T.muted }}>{t('ad6_sys_logs.no_activity_data')}</p>
               </div>
             )}
           </div>
@@ -337,7 +339,7 @@ export default function LogsPage() {
           <div className="rounded-2xl overflow-hidden" style={{ background: T.card, border: `1px solid ${T.border}` }}>
             <div className="flex items-center gap-2 px-5 py-3.5" style={{ borderBottom: `1px solid ${T.border}`, background: T.cardAlt }}>
               <CheckCircle size={14} style={{ color: T.red }} />
-              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>Santé services</span>
+              <span style={{ fontSize: 13, fontWeight: 700, color: T.text }}>{t('ad6_sys_logs.health_services_title')}</span>
             </div>
             <div className="divide-y" style={{ borderColor: T.border }}>
               {SERVICES.map(svc => {
@@ -349,10 +351,10 @@ export default function LogsPage() {
                     onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                     <div className="flex items-center gap-2.5">
                       <div style={{ width: 8, height: 8, borderRadius: '50%', background: color, flexShrink: 0 }} />
-                      <span style={{ fontSize: 12.5, color: T.text }}>{SERVICE_LABELS[svc]}</span>
+                      <span style={{ fontSize: 12.5, color: T.text }}>{t(SERVICE_LABEL_KEYS[svc])}</span>
                     </div>
                     <span style={{ fontSize: 12, fontWeight: 700, color, flexShrink: 0 }}>
-                      {errors === 0 ? 'OK' : `${errors} err.`}
+                      {errors === 0 ? t('ad6_sys_logs.health_ok') : t('ad6_sys_logs.health_errors', { count: errors })}
                     </span>
                   </div>
                 );
@@ -368,17 +370,17 @@ export default function LogsPage() {
           <div className="relative flex-1 min-w-[200px]">
             <Search size={14} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
             <input value={search} onChange={e => { setSearch(e.target.value); setPage(1); }}
-              placeholder="Rechercher dans les messages, loggers, tracebacks…"
+              placeholder={t('ad6_sys_logs.search_placeholder')}
               style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 10, padding: '9px 12px 9px 36px', fontSize: 13, outline: 'none' }} />
           </div>
           <button onClick={() => setShowFilters(v => !v)}
             style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 12px', borderRadius: 10, fontSize: 12, fontWeight: 600, background: showFilters ? T.red + '15' : T.cardAlt, color: showFilters ? T.red : T.muted, border: `1px solid ${showFilters ? T.red + '40' : T.border}`, cursor: 'pointer' }}>
-            <Filter size={12} /> Filtres
+            <Filter size={12} /> {t('ad6_sys_logs.filters')}
             {hasFilters && <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 5px', borderRadius: 5, background: T.red, color: '#fff', marginLeft: 2 }}>!</span>}
           </button>
           {hasFilters && (
             <button onClick={resetFilters} style={{ color: T.muted, display: 'flex', alignItems: 'center', gap: 4, fontSize: 12, cursor: 'pointer', background: 'none', border: 'none' }}>
-              <X size={12} /> Réinitialiser
+              <X size={12} /> {t('ad6_sys_logs.reset')}
             </button>
           )}
         </div>
@@ -386,28 +388,28 @@ export default function LogsPage() {
         {showFilters && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2" style={{ borderTop: `1px solid ${T.border}` }}>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Niveau</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_logs.filter_level')}</label>
               <select value={levelF} onChange={e => { setLevelF(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }}>
-                <option value="">Tous</option>
+                <option value="">{t('ad6_sys_logs.filter_all')}</option>
                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Service</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_logs.filter_service')}</label>
               <select value={serviceF} onChange={e => { setServiceF(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }}>
-                <option value="">Tous</option>
-                {SERVICES.map(s => <option key={s} value={s}>{SERVICE_LABELS[s]}</option>)}
+                <option value="">{t('ad6_sys_logs.filter_all')}</option>
+                {SERVICES.map(s => <option key={s} value={s}>{t(SERVICE_LABEL_KEYS[s])}</option>)}
               </select>
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Depuis</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_logs.filter_from')}</label>
               <input type="datetime-local" value={dateFrom} onChange={e => { setDateFrom(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }} />
             </div>
             <div>
-              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>Jusqu'à</label>
+              <label style={{ fontSize: 11, fontWeight: 700, color: T.muted, display: 'block', marginBottom: 4 }}>{t('ad6_sys_logs.filter_to')}</label>
               <input type="datetime-local" value={dateTo} onChange={e => { setDateTo(e.target.value); setPage(1); }}
                 style={{ width: '100%', background: T.input, border: `1px solid ${T.inputBorder}`, color: T.text, borderRadius: 8, padding: '8px 10px', fontSize: 12, outline: 'none' }} />
             </div>
@@ -429,7 +431,7 @@ export default function LogsPage() {
             <button key={l || 'all'} onClick={() => { setLevelF(l); setPage(1); }}
               style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 12px', borderRadius: 8, fontSize: 11.5, fontWeight: 600, cursor: 'pointer', background: active ? (cfg?.color ?? T.red) + '18' : T.card, color: active ? (cfg?.color ?? T.red) : T.muted, border: `1px solid ${active ? (cfg?.color ?? T.red) + '40' : T.border}` }}>
               {cfg && <cfg.icon size={11} />}
-              {l || 'Tous'}
+              {l || t('ad6_sys_logs.filter_all')}
               {count !== null && count !== undefined && (
                 <span style={{ fontSize: 10, opacity: 0.7 }}>({count})</span>
               )}
@@ -440,7 +442,7 @@ export default function LogsPage() {
         <div className="flex-1 flex justify-end">
           <select value={pageSize} onChange={e => { setPageSize(parseInt(e.target.value) as 50 | 100 | 200); setPage(1); }}
             style={{ background: T.card, border: `1px solid ${T.border}`, color: T.muted, borderRadius: 8, padding: '5px 10px', fontSize: 11.5, outline: 'none', cursor: 'pointer' }}>
-            {PAGE_SIZES.map(s => <option key={s} value={s}>{s} / page</option>)}
+            {PAGE_SIZES.map(s => <option key={s} value={s}>{t('ad6_sys_logs.per_page', { count: s })}</option>)}
           </select>
         </div>
       </div>
@@ -458,17 +460,17 @@ export default function LogsPage() {
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28C840' }} />
             </div>
             <span style={{ fontSize: 11.5, fontWeight: 600, color: '#484F58', fontFamily: 'monospace' }}>
-              belivay@prod — logs
+              {t('ad6_sys_logs.terminal_title')}
             </span>
             {autoRefresh && (
               <div className="flex items-center gap-1.5">
                 <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', animation: 'pulse 1.5s ease-in-out infinite' }} />
-                <span style={{ fontSize: 10, color: '#10B981', fontFamily: 'monospace' }}>LIVE</span>
+                <span style={{ fontSize: 10, color: '#10B981', fontFamily: 'monospace' }}>{t('ad6_sys_logs.live')}</span>
               </div>
             )}
           </div>
           <span style={{ fontSize: 11, color: '#484F58', fontFamily: 'monospace' }}>
-            {data ? `${((page - 1) * pageSize + 1)}–${Math.min(page * pageSize, data.total)} / ${data.total.toLocaleString('fr-FR')}` : '—'}
+            {data ? t('ad6_sys_logs.entries_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, data.total), total: data.total.toLocaleString('fr-FR') }) : '—'}
           </span>
         </div>
 
@@ -480,7 +482,7 @@ export default function LogsPage() {
           <span style={{ color: '#E6EDF3' }}>
             tail -f /var/log/belivay.log
             {levelF   ? ` | grep ${levelF}`   : ''}
-            {serviceF ? ` | grep ${SERVICE_LABELS[serviceF]}` : ''}
+            {serviceF ? ` | grep ${t(SERVICE_LABEL_KEYS[serviceF])}` : ''}
             {search   ? ` | grep "${search}"` : ''}
           </span>
         </div>
@@ -493,7 +495,7 @@ export default function LogsPage() {
           <div className="flex flex-col items-center py-14 gap-3">
             <Terminal size={32} style={{ color: 'rgba(255,255,255,0.1)' }} />
             <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.2)', fontFamily: 'monospace' }}>
-              {hasFilters ? '// Aucun log correspondant aux filtres' : '// Aucun log — le système est silencieux'}
+              {hasFilters ? t('ad6_sys_logs.empty_filtered') : t('ad6_sys_logs.empty_none')}
             </p>
           </div>
         ) : (
@@ -529,7 +531,7 @@ export default function LogsPage() {
 
                     {/* Service */}
                     <span style={{ color: '#58A6FF', flexShrink: 0, fontSize: 11 }}>
-                      [{SERVICE_LABELS[log.service] ?? log.service}]
+                      [{SERVICE_LABEL_KEYS[log.service] ? t(SERVICE_LABEL_KEYS[log.service]) : log.service}]
                     </span>
 
                     {/* Message */}
@@ -560,10 +562,10 @@ export default function LogsPage() {
                     <div style={{ padding: '4px 20px 14px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3">
                         {[
-                          { label: 'Logger',   value: log.logger || '—' },
-                          { label: 'Fichier',  value: log.pathname ? `${log.pathname.split('/').slice(-2).join('/')}:${log.lineno}` : '—' },
-                          { label: 'IP',       value: log.ip_address || '—' },
-                          { label: 'User ID',  value: log.user_id ? `#${log.user_id}` : '—' },
+                          { label: t('ad6_sys_logs.detail_logger'),   value: log.logger || '—' },
+                          { label: t('ad6_sys_logs.detail_file'),  value: log.pathname ? `${log.pathname.split('/').slice(-2).join('/')}:${log.lineno}` : '—' },
+                          { label: t('ad6_sys_logs.detail_ip'),       value: log.ip_address || '—' },
+                          { label: t('ad6_sys_logs.detail_user_id'),  value: log.user_id ? `#${log.user_id}` : '—' },
                         ].map(({ label, value }) => (
                           <div key={label}>
                             <p style={{ fontSize: 9.5, color: '#30363D', marginBottom: 2 }}>{label}</p>
@@ -599,7 +601,7 @@ export default function LogsPage() {
           <div className="flex items-center justify-between px-5 py-3"
             style={{ borderTop: '1px solid rgba(255,255,255,0.06)', background: '#161B22' }}>
             <span style={{ fontSize: 11, color: '#484F58', fontFamily: 'monospace' }}>
-              page {page}/{data.total_pages}
+              {t('ad6_sys_logs.page_x_of_y', { page, total: data.total_pages })}
             </span>
             <div className="flex items-center gap-2">
               <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
@@ -626,21 +628,21 @@ export default function LogsPage() {
             <div className="flex items-center gap-3 mb-4">
               <Trash2 size={20} style={{ color: '#EF4444' }} />
               <h3 style={{ fontFamily: "'Syne',sans-serif", fontSize: 16, fontWeight: 800, color: T.text }}>
-                Purger les logs
+                {t('ad6_sys_logs.modal_purge_title')}
               </h3>
             </div>
             <p style={{ fontSize: 13.5, color: T.muted, lineHeight: 1.6, marginBottom: 20 }}>
-              Tous les logs de plus de <strong style={{ color: T.text }}>30 jours</strong> seront supprimés définitivement. Cette action est irréversible.
+              {t('ad6_sys_logs.modal_purge_desc_prefix')} <strong style={{ color: T.text }}>{t('ad6_sys_logs.modal_purge_desc_days')}</strong> {t('ad6_sys_logs.modal_purge_desc_suffix')}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowClear(false)}
                 style={{ flex: 1, padding: '10px 0', borderRadius: 12, fontSize: 13, fontWeight: 600, background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}`, cursor: 'pointer' }}>
-                Annuler
+                {t('ad6_sys_logs.modal_cancel')}
               </button>
               <button onClick={clearLogs} disabled={clearing}
                 style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '10px 0', borderRadius: 12, fontSize: 13, fontWeight: 700, background: '#EF4444', color: '#fff', cursor: clearing ? 'not-allowed' : 'pointer', opacity: clearing ? 0.7 : 1, border: 'none' }}>
                 {clearing ? <RefreshCw size={13} className="animate-spin" /> : <Trash2 size={13} />}
-                {clearing ? 'Suppression…' : 'Confirmer'}
+                {clearing ? t('ad6_sys_logs.modal_deleting') : t('ad6_sys_logs.modal_confirm')}
               </button>
             </div>
           </div>

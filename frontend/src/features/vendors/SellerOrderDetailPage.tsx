@@ -4,6 +4,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   AlertTriangle, ArrowLeft, Bike, CheckCircle, Clock, FileText, Lock, MapPin,
   Navigation, Package, PackageCheck, Phone, RefreshCw, Route, Save, Scale,
@@ -21,11 +22,11 @@ const RELEASE_H = 24;
 const AUTO_CONFIRM_H = 48;
 
 const STEPS = [
-  { key: 'PAID_IN_ESCROW',      label: 'Payée',       icon: CheckCircle },
-  { key: 'VENDOR_ACKNOWLEDGED', label: 'Confirmée',   icon: Clock },
-  { key: 'PREPARING',           label: 'Préparation', icon: Package },
-  { key: 'READY_FOR_PICKUP',    label: 'Prête',       icon: Truck },
-  { key: 'DELIVERED',           label: 'Livrée',      icon: PackageCheck },
+  { key: 'PAID_IN_ESCROW',      labelKey: 'sl3_order_detail.step_paid',       icon: CheckCircle },
+  { key: 'VENDOR_ACKNOWLEDGED', labelKey: 'sl3_order_detail.step_acknowledged', icon: Clock },
+  { key: 'PREPARING',           labelKey: 'sl3_order_detail.step_preparing',  icon: Package },
+  { key: 'READY_FOR_PICKUP',    labelKey: 'sl3_order_detail.step_ready',      icon: Truck },
+  { key: 'DELIVERED',           labelKey: 'sl3_order_detail.step_delivered',  icon: PackageCheck },
 ];
 
 const STATUS_ORDER: Record<string, number> = {
@@ -33,39 +34,39 @@ const STATUS_ORDER: Record<string, number> = {
   READY_FOR_PICKUP: 4, DELIVERED: 5, CANCELLED: -1,
 };
 
-const FULFILL_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  CREATED:             { label: 'Reçue',            color: T.muted,  bg: T.creamAlt },
-  PAID_IN_ESCROW:      { label: 'À confirmer',      color: T.amber,  bg: T.amberL   },
-  VENDOR_ACKNOWLEDGED: { label: 'Confirmée',        color: T.blue,   bg: T.blueL    },
-  PREPARING:           { label: 'En préparation',   color: T.blue,   bg: T.blueL    },
-  READY_FOR_PICKUP:    { label: 'Prête',            color: T.violet, bg: T.violetL  },
-  DELIVERED:           { label: 'Livrée',           color: T.green,  bg: T.greenL   },
-  BUYER_CONFIRMED:     { label: 'Confirmée',        color: T.green,  bg: T.greenL   },
-  AUTO_CONFIRMED:      { label: 'Confirmée auto',   color: T.green,  bg: T.greenL   },
-  RELEASED_TO_VENDOR:  { label: 'Fonds libérés',    color: T.green,  bg: T.greenL   },
-  DISPUTED:            { label: 'Litige',           color: T.red,    bg: T.redL     },
-  CANCELLED:           { label: 'Annulée',          color: T.red,    bg: T.redL     },
-  REFUNDED:            { label: 'Remboursée',       color: T.blue,   bg: T.blueL    },
+const FULFILL_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  CREATED:             { labelKey: 'sl3_order_detail.fulfill_created',      color: T.muted,  bg: T.creamAlt },
+  PAID_IN_ESCROW:      { labelKey: 'sl3_order_detail.fulfill_to_confirm',   color: T.amber,  bg: T.amberL   },
+  VENDOR_ACKNOWLEDGED: { labelKey: 'sl3_order_detail.fulfill_confirmed',    color: T.blue,   bg: T.blueL    },
+  PREPARING:           { labelKey: 'sl3_order_detail.fulfill_preparing',   color: T.blue,   bg: T.blueL    },
+  READY_FOR_PICKUP:    { labelKey: 'sl3_order_detail.fulfill_ready',        color: T.violet, bg: T.violetL  },
+  DELIVERED:           { labelKey: 'sl3_order_detail.fulfill_delivered',    color: T.green,  bg: T.greenL   },
+  BUYER_CONFIRMED:     { labelKey: 'sl3_order_detail.fulfill_buyer_confirmed', color: T.green,  bg: T.greenL   },
+  AUTO_CONFIRMED:      { labelKey: 'sl3_order_detail.fulfill_auto_confirmed', color: T.green,  bg: T.greenL   },
+  RELEASED_TO_VENDOR:  { labelKey: 'sl3_order_detail.fulfill_released',     color: T.green,  bg: T.greenL   },
+  DISPUTED:            { labelKey: 'sl3_order_detail.fulfill_disputed',     color: T.red,    bg: T.redL     },
+  CANCELLED:           { labelKey: 'sl3_order_detail.fulfill_cancelled',    color: T.red,    bg: T.redL     },
+  REFUNDED:            { labelKey: 'sl3_order_detail.fulfill_refunded',     color: T.blue,   bg: T.blueL    },
 };
 
-const PAYMENT_CFG: Record<string, { label: string; color: string; bg: string }> = {
-  PENDING:  { label: 'Paiement en attente', color: T.amber, bg: T.amberL },
-  PAID:     { label: 'Payée',               color: T.green, bg: T.greenL },
-  FAILED:   { label: 'Paiement échoué',     color: T.red,   bg: T.redL   },
-  REFUNDED: { label: 'Remboursée',          color: T.blue,  bg: T.blueL  },
+const PAYMENT_CFG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  PENDING:  { labelKey: 'sl3_order_detail.payment_pending', color: T.amber, bg: T.amberL },
+  PAID:     { labelKey: 'sl3_order_detail.payment_paid',    color: T.green, bg: T.greenL },
+  FAILED:   { labelKey: 'sl3_order_detail.payment_failed',  color: T.red,   bg: T.redL   },
+  REFUNDED: { labelKey: 'sl3_order_detail.payment_refunded', color: T.blue,  bg: T.blueL  },
 };
 
-function shipmentLabel(status?: string) {
+function shipmentLabelKey(status?: string): string {
   switch (status) {
-    case 'CREATED': return 'Livraison créée';
-    case 'ASSIGNED': return 'Livreur assigné';
-    case 'PICKED_UP': return 'Colis pris en main';
-    case 'IN_TRANSIT': return 'En transit';
-    case 'OUT_FOR_DELIVERY': return 'En livraison';
-    case 'DELIVERED': return 'Livré';
-    case 'FAILED': return 'Échec';
-    case 'CANCELLED': return 'Annulée';
-    default: return status || 'Non créée';
+    case 'CREATED': return 'sl3_order_detail.shipment_created';
+    case 'ASSIGNED': return 'sl3_order_detail.shipment_assigned';
+    case 'PICKED_UP': return 'sl3_order_detail.shipment_picked_up';
+    case 'IN_TRANSIT': return 'sl3_order_detail.shipment_in_transit';
+    case 'OUT_FOR_DELIVERY': return 'sl3_order_detail.shipment_out_for_delivery';
+    case 'DELIVERED': return 'sl3_order_detail.shipment_delivered';
+    case 'FAILED': return 'sl3_order_detail.shipment_failed';
+    case 'CANCELLED': return 'sl3_order_detail.shipment_cancelled';
+    default: return status || 'sl3_order_detail.shipment_none';
   }
 }
 
@@ -78,28 +79,30 @@ function maskPhone(p?: string) {
 }
 
 function useShopName(): string {
-  const [name, setName] = useState('Ma Boutique');
+  const { t } = useTranslation();
+  const [name, setName] = useState<string | null>(null);
   useEffect(() => {
     vendorsApi.getProfile().then(p => setName(p.business_name)).catch(() => null);
   }, []);
-  return name;
+  return name ?? t('sl3_order_detail.default_shop_name');
 }
 
 /** Minuterie d'acceptation (72 h) — Date.now() jamais appelé pendant le rendu. */
 function useTimer(createdAt: string, active: boolean): string | null {
-  const [t, setT] = useState<string | null>(null);
+  const { t } = useTranslation();
+  const [timerText, setTimerText] = useState<string | null>(null);
   useEffect(() => {
     if (!active || !createdAt) return;
     const deadline = new Date(createdAt).getTime() + 72 * 3600000;
     const tick = () => {
       const d = deadline - Date.now();
-      setT(d <= 0 ? null : `${Math.floor(d / 3600000)} h ${Math.floor((d % 3600000) / 60000)} min restantes`);
+      setTimerText(d <= 0 ? null : t('sl3_order_detail.time_remaining', { h: Math.floor(d / 3600000), m: Math.floor((d % 3600000) / 60000) }));
     };
     const a = setTimeout(tick, 0);
     const b = setInterval(tick, 60_000);
     return () => { clearTimeout(a); clearInterval(b); };
-  }, [active, createdAt]);
-  return active ? t : null;
+  }, [active, createdAt, t]);
+  return active ? timerText : null;
 }
 
 function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
@@ -115,6 +118,7 @@ function DetailRow({ icon, label, value }: { icon: React.ReactNode; label: strin
 }
 
 export default function SellerOrderDetailPage() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -139,12 +143,12 @@ export default function SellerOrderDetailPage() {
       setNote(noteData.content);
       setNoteDraft(noteData.content);
     } catch {
-      showToast('Commande introuvable', 'error');
+      showToast(t('sl3_order_detail.toast_not_found'), 'error');
       navigate('/seller/orders');
     } finally {
       setLoading(false);
     }
-  }, [id, navigate, showToast]);
+  }, [id, navigate, showToast, t]);
 
   useEffect(() => { loadOrder(); }, [loadOrder]);
 
@@ -154,9 +158,10 @@ export default function SellerOrderDetailPage() {
       setUpdating(true);
       const updated = await vendorsApi.updateFulfillmentStatus(order.id, { fulfillment_status: next });
       setOrder(updated);
-      showToast(`Statut mis à jour : ${FULFILL_CFG[next]?.label ?? next}`, 'success');
+      const nextLabel = FULFILL_CFG[next]?.labelKey ? t(FULFILL_CFG[next].labelKey) : next;
+      showToast(t('sl3_order_detail.toast_status_updated', { status: nextLabel }), 'success');
     } catch {
-      showToast('Erreur de mise à jour', 'error');
+      showToast(t('sl3_order_detail.toast_update_error'), 'error');
     } finally {
       setUpdating(false);
     }
@@ -169,9 +174,9 @@ export default function SellerOrderDetailPage() {
       const saved = await vendorsApi.saveNote(order.id, noteDraft);
       setNote(saved.content);
       setNoteDraft(saved.content);
-      showToast('Note sauvegardée', 'success');
+      showToast(t('sl3_order_detail.toast_note_saved'), 'success');
     } catch {
-      showToast('Erreur lors de la sauvegarde', 'error');
+      showToast(t('sl3_order_detail.toast_note_save_error'), 'error');
     } finally {
       setNoteSaving(false);
     }
@@ -204,14 +209,14 @@ export default function SellerOrderDetailPage() {
 
   const releaseLeft = (() => {
     if (order.escrow_status === 'RELEASED') return null;
-    if (order.escrow_status === 'DISPUTED') return 'Suspendu par litige';
-    if (!isDelivered) return 'Après livraison';
+    if (order.escrow_status === 'DISPUTED') return t('sl3_order_detail.release_suspended_dispute');
+    if (!isDelivered) return t('sl3_order_detail.release_after_delivery');
     const base = new Date(order.updated_at ?? order.created_at).getTime();
     const target = order.escrow_status === 'RELEASE_PENDING'
       ? base + RELEASE_H * 3600000
       : base + (AUTO_CONFIRM_H + RELEASE_H) * 3600000;
     const left = target - Date.now();
-    return left > 0 ? `Dans ${Math.floor(left / 3600000)} h` : 'Imminent';
+    return left > 0 ? t('sl3_order_detail.release_in_hours', { hours: Math.floor(left / 3600000) }) : t('sl3_order_detail.release_imminent');
   })();
 
   /** Rang de l'escrow, pour savoir quelle étape du parcours de l'argent est franchie. */
@@ -224,28 +229,28 @@ export default function SellerOrderDetailPage() {
 
   const moneySteps = [
     {
-      key: 'paid', title: 'Acheteur payé — fonds bloqués',
-      time: order.is_paid ? fmtDate(order.created_at) : 'En attente',
-      desc: 'BelivaY conserve la totalité. Vous êtes couvert même si le colis se perd.',
-      amount: `+ ${fmtXAF(order.vendor_subtotal)} encaissés`, tone: T.green,
+      key: 'paid', title: t('sl3_order_detail.money_paid_title'),
+      time: order.is_paid ? fmtDate(order.created_at) : t('sl3_order_detail.time_pending'),
+      desc: t('sl3_order_detail.money_paid_desc'),
+      amount: t('sl3_order_detail.money_paid_amount', { amount: fmtXAF(order.vendor_subtotal) }), tone: T.green,
     },
     {
-      key: 'commission', title: 'Commission retenue',
+      key: 'commission', title: t('sl3_order_detail.money_commission_title'),
       time: order.is_paid ? fmtDate(order.created_at) : '—',
-      desc: 'Taux de votre plan figé sur cette commande. Il ne bougera pas, même si vous changez de plan.',
-      amount: `− ${fmtXAF(order.commission_amount)} (${order.commission_rate.toFixed(1)} %)`, tone: T.red,
+      desc: t('sl3_order_detail.money_commission_desc'),
+      amount: t('sl3_order_detail.money_commission_amount', { amount: fmtXAF(order.commission_amount), rate: order.commission_rate.toFixed(1) }), tone: T.red,
     },
     {
-      key: 'delivered', title: 'Colis livré — décompte lancé',
-      time: isDelivered ? fmtDate(order.updated_at ?? order.created_at) : 'À venir',
-      desc: `L'acheteur a ${AUTO_CONFIRM_H} h pour confirmer ou ouvrir un litige. Sans réponse, la confirmation est automatique.`,
-      amount: `${fmtXAF(order.vendor_net_amount ?? 0)} en attente`, tone: T.amber,
+      key: 'delivered', title: t('sl3_order_detail.money_delivered_title'),
+      time: isDelivered ? fmtDate(order.updated_at ?? order.created_at) : t('sl3_order_detail.time_upcoming'),
+      desc: t('sl3_order_detail.money_delivered_desc', { hours: AUTO_CONFIRM_H }),
+      amount: t('sl3_order_detail.money_delivered_amount', { amount: fmtXAF(order.vendor_net_amount ?? 0) }), tone: T.amber,
     },
     {
-      key: 'released', title: 'Versement sur votre solde',
-      time: rank >= 3 ? fmtDate(order.updated_at ?? order.created_at) : (releaseLeft ?? 'À venir'),
-      desc: 'Le net rejoint votre solde retirable, puis part vers votre Mobile Money à la demande.',
-      amount: `${fmtXAF(order.vendor_net_amount ?? 0)} ${rank >= 3 ? 'versés' : 'à venir'}`,
+      key: 'released', title: t('sl3_order_detail.money_released_title'),
+      time: rank >= 3 ? fmtDate(order.updated_at ?? order.created_at) : (releaseLeft ?? t('sl3_order_detail.time_upcoming')),
+      desc: t('sl3_order_detail.money_released_desc'),
+      amount: t(rank >= 3 ? 'sl3_order_detail.money_released_amount_done' : 'sl3_order_detail.money_released_amount_pending', { amount: fmtXAF(order.vendor_net_amount ?? 0) }),
       tone: rank >= 3 ? T.green : T.mutedL,
     },
   ];
@@ -264,20 +269,20 @@ export default function SellerOrderDetailPage() {
         </Link>
         <div className="flex-1" style={{ minWidth: 200 }}>
           <h1 className="font-black" style={{ fontSize: 21, color: T.text, letterSpacing: '-.025em' }}>
-            Commande {orderRef(order.id)}
+            {t('sl3_order_detail.order_heading', { ref: orderRef(order.id) })}
           </h1>
           <p className="mt-0.5" style={{ fontSize: 12, color: T.muted }}>
-            {fmtDate(order.created_at)} · {items.length} article{items.length > 1 ? 's' : ''} · {order.city}
+            {fmtDate(order.created_at)} · {t(items.length > 1 ? 'sl3_order_detail.item_count_plural' : 'sl3_order_detail.item_count', { count: items.length })} · {order.city}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {paymentCfg && <Badge label={paymentCfg.label} color={paymentCfg.color} bg={paymentCfg.bg} />}
-          {fulfillCfg && <Badge label={fulfillCfg.label} color={fulfillCfg.color} bg={fulfillCfg.bg} />}
-          <Badge label={escrow.label} color={escrow.color} bg={escrow.bg} />
-          <button type="button" onClick={() => openInvoice([order], shopName)}
+          {paymentCfg && <Badge label={t(paymentCfg.labelKey)} color={paymentCfg.color} bg={paymentCfg.bg} />}
+          {fulfillCfg && <Badge label={t(fulfillCfg.labelKey)} color={fulfillCfg.color} bg={fulfillCfg.bg} />}
+          <Badge label={t(escrow.labelKey)} color={escrow.color} bg={escrow.bg} />
+          <button type="button" onClick={() => openInvoice([order], shopName, t)}
             className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
             style={{ padding: '9px 14px', fontSize: 12, background: T.orange, boxShadow: '0 8px 18px -8px rgba(244,121,32,.8)' }}>
-            <FileText size={13} />Facture
+            <FileText size={13} />{t('sl3_order_detail.invoice')}
           </button>
         </div>
       </div>
@@ -285,14 +290,14 @@ export default function SellerOrderDetailPage() {
       {/* ═══ PROGRESSION ═══ */}
       <div className="rounded-2xl p-5" style={card}>
         <p className="font-bold uppercase mb-4" style={{ fontSize: 10.5, letterSpacing: '.18em', color: T.mutedL }}>
-          Progression de la commande
+          {t('sl3_order_detail.order_progress')}
         </p>
 
         {timer && (
           <div className="flex items-center gap-2 mb-4 rounded-xl"
             style={{ padding: '11px 14px', background: 'rgba(22,163,74,.06)', border: '1px solid rgba(22,163,74,.14)' }}>
             <Clock size={14} style={{ color: T.green, flexShrink: 0 }} />
-            <span className="font-semibold" style={{ fontSize: 12, color: T.green }}>{timer} pour accepter</span>
+            <span className="font-semibold" style={{ fontSize: 12, color: T.green }}>{t('sl3_order_detail.timer_to_accept', { timer })}</span>
           </div>
         )}
 
@@ -300,8 +305,8 @@ export default function SellerOrderDetailPage() {
           <div className="flex items-center gap-3 rounded-xl" style={{ padding: 13, background: T.redL }}>
             <XCircle size={18} style={{ color: T.red, flexShrink: 0 }} />
             <div>
-              <p className="font-bold" style={{ fontSize: 13, color: T.red }}>Commande annulée</p>
-              <p style={{ fontSize: 11, color: T.red }}>Le {fmtDate(order.updated_at ?? order.created_at)}</p>
+              <p className="font-bold" style={{ fontSize: 13, color: T.red }}>{t('sl3_order_detail.order_cancelled')}</p>
+              <p style={{ fontSize: 11, color: T.red }}>{t('sl3_order_detail.cancelled_on', { date: fmtDate(order.updated_at ?? order.created_at) })}</p>
             </div>
           </div>
         ) : (
@@ -325,7 +330,7 @@ export default function SellerOrderDetailPage() {
                       </span>
                       <span className="whitespace-nowrap"
                         style={{ fontSize: 10, fontWeight: now ? 700 : 500, color: done ? T.green : now ? T.orange : T.mutedL }}>
-                        {s.label}
+                        {t(s.labelKey)}
                       </span>
                     </div>
                     {i < STEPS.length - 1 && (
@@ -345,20 +350,20 @@ export default function SellerOrderDetailPage() {
               <>
                 <button type="button" onClick={() => advance('VENDOR_ACKNOWLEDGED')}
                   disabled={updating || !order.is_paid}
-                  title={!order.is_paid ? 'En attente du paiement' : undefined}
+                  title={!order.is_paid ? t('sl3_order_detail.awaiting_payment') : undefined}
                   className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px disabled:opacity-60"
                   style={{ padding: '11px 17px', fontSize: 12.5, background: T.green, boxShadow: '0 8px 20px -10px rgba(22,163,74,.8)' }}>
-                  {updating ? spin : <CheckCircle size={14} />}Accepter la commande
+                  {updating ? spin : <CheckCircle size={14} />}{t('sl3_order_detail.accept_order')}
                 </button>
                 <button type="button" onClick={() => advance('PREPARING')} disabled={updating || !order.is_paid}
                   className="flex items-center gap-1.5 rounded-xl font-semibold transition-all"
                   style={{ padding: '11px 16px', fontSize: 12.5, background: T.cream, border: `1px solid ${T.border}`, color: T.text }}>
-                  {updating ? spin : <Package size={14} />}Passer en préparation
+                  {updating ? spin : <Package size={14} />}{t('sl3_order_detail.move_to_preparing')}
                 </button>
                 <button type="button" onClick={() => advance('CANCELLED')} disabled={updating}
                   className="flex items-center gap-1.5 rounded-xl font-semibold transition-all"
                   style={{ padding: '11px 16px', fontSize: 12.5, background: T.redL, border: `1px solid ${T.redB}`, color: T.red }}>
-                  {updating ? spin : <XCircle size={14} />}Refuser
+                  {updating ? spin : <XCircle size={14} />}{t('sl3_order_detail.refuse')}
                 </button>
               </>
             )}
@@ -366,19 +371,19 @@ export default function SellerOrderDetailPage() {
               <button type="button" onClick={() => advance('PREPARING')} disabled={updating}
                 className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
                 style={{ padding: '11px 17px', fontSize: 12.5, background: T.blue, boxShadow: '0 8px 20px -10px rgba(37,99,235,.8)' }}>
-                {updating ? spin : <Package size={14} />}Commencer la préparation
+                {updating ? spin : <Package size={14} />}{t('sl3_order_detail.start_preparing')}
               </button>
             )}
             {status === 'PREPARING' && (
               <button type="button" onClick={() => advance('READY_FOR_PICKUP')} disabled={updating}
                 className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
                 style={{ padding: '11px 17px', fontSize: 12.5, background: T.orange, boxShadow: '0 8px 20px -10px rgba(244,121,32,.85)' }}>
-                {updating ? spin : <Truck size={14} />}Marquer comme prêt à expédier
+                {updating ? spin : <Truck size={14} />}{t('sl3_order_detail.mark_ready_to_ship')}
               </button>
             )}
             {status === 'READY_FOR_PICKUP' && (
               <span className="flex items-center gap-1.5 font-medium" style={{ fontSize: 12, color: T.muted }}>
-                <Truck size={14} />En attente du livreur BelivaY
+                <Truck size={14} />{t('sl3_order_detail.waiting_for_courier')}
               </span>
             )}
           </div>
@@ -389,24 +394,24 @@ export default function SellerOrderDetailPage() {
             style={{ padding: '10px 13px', background: T.amberL, border: `1px solid ${T.amberB}` }}>
             <AlertTriangle size={13} style={{ color: T.amber, flexShrink: 0 }} />
             <p className="font-semibold" style={{ fontSize: 12, color: T.amber }}>
-              Le paiement n'est pas encore confirmé. Vous ne pouvez pas traiter cette commande.
+              {t('sl3_order_detail.payment_pending_warning')}
             </p>
           </div>
         )}
       </div>
 
       {/* ═══ SUIVI COLIS ═══ */}
-      <Panel title="Suivi du colis · vendeur ↔ livreur" right={<Route size={15} style={{ color: T.orange }} />}>
+      <Panel title={t('sl3_order_detail.shipment_panel_title')} right={<Route size={15} style={{ color: T.orange }} />}>
         {order.shipment ? (
           <>
             <div className="grid gap-2.5" style={{ gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))' }}>
               <div className="rounded-2xl" style={{ padding: '13px 15px', background: T.blueL, border: '1px solid rgba(37,99,235,.16)' }}>
-                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.blue }}>Statut livraison</p>
-                <p className="font-black mt-1.5" style={{ fontSize: 13, color: T.text }}>{shipmentLabel(order.shipment.status)}</p>
+                <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.blue }}>{t('sl3_order_detail.delivery_status')}</p>
+                <p className="font-black mt-1.5" style={{ fontSize: 13, color: T.text }}>{t(shipmentLabelKey(order.shipment.status))}</p>
               </div>
               <div className="rounded-2xl" style={{ padding: '13px 15px', background: T.greenL, border: `1px solid ${T.greenB}` }}>
                 <p className="flex items-center gap-1.5 font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.green }}>
-                  <Navigation size={11} />Distance calculée
+                  <Navigation size={11} />{t('sl3_order_detail.distance_calculated')}
                 </p>
                 <p className="font-black mt-1.5" style={{ fontSize: 17, color: T.text }}>
                   {order.shipment.distance_km.toFixed(1)} km
@@ -414,10 +419,10 @@ export default function SellerOrderDetailPage() {
               </div>
               <div className="rounded-2xl" style={{ padding: '13px 15px', background: T.orangeL, border: '1px solid rgba(244,121,32,.16)' }}>
                 <p className="flex items-center gap-1.5 font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.orange }}>
-                  <Bike size={11} />Livreur
+                  <Bike size={11} />{t('sl3_order_detail.courier')}
                 </p>
                 <p className="font-black mt-1.5" style={{ fontSize: 13, color: T.text }}>
-                  {order.shipment.courier_name || 'En attente'}
+                  {order.shipment.courier_name || t('sl3_order_detail.awaiting')}
                 </p>
                 {order.shipment.courier_phone && (
                   <p style={{ fontSize: 10.5, color: T.muted, marginTop: 2 }}>{order.shipment.courier_phone}</p>
@@ -428,13 +433,13 @@ export default function SellerOrderDetailPage() {
             {order.shipment.pickup_confirmation_code && (
               <div className="mt-4 rounded-2xl" style={{ padding: '14px 16px', background: '#FEF3C7', border: '1px solid #FDE68A' }}>
                 <p className="font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: '#92400E' }}>
-                  Code de remise — à donner au livreur
+                  {t('sl3_order_detail.pickup_code_title')}
                 </p>
                 <p className="font-black mt-1.5" style={{ fontSize: 24, letterSpacing: '.15em', color: '#78350F' }}>
                   {order.shipment.pickup_confirmation_code}
                 </p>
                 <p style={{ fontSize: 11, color: '#92400E', marginTop: 4 }}>
-                  Lisez ce code au livreur au moment du ramassage. Il en a besoin pour valider la prise en charge.
+                  {t('sl3_order_detail.pickup_code_desc')}
                 </p>
               </div>
             )}
@@ -457,7 +462,7 @@ export default function SellerOrderDetailPage() {
                         <span className="font-semibold" style={{ fontSize: 10.5, color: T.mutedL }}>{fmtDate(e.created_at)}</span>
                       </div>
                       <p className="mt-1" style={{ fontSize: 11.5, lineHeight: 1.5, color: T.muted }}>
-                        {e.message || shipmentLabel(e.status)}
+                        {e.message || t(shipmentLabelKey(e.status))}
                       </p>
                       {e.location && (
                         <p className="flex items-center gap-1 font-bold mt-1.5" style={{ fontSize: 10.5, color: T.mutedL }}>
@@ -472,7 +477,7 @@ export default function SellerOrderDetailPage() {
           </>
         ) : (
           <div className="rounded-xl" style={{ padding: '13px 15px', background: T.cream, fontSize: 13, color: T.muted }}>
-            Aucun suivi de colis n'est encore associé à cette commande.
+            {t('sl3_order_detail.no_shipment_tracking')}
           </div>
         )}
       </Panel>
@@ -481,7 +486,7 @@ export default function SellerOrderDetailPage() {
       <div className="flex gap-3.5 items-start flex-wrap">
         <div className="flex-1 flex flex-col gap-3.5" style={{ minWidth: 340 }}>
 
-          <Panel title="Cycle de vie de l'argent" right={<Lock size={15} style={{ color: escrow.color }} />}>
+          <Panel title={t('sl3_order_detail.money_lifecycle_title')} right={<Lock size={15} style={{ color: escrow.color }} />}>
             {moneySteps.map((s, i, arr) => {
               const done = rank >= (stepRank[s.key] ?? 0);
               const isNow = !done && (i === 0 || rank >= (stepRank[arr[i - 1].key] ?? 0));
@@ -518,26 +523,26 @@ export default function SellerOrderDetailPage() {
           </Panel>
 
           <Panel
-            title="Décomposition du paiement"
-            right={<GhostBtn icon={<FileText size={13} />} onClick={() => openInvoice([order], shopName)}>Facture</GhostBtn>}
+            title={t('sl3_order_detail.payment_breakdown_title')}
+            right={<GhostBtn icon={<FileText size={13} />} onClick={() => openInvoice([order], shopName, t)}>{t('sl3_order_detail.invoice')}</GhostBtn>}
           >
             <div className="rounded-2xl overflow-hidden" style={{ border: `1px solid ${T.border}` }}>
               <div className="flex items-center justify-between" style={{ padding: '14px 16px', background: T.cream }}>
-                <span style={{ fontSize: 12, color: T.muted }}>Sous-total de vos articles</span>
+                <span style={{ fontSize: 12, color: T.muted }}>{t('sl3_order_detail.items_subtotal')}</span>
                 <span className="font-bold" style={{ fontSize: 13.5, color: T.text }}>{fmtXAF(order.vendor_subtotal)}</span>
               </div>
               <div className="flex items-center justify-between"
                 style={{ padding: '14px 16px', background: T.white, borderTop: `1px solid ${T.borderL}` }}>
-                <span style={{ fontSize: 12, color: T.mutedL }}>Livraison (encaissée par BelivaY)</span>
+                <span style={{ fontSize: 12, color: T.mutedL }}>{t('sl3_order_detail.delivery_collected_by_belivay')}</span>
                 <span className="font-semibold" style={{ fontSize: 13, color: T.mutedL }}>
-                  {(order.delivery_fee_xaf ?? 0) === 0 ? 'Offerte' : fmtXAF(order.delivery_fee_xaf ?? 0)}
+                  {(order.delivery_fee_xaf ?? 0) === 0 ? t('sl3_order_detail.free') : fmtXAF(order.delivery_fee_xaf ?? 0)}
                 </span>
               </div>
               <div className="flex items-center justify-between gap-3"
                 style={{ padding: '14px 16px', background: 'rgba(220,38,38,.06)', borderTop: '1px solid rgba(220,38,38,.14)' }}>
                 <span style={{ fontSize: 12, color: T.red }}>
-                  Commission BelivaY {order.commission_rate.toFixed(1)} %{' '}
-                  <span style={{ fontSize: 10, opacity: .8 }}>(figée à la commande)</span>
+                  {t('sl3_order_detail.commission_rate', { rate: order.commission_rate.toFixed(1) })}{' '}
+                  <span style={{ fontSize: 10, opacity: .8 }}>{t('sl3_order_detail.commission_locked')}</span>
                 </span>
                 <span className="font-bold flex-shrink-0" style={{ fontSize: 13.5, color: T.red }}>
                   − {fmtXAF(order.commission_amount)}
@@ -545,7 +550,7 @@ export default function SellerOrderDetailPage() {
               </div>
               <div className="flex items-center justify-between gap-3"
                 style={{ padding: '17px 16px', background: T.greenL, borderTop: `1px solid ${T.greenB}` }}>
-                <span className="font-bold" style={{ fontSize: 12, color: T.green }}>Net qui vous revient</span>
+                <span className="font-bold" style={{ fontSize: 12, color: T.green }}>{t('sl3_order_detail.net_to_you')}</span>
                 <span className="font-black flex-shrink-0"
                   style={{ fontSize: 22, color: T.green, letterSpacing: '-.02em' }}>
                   {fmtXAF(order.vendor_net_amount ?? 0)}
@@ -563,7 +568,7 @@ export default function SellerOrderDetailPage() {
                 background: `radial-gradient(circle,${escrow.color}88,transparent 68%)` }} />
             <div className="relative">
               <p className="font-bold uppercase" style={{ fontSize: 10, letterSpacing: '.18em', color: 'rgba(255,255,255,.42)' }}>
-                {rank >= 3 ? 'Déjà versé' : 'Bloqué pour vous'}
+                {rank >= 3 ? t('sl3_order_detail.already_paid_out') : t('sl3_order_detail.blocked_for_you')}
               </p>
               <p className="font-black mt-2"
                 style={{ fontSize: 29, color: '#fff', letterSpacing: '-.025em' }}>
@@ -579,38 +584,37 @@ export default function SellerOrderDetailPage() {
                   </span>
                   <span>
                     <span className="block font-bold" style={{ fontSize: 11.5, color: '#fff' }}>
-                      Libération {releaseLeft.toLowerCase()}
+                      {t('sl3_order_detail.release_label', { when: releaseLeft.toLowerCase() })}
                     </span>
                     <span className="block mt-0.5" style={{ fontSize: 10.5, color: 'rgba(255,255,255,.45)' }}>
-                      {order.escrow_status === 'DISPUTED' ? "Reprend après l'arbitrage" : "Ou dès que l'acheteur confirme"}
+                      {order.escrow_status === 'DISPUTED' ? t('sl3_order_detail.resumes_after_arbitration') : t('sl3_order_detail.or_on_buyer_confirmation')}
                     </span>
                   </span>
                 </div>
               )}
 
               <p className="mt-3" style={{ fontSize: 11, lineHeight: 1.6, color: 'rgba(255,255,255,.55)' }}>
-                Confirmation automatique <strong style={{ color: '#fff' }}>{AUTO_CONFIRM_H} h</strong> après livraison,
-                puis versement <strong style={{ color: '#fff' }}>{RELEASE_H} h</strong> plus tard.
+                {t('sl3_order_detail.auto_confirm_hero', { autoConfirmH: AUTO_CONFIRM_H, releaseH: RELEASE_H })}
               </p>
 
               <Link to="/seller/pending-funds">
                 <span className="block mt-3 font-bold" style={{ fontSize: 11, color: T.orange }}>
-                  Voir tous mes fonds en attente →
+                  {t('sl3_order_detail.see_all_pending_funds')}
                 </span>
               </Link>
             </div>
           </div>
 
           {/* Livraison — sans identité acheteur */}
-          <Panel title="Livraison" right={<MapPin size={15} style={{ color: T.orange }} />}>
-            <DetailRow icon={<MapPin size={13} />} label="Ville" value={order.city} />
-            {order.address && <DetailRow icon={<MapPin size={13} />} label="Adresse de livraison" value={order.address} />}
-            <DetailRow icon={<Phone size={13} />} label="Contact de livraison" value={maskPhone(order.customer_phone)} />
+          <Panel title={t('sl3_order_detail.delivery_panel_title')} right={<MapPin size={15} style={{ color: T.orange }} />}>
+            <DetailRow icon={<MapPin size={13} />} label={t('sl3_order_detail.city')} value={order.city} />
+            {order.address && <DetailRow icon={<MapPin size={13} />} label={t('sl3_order_detail.delivery_address')} value={order.address} />}
+            <DetailRow icon={<Phone size={13} />} label={t('sl3_order_detail.delivery_contact')} value={maskPhone(order.customer_phone)} />
 
             {order.note && (
               <div className="mt-3 rounded-2xl" style={{ padding: 13, background: T.orangeL, border: '1px solid rgba(244,121,32,.16)' }}>
                 <p className="flex items-center gap-1.5 font-bold uppercase" style={{ fontSize: 9.5, letterSpacing: '.12em', color: T.orange }}>
-                  <StickyNote size={12} />Consigne du client
+                  <StickyNote size={12} />{t('sl3_order_detail.customer_instructions')}
                 </p>
                 <p className="mt-1.5" style={{ fontSize: 12, lineHeight: 1.5, color: T.text }}>{order.note}</p>
               </div>
@@ -618,8 +622,7 @@ export default function SellerOrderDetailPage() {
 
             <div className="mt-3">
               <Note icon={<ShieldCheck size={14} />}>
-                L'identité de l'acheteur reste chez BelivaY. Vous recevez l'adresse et un contact de livraison,
-                rien de plus.
+                {t('sl3_order_detail.buyer_identity_note')}
               </Note>
             </div>
           </Panel>
@@ -630,9 +633,9 @@ export default function SellerOrderDetailPage() {
                 <span className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
                   style={{ background: T.redL, color: T.red }}><Scale size={16} /></span>
                 <span className="flex-1 min-w-0">
-                  <span className="block font-bold" style={{ fontSize: 12.5, color: T.text }}>Litige en cours</span>
+                  <span className="block font-bold" style={{ fontSize: 12.5, color: T.text }}>{t('sl3_order_detail.dispute_ongoing')}</span>
                   <span className="block" style={{ fontSize: 10.5, color: T.muted }}>
-                    {fmtXAF(order.vendor_net_amount ?? 0)} gelés — répondre au litige
+                    {t('sl3_order_detail.dispute_frozen_amount', { amount: fmtXAF(order.vendor_net_amount ?? 0) })}
                   </span>
                 </span>
               </div>
@@ -644,8 +647,8 @@ export default function SellerOrderDetailPage() {
       {/* ═══ ARTICLES ═══ */}
       <Panel
         pad={false}
-        title="Articles commandés"
-        sub={`${items.length} article${items.length > 1 ? 's' : ''} · ${units} unité${units > 1 ? 's' : ''}`}
+        title={t('sl3_order_detail.ordered_items_title')}
+        sub={t('sl3_order_detail.ordered_items_sub', { items: t(items.length > 1 ? 'sl3_order_detail.item_count_plural' : 'sl3_order_detail.item_count', { count: items.length }), units: t(units > 1 ? 'sl3_order_detail.unit_count_plural' : 'sl3_order_detail.unit_count', { count: units }) })}
         right={<Package size={15} style={{ color: T.orange }} />}
       >
         {items.map(item => (
@@ -660,7 +663,7 @@ export default function SellerOrderDetailPage() {
             <div className="flex-1" style={{ minWidth: 170 }}>
               <p className="font-semibold" style={{ fontSize: 13, color: T.text, lineHeight: 1.4 }}>{item.product_title}</p>
               <p className="mt-1" style={{ fontSize: 11.5, color: T.muted }}>
-                Qté <strong style={{ color: T.text }}>{item.qty}</strong> · Prix unitaire{' '}
+                {t('sl3_order_detail.qty_short')} <strong style={{ color: T.text }}>{item.qty}</strong> · {t('sl3_order_detail.unit_price')}{' '}
                 <strong style={{ color: T.text }}>{fmtXAF(item.product_price ?? 0)}</strong>
               </p>
             </div>
@@ -669,7 +672,7 @@ export default function SellerOrderDetailPage() {
                 {fmtXAF(item.line_total_xaf)}
               </p>
               <p style={{ fontSize: 10.5, color: T.mutedL, marginTop: 2 }}>
-                net {fmtXAF(Math.round(item.line_total_xaf * (1 - order.commission_rate / 100)))}
+                {t('sl3_order_detail.net_amount', { amount: fmtXAF(Math.round(item.line_total_xaf * (1 - order.commission_rate / 100))) })}
               </p>
             </div>
           </div>
@@ -683,14 +686,14 @@ export default function SellerOrderDetailPage() {
           <div className="flex items-center gap-2.5 flex-wrap">
             <span className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
               style={{ background: T.violetL, color: T.violet }}><StickyNote size={15} /></span>
-            <span className="font-bold" style={{ fontSize: 13.5, color: T.text }}>Note interne</span>
+            <span className="font-bold" style={{ fontSize: 13.5, color: T.text }}>{t('sl3_order_detail.internal_note_title')}</span>
             <span className="font-bold rounded-full"
               style={{ fontSize: 10, padding: '4px 9px', background: T.violetL, color: T.violet }}>
-              Visible uniquement par vous
+              {t('sl3_order_detail.internal_note_visibility')}
             </span>
           </div>
           {noteDraft !== note && (
-            <span className="font-medium" style={{ fontSize: 11, color: T.amber }}>Modifications non sauvegardées</span>
+            <span className="font-medium" style={{ fontSize: 11, color: T.amber }}>{t('sl3_order_detail.unsaved_changes')}</span>
           )}
         </div>
 
@@ -698,7 +701,7 @@ export default function SellerOrderDetailPage() {
           <textarea
             value={noteDraft}
             onChange={e => setNoteDraft(e.target.value)}
-            placeholder="Ex : client régulier — emballage cadeau · vérifier le numéro de série avant expédition…"
+            placeholder={t('sl3_order_detail.note_placeholder')}
             maxLength={2000}
             rows={4}
             className="w-full resize-none rounded-2xl outline-none transition-all"
@@ -707,20 +710,20 @@ export default function SellerOrderDetailPage() {
             onBlur={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.boxShadow = 'none'; }}
           />
           <div className="flex items-center justify-between gap-2.5 mt-3 flex-wrap">
-            <p style={{ fontSize: 11, color: T.mutedL }}>{noteDraft.length}/2 000 caractères</p>
+            <p style={{ fontSize: 11, color: T.mutedL }}>{t('sl3_order_detail.char_count', { count: noteDraft.length })}</p>
             <div className="flex gap-2">
               {noteDraft !== note && (
                 <button type="button" onClick={() => setNoteDraft(note)}
                   className="rounded-xl font-semibold"
                   style={{ padding: '9px 15px', fontSize: 12, background: T.creamAlt, color: T.muted }}>
-                  Annuler
+                  {t('sl3_order_detail.cancel')}
                 </button>
               )}
               <button type="button" onClick={saveNote} disabled={noteSaving || noteDraft === note}
                 className="flex items-center gap-1.5 rounded-xl font-bold text-white transition-all disabled:opacity-50"
                 style={{ padding: '9px 17px', fontSize: 12.5, background: T.violet, boxShadow: '0 8px 20px -10px rgba(124,58,237,.85)' }}>
                 {noteSaving ? <RefreshCw size={13} className="animate-spin" /> : <Save size={13} />}
-                {noteSaving ? 'Sauvegarde…' : 'Sauvegarder'}
+                {noteSaving ? t('sl3_order_detail.saving') : t('sl3_order_detail.save')}
               </button>
             </div>
           </div>
@@ -730,8 +733,7 @@ export default function SellerOrderDetailPage() {
           style={{ padding: '13px 20px', background: 'rgba(124,58,237,.04)', borderTop: `1px solid ${T.border}` }}>
           <StickyNote size={12} style={{ color: T.violet, flexShrink: 0, marginTop: 2 }} />
           <p style={{ fontSize: 11, lineHeight: 1.6, color: T.muted }}>
-            Cette note est strictement privée. Elle n'est ni visible par l'acheteur, ni par l'équipe BelivaY,
-            ni par d'autres vendeurs. Utilisez-la pour vos instructions de préparation ou tout mémo interne.
+            {t('sl3_order_detail.note_privacy_desc')}
           </p>
         </div>
       </div>
@@ -740,13 +742,13 @@ export default function SellerOrderDetailPage() {
       <div className="rounded-2xl flex items-center justify-between gap-3 flex-wrap"
         style={{ padding: '16px 20px', background: T.creamAlt, border: `1px solid ${T.border}` }}>
         <p style={{ fontSize: 11.5, color: T.muted }}>
-          Commande créée le {fmtDate(order.created_at)}
-          {order.updated_at && order.updated_at !== order.created_at && ` · mise à jour le ${fmtDate(order.updated_at)}`}
+          {t('sl3_order_detail.created_on', { date: fmtDate(order.created_at) })}
+          {order.updated_at && order.updated_at !== order.created_at && t('sl3_order_detail.updated_on_suffix', { date: fmtDate(order.updated_at) })}
         </p>
-        <button type="button" onClick={() => openInvoice([order], shopName)}
+        <button type="button" onClick={() => openInvoice([order], shopName, t)}
           className="flex items-center gap-2 rounded-xl font-bold text-white transition-all hover:-translate-y-px"
           style={{ padding: '10px 17px', fontSize: 12.5, background: T.orange, boxShadow: '0 8px 20px -10px rgba(244,121,32,.85)' }}>
-          <FileText size={14} />Imprimer la facture
+          <FileText size={14} />{t('sl3_order_detail.print_invoice')}
         </button>
       </div>
     </div>

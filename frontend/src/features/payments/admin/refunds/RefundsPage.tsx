@@ -15,6 +15,7 @@
 
 import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import type { ListParams } from '../../api/admin-finance.api';
@@ -48,6 +49,7 @@ const FILTRES: Record<string, string> = {
 export default function AdminRefundsPage({
   basePath = '/admin/finance',
 }: AdminRefundsPageProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const filtre = params.get('filter') ?? 'pending';
@@ -72,10 +74,10 @@ export default function AdminRefundsPage({
   const lignes = data?.results ?? [];
 
   const onglets: FilterTab[] = [
-    { key: 'pending', label: 'À approuver', urgent: true },
-    { key: 'approved', label: 'À exécuter' },
-    { key: 'incidents', label: 'Incidents' },
-    { key: 'all', label: 'Tous' },
+    { key: 'pending', label: t('pm1_refunds.tab_pending'), urgent: true },
+    { key: 'approved', label: t('pm1_refunds.tab_approved') },
+    { key: 'incidents', label: t('pm1_refunds.tab_incidents') },
+    { key: 'all', label: t('pm1_refunds.tab_all') },
   ];
 
   const confirmer = (motif: string) => {
@@ -84,17 +86,17 @@ export default function AdminRefundsPage({
     if (dialogue.mode === 'approve') {
       void action.run(
         () => adminFinanceApi.approveRefund(reference),
-        'Remboursement approuvé.',
+        t('pm1_refunds.toast_approved'),
       );
     } else if (dialogue.mode === 'reject') {
       void action.run(
         () => adminFinanceApi.rejectRefund(reference, motif),
-        'Remboursement rejeté. Le séquestre reste gelé.',
+        t('pm1_refunds.toast_rejected'),
       );
     } else {
       void action.run(
         () => adminFinanceApi.executeRefund(reference),
-        'Remboursement émis vers le payeur.',
+        t('pm1_refunds.toast_executed'),
       );
     }
   };
@@ -111,7 +113,7 @@ export default function AdminRefundsPage({
           aria-hidden="true"
           style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
         />
-        Centre financier
+        {t('pm1_refunds.back_label')}
       </button>
 
       <div style={{
@@ -123,10 +125,10 @@ export default function AdminRefundsPage({
           <p style={{
             fontSize: 19, margin: 0, color: 'var(--text-primary, #1A1209)',
           }}>
-            Remboursements
+            {t('pm1_refunds.title')}
           </p>
           <p style={{ fontSize: 12.5, margin: '4px 0 0', color: FT.muted }}>
-            L’argent retourne toujours vers le numéro qui a payé.
+            {t('pm1_refunds.subtitle')}
           </p>
         </div>
         <FilterTabs
@@ -160,14 +162,14 @@ export default function AdminRefundsPage({
       }}>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_refunds.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher les remboursements"
+            title={t('pm1_refunds.error_title')}
             description={error}
           />
         )}
@@ -176,8 +178,8 @@ export default function AdminRefundsPage({
           <EmptyState
             icon="arrow-back-up"
             title={filtre === 'pending'
-              ? 'Aucun remboursement en attente'
-              : 'Aucun remboursement'}
+              ? t('pm1_refunds.empty_pending')
+              : t('pm1_refunds.empty_all')}
           />
         )}
 
@@ -214,10 +216,12 @@ export default function AdminRefundsPage({
                   />
                 </div>
                 <p style={{ fontSize: 11.5, margin: '5px 0 0', color: FT.faint }}>
-                  {remboursement.reference}
-                  {' · '}{formatShortDate(remboursement.created_at)}
-                  {' · vers '}{remboursement.payer_msisdn_masked}
-                  {' · demandé par '}{remboursement.requested_by_username}
+                  {t('pm1_refunds.meta_line', {
+                    reference: remboursement.reference,
+                    date: formatShortDate(remboursement.created_at),
+                    payer: remboursement.payer_msisdn_masked,
+                    requester: remboursement.requested_by_username,
+                  })}
                 </p>
               </div>
 
@@ -228,7 +232,7 @@ export default function AdminRefundsPage({
               <div style={{ width: 100, textAlign: 'right', paddingTop: 2 }}>
                 {inconnu ? (
                   <span style={{ fontSize: 11.5, color: FT.redD }}>
-                    ne pas rejouer
+                    {t('pm1_refunds.do_not_retry')}
                   </span>
                 ) : aApprouver ? (
                   <button
@@ -241,7 +245,7 @@ export default function AdminRefundsPage({
                       borderColor: FT.green, color: FT.greenD,
                     }}
                   >
-                    Approuver
+                    {t('pm1_refunds.approve')}
                   </button>
                 ) : aExecuter ? (
                   <button
@@ -251,7 +255,7 @@ export default function AdminRefundsPage({
                     })}
                     style={{ fontSize: 12, padding: '5px 12px' }}
                   >
-                    Exécuter
+                    {t('pm1_refunds.execute')}
                   </button>
                 ) : null}
               </div>
@@ -263,28 +267,30 @@ export default function AdminRefundsPage({
       <ApprovalDialog
         open={dialogue !== null}
         title={{
-          approve: 'Approuver ce remboursement',
-          reject: 'Rejeter ce remboursement',
-          execute: 'Exécuter ce remboursement',
+          approve: t('pm1_refunds.dialog_title_approve'),
+          reject: t('pm1_refunds.dialog_title_reject'),
+          execute: t('pm1_refunds.dialog_title_execute'),
         }[dialogue?.mode ?? 'approve']}
         amountXaf={dialogue?.refund.amount_xaf ?? 0}
         fields={dialogue ? [
-          { label: 'Motif', value: dialogue.refund.reason_label },
-          { label: 'Vers', value: dialogue.refund.payer_msisdn_masked },
-          { label: 'Demandé par', value: dialogue.refund.requested_by_username },
+          { label: t('pm1_refunds.field_reason'), value: dialogue.refund.reason_label },
+          { label: t('pm1_refunds.field_to'), value: dialogue.refund.payer_msisdn_masked },
+          { label: t('pm1_refunds.field_requested_by'), value: dialogue.refund.requested_by_username },
         ] : []}
         confirmLabel={{
-          approve: 'Approuver', reject: 'Rejeter', execute: 'Exécuter',
+          approve: t('pm1_refunds.approve'),
+          reject: t('pm1_refunds.reject'),
+          execute: t('pm1_refunds.execute'),
         }[dialogue?.mode ?? 'approve']}
         reasonRequired={dialogue?.mode === 'reject'}
         reasonPlaceholder={dialogue?.mode === 'reject'
-          ? 'Motif du rejet…' : ''}
+          ? t('pm1_refunds.reject_reason_placeholder') : ''}
         danger={dialogue?.mode === 'reject'}
         warning={dialogue?.mode === 'execute'
-          ? "L'argent partira vers le numéro qui a payé. Irréversible."
+          ? t('pm1_refunds.warning_execute')
           : dialogue?.mode === 'reject'
-            ? 'Le séquestre restera gelé : rejeter ne tranche pas le litige.'
-            : 'Le demandeur ne peut pas approuver sa propre demande.'}
+            ? t('pm1_refunds.warning_reject')
+            : t('pm1_refunds.warning_approve')}
         running={action.running}
         error={action.error}
         onConfirm={confirmer}

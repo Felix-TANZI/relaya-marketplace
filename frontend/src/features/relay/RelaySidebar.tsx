@@ -1,4 +1,5 @@
 import { LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { RELAY_NAV_ITEMS, type RelayNavGroup, type RelayNavItem, type RelayTab } from "./relayNav";
 
 const GROUP_ORDER: RelayNavGroup[] = ["pilotage", "operations", "qualite", "gestion", "risque", "compte"];
@@ -71,6 +72,7 @@ export function RelaySidebarContent({
   profile,
   footer,
 }: RelaySidebarProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="rounded-[22px] border border-blue-300/25 bg-[linear-gradient(145deg,rgba(96,165,250,.16),rgba(255,255,255,.03))] p-4 shadow-[0_18px_40px_rgba(2,18,29,.55)]">
@@ -103,7 +105,7 @@ export function RelaySidebarContent({
           </div>
         </div>
         <div className="mt-3 flex items-center justify-between border-t border-blue-300/20 pt-3 text-xs">
-          <span className="font-semibold uppercase tracking-[0.08em] text-blue-100/70">Trust Score PR</span>
+          <span className="font-semibold uppercase tracking-[0.08em] text-blue-100/70">{t("rl1_sidebar.trust_score_label")}</span>
           <span className="flex items-center gap-2 font-black text-white">
             {profile.trust}/100
             <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-200 to-blue-400 shadow-[0_0_12px_rgba(147,197,253,1)]" />

@@ -13,7 +13,8 @@
  */
 import { Gauge, Package, Route, ScanLine } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { TAB_LABELS, type CourierTab } from "./courierNav";
+import { useTranslation } from "react-i18next";
+import { TAB_LABEL_KEYS, type CourierTab } from "./courierNav";
 
 /** Les quatre onglets fixes, dans l'ordre du flux metier d'une journee. */
 const PRIMARY: Array<{ id: CourierTab; icon: LucideIcon }> = [
@@ -51,9 +52,10 @@ export default function CourierMobileNav({
   onSelect: (tab: CourierTab) => void;
   badges: Partial<Record<CourierTab, number>>;
 }) {
+  const { t } = useTranslation();
   return (
     <nav
-      aria-label="Espace livreur"
+      aria-label={t("cr1_mobile_nav.aria_label")}
       className="fixed bottom-0 left-0 right-0 z-[900] border-t border-emerald-500/10 bg-[#07130f] shadow-[0_-8px_30px_rgba(0,0,0,.35)] lg:hidden"
     >
       <div className="flex h-[58px] items-center px-2">
@@ -77,7 +79,7 @@ export default function CourierMobileNav({
                 {badge > 0 ? <Badge count={badge} /> : null}
               </span>
               <span className={`max-w-full truncate text-[9px] font-bold ${active ? "text-emerald-300" : "text-[#8B949E]"}`}>
-                {TAB_LABELS[id]}
+                {t(TAB_LABEL_KEYS[id])}
               </span>
             </button>
           );

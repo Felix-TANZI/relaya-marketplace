@@ -11,6 +11,8 @@
 // prestataire depuis le detail, ce qui ne deplace aucun argent.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import Money from '../../shared/Money';
 import { statusMeta, TONE } from '../../model/status';
 import { FT } from '../../shared/tokens';
@@ -28,7 +30,8 @@ interface PayoutRowProps {
 export default function PayoutRow({
   payout, showBorder = true, onOpen, onApprove, onExecute,
 }: PayoutRowProps) {
-  const meta = statusMeta('payout', payout.status);
+  const { t } = useTranslation();
+  const meta = statusMeta('payout', payout.status, t);
   const inconnu = payout.status === 'UNKNOWN';
   const aApprouver = payout.status === 'PENDING_APPROVAL';
   const aExecuter = payout.status === 'APPROVED';
@@ -56,7 +59,7 @@ export default function PayoutRow({
         }}>
           {payout.reference}
           {payout.settled_at
-            ? ` · versé le ${formatShortDate(payout.settled_at)}`
+            ? t('pm1_payout_row.settled_on', { date: formatShortDate(payout.settled_at) })
             : ` · ${payout.payee_msisdn_masked} ${payout.payee_operator}`}
         </p>
       </div>
@@ -77,7 +80,10 @@ export default function PayoutRow({
           color: acheve ? FT.muted : 'var(--text-primary, #1A1209)',
         }}>
           {aApprouver
-            ? `${payout.approvals_count} / ${payout.required_approvals} approbation`
+            ? t('pm1_payout_row.approvals_count', {
+                count: payout.approvals_count,
+                required: payout.required_approvals,
+              })
             : meta.label}
         </span>
       </div>
@@ -94,7 +100,7 @@ export default function PayoutRow({
         {inconnu ? (
           // Pas de bouton. La mention remplace l'action.
           <span style={{ fontSize: 11.5, color: FT.redD }}>
-            ne pas rejouer
+            {t('pm1_payout_row.do_not_retry')}
           </span>
         ) : aApprouver && onApprove ? (
           <button
@@ -105,7 +111,7 @@ export default function PayoutRow({
               borderColor: FT.green, color: FT.greenD,
             }}
           >
-            Approuver
+            {t('pm1_payout_row.approve')}
           </button>
         ) : aExecuter && onExecute ? (
           <button
@@ -113,7 +119,7 @@ export default function PayoutRow({
             onClick={onExecute}
             style={{ fontSize: 12, padding: '5px 12px' }}
           >
-            Exécuter
+            {t('pm1_payout_row.execute')}
           </button>
         ) : null}
       </div>

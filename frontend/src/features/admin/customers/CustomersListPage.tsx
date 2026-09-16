@@ -6,6 +6,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Search, RefreshCw, AlertCircle, ChevronLeft, ChevronRight,
   ShoppingCart, UserX, UserCheck, MoreHorizontal, Eye,
@@ -45,13 +46,13 @@ const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';
 const fmtShortDate = (d: string) =>
   new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-const fmtRelative = (d: string | null): string => {
+const fmtRelative = (d: string | null, t: (key: string, opts?: Record<string, unknown>) => string): string => {
   if (!d) return '—';
   const s = Math.floor((Date.now() - new Date(d).getTime()) / 1000);
-  if (s < 60)     return "à l'instant";
-  if (s < 3600)   return `il y a ${Math.floor(s / 60)}min`;
-  if (s < 86400)  return `il y a ${Math.floor(s / 3600)}h`;
-  if (s < 604800) return `il y a ${Math.floor(s / 86400)}j`;
+  if (s < 60)     return t('ad2_customers_list.relative_now');
+  if (s < 3600)   return t('ad2_customers_list.relative_minutes', { count: Math.floor(s / 60) });
+  if (s < 86400)  return t('ad2_customers_list.relative_hours', { count: Math.floor(s / 3600) });
+  if (s < 604800) return t('ad2_customers_list.relative_days', { count: Math.floor(s / 86400) });
   return fmtDate(d);
 };
 const isNew = (d: string) => Date.now() - new Date(d).getTime() < 7 * 86400_000;
@@ -73,19 +74,19 @@ const PAGE_SIZES = [10, 20, 50] as const;
 // CONFIG VISUELLE
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PLAN_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  FREE:     { label: 'Gratuit',  color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
-  STARTER:  { label: 'Starter', color: '#3B82F6', bg: 'rgba(59,130,246,0.12)'  },
-  PRO:      { label: 'Pro',     color: '#F47920', bg: 'rgba(244,121,32,0.12)'  },
-  BUSINESS: { label: 'Business',color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
-  TRIAL:    { label: 'Essai',   color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
+const PLAN_CONFIG: Record<string, { labelKey: string; color: string; bg: string }> = {
+  FREE:     { labelKey: 'ad2_customers_list.plan_free',     color: '#9CA3AF', bg: 'rgba(156,163,175,0.12)' },
+  STARTER:  { labelKey: 'ad2_customers_list.plan_starter',  color: '#3B82F6', bg: 'rgba(59,130,246,0.12)'  },
+  PRO:      { labelKey: 'ad2_customers_list.plan_pro',      color: '#F47920', bg: 'rgba(244,121,32,0.12)'  },
+  BUSINESS: { labelKey: 'ad2_customers_list.plan_business', color: '#8B5CF6', bg: 'rgba(139,92,246,0.12)' },
+  TRIAL:    { labelKey: 'ad2_customers_list.plan_trial',    color: '#10B981', bg: 'rgba(16,185,129,0.12)' },
 };
 
-const TIER_CONFIG: Record<string, { label: string; color: string }> = {
-  BRONZE:  { label: 'Bronze',  color: '#CD7F32' },
-  SILVER:  { label: 'Argent',  color: '#A8A9AD' },
-  GOLD:    { label: 'Or',      color: '#FFD700' },
-  DIAMOND: { label: 'Diamant', color: '#60A5FA' },
+const TIER_CONFIG: Record<string, { labelKey: string; color: string }> = {
+  BRONZE:  { labelKey: 'ad2_customers_list.tier_bronze',  color: '#CD7F32' },
+  SILVER:  { labelKey: 'ad2_customers_list.tier_silver',  color: '#A8A9AD' },
+  GOLD:    { labelKey: 'ad2_customers_list.tier_gold',    color: '#FFD700' },
+  DIAMOND: { labelKey: 'ad2_customers_list.tier_diamond', color: '#60A5FA' },
 };
 
 const ROLE_COLORS: Record<string, string> = {
@@ -106,16 +107,18 @@ const CHART_COLORS = ['#3B82F6', '#F47920', '#8B5CF6', '#10B981', '#F59E0B', '#E
 
 /** Badge statut compte */
 function StatusBadge({ user }: { user: AdminUser }) {
+  const { t } = useTranslation();
   const s: React.CSSProperties = { fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6, display: 'inline-block' };
-  if (user.is_superuser) return <span style={{ ...s, background: 'rgba(220,38,38,0.15)',   color: '#DC2626', border: '1px solid rgba(220,38,38,0.3)' }}>Super Admin</span>;
-  if (user.is_staff)     return <span style={{ ...s, background: 'rgba(139,92,246,0.15)',  color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.3)' }}>Staff</span>;
-  if (user.is_banned)    return <span style={{ ...s, background: 'rgba(239,68,68,0.12)',   color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}>Banni</span>;
-  if (!user.is_active)   return <span style={{ ...s, background: 'rgba(107,114,128,0.12)', color: '#9CA3AF', border: '1px solid rgba(107,114,128,0.2)' }}>Inactif</span>;
-  return <span style={{ ...s, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}>Actif</span>;
+  if (user.is_superuser) return <span style={{ ...s, background: 'rgba(220,38,38,0.15)',   color: '#DC2626', border: '1px solid rgba(220,38,38,0.3)' }}>{t('ad2_customers_list.status_super_admin')}</span>;
+  if (user.is_staff)     return <span style={{ ...s, background: 'rgba(139,92,246,0.15)',  color: '#8B5CF6', border: '1px solid rgba(139,92,246,0.3)' }}>{t('ad2_customers_list.status_staff')}</span>;
+  if (user.is_banned)    return <span style={{ ...s, background: 'rgba(239,68,68,0.12)',   color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}>{t('ad2_customers_list.status_banned')}</span>;
+  if (!user.is_active)   return <span style={{ ...s, background: 'rgba(107,114,128,0.12)', color: '#9CA3AF', border: '1px solid rgba(107,114,128,0.2)' }}>{t('ad2_customers_list.status_inactive')}</span>;
+  return <span style={{ ...s, background: 'rgba(16,185,129,0.12)', color: '#10B981', border: '1px solid rgba(16,185,129,0.25)' }}>{t('ad2_customers_list.status_active')}</span>;
 }
 
 /** Chips de rôles (Acheteur, Vendeur, Staff…) */
 function RoleChips({ user }: { user: AdminUser }) {
+  const { t } = useTranslation();
   const chips: { label: string; color: string }[] = [];
   const roles = user.actor_roles?.length ? user.actor_roles : [
     'CLIENT',
@@ -124,13 +127,13 @@ function RoleChips({ user }: { user: AdminUser }) {
     ...(user.is_staff ? ['STAFF' as const] : []),
     ...(user.is_superuser ? ['ADMIN' as const] : []),
   ];
-  if (roles.includes('CLIENT'))  chips.push({ label: 'Client',  color: ROLE_COLORS.role_buyer });
-  if (roles.includes('VENDOR'))  chips.push({ label: 'Vendeur', color: ROLE_COLORS.role_vendor });
-  if (roles.includes('COURIER')) chips.push({ label: 'Livreur', color: ROLE_COLORS.role_courier });
-  if (roles.includes('DELIVERY_ORGANIZATION')) chips.push({ label: 'Entreprise livraison', color: ROLE_COLORS.role_delivery_org });
-  if (roles.includes('RELAY_POINT'))           chips.push({ label: 'Point relais',         color: ROLE_COLORS.role_relay_point });
-  if (roles.includes('STAFF'))   chips.push({ label: 'Staff',   color: ROLE_COLORS.role_staff });
-  if (roles.includes('ADMIN'))   chips.push({ label: 'Admin',   color: ROLE_COLORS.role_admin });
+  if (roles.includes('CLIENT'))  chips.push({ label: t('ad2_customers_list.role_client'),  color: ROLE_COLORS.role_buyer });
+  if (roles.includes('VENDOR'))  chips.push({ label: t('ad2_customers_list.role_vendor'), color: ROLE_COLORS.role_vendor });
+  if (roles.includes('COURIER')) chips.push({ label: t('ad2_customers_list.role_courier'), color: ROLE_COLORS.role_courier });
+  if (roles.includes('DELIVERY_ORGANIZATION')) chips.push({ label: t('ad2_customers_list.role_delivery_org'), color: ROLE_COLORS.role_delivery_org });
+  if (roles.includes('RELAY_POINT'))           chips.push({ label: t('ad2_customers_list.role_relay_point'), color: ROLE_COLORS.role_relay_point });
+  if (roles.includes('STAFF'))   chips.push({ label: t('ad2_customers_list.role_staff'),   color: ROLE_COLORS.role_staff });
+  if (roles.includes('ADMIN'))   chips.push({ label: t('ad2_customers_list.role_admin'),   color: ROLE_COLORS.role_admin });
 
   return (
     <div className="flex flex-wrap gap-1">
@@ -148,6 +151,7 @@ function RoleChips({ user }: { user: AdminUser }) {
 
 /** Badge plan vendeur */
 function PlanBadge({ plan }: { plan: string | null }) {
+  const { t } = useTranslation();
   if (!plan) return null;
   const cfg = PLAN_CONFIG[plan] ?? PLAN_CONFIG.FREE;
   return (
@@ -155,20 +159,21 @@ function PlanBadge({ plan }: { plan: string | null }) {
       fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 6,
       background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.color}40`,
     }}>
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
 
 /** Badge niveau fidélité */
 function TierBadge({ tier }: { tier: string }) {
+  const { t } = useTranslation();
   const cfg = TIER_CONFIG[tier] ?? TIER_CONFIG.BRONZE;
   return (
     <span style={{
       fontSize: 9.5, fontWeight: 700, padding: '1px 6px', borderRadius: 4,
       background: cfg.color + '18', color: cfg.color,
     }}>
-      {cfg.label}
+      {t(cfg.labelKey)}
     </span>
   );
 }
@@ -234,6 +239,7 @@ function ChartTooltip({ active, payload, label, suffix = '' }: {
 
 export default function CustomersListPage() {
   const T             = useAdminTheme();
+  const { t }          = useTranslation();
   const { showToast } = useToast();
   const { confirm }   = useConfirm();
 
@@ -271,11 +277,11 @@ export default function CustomersListPage() {
       setUsers(usersData);
       setStats(statsData);
     } catch {
-      showToast('Erreur chargement des clients', 'error');
+      showToast(t('ad2_customers_list.toast_error_loading'), 'error');
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, [showToast, t]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -364,21 +370,21 @@ export default function CustomersListPage() {
     action: 'ban' | 'unban' | 'deactivate' | 'activate'
   ) => {
     const msgs = {
-      ban:        { title: `Bannir ${u.username} ?`,        message: 'L\'utilisateur ne pourra plus se connecter.', confirmText: 'Bannir',      type: 'danger'  as const },
-      unban:      { title: `Débannir ${u.username} ?`,      message: 'L\'utilisateur pourra à nouveau se connecter.', confirmText: 'Débannir', type: 'warning' as const },
-      deactivate: { title: `Désactiver ${u.username} ?`,    message: 'Le compte sera suspendu temporairement.',     confirmText: 'Désactiver',  type: 'warning' as const },
-      activate:   { title: `Réactiver ${u.username} ?`,     message: 'Le compte sera à nouveau accessible.',        confirmText: 'Réactiver',   type: 'warning' as const },
+      ban:        { title: t('ad2_customers_list.confirm_ban_title', { username: u.username }),        message: t('ad2_customers_list.confirm_ban_message'), confirmText: t('ad2_customers_list.confirm_ban_confirm'),      type: 'danger'  as const },
+      unban:      { title: t('ad2_customers_list.confirm_unban_title', { username: u.username }),      message: t('ad2_customers_list.confirm_unban_message'), confirmText: t('ad2_customers_list.confirm_unban_confirm'), type: 'warning' as const },
+      deactivate: { title: t('ad2_customers_list.confirm_deactivate_title', { username: u.username }),    message: t('ad2_customers_list.confirm_deactivate_message'),     confirmText: t('ad2_customers_list.confirm_deactivate_confirm'),  type: 'warning' as const },
+      activate:   { title: t('ad2_customers_list.confirm_activate_title', { username: u.username }),     message: t('ad2_customers_list.confirm_activate_message'),        confirmText: t('ad2_customers_list.confirm_activate_confirm'),   type: 'warning' as const },
     };
-    const ok = await confirm({ ...msgs[action], cancelText: 'Annuler' });
+    const ok = await confirm({ ...msgs[action], cancelText: t('ad2_customers_list.confirm_cancel') });
     if (!ok) return;
     setActing(u.id);
     try {
       if (action === 'ban')        await adminApi.banUser(u.id, 'Décision admin');
       else if (action === 'unban') await adminApi.unbanUser(u.id);
       else                         await adminApi.updateUser(u.id, { is_active: action === 'activate' });
-      showToast('Action effectuée', 'success');
+      showToast(t('ad2_customers_list.toast_action_done'), 'success');
       await load();
-    } catch { showToast('Erreur', 'error'); }
+    } catch { showToast(t('ad2_customers_list.toast_error'), 'error'); }
     finally  { setActing(null); }
   };
 
@@ -387,9 +393,11 @@ export default function CustomersListPage() {
     const targets = users.filter(u => selected.has(u.id) && !u.is_staff && !u.is_superuser);
     if (!targets.length) return;
     const ok = await confirm({
-      title: `${action === 'ban' ? 'Bannir' : 'Désactiver'} ${targets.length} utilisateur(s) ?`,
-      message: 'Cette action s\'applique à tous les comptes sélectionnés.',
-      type: 'danger', confirmText: `Confirmer`, cancelText: 'Annuler',
+      title: action === 'ban'
+        ? t('ad2_customers_list.confirm_bulk_ban_title', { count: targets.length })
+        : t('ad2_customers_list.confirm_bulk_deactivate_title', { count: targets.length }),
+      message: t('ad2_customers_list.confirm_bulk_message'),
+      type: 'danger', confirmText: t('ad2_customers_list.confirm_bulk_confirm'), cancelText: t('ad2_customers_list.confirm_cancel'),
     });
     if (!ok) return;
     for (const u of targets) {
@@ -398,7 +406,7 @@ export default function CustomersListPage() {
         else                  await adminApi.updateUser(u.id, { is_active: false });
       } catch { /* silencieux */ }
     }
-    showToast(`${targets.length} compte(s) traité(s)`, 'success');
+    showToast(t('ad2_customers_list.toast_bulk_done', { count: targets.length }), 'success');
     clearSel();
     await load();
   };
@@ -409,13 +417,13 @@ export default function CustomersListPage() {
     const rows = data.map(u => [
       u.id, u.username, u.email,
       `${u.first_name} ${u.last_name}`.trim(),
-      (u.actor_roles ?? []).join('+') || (u.is_superuser ? 'Admin' : u.is_staff ? 'Staff' : u.is_vendor ? 'Client+Vendeur' : 'Client'),
-      u.is_banned ? 'Banni' : u.is_active ? 'Actif' : 'Inactif',
+      (u.actor_roles ?? []).join('+') || (u.is_superuser ? t('ad2_customers_list.csv_role_admin') : u.is_staff ? t('ad2_customers_list.csv_role_staff') : u.is_vendor ? t('ad2_customers_list.csv_role_client_vendor') : t('ad2_customers_list.csv_role_client')),
+      u.is_banned ? t('ad2_customers_list.csv_status_banned') : u.is_active ? t('ad2_customers_list.csv_status_active') : t('ad2_customers_list.csv_status_inactive'),
       u.vendor_plan ?? '—', u.loyalty_tier, u.loyalty_points,
       u.total_orders, u.total_spent, u.city ?? '—',
       fmtDate(u.date_joined), fmtDate(u.last_login),
     ].join(';'));
-    const headers = 'ID;Username;Email;Nom;Rôle;Statut;Plan;Fidélité;Points;Commandes;Dépensé;Ville;Inscrit;Dernière co.';
+    const headers = t('ad2_customers_list.csv_headers');
     const csv  = [headers, ...rows].join('\n');
     const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
     const url  = URL.createObjectURL(blob);
@@ -479,15 +487,15 @@ export default function CustomersListPage() {
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 style={{ fontFamily: "'Syne',sans-serif", fontSize: 22, fontWeight: 800, color: T.text, marginBottom: 4 }}>
-            Gestion Clients
+            {t('ad2_customers_list.heading')}
           </h1>
           <p style={{ fontSize: 13, color: T.muted }}>
             {stats && stats.kpis.new_this_week > 0 && (
               <span style={{ color: '#10B981', fontWeight: 700, marginRight: 6 }}>
-                +{stats.kpis.new_this_week} cette semaine ·
+                {t('ad2_customers_list.new_this_week', { count: stats.kpis.new_this_week })}
               </span>
             )}
-            {users.length.toLocaleString('fr-FR')} comptes enregistrés
+            {t('ad2_customers_list.accounts_registered', { count: users.length })}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
@@ -498,7 +506,7 @@ export default function CustomersListPage() {
             onMouseEnter={e => (e.currentTarget.style.color = T.text)}
             onMouseLeave={e => (e.currentTarget.style.color = T.muted)}
           >
-            <Download size={13} /> <span className="hidden sm:inline">Exporter CSV</span>
+            <Download size={13} /> <span className="hidden sm:inline">{t('ad2_customers_list.export_csv')}</span>
           </button>
           <button
             onClick={() => load()}
@@ -508,7 +516,7 @@ export default function CustomersListPage() {
             onMouseLeave={e => (e.currentTarget.style.background = 'rgba(220,38,38,0.1)')}
           >
             <RefreshCw size={13} className={loading ? 'animate-spin' : ''} />
-            <span className="hidden sm:inline">Actualiser</span>
+            <span className="hidden sm:inline">{t('ad2_customers_list.refresh')}</span>
           </button>
         </div>
       </div>
@@ -516,10 +524,10 @@ export default function CustomersListPage() {
       {/* ── KPI Cards ────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Total',         value: stats?.kpis.total       ?? '—', sub: `${stats?.kpis.new_this_month ?? 0} ce mois`,    accent: T.text,    tab: null as RoleTab | null },
-          { label: 'Actifs (30j)',  value: stats?.kpis.active_30d  ?? '—', sub: 'connectés ce mois',                             accent: '#10B981', tab: null },
-          { label: 'Vendeurs',      value: stats?.kpis.vendors     ?? '—', sub: `${stats?.kpis.pending_vendors ?? 0} en attente`, accent: '#F47920', tab: 'vendor' as RoleTab | null },
-          { label: 'Bannis',        value: stats?.kpis.banned      ?? '—', sub: 'comptes suspendus',                             accent: '#EF4444', tab: null },
+          { label: t('ad2_customers_list.kpi_total'),        value: stats?.kpis.total       ?? '—', sub: t('ad2_customers_list.kpi_total_sub', { count: stats?.kpis.new_this_month ?? 0 }),    accent: T.text,    tab: null as RoleTab | null },
+          { label: t('ad2_customers_list.kpi_active_30d'),   value: stats?.kpis.active_30d  ?? '—', sub: t('ad2_customers_list.kpi_active_30d_sub'),                             accent: '#10B981', tab: null },
+          { label: t('ad2_customers_list.kpi_vendors'),      value: stats?.kpis.vendors     ?? '—', sub: t('ad2_customers_list.kpi_vendors_sub', { count: stats?.kpis.pending_vendors ?? 0 }), accent: '#F47920', tab: 'vendor' as RoleTab | null },
+          { label: t('ad2_customers_list.kpi_banned'),       value: stats?.kpis.banned      ?? '—', sub: t('ad2_customers_list.kpi_banned_sub'),                             accent: '#EF4444', tab: null },
         ].map((kpi, i) => (
           <button
             key={i}
@@ -549,10 +557,10 @@ export default function CustomersListPage() {
             <div className="flex items-start justify-between mb-4">
               <div>
                 <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 14, fontWeight: 800, color: T.text }}>
-                  Nouvelles inscriptions — 30 jours
+                  {t('ad2_customers_list.chart_registrations_title')}
                 </p>
                 <p style={{ fontSize: 11.5, color: T.muted, marginTop: 2 }}>
-                  {stats.kpis.new_this_month} nouveaux ce mois
+                  {t('ad2_customers_list.chart_registrations_sub', { count: stats.kpis.new_this_month })}
                 </p>
               </div>
               <div style={{
@@ -560,7 +568,7 @@ export default function CustomersListPage() {
                 background: 'rgba(16,185,129,0.12)', color: '#10B981',
                 fontSize: 11, fontWeight: 700,
               }}>
-                +{stats.kpis.new_this_week} cette semaine
+                {t('ad2_customers_list.chart_registrations_badge', { count: stats.kpis.new_this_week })}
               </div>
             </div>
             <ResponsiveContainer width="100%" height={160}>
@@ -579,7 +587,7 @@ export default function CustomersListPage() {
                   axisLine={false} tickLine={false} interval={4}
                 />
                 <YAxis tick={{ fill: T.muted, fontSize: 10 }} axisLine={false} tickLine={false} width={24} allowDecimals={false} />
-                <Tooltip content={<ChartTooltip suffix=" inscrit(s)" />} />
+                <Tooltip content={<ChartTooltip suffix={t('ad2_customers_list.chart_tooltip_suffix')} />} />
                 <Area type="monotone" dataKey="count" stroke="#3B82F6" strokeWidth={2}
                   fill="url(#regGrad)" dot={false} activeDot={{ r: 4, fill: '#3B82F6' }} />
               </AreaChart>
@@ -592,7 +600,7 @@ export default function CustomersListPage() {
             {/* Donut rôles */}
             <div>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 10 }}>
-                Distribution des rôles
+                {t('ad2_customers_list.chart_roles_title')}
               </p>
               <div className="flex items-center gap-4">
                 <ResponsiveContainer width={90} height={90}>
@@ -622,10 +630,10 @@ export default function CustomersListPage() {
             {/* Donut plans vendeurs */}
             <div>
               <p style={{ fontFamily: "'Syne',sans-serif", fontSize: 13, fontWeight: 800, color: T.text, marginBottom: 10 }}>
-                Plans vendeurs
+                {t('ad2_customers_list.chart_plans_title')}
               </p>
               {stats.plan_distribution.length === 0 ? (
-                <p style={{ fontSize: 12, color: T.muted }}>Aucun vendeur</p>
+                <p style={{ fontSize: 12, color: T.muted }}>{t('ad2_customers_list.chart_no_vendors')}</p>
               ) : (
                 <div className="flex items-center gap-4">
                   <ResponsiveContainer width={90} height={90}>
@@ -642,7 +650,7 @@ export default function CustomersListPage() {
                       <div key={i} className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5">
                           <div style={{ width: 7, height: 7, borderRadius: 2, background: PLAN_CONFIG[d.plan]?.color ?? CHART_COLORS[i], flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: T.muted }}>{PLAN_CONFIG[d.plan]?.label ?? d.plan}</span>
+                          <span style={{ fontSize: 11, color: T.muted }}>{PLAN_CONFIG[d.plan] ? t(PLAN_CONFIG[d.plan].labelKey) : d.plan}</span>
                         </div>
                         <span style={{ fontSize: 11, fontWeight: 700, color: T.text }}>{d.count}</span>
                       </div>
@@ -662,7 +670,7 @@ export default function CustomersListPage() {
           /* ── Barre sélection groupée ── */
           <div className="flex items-center gap-3 px-4 py-3 flex-wrap">
             <span style={{ fontSize: 13, fontWeight: 700, color: T.text, flexShrink: 0 }}>
-              {selected.size} sélectionné(s)
+              {t('ad2_customers_list.selected_count', { count: selected.size })}
             </span>
             <div style={{ width: 1, height: 18, background: T.border }} />
             <button
@@ -670,21 +678,21 @@ export default function CustomersListPage() {
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
               style={{ background: 'rgba(239,68,68,0.1)', color: '#EF4444', border: '1px solid rgba(239,68,68,0.25)' }}
             >
-              <Ban size={12} /> Bannir
+              <Ban size={12} /> {t('ad2_customers_list.bulk_ban')}
             </button>
             <button
               onClick={() => bulkAction('deactivate')}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
               style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
             >
-              <ToggleLeft size={12} /> Désactiver
+              <ToggleLeft size={12} /> {t('ad2_customers_list.bulk_deactivate')}
             </button>
             <button
               onClick={() => exportCSV(selected)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
               style={{ background: T.cardAlt, color: T.muted, border: `1px solid ${T.border}` }}
             >
-              <Download size={12} /> Exporter ({selected.size})
+              <Download size={12} /> {t('ad2_customers_list.bulk_export', { count: selected.size })}
             </button>
             <button onClick={clearSel} className="ml-auto" style={{ color: T.muted }}>
               <X size={16} />
@@ -699,27 +707,27 @@ export default function CustomersListPage() {
               {/* Tabs */}
               <div className="flex gap-1 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
                 {([
-                  { key: 'all' as RoleTab,    label: 'Tous',      count: users.length },
-                  { key: 'buyer' as RoleTab,  label: 'Clients',   count: users.filter(u => u.actor_roles?.includes('CLIENT') ?? true).length },
-                  { key: 'vendor' as RoleTab, label: 'Vendeurs',  count: users.filter(u => u.is_vendor).length },
-                  { key: 'courier' as RoleTab,label: 'Livreurs',  count: users.filter(u => u.is_courier).length },
-                  { key: 'staff' as RoleTab,  label: 'Staff',     count: users.filter(u => u.is_staff || u.is_superuser).length },
-                ] as { key: RoleTab; label: string; count: number }[]).map(t => (
+                  { key: 'all' as RoleTab,    label: t('ad2_customers_list.tab_all'),      count: users.length },
+                  { key: 'buyer' as RoleTab,  label: t('ad2_customers_list.tab_buyer'),   count: users.filter(u => u.actor_roles?.includes('CLIENT') ?? true).length },
+                  { key: 'vendor' as RoleTab, label: t('ad2_customers_list.tab_vendor'),  count: users.filter(u => u.is_vendor).length },
+                  { key: 'courier' as RoleTab,label: t('ad2_customers_list.tab_courier'),  count: users.filter(u => u.is_courier).length },
+                  { key: 'staff' as RoleTab,  label: t('ad2_customers_list.tab_staff'),     count: users.filter(u => u.is_staff || u.is_superuser).length },
+                ] as { key: RoleTab; label: string; count: number }[]).map(tab => (
                   <button
-                    key={t.key}
-                    onClick={() => { setRoleTab(t.key); setPage(1); setSelected(new Set()); }}
+                    key={tab.key}
+                    onClick={() => { setRoleTab(tab.key); setPage(1); setSelected(new Set()); }}
                     className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all"
-                    style={{ background: roleTab === t.key ? T.red : 'transparent', color: roleTab === t.key ? '#fff' : T.muted }}
-                    onMouseEnter={e => { if (roleTab !== t.key) (e.currentTarget.style.color = T.text); }}
-                    onMouseLeave={e => { if (roleTab !== t.key) (e.currentTarget.style.color = T.muted); }}
+                    style={{ background: roleTab === tab.key ? T.red : 'transparent', color: roleTab === tab.key ? '#fff' : T.muted }}
+                    onMouseEnter={e => { if (roleTab !== tab.key) (e.currentTarget.style.color = T.text); }}
+                    onMouseLeave={e => { if (roleTab !== tab.key) (e.currentTarget.style.color = T.muted); }}
                   >
-                    {t.label}
+                    {tab.label}
                     <span style={{
                       fontSize: 10, padding: '1px 5px', borderRadius: 999, fontWeight: 700,
-                      background: roleTab === t.key ? 'rgba(255,255,255,0.25)' : T.cardAlt,
-                      color: roleTab === t.key ? '#fff' : T.muted,
+                      background: roleTab === tab.key ? 'rgba(255,255,255,0.25)' : T.cardAlt,
+                      color: roleTab === tab.key ? '#fff' : T.muted,
                     }}>
-                      {t.count}
+                      {tab.count}
                     </span>
                   </button>
                 ))}
@@ -733,7 +741,7 @@ export default function CustomersListPage() {
                 <Search size={13} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: T.muted }} />
                 <input
                   type="text"
-                  placeholder="Nom, email, boutique…"
+                  placeholder={t('ad2_customers_list.search_placeholder')}
                   onChange={e => handleSearch(e.target.value)}
                   className="w-full pl-8 pr-3 py-2 rounded-xl text-[12.5px] outline-none transition-all"
                   style={{ background: T.input, color: T.text, border: `1px solid ${T.inputBorder}`, fontFamily: "'Plus Jakarta Sans',sans-serif" }}
@@ -750,12 +758,12 @@ export default function CustomersListPage() {
               {/* Statut */}
               <div className="relative">
                 <DropBtn
-                  label={statusF === 'all' ? 'Statut' : { active: 'Actif', banned: 'Banni', inactive: 'Inactif' }[statusF] ?? 'Statut'}
+                  label={statusF === 'all' ? t('ad2_customers_list.filter_status') : { active: t('ad2_customers_list.filter_status_active'), banned: t('ad2_customers_list.filter_status_banned'), inactive: t('ad2_customers_list.filter_status_inactive') }[statusF] ?? t('ad2_customers_list.filter_status')}
                   active={statusF !== 'all'}
                   onClick={() => setOpenDropdown(openDropdown === 'status' ? null : 'status')}
                 />
                 <DropMenu show={openDropdown === 'status'}>
-                  {([['all', 'Tous'], ['active', 'Actif'], ['banned', 'Banni'], ['inactive', 'Inactif']] as [StatusFilter, string][]).map(([k, l]) => (
+                  {([['all', t('ad2_customers_list.filter_status_all')], ['active', t('ad2_customers_list.filter_status_active')], ['banned', t('ad2_customers_list.filter_status_banned')], ['inactive', t('ad2_customers_list.filter_status_inactive')]] as [StatusFilter, string][]).map(([k, l]) => (
                     <DropItem key={k} label={l} active={statusF === k} onClick={() => { setStatusF(k); setPage(1); }} />
                   ))}
                 </DropMenu>
@@ -764,14 +772,14 @@ export default function CustomersListPage() {
               {/* Plan */}
               <div className="relative">
                 <DropBtn
-                  label={planF === 'all' ? 'Plan' : PLAN_CONFIG[planF]?.label ?? 'Plan'}
+                  label={planF === 'all' ? t('ad2_customers_list.filter_plan') : (PLAN_CONFIG[planF] ? t(PLAN_CONFIG[planF].labelKey) : t('ad2_customers_list.filter_plan'))}
                   active={planF !== 'all'}
                   onClick={() => setOpenDropdown(openDropdown === 'plan' ? null : 'plan')}
                 />
                 <DropMenu show={openDropdown === 'plan'}>
-                  <DropItem label="Tous les plans" active={planF === 'all'} onClick={() => { setPlanF('all'); setPage(1); }} />
+                  <DropItem label={t('ad2_customers_list.filter_plan_all')} active={planF === 'all'} onClick={() => { setPlanF('all'); setPage(1); }} />
                   {(['FREE', 'STARTER', 'PRO', 'BUSINESS'] as PlanFilter[]).map(k => (
-                    <DropItem key={k} label={PLAN_CONFIG[k]?.label ?? k} active={planF === k} onClick={() => { setPlanF(k); setPage(1); }} />
+                    <DropItem key={k} label={PLAN_CONFIG[k] ? t(PLAN_CONFIG[k].labelKey) : k} active={planF === k} onClick={() => { setPlanF(k); setPage(1); }} />
                   ))}
                 </DropMenu>
               </div>
@@ -779,12 +787,12 @@ export default function CustomersListPage() {
               {/* Période */}
               <div className="relative">
                 <DropBtn
-                  label={({ all: 'Période', today: "Aujourd'hui", week: 'Cette semaine', month: 'Ce mois' } as Record<DateFilter, string>)[dateF]}
+                  label={({ all: t('ad2_customers_list.filter_date'), today: t('ad2_customers_list.filter_date_today'), week: t('ad2_customers_list.filter_date_week'), month: t('ad2_customers_list.filter_date_month') } as Record<DateFilter, string>)[dateF]}
                   active={dateF !== 'all'}
                   onClick={() => setOpenDropdown(openDropdown === 'date' ? null : 'date')}
                 />
                 <DropMenu show={openDropdown === 'date'}>
-                  {([['all', 'Toutes périodes'], ['today', "Aujourd'hui"], ['week', 'Cette semaine'], ['month', 'Ce mois']] as [DateFilter, string][]).map(([k, l]) => (
+                  {([['all', t('ad2_customers_list.filter_date_all')], ['today', t('ad2_customers_list.filter_date_today')], ['week', t('ad2_customers_list.filter_date_week')], ['month', t('ad2_customers_list.filter_date_month')]] as [DateFilter, string][]).map(([k, l]) => (
                     <DropItem key={k} label={l} active={dateF === k} onClick={() => { setDateF(k); setPage(1); }} />
                   ))}
                 </DropMenu>
@@ -797,12 +805,12 @@ export default function CustomersListPage() {
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all"
                   style={{ background: T.red + '10', color: T.red, border: `1px solid ${T.red}30` }}
                 >
-                  <X size={11} /> {activeFilters} filtre{activeFilters > 1 ? 's' : ''} actif{activeFilters > 1 ? 's' : ''}
+                  <X size={11} /> {t(activeFilters > 1 ? 'ad2_customers_list.filters_active_plural' : 'ad2_customers_list.filters_active', { count: activeFilters })}
                 </button>
               )}
 
               <p style={{ fontSize: 12, color: T.muted, marginLeft: 'auto' }}>
-                {sorted.length} résultat{sorted.length > 1 ? 's' : ''}
+                {t(sorted.length > 1 ? 'ad2_customers_list.results_count_plural' : 'ad2_customers_list.results_count', { count: sorted.length })}
               </p>
             </div>
           </div>
@@ -829,15 +837,15 @@ export default function CustomersListPage() {
                   </button>
                 </th>
                 {[
-                  { label: 'Utilisateur',    k: 'username'       as SortKey | null },
-                  { label: 'Rôle(s)',        k: null },
-                  { label: 'Statut',         k: null },
-                  { label: 'Fidélité',       k: 'loyalty_points' as SortKey | null },
-                  { label: 'Plan',           k: null },
-                  { label: 'Commandes',      k: 'total_orders'   as SortKey | null },
-                  { label: 'Dépensé',        k: 'total_spent'    as SortKey | null },
-                  { label: 'Inscrit',        k: 'date_joined'    as SortKey | null },
-                  { label: 'Dernière co.',   k: 'last_login'     as SortKey | null },
+                  { label: t('ad2_customers_list.col_user'),    k: 'username'       as SortKey | null },
+                  { label: t('ad2_customers_list.col_roles'),        k: null },
+                  { label: t('ad2_customers_list.col_status'),         k: null },
+                  { label: t('ad2_customers_list.col_loyalty'),       k: 'loyalty_points' as SortKey | null },
+                  { label: t('ad2_customers_list.col_plan'),           k: null },
+                  { label: t('ad2_customers_list.col_orders'),      k: 'total_orders'   as SortKey | null },
+                  { label: t('ad2_customers_list.col_spent'),        k: 'total_spent'    as SortKey | null },
+                  { label: t('ad2_customers_list.col_joined'),        k: 'date_joined'    as SortKey | null },
+                  { label: t('ad2_customers_list.col_last_login'),   k: 'last_login'     as SortKey | null },
                   { label: '',               k: null },
                 ].map((col, i) => (
                   <th
@@ -868,10 +876,10 @@ export default function CustomersListPage() {
                       <td colSpan={11} style={{ padding: '60px 0', textAlign: 'center' }}>
                         <div className="flex flex-col items-center gap-3">
                           <AlertCircle size={28} style={{ color: T.muted }} />
-                          <p style={{ fontSize: 14, color: T.muted }}>Aucun utilisateur trouvé</p>
+                          <p style={{ fontSize: 14, color: T.muted }}>{t('ad2_customers_list.no_users_found')}</p>
                           {activeFilters > 0 && (
                             <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>
-                              Réinitialiser les filtres
+                              {t('ad2_customers_list.reset_filters')}
                             </button>
                           )}
                         </div>
@@ -910,7 +918,7 @@ export default function CustomersListPage() {
                               </p>
                               {isNew(u.date_joined) && (
                                 <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981' }}>
-                                  NOUVEAU
+                                  {t('ad2_customers_list.badge_new')}
                                 </span>
                               )}
                             </div>
@@ -927,7 +935,7 @@ export default function CustomersListPage() {
                       <td style={{ padding: '12px 12px' }}>
                         <div>
                           <TierBadge tier={u.loyalty_tier} />
-                          <p style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>{u.loyalty_points} pts</p>
+                          <p style={{ fontSize: 10, color: T.muted, marginTop: 2 }}>{t('ad2_customers_list.loyalty_pts', { count: u.loyalty_points })}</p>
                         </div>
                       </td>
                       {/* Plan */}
@@ -960,7 +968,7 @@ export default function CustomersListPage() {
                       </td>
                       {/* Dernière co. */}
                       <td style={{ padding: '12px 12px', fontSize: 11.5, color: T.muted, whiteSpace: 'nowrap' }}>
-                        {fmtRelative(u.last_login)}
+                        {fmtRelative(u.last_login, t)}
                       </td>
                       {/* Actions */}
                       <td style={{ padding: '12px 16px' }}>
@@ -994,34 +1002,34 @@ export default function CustomersListPage() {
                                     style={{ color: T.text }}
                                     onClick={() => setMobileMenu(null)}
                                   >
-                                    <ShoppingCart size={13} /> Ses commandes
+                                    <ShoppingCart size={13} /> {t('ad2_customers_list.action_orders')}
                                   </Link>
                                   <div style={{ height: 1, background: T.border, margin: '4px 0' }} />
                                   {u.is_banned ? (
                                     <button onClick={() => { setMobileMenu(null); doAction(u, 'unban'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}>
-                                      <UserCheck size={13} /> Débannir
+                                      <UserCheck size={13} /> {t('ad2_customers_list.action_unban')}
                                     </button>
                                   ) : (
                                     <button onClick={() => { setMobileMenu(null); doAction(u, 'ban'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}>
-                                      <UserX size={13} /> Bannir
+                                      <UserX size={13} /> {t('ad2_customers_list.action_ban')}
                                     </button>
                                   )}
                                   {u.is_active ? (
                                     <button onClick={() => { setMobileMenu(null); doAction(u, 'deactivate'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: T.muted }}>
-                                      <ToggleLeft size={13} /> Désactiver
+                                      <ToggleLeft size={13} /> {t('ad2_customers_list.action_deactivate')}
                                     </button>
                                   ) : (
                                     <button onClick={() => { setMobileMenu(null); doAction(u, 'activate'); }}
                                       className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}>
-                                      <ToggleRight size={13} /> Réactiver
+                                      <ToggleRight size={13} /> {t('ad2_customers_list.action_activate')}
                                     </button>
                                   )}
                                   <div style={{ height: 1, background: T.border, margin: '4px 0' }} />
                                   <button onClick={() => { setMobileMenu(null); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: T.muted }}>
-                                    <BellRing size={13} /> Notifier <span style={{ fontSize: 9, opacity: 0.6 }}>(bientôt)</span>
+                                    <BellRing size={13} /> {t('ad2_customers_list.action_notify')} <span style={{ fontSize: 9, opacity: 0.6 }}>{t('ad2_customers_list.action_notify_soon')}</span>
                                   </button>
                                 </div>
                               )}
@@ -1046,10 +1054,10 @@ export default function CustomersListPage() {
           ) : paginated.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 gap-3">
               <AlertCircle size={28} style={{ color: T.muted }} />
-              <p style={{ fontSize: 14, color: T.muted }}>Aucun utilisateur trouvé</p>
+              <p style={{ fontSize: 14, color: T.muted }}>{t('ad2_customers_list.no_users_found')}</p>
               {activeFilters > 0 && (
                 <button onClick={resetFilters} style={{ fontSize: 12, color: T.red, fontWeight: 600 }}>
-                  Réinitialiser les filtres
+                  {t('ad2_customers_list.reset_filters')}
                 </button>
               )}
             </div>
@@ -1083,7 +1091,7 @@ export default function CustomersListPage() {
                           </p>
                           {isNew(u.date_joined) && (
                             <span style={{ fontSize: 9, fontWeight: 800, padding: '1px 5px', borderRadius: 4, background: 'rgba(16,185,129,0.15)', color: '#10B981', flexShrink: 0 }}>
-                              NOUVEAU
+                              {t('ad2_customers_list.badge_new')}
                             </span>
                           )}
                         </div>
@@ -1103,14 +1111,14 @@ export default function CustomersListPage() {
                     <div className="flex items-center gap-3 mt-1.5 flex-wrap">
                       <span style={{ fontSize: 11, color: T.muted }}>
                         <ShoppingCart size={10} style={{ display: 'inline', marginRight: 3 }} />
-                        {u.total_orders} cmd
+                        {t('ad2_customers_list.orders_abbrev', { count: u.total_orders })}
                       </span>
                       {u.total_spent > 0 && (
                         <span style={{ fontSize: 11, color: '#10B981', fontWeight: 600 }}>
                           {fmtXaf(u.total_spent)}
                         </span>
                       )}
-                      <span style={{ fontSize: 11, color: T.muted }}>{fmtRelative(u.last_login)}</span>
+                      <span style={{ fontSize: 11, color: T.muted }}>{fmtRelative(u.last_login, t)}</span>
                       {u.city && <span style={{ fontSize: 11, color: T.muted }}>{u.city}</span>}
                     </div>
                   </div>
@@ -1130,17 +1138,17 @@ export default function CustomersListPage() {
                         style={{ background: T.card, border: `1px solid ${T.border}`, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', minWidth: 160 }}
                       >
                         <Link to={`/admin/customers/${u.id}`} className="flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: T.text }} onClick={() => setMobileMenu(null)}>
-                          <Eye size={13} /> Voir profil
+                          <Eye size={13} /> {t('ad2_customers_list.action_view_profile')}
                         </Link>
                         <Link to={`/admin/orders?user=${u.id}`} className="flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: T.text }} onClick={() => setMobileMenu(null)}>
-                          <ShoppingCart size={13} /> Ses commandes
+                          <ShoppingCart size={13} /> {t('ad2_customers_list.action_orders')}
                         </Link>
                         {!u.is_superuser && (
                           <>
                             <div style={{ height: 1, background: T.border, margin: '4px 0' }} />
                             {u.is_banned
-                              ? <button onClick={() => { setMobileMenu(null); doAction(u, 'unban'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}><UserCheck size={13} /> Débannir</button>
-                              : <button onClick={() => { setMobileMenu(null); doAction(u, 'ban'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}><UserX size={13} /> Bannir</button>
+                              ? <button onClick={() => { setMobileMenu(null); doAction(u, 'unban'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#10B981' }}><UserCheck size={13} /> {t('ad2_customers_list.action_unban')}</button>
+                              : <button onClick={() => { setMobileMenu(null); doAction(u, 'ban'); }} className="w-full flex items-center gap-2 px-4 py-2.5 text-[12px]" style={{ color: '#EF4444' }}><UserX size={13} /> {t('ad2_customers_list.action_ban')}</button>
                             }
                           </>
                         )}
@@ -1161,7 +1169,7 @@ export default function CustomersListPage() {
           >
             {/* Lignes par page */}
             <div className="flex items-center gap-2">
-              <span style={{ fontSize: 12, color: T.muted }}>Lignes :</span>
+              <span style={{ fontSize: 12, color: T.muted }}>{t('ad2_customers_list.rows_per_page')}</span>
               {PAGE_SIZES.map(s => (
                 <button
                   key={s}
@@ -1180,7 +1188,7 @@ export default function CustomersListPage() {
 
             {/* Info */}
             <p style={{ fontSize: 12, color: T.muted }}>
-              {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, sorted.length)} sur {sorted.length}
+              {t('ad2_customers_list.pagination_range', { from: (page - 1) * pageSize + 1, to: Math.min(page * pageSize, sorted.length), total: sorted.length })}
             </p>
 
             {/* Navigation */}

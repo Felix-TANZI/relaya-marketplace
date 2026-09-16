@@ -69,12 +69,12 @@ export default function Footer() {
               </li>
               <li>
                 <Link to="/wishlist" className="text-gray-300 hover:text-primary transition-colors text-sm">
-                  Mes favoris
+                  {t('cl1_footer.wishlist')}
                 </Link>
               </li>
               <li>
                 <Link to="/become-seller" className="text-gray-300 hover:text-primary transition-colors text-sm">
-                  Devenir Vendeur
+                  {t('cl1_footer.become_seller')}
                 </Link>
               </li>
             </ul>
@@ -114,7 +114,7 @@ export default function Footer() {
               <li className="flex items-start gap-3 text-sm">
                 <MapPin size={18} className="text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-gray-300">
-                  Yaoundé, Cameroun
+                  {t('cl1_footer.address')}
                 </span>
               </li>
               <li className="flex items-center gap-3 text-sm">
@@ -139,7 +139,7 @@ export default function Footer() {
               className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#22C55E] px-5 py-2.5 text-sm font-bold text-white shadow-[0_8px_22px_rgba(34,197,94,.3)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#16A34A]"
             >
               <MessageCircle size={16} />
-              Contacter sur WhatsApp
+              {t('cl1_footer.whatsapp_cta')}
             </a>
           </div>
         </div>

@@ -21,9 +21,9 @@ import { inferPortalRoleFromPath, isDedicatedPortal, portalHomePath, portalRole,
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 
 const portalCopy: Record<PortalRole, {
-  label: string;
-  title: string;
-  hint: string;
+  labelKey: string;
+  titleKey: string;
+  hintKey: string;
   accent: string;
   accentDark: string;
   soft: string;
@@ -31,9 +31,9 @@ const portalCopy: Record<PortalRole, {
   logo: string;
 }> = {
   client: {
-    label: 'BelivaY Marketplace',
-    title: 'Connexion client',
-    hint: 'Accédez à vos commandes, favoris, litiges et suivis colis.',
+    labelKey: 'cl1_login.portal_client_label',
+    titleKey: 'cl1_login.portal_client_title',
+    hintKey: 'cl1_login.portal_client_hint',
     accent: '#F47920',
     accentDark: '#C4510B',
     soft: 'rgba(244,121,32,.14)',
@@ -41,9 +41,9 @@ const portalCopy: Record<PortalRole, {
     logo: '/belivay-logo.png',
   },
   seller: {
-    label: 'Portail vendeur',
-    title: 'Connexion vendeur',
-    hint: 'Accès réservé aux boutiques validées par BelivaY.',
+    labelKey: 'cl1_login.portal_seller_label',
+    titleKey: 'cl1_login.portal_seller_title',
+    hintKey: 'cl1_login.portal_seller_hint',
     accent: '#EA580C',
     accentDark: '#9A3412',
     soft: 'rgba(234,88,12,.14)',
@@ -51,9 +51,9 @@ const portalCopy: Record<PortalRole, {
     logo: '/belivay-logo.png',
   },
   courier: {
-    label: 'Portail livreur',
-    title: 'Connexion livreur',
-    hint: 'Accès terrain pour missions, scans, preuves et litiges.',
+    labelKey: 'cl1_login.portal_courier_label',
+    titleKey: 'cl1_login.portal_courier_title',
+    hintKey: 'cl1_login.portal_courier_hint',
     accent: '#16A34A',
     accentDark: '#166534',
     soft: 'rgba(22,163,74,.14)',
@@ -61,9 +61,9 @@ const portalCopy: Record<PortalRole, {
     logo: '/belivay-logo-mark-courier.png',
   },
   admin: {
-    label: 'Console interne',
-    title: 'Connexion administrateur',
-    hint: 'Accès strictement réservé aux comptes staff BelivaY.',
+    labelKey: 'cl1_login.portal_admin_label',
+    titleKey: 'cl1_login.portal_admin_title',
+    hintKey: 'cl1_login.portal_admin_hint',
     accent: '#DC2626',
     accentDark: '#991B1B',
     soft: 'rgba(220,38,38,.14)',
@@ -71,9 +71,9 @@ const portalCopy: Record<PortalRole, {
     logo: '/admin-belivay-logo-red.png',
   },
   delivery_organization: {
-    label: 'Portail organisation',
-    title: 'Connexion organisation de livraison',
-    hint: 'Gérez missions, livreurs, véhicules, zones, contrat et KYC.',
+    labelKey: 'cl1_login.portal_delivery_org_label',
+    titleKey: 'cl1_login.portal_delivery_org_title',
+    hintKey: 'cl1_login.portal_delivery_org_hint',
     accent: '#0284C7',
     accentDark: '#075985',
     soft: 'rgba(2,132,199,.14)',
@@ -81,9 +81,9 @@ const portalCopy: Record<PortalRole, {
     logo: '/belivay-logo-delivery-org.png',
   },
   relay_point: {
-    label: 'Portail point relais',
-    title: 'Connexion point relais',
-    hint: 'Accès réception, stockage, retraits, preuves et incidents colis.',
+    labelKey: 'cl1_login.portal_relay_point_label',
+    titleKey: 'cl1_login.portal_relay_point_title',
+    hintKey: 'cl1_login.portal_relay_point_hint',
     accent: '#1E3A8A',
     accentDark: '#172554',
     soft: 'rgba(30,58,138,.14)',
@@ -132,7 +132,7 @@ export default function LoginPage() {
       if (res.twoFactorRequired) {
         setTwoFA({ userId: res.userId, email: res.email });
         setCode('');
-        showToast(`Un code de vérification a été envoyé à ${res.email}`, 'success');
+        showToast(t('cl1_login.verification_code_sent', { email: res.email }), 'success');
       } else {
         showToast(t('auth.login_success') || 'Connexion réussie !', 'success');
         navigate(afterLoginPath, { replace: true });
@@ -148,7 +148,7 @@ export default function LoginPage() {
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!twoFA || code.trim().length < 6) {
-      showToast('Entrez le code à 6 chiffres.', 'error');
+      showToast(t('cl1_login.enter_six_digit_code'), 'error');
       return;
     }
     setVerifying(true);
@@ -157,7 +157,7 @@ export default function LoginPage() {
       showToast(t('auth.login_success') || 'Connexion réussie !', 'success');
       navigate(afterLoginPath, { replace: true });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Code invalide.', 'error');
+      showToast(error instanceof Error ? error.message : t('cl1_login.invalid_code'), 'error');
     } finally {
       setVerifying(false);
     }
@@ -167,9 +167,9 @@ export default function LoginPage() {
     setResending(true);
     try {
       await login(formData.username, formData.password);
-      showToast('Nouveau code envoyé.', 'success');
+      showToast(t('cl1_login.new_code_sent'), 'success');
     } catch {
-      showToast('Impossible de renvoyer le code.', 'error');
+      showToast(t('cl1_login.resend_failed'), 'error');
     } finally {
       setResending(false);
     }
@@ -182,13 +182,13 @@ export default function LoginPage() {
       if (res.twoFactorRequired) {
         setTwoFA({ userId: res.userId, email: res.email });
         setCode('');
-        showToast(`Un code de verification a ete envoye a ${res.email}`, 'success');
+        showToast(t('cl1_login.verification_code_sent', { email: res.email }), 'success');
       } else {
         showToast(t('auth.login_success') || 'Connexion reussie !', 'success');
         navigate(afterLoginPath, { replace: true });
       }
     } catch (error) {
-      showToast(error instanceof Error ? error.message : 'Connexion Google impossible.', 'error');
+      showToast(error instanceof Error ? error.message : t('cl1_login.google_login_unavailable'), 'error');
     } finally {
       setLoading(false);
     }
@@ -230,20 +230,20 @@ export default function LoginPage() {
                   style={{ background: copy.soft, color: copy.accentDark }}
                 >
                   <PortalIcon size={14} />
-                  {copy.label}
+                  {t(copy.labelKey)}
                 </div>
               )}
               <h1
                 className="text-3xl font-black text-gray-950"
                 style={{ textShadow: '0 2px 10px rgba(255,255,255,.85)' }}
               >
-                {copy.title}
+                {t(copy.titleKey)}
               </h1>
               <p
                 className="mt-2 text-sm font-semibold leading-6 text-gray-800"
                 style={{ textShadow: '0 1px 6px rgba(255,255,255,.72)' }}
               >
-                {copy.hint}
+                {t(copy.hintKey)}
               </p>
             </div>
 
@@ -259,7 +259,7 @@ export default function LoginPage() {
                       color: !secureMode ? '#fff' : '#374151',
                     }}
                   >
-                    Mot de passe
+                    {t('cl1_login.password_tab')}
                   </button>
                   <button
                     type="button"
@@ -278,14 +278,14 @@ export default function LoginPage() {
                 <div className="rounded-2xl border border-white/40 bg-white/35 p-4">
                   <p className="text-xs font-semibold leading-5 text-gray-800">
                     {secureMode
-                      ? "Si la double authentification est activée sur ce compte, le code sera demandé après le mot de passe."
-                      : "Connexion classique. La double authentification reste disponible depuis les paramètres du profil."}
+                      ? t('cl1_login.secure_mode_hint')
+                      : t('cl1_login.classic_mode_hint')}
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-900">
-                    {t('auth.email')} / {t('auth.username')} / Téléphone
+                    {t('auth.email')} / {t('auth.username')} / {t('cl1_login.phone')}
                   </label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-700" size={20} />
@@ -339,7 +339,7 @@ export default function LoginPage() {
                     </Link>
                   ) : (
                     <span className="text-xs font-semibold leading-5 text-gray-700">
-                      Compte fourni par BelivaY.
+                      {t('cl1_login.account_provided_by_belivay')}
                     </span>
                   )}
                   <Link to="/forgot-password" className="text-sm font-semibold hover:underline" style={{ color: copy.accent }}>
@@ -368,7 +368,7 @@ export default function LoginPage() {
                     <div className="relative flex items-center py-1">
                       <div className="h-px flex-1 bg-white/45" />
                       <span className="px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-700">
-                        Ou
+                        {t('cl1_login.or_divider')}
                       </span>
                       <div className="h-px flex-1 bg-white/45" />
                     </div>
@@ -389,10 +389,10 @@ export default function LoginPage() {
               <form onSubmit={handleVerify} className="space-y-5">
                 <div className="flex items-center justify-center gap-2">
                   <ShieldCheck size={20} style={{ color: copy.accent }} />
-                  <h2 className="text-lg font-bold text-gray-900">Vérification en deux étapes</h2>
+                  <h2 className="text-lg font-bold text-gray-900">{t('cl1_login.two_factor_title')}</h2>
                 </div>
                 <p className="text-center text-sm text-gray-800">
-                  Un code à 6 chiffres a été envoyé à <span className="font-semibold">{twoFA.email}</span>.
+                  {t('cl1_login.two_factor_code_sent_to')} <span className="font-semibold">{twoFA.email}</span>.
                 </p>
                 <input
                   type="text"
@@ -412,7 +412,7 @@ export default function LoginPage() {
                   className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 font-semibold text-white shadow-lg transition-all disabled:opacity-50"
                   style={{ background: `linear-gradient(135deg, ${copy.accent}, ${copy.accentDark})` }}
                 >
-                  {verifying ? <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" /> : <>Vérifier <ArrowRight size={20} /></>}
+                  {verifying ? <div className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" /> : <>{t('cl1_login.verify_button')} <ArrowRight size={20} /></>}
                 </button>
                 <div className="flex items-center justify-between text-sm">
                   <button
@@ -420,7 +420,7 @@ export default function LoginPage() {
                     onClick={() => { setTwoFA(null); setCode(''); }}
                     className="font-semibold text-gray-800"
                   >
-                    Retour
+                    {t('cl1_login.back_button')}
                   </button>
                   <button
                     type="button"
@@ -429,7 +429,7 @@ export default function LoginPage() {
                     className="font-semibold hover:underline disabled:opacity-50"
                     style={{ color: copy.accent }}
                   >
-                    {resending ? 'Envoi...' : 'Renvoyer le code'}
+                    {resending ? t('cl1_login.sending') : t('cl1_login.resend_code')}
                   </button>
                 </div>
               </form>

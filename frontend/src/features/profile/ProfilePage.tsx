@@ -227,7 +227,7 @@ export default function ProfilePage() {
   const { showToast } = useToast();
   const { logout } = useAuth();
   const { itemCount, total } = useCart();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserType | null>(null);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
@@ -247,7 +247,7 @@ export default function ProfilePage() {
   const [selectedConversationId, setSelectedConversationId] = useState("");
   const [chatDraft, setChatDraft] = useState("");
   const [supportConversations, setSupportConversations] = useState<Conversation[]>(() =>
-    toConversations(getSupportConversations()),
+    toConversations(getSupportConversations(t)),
   );
   const [account, setAccount] = useState<BelivayAccount>(() => getBelivayAccount());
   const [depositProvider, setDepositProvider] = useState<BelivayProvider>("ORANGE_MONEY");
@@ -297,7 +297,7 @@ export default function ProfilePage() {
         vendorsApi.getProfile().then(setVendorProfile).catch(() => setVendorProfile(null));
         api.get<RewardAccount[]>("/auth/rewards/").then(setRewardAccounts).catch(() => setRewardAccounts([]));
       })
-      .catch(() => showToast("Erreur chargement profil", "error"))
+      .catch(() => showToast(t("cl3_profile_dashboard.error_loading_profile"), "error"))
       .finally(() => setLoading(false));
   }, [showToast]);
 
@@ -360,14 +360,14 @@ export default function ProfilePage() {
   }, []);
 
   useEffect(() => {
-    const syncSupport = () => setSupportConversations(toConversations(getSupportConversations()));
+    const syncSupport = () => setSupportConversations(toConversations(getSupportConversations(t)));
     window.addEventListener(SUPPORT_UPDATED_EVENT, syncSupport);
     window.addEventListener("storage", syncSupport);
     return () => {
       window.removeEventListener(SUPPORT_UPDATED_EVENT, syncSupport);
       window.removeEventListener("storage", syncSupport);
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     const syncAccount = () => setAccount(getBelivayAccount());
@@ -382,8 +382,8 @@ export default function ProfilePage() {
   /* Ouvrir un fil le marque comme lu — la pastille du header suit aussitôt. */
   useEffect(() => {
     if (activePanel !== "messages" || !selectedConversationId) return;
-    markSupportConversationRead(selectedConversationId);
-  }, [activePanel, selectedConversationId]);
+    markSupportConversationRead(selectedConversationId, t);
+  }, [activePanel, selectedConversationId, t]);
 
   const displayName = useMemo(() => getUserDisplayName(user), [user]);
   const userInitials = useMemo(() => getUserInitials(user), [user]);
@@ -398,7 +398,7 @@ export default function ProfilePage() {
     () =>
       disputes.map((dispute) => ({
         id: dispute.id,
-        name: `Litige ${dispute.orderLabel}`,
+        name: t("cl3_profile_messages.dispute_name", { order: dispute.orderLabel }),
         preview: dispute.messages[dispute.messages.length - 1]?.text ?? dispute.reason,
         time: new Date(dispute.updatedAt).toLocaleDateString("fr-FR", {
           day: "2-digit",
@@ -432,10 +432,10 @@ export default function ProfilePage() {
     null;
   const clientReward = rewardAccounts.find((account) => account.role === "CLIENT") ?? null;
   const fidelityPoints = clientReward?.points_balance ?? user?.loyalty_points ?? 0;
-  const fidelityTier = clientReward?.tier_display ?? user?.loyalty_tier ?? "Bronze";
+  const fidelityTier = clientReward?.tier_display ?? user?.loyalty_tier ?? t("cl3_profile_loyalty.tier_bronze");
   const fidelityTrust = clientReward?.trust_score ?? 70;
 
-  const greetingName = user?.first_name?.trim() || displayName.split(" ")[0] || "vous";
+  const greetingName = user?.first_name?.trim() || displayName.split(" ")[0] || t("cl3_profile_dashboard.greeting_fallback_name");
   const unreadMessages = conversations.reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
   const joinedDate = user?.date_joined;
   const memberSince = joinedDate
@@ -444,16 +444,16 @@ export default function ProfilePage() {
   const defaultCity =
     normalizedAddresses.find((address) => address.default)?.line.split("·").pop()?.trim() ||
     normalizedAddresses[0]?.line.split("·").pop()?.trim() ||
-    "Cameroun";
+    t("cl3_profile_shell.default_country");
   const TIER_LADDER = [
-    { name: "Bronze", threshold: 0 },
-    { name: "Argent", threshold: 500 },
-    { name: "Or", threshold: 1500 },
-    { name: "Platinum", threshold: 3000 },
+    { name: t("cl3_profile_loyalty.tier_bronze"), threshold: 0 },
+    { name: t("cl3_profile_loyalty.tier_silver"), threshold: 500 },
+    { name: t("cl3_profile_loyalty.tier_gold"), threshold: 1500 },
+    { name: t("cl3_profile_loyalty.tier_platinum"), threshold: 3000 },
   ];
   const TIER_THRESHOLDS = TIER_LADDER.map((tier) => tier.threshold);
   const nextTier = TIER_LADDER.find((tier) => tier.threshold > fidelityPoints) ?? null;
-  const nextTierLabel = nextTier ? nextTier.name : "Niveau max";
+  const nextTierLabel = nextTier ? nextTier.name : t("cl3_profile_loyalty.max_level");
   const nextTierThreshold = nextTier ? nextTier.threshold : 3000;
   const prevTierThreshold = [...TIER_THRESHOLDS].reverse().find((threshold) => threshold <= fidelityPoints) ?? 0;
   const tierProgress =
@@ -473,10 +473,10 @@ export default function ProfilePage() {
   ];
   const profileComplete = Math.round((profileChecks.filter(Boolean).length / profileChecks.length) * 100);
   const profileMissing = [
-    !user?.last_name?.trim() ? "nom" : null,
-    !user?.phone ? "téléphone" : null,
-    !avatar ? "photo" : null,
-    normalizedAddresses.length === 0 ? "adresse" : null,
+    !user?.last_name?.trim() ? t("cl3_profile_dashboard.missing_last_name") : null,
+    !user?.phone ? t("cl3_profile_dashboard.missing_phone") : null,
+    !avatar ? t("cl3_profile_dashboard.missing_photo") : null,
+    normalizedAddresses.length === 0 ? t("cl3_profile_dashboard.missing_address") : null,
   ].filter(Boolean) as string[];
 
   const handleSaveProfile = async () => {
@@ -492,9 +492,9 @@ export default function ProfilePage() {
         sms_notifications: pfSms,
       });
       setUser(updated);
-      showToast("Profil mis à jour !", "success");
+      showToast(t("cl3_profile_account.toast_profile_updated"), "success");
     } catch {
-      showToast("Erreur lors de la mise à jour.", "error");
+      showToast(t("cl3_profile_account.toast_update_error"), "error");
     } finally {
       setPfSaving(false);
     }
@@ -504,15 +504,15 @@ export default function ProfilePage() {
     try {
       const updated = await authApi.removeAvatar();
       setUser(updated);
-      showToast("Photo supprimée.", "success");
+      showToast(t("cl3_profile_account.toast_photo_removed"), "success");
     } catch {
-      showToast("Erreur.", "error");
+      showToast(t("cl3_profile_account.toast_generic_error"), "error");
     }
   };
 
   const handleSetDefaultAddress = (id: string) => {
     setAddresses((current) => current.map((address) => ({ ...address, default: address.id === id })));
-    showToast("Adresse par défaut mise à jour.", "success");
+    showToast(t("cl3_profile_addresses.toast_default_updated"), "success");
   };
 
   const setAddressType = (id: string, type: "home" | "office") => {
@@ -522,12 +522,12 @@ export default function ProfilePage() {
   const saveAddressEdit = (id: string) => {
     const target = addresses.find((address) => address.id === id);
     if (!target || !target.line.trim()) {
-      showToast("Renseignez l'adresse complète.", "error");
+      showToast(t("cl3_profile_addresses.toast_incomplete_address"), "error");
       return;
     }
     setDraftAddressId(null);
     setEditingAddressId(null);
-    showToast("Adresse enregistrée.", "success");
+    showToast(t("cl3_profile_addresses.toast_address_saved"), "success");
   };
 
   const cancelAddressEdit = (id: string) => {
@@ -580,7 +580,7 @@ export default function ProfilePage() {
     if (editingAddressId === id) {
       setEditingAddressId(null);
     }
-    showToast("Adresse supprimée", "success");
+    showToast(t("cl3_profile_addresses.toast_address_deleted"), "success");
   };
 
   const handleSendChatMessage = () => {
@@ -590,7 +590,7 @@ export default function ProfilePage() {
       addDisputeMessage(selectedConversation.id, chatDraft.trim());
       setDisputes(getStoredOrderDisputes());
     } else {
-      addSupportMessage(selectedConversation.id, chatDraft.trim());
+      addSupportMessage(selectedConversation.id, chatDraft.trim(), t);
     }
 
     setChatDraft("");
@@ -598,13 +598,13 @@ export default function ProfilePage() {
 
   const handleRefreshAccount = () => {
     setAccount(refreshBelivayAccount());
-    showToast("Compte BelivaY actualisé.", "success");
+    showToast(t("cl3_profile_wallet.toast_account_refreshed"), "success");
   };
 
   const handleDeposit = () => {
     const national = toNationalNumber(depositPhone);
     if (!isValidNationalNumber(national)) {
-      showToast("Numéro Mobile Money invalide.", "error");
+      showToast(t("cl3_profile_wallet.toast_invalid_momo_number"), "error");
       return;
     }
 
@@ -613,13 +613,13 @@ export default function ProfilePage() {
     const operator = detectOperator(national)?.name;
     const expected = depositProvider === "ORANGE_MONEY" ? "Orange" : "MTN";
     if (operator && operator !== expected) {
-      showToast(`Ce numéro est ${operator}, pas ${expected}.`, "error");
+      showToast(t("cl3_profile_wallet.toast_operator_mismatch", { operator, expected }), "error");
       return;
     }
 
     const amount = Number(depositAmount.replace(/\s/g, ""));
     if (!Number.isFinite(amount) || amount < MIN_DEPOSIT_XAF) {
-      showToast(`Le dépôt minimum est de ${formatXaf(MIN_DEPOSIT_XAF)}.`, "error");
+      showToast(t("cl3_profile_wallet.toast_min_deposit", { amount: formatXaf(MIN_DEPOSIT_XAF) }), "error");
       return;
     }
 
@@ -628,15 +628,15 @@ export default function ProfilePage() {
         provider: depositProvider,
         senderPhone: national,
         amountXaf: amount,
-      });
+      }, t);
       setAccount(getBelivayAccount());
       setDepositAmount("");
-      showToast(`Dépôt enregistré · réf. ${deposit.reference}`, {
-        description: "Crédité sur votre solde sous 24–72h après validation de l'opérateur.",
+      showToast(t("cl3_profile_wallet.toast_deposit_recorded", { reference: deposit.reference }), {
+        description: t("cl3_profile_wallet.toast_deposit_recorded_description"),
         type: "success",
       });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Dépôt impossible.", "error");
+      showToast(error instanceof Error ? error.message : t("cl3_profile_wallet.toast_deposit_failed"), "error");
     }
   };
 
@@ -648,14 +648,16 @@ export default function ProfilePage() {
 
   const handlePayPlan = (planId: "ESSENTIEL" | "PREMIUM") => {
     try {
-      const charge = payBelivaySubscription(planId);
+      const charge = payBelivaySubscription(planId, t);
       setAccount(getBelivayAccount());
-      showToast("Abonnement réglé depuis votre Compte BelivaY.", {
-        description: `Valable jusqu'au ${new Date(charge.periodEnd).toLocaleDateString("fr-FR")}.`,
+      showToast(t("cl3_profile_wallet.toast_subscription_paid"), {
+        description: t("cl3_profile_wallet.toast_subscription_valid_until", {
+          date: new Date(charge.periodEnd).toLocaleDateString("fr-FR"),
+        }),
         type: "success",
       });
     } catch (error) {
-      showToast(error instanceof Error ? error.message : "Paiement impossible.", "error");
+      showToast(error instanceof Error ? error.message : t("cl3_profile_wallet.toast_payment_failed"), "error");
     }
   };
 
@@ -683,10 +685,10 @@ export default function ProfilePage() {
       setVendorProfile(vendor);
       if (profile) setUser({ ...profile, is_vendor: true });
       window.dispatchEvent(new Event("belivay-vendor-updated"));
-      showToast("Votre compte vendeur est activé.", "success");
+      showToast(t("cl3_profile_seller.toast_activated"), "success");
       openPanel("dashboard");
     } catch {
-      showToast("Impossible d'enregistrer la demande vendeur.", "error");
+      showToast(t("cl3_profile_seller.toast_apply_error"), "error");
     } finally {
       setSellerSubmitting(false);
     }
@@ -716,7 +718,12 @@ export default function ProfilePage() {
           : ["READY_FOR_PICKUP"].includes(status)
             ? 1
             : 1;
-    const trackerSteps = ["Confirmée", "Préparée", "En route", "Livrée"];
+    const trackerSteps = [
+      t("cl3_profile_dashboard.tracker_confirmed"),
+      t("cl3_profile_dashboard.tracker_prepared"),
+      t("cl3_profile_dashboard.tracker_en_route"),
+      t("cl3_profile_dashboard.tracker_delivered"),
+    ];
     const stat = (
       Icon: React.ComponentType<{ size?: number }>,
       value: React.ReactNode,
@@ -734,19 +741,19 @@ export default function ProfilePage() {
     return (
       <div className="pf-stack">
         <div className="pf-anim">
-          <div className="pf-hello">Bonjour, {greetingName}</div>
-          <div className="pf-hello-sub">Voici l'essentiel de votre compte aujourd'hui.</div>
+          <div className="pf-hello">{t("cl3_profile_dashboard.greeting", { name: greetingName })}</div>
+          <div className="pf-hello-sub">{t("cl3_profile_dashboard.greeting_sub")}</div>
         </div>
 
         {activeOrder ? (
           <div className="pf-card pf-anim">
             <div className="pf-tk-head">
               <div>
-                <div className="pf-k">Commande #{activeOrder.id} · en cours</div>
-                <div className="pf-t">Suivez votre livraison</div>
+                <div className="pf-k">{t("cl3_profile_dashboard.active_order_label", { id: activeOrder.id })}</div>
+                <div className="pf-t">{t("cl3_profile_dashboard.active_order_title")}</div>
               </div>
               <button type="button" className="pf-btn-accent" onClick={() => navigate(`/orders/${activeOrder.id}`)}>
-                <Truck size={14} />Suivre
+                <Truck size={14} />{t("cl3_profile_dashboard.track_btn")}
               </button>
             </div>
             <div className="pf-steps">
@@ -771,34 +778,36 @@ export default function ProfilePage() {
         ) : (
           <div className="pf-card pf-anim pf-row-between">
             <div>
-              <div className="pf-t">Aucune commande en cours</div>
-              <div className="pf-sub">Parcourez le catalogue pour votre prochain achat.</div>
+              <div className="pf-t">{t("cl3_profile_dashboard.no_active_order")}</div>
+              <div className="pf-sub">{t("cl3_profile_dashboard.no_active_order_sub")}</div>
             </div>
             <button type="button" className="pf-btn-accent" onClick={() => navigate("/catalog")}>
-              <Package size={14} />Explorer
+              <Package size={14} />{t("cl3_profile_dashboard.explore_btn")}
             </button>
           </div>
         )}
 
         <div className="pf-stats">
-          {stat(Package, orderCount, "Commandes", "o")}
-          {stat(Truck, activeCount, "En cours", "b")}
-          {stat(Heart, favoritesCount, "Favoris", "p")}
-          {stat(Award, fidelityPoints.toLocaleString("fr-FR"), "Points", "a")}
+          {stat(Package, orderCount, t("cl3_profile_dashboard.stat_orders"), "o")}
+          {stat(Truck, activeCount, t("cl3_profile_dashboard.stat_in_progress"), "b")}
+          {stat(Heart, favoritesCount, t("cl3_profile_dashboard.stat_favorites"), "p")}
+          {stat(Award, fidelityPoints.toLocaleString("fr-FR"), t("cl3_profile_dashboard.stat_points"), "a")}
         </div>
 
         <div className="pf-twoup">
           <div className="pf-card pf-anim">
             <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">Programme fidélité</span>
+              <span className="pf-card-title">{t("cl3_profile_dashboard.loyalty_program")}</span>
               <span className="pf-muted-sm">
-                {fidelityTier} → <span style={{ color: "var(--pf-accent)", fontWeight: 600 }}>Argent</span>
+                {fidelityTier} → <span style={{ color: "var(--pf-accent)", fontWeight: 600 }}>{t("cl3_profile_dashboard.tier_silver")}</span>
               </span>
             </div>
             <div className="pf-bar"><i style={{ width: `${tierProgress}%` }} /></div>
             <div className="pf-muted-sm pf-mt">
               {fidelityPoints.toLocaleString("fr-FR")} / {nextTierThreshold.toLocaleString("fr-FR")} pts
-              {pointsToNextTier > 0 ? ` — encore ${pointsToNextTier.toLocaleString("fr-FR")} pts` : " — niveau max"}
+              {pointsToNextTier > 0
+                ? t("cl3_profile_dashboard.points_remaining", { points: pointsToNextTier.toLocaleString("fr-FR") })
+                : t("cl3_profile_dashboard.max_level")}
             </div>
           </div>
           <button type="button" className="pf-card pf-anim pf-notif" onClick={() => openPanel("messages", "support")}>
@@ -807,9 +816,11 @@ export default function ProfilePage() {
               {unreadMessages > 0 && <span className="pf-notif-b">{unreadMessages}</span>}
             </span>
             <span>
-              <span className="pf-notif-t">Notifications</span>
+              <span className="pf-notif-t">{t("cl3_profile_dashboard.notifications")}</span>
               <span className="pf-muted-sm">
-                {unreadMessages > 0 ? `${unreadMessages} non lue${unreadMessages > 1 ? "s" : ""}` : "À jour"}
+                {unreadMessages > 0
+                  ? t(unreadMessages > 1 ? "cl3_profile_dashboard.unread_count_plural" : "cl3_profile_dashboard.unread_count", { count: unreadMessages })
+                  : t("cl3_profile_dashboard.up_to_date")}
               </span>
             </span>
           </button>
@@ -818,14 +829,14 @@ export default function ProfilePage() {
         {recentOrders.length > 0 && (
           <div className="pf-card pf-anim">
             <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">Commandes récentes</span>
-              <button type="button" className="pf-link" onClick={() => navigate("/orders")}>Tout voir</button>
+              <span className="pf-card-title">{t("cl3_profile_dashboard.recent_orders")}</span>
+              <button type="button" className="pf-link" onClick={() => navigate("/orders")}>{t("cl3_profile_dashboard.see_all")}</button>
             </div>
             {recentOrders.map((order) => (
               <div key={order.id} className="pf-order-line">
                 <div className="pf-order-ic"><Package size={16} /></div>
                 <div className="pf-order-mid">
-                  <div className="pf-order-id">Commande #{order.id}</div>
+                  <div className="pf-order-id">{t("cl3_profile_dashboard.order_label", { id: order.id })}</div>
                   <div className="pf-muted-sm">
                     {new Date(order.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
                   </div>
@@ -840,8 +851,8 @@ export default function ProfilePage() {
           <button type="button" className="pf-support-item" onClick={() => openPanel("messages", "support")}>
             <span className="pf-support-ic accent"><MessageSquare size={18} /></span>
             <span className="pf-support-txt">
-              <span className="pf-support-t">Contacter le support</span>
-              <span className="pf-muted-sm">L'équipe BelivaY répond vite</span>
+              <span className="pf-support-t">{t("cl3_profile_dashboard.contact_support")}</span>
+              <span className="pf-muted-sm">{t("cl3_profile_dashboard.contact_support_sub")}</span>
             </span>
             <ArrowRight size={16} className="pf-muted" />
           </button>
@@ -852,9 +863,9 @@ export default function ProfilePage() {
           >
             <span className="pf-support-ic"><Store size={18} /></span>
             <span className="pf-support-txt">
-              <span className="pf-support-t">{isVendor ? "Espace vendeur" : "Devenir vendeur"}</span>
+              <span className="pf-support-t">{isVendor ? t("cl3_profile_dashboard.seller_space") : t("cl3_profile_dashboard.become_seller")}</span>
               <span className="pf-muted-sm">
-                {isVendor ? (vendorProfile?.business_name || "Votre boutique") : "Ouvrez votre boutique BelivaY"}
+                {isVendor ? (vendorProfile?.business_name || t("cl3_profile_dashboard.your_shop")) : t("cl3_profile_dashboard.open_your_shop")}
               </span>
             </span>
             <ArrowRight size={16} className="pf-muted" />
@@ -866,17 +877,20 @@ export default function ProfilePage() {
             <button type="button" className="pf-card pf-notif" onClick={() => navigate("/cart")}>
               <span className="pf-support-ic accent"><ShoppingCart size={18} /></span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="pf-notif-t">Votre panier</span>
-                <span className="pf-muted-sm">{itemCount} article{itemCount > 1 ? "s" : ""} · {total.toLocaleString("fr-FR")} FCFA</span>
+                <span className="pf-notif-t">{t("cl3_profile_dashboard.your_cart")}</span>
+                <span className="pf-muted-sm">
+                  {t(itemCount > 1 ? "cl3_profile_dashboard.cart_items_plural" : "cl3_profile_dashboard.cart_items", { count: itemCount })}
+                  {" · "}{total.toLocaleString("fr-FR")} FCFA
+                </span>
               </span>
-              <span className="pf-pill">Commander</span>
+              <span className="pf-pill">{t("cl3_profile_dashboard.order_cta")}</span>
             </button>
           ) : (
             <button type="button" className="pf-card pf-notif" onClick={() => navigate("/catalog")}>
               <span className="pf-support-ic"><ShoppingCart size={18} /></span>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="pf-notif-t">Votre panier est vide</span>
-                <span className="pf-muted-sm">Parcourez le catalogue</span>
+                <span className="pf-notif-t">{t("cl3_profile_dashboard.empty_cart")}</span>
+                <span className="pf-muted-sm">{t("cl3_profile_dashboard.browse_catalog")}</span>
               </span>
               <ArrowRight size={16} className="pf-muted" />
             </button>
@@ -884,20 +898,20 @@ export default function ProfilePage() {
 
           <div className="pf-card">
             <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">Adresse de livraison</span>
-              <button type="button" className="pf-link" onClick={() => openPanel("adresses")}>Gérer</button>
+              <span className="pf-card-title">{t("cl3_profile_dashboard.delivery_address")}</span>
+              <button type="button" className="pf-link" onClick={() => openPanel("adresses")}>{t("cl3_profile_dashboard.manage")}</button>
             </div>
             {defaultAddress ? (
               <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
                 <span className="pf-order-ic"><MapPin size={16} /></span>
                 <div style={{ minWidth: 0 }}>
-                  <div className="pf-order-id">{defaultAddress.label}{defaultAddress.default ? " · par défaut" : ""}</div>
+                  <div className="pf-order-id">{defaultAddress.label}{defaultAddress.default ? ` · ${t("cl3_profile_dashboard.default_suffix")}` : ""}</div>
                   <div className="pf-muted-sm">{defaultAddress.line}</div>
                 </div>
               </div>
             ) : (
               <button type="button" className="pf-btn-accent" onClick={() => openPanel("adresses")}>
-                <Plus size={14} />Ajouter une adresse
+                <Plus size={14} />{t("cl3_profile_dashboard.add_address")}
               </button>
             )}
           </div>
@@ -906,46 +920,48 @@ export default function ProfilePage() {
         {profileComplete < 100 && (
           <div className="pf-card pf-anim">
             <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">Complétez votre profil</span>
+              <span className="pf-card-title">{t("cl3_profile_dashboard.complete_profile")}</span>
               <span style={{ color: "var(--pf-accent)", fontWeight: 700, fontSize: 13 }}>{profileComplete}%</span>
             </div>
             <div className="pf-bar"><i style={{ width: `${profileComplete}%` }} /></div>
             <div className="pf-row-between" style={{ marginTop: 12, gap: 10 }}>
               <span className="pf-muted-sm">
-                {profileMissing.length > 0 ? `À ajouter : ${profileMissing.join(", ")}` : "Profil complet"}
+                {profileMissing.length > 0
+                  ? t("cl3_profile_dashboard.to_add", { items: profileMissing.join(", ") })
+                  : t("cl3_profile_dashboard.profile_complete")}
               </span>
-              <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>Compléter</button>
+              <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>{t("cl3_profile_dashboard.complete_btn")}</button>
             </div>
           </div>
         )}
 
         <div className="pf-anim">
-          <div className="pf-card-title pf-mb">Raccourcis</div>
+          <div className="pf-card-title pf-mb">{t("cl3_profile_dashboard.shortcuts")}</div>
           <div className="pf-quick">
             <button type="button" className="pf-quick-tile" onClick={() => navigate("/promotions")}>
               <span className="pf-quick-ic o"><Sparkles size={18} /></span>
-              Promotions
+              {t("cl3_profile_dashboard.shortcut_promotions")}
             </button>
             <button type="button" className="pf-quick-tile" onClick={() => navigate("/notifications")}>
               <span className="pf-quick-ic b"><Bell size={18} /></span>
-              Notifications
+              {t("cl3_profile_dashboard.notifications")}
             </button>
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("parrain")}>
               <span className="pf-quick-ic p"><Gift size={18} /></span>
-              Parrainage
+              {t("cl3_profile_dashboard.shortcut_referral")}
             </button>
             <button type="button" className="pf-quick-tile" onClick={() => navigate("/help")}>
               <span className="pf-quick-ic a"><HelpCircle size={18} /></span>
-              Centre d'aide
+              {t("cl3_profile_dashboard.shortcut_help_center")}
             </button>
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("compte-belivay")}>
               <span className="pf-quick-ic o"><Wallet size={18} /></span>
-              Compte BelivaY
+              {t("cl3_profile_dashboard.shortcut_belivay_account")}
               <span className="pf-muted-sm">{formatXaf(account.availableXaf)}</span>
             </button>
             <button type="button" className="pf-quick-tile" onClick={() => openPanel("reglages")}>
               <span className="pf-quick-ic b"><Settings size={18} /></span>
-              Réglages
+              {t("cl3_profile_dashboard.shortcut_settings")}
             </button>
           </div>
         </div>
@@ -977,37 +993,37 @@ export default function ProfilePage() {
               />
             </label>
             {avatar ? (
-              <button type="button" className="pf-btn-ghost" onClick={handleAvatarRemove} aria-label="Retirer la photo">
+              <button type="button" className="pf-btn-ghost" onClick={handleAvatarRemove} aria-label={t("cl3_profile_account.remove_photo_aria")}>
                 <Trash2 size={13} />
               </button>
             ) : null}
           </div>
           <div className="pf-summary">
-            <div className="pf-summary-row"><span className="pf-muted-sm">Membre depuis</span><span className="pf-summary-v">{memberSince || "—"}</span></div>
-            <div className="pf-summary-row"><span className="pf-muted-sm">Type de compte</span><span className="pf-summary-v">{isVendor ? "Vendeur" : "Client"}</span></div>
-            <div className="pf-summary-row"><span className="pf-muted-sm">Fidélité</span><span className="pf-summary-v">{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span></div>
+            <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.member_since")}</span><span className="pf-summary-v">{memberSince || "—"}</span></div>
+            <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.account_type")}</span><span className="pf-summary-v">{isVendor ? t("cl3_profile_account.account_type_seller") : t("cl3_profile_account.account_type_client")}</span></div>
+            <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.loyalty")}</span><span className="pf-summary-v">{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span></div>
           </div>
         </section>
 
         <section className="pf-glass-panel">
-          <div className="pf-card-title pf-mb">Préférences</div>
+          <div className="pf-card-title pf-mb">{t("cl3_profile_account.preferences")}</div>
           <div className="pf-toggle-row" style={{ borderTop: "none", paddingTop: 0 }}>
-            <div><div className="pf-toggle-t">Langue</div><div className="pf-muted-sm">Interface de l'application</div></div>
+            <div><div className="pf-toggle-t">{t("cl3_profile_account.language")}</div><div className="pf-muted-sm">{t("cl3_profile_account.language_sub")}</div></div>
             <div className="pf-lang">
               <button type="button" className={`pf-lang-btn${(i18n.language || "fr").startsWith("fr") ? " on" : ""}`} onClick={() => i18n.changeLanguage("fr")}>🇫🇷 FR</button>
               <button type="button" className={`pf-lang-btn${(i18n.language || "").startsWith("en") ? " on" : ""}`} onClick={() => i18n.changeLanguage("en")}>🇬🇧 EN</button>
             </div>
           </div>
           <div className="pf-toggle-row">
-            <div><div className="pf-toggle-t">Newsletter</div><div className="pf-muted-sm">Offres par email</div></div>
-            <button type="button" role="switch" aria-checked={pfNewsletter} aria-label="Newsletter" className={`pf-switch${pfNewsletter ? " on" : ""}`} onClick={() => setPfNewsletter((v) => !v)}><span /></button>
+            <div><div className="pf-toggle-t">{t("cl3_profile_account.newsletter")}</div><div className="pf-muted-sm">{t("cl3_profile_account.newsletter_sub")}</div></div>
+            <button type="button" role="switch" aria-checked={pfNewsletter} aria-label={t("cl3_profile_account.newsletter")} className={`pf-switch${pfNewsletter ? " on" : ""}`} onClick={() => setPfNewsletter((v) => !v)}><span /></button>
           </div>
           <div className="pf-toggle-row">
-            <div><div className="pf-toggle-t">Notifications SMS</div><div className="pf-muted-sm">Suivi par SMS</div></div>
-            <button type="button" role="switch" aria-checked={pfSms} aria-label="SMS" className={`pf-switch${pfSms ? " on" : ""}`} onClick={() => setPfSms((v) => !v)}><span /></button>
+            <div><div className="pf-toggle-t">{t("cl3_profile_account.sms_notifications")}</div><div className="pf-muted-sm">{t("cl3_profile_account.sms_notifications_sub")}</div></div>
+            <button type="button" role="switch" aria-checked={pfSms} aria-label={t("cl3_profile_account.sms_aria")} className={`pf-switch${pfSms ? " on" : ""}`} onClick={() => setPfSms((v) => !v)}><span /></button>
           </div>
           <button type="button" className="pf-btn-ghost" style={{ marginTop: 14, width: "100%", justifyContent: "center" }} onClick={() => openPanel("securite")}>
-            <Shield size={14} />Sécurité & mot de passe
+            <Shield size={14} />{t("cl3_profile_account.security_and_password")}
           </button>
         </section>
       </div>
@@ -1015,35 +1031,35 @@ export default function ProfilePage() {
       <section className="pf-glass-panel">
         <div className="pf-panel-head">
           <div>
-            <div className="pf-panel-title">Informations personnelles</div>
-            <div className="pf-panel-sub">Mettez à jour vos coordonnées</div>
+            <div className="pf-panel-title">{t("cl3_profile_account.personal_info")}</div>
+            <div className="pf-panel-sub">{t("cl3_profile_account.personal_info_sub")}</div>
           </div>
         </div>
         <div className="pf-form-grid">
           <div className="pf-field">
-            <label className="pf-label">Prénom</label>
+            <label className="pf-label">{t("cl3_profile_account.first_name")}</label>
             <input className="pf-input" value={pfForm.first_name} onChange={(e) => setPfForm((f) => ({ ...f, first_name: e.target.value }))} />
           </div>
           <div className="pf-field">
-            <label className="pf-label">Nom</label>
+            <label className="pf-label">{t("cl3_profile_account.last_name")}</label>
             <input className="pf-input" value={pfForm.last_name} onChange={(e) => setPfForm((f) => ({ ...f, last_name: e.target.value }))} />
           </div>
           <div className="pf-field pf-col2">
-            <label className="pf-label">Email</label>
+            <label className="pf-label">{t("cl3_profile_account.email")}</label>
             <input className="pf-input" type="email" value={pfForm.email} onChange={(e) => setPfForm((f) => ({ ...f, email: e.target.value }))} />
           </div>
           <div className="pf-field pf-col2">
-            <label className="pf-label">Téléphone</label>
+            <label className="pf-label">{t("cl3_profile_account.phone")}</label>
             <PhoneInput value={pfForm.phone} onChange={(v) => setPfForm((f) => ({ ...f, phone: v }))} placeholder="6XX XXX XXX" />
           </div>
           <div className="pf-field pf-col2">
-            <label className="pf-label">Biographie</label>
-            <textarea className="pf-input pf-textarea" value={pfForm.bio} onChange={(e) => setPfForm((f) => ({ ...f, bio: e.target.value }))} placeholder="Parlez-nous de vous…" />
+            <label className="pf-label">{t("cl3_profile_account.bio")}</label>
+            <textarea className="pf-input pf-textarea" value={pfForm.bio} onChange={(e) => setPfForm((f) => ({ ...f, bio: e.target.value }))} placeholder={t("cl3_profile_account.bio_placeholder")} />
           </div>
         </div>
         <div className="pf-form-actions">
           <button type="button" className="pf-btn-accent" onClick={handleSaveProfile} disabled={pfSaving}>
-            <ShieldCheck size={14} />{pfSaving ? "Enregistrement…" : "Sauvegarder"}
+            <ShieldCheck size={14} />{pfSaving ? t("cl3_profile_account.saving") : t("cl3_profile_account.save")}
           </button>
           <button
             type="button"
@@ -1060,7 +1076,7 @@ export default function ProfilePage() {
               }
             }}
           >
-            Annuler
+            {t("cl3_profile_account.cancel")}
           </button>
         </div>
       </section>
@@ -1071,8 +1087,8 @@ export default function ProfilePage() {
     <section className="pf-glass-panel">
       <div className="pf-panel-head">
         <div>
-          <div className="pf-panel-title">Mes adresses</div>
-          <div className="pf-panel-sub">Gérez vos lieux de livraison</div>
+          <div className="pf-panel-title">{t("cl3_profile_addresses.title")}</div>
+          <div className="pf-panel-sub">{t("cl3_profile_addresses.subtitle")}</div>
         </div>
         <button
           type="button"
@@ -1087,15 +1103,15 @@ export default function ProfilePage() {
             setDraftAddressId(nextId);
           }}
         >
-          <Plus size={14} />Ajouter
+          <Plus size={14} />{t("cl3_profile_addresses.add")}
         </button>
       </div>
 
       {normalizedAddresses.length === 0 ? (
         <div className="pf-empty">
           <span className="pf-empty-ic"><MapPin size={22} /></span>
-          <div className="pf-empty-t">Aucune adresse enregistrée</div>
-          <div className="pf-muted-sm">Ajoutez une adresse pour accélérer vos commandes.</div>
+          <div className="pf-empty-t">{t("cl3_profile_addresses.empty_title")}</div>
+          <div className="pf-muted-sm">{t("cl3_profile_addresses.empty_sub")}</div>
         </div>
       ) : (
         <div className="pf-addr-grid">
@@ -1106,41 +1122,41 @@ export default function ProfilePage() {
               <div key={address.id} className={`pf-addr${address.default ? " def" : ""}`}>
                 <div className="pf-addr-label">
                   <span className="pf-addr-ic"><AddressIcon size={14} /></span>
-                  {address.label || (isEditing ? "Nouvelle adresse" : "Sans nom")}
-                  {address.default ? <span className="pf-badge-soft">Par défaut</span> : null}
+                  {address.label || (isEditing ? t("cl3_profile_addresses.new_address") : t("cl3_profile_addresses.unnamed"))}
+                  {address.default ? <span className="pf-badge-soft">{t("cl3_profile_addresses.default_badge")}</span> : null}
                 </div>
 
                 {isEditing ? (
                   <div className="pf-addr-edit">
                     <div className="pf-type-toggle">
-                      <button type="button" className={`pf-type-btn${address.type === "home" ? " on" : ""}`} onClick={() => setAddressType(address.id, "home")}><Home size={13} />Maison</button>
-                      <button type="button" className={`pf-type-btn${address.type === "office" ? " on" : ""}`} onClick={() => setAddressType(address.id, "office")}><Building2 size={13} />Bureau</button>
+                      <button type="button" className={`pf-type-btn${address.type === "home" ? " on" : ""}`} onClick={() => setAddressType(address.id, "home")}><Home size={13} />{t("cl3_profile_addresses.type_home")}</button>
+                      <button type="button" className={`pf-type-btn${address.type === "office" ? " on" : ""}`} onClick={() => setAddressType(address.id, "office")}><Building2 size={13} />{t("cl3_profile_addresses.type_office")}</button>
                     </div>
-                    <input className="pf-input" value={address.label} onChange={(e) => handleAddressUpdate(address.id, "label", e.target.value)} placeholder="Libellé (Maison, Bureau…)" />
-                    <input className="pf-input" value={address.person} onChange={(e) => handleAddressUpdate(address.id, "person", e.target.value)} placeholder="Destinataire" />
+                    <input className="pf-input" value={address.label} onChange={(e) => handleAddressUpdate(address.id, "label", e.target.value)} placeholder={t("cl3_profile_addresses.label_placeholder")} />
+                    <input className="pf-input" value={address.person} onChange={(e) => handleAddressUpdate(address.id, "person", e.target.value)} placeholder={t("cl3_profile_addresses.recipient_placeholder")} />
                     <PhoneInput value={address.phone} onChange={(v) => handleAddressUpdate(address.id, "phone", v)} placeholder="6XX XXX XXX" />
-                    <textarea className="pf-input pf-textarea" value={address.line} onChange={(e) => handleAddressUpdate(address.id, "line", e.target.value)} placeholder="Adresse complète (quartier, ville, repère…)" />
+                    <textarea className="pf-input pf-textarea" value={address.line} onChange={(e) => handleAddressUpdate(address.id, "line", e.target.value)} placeholder={t("cl3_profile_addresses.line_placeholder")} />
                   </div>
                 ) : (
                   <div className="pf-addr-line">
                     {address.person}{address.phone ? ` · ${address.phone}` : ""}<br />
-                    {address.line || "Adresse à compléter"}
+                    {address.line || t("cl3_profile_addresses.line_incomplete")}
                   </div>
                 )}
 
                 <div className="pf-addr-actions">
                   {isEditing ? (
                     <>
-                      <button type="button" className="pf-btn-accent" onClick={() => saveAddressEdit(address.id)}>Sauvegarder</button>
-                      <button type="button" className="pf-btn-ghost" onClick={() => cancelAddressEdit(address.id)}><X size={13} />Fermer</button>
+                      <button type="button" className="pf-btn-accent" onClick={() => saveAddressEdit(address.id)}>{t("cl3_profile_addresses.save")}</button>
+                      <button type="button" className="pf-btn-ghost" onClick={() => cancelAddressEdit(address.id)}><X size={13} />{t("cl3_profile_addresses.close")}</button>
                     </>
                   ) : (
                     <>
                       {!address.default ? (
-                        <button type="button" className="pf-btn-ghost" onClick={() => handleSetDefaultAddress(address.id)}>Par défaut</button>
+                        <button type="button" className="pf-btn-ghost" onClick={() => handleSetDefaultAddress(address.id)}>{t("cl3_profile_addresses.set_default")}</button>
                       ) : null}
-                      <button type="button" className="pf-btn-ghost" onClick={() => setEditingAddressId(address.id)}><Pencil size={13} />Modifier</button>
-                      <button type="button" className="pf-btn-danger" onClick={() => handleDeleteAddress(address.id)} aria-label="Supprimer"><Trash2 size={13} /></button>
+                      <button type="button" className="pf-btn-ghost" onClick={() => setEditingAddressId(address.id)}><Pencil size={13} />{t("cl3_profile_addresses.edit")}</button>
+                      <button type="button" className="pf-btn-danger" onClick={() => handleDeleteAddress(address.id)} aria-label={t("cl3_profile_addresses.delete")}><Trash2 size={13} /></button>
                     </>
                   )}
                 </div>
@@ -1166,10 +1182,10 @@ export default function ProfilePage() {
 
   const renderFidelite = () => {
     const tiers = [
-      { icon: Medal, name: "Bronze", min: 0, range: "0 – 499 pts", perk: "Accès basique" },
-      { icon: Award, name: "Argent", min: 500, range: "500 – 1 999 pts", perk: "Livraison -10%" },
-      { icon: Trophy, name: "Or", min: 2000, range: "2 000 – 4 999 pts", perk: "Livraison gratuite" },
-      { icon: Star, name: "Platinum", min: 5000, range: "5 000+ pts", perk: "Accès VIP total" },
+      { icon: Medal, name: t("cl3_profile_loyalty.tier_bronze"), min: 0, range: t("cl3_profile_loyalty.range_bronze"), perk: t("cl3_profile_loyalty.perk_bronze") },
+      { icon: Award, name: t("cl3_profile_loyalty.tier_silver"), min: 500, range: t("cl3_profile_loyalty.range_silver"), perk: t("cl3_profile_loyalty.perk_silver") },
+      { icon: Trophy, name: t("cl3_profile_loyalty.tier_gold"), min: 2000, range: t("cl3_profile_loyalty.range_gold"), perk: t("cl3_profile_loyalty.perk_gold") },
+      { icon: Star, name: t("cl3_profile_loyalty.tier_platinum"), min: 5000, range: t("cl3_profile_loyalty.range_platinum"), perk: t("cl3_profile_loyalty.perk_platinum") },
     ];
     let currentIndex = 0;
     tiers.forEach((tier, index) => {
@@ -1192,20 +1208,24 @@ export default function ProfilePage() {
       <div className="pf-stack">
         <section className="pf-hero pf-anim">
           <span className="pf-hero-glow" />
-          <div className="pf-hero-top"><Award size={15} />Solde BelivaY Points</div>
+          <div className="pf-hero-top"><Award size={15} />{t("cl3_profile_loyalty.points_balance")}</div>
           <div className="pf-hero-pts">{fidelityPoints.toLocaleString("fr-FR")} <span>pts</span></div>
-          <div className="pf-hero-sub">Niveau {fidelityTier} · Indice de confiance {fidelityTrust}/100</div>
+          <div className="pf-hero-sub">{t("cl3_profile_loyalty.level_trust", { tier: fidelityTier, trust: fidelityTrust })}</div>
           <div className="pf-hero-bar">
             <div className="pf-hero-bar-head">
-              <span>{nextTier ? `Vers ${nextTier.name}` : "Niveau maximum atteint"}</span>
-              <span>{nextTier ? `${ptsToNext.toLocaleString("fr-FR")} pts restants` : `${(clientReward?.lifetime_points ?? fidelityPoints).toLocaleString("fr-FR")} pts cumulés`}</span>
+              <span>{nextTier ? t("cl3_profile_loyalty.toward_tier", { tier: nextTier.name }) : t("cl3_profile_loyalty.max_level_reached")}</span>
+              <span>
+                {nextTier
+                  ? t("cl3_profile_loyalty.points_remaining", { points: ptsToNext.toLocaleString("fr-FR") })
+                  : t("cl3_profile_loyalty.points_cumulated", { points: (clientReward?.lifetime_points ?? fidelityPoints).toLocaleString("fr-FR") })}
+              </span>
             </div>
             <div className="pf-hero-track"><div className="pf-hero-fill" style={{ width: `${tierPct}%` }} /></div>
           </div>
         </section>
 
         <section className="pf-glass-panel pf-anim">
-          <div className="pf-card-title pf-mb">Niveaux de fidélité</div>
+          <div className="pf-card-title pf-mb">{t("cl3_profile_loyalty.tiers_title")}</div>
           <div className="pf-tier-grid">
             {tiers.map((tier, index) => {
               const Icon = tier.icon;
@@ -1215,7 +1235,7 @@ export default function ProfilePage() {
                   <div className="pf-tier-name">{tier.name}</div>
                   <div className="pf-tier-range">{tier.range}</div>
                   <div className="pf-tier-perk">{tier.perk}</div>
-                  {index === currentIndex ? <span className="pf-tier-badge">Niveau actuel</span> : null}
+                  {index === currentIndex ? <span className="pf-tier-badge">{t("cl3_profile_loyalty.current_level")}</span> : null}
                 </div>
               );
             })}
@@ -1224,11 +1244,11 @@ export default function ProfilePage() {
 
         <section className="pf-glass-panel pf-anim">
           <div className="pf-card-title pf-mb" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Package size={16} />Historique des points
+            <Package size={16} />{t("cl3_profile_loyalty.points_history")}
           </div>
           {history.length === 0 ? (
             <div className="pf-muted-sm" style={{ padding: "8px 0" }}>
-              Aucune transaction pour le moment. Passez commande pour cumuler des points.
+              {t("cl3_profile_loyalty.no_transactions")}
             </div>
           ) : (
             history.map((entry, index) => (
@@ -1253,33 +1273,34 @@ export default function ProfilePage() {
       if (navigator.clipboard) {
         navigator.clipboard
           .writeText(refLink)
-          .then(() => showToast("Lien de parrainage copié !", "success"))
-          .catch(() => showToast("Copie impossible.", "error"));
+          .then(() => showToast(t("cl3_profile_referral.toast_link_copied"), "success"))
+          .catch(() => showToast(t("cl3_profile_referral.toast_copy_error"), "error"));
       }
     };
+    const referralSteps = [
+      t("cl3_profile_referral.step_1"),
+      t("cl3_profile_referral.step_2"),
+      t("cl3_profile_referral.step_3"),
+      t("cl3_profile_referral.step_4"),
+    ];
     return (
       <div className="pf-stack">
         <section className="pf-hero pf-anim" style={{ background: "linear-gradient(120deg,#6d28d9,#a855f7 60%,#c084fc)", boxShadow: "0 16px 44px rgba(124,58,237,.4)" }}>
           <span className="pf-hero-glow" />
-          <div className="pf-hero-top"><Gift size={15} />Parrainez, gagnez</div>
-          <div style={{ position: "relative", zIndex: 1, fontSize: 21, fontWeight: 800, letterSpacing: "-.02em", marginTop: 4 }}>Invitez vos proches sur BelivaY</div>
-          <div className="pf-hero-sub">Vous et votre filleul gagnez des points de fidélité dès sa première commande.</div>
+          <div className="pf-hero-top"><Gift size={15} />{t("cl3_profile_referral.hero_top")}</div>
+          <div style={{ position: "relative", zIndex: 1, fontSize: 21, fontWeight: 800, letterSpacing: "-.02em", marginTop: 4 }}>{t("cl3_profile_referral.hero_title")}</div>
+          <div className="pf-hero-sub">{t("cl3_profile_referral.hero_sub")}</div>
           <div style={{ position: "relative", zIndex: 1, display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
             <div className="pf-ref-code">{refCode}</div>
             <button type="button" className="pf-btn-ghost" style={{ background: "rgba(255,255,255,.18)", borderColor: "rgba(255,255,255,.3)", color: "#fff" }} onClick={share}>
-              <Send size={13} />Copier mon lien
+              <Send size={13} />{t("cl3_profile_referral.copy_link")}
             </button>
           </div>
         </section>
 
         <section className="pf-glass-panel pf-anim">
-          <div className="pf-card-title pf-mb">Comment ça marche</div>
-          {[
-            "Partagez votre lien ou votre code unique",
-            "Votre filleul s'inscrit via votre lien",
-            "Il réalise sa première commande",
-            "Vous recevez tous les deux des points de fidélité",
-          ].map((step, index) => (
+          <div className="pf-card-title pf-mb">{t("cl3_profile_referral.how_it_works")}</div>
+          {referralSteps.map((step, index) => (
             <div key={step} className="pf-step">
               <span className="pf-step-n">{index + 1}</span>{step}
             </div>
@@ -1287,9 +1308,9 @@ export default function ProfilePage() {
         </section>
 
         <section className="pf-glass-panel pf-anim">
-          <div className="pf-card-title pf-mb">Mes parrainages</div>
+          <div className="pf-card-title pf-mb">{t("cl3_profile_referral.my_referrals")}</div>
           <div className="pf-muted-sm" style={{ padding: "8px 0" }}>
-            Vos parrainages apparaîtront ici dès que vos filleuls s'inscriront via votre lien.
+            {t("cl3_profile_referral.empty_referrals")}
           </div>
         </section>
       </div>
@@ -1305,14 +1326,14 @@ export default function ProfilePage() {
             onClick={() => openPanel("messages", "all")}
             className={`rounded-[8px] px-4 py-2 text-[12px] font-bold ${messageTab === "all" ? "bg-[#fff4eb] text-[#c85e14] dark:bg-primary/10 dark:text-primary" : "bg-[#f9fafb] text-[#4b5563] dark:bg-gray-800 dark:text-gray-300"}`}
           >
-            Tous ({conversations.length})
+            {t("cl3_profile_messages.tab_all", { count: conversations.length })}
           </button>
           <button
             type="button"
             onClick={() => openPanel("messages", "support")}
             className={`rounded-[8px] px-4 py-2 text-[12px] font-bold ${messageTab === "support" ? "bg-[#fff4eb] text-[#c85e14] dark:bg-primary/10 dark:text-primary" : "bg-[#f9fafb] text-[#4b5563] dark:bg-gray-800 dark:text-gray-300"}`}
           >
-            Support
+            {t("cl3_profile_messages.tab_support")}
           </button>
           <button
             type="button"
@@ -1320,17 +1341,17 @@ export default function ProfilePage() {
             className={`inline-flex items-center gap-2 rounded-[8px] px-4 py-2 text-[12px] font-bold ${messageTab === "litige" ? "bg-[#fff4eb] text-[#c85e14] dark:bg-primary/10 dark:text-primary" : "bg-[#f9fafb] text-[#4b5563] dark:bg-gray-800 dark:text-gray-300"}`}
           >
             <Shield size={14} />
-            Litiges
+            {t("cl3_profile_messages.tab_disputes")}
           </button>
         </div>
         <ActionButton variant="primary" onClick={() => navigate("/orders")}>
           <Package size={14} className="mr-1" />
-          Aller aux commandes
+          {t("cl3_profile_messages.go_to_orders")}
         </ActionButton>
       </div>
 
       <div className="mb-4 rounded-[12px] border border-[#fed7aa] bg-[#fff7ed] p-4 text-[13px] leading-[1.7] text-[#7c4b27] dark:border-orange-900/40 dark:bg-orange-950/30 dark:text-orange-200">
-                Un litige se fait dans le detail d'une commande. Cette page permet ensuite de consulter l'historique des litiges ouverts.
+                {t("cl3_profile_messages.dispute_note")}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[340px_minmax(0,1fr)]">
@@ -1364,7 +1385,7 @@ export default function ProfilePage() {
           ))}
           {filteredConversations.length === 0 ? (
             <div className="rounded-[12px] border border-dashed border-[#e5e7eb] bg-[#f9fafb] p-4 text-[13px] text-[#6b7280] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-              Aucun échange dans ce filtre pour le moment.
+              {t("cl3_profile_messages.empty_filter")}
             </div>
           ) : null}
         </div>
@@ -1375,7 +1396,7 @@ export default function ProfilePage() {
               <div className="mb-4 border-b border-[#e5e7eb] pb-3 dark:border-gray-800">
                 <div className="text-[14px] font-extrabold text-[#111827] dark:text-white">{selectedConversation.name}</div>
                 <div className="mt-1 text-[12px] text-[#6b7280] dark:text-gray-400">
-                  {selectedConversation.type === "litige" ? "Chat de litige ouvert" : "Conversation avec le support"}
+                  {selectedConversation.type === "litige" ? t("cl3_profile_messages.dispute_chat_open") : t("cl3_profile_messages.support_conversation")}
                 </div>
               </div>
               <div className="space-y-3">
@@ -1395,7 +1416,7 @@ export default function ProfilePage() {
               </div>
               {selectedConversation.type === "litige" ? (
                 <div className="mt-4 rounded-[10px] border border-dashed border-[#e5e7eb] bg-[#f9fafb] px-3 py-3 text-[12.5px] text-[#6b7280] dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400">
-                  Historique en lecture seule. Les reponses aux litiges se font depuis la page de commande.
+                  {t("cl3_profile_messages.dispute_readonly_note")}
                 </div>
               ) : (
                 <div className="mt-4 flex gap-2 border-t border-[#e5e7eb] pt-3 dark:border-gray-800">
@@ -1403,17 +1424,17 @@ export default function ProfilePage() {
                     className="flex-1 rounded-[10px] border border-[#e5e7eb] px-3 py-2 text-[13px] outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
                     value={chatDraft}
                     onChange={(event) => setChatDraft(event.target.value)}
-                    placeholder="Envoyer un message au support..."
+                    placeholder={t("cl3_profile_messages.chat_placeholder")}
                   />
                   <ActionButton variant="primary" onClick={handleSendChatMessage}>
                     <Send size={14} className="mr-1" />
-                    Envoyer
+                    {t("cl3_profile_messages.send")}
                   </ActionButton>
                 </div>
               )}
             </>
           ) : (
-            <div className="text-[13px] text-[#6b7280] dark:text-gray-400">Aucune conversation disponible.</div>
+            <div className="text-[13px] text-[#6b7280] dark:text-gray-400">{t("cl3_profile_messages.no_conversation")}</div>
           )}
         </div>
       </div>
@@ -1426,36 +1447,36 @@ export default function ProfilePage() {
         <>
           <div className="pf-panel-head">
             <div>
-              <div className="pf-panel-title">Vous êtes vendeur</div>
-              <div className="pf-panel-sub">Votre boutique est active sur BelivaY</div>
+              <div className="pf-panel-title">{t("cl3_profile_seller.you_are_seller")}</div>
+              <div className="pf-panel-sub">{t("cl3_profile_seller.shop_active")}</div>
             </div>
           </div>
           <div className="pf-vendor-active">
             <span className="pf-vendor-ic"><Store size={20} /></span>
             <div>
-              <div className="pf-toggle-t">Vendeur actif{vendorProfile?.business_name ? ` · ${vendorProfile.business_name}` : ""}</div>
-              <div className="pf-muted-sm">Gérez vos produits, commandes et revenus depuis l'espace vendeur.</div>
+              <div className="pf-toggle-t">{t("cl3_profile_seller.active_seller")}{vendorProfile?.business_name ? ` · ${vendorProfile.business_name}` : ""}</div>
+              <div className="pf-muted-sm">{t("cl3_profile_seller.active_seller_sub")}</div>
             </div>
           </div>
           <div className="pf-form-actions">
-            <button type="button" className="pf-btn-accent" onClick={() => navigate("/seller/dashboard")}><Store size={14} />Ouvrir l'espace vendeur</button>
-            <button type="button" className="pf-btn-ghost" onClick={() => openPanel("dashboard")}>Tableau de bord</button>
+            <button type="button" className="pf-btn-accent" onClick={() => navigate("/seller/dashboard")}><Store size={14} />{t("cl3_profile_seller.open_seller_space")}</button>
+            <button type="button" className="pf-btn-ghost" onClick={() => openPanel("dashboard")}>{t("cl3_profile_seller.dashboard")}</button>
           </div>
         </>
       ) : (
         <>
           <div className="pf-panel-head">
             <div>
-              <div className="pf-panel-title">Devenir vendeur</div>
-              <div className="pf-panel-sub">Lancez votre boutique sur BelivaY</div>
+              <div className="pf-panel-title">{t("cl3_profile_seller.become_seller_title")}</div>
+              <div className="pf-panel-sub">{t("cl3_profile_seller.become_seller_sub")}</div>
             </div>
           </div>
 
           <div className="pf-benefits">
             {[
-              { icon: Store, title: "Votre boutique", desc: "Vendez à tout le marché CEMAC" },
-              { icon: Wallet, title: "Mobile Money", desc: "Encaissez via MTN & Orange" },
-              { icon: Award, title: "Visibilité", desc: "Vos fiches mises en avant" },
+              { icon: Store, title: t("cl3_profile_seller.benefit_shop_title"), desc: t("cl3_profile_seller.benefit_shop_desc") },
+              { icon: Wallet, title: t("cl3_profile_seller.benefit_momo_title"), desc: t("cl3_profile_seller.benefit_momo_desc") },
+              { icon: Award, title: t("cl3_profile_seller.benefit_visibility_title"), desc: t("cl3_profile_seller.benefit_visibility_desc") },
             ].map((benefit) => {
               const Icon = benefit.icon;
               return (
@@ -1471,18 +1492,18 @@ export default function ProfilePage() {
           </div>
 
           <div className="pf-form-grid">
-            <div className="pf-field"><label className="pf-label">Nom de boutique</label><input className="pf-input" value={sellerForm.shopName} onChange={(e) => handleSellerField("shopName", e.target.value)} placeholder="Ex: Maison Wax Premium" /></div>
-            <div className="pf-field"><label className="pf-label">Catégorie principale</label><input className="pf-input" value={sellerForm.category} onChange={(e) => handleSellerField("category", e.target.value)} placeholder="Mode, Beauté, Tech…" /></div>
-            <div className="pf-field"><label className="pf-label">Ville</label><input className="pf-input" value={sellerForm.city} onChange={(e) => handleSellerField("city", e.target.value)} /></div>
-            <div className="pf-field"><label className="pf-label">Téléphone business</label><PhoneInput value={sellerForm.phone} onChange={(v) => handleSellerField("phone", v)} placeholder="6XX XXX XXX" /></div>
-            <div className="pf-field pf-col2"><label className="pf-label">Adresse boutique</label><input className="pf-input" value={sellerForm.address} onChange={(e) => handleSellerField("address", e.target.value)} placeholder="Ex: Marché central, entrée principale" /></div>
-            <div className="pf-field pf-col2"><label className="pf-label">Pièce d'identité (N° CNI / RCCM)</label><input className="pf-input" value={sellerForm.idDocument} onChange={(e) => handleSellerField("idDocument", e.target.value)} placeholder="Référence officielle" /></div>
-            <div className="pf-field pf-col2"><label className="pf-label">Pourquoi devenir vendeur ?</label><textarea className="pf-input pf-textarea" value={sellerForm.motivation} onChange={(e) => handleSellerField("motivation", e.target.value)} placeholder="Présentez votre activité, vos produits et votre objectif sur BelivaY." /></div>
+            <div className="pf-field"><label className="pf-label">{t("cl3_profile_seller.shop_name")}</label><input className="pf-input" value={sellerForm.shopName} onChange={(e) => handleSellerField("shopName", e.target.value)} placeholder={t("cl3_profile_seller.shop_name_placeholder")} /></div>
+            <div className="pf-field"><label className="pf-label">{t("cl3_profile_seller.main_category")}</label><input className="pf-input" value={sellerForm.category} onChange={(e) => handleSellerField("category", e.target.value)} placeholder={t("cl3_profile_seller.main_category_placeholder")} /></div>
+            <div className="pf-field"><label className="pf-label">{t("cl3_profile_seller.city")}</label><input className="pf-input" value={sellerForm.city} onChange={(e) => handleSellerField("city", e.target.value)} /></div>
+            <div className="pf-field"><label className="pf-label">{t("cl3_profile_seller.business_phone")}</label><PhoneInput value={sellerForm.phone} onChange={(v) => handleSellerField("phone", v)} placeholder="6XX XXX XXX" /></div>
+            <div className="pf-field pf-col2"><label className="pf-label">{t("cl3_profile_seller.shop_address")}</label><input className="pf-input" value={sellerForm.address} onChange={(e) => handleSellerField("address", e.target.value)} placeholder={t("cl3_profile_seller.shop_address_placeholder")} /></div>
+            <div className="pf-field pf-col2"><label className="pf-label">{t("cl3_profile_seller.id_document")}</label><input className="pf-input" value={sellerForm.idDocument} onChange={(e) => handleSellerField("idDocument", e.target.value)} placeholder={t("cl3_profile_seller.id_document_placeholder")} /></div>
+            <div className="pf-field pf-col2"><label className="pf-label">{t("cl3_profile_seller.motivation")}</label><textarea className="pf-input pf-textarea" value={sellerForm.motivation} onChange={(e) => handleSellerField("motivation", e.target.value)} placeholder={t("cl3_profile_seller.motivation_placeholder")} /></div>
           </div>
 
           <div className="pf-form-actions">
-            <button type="button" className="pf-btn-accent" onClick={handleSellerApplication} disabled={sellerSubmitting}><Store size={14} />{sellerSubmitting ? "Enregistrement…" : "Envoyer la demande"}</button>
-            <button type="button" className="pf-btn-ghost" onClick={() => openPanel("dashboard")}>Retour</button>
+            <button type="button" className="pf-btn-accent" onClick={handleSellerApplication} disabled={sellerSubmitting}><Store size={14} />{sellerSubmitting ? t("cl3_profile_seller.submitting") : t("cl3_profile_seller.submit_application")}</button>
+            <button type="button" className="pf-btn-ghost" onClick={() => openPanel("dashboard")}>{t("cl3_profile_seller.back")}</button>
           </div>
         </>
       )}
@@ -1493,8 +1514,8 @@ export default function ProfilePage() {
     <section className="pf-glass-panel">
       <div className="pf-panel-head" style={{ marginBottom: 6 }}>
         <div>
-          <div className="pf-panel-title">Sécurité</div>
-          <div className="pf-panel-sub">Protégez l'accès à votre compte</div>
+          <div className="pf-panel-title">{t("cl3_profile_security.title")}</div>
+          <div className="pf-panel-sub">{t("cl3_profile_security.subtitle")}</div>
         </div>
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 14 }}>
@@ -1519,12 +1540,12 @@ export default function ProfilePage() {
             <div>
               <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
                 <Building2 size={19} style={{ color: "var(--pf-accent)" }} />
-                Mon Compte BelivaY
+                {t("cl3_profile_wallet.my_belivay_account")}
               </div>
-              <div className="pf-panel-sub">Solde · Dépôts · Payer mon abonnement</div>
+              <div className="pf-panel-sub">{t("cl3_profile_wallet.balance_deposits_subscription")}</div>
             </div>
             <button type="button" className="pf-btn-ghost" onClick={handleRefreshAccount}>
-              <RefreshCw size={13} />Actualiser
+              <RefreshCw size={13} />{t("cl3_profile_wallet.refresh")}
             </button>
           </div>
 
@@ -1532,31 +1553,31 @@ export default function ProfilePage() {
             <div className="pf-wal o">
               <span className="pf-wal-ic"><Wallet size={17} /></span>
               <div className="pf-wal-amt">{formatXaf(account.availableXaf)}</div>
-              <div className="pf-wal-l">Solde disponible</div>
-              <div className="pf-wal-s">Utilisable pour abonnement</div>
+              <div className="pf-wal-l">{t("cl3_profile_wallet.available_balance")}</div>
+              <div className="pf-wal-s">{t("cl3_profile_wallet.available_balance_sub")}</div>
             </div>
             <div className="pf-wal g">
               <span className="pf-wal-ic"><CreditCard size={17} /></span>
               <div className="pf-wal-amt">{formatXaf(account.totalDepositedXaf)}</div>
-              <div className="pf-wal-l">Total déposé</div>
+              <div className="pf-wal-l">{t("cl3_profile_wallet.total_deposited")}</div>
               <div className="pf-wal-s">
-                {account.depositCount} dépôt{account.depositCount > 1 ? "s" : ""}
+                {t(account.depositCount > 1 ? "cl3_profile_wallet.deposit_count_plural" : "cl3_profile_wallet.deposit_count", { count: account.depositCount })}
               </div>
             </div>
             <div className="pf-wal y">
               <span className="pf-wal-ic"><Clock size={17} /></span>
               <div className="pf-wal-amt">{formatXaf(account.pendingXaf)}</div>
-              <div className="pf-wal-l">En attente</div>
-              <div className="pf-wal-s">Crédit sous 24–72h</div>
+              <div className="pf-wal-l">{t("cl3_profile_wallet.pending")}</div>
+              <div className="pf-wal-s">{t("cl3_profile_wallet.pending_sub")}</div>
             </div>
           </div>
 
           <div className="pf-info-note">
             <span className="pf-info-ic"><Sparkles size={16} /></span>
             <div style={{ fontSize: 12.5, lineHeight: 1.7, color: "var(--pf-text2)" }}>
-              <strong style={{ color: "var(--pf-text)" }}>À quoi sert mon Compte BelivaY ?</strong>{" "}
-              Déposez des fonds pour <strong style={{ color: "var(--pf-text)" }}>régler votre abonnement Premium</strong>{" "}
-              directement sur la plateforme, sans avoir à ressaisir vos coordonnées à chaque fois.
+              <strong style={{ color: "var(--pf-text)" }}>{t("cl3_profile_wallet.info_note_title")}</strong>{" "}
+              {t("cl3_profile_wallet.info_note_body_1")} <strong style={{ color: "var(--pf-text)" }}>{t("cl3_profile_wallet.info_note_body_strong")}</strong>{" "}
+              {t("cl3_profile_wallet.info_note_body_2")}
             </div>
           </div>
         </section>
@@ -1564,8 +1585,8 @@ export default function ProfilePage() {
         <section className="pf-glass-panel pf-anim">
           <div className="pf-panel-head" style={{ marginBottom: 14 }}>
             <div>
-              <div className="pf-panel-title">Déposer des fonds</div>
-              <div className="pf-panel-sub">Dépôt minimum {formatXaf(MIN_DEPOSIT_XAF)}</div>
+              <div className="pf-panel-title">{t("cl3_profile_wallet.deposit_funds")}</div>
+              <div className="pf-panel-sub">{t("cl3_profile_wallet.min_deposit", { amount: formatXaf(MIN_DEPOSIT_XAF) })}</div>
             </div>
           </div>
 
@@ -1580,14 +1601,14 @@ export default function ProfilePage() {
               >
                 <span className={`pf-op-dot ${provider === "ORANGE_MONEY" ? "orange" : "mtn"}`} />
                 <span className="pf-op-n">{PROVIDER_LABELS[provider]}</span>
-                <span className="pf-op-s">Envoyer vers BelivaY</span>
+                <span className="pf-op-s">{t("cl3_profile_wallet.send_to_belivay")}</span>
               </button>
             ))}
           </div>
 
           <div className="pf-field" style={{ marginTop: 16 }}>
             <label className="pf-label" htmlFor="belivay-deposit-phone">
-              Votre numéro {PROVIDER_LABELS[depositProvider]} (expéditeur)
+              {t("cl3_profile_wallet.your_number_label", { provider: PROVIDER_LABELS[depositProvider] })}
             </label>
             <div className={`pf-phone${nationalPhone && !isValidNationalNumber(nationalPhone) ? " invalid" : ""}`}>
               <span className="pf-phone-country">🇨🇲 +237</span>
@@ -1603,13 +1624,13 @@ export default function ProfilePage() {
             </div>
             <div className="pf-muted-sm" style={{ marginTop: 6 }}>
               {phoneOperator
-                ? `Opérateur détecté : ${phoneOperator}`
-                : "Format : 690 000 000 (Orange) ou 680 000 000 (MTN)"}
+                ? t("cl3_profile_wallet.operator_detected", { operator: phoneOperator })
+                : t("cl3_profile_wallet.phone_format_hint")}
             </div>
           </div>
 
           <div className="pf-field" style={{ marginTop: 14 }}>
-            <span className="pf-label">Numéro BelivaY destinataire</span>
+            <span className="pf-label">{t("cl3_profile_wallet.recipient_number_label")}</span>
             <div className="pf-recv">
               <span className="pf-recv-n">
                 <span
@@ -1618,43 +1639,43 @@ export default function ProfilePage() {
                 />
                 {BELIVAY_RECEIVERS[depositProvider]}
               </span>
-              <span className="pf-muted-sm">Compte officiel BelivaY</span>
+              <span className="pf-muted-sm">{t("cl3_profile_wallet.official_account")}</span>
             </div>
           </div>
 
           <div className="pf-form-grid" style={{ marginTop: 14 }}>
             <div className="pf-field">
-              <label className="pf-label" htmlFor="belivay-deposit-amount">Montant (FCFA)</label>
+              <label className="pf-label" htmlFor="belivay-deposit-amount">{t("cl3_profile_wallet.amount_label")}</label>
               <input
                 id="belivay-deposit-amount"
                 className="pf-input"
                 inputMode="numeric"
-                placeholder="Ex : 10 000"
+                placeholder={t("cl3_profile_wallet.amount_placeholder")}
                 value={depositAmount}
                 onChange={(event) => setDepositAmount(event.target.value.replace(/[^\d\s]/g, ""))}
               />
             </div>
             <div className="pf-field">
-              <span className="pf-label">Nouveau solde estimé</span>
+              <span className="pf-label">{t("cl3_profile_wallet.new_estimated_balance")}</span>
               <div className="pf-estimate">
-                {validAmount ? formatXaf(account.availableXaf + validAmount) : "— FCFA"}
+                {validAmount ? formatXaf(account.availableXaf + validAmount) : t("cl3_profile_wallet.estimate_placeholder")}
               </div>
             </div>
           </div>
 
           <div className="pf-form-actions">
             <button type="button" className="pf-btn-accent" onClick={handleDeposit}>
-              <ArrowDownToLine size={14} />Confirmer le dépôt
+              <ArrowDownToLine size={14} />{t("cl3_profile_wallet.confirm_deposit")}
             </button>
             <button type="button" className="pf-btn-ghost" onClick={handleResetDeposit}>
-              <RotateCcw size={13} />Réinitialiser
+              <RotateCcw size={13} />{t("cl3_profile_wallet.reset")}
             </button>
           </div>
         </section>
 
         {account.deposits.length > 0 ? (
           <section className="pf-glass-panel pf-anim">
-            <div className="pf-card-title pf-mb">Historique des dépôts</div>
+            <div className="pf-card-title pf-mb">{t("cl3_profile_wallet.deposit_history")}</div>
             {account.deposits.slice(0, 8).map((deposit) => (
               <div key={deposit.id} className="pf-dep-line">
                 <span className="pf-order-ic">
@@ -1671,7 +1692,7 @@ export default function ProfilePage() {
                       year: "numeric",
                     })}
                     {" · "}
-                    {deposit.status === "CREDITED" ? "Crédité" : "En attente de validation"}
+                    {deposit.status === "CREDITED" ? t("cl3_profile_wallet.credited") : t("cl3_profile_wallet.pending_validation")}
                   </div>
                 </div>
                 <div className="pf-order-total">{formatXaf(deposit.amountXaf)}</div>
@@ -1684,17 +1705,17 @@ export default function ProfilePage() {
           <div className="pf-panel-head" style={{ marginBottom: 14 }}>
             <div className="pf-panel-title" style={{ display: "flex", alignItems: "center", gap: 9 }}>
               <Gem size={18} style={{ color: "var(--pf-accent)" }} />
-              Payer mon abonnement Premium
+              {t("cl3_profile_wallet.pay_premium_subscription")}
             </div>
           </div>
 
           <div className="pf-plan-current">
-            <div className="pf-plan-k">Plan actuel</div>
-            <div className="pf-plan-name">{currentPlan ? currentPlan.name : "Gratuit"}</div>
+            <div className="pf-plan-k">{t("cl3_profile_wallet.current_plan")}</div>
+            <div className="pf-plan-name">{currentPlan ? currentPlan.name : t("cl3_profile_wallet.free_plan")}</div>
             <div className="pf-plan-sub">
               {currentPlan && account.planExpiresAt
-                ? `Actif jusqu'au ${new Date(account.planExpiresAt).toLocaleDateString("fr-FR")}`
-                : "Passez Premium pour accéder aux avantages exclusifs"}
+                ? t("cl3_profile_wallet.active_until", { date: new Date(account.planExpiresAt).toLocaleDateString("fr-FR") })
+                : t("cl3_profile_wallet.go_premium_hint")}
             </div>
           </div>
 
@@ -1711,7 +1732,7 @@ export default function ProfilePage() {
                   )}
                   <div className="pf-plan-t">{plan.name}</div>
                   <div className="pf-plan-p">
-                    {plan.priceXaf.toLocaleString("fr-FR")} FCFA<span>/mois</span>
+                    {plan.priceXaf.toLocaleString("fr-FR")} FCFA<span>{t("cl3_profile_wallet.per_month")}</span>
                   </div>
                   <ul className="pf-plan-perks">
                     {plan.perks.map((perk) => (
@@ -1726,9 +1747,9 @@ export default function ProfilePage() {
                     className="pf-plan-cta"
                     disabled={!affordable}
                     onClick={() => handlePayPlan(plan.id)}
-                    title={affordable ? undefined : "Solde insuffisant : faites un dépôt d'abord."}
+                    title={affordable ? undefined : t("cl3_profile_wallet.insufficient_balance")}
                   >
-                    {isCurrent ? "Renouveler →" : "Payer →"}
+                    {isCurrent ? t("cl3_profile_wallet.renew_cta") : t("cl3_profile_wallet.pay_cta")}
                   </button>
                 </div>
               );
@@ -1736,7 +1757,7 @@ export default function ProfilePage() {
           </div>
 
           <div className="pf-muted-sm" style={{ marginTop: 12, textAlign: "center" }}>
-            Les fonds de votre Compte BelivaY seront utilisés pour le paiement.
+            {t("cl3_profile_wallet.funds_usage_note")}
           </div>
         </section>
       </div>
@@ -1748,26 +1769,26 @@ export default function ProfilePage() {
       <section className="pf-glass-panel pf-anim">
         <div className="pf-panel-head" style={{ marginBottom: 6 }}>
           <div>
-            <div className="pf-panel-title">Réglages</div>
-            <div className="pf-panel-sub">Apparence, langue et notifications</div>
+            <div className="pf-panel-title">{t("cl3_profile_settings.title")}</div>
+            <div className="pf-panel-sub">{t("cl3_profile_settings.subtitle")}</div>
           </div>
         </div>
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Apparence</div>
-            <div className="pf-muted-sm">Thème clair ou sombre</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.appearance")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.appearance_sub")}</div>
           </div>
           <button type="button" className="pf-btn-ghost" onClick={toggleTheme}>
             {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
-            {theme === "dark" ? "Sombre" : "Clair"}
+            {theme === "dark" ? t("cl3_profile_settings.dark") : t("cl3_profile_settings.light")}
           </button>
         </div>
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Langue</div>
-            <div className="pf-muted-sm">Interface de l'application</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.language")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.language_sub")}</div>
           </div>
           <div className="pf-lang">
             <button
@@ -1789,8 +1810,8 @@ export default function ProfilePage() {
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Taille du texte</div>
-            <div className="pf-muted-sm">Confort de lecture</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.text_size")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.text_size_sub")}</div>
           </div>
           <div style={{ display: "inline-flex", gap: 4 }}>
             {(["small", "normal", "large"] as const).map((size) => (
@@ -1814,14 +1835,14 @@ export default function ProfilePage() {
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Mode daltonien</div>
-            <div className="pf-muted-sm">Contraste renforcé, saturation réduite</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.colorblind_mode")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.colorblind_mode_sub")}</div>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={daltonianMode}
-            aria-label="Mode daltonien"
+            aria-label={t("cl3_profile_settings.colorblind_mode")}
             className={`pf-switch${daltonianMode ? " on" : ""}`}
             onClick={() => setDaltonianMode((value) => !value)}
           >
@@ -1831,14 +1852,14 @@ export default function ProfilePage() {
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Newsletter</div>
-            <div className="pf-muted-sm">Offres par email</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.newsletter")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.newsletter_sub")}</div>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={pfNewsletter}
-            aria-label="Newsletter"
+            aria-label={t("cl3_profile_settings.newsletter")}
             className={`pf-switch${pfNewsletter ? " on" : ""}`}
             onClick={() => setPfNewsletter((value) => !value)}
           >
@@ -1848,14 +1869,14 @@ export default function ProfilePage() {
 
         <div className="pf-toggle-row">
           <div>
-            <div className="pf-toggle-t">Notifications SMS</div>
-            <div className="pf-muted-sm">Suivi de commande par SMS</div>
+            <div className="pf-toggle-t">{t("cl3_profile_settings.sms_notifications")}</div>
+            <div className="pf-muted-sm">{t("cl3_profile_settings.sms_notifications_sub")}</div>
           </div>
           <button
             type="button"
             role="switch"
             aria-checked={pfSms}
-            aria-label="Notifications SMS"
+            aria-label={t("cl3_profile_settings.sms_notifications")}
             className={`pf-switch${pfSms ? " on" : ""}`}
             onClick={() => setPfSms((value) => !value)}
           >
@@ -1865,7 +1886,7 @@ export default function ProfilePage() {
 
         <div className="pf-form-actions">
           <button type="button" className="pf-btn-accent" onClick={handleSaveProfile} disabled={pfSaving}>
-            <Check size={14} />{pfSaving ? "Enregistrement…" : "Enregistrer les préférences"}
+            <Check size={14} />{pfSaving ? t("cl3_profile_settings.saving") : t("cl3_profile_settings.save_preferences")}
           </button>
         </div>
       </section>
@@ -1874,32 +1895,32 @@ export default function ProfilePage() {
         <button type="button" className="pf-support-item" onClick={() => openPanel("securite")}>
           <span className="pf-support-ic accent"><Shield size={18} /></span>
           <span className="pf-support-txt">
-            <span className="pf-support-t">Sécurité & mot de passe</span>
-            <span className="pf-muted-sm">2FA, sessions actives</span>
+            <span className="pf-support-t">{t("cl3_profile_settings.security_and_password")}</span>
+            <span className="pf-muted-sm">{t("cl3_profile_settings.security_and_password_sub")}</span>
           </span>
           <ArrowRight size={16} className="pf-muted" />
         </button>
         <button type="button" className="pf-support-item" onClick={() => navigate("/notifications")}>
           <span className="pf-support-ic"><Bell size={18} /></span>
           <span className="pf-support-txt">
-            <span className="pf-support-t">Centre de notifications</span>
-            <span className="pf-muted-sm">Historique des alertes</span>
+            <span className="pf-support-t">{t("cl3_profile_settings.notification_center")}</span>
+            <span className="pf-muted-sm">{t("cl3_profile_settings.notification_center_sub")}</span>
           </span>
           <ArrowRight size={16} className="pf-muted" />
         </button>
         <button type="button" className="pf-support-item" onClick={() => navigate("/help")}>
           <span className="pf-support-ic"><HelpCircle size={18} /></span>
           <span className="pf-support-txt">
-            <span className="pf-support-t">Centre d'aide</span>
-            <span className="pf-muted-sm">FAQ et contact</span>
+            <span className="pf-support-t">{t("cl3_profile_settings.help_center")}</span>
+            <span className="pf-muted-sm">{t("cl3_profile_settings.help_center_sub")}</span>
           </span>
           <ArrowRight size={16} className="pf-muted" />
         </button>
         <button type="button" className="pf-support-item" onClick={() => { logout(); navigate("/"); }}>
           <span className="pf-support-ic"><LogOut size={18} /></span>
           <span className="pf-support-txt">
-            <span className="pf-support-t" style={{ color: "#dc2626" }}>Déconnexion</span>
-            <span className="pf-muted-sm">Fermer la session sur cet appareil</span>
+            <span className="pf-support-t" style={{ color: "#dc2626" }}>{t("cl3_profile_settings.logout")}</span>
+            <span className="pf-muted-sm">{t("cl3_profile_settings.logout_sub")}</span>
           </span>
         </button>
       </section>
@@ -1943,11 +1964,11 @@ export default function ProfilePage() {
     to?: string;
     badge?: number;
   }> = [
-    { key: "dashboard", label: "Vue d'ensemble", icon: Home, panel: "dashboard" },
-    { key: "orders", label: "Commandes", icon: Package, to: "/orders" },
-    { key: "wishlist", label: "Favoris", icon: Heart, to: "/wishlist" },
-    { key: "messages", label: "Messages", icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
-    { key: "fidelite", label: "Fidélité", icon: Award, panel: "fidelite" },
+    { key: "dashboard", label: t("cl3_profile_nav.overview"), icon: Home, panel: "dashboard" },
+    { key: "orders", label: t("cl3_profile_nav.orders"), icon: Package, to: "/orders" },
+    { key: "wishlist", label: t("cl3_profile_nav.favorites"), icon: Heart, to: "/wishlist" },
+    { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
+    { key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" },
   ];
   const accountNav: Array<{
     key: string;
@@ -1955,14 +1976,14 @@ export default function ProfilePage() {
     icon: React.ComponentType<{ size?: number; className?: string }>;
     panel: PanelId;
   }> = [
-    { key: "profil", label: "Profil", icon: User, panel: "profil" },
-    { key: "adresses", label: "Adresses", icon: MapPin, panel: "adresses" },
-    { key: "paiements", label: "Paiements", icon: CreditCard, panel: "paiements" },
-    { key: "historique-paiements", label: "Historique des paiements", icon: Wallet, panel: "historique-paiements" },
-    { key: "parrain", label: "Parrainage", icon: Gift, panel: "parrain" },
-    { key: "securite", label: "Sécurité", icon: Shield, panel: "securite" },
-    { key: "compte-belivay", label: "Compte BelivaY", icon: Building2, panel: "compte-belivay" },
-    { key: "reglages", label: "Réglages", icon: Settings, panel: "reglages" },
+    { key: "profil", label: t("cl3_profile_nav.profile"), icon: User, panel: "profil" },
+    { key: "adresses", label: t("cl3_profile_nav.addresses"), icon: MapPin, panel: "adresses" },
+    { key: "paiements", label: t("cl3_profile_nav.payments"), icon: CreditCard, panel: "paiements" },
+    { key: "historique-paiements", label: t("cl3_profile_nav.payment_history"), icon: Wallet, panel: "historique-paiements" },
+    { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
+    { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
+    { key: "compte-belivay", label: t("cl3_profile_nav.belivay_account"), icon: Building2, panel: "compte-belivay" },
+    { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
   /*
@@ -1976,16 +1997,16 @@ export default function ProfilePage() {
     panel: PanelId;
     badge?: number;
   }> = [
-    { key: "dashboard", label: "Accueil", icon: Home, panel: "dashboard" },
-    { key: "profil", label: "Profil", icon: User, panel: "profil" },
-    { key: "adresses", label: "Adresses", icon: MapPin, panel: "adresses" },
-    { key: "paiements", label: "Paiement", icon: CreditCard, panel: "paiements" },
-    { key: "fidelite", label: "Fidélité", icon: Award, panel: "fidelite" },
-    { key: "parrain", label: "Parrainage", icon: Gift, panel: "parrain" },
-    { key: "messages", label: "Messages", icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
-    { key: "securite", label: "Sécurité", icon: Shield, panel: "securite" },
-    { key: "compte-belivay", label: "Compte BelivaY", icon: Building2, panel: "compte-belivay" },
-    { key: "reglages", label: "Réglages", icon: Settings, panel: "reglages" },
+    { key: "dashboard", label: t("cl3_profile_nav.home"), icon: Home, panel: "dashboard" },
+    { key: "profil", label: t("cl3_profile_nav.profile"), icon: User, panel: "profil" },
+    { key: "adresses", label: t("cl3_profile_nav.addresses"), icon: MapPin, panel: "adresses" },
+    { key: "paiements", label: t("cl3_profile_nav.payment"), icon: CreditCard, panel: "paiements" },
+    { key: "fidelite", label: t("cl3_profile_nav.loyalty"), icon: Award, panel: "fidelite" },
+    { key: "parrain", label: t("cl3_profile_nav.referral"), icon: Gift, panel: "parrain" },
+    { key: "messages", label: t("cl3_profile_nav.messages"), icon: MessageSquare, panel: "messages", badge: unreadMessages || undefined },
+    { key: "securite", label: t("cl3_profile_nav.security"), icon: Shield, panel: "securite" },
+    { key: "compte-belivay", label: t("cl3_profile_nav.belivay_account"), icon: Building2, panel: "compte-belivay" },
+    { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
   /* Les quatre tuiles de raccourci sous l'identité, en mobile. */
@@ -1999,7 +2020,7 @@ export default function ProfilePage() {
   }> = [
     {
       key: "orders",
-      label: "Commandes",
+      label: t("cl3_profile_nav.orders"),
       icon: Package,
       badge: orderCount || undefined,
       active: false,
@@ -2007,7 +2028,7 @@ export default function ProfilePage() {
     },
     {
       key: "favorites",
-      label: "Favoris",
+      label: t("cl3_profile_nav.favorites"),
       icon: Heart,
       badge: favoritesCount || undefined,
       active: false,
@@ -2015,7 +2036,7 @@ export default function ProfilePage() {
     },
     {
       key: "messages",
-      label: "Messages",
+      label: t("cl3_profile_nav.messages"),
       icon: MessageSquare,
       badge: unreadMessages || undefined,
       active: activePanel === "messages",
@@ -2023,7 +2044,7 @@ export default function ProfilePage() {
     },
     {
       key: "wallet",
-      label: "Wallet",
+      label: t("cl3_profile_nav.wallet"),
       icon: Wallet,
       active: activePanel === "compte-belivay",
       onSelect: () => openPanel("compte-belivay"),
@@ -2049,7 +2070,7 @@ export default function ProfilePage() {
                 <span><Mail size={13} />{user?.email}</span>
               )}
               {memberSince && (
-                <span><Calendar size={13} />Membre depuis {memberSince}</span>
+                <span><Calendar size={13} />{t("cl3_profile_shell.member_since", { date: memberSince })}</span>
               )}
               <span><MapPin size={13} />{defaultCity}</span>
             </div>
@@ -2057,7 +2078,7 @@ export default function ProfilePage() {
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <span className="pf-chip"><Award size={14} style={{ color: "var(--pf-accent)" }} />{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span>
             <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>
-              <Pencil size={13} />Modifier
+              <Pencil size={13} />{t("cl3_profile_shell.edit")}
             </button>
           </div>
         </div>
@@ -2086,7 +2107,7 @@ export default function ProfilePage() {
             type="button"
             className="pf-mprog"
             onClick={() => openPanel("fidelite")}
-            aria-label="Voir le programme de fidélité"
+            aria-label={t("cl3_profile_shell.view_loyalty_program")}
           >
             <span className="pf-mprog-l">
               → {nextTierLabel} <Medal size={12} />
@@ -2138,7 +2159,7 @@ export default function ProfilePage() {
 
         <div className="pf-grid">
           <nav className="pf-navcard pf-anim">
-            <div className="pf-sec">Principal</div>
+            <div className="pf-sec">{t("cl3_profile_shell.nav_main")}</div>
             {primaryNav.map((item) => {
               const Icon = item.icon;
               const active = item.panel !== undefined && activePanel === item.panel;
@@ -2156,7 +2177,7 @@ export default function ProfilePage() {
               );
             })}
 
-            <div className="pf-sec">Compte</div>
+            <div className="pf-sec">{t("cl3_profile_shell.nav_account")}</div>
             {accountNav.map((item) => {
               const Icon = item.icon;
               const active = activePanel === item.panel;
@@ -2181,24 +2202,24 @@ export default function ProfilePage() {
               onClick={() => openPanel("vendeur")}
             >
               <Store size={17} />
-              <span style={{ flex: 1 }}>{isVendor ? "Espace vendeur" : "Devenir vendeur"}</span>
+              <span style={{ flex: 1 }}>{isVendor ? t("cl3_profile_dashboard.seller_space") : t("cl3_profile_dashboard.become_seller")}</span>
             </button>
             <button type="button" className="pf-nav" onClick={() => { logout(); navigate("/"); }}>
               <LogOut size={17} />
-              <span style={{ flex: 1 }}>Déconnexion</span>
+              <span style={{ flex: 1 }}>{t("cl3_profile_settings.logout")}</span>
             </button>
 
             <div className="pf-a11y">
-              <div className="pf-sec" style={{ padding: "0 0 8px" }}>Accessibilité</div>
+              <div className="pf-sec" style={{ padding: "0 0 8px" }}>{t("cl3_profile_shell.accessibility")}</div>
               <div className="pf-a11y-row">
-                <span className="pf-a11y-l">Apparence</span>
-                <button type="button" className="pf-btn-ghost" onClick={toggleTheme} aria-label="Basculer le thème">
+                <span className="pf-a11y-l">{t("cl3_profile_settings.appearance")}</span>
+                <button type="button" className="pf-btn-ghost" onClick={toggleTheme} aria-label={t("cl3_profile_shell.toggle_theme")}>
                   {theme === "dark" ? <Moon size={14} /> : <Sun size={14} />}
-                  {theme === "dark" ? "Sombre" : "Clair"}
+                  {theme === "dark" ? t("cl3_profile_settings.dark") : t("cl3_profile_settings.light")}
                 </button>
               </div>
               <div className="pf-a11y-row">
-                <span className="pf-a11y-l">Taille du texte</span>
+                <span className="pf-a11y-l">{t("cl3_profile_settings.text_size")}</span>
                 <div style={{ display: "inline-flex", gap: 4 }}>
                   {(["small", "normal", "large"] as const).map((size) => (
                     <button
@@ -2214,11 +2235,11 @@ export default function ProfilePage() {
                 </div>
               </div>
               <div className="pf-a11y-row">
-                <span className="pf-a11y-l">Mode daltonien</span>
+                <span className="pf-a11y-l">{t("cl3_profile_settings.colorblind_mode")}</span>
                 <button
                   type="button"
                   onClick={() => setDaltonianMode((v) => !v)}
-                  aria-label="Mode daltonien"
+                  aria-label={t("cl3_profile_settings.colorblind_mode")}
                   style={{ position: "relative", height: 24, width: 40, borderRadius: 999, border: "none", cursor: "pointer", background: daltonianMode ? "var(--pf-accent)" : "var(--pf-bstrong)", transition: ".15s" }}
                 >
                   <span style={{ position: "absolute", top: 4, height: 16, width: 16, borderRadius: "50%", background: "#fff", transition: ".15s", left: daltonianMode ? 20 : 4 }} />
@@ -2239,7 +2260,7 @@ export default function ProfilePage() {
           onUploaded={(updated) => {
             setUser(updated);
             setAvatarFile(null);
-            showToast("Photo rognée, compressée et enregistrée.", "success");
+            showToast(t("cl3_profile_account.toast_photo_cropped"), "success");
           }}
         />
       )}

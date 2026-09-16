@@ -9,6 +9,8 @@
 // qu'un partenaire ne le signale.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import { adminFinanceApi } from '../../api/admin-finance.api';
 import { useTaskHealth } from '../../hooks/useFinanceAdmin';
 import { useFinanceAction } from '../../hooks/useFinanceAction';
@@ -21,8 +23,8 @@ interface SchedulerPageProps {
   basePath?: string;
 }
 
-function horodatage(valeur: string | null): string {
-  if (!valeur) return 'jamais';
+function horodatage(valeur: string | null, jamaisLabel: string): string {
+  if (!valeur) return jamaisLabel;
   return new Date(valeur).toLocaleString('fr-FR', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   });
@@ -31,18 +33,23 @@ function horodatage(valeur: string | null): string {
 export default function SchedulerPage({
   basePath = '/admin/finance',
 }: SchedulerPageProps) {
+  const { t } = useTranslation();
   const { data, loading, error, reload } = useTaskHealth();
   const action = useFinanceAction(reload);
 
   const taches = data?.health ?? [];
-  const jamais = taches.filter((t) => t.last_success_at === null);
+  const jamais = taches.filter((tache) => tache.last_success_at === null);
   const toutesMuettes = taches.length > 0 && jamais.length === taches.length;
 
   return (
     <AdminPageShell
-      title="Ordonnanceur"
-      subtitle={`${taches.length} tâche${taches.length > 1 ? 's' : ''} planifiée${
-        taches.length > 1 ? 's' : ''}`}
+      title={t('pm1_scheduler.title')}
+      subtitle={t(
+        taches.length > 1
+          ? 'pm1_scheduler.subtitle_count_plural'
+          : 'pm1_scheduler.subtitle_count',
+        { count: taches.length },
+      )}
       backTo={basePath}
       actions={(
         <button
@@ -55,7 +62,7 @@ export default function SchedulerPage({
             aria-hidden="true"
             style={{ fontSize: 14, verticalAlign: -2, marginRight: 6 }}
           />
-          Actualiser
+          {t('pm1_scheduler.refresh_button')}
         </button>
       )}
     >
@@ -72,16 +79,17 @@ export default function SchedulerPage({
                   fontSize: 14, margin: 0,
                   color: 'var(--text-primary, #1A1209)',
                 }}>
-                  Aucune tâche n’a jamais tourné
+                  {t('pm1_scheduler.never_run_title')}
                 </p>
                 <p style={{
                   fontSize: 12.5, margin: '4px 0 0', lineHeight: 1.6,
                   color: FT.muted,
                 }}>
-                  Les séquestres ne s’auto-confirment pas, les lots ne se
-                  construisent pas, et <span style={{ color: FT.redD }}>
-                  aucun partenaire n’est payé</span>. Le crontab doit être
-                  planifié sur le serveur.
+                  {t('pm1_scheduler.never_run_description_prefix')}
+                  <span style={{ color: FT.redD }}>
+                    {t('pm1_scheduler.never_run_description_emphasis')}
+                  </span>
+                  {t('pm1_scheduler.never_run_description_suffix')}
                 </p>
               </div>
             </div>
@@ -103,27 +111,28 @@ export default function SchedulerPage({
       <AdminCard>
         {loading && (
           <div style={{ padding: '2.5rem', textAlign: 'center' }}>
-            <span style={{ fontSize: 13, color: FT.faint }}>Chargement…</span>
+            <span style={{ fontSize: 13, color: FT.faint }}>{t('pm1_scheduler.loading')}</span>
           </div>
         )}
 
         {!loading && error && (
           <EmptyState
             icon="alert-circle"
-            title="Impossible d'afficher l'ordonnanceur"
+            title={t('pm1_scheduler.error_title')}
             description={error}
           />
         )}
 
         {!loading && !error && taches.length === 0 && (
-          <EmptyState icon="clock-play" title="Aucune tâche enregistrée" />
+          <EmptyState icon="clock-play" title={t('pm1_scheduler.empty_title')} />
         )}
 
         {!loading && !error && taches.map((tache, index) => {
           const couleur = tache.alert
             ? FT.red : tache.stale ? FT.amber : FT.green;
           const etat = tache.alert
-            ? 'alerte' : tache.stale ? 'en retard' : 'à jour';
+            ? t('pm1_scheduler.status_alert')
+            : tache.stale ? t('pm1_scheduler.status_stale') : t('pm1_scheduler.status_ok');
 
           return (
             <div
@@ -148,12 +157,19 @@ export default function SchedulerPage({
                   {tache.task_name}
                   {tache.critical && (
                     <span style={{ fontSize: 11, color: FT.faint }}>
-                      {' · critique'}
+                      {' '}
+                      {t('pm1_scheduler.critical_label')}
                     </span>
                   )}
                 </p>
                 <p style={{ fontSize: 11.5, margin: '2px 0 0', color: FT.faint }}>
-                  {etat} · dernier succès {horodatage(tache.last_success_at)}
+                  {t('pm1_scheduler.task_status_line', {
+                    status: etat,
+                    timestamp: horodatage(
+                      tache.last_success_at,
+                      t('pm1_scheduler.never'),
+                    ),
+                  })}
                 </p>
               </div>
 
@@ -163,12 +179,12 @@ export default function SchedulerPage({
                 onClick={() => {
                   void action.run(
                     () => adminFinanceApi.runTask(tache.task_name),
-                    `${tache.task_name} exécutée.`,
+                    t('pm1_scheduler.task_executed_success', { name: tache.task_name }),
                   );
                 }}
                 style={{ fontSize: 12, padding: '5px 12px' }}
               >
-                Exécuter
+                {t('pm1_scheduler.execute_button')}
               </button>
             </div>
           );

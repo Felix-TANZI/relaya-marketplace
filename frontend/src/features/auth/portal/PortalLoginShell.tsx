@@ -78,9 +78,10 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
   // ───────────────────────────────────────────────────────────────────────────
   const chrome = content.role !== 'client';
 
-  const titleLines = content.title.map((line, index) => ({
-    line,
-    accented: dark ? index >= content.accentFrom : index === content.title.length - 1,
+  const titleLines = content.titleKeys.map((titleKey, index) => ({
+    key: titleKey,
+    line: ctl.t(titleKey),
+    accented: dark ? index >= content.accentFrom : index === content.titleKeys.length - 1,
   }));
 
   return (
@@ -89,7 +90,7 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
       <div className="relative hidden min-h-screen lg:block">
         <img
           src={dark ? hero.night : hero.day}
-          alt={hero.alt}
+          alt={ctl.t(hero.altKey)}
           className="absolute inset-0 h-full w-full object-cover"
         />
         <div
@@ -112,18 +113,18 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
               <span className="flex flex-col leading-none">
                 <Wordmark accent={accent} className="text-[1.8rem] font-bold tracking-tight" />
                 <span className="mt-1 whitespace-nowrap text-[10px] text-white/75">
-                  Tout ce qu'il vous faut, livré chez vous.
+                  {ctl.t('cl6_portal_shell.tagline')}
                 </span>
               </span>
             </div>
             <LanguageToggle className="ml-auto text-white" />
-            {content.navCta && (
+            {content.navCtaKey && (
               <button
                 type="button"
                 className="ml-4 h-9 shrink-0 whitespace-nowrap rounded-full px-5 text-[13px] font-semibold text-white"
                 style={{ background: `linear-gradient(180deg, ${accent}, ${content.theme.accentDark})` }}
               >
-                {content.navCta}
+                {ctl.t(content.navCtaKey)}
               </button>
             )}
           </header>
@@ -133,37 +134,37 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
           <div className="flex items-center gap-3">
             <span className="h-[3px] w-7 shrink-0" style={{ background: accent }} />
             <span className="whitespace-nowrap text-[13px] font-semibold uppercase tracking-[.16em]" style={{ color: accent }}>
-              {content.kicker}
+              {ctl.t(content.kickerKey)}
             </span>
           </div>
           <h2 className="mt-4 text-[2.7rem] font-bold leading-[1.16] tracking-tight">
-            {titleLines.map(({ line, accented }) => (
-              <span key={line} className="block" style={accented ? { color: accent } : undefined}>
+            {titleLines.map(({ key, line, accented }) => (
+              <span key={key} className="block" style={accented ? { color: accent } : undefined}>
                 {line}
               </span>
             ))}
           </h2>
           <p className="mt-5 text-[0.97rem] leading-[1.72] text-white/90">
-            {content.intro.map((line) => (
-              <span key={line} className="block">
-                {line}
+            {content.introKeys.map((introKey) => (
+              <span key={introKey} className="block">
+                {ctl.t(introKey)}
               </span>
             ))}
           </p>
-          {content.cta && (
+          {content.ctaKey && (
             <button
               type="button"
               className="mt-5 inline-flex h-11 items-center gap-2.5 whitespace-nowrap rounded px-5 text-sm font-semibold text-white shadow-lg transition hover:brightness-95"
               style={{ background: `linear-gradient(180deg, ${accent}, ${content.theme.accentDark})` }}
             >
-              {content.cta}
+              {ctl.t(content.ctaKey)}
               <ArrowRight size={16} />
             </button>
           )}
 
           <ul className="mt-6 flex gap-7">
-            {content.features.map(({ icon: Icon, label, hint }) => (
-              <li key={label} className="flex w-[7.75rem] flex-col items-center gap-3 text-center">
+            {content.features.map(({ icon: Icon, labelKey, hintKey }) => (
+              <li key={labelKey} className="flex w-[7.75rem] flex-col items-center gap-3 text-center">
                 <span
                   className="flex items-center justify-center rounded-full border"
                   style={{
@@ -176,16 +177,16 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
                 >
                   <Icon size={22} strokeWidth={1.6} />
                 </span>
-                <span className="text-[11.5px] font-medium leading-snug text-white/95">{label}</span>
-                {hint && <span className="text-[10.5px] leading-snug text-white/70">{hint}</span>}
+                <span className="text-[11.5px] font-medium leading-snug text-white/95">{ctl.t(labelKey)}</span>
+                {hintKey && <span className="text-[10.5px] leading-snug text-white/70">{ctl.t(hintKey)}</span>}
               </li>
             ))}
           </ul>
 
           <p className="mt-8 whitespace-nowrap text-[2rem] font-semibold leading-tight -rotate-[1.5deg]" style={HANDWRITING}>
-            {content.signature[0]}
+            {ctl.t(content.signatureKeys[0])}
             <br />
-            {content.signature[1]}
+            {ctl.t(content.signatureKeys[1])}
           </p>
         </div>
 
@@ -195,21 +196,21 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
           style={{ background: `linear-gradient(180deg, rgba(${veil},.72), rgba(${veil},.96))` }}
         >
           <ul className="ml-[9rem] flex items-center gap-10">
-            {content.stats.map(({ icon: Icon, value, label }) => (
-              <li key={label} className="flex items-center gap-3">
+            {content.stats.map(({ icon: Icon, valueKey, labelKey }) => (
+              <li key={labelKey} className="flex items-center gap-3">
                 <Icon size={25} strokeWidth={1.6} style={{ color: accent }} className="shrink-0" />
                 <span className="flex flex-col gap-0.5">
-                  <span className="whitespace-nowrap text-[15px] font-semibold leading-tight">{value}</span>
-                  <span className="whitespace-nowrap text-xs leading-tight text-white/75">{label}</span>
+                  <span className="whitespace-nowrap text-[15px] font-semibold leading-tight">{ctl.t(valueKey)}</span>
+                  <span className="whitespace-nowrap text-xs leading-tight text-white/75">{ctl.t(labelKey)}</span>
                 </span>
               </li>
             ))}
           </ul>
-          {content.signatureEnd && (
+          {content.signatureEndKeys && (
             <p className="ml-auto whitespace-nowrap text-[1.6rem] font-semibold leading-tight -rotate-[1.5deg]" style={HANDWRITING}>
-              {content.signatureEnd[0]}
+              {ctl.t(content.signatureEndKeys[0])}
               <br />
-              {content.signatureEnd[1]}
+              {ctl.t(content.signatureEndKeys[1])}
             </p>
           )}
         </footer>
@@ -233,20 +234,20 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
         )}
 
         <h2 className={`px-5 text-[1.85rem] font-bold leading-[1.26] tracking-tight text-gray-900 dark:text-white ${chrome ? 'mt-6' : 'safe-pt mt-4'}`}>
-          {titleLines.map(({ line, accented }) => (
-            <span key={line} className="block" style={accented ? { color: accent } : undefined}>
+          {titleLines.map(({ key, line, accented }) => (
+            <span key={key} className="block" style={accented ? { color: accent } : undefined}>
               {line}
             </span>
           ))}
         </h2>
         <p className="mt-3.5 px-5 text-[12.5px] leading-[1.7] text-gray-500 dark:text-white/70">
-          {content.introMobile}
+          {ctl.t(content.introMobileKey)}
         </p>
 
         <div className="relative mt-4 h-[19rem] w-full shrink-0 overflow-hidden">
           <img
             src={dark ? hero.nightPortrait : hero.dayPortrait}
-            alt={hero.alt}
+            alt={ctl.t(hero.altKey)}
             className="h-full w-full object-cover"
             style={{ objectPosition: hero.portraitFocus ?? 'center 40%' }}
           />
@@ -263,10 +264,10 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
         </div>
 
         <ul className="mt-5 grid grid-cols-4 gap-2 px-4">
-          {content.features.map(({ icon: Icon, label }) => (
-            <li key={label} className="flex flex-col items-center gap-1.5 text-center">
+          {content.features.map(({ icon: Icon, labelKey }) => (
+            <li key={labelKey} className="flex flex-col items-center gap-1.5 text-center">
               <Icon size={22} strokeWidth={1.6} style={{ color: accent }} />
-              <span className="text-[10.5px] font-medium leading-snug text-gray-600 dark:text-white/80">{label}</span>
+              <span className="text-[10.5px] font-medium leading-snug text-gray-600 dark:text-white/80">{ctl.t(labelKey)}</span>
             </li>
           ))}
         </ul>
@@ -275,9 +276,9 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
           className="safe-pb mt-auto px-5 pb-7 pt-6 text-center text-[1.35rem] font-semibold leading-snug text-gray-900 dark:text-white"
           style={HANDWRITING}
         >
-          {content.signature[0]}
+          {ctl.t(content.signatureKeys[0])}
           <br />
-          {content.signature[1]}
+          {ctl.t(content.signatureKeys[1])}
         </p>
       </div>
     </div>

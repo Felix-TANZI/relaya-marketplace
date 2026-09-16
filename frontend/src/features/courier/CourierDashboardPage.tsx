@@ -61,7 +61,7 @@ import * as QRCode from "qrcode";
 
 import {
   COURIER_TABS,
-  TAB_LABELS,
+  TAB_LABEL_KEYS,
   type CourierTab,
 } from './courierNav';
 import CourierSidebar from './CourierSidebar';
@@ -70,10 +70,10 @@ import CourierMobileNav, { COURIER_TABBAR_IDS } from './CourierMobileNav';
 import CourierProfileSheet from './CourierProfileSheet';
 
 /** Mentions legales du pied de menu, communes a la colonne et au tiroir. */
-const COURIER_FOOTER = [
-  "BelivaY Livreur v1.0 — Juillet 2026",
-  "Partenaire Independant · ANTIC · OHADA",
-  "Anonymat V5 ch.1",
+const COURIER_FOOTER_KEYS = [
+  "cr1_dashboard.footer.version",
+  "cr1_dashboard.footer.partner",
+  "cr1_dashboard.footer.anonymity",
 ];
 
 function getInitialCourierTab(): CourierTab {
@@ -81,30 +81,37 @@ function getInitialCourierTab(): CourierTab {
   return requested && COURIER_TABS.includes(requested) ? requested : "dashboard";
 }
 
-const VEHICLE_LABELS: Record<string, string> = {
-  MOTORBIKE: "Moto",
-  CAR: "Voiture",
-  BIKE: "Velo",
-  TRICYCLE: "Tricycle",
-  VAN: "Camionnette",
+const VEHICLE_LABEL_KEYS: Record<string, string> = {
+  MOTORBIKE: "cr1_dashboard.vehicle.motorbike",
+  CAR: "cr1_dashboard.vehicle.car",
+  BIKE: "cr1_dashboard.vehicle.bike",
+  TRICYCLE: "cr1_dashboard.vehicle.tricycle",
+  VAN: "cr1_dashboard.vehicle.van",
 };
 
-function statusLabel(status: string) {
+type TranslateFn = (key: string, options?: Record<string, unknown>) => string;
+
+function vehicleLabel(t: TranslateFn, vehicle: string) {
+  const key = VEHICLE_LABEL_KEYS[vehicle];
+  return key ? t(key) : vehicle;
+}
+
+function statusLabel(t: TranslateFn, status: string) {
   switch (status) {
     case "ASSIGNED":
-      return "Assignee";
+      return t("cr1_dashboard.status.assigned");
     case "PICKED_UP":
-      return "Pris en charge";
+      return t("cr1_dashboard.status.picked_up");
     case "OUT_FOR_DELIVERY":
-      return "En livraison";
+      return t("cr1_dashboard.status.out_for_delivery");
     case "DELIVERED":
-      return "Livree";
+      return t("cr1_dashboard.status.delivered");
     case "INCIDENT":
-      return "Incident signale";
+      return t("cr1_dashboard.status.incident");
     case "FAILED":
-      return "Echec";
+      return t("cr1_dashboard.status.failed");
     default:
-      return "En attente";
+      return t("cr1_dashboard.status.pending");
   }
 }
 
@@ -138,11 +145,11 @@ function haversineDistanceMeters(lat1: number, lng1: number, lat2: number, lng2:
   return earthRadiusM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-function formatElapsedMinutes(sinceMs: number) {
+function formatElapsedMinutes(t: TranslateFn, sinceMs: number) {
   const minutes = Math.floor((Date.now() - sinceMs) / 60000);
-  if (minutes < 1) return "à l'instant";
-  if (minutes === 1) return "il y a 1 min";
-  return `il y a ${minutes} min`;
+  if (minutes < 1) return t("cr1_dashboard.elapsed.now");
+  if (minutes === 1) return t("cr1_dashboard.elapsed.one_minute");
+  return t("cr1_dashboard.elapsed.minutes", { count: minutes });
 }
 
 function applyLocalAction(
@@ -254,7 +261,7 @@ function InfoPill({
 
 export default function CourierDashboardPage() {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { theme, toggleTheme } = useTheme();
   const { logout } = useAuth();
   const [tab, setTab] = useState<CourierTab>(getInitialCourierTab);
@@ -373,7 +380,7 @@ export default function CourierDashboardPage() {
 
   const courierProfile = application?.application ?? user?.courier_profile ?? null;
   const isApprovedCourier = application?.status === "approved" || Boolean(user?.is_courier);
-  const firstName = user?.first_name || user?.username || "Livreur";
+  const firstName = user?.first_name || user?.username || t("cr1_dashboard.common.courier_fallback_name");
   const zones = courierProfile?.zones?.length ? courierProfile.zones : [];
   const currentCourierCity = courierSettings?.city ?? courierProfile?.city ?? "Yaounde";
   const currentCourierZones = courierSettings?.zones?.length ? courierSettings.zones : zones;
@@ -471,7 +478,7 @@ export default function CourierDashboardPage() {
         captured_at: new Date(fix.timestamp).toISOString(),
       }).then((location) => {
         setLastLocationAt(Date.now());
-        setTrackingFeedback(`Position partagée à ${new Date(location.captured_at).toLocaleTimeString("fr-FR")}`);
+        setTrackingFeedback(t("cr1_dashboard.map.position_shared_at", { time: new Date(location.captured_at).toLocaleTimeString("fr-FR") }));
         setShipments((current) => current.map((shipment) => shipment.id === selectedShipment.id
           ? {
               ...shipment,
@@ -479,7 +486,7 @@ export default function CourierDashboardPage() {
               location_history: [...shipment.location_history, location].slice(-100),
             }
           : shipment));
-      }).catch(() => setTrackingFeedback("Impossible de transmettre la position GPS. Nouvelle tentative en cours..."));
+      }).catch(() => setTrackingFeedback(t("cr1_dashboard.map.position_send_failed")));
     };
 
     const scheduleWebRetry = () => {
@@ -494,7 +501,7 @@ export default function CourierDashboardPage() {
 
     const startWebWatch = () => {
       if (!("geolocation" in navigator)) {
-        setTrackingFeedback("La géolocalisation n'est pas disponible sur cet appareil.");
+        setTrackingFeedback(t("cr1_dashboard.map.geolocation_unavailable"));
         return;
       }
       webWatchId = navigator.geolocation.watchPosition(
@@ -511,10 +518,10 @@ export default function CourierDashboardPage() {
         (error) => {
           if (error.code === error.PERMISSION_DENIED) {
             setGpsPermissionDenied(true);
-            setTrackingFeedback("Autorisez la localisation dans le navigateur pour démarrer le suivi.");
+            setTrackingFeedback(t("cr1_dashboard.map.authorize_location_web"));
             return;
           }
-          setTrackingFeedback("Position GPS momentanément indisponible. Nouvelle tentative dans quelques secondes...");
+          setTrackingFeedback(t("cr1_dashboard.map.position_temporarily_unavailable_retry"));
           if (webWatchId != null) {
             navigator.geolocation.clearWatch(webWatchId);
             webWatchId = null;
@@ -528,8 +535,8 @@ export default function CourierDashboardPage() {
     if (Capacitor.isNativePlatform()) {
       BackgroundGeolocation.addWatcher(
         {
-          backgroundTitle: "BelivaY Livreur",
-          backgroundMessage: "Le suivi de votre position reste actif pour cette course.",
+          backgroundTitle: t("cr1_dashboard.map.background_title"),
+          backgroundMessage: t("cr1_dashboard.map.background_message"),
           requestPermissions: true,
           stale: false,
           distanceFilter: 10,
@@ -539,10 +546,10 @@ export default function CourierDashboardPage() {
           if (error) {
             if (error.code === "NOT_AUTHORIZED") {
               setGpsPermissionDenied(true);
-              setTrackingFeedback("Autorisez la localisation en arrière-plan dans les réglages de l'application.");
+              setTrackingFeedback(t("cr1_dashboard.map.authorize_location_native"));
               return;
             }
-            setTrackingFeedback("Position GPS momentanément indisponible.");
+            setTrackingFeedback(t("cr1_dashboard.map.position_temporarily_unavailable"));
             return;
           }
           if (!location) return;
@@ -561,7 +568,7 @@ export default function CourierDashboardPage() {
           return;
         }
         nativeWatcherId = id;
-      }).catch(() => setTrackingFeedback("Impossible de démarrer le suivi GPS natif."));
+      }).catch(() => setTrackingFeedback(t("cr1_dashboard.map.native_gps_start_failed")));
     } else {
       startWebWatch();
     }
@@ -572,7 +579,7 @@ export default function CourierDashboardPage() {
       if (webWatchId != null) navigator.geolocation.clearWatch(webWatchId);
       if (nativeWatcherId != null) BackgroundGeolocation.removeWatcher({ id: nativeWatcherId }).catch(() => {});
     };
-  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status, gpsRetryNonce]);
+  }, [currentGpsGranted, currentIsOnline, selectedShipment?.id, selectedShipment?.status, gpsRetryNonce, t]);
 
   useEffect(() => {
     if (!selectedShipment || !currentGpsGranted || !currentIsOnline) return;
@@ -648,18 +655,18 @@ export default function CourierDashboardPage() {
       if (action === "PICKED_UP") setPickupCodeDraft("");
       setActionFeedback(
         action === "ACCEPT"
-          ? "Mission acceptee et synchronisee."
+          ? t("cr1_dashboard.feedback.action_accept")
           : action === "PICKED_UP"
-            ? "Colis marque comme pris en charge."
+            ? t("cr1_dashboard.feedback.action_picked_up")
             : action === "OUT_FOR_DELIVERY"
-              ? "Course marquee en livraison."
+              ? t("cr1_dashboard.feedback.action_out_for_delivery")
               : action === "DELIVERED"
-                ? "Colis remis au client et livraison certifiee."
+                ? t("cr1_dashboard.feedback.action_delivered")
                 : action === "INCIDENT"
-                  ? "Incident signale au client immediatement."
+                  ? t("cr1_dashboard.feedback.action_incident")
                   : action === "NOTE"
-                    ? "Note enregistree sur la mission."
-                    : "Action synchronisee.",
+                    ? t("cr1_dashboard.feedback.action_note")
+                    : t("cr1_dashboard.feedback.action_generic"),
       );
     } catch {
       const message = action === "NOTE" || action === "INCIDENT" ? noteDraft.trim() : undefined;
@@ -671,7 +678,7 @@ export default function CourierDashboardPage() {
         ),
       );
       if (action === "NOTE" || action === "INCIDENT") setNoteDraft("");
-      setActionFeedback("Action appliquee localement. La synchronisation backend sera a reverifier.");
+      setActionFeedback(t("cr1_dashboard.feedback.action_local_only"));
     } finally {
       setActionLoading(null);
     }
@@ -711,10 +718,10 @@ export default function CourierDashboardPage() {
       setAvailableShipmentsFromAPI((prev) => prev.filter((s) => s.id !== id));
       setShipments((prev) => [claimed, ...prev]);
       setSelectedShipmentId(claimed.id);
-      setActionFeedback("Mission prise en charge avec succès.");
+      setActionFeedback(t("cr1_dashboard.feedback.claim_success"));
       refreshCourierWork();
     } catch {
-      setActionFeedback("Impossible de prendre cette mission. Elle a peut-être déjà été assignée.");
+      setActionFeedback(t("cr1_dashboard.feedback.claim_failed"));
     } finally {
       setActionLoading(null);
     }
@@ -727,11 +734,11 @@ export default function CourierDashboardPage() {
     try {
       await customerApi.sendOrderChatMessage(
         selectedShipment.order,
-        "Votre livreur souhaite vous joindre au sujet de cette livraison. Merci de consulter le suivi de commande.",
+        t("cr1_dashboard.courses.contact_client_template"),
       );
-      setActionFeedback("Message envoyé au client dans ses notifications.");
+      setActionFeedback(t("cr1_dashboard.feedback.contact_client_sent"));
     } catch {
-      setActionFeedback("Impossible d'envoyer le message au client pour le moment.");
+      setActionFeedback(t("cr1_dashboard.feedback.contact_client_failed"));
     } finally {
       setContactLoading(false);
     }
@@ -765,9 +772,9 @@ export default function CourierDashboardPage() {
     setDisputePermissionStatus((current) => ({ ...current, [dispute.id]: "requested" }));
     try {
       await courierApi.requestDisputeReplyPermission(dispute.id);
-      setDisputeFeedback("Demande envoyee a l'administrateur. En attente d'autorisation.");
+      setDisputeFeedback(t("cr1_dashboard.feedback.dispute_request_sent"));
     } catch {
-      setDisputeFeedback("Demande enregistree localement. L'administrateur devra l'autoriser.");
+      setDisputeFeedback(t("cr1_dashboard.feedback.dispute_request_local"));
     }
   };
 
@@ -775,11 +782,11 @@ export default function CourierDashboardPage() {
     if (!selectedDispute || !disputeReplyDraft.trim() || selectedDisputePermission !== "granted") return;
     const message = disputeReplyDraft.trim();
     setDisputeReplyDraft("");
-    setDisputeFeedback("Reponse envoyee au dossier de litige.");
+    setDisputeFeedback(t("cr1_dashboard.feedback.dispute_reply_sent"));
     try {
       await courierApi.sendDisputeReply(selectedDispute.id, { message });
     } catch {
-      setDisputeFeedback("Reponse conservee localement. Synchronisation backend a verifier.");
+      setDisputeFeedback(t("cr1_dashboard.feedback.dispute_reply_local"));
     }
   };
 
@@ -793,35 +800,35 @@ export default function CourierDashboardPage() {
       });
       setShipments((current) => current.map((shipment) => (shipment.id === updated.id ? updated : shipment)));
       setSelectedShipmentId(updated.id);
-      setScanFeedback(`Scan traite pour la commande #${updated.order}.`);
+      setScanFeedback(t("cr1_dashboard.feedback.scan_success", { order: updated.order }));
     } catch {
-      setScanFeedback("Le scan a echoue. Verifie le code et l'assignation de la mission.");
+      setScanFeedback(t("cr1_dashboard.feedback.scan_failed"));
     }
   };
 
 
   const quickStats = [
     {
-      label: "Courses actives",
+      label: t("cr1_dashboard.quick_stats.active"),
       value: activeShipments.length,
       icon: Package,
       tone: "text-emerald-300 bg-emerald-500/10 border-emerald-500/20",
     },
     {
-      label: "Livrees",
+      label: t("cr1_dashboard.quick_stats.delivered"),
       value: completedShipments.filter((shipment) => shipment.status === "DELIVERED").length,
       icon: CheckCircle2,
       tone: "text-green-300 bg-green-500/10 border-green-500/20",
     },
     {
-      label: "Statut",
-      value: currentIsOnline ? "En ligne" : "Hors ligne",
+      label: t("cr1_dashboard.quick_stats.status"),
+      value: currentIsOnline ? t("cr1_dashboard.common.online") : t("cr1_dashboard.common.offline"),
       icon: Bell,
       tone: "text-sky-300 bg-sky-500/10 border-sky-500/20",
     },
     {
-      label: "Vehicule",
-      value: VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle,
+      label: t("cr1_dashboard.quick_stats.vehicle"),
+      value: vehicleLabel(t, currentCourierVehicle),
       icon: Bike,
       tone: "text-lime-300 bg-lime-500/10 border-lime-500/20",
     },
@@ -831,22 +838,28 @@ export default function CourierDashboardPage() {
 
   const liveHeaderStats = [
     {
-      label: "Trust Score",
+      label: t("cr1_dashboard.live_stats.trust_score"),
       value: dashboard ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}` : "—",
       tone: dashboard?.trust_score.veto_active ? "text-red-300" : "text-emerald-300",
     },
     {
-      label: "Temps en ligne",
+      label: t("cr1_dashboard.live_stats.online_time"),
       value: `${Math.floor((dashboard?.online_minutes ?? 0) / 60)}h ${String((dashboard?.online_minutes ?? 0) % 60).padStart(2, "0")}`,
       tone: "text-emerald-300",
     },
-    { label: "Statut", value: dashboard?.status_label ?? (currentIsOnline ? "En ligne" : "Hors ligne"), tone: "text-green-300" },
-    { label: "Parcourus", value: `${(dashboard?.distance_km ?? 0).toFixed(1)} km`, tone: "text-sky-300" },
-    { label: "Temps moyen / livraison", value: `${dashboard?.average_delivery_minutes ?? 0} min`, tone: "text-cyan-300" },
-    { label: "Performance", value: `${dashboard?.performance_percent ?? 0}%`, tone: "text-orange-300" },
+    {
+      label: t("cr1_dashboard.quick_stats.status"),
+      value: dashboard?.status_label ?? (currentIsOnline ? t("cr1_dashboard.common.online") : t("cr1_dashboard.common.offline")),
+      tone: "text-green-300",
+    },
+    { label: t("cr1_dashboard.live_stats.distance"), value: `${(dashboard?.distance_km ?? 0).toFixed(1)} km`, tone: "text-sky-300" },
+    { label: t("cr1_dashboard.live_stats.average_delivery"), value: `${dashboard?.average_delivery_minutes ?? 0} min`, tone: "text-cyan-300" },
+    { label: t("cr1_dashboard.live_stats.performance"), value: `${dashboard?.performance_percent ?? 0}%`, tone: "text-orange-300" },
   ];
 
   const unreadNotifications = notifications.filter((item) => !item.is_read).length;
+
+  const courierFooter = useMemo(() => COURIER_FOOTER_KEYS.map((key) => t(key)), [t]);
 
   /**
    * Carte d'identite du livreur, partagee par la colonne de bureau, le tiroir
@@ -854,14 +867,14 @@ export default function CourierDashboardPage() {
    * les trois surfaces.
    */
   const courierIdentity = {
-    name: `${user?.first_name || "Livreur"} ${user?.last_name || ""}`.trim(),
+    name: `${user?.first_name || t("cr1_dashboard.common.courier_fallback_name")} ${user?.last_name || ""}`.trim(),
     city: currentCourierCity,
-    vehicle: VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle,
+    vehicle: vehicleLabel(t, currentCourierVehicle),
     status: courierProfile
       ? currentIsOnline
-        ? "Disponible"
-        : "Hors ligne"
-      : "Demande a finaliser",
+        ? t("cr1_dashboard.common.available")
+        : t("cr1_dashboard.common.offline")
+      : t("cr1_dashboard.common.request_to_finalize"),
     online: currentIsOnline,
     avatarUrl: user?.avatar_url || undefined,
   };
@@ -940,38 +953,44 @@ export default function CourierDashboardPage() {
   }).length;
   const tourInsights = [
     {
-      title: activeShipments.length > 1 ? "Regroupement detecte" : "Prochaine destination",
+      title: activeShipments.length > 1 ? t("cr1_dashboard.tournee.insight_grouping_title") : t("cr1_dashboard.tournee.insight_next_title"),
       body:
         activeShipments.length > 1
-          ? `${activeZones.join(", ") || courierProfile?.city || "Votre zone"} concentre ${activeShipments.length} livraison(s) active(s).`
+          ? t("cr1_dashboard.tournee.insight_grouping_body", {
+              zone: activeZones.join(", ") || courierProfile?.city || t("cr1_dashboard.common.your_zone"),
+              count: activeShipments.length,
+            })
           : nextTourStop
             ? nextTourStop.delivery_address
-            : "Aucune livraison active pour le moment.",
+            : t("cr1_dashboard.tournee.insight_next_empty"),
       tone: "border-orange-500/20 bg-orange-500/5",
     },
     {
-      title: "Fenetre conseillee",
+      title: t("cr1_dashboard.tournee.insight_window_title"),
       body: dashboard?.recommended_departure
-        ? `Depart recommande a ${dashboard.recommended_departure} avec trafic ${dashboard.traffic_label?.toLowerCase() || "modere"}.`
-        : "La prochaine mission apparaitra ici des qu'une course est assignee.",
+        ? t("cr1_dashboard.tournee.insight_window_body", {
+            time: dashboard.recommended_departure,
+            traffic: dashboard.traffic_label?.toLowerCase() || t("cr1_dashboard.common.moderate"),
+          })
+        : t("cr1_dashboard.tournee.insight_window_empty"),
       tone: "border-sky-500/20 bg-sky-500/5",
     },
     {
-      title: "Suivi terrain",
+      title: t("cr1_dashboard.tournee.insight_field_title"),
       body:
         activeShipments.length > 0
-          ? `${completedToday} mission(s) cloturee(s) aujourd'hui, ${activeShipments.length} encore en cours.`
-          : "Aucune mission en cours. Reste disponible pour recevoir de nouvelles assignations.",
+          ? t("cr1_dashboard.tournee.insight_field_body", { completed: completedToday, active: activeShipments.length })
+          : t("cr1_dashboard.tournee.insight_field_empty"),
       tone: activeShipments.length > 0 ? "border-emerald-500/20 bg-emerald-500/5" : "border-white/10 bg-white/[0.03]",
     },
   ];
 
   function formatDuration(totalMinutes: number) {
-    if (!totalMinutes) return "0 min";
+    if (!totalMinutes) return t("cr1_dashboard.common.zero_minutes");
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
-    if (!hours) return `${minutes} min`;
-    return `${hours}h ${String(minutes).padStart(2, "0")} min`;
+    if (!hours) return t("cr1_dashboard.common.minutes_short", { count: minutes });
+    return t("cr1_dashboard.common.hours_minutes_short", { hours, minutes: String(minutes).padStart(2, "0") });
   }
 
   function notificationTone(type: CourierNotification["notification_type"]) {
@@ -1030,9 +1049,9 @@ export default function CourierDashboardPage() {
       if (payload.preferred_language) {
         i18n.changeLanguage(payload.preferred_language);
       }
-      setSettingsFeedback("Reglage synchronise avec le backend.");
+      setSettingsFeedback(t("cr1_dashboard.feedback.settings_synced"));
     } catch {
-      setSettingsFeedback("Impossible de synchroniser ce reglage pour le moment.");
+      setSettingsFeedback(t("cr1_dashboard.feedback.settings_sync_failed"));
     } finally {
       setSettingsSaving(null);
     }
@@ -1044,34 +1063,39 @@ export default function CourierDashboardPage() {
       {/* Briefing du jour en tete : c'est la premiere chose qu'un livreur
           veut lire en ouvrant l'app — son statut terrain et son depart
           conseille — avant meme ses compteurs. */}
-      <SectionShell kicker="Briefing du jour" title={`Bonjour ${firstName}, prete pour la tournee ?`}>
+      <SectionShell kicker={t("cr1_dashboard.briefing.kicker")} title={t("cr1_dashboard.briefing.title", { name: firstName })}>
         <div className="grid gap-4 md:grid-cols-2">
           <div className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 p-4">
             <div className="mb-3 flex items-center justify-between">
-              <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">Statut terrain</span>
+              <span className="text-[12px] font-black uppercase tracking-[0.15em] text-emerald-300">{t("cr1_dashboard.briefing.field_status")}</span>
               <InfoPill icon={Bike} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                {currentIsOnline ? "Disponible" : "Hors ligne"}
+                {currentIsOnline ? t("cr1_dashboard.common.available") : t("cr1_dashboard.common.offline")}
               </InfoPill>
             </div>
             <div className="space-y-2 text-[14px] text-slate-700 dark:text-white/85">
               <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                <span>Depart conseille</span>
+                <span>{t("cr1_dashboard.briefing.recommended_departure")}</span>
                 <strong>{dashboard?.recommended_departure ?? "—"}</strong>
               </div>
               <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                <span>Trafic</span>
+                <span>{t("cr1_dashboard.briefing.traffic")}</span>
                 <strong>{dashboard?.traffic_label ?? "—"}</strong>
               </div>
               <div className="flex items-center justify-between rounded-[14px] bg-white/70 px-4 py-3 dark:bg-black/10">
-                <span>Meteo</span>
+                <span>{t("cr1_dashboard.briefing.weather")}</span>
                 <strong>{dashboard?.weather_label ?? "—"}</strong>
               </div>
             </div>
           </div>
           <div className="rounded-[20px] border border-white/5 bg-white/[0.03] p-4">
-            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">Checklist pre-shift</div>
+            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-green-300">{t("cr1_dashboard.briefing.checklist_title")}</div>
             <div className="space-y-3">
-              {["Telephone charge", "Application GPS active", "Casque et gilet", "Solde data suffisant"].map((item) => (
+              {[
+                t("cr1_dashboard.briefing.checklist_phone"),
+                t("cr1_dashboard.briefing.checklist_gps"),
+                t("cr1_dashboard.briefing.checklist_gear"),
+                t("cr1_dashboard.briefing.checklist_data"),
+              ].map((item) => (
                 <div key={item} className="flex items-center gap-3 rounded-[14px] bg-white/70 px-4 py-3 text-[14px] text-slate-700 dark:bg-black/10 dark:text-white">
                   <CheckCircle2 size={16} className="text-emerald-300" />
                   {item}
@@ -1109,22 +1133,22 @@ export default function CourierDashboardPage() {
         <section className="rounded-[20px] border border-emerald-500/15 bg-emerald-500/5 px-5 py-4 text-sm text-slate-700 dark:text-slate-200">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">Plafond de mission</div>
+              <div className="text-[11px] font-black uppercase tracking-[0.16em] text-emerald-400">{t("cr1_dashboard.trust.cap_label")}</div>
               <div className="mt-1 font-extrabold text-slate-950 dark:text-white">
                 {dashboard.trust_score.parcel_value_cap_xaf === null
-                  ? "Déplafonné avec assurance transport"
-                  : `${dashboard.trust_score.parcel_value_cap_xaf.toLocaleString("fr-FR")} FCFA par colis`}
+                  ? t("cr1_dashboard.trust.cap_uncapped")
+                  : t("cr1_dashboard.trust.cap_value", { amount: dashboard.trust_score.parcel_value_cap_xaf.toLocaleString("fr-FR") })}
               </div>
             </div>
             <div className="rounded-xl border border-emerald-500/20 bg-white/70 px-4 py-2 font-bold dark:bg-black/10">
-              {dashboard.trust_score.sample_size} observations analysées
+              {t("cr1_dashboard.trust.sample_size", { count: dashboard.trust_score.sample_size })}
             </div>
           </div>
         </section>
       )}
 
       <section className="grid gap-5">
-        <SectionShell kicker="Classement" title="Top livreurs & score" accent="text-green-300">
+        <SectionShell kicker={t("cr1_dashboard.leaderboard.kicker")} title={t("cr1_dashboard.leaderboard.title")} accent="text-green-300">
           <div className="space-y-3">
             {leaderboard.length ? (
               leaderboard.map((item, index) => (
@@ -1140,13 +1164,13 @@ export default function CourierDashboardPage() {
                   </div>
                   <div className="text-right">
                     <div className="text-[18px] font-extrabold text-white">{item.score}</div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">Performance</div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/50">{t("cr1_dashboard.leaderboard.performance")}</div>
                   </div>
                 </div>
               ))
             ) : (
               <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-                Aucun classement backend disponible pour le moment.
+                {t("cr1_dashboard.leaderboard.empty")}
               </div>
             )}
           </div>
@@ -1154,14 +1178,14 @@ export default function CourierDashboardPage() {
       </section>
 
       <section className="grid gap-5 xl:grid-cols-[1fr_1fr]">
-        <SectionShell kicker="Carte rapide" title="Zone chaude & disponibilites">
+        <SectionShell kicker={t("cr1_dashboard.hotzone.kicker")} title={t("cr1_dashboard.hotzone.title")}>
           <div className="space-y-4">
             <div className="overflow-hidden rounded-[26px] border border-emerald-500/15 bg-[#0b1220] p-2 shadow-[0_18px_48px_rgba(16,185,129,.08)]">
               <TrackingMap
                 destinationAddress={mapShipment?.delivery_address}
                 destinationCity={mapShipment?.city}
                 destinationPrecision={mapShipment?.delivery_location_precision}
-                destinationLabel="Destination client"
+                destinationLabel={t("cr1_dashboard.map.destination_label")}
                 currentLocation={mapShipment?.latest_location
                   ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
                   : undefined}
@@ -1187,14 +1211,14 @@ export default function CourierDashboardPage() {
                 ))
               ) : (
                 <div className="rounded-[20px] border border-dashed border-white/10 p-4 text-[13px] text-[#8B949E] md:col-span-3">
-                  Aucune donnee de zone chaude n'est encore disponible.
+                  {t("cr1_dashboard.hotzone.empty")}
                 </div>
               )}
             </div>
           </div>
         </SectionShell>
 
-        <SectionShell kicker="Courses" title="Missions disponibles" accent="text-emerald-300">
+        <SectionShell kicker={t("cr1_dashboard.available.kicker")} title={t("cr1_dashboard.available.title")} accent="text-emerald-300">
           <div className="space-y-3">
             {(availableShipments.length ? availableShipments : activeShipments).slice(0, 4).map((shipment) => (
               <button
@@ -1208,22 +1232,21 @@ export default function CourierDashboardPage() {
               >
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <div className="font-extrabold text-white">Commande #{shipment.order}</div>
+                    <div className="font-extrabold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
                     <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
                   </div>
                   <div className="text-right">
                     <div className="text-[15px] font-extrabold text-emerald-300">
                       {shipment.city || currentCourierCity}
                     </div>
-                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">Zone</div>
+                    <div className="text-[11px] uppercase tracking-[0.14em] text-white/45">{t("cr1_dashboard.common.zone")}</div>
                   </div>
                 </div>
               </button>
             ))}
             {!availableShipments.length && !activeShipments.length ? (
               <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
-                Aucune mission visible dans ta zone pour le moment. Verifie que le livreur est disponible et que la
-                commande est dans la meme ville que ton profil livreur.
+                {t("cr1_dashboard.available.empty")}
               </div>
             ) : null}
           </div>
@@ -1234,20 +1257,20 @@ export default function CourierDashboardPage() {
 
   const renderTournee = () => (
     <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionShell kicker="Route optimise" title="Ma tournee du jour">
+      <SectionShell kicker={t("cr1_dashboard.tournee.kicker")} title={t("cr1_dashboard.tournee.title")}>
         <div className="space-y-4">
           <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="flex flex-wrap items-center gap-3">
               <InfoPill icon={Route} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                {tourShipments.length} stop{tourShipments.length > 1 ? "s" : ""}
+                {t(tourShipments.length > 1 ? "cr1_dashboard.tournee.stops_plural" : "cr1_dashboard.tournee.stops", { count: tourShipments.length })}
               </InfoPill>
               <InfoPill icon={Clock3}>{formatDuration(estimatedTourMinutes)}</InfoPill>
               <InfoPill icon={Navigation}>{activeDistanceKm.toFixed(1)} km</InfoPill>
             </div>
             <p className="mt-3 text-[14px] leading-7 text-white/80">
               {nextTourStop
-                ? `Prochain arret conseille: ${nextTourStop.delivery_address}.`
-                : "Aucune mission active pour le moment. Les prochaines livraisons assignees apparaitront ici."}
+                ? t("cr1_dashboard.tournee.next_stop", { address: nextTourStop.delivery_address })
+                : t("cr1_dashboard.tournee.no_active_mission")}
             </p>
           </div>
           {tourShipments.length ? (
@@ -1267,19 +1290,21 @@ export default function CourierDashboardPage() {
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
-                      <div className="font-bold text-white">Client de la commande</div>
-                      <div className="mt-1 text-[12px] text-[#8B949E]">Commande #{shipment.order}</div>
+                      <div className="font-bold text-white">{t("cr1_dashboard.tournee.order_client")}</div>
+                      <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
                     </div>
                     <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
-                      {statusLabel(shipment.status)}
+                      {statusLabel(t, shipment.status)}
                     </span>
                   </div>
                   <div className="mt-1 text-[12px] text-[#8B949E]">{shipment.delivery_address}</div>
                   <div className="mt-2 flex flex-wrap items-center gap-3 text-[12px] text-white/60">
-                    <span>{shipment.city || courierProfile?.city || "Zone non renseignee"}</span>
+                    <span>{shipment.city || courierProfile?.city || t("cr1_dashboard.common.zone_unspecified")}</span>
                     <span>•</span>
                     <span>
-                      ETA recommandee: {formatDuration(Math.max((index + 1) * (dashboard?.average_delivery_minutes ?? 18), 12))}
+                      {t("cr1_dashboard.tournee.recommended_eta", {
+                        duration: formatDuration(Math.max((index + 1) * (dashboard?.average_delivery_minutes ?? 18), 12)),
+                      })}
                     </span>
                   </div>
                 </div>
@@ -1288,9 +1313,12 @@ export default function CourierDashboardPage() {
           ) : availableShipments.length ? (
             <div className="space-y-3">
               <div className="rounded-[18px] border border-sky-500/20 bg-sky-500/5 p-4 text-[13px] leading-6 text-sky-100">
-                Aucune mission n'est encore dans ta tournee, mais {availableShipments.length} livraison
-                {availableShipments.length > 1 ? "s" : ""} disponible{availableShipments.length > 1 ? "s" : ""} attend
-                {availableShipments.length > 1 ? "ent" : ""} une prise en charge.
+                {t(
+                  availableShipments.length > 1
+                    ? "cr1_dashboard.tournee.available_waiting_plural"
+                    : "cr1_dashboard.tournee.available_waiting",
+                  { count: availableShipments.length },
+                )}
               </div>
               {availableShipments.slice(0, 5).map((shipment, index) => (
                 <div
@@ -1303,8 +1331,8 @@ export default function CourierDashboardPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <div className="font-bold text-white">Commande #{shipment.order}</div>
-                        <div className="mt-1 text-[12px] text-[#8B949E]">Client masque</div>
+                        <div className="font-bold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                        <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.client_hidden")}</div>
                       </div>
                       <button
                         type="button"
@@ -1312,7 +1340,7 @@ export default function CourierDashboardPage() {
                         disabled={Boolean(actionLoading)}
                         className="rounded-full bg-[linear-gradient(135deg,#3B82F6,#1D4ED8)] px-4 py-2 text-[11px] font-extrabold text-white disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {actionLoading === "CLAIM" ? "Prise..." : "Prendre"}
+                        {actionLoading === "CLAIM" ? t("cr1_dashboard.common.claiming") : t("cr1_dashboard.common.claim")}
                       </button>
                     </div>
                     <div className="mt-2 text-[12px] leading-6 text-[#8B949E]">{shipment.delivery_address}</div>
@@ -1322,14 +1350,13 @@ export default function CourierDashboardPage() {
             </div>
           ) : (
             <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-              Aucune etape de tournee disponible. Les commandes visibles ici doivent etre dans ta ville livreur
-              ({currentCourierCity}) ou dans tes zones.
+              {t("cr1_dashboard.tournee.empty_steps", { city: currentCourierCity })}
             </div>
           )}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Terrain" title="Conseils live & regroupement" accent="text-orange-300">
+      <SectionShell kicker={t("cr1_dashboard.tournee.field_kicker")} title={t("cr1_dashboard.tournee.field_title")} accent="text-orange-300">
         <div className="space-y-4">
           {tourInsights.map((item) => (
             <div key={item.title} className={`rounded-[18px] border p-4 ${item.tone}`}>
@@ -1338,13 +1365,13 @@ export default function CourierDashboardPage() {
             </div>
           ))}
           <div className="rounded-[18px] border border-emerald-500/15 bg-[#0f1722] p-4">
-            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">Prochaine action</div>
+            <div className="mb-3 text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">{t("cr1_dashboard.tournee.next_action")}</div>
             <button
               type="button"
               onClick={() => setTab(nextTourStop ? "courses" : "map")}
               className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
             >
-              {nextTourStop ? "Ouvrir la mission active" : "Ouvrir la navigation"}
+              {nextTourStop ? t("cr1_dashboard.tournee.open_active_mission") : t("cr1_dashboard.tournee.open_navigation")}
               <ChevronRight size={14} />
             </button>
           </div>
@@ -1355,12 +1382,12 @@ export default function CourierDashboardPage() {
 
   const renderCourses = () => (
     <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionShell kicker="Operations" title="Toutes les courses">
+      <SectionShell kicker={t("cr1_dashboard.courses.kicker")} title={t("cr1_dashboard.courses.title")}>
         <div className="mb-4 flex flex-wrap gap-2">
           {[
-            { label: "Actives", count: activeShipments.length, tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" },
-            { label: "Disponibles", count: availableShipments.length, tone: "border-sky-500/20 bg-sky-500/10 text-sky-300" },
-            { label: "Historique", count: completedShipments.length, tone: "border-white/10 bg-white/5 text-white" },
+            { label: t("cr1_dashboard.courses.pill_active"), count: activeShipments.length, tone: "border-emerald-500/20 bg-emerald-500/10 text-emerald-300" },
+            { label: t("cr1_dashboard.courses.pill_available"), count: availableShipments.length, tone: "border-sky-500/20 bg-sky-500/10 text-sky-300" },
+            { label: t("cr1_dashboard.courses.pill_history"), count: completedShipments.length, tone: "border-white/10 bg-white/5 text-white" },
           ].map((pill) => (
             <div key={pill.label} className={`rounded-full border px-4 py-2 text-[12px] font-bold ${pill.tone}`}>
               {pill.label} · {pill.count}
@@ -1383,20 +1410,20 @@ export default function CourierDashboardPage() {
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <div className="text-[13px] font-extrabold text-white">Commande #{shipment.order}</div>
-                  <div className="mt-1 text-[12px] text-[#8B949E]">Client masque</div>
+                  <div className="text-[13px] font-extrabold text-white">{t("cr1_dashboard.common.order_number", { order: shipment.order })}</div>
+                  <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.common.client_hidden")}</div>
                   <div className="mt-2 inline-flex items-center gap-2 text-[12px] text-[#8B949E]">
                     <MapPin size={12} />
                     {shipment.delivery_address}
                   </div>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-bold text-white/70">
-                      {shipment.vendor_names?.join(", ") || "Vendeur non precise"}
+                      {shipment.vendor_names?.join(", ") || t("cr1_dashboard.courses.vendor_unspecified")}
                     </span>
                   </div>
                 </div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
-                  {isAvailable ? "Disponible" : statusLabel(shipment.status)}
+                  {isAvailable ? t("cr1_dashboard.status.available") : statusLabel(t, shipment.status)}
                 </span>
               </div>
             </button>
@@ -1404,25 +1431,28 @@ export default function CourierDashboardPage() {
           })}
           {!visibleCourseShipments.length ? (
             <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
-              Aucune course trouvee. Sur Render, une nouvelle commande apparait ici seulement si son mode est
-              livraison et si sa ville correspond a ton profil livreur ({currentCourierCity}) ou a tes zones.
+              {t("cr1_dashboard.courses.empty", { city: currentCourierCity })}
             </div>
           ) : null}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Mission selectionnee" title={selectedShipment ? `Commande #${selectedShipment.order}` : "Aucune mission"} accent="text-orange-300">
+      <SectionShell
+        kicker={t("cr1_dashboard.courses.selected_kicker")}
+        title={selectedShipment ? t("cr1_dashboard.common.order_number", { order: selectedShipment.order }) : t("cr1_dashboard.courses.no_mission")}
+        accent="text-orange-300"
+      >
         {selectedShipment ? (
           <>
             <div className="grid gap-3 md:grid-cols-2">
               <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Client</div>
-                <div className="mt-2 font-semibold text-white">Coordonnees masquees</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">Utilise la messagerie pour contacter le client.</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.courses.client_label")}</div>
+                <div className="mt-2 font-semibold text-white">{t("cr1_dashboard.courses.coordinates_hidden")}</div>
+                <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.courses.use_chat_hint")}</div>
               </div>
               <div className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
-                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Mission</div>
-                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{statusLabel(selectedShipment.status)}</div>
+                <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.courses.mission_label")}</div>
+                <div className="mt-2 text-[20px] font-extrabold text-emerald-300">{statusLabel(t, selectedShipment.status)}</div>
                 <div className="mt-1 text-[12px] text-white/55">{selectedShipment.city || currentCourierCity}</div>
               </div>
             </div>
@@ -1436,7 +1466,7 @@ export default function CourierDashboardPage() {
                   className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#3B82F6,#1D4ED8)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(59,130,246,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading === "CLAIM" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                  {actionLoading === "CLAIM" ? "Prise en charge..." : "Prendre la mission"}
+                  {actionLoading === "CLAIM" ? t("cr1_dashboard.courses.claiming_mission") : t("cr1_dashboard.courses.claim_mission")}
                 </button>
               ) : null}
               {selectedShipment.status === "ASSIGNED" && !selectedShipmentAccepted ? (
@@ -1448,7 +1478,7 @@ export default function CourierDashboardPage() {
                     className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "ACCEPT" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    {actionLoading === "ACCEPT" ? "Validation..." : "Accepter la mission"}
+                    {actionLoading === "ACCEPT" ? t("cr1_dashboard.courses.validating") : t("cr1_dashboard.courses.accept_mission")}
                   </button>
                   <button
                     type="button"
@@ -1456,21 +1486,21 @@ export default function CourierDashboardPage() {
                     disabled={Boolean(actionLoading)}
                     className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {actionLoading === "DECLINE" ? "Refus..." : "Refuser"}
+                    {actionLoading === "DECLINE" ? t("cr1_dashboard.courses.declining") : t("cr1_dashboard.courses.decline")}
                   </button>
                 </>
               ) : null}
               {selectedShipment.status === "ASSIGNED" && selectedShipmentAccepted ? (
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-5 py-3 text-[12px] font-extrabold text-emerald-300">
                   <BadgeCheck size={14} />
-                  Mission acceptee
+                  {t("cr1_dashboard.courses.mission_accepted")}
                 </div>
               ) : null}
               {(selectedShipment.status === "PICKED_UP" || selectedShipment.status === "ASSIGNED") && (
                 <>
                   {!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] && (
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
-                      <Camera size={14} /> Photo colis (obligatoire)
+                      <Camera size={14} /> {t("cr1_dashboard.courses.photo_package_required")}
                       <input
                         type="file"
                         accept="image/*"
@@ -1487,7 +1517,7 @@ export default function CourierDashboardPage() {
                     value={pickupCodeDraft}
                     onChange={(event) => setPickupCodeDraft(event.target.value.replace(/\D/g, "").slice(0, 6))}
                     inputMode="numeric"
-                    placeholder="Code de remise (vendeur)"
+                    placeholder={t("cr1_dashboard.courses.pickup_code_placeholder")}
                     maxLength={6}
                     className="w-[168px] rounded-full border border-amber-500/25 bg-[#0D1117] px-4 py-3 text-center text-[13px] font-black tracking-widest text-amber-300 outline-none placeholder:text-[10px] placeholder:font-bold placeholder:tracking-normal placeholder:text-amber-300/50"
                   />
@@ -1495,11 +1525,17 @@ export default function CourierDashboardPage() {
                     type="button"
                     onClick={() => handleShipmentAction("PICKED_UP")}
                     disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] || pickupCodeDraft.length !== 6}
-                    title={!capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`] ? "Prenez d'abord une photo du colis" : pickupCodeDraft.length !== 6 ? "Demandez le code de remise au vendeur" : undefined}
+                    title={
+                      !capturedEvidence[`${selectedShipment.id}:COURIER_PICKUP_VENDOR`]
+                        ? t("cr1_dashboard.courses.hint_photo_package_first")
+                        : pickupCodeDraft.length !== 6
+                          ? t("cr1_dashboard.courses.hint_ask_pickup_code")
+                          : undefined
+                    }
                     className="inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5 hover:bg-amber-500/15 disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "PICKED_UP" ? <LoaderCircle size={14} className="animate-spin" /> : <Package size={14} />}
-                    {actionLoading === "PICKED_UP" ? "Enregistrement..." : "Marquer pris en charge"}
+                    {actionLoading === "PICKED_UP" ? t("cr1_dashboard.courses.saving") : t("cr1_dashboard.courses.mark_picked_up")}
                   </button>
                 </>
               )}
@@ -1511,14 +1547,14 @@ export default function CourierDashboardPage() {
                   className="inline-flex items-center gap-2 rounded-full border border-orange-500/25 bg-orange-500/10 px-5 py-3 text-[12px] font-extrabold text-orange-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {actionLoading === "OUT_FOR_DELIVERY" ? <LoaderCircle size={14} className="animate-spin" /> : <Truck size={14} />}
-                  {actionLoading === "OUT_FOR_DELIVERY" ? "Mise a jour..." : "Marquer en cours de livraison"}
+                  {actionLoading === "OUT_FOR_DELIVERY" ? t("cr1_dashboard.courses.updating") : t("cr1_dashboard.courses.mark_out_for_delivery")}
                 </button>
               )}
               {selectedShipment.status === "OUT_FOR_DELIVERY" && (
                 <>
                   {!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] && (
                     <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-sky-500/25 bg-sky-500/10 px-5 py-3 text-[12px] font-extrabold text-sky-300 transition hover:-translate-y-0.5">
-                      <Camera size={14} /> Photo remise (obligatoire)
+                      <Camera size={14} /> {t("cr1_dashboard.courses.photo_delivery_required")}
                       <input
                         type="file"
                         accept="image/*"
@@ -1535,11 +1571,11 @@ export default function CourierDashboardPage() {
                     type="button"
                     onClick={() => handleShipmentAction("DELIVERED")}
                     disabled={Boolean(actionLoading) || !capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`]}
-                    title={!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] ? "Prenez d'abord une photo de la remise" : undefined}
+                    title={!capturedEvidence[`${selectedShipment.id}:CUSTOMER_DELIVERY`] ? t("cr1_dashboard.courses.hint_photo_delivery_first") : undefined}
                     className="inline-flex items-center gap-2 rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_rgba(16,185,129,.28)] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {actionLoading === "DELIVERED" ? <LoaderCircle size={14} className="animate-spin" /> : <CheckCircle2 size={14} />}
-                    {actionLoading === "DELIVERED" ? "Certification..." : "Certifier colis remis"}
+                    {actionLoading === "DELIVERED" ? t("cr1_dashboard.courses.certifying") : t("cr1_dashboard.courses.certify_delivered")}
                   </button>
                   <button
                     type="button"
@@ -1547,7 +1583,7 @@ export default function CourierDashboardPage() {
                     disabled={Boolean(actionLoading)}
                     className="rounded-full border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                   >
-                    {actionLoading === "FAILED" ? "Signalement..." : "Marquer echec"}
+                    {actionLoading === "FAILED" ? t("cr1_dashboard.courses.reporting") : t("cr1_dashboard.courses.mark_failed")}
                   </button>
                 </>
               )}
@@ -1558,7 +1594,7 @@ export default function CourierDashboardPage() {
                 className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-5 py-3 text-[12px] font-extrabold text-white transition hover:-translate-y-0.5 hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {contactLoading ? <LoaderCircle size={14} className="animate-spin" /> : <Phone size={14} />}
-                {contactLoading ? "Envoi..." : "Notifier le client"}
+                {contactLoading ? t("cr1_dashboard.courses.sending") : t("cr1_dashboard.courses.notify_client")}
               </button>
             </div>
             {actionFeedback ? (
@@ -1568,28 +1604,29 @@ export default function CourierDashboardPage() {
             ) : null}
             {pendingEvidenceCount > 0 && (
               <div className="mt-3 flex items-center gap-2 rounded-[14px] border border-amber-500/20 bg-amber-500/5 px-4 py-2.5 text-[12px] font-bold text-amber-300">
-                <Camera size={13} /> {pendingEvidenceCount} photo{pendingEvidenceCount > 1 ? "s" : ""} en attente de synchro
+                <Camera size={13} />{" "}
+                {t(pendingEvidenceCount > 1 ? "cr1_dashboard.courses.pending_sync_plural" : "cr1_dashboard.courses.pending_sync", { count: pendingEvidenceCount })}
               </div>
             )}
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
-                Details de commande
+                {t("cr1_dashboard.courses.order_details")}
               </div>
               <div className="grid gap-3 md:grid-cols-2">
-                <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Adresse: {selectedShipment.delivery_address}</InfoPill>
+                <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">{t("cr1_dashboard.courses.detail_address", { address: selectedShipment.delivery_address })}</InfoPill>
                 {selectedShipment.delivery_district ? (
                   <InfoPill icon={MapPin} tone="border-gray-200 bg-gray-50 text-gray-700">Quartier: {selectedShipment.delivery_district}</InfoPill>
                 ) : null}
-                <InfoPill icon={Store} tone="border-gray-200 bg-gray-50 text-gray-700">Vendeur(s): {selectedShipment.vendor_names?.join(", ") || "Non precise"}</InfoPill>
-                <InfoPill icon={Truck} tone="border-gray-200 bg-gray-50 text-gray-700">Statut: {statusLabel(selectedShipment.status)}</InfoPill>
+                <InfoPill icon={Store} tone="border-gray-200 bg-gray-50 text-gray-700">{t("cr1_dashboard.courses.detail_vendors", { vendors: selectedShipment.vendor_names?.join(", ") || t("cr1_dashboard.common.unspecified") })}</InfoPill>
+                <InfoPill icon={Truck} tone="border-gray-200 bg-gray-50 text-gray-700">{t("cr1_dashboard.courses.detail_status", { status: statusLabel(t, selectedShipment.status) })}</InfoPill>
               </div>
               {selectedShipment.authorized_pickup_name ? (
                 <div className="mt-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 px-4 py-3 text-[13px] font-bold text-amber-200">
-                  Tiers autorisé au retrait : {selectedShipment.authorized_pickup_name}
+                  {t("cr1_dashboard.courses.authorized_pickup", { name: selectedShipment.authorized_pickup_name })}
                   {selectedShipment.authorized_pickup_phone ? ` · ${selectedShipment.authorized_pickup_phone}` : ""}
                   <span className="mt-1 block text-[11px] font-semibold text-amber-200/70">
-                    Vérifiez l'identité de cette personne avant de remettre le colis si ce n'est pas le client.
+                    {t("cr1_dashboard.courses.authorized_pickup_hint")}
                   </span>
                 </div>
               ) : null}
@@ -1599,7 +1636,7 @@ export default function CourierDashboardPage() {
                   target="_blank" rel="noreferrer"
                   className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-emerald-500/10 px-4 py-2.5 text-[12.5px] font-bold text-emerald-300 hover:bg-emerald-500/15"
                 >
-                  <Navigation size={14} /> Position GPS exacte du client — ouvrir sur la carte
+                  <Navigation size={14} /> {t("cr1_dashboard.courses.exact_gps_link")}
                 </a>
               ) : null}
             </div>
@@ -1607,11 +1644,11 @@ export default function CourierDashboardPage() {
             <div className="mt-5 rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
               <div className="mb-3 flex items-center justify-between gap-3">
                 <div>
-                  <div className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-sky-300">Chat client</div>
-                  <div className="mt-1 text-[12px] text-white/60">Reponds librement aux messages envoyes par le client.</div>
+                  <div className="text-[12px] font-extrabold uppercase tracking-[0.16em] text-sky-300">{t("cr1_dashboard.courses.client_chat")}</div>
+                  <div className="mt-1 text-[12px] text-white/60">{t("cr1_dashboard.courses.client_chat_hint")}</div>
                 </div>
                 <span className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[11px] font-bold text-sky-300">
-                  {clientMessages.length} message{clientMessages.length > 1 ? "s" : ""}
+                  {t(clientMessages.length > 1 ? "cr1_dashboard.courses.message_count_plural" : "cr1_dashboard.courses.message_count", { count: clientMessages.length })}
                 </span>
               </div>
               <div className="max-h-64 space-y-3 overflow-y-auto rounded-[16px] bg-[#0D1117] p-3">
@@ -1631,7 +1668,7 @@ export default function CourierDashboardPage() {
                   </div>
                 )) : (
                   <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">
-                    Aucun message client pour cette course.
+                    {t("cr1_dashboard.courses.no_client_message")}
                   </div>
                 )}
                 <div ref={clientChatEndRef} />
@@ -1643,7 +1680,7 @@ export default function CourierDashboardPage() {
                   onKeyDown={(event) => {
                     if (event.key === "Enter") void handleReplyClient();
                   }}
-                  placeholder="Repondre au client..."
+                  placeholder={t("cr1_dashboard.courses.reply_client_placeholder")}
                   className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
                 />
                 <button
@@ -1651,7 +1688,7 @@ export default function CourierDashboardPage() {
                   onClick={() => void handleReplyClient()}
                   disabled={!clientReplyDraft.trim()}
                   className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-emerald-500 text-white disabled:cursor-not-allowed disabled:opacity-45"
-                  aria-label="Repondre au client"
+                  aria-label={t("cr1_dashboard.courses.reply_client_aria")}
                 >
                   <Send size={16} />
                 </button>
@@ -1660,13 +1697,13 @@ export default function CourierDashboardPage() {
 
             <div className="mt-5 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="mb-3 text-[12px] font-extrabold uppercase tracking-[0.16em] text-[#8B949E]">
-                Ajouter une note ou une position
+                {t("cr1_dashboard.courses.add_note_title")}
               </div>
               <div className="flex flex-col gap-3 md:flex-row">
                 <input
                   value={noteDraft}
                   onChange={(event) => setNoteDraft(event.target.value)}
-                  placeholder="Ex: client joint, arrivee estimee 12 min"
+                  placeholder={t("cr1_dashboard.courses.add_note_placeholder")}
                   className="flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
                 />
                 <button
@@ -1676,24 +1713,24 @@ export default function CourierDashboardPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-[14px] bg-white px-5 py-3 text-[12px] font-extrabold text-[#0D1117] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "NOTE" ? <LoaderCircle size={14} className="animate-spin" /> : <ArrowRight size={14} />}
-                  {actionLoading === "NOTE" ? "Enregistrement..." : "Enregistrer"}
+                  {actionLoading === "NOTE" ? t("cr1_dashboard.courses.saving") : t("cr1_dashboard.courses.save")}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleShipmentAction("INCIDENT")}
                   disabled={Boolean(actionLoading) || !noteDraft.trim()}
-                  title="Decrivez l'incident dans le champ ci-dessus avant de le signaler"
+                  title={t("cr1_dashboard.courses.hint_describe_incident_first")}
                   className="inline-flex items-center justify-center gap-2 rounded-[14px] border border-red-500/25 bg-red-500/10 px-5 py-3 text-[12px] font-extrabold text-red-300 transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {actionLoading === "INCIDENT" ? <LoaderCircle size={14} className="animate-spin" /> : <AlertTriangle size={14} />}
-                  {actionLoading === "INCIDENT" ? "Signalement..." : "Signaler un incident"}
+                  {actionLoading === "INCIDENT" ? t("cr1_dashboard.courses.reporting") : t("cr1_dashboard.courses.report_incident")}
                 </button>
               </div>
             </div>
           </>
         ) : (
           <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-            Aucune course selectionnee.
+            {t("cr1_dashboard.courses.no_selected_course")}
           </div>
         )}
       </SectionShell>
@@ -1703,43 +1740,43 @@ export default function CourierDashboardPage() {
   const renderScanner = () => (
     <div className="space-y-5">
     {receiptCode && (
-      <SectionShell kicker="A presenter au client" title="Code de confirmation de reception" accent="text-emerald-300">
+      <SectionShell kicker={t("cr1_dashboard.scanner.receipt_kicker")} title={t("cr1_dashboard.scanner.receipt_title")} accent="text-emerald-300">
         <div className="flex flex-col items-center gap-4 rounded-[28px] border border-emerald-500/20 bg-[#0d1520] p-6 text-center sm:flex-row sm:text-left">
           {receiptQrDataUrl ? (
-            <img src={receiptQrDataUrl} alt="QR de confirmation" className="h-[140px] w-[140px] rounded-2xl bg-white p-2" />
+            <img src={receiptQrDataUrl} alt={t("cr1_dashboard.scanner.receipt_qr_alt")} className="h-[140px] w-[140px] rounded-2xl bg-white p-2" />
           ) : null}
           <div>
-            <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-300">Commande #{mapShipment?.order}</div>
+            <div className="text-[12px] font-bold uppercase tracking-[0.14em] text-emerald-300">{t("cr1_dashboard.common.order_number", { order: mapShipment?.order })}</div>
             <div className="mt-2 text-3xl font-black tracking-[0.3em] text-white">{receiptCode}</div>
             <p className="mt-2 text-[12px] leading-5 text-[#8B949E]">
-              Montre ce QR ou ce code au client a la remise : il doit le scanner ou le saisir pour confirmer la reception.
+              {t("cr1_dashboard.scanner.receipt_hint")}
             </p>
           </div>
         </div>
       </SectionShell>
     )}
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Verification colis" title="Scanner QR">
+      <SectionShell kicker={t("cr1_dashboard.scanner.kicker")} title={t("cr1_dashboard.scanner.title")}>
         <div className="rounded-[28px] border border-emerald-500/20 bg-[radial-gradient(circle_at_center,_rgba(16,185,129,.18),_transparent_55%),#0d1520] p-6">
           <div className="mx-auto flex h-[280px] max-w-[320px] items-center justify-center rounded-[28px] border-2 border-dashed border-emerald-400/40 bg-black/20">
             <div className="text-center">
               <QrCode size={80} className="mx-auto text-emerald-300" />
-              <div className="mt-4 text-[14px] font-bold text-white">Place le QR du colis dans la zone de scan</div>
-              <div className="mt-2 text-[12px] text-[#8B949E]">Le systeme confirme le retrait, la remise ou le retour.</div>
+              <div className="mt-4 text-[14px] font-bold text-white">{t("cr1_dashboard.scanner.place_qr")}</div>
+              <div className="mt-2 text-[12px] text-[#8B949E]">{t("cr1_dashboard.scanner.confirms")}</div>
             </div>
           </div>
           <div className="mt-5 grid gap-3 md:grid-cols-[1fr_auto]">
             <input
               value={scanCode}
               onChange={(event) => setScanCode(event.target.value)}
-              placeholder="Ex: BLV-12, SHIP-4 ou 12"
+              placeholder={t("cr1_dashboard.scanner.code_placeholder")}
               className="rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
             />
             <div className="flex flex-wrap gap-2">
               {[
-                ["PICKED_UP", "Prise en charge"],
-                ["OUT_FOR_DELIVERY", "En livraison"],
-                ["DELIVERED", "Livree"],
+                ["PICKED_UP", t("cr1_dashboard.scanner.action_picked_up")],
+                ["OUT_FOR_DELIVERY", t("cr1_dashboard.scanner.action_out_for_delivery")],
+                ["DELIVERED", t("cr1_dashboard.scanner.action_delivered")],
               ].map(([value, label]) => (
                 <button
                   key={value}
@@ -1762,30 +1799,30 @@ export default function CourierDashboardPage() {
               onClick={handleScanShipment}
               className="rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] px-5 py-3 text-[12px] font-extrabold text-white"
             >
-              Traiter le scan
+              {t("cr1_dashboard.scanner.process_scan")}
             </button>
-            <InfoPill icon={ScanLine}>Mode camera HD</InfoPill>
-            <InfoPill icon={ShieldCheck}>Scan securise</InfoPill>
+            <InfoPill icon={ScanLine}>{t("cr1_dashboard.scanner.hd_camera")}</InfoPill>
+            <InfoPill icon={ShieldCheck}>{t("cr1_dashboard.scanner.secure_scan")}</InfoPill>
           </div>
           {scanFeedback ? <div className="mt-4 text-[13px] text-emerald-300">{scanFeedback}</div> : null}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Historique" title="Derniers scans" accent="text-sky-300">
+      <SectionShell kicker={t("cr1_dashboard.scanner.history_kicker")} title={t("cr1_dashboard.scanner.history_title")} accent="text-sky-300">
         <div className="space-y-3">
           {(selectedShipment ? [selectedShipment] : shipments.slice(0, 1)).concat(shipments.slice(1, 4)).map((shipment, index) => (
             <div key={`${shipment.id}-${index}`} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="flex items-center justify-between gap-3">
-                <div className="font-bold text-white">QR Commande #{shipment.order}</div>
+                <div className="font-bold text-white">{t("cr1_dashboard.scanner.qr_order", { order: shipment.order })}</div>
                 <span className={`rounded-full border px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] ${statusTone(shipment.status)}`}>
-                  {statusLabel(shipment.status)}
+                  {statusLabel(t, shipment.status)}
                 </span>
               </div>
               <div className="mt-2 text-[12px] text-[#8B949E]">{new Date().toLocaleString("fr-FR")}</div>
             </div>
           ))}
           <div className="rounded-[18px] border border-orange-500/20 bg-orange-500/5 p-4 text-[13px] leading-6 text-white/80">
-            Conseil: scanne toujours au retrait et a la remise pour horodater automatiquement la mission.
+            {t("cr1_dashboard.scanner.tip")}
           </div>
         </div>
       </SectionShell>
@@ -1795,14 +1832,14 @@ export default function CourierDashboardPage() {
 
   const renderMap = () => (
     <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-      <SectionShell kicker="Navigation" title="Carte & itineraire">
+      <SectionShell kicker={t("cr1_dashboard.map.kicker")} title={t("cr1_dashboard.map.title")}>
         <div className="space-y-4">
             <div className="overflow-hidden rounded-[26px] border border-emerald-500/15 bg-[#0b1220] p-2 shadow-[0_18px_48px_rgba(16,185,129,.08)]">
             <TrackingMap
               destinationAddress={mapShipment?.delivery_address}
               destinationCity={mapShipment?.city}
               destinationPrecision={mapShipment?.delivery_location_precision}
-              destinationLabel="Destination client"
+              destinationLabel={t("cr1_dashboard.map.destination_label")}
               currentLocation={mapShipment?.latest_location
                 ? [Number(mapShipment.latest_location.latitude), Number(mapShipment.latest_location.longitude)]
                 : undefined}
@@ -1818,8 +1855,8 @@ export default function CourierDashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12px] font-semibold text-red-200">
               <span>
                 {Capacitor.isNativePlatform()
-                  ? "Localisation refusée. Ouvrez les réglages de l'application pour l'autoriser (y compris en arrière-plan)."
-                  : "Localisation refusée par le navigateur. Autorisez-la dans les réglages du site, puis réessayez."}
+                  ? t("cr1_dashboard.map.gps_denied_native")
+                  : t("cr1_dashboard.map.gps_denied_web")}
               </span>
               <button
                 type="button"
@@ -1829,40 +1866,47 @@ export default function CourierDashboardPage() {
                 }}
                 className="rounded-full border border-red-400/40 px-3 py-1 text-[11px] font-bold text-red-100 hover:bg-red-500/20"
               >
-                J'ai autorisé, réessayer
+                {t("cr1_dashboard.map.gps_retry")}
               </button>
             </div>
           )}
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 px-4 py-3 text-[12px] text-white/80">
             <span>{trackingFeedback || (mapShipment?.latest_location
-              ? `Dernière position : ${new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR")}`
-              : "Activez le GPS et le statut en ligne pour partager votre position.")}</span>
+              ? t("cr1_dashboard.map.last_position", { time: new Date(mapShipment.latest_location.captured_at).toLocaleString("fr-FR") })
+              : t("cr1_dashboard.map.enable_gps_hint"))}</span>
             <span className="flex items-center gap-3">
               {lastLocationAt != null && (
-                <span className="text-white/60">{formatElapsedMinutes(lastLocationAt)}</span>
+                <span className="text-white/60">{formatElapsedMinutes(t, lastLocationAt)}</span>
               )}
-              <span className="font-black text-emerald-300">{mapShipment?.location_history.length || 0} point(s) GPS</span>
+              <span className="font-black text-emerald-300">
+                {t(
+                  (mapShipment?.location_history.length || 0) > 1
+                    ? "cr1_dashboard.map.gps_points_plural"
+                    : "cr1_dashboard.map.gps_points",
+                  { count: mapShipment?.location_history.length || 0 },
+                )}
+              </span>
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
             {zones.map((zone, index) => (
               <div key={zone} className="rounded-[20px] border border-white/5 bg-[linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02))] p-4">
                 <div className="text-[12px] font-black uppercase tracking-[0.16em] text-emerald-300">{zone}</div>
-                <div className="mt-3 text-[24px] font-extrabold text-white">{index + 3} hotspots</div>
-                <div className="mt-1 text-[12px] text-[#8B949E]">Heure optimale: {11 + index}h - {15 + index}h</div>
+                <div className="mt-3 text-[24px] font-extrabold text-white">{t("cr1_dashboard.map.hotspots", { count: index + 3 })}</div>
+                <div className="mt-1 text-[12px] text-[#8B949E]">{t("cr1_dashboard.map.optimal_time", { start: 11 + index, end: 15 + index })}</div>
               </div>
             ))}
           </div>
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Aide conduite" title="Meilleurs choix terrain" accent="text-green-300">
+      <SectionShell kicker={t("cr1_dashboard.map.driving_kicker")} title={t("cr1_dashboard.map.driving_title")} accent="text-green-300">
         <div className="space-y-3">
           {[
-            "Contourner le carrefour Warda entre 17h10 et 18h.",
-            "Zone Bastos plus rentable en debut d'apres-midi.",
-            "Relancer la navigation si GPS faible sous tunnel.",
-            "Mode pluie disponible automatiquement si precipitation detectee.",
+            t("cr1_dashboard.map.tip_warda"),
+            t("cr1_dashboard.map.tip_bastos"),
+            t("cr1_dashboard.map.tip_tunnel"),
+            t("cr1_dashboard.map.tip_rain"),
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
               <Navigation size={16} className="mt-0.5 shrink-0 text-emerald-300" />
@@ -1880,18 +1924,18 @@ export default function CourierDashboardPage() {
 
     return (
       <section className="grid gap-5 xl:grid-cols-[1.05fr_0.95fr]">
-        <SectionShell kicker="Reseau terrain" title="Boutiques partenaires">
+        <SectionShell kicker={t("cr1_dashboard.reseau.kicker")} title={t("cr1_dashboard.reseau.title")}>
           <div className="mb-4 grid gap-3 md:grid-cols-3">
             <div className="rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Boutiques</div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.shops")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-emerald-300">{shops.length}</div>
             </div>
             <div className="rounded-[18px] border border-sky-500/15 bg-sky-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Points relais</div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.relay_points")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-sky-300">{relayPoints.length}</div>
             </div>
             <div className="rounded-[18px] border border-orange-500/15 bg-orange-500/5 p-4">
-              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">Boutiques en ligne</div>
+              <div className="text-[11px] uppercase tracking-[0.16em] text-[#8B949E]">{t("cr1_dashboard.reseau.shops_online")}</div>
               <div className="mt-2 text-[24px] font-extrabold text-orange-300">
                 {shops.filter((item) => item.is_online).length}
               </div>
@@ -1906,7 +1950,7 @@ export default function CourierDashboardPage() {
                     <div>
                       <div className="font-bold text-white">{shop.vendor_name}</div>
                       <div className="mt-1 text-[12px] text-emerald-300">
-                        {shop.location_name || "Boutique principale"}
+                        {shop.location_name || t("cr1_dashboard.reseau.main_shop")}
                       </div>
                     </div>
                     <span
@@ -1916,28 +1960,28 @@ export default function CourierDashboardPage() {
                           : "border-white/10 bg-white/5 text-white/65"
                       }`}
                     >
-                      {shop.is_online ? "En ligne" : "Hors ligne"}
+                      {shop.is_online ? t("cr1_dashboard.common.online") : t("cr1_dashboard.common.offline")}
                     </span>
                   </div>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Adresse</div>
-                      <div className="mt-1">{shop.address || "Adresse non renseignee"}</div>
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.address")}</div>
+                      <div className="mt-1">{shop.address || t("cr1_dashboard.reseau.address_unspecified")}</div>
                     </div>
                     <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Ville</div>
-                      <div className="mt-1">{shop.city || "Ville non renseignee"}</div>
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.city")}</div>
+                      <div className="mt-1">{shop.city || t("cr1_dashboard.reseau.city_unspecified")}</div>
                     </div>
                     <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Telephone</div>
-                      <div className="mt-1">{shop.phone || "Non renseigne"}</div>
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.phone")}</div>
+                      <div className="mt-1">{shop.phone || t("cr1_dashboard.common.unspecified")}</div>
                     </div>
                     <div className="rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
-                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">Coordonnees GPS</div>
+                      <div className="text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.reseau.gps_coordinates")}</div>
                       <div className="mt-1">
                         {shop.latitude !== null && shop.longitude !== null
                           ? `${shop.latitude}, ${shop.longitude}`
-                          : "Non renseignees"}
+                          : t("cr1_dashboard.reseau.gps_unspecified")}
                       </div>
                     </div>
                   </div>
@@ -1945,13 +1989,13 @@ export default function CourierDashboardPage() {
               ))
             ) : (
               <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-                Aucune boutique approuvee n'est encore remontee par le backend.
+                {t("cr1_dashboard.reseau.no_shops")}
               </div>
             )}
           </div>
         </SectionShell>
 
-        <SectionShell kicker="Points relais" title="Relais BelivaY observes" accent="text-sky-300">
+        <SectionShell kicker={t("cr1_dashboard.reseau.relay_kicker")} title={t("cr1_dashboard.reseau.relay_title")} accent="text-sky-300">
           <div className="space-y-3">
             {relayPoints.length ? (
               relayPoints.map((relay) => (
@@ -1959,10 +2003,10 @@ export default function CourierDashboardPage() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <div className="font-bold text-white">{relay.name}</div>
-                      <div className="mt-1 text-[12px] text-[#8B949E]">{relay.city || "Ville non renseignee"}</div>
+                      <div className="mt-1 text-[12px] text-[#8B949E]">{relay.city || t("cr1_dashboard.reseau.city_unspecified")}</div>
                     </div>
                     <div className="rounded-full border border-sky-500/20 bg-sky-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-sky-300">
-                      {relay.shipments_count} mission{relay.shipments_count > 1 ? "s" : ""}
+                      {t(relay.shipments_count > 1 ? "cr1_dashboard.reseau.missions_plural" : "cr1_dashboard.reseau.missions", { count: relay.shipments_count })}
                     </div>
                   </div>
                   <div className="mt-3 rounded-[14px] bg-black/10 px-4 py-3 text-[13px] text-white/80">
@@ -1972,8 +2016,7 @@ export default function CourierDashboardPage() {
               ))
             ) : (
               <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-                Aucun point relais n'est encore enregistre dans les shipments. Des qu'un `relay_point` sera utilise,
-                il apparaitra ici.
+                {t("cr1_dashboard.reseau.no_relay_points")}
               </div>
             )}
           </div>
@@ -1984,22 +2027,22 @@ export default function CourierDashboardPage() {
 
   const renderProfil = () => (
     <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Identite" title="Mon Profil">
+      <SectionShell kicker={t("cr1_dashboard.profil.kicker")} title={t("cr1_dashboard.profil.title")}>
         <div className="mb-5 flex flex-col gap-4 rounded-[18px] border border-emerald-500/15 bg-emerald-500/5 p-4 sm:flex-row sm:items-center">
           <div className="grid h-20 w-20 shrink-0 place-items-center overflow-hidden rounded-full border-2 border-emerald-400/50 bg-[#07130f] text-2xl font-black text-emerald-300">
             {user?.avatar_url ? (
-              <img src={user.avatar_url} alt="Photo du livreur" className="h-full w-full object-cover" />
+              <img src={user.avatar_url} alt={t("cr1_dashboard.profil.photo_alt")} className="h-full w-full object-cover" />
             ) : (
               (user?.first_name?.[0] || user?.username?.[0] || "L").toUpperCase()
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="font-extrabold text-white">Photo de profil</div>
-            <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">Rognez votre photo avant l'envoi. Elle sera compressée en WebP pour limiter l'espace utilisé.</p>
+            <div className="font-extrabold text-white">{t("cr1_dashboard.profil.photo_title")}</div>
+            <p className="mt-1 text-[12px] leading-5 text-[#8B949E]">{t("cr1_dashboard.profil.photo_hint")}</p>
           </div>
           <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-[12px] font-black text-[#022c22] transition hover:bg-emerald-400">
             <Camera size={16} />
-            Modifier
+            {t("cr1_dashboard.profil.edit")}
             <input
               type="file"
               accept="image/jpeg,image/png,image/webp"
@@ -2013,12 +2056,12 @@ export default function CourierDashboardPage() {
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           {[
-            { label: "Telephone", value: courierProfile?.phone || user?.phone || "—", icon: Phone },
-            { label: "Ville", value: courierProfile?.city || "Yaounde", icon: MapPin },
-            { label: "Zones", value: zones.join(", "), icon: Truck },
-            { label: "Vehicule", value: courierProfile ? VEHICLE_LABELS[courierProfile.vehicle_type] || courierProfile.vehicle_type : "Moto", icon: Bike },
-            { label: "Piece d'identite", value: courierProfile?.id_card || "En attente", icon: FileBadge2 },
-            { label: "Statut", value: isApprovedCourier ? "Approuve" : "En validation", icon: BadgeCheck },
+            { label: t("cr1_dashboard.profil.phone"), value: courierProfile?.phone || user?.phone || "—", icon: Phone },
+            { label: t("cr1_dashboard.profil.city"), value: courierProfile?.city || "Yaounde", icon: MapPin },
+            { label: t("cr1_dashboard.profil.zones"), value: zones.join(", "), icon: Truck },
+            { label: t("cr1_dashboard.profil.vehicle"), value: courierProfile ? vehicleLabel(t, courierProfile.vehicle_type) : t("cr1_dashboard.vehicle.motorbike"), icon: Bike },
+            { label: t("cr1_dashboard.profil.id_card"), value: courierProfile?.id_card || t("cr1_dashboard.profil.pending"), icon: FileBadge2 },
+            { label: t("cr1_dashboard.profil.status"), value: isApprovedCourier ? t("cr1_dashboard.common.approved") : t("cr1_dashboard.common.under_review"), icon: BadgeCheck },
           ].map((item) => {
             const Icon = item.icon;
             return (
@@ -2034,14 +2077,14 @@ export default function CourierDashboardPage() {
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Reputation" title="Badges & pouvoir metier" accent="text-orange-300">
+      <SectionShell kicker={t("cr1_dashboard.profil.reputation_kicker")} title={t("cr1_dashboard.profil.reputation_title")} accent="text-orange-300">
         <div className="space-y-3">
           {[
-            "Voir vos livraisons assignees",
-            "Accepter ou refuser une mission",
-            "Marquer pris en charge, en livraison, livre ou echec",
-            "Ajouter une note ou une position",
-            "Contacter client et vendeur si necessaire",
+            t("cr1_dashboard.profil.power_view_deliveries"),
+            t("cr1_dashboard.profil.power_accept_decline"),
+            t("cr1_dashboard.profil.power_mark_status"),
+            t("cr1_dashboard.profil.power_add_note"),
+            t("cr1_dashboard.profil.power_contact"),
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-emerald-500/15 bg-emerald-500/5 p-4 text-[13px] text-white">
               <CheckCircle2 size={16} className="mt-0.5 shrink-0 text-[#6EE7B7]" />
@@ -2049,9 +2092,9 @@ export default function CourierDashboardPage() {
             </div>
           ))}
           {[
-            "Modifier les produits ou les prix",
-            "Voir toutes les commandes de tous les vendeurs",
-            "Changer les paiements ou l'escrow",
+            t("cr1_dashboard.profil.restriction_products"),
+            t("cr1_dashboard.profil.restriction_orders"),
+            t("cr1_dashboard.profil.restriction_escrow"),
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-red-500/15 bg-red-500/5 p-4 text-[13px] text-white">
               <XCircle size={16} className="mt-0.5 shrink-0 text-red-300" />
@@ -2065,11 +2108,11 @@ export default function CourierDashboardPage() {
 
   const renderFormation = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Academie" title="Formation livreur">
+      <SectionShell kicker={t("cr1_dashboard.formation.kicker")} title={t("cr1_dashboard.formation.title")}>
         <div className="rounded-[22px] border border-emerald-500/20 bg-emerald-500/5 p-5">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">Progression</div>
+              <div className="text-[12px] font-black uppercase tracking-[0.15em] text-[#6EE7B7]">{t("cr1_dashboard.formation.progress")}</div>
               <div className="mt-1 text-[26px] font-extrabold text-white">72%</div>
             </div>
             <BookOpen size={28} className="text-emerald-300" />
@@ -2080,25 +2123,25 @@ export default function CourierDashboardPage() {
         </div>
         <div className="mt-5 space-y-3">
           {[
-            "Retrait et verification du colis",
-            "Navigation intelligente et etiquette client",
-            "Gestion des incidents et preuves",
-            "Securite nuit & bouton SOS",
+            t("cr1_dashboard.formation.module_pickup"),
+            t("cr1_dashboard.formation.module_navigation"),
+            t("cr1_dashboard.formation.module_incidents"),
+            t("cr1_dashboard.formation.module_safety"),
           ].map((item, index) => (
             <div key={item} className="flex items-center justify-between rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="font-semibold text-white">{item}</div>
-              <div className="text-[12px] font-bold text-[#8B949E]">{index < 2 ? "Valide" : "A terminer"}</div>
+              <div className="text-[12px] font-bold text-[#8B949E]">{index < 2 ? t("cr1_dashboard.formation.validated") : t("cr1_dashboard.formation.to_complete")}</div>
             </div>
           ))}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Certification" title="Quiz & badges" accent="text-sky-300">
+      <SectionShell kicker={t("cr1_dashboard.formation.cert_kicker")} title={t("cr1_dashboard.formation.cert_title")} accent="text-sky-300">
         <div className="space-y-3">
           {[
-            "Badge Ponctualite",
-            "Badge Communication client",
-            "Badge Securite terrain",
+            t("cr1_dashboard.formation.badge_punctuality"),
+            t("cr1_dashboard.formation.badge_communication"),
+            t("cr1_dashboard.formation.badge_safety"),
           ].map((item) => (
             <div key={item} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-[14px] font-semibold text-white">
               {item}
@@ -2110,10 +2153,12 @@ export default function CourierDashboardPage() {
   );
 
   const renderNotifications = () => (
-    <SectionShell kicker="Centre d'alertes" title="Notifications">
+    <SectionShell kicker={t("cr1_dashboard.notifications.kicker")} title={t("cr1_dashboard.notifications.title")}>
       <div className="mb-4 flex items-center justify-between gap-3">
         <div className="text-[12px] text-[#8B949E]">
-          {notifications.length} notification{notifications.length > 1 ? "s" : ""} · {unreadNotifications} non lue{unreadNotifications > 1 ? "s" : ""}
+          {t(notifications.length > 1 ? "cr1_dashboard.notifications.count_plural" : "cr1_dashboard.notifications.count", { count: notifications.length })}
+          {" · "}
+          {t(unreadNotifications > 1 ? "cr1_dashboard.notifications.unread_plural" : "cr1_dashboard.notifications.unread", { count: unreadNotifications })}
         </div>
         {notifications.length > 0 ? (
           <button
@@ -2121,7 +2166,7 @@ export default function CourierDashboardPage() {
             onClick={handleMarkAllNotificationsRead}
             className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-[12px] font-bold text-white"
           >
-            Tout marquer comme lu
+            {t("cr1_dashboard.notifications.mark_all_read")}
           </button>
         ) : null}
       </div>
@@ -2147,14 +2192,14 @@ export default function CourierDashboardPage() {
                 <div className="mt-1 text-[13px] leading-6 text-white/75">{item.message}</div>
                 <div className="mt-2 text-[11px] uppercase tracking-[0.14em] text-[#8B949E]">
                   {item.notification_type}
-                  {!item.is_read ? " · Nouveau" : ""}
+                  {!item.is_read ? ` · ${t("cr1_dashboard.notifications.new")}` : ""}
                 </div>
               </div>
             </button>
           ))
         ) : (
           <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-            Aucune notification disponible pour le moment.
+            {t("cr1_dashboard.notifications.empty")}
           </div>
         )}
       </div>
@@ -2163,30 +2208,30 @@ export default function CourierDashboardPage() {
 
   const renderIncidents = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Assistant terrain" title="Incidents">
+      <SectionShell kicker={t("cr1_dashboard.incidents.kicker")} title={t("cr1_dashboard.incidents.title")}>
         <div className="space-y-3">
           {[
-            "Client absent",
-            "Adresse introuvable",
-            "Colis endommage",
-            "Route bloquee / trafic severe",
+            t("cr1_dashboard.incidents.case_client_absent"),
+            t("cr1_dashboard.incidents.case_address_not_found"),
+            t("cr1_dashboard.incidents.case_package_damaged"),
+            t("cr1_dashboard.incidents.case_road_blocked"),
           ].map((item) => (
             <div key={item} className="rounded-[18px] border border-red-500/15 bg-red-500/5 p-4">
               <div className="font-bold text-white">{item}</div>
               <div className="mt-2 text-[13px] text-white/75">
-                Ouvre un protocole rapide avec preuves, photo, horodatage et message automatique.
+                {t("cr1_dashboard.incidents.protocol_hint")}
               </div>
             </div>
           ))}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Protocoles" title="Actions conseillees" accent="text-sky-300">
+      <SectionShell kicker={t("cr1_dashboard.incidents.protocols_kicker")} title={t("cr1_dashboard.incidents.protocols_title")} accent="text-sky-300">
         <div className="space-y-3">
           {[
-            "Appeler le client 2 fois avant de cloturer un echec.",
-            "Joindre une photo geolocalisee si depot refuse.",
-            "Signaler le vendeur si le colis ne correspond pas.",
+            t("cr1_dashboard.incidents.advice_call_twice"),
+            t("cr1_dashboard.incidents.advice_geolocated_photo"),
+            t("cr1_dashboard.incidents.advice_report_vendor"),
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
               <AlertTriangle size={16} className="mt-0.5 shrink-0 text-orange-300" />
@@ -2200,7 +2245,7 @@ export default function CourierDashboardPage() {
 
   const renderLitiges = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.95fr]">
-      <SectionShell kicker="Mediation" title="Litiges livreur">
+      <SectionShell kicker={t("cr1_dashboard.litiges.kicker")} title={t("cr1_dashboard.litiges.title")}>
         <div className="space-y-3">
           {disputes.length ? (
             disputes.map((item) => (
@@ -2229,13 +2274,13 @@ export default function CourierDashboardPage() {
             ))
           ) : (
             <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] text-[#8B949E]">
-              Aucun litige lie a tes commandes assignees pour le moment.
+              {t("cr1_dashboard.litiges.empty")}
             </div>
           )}
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Cadre metier" title="Droits & obligations" accent="text-orange-300">
+      <SectionShell kicker={t("cr1_dashboard.litiges.framework_kicker")} title={t("cr1_dashboard.litiges.framework_title")} accent="text-orange-300">
         <div className="space-y-3">
           {selectedDispute ? (
             <div className="rounded-[18px] border border-orange-200 bg-orange-50 p-4 dark:border-orange-500/20 dark:bg-orange-500/5">
@@ -2255,10 +2300,10 @@ export default function CourierDashboardPage() {
                       : "border-slate-200 bg-white text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-white/65"
                 }`}>
                   {selectedDisputePermission === "granted"
-                    ? "Autorise"
+                    ? t("cr1_dashboard.litiges.permission_granted")
                     : selectedDisputePermission === "requested"
-                      ? "Demande envoyee"
-                      : "Verrouille"}
+                      ? t("cr1_dashboard.litiges.permission_requested")
+                      : t("cr1_dashboard.litiges.permission_locked")}
                 </span>
               </div>
 
@@ -2267,7 +2312,7 @@ export default function CourierDashboardPage() {
                   <input
                     value={disputeReplyDraft}
                     onChange={(event) => setDisputeReplyDraft(event.target.value)}
-                    placeholder="Reponse au litige..."
+                    placeholder={t("cr1_dashboard.litiges.reply_placeholder")}
                     className="min-w-0 flex-1 rounded-[14px] border border-white/10 bg-[#0D1117] px-4 py-3 text-[13px] text-white outline-none placeholder:text-[#6B7280]"
                   />
                   <button
@@ -2275,7 +2320,7 @@ export default function CourierDashboardPage() {
                     onClick={() => void handleSendDisputeReply()}
                     disabled={!disputeReplyDraft.trim()}
                     className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-[14px] bg-orange-500 text-white disabled:cursor-not-allowed disabled:opacity-45"
-                    aria-label="Repondre au litige"
+                    aria-label={t("cr1_dashboard.litiges.reply_aria")}
                   >
                     <Send size={16} />
                   </button>
@@ -2287,7 +2332,7 @@ export default function CourierDashboardPage() {
                   className="mt-4 inline-flex items-center gap-2 rounded-full border border-amber-500/25 bg-amber-500/10 px-5 py-3 text-[12px] font-extrabold text-amber-300 transition hover:-translate-y-0.5"
                 >
                   <LockKeyhole size={14} />
-                  Demander l'autorisation de répondre
+                  {t("cr1_dashboard.litiges.request_permission")}
                 </button>
               )}
 
@@ -2300,9 +2345,9 @@ export default function CourierDashboardPage() {
           ) : null}
 
           {[
-            "Toujours fournir les preuves de passage ou de remise.",
-            "Ne jamais cloturer un litige hors protocole support.",
-            "Le livreur peut repondre uniquement quand l'administrateur l'autorise.",
+            t("cr1_dashboard.litiges.rule_provide_proof"),
+            t("cr1_dashboard.litiges.rule_no_self_close"),
+            t("cr1_dashboard.litiges.rule_reply_only_when_authorized"),
           ].map((item) => (
             <div key={item} className="flex gap-3 rounded-[16px] border border-slate-200 bg-slate-50 p-4 dark:border-white/5 dark:bg-white/[0.03]">
               <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-300" />
@@ -2316,27 +2361,25 @@ export default function CourierDashboardPage() {
 
   const renderPreuves = () => (
     <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-      <SectionShell kicker="Conformite BelivaY" title="Preuves colis & remise point relais">
+      <SectionShell kicker={t("cr1_dashboard.preuves.kicker")} title={t("cr1_dashboard.preuves.title")}>
         <div className="space-y-4">
           <div className="rounded-[20px] border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="flex flex-wrap items-center gap-3">
               <InfoPill icon={QrCode} tone="border-emerald-500/20 bg-emerald-500/10 text-emerald-300">
-                Scan obligatoire
+                {t("cr1_dashboard.preuves.scan_required")}
               </InfoPill>
-              <InfoPill icon={FileBadge2}>Photos + signature</InfoPill>
-              <InfoPill icon={Store}>Point relais masque vendeur</InfoPill>
+              <InfoPill icon={FileBadge2}>{t("cr1_dashboard.preuves.photos_signature")}</InfoPill>
+              <InfoPill icon={Store}>{t("cr1_dashboard.preuves.relay_hidden_vendor")}</InfoPill>
             </div>
             <p className="mt-3 text-[13px] leading-6 text-white/75">
-              Cette vue reprend la logique documentee: le livreur prouve chaque transfert par scan, photos,
-              horodatage et validation du destinataire logistique. Les champs de preuve backend complets restent a
-              brancher des que le modele ShipmentProof sera ajoute.
+              {t("cr1_dashboard.preuves.intro")}
             </p>
           </div>
 
           {[
-            ["1", "Enlevement vendeur", "Scanner la mission, verifier le nombre de colis, photo etiquette et photo colis ferme."],
-            ["2", "Remise point relais", "Scanner le QR du point relais, faire signer le gerant, enregistrer l'emplacement de stockage."],
-            ["3", "Livraison client", "Verifier le code de retrait ou la confirmation client, preuve finale, puis statut livre."],
+            ["1", t("cr1_dashboard.preuves.step1_title"), t("cr1_dashboard.preuves.step1_body")],
+            ["2", t("cr1_dashboard.preuves.step2_title"), t("cr1_dashboard.preuves.step2_body")],
+            ["3", t("cr1_dashboard.preuves.step3_title"), t("cr1_dashboard.preuves.step3_body")],
           ].map(([step, title, body]) => (
             <div key={step} className="flex gap-4 rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 font-extrabold text-emerald-300">
@@ -2351,15 +2394,19 @@ export default function CourierDashboardPage() {
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Mission selectionnee" title={selectedShipment ? `Dossier #${selectedShipment.order}` : "Aucune mission"} accent="text-sky-300">
+      <SectionShell
+        kicker={t("cr1_dashboard.preuves.selected_kicker")}
+        title={selectedShipment ? t("cr1_dashboard.preuves.file_number", { order: selectedShipment.order }) : t("cr1_dashboard.courses.no_mission")}
+        accent="text-sky-300"
+      >
         {selectedShipment ? (
           <div className="space-y-4">
             <div className="grid gap-3 md:grid-cols-2">
               {[
-                ["Code mission", `BVY-${selectedShipment.order}-${selectedShipment.id}`],
-                ["Statut", statusLabel(selectedShipment.status)],
-                ["Zone", selectedShipment.city || currentCourierCity],
-                ["Relais", selectedShipment.relay_point || "A definir par BelivaY"],
+                [t("cr1_dashboard.preuves.mission_code"), `BVY-${selectedShipment.order}-${selectedShipment.id}`],
+                [t("cr1_dashboard.preuves.status_label"), statusLabel(t, selectedShipment.status)],
+                [t("cr1_dashboard.common.zone"), selectedShipment.city || currentCourierCity],
+                [t("cr1_dashboard.preuves.relay"), selectedShipment.relay_point || t("cr1_dashboard.preuves.relay_tbd")],
               ].map(([label, value]) => (
                 <div key={label} className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
                   <div className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{label}</div>
@@ -2369,12 +2416,11 @@ export default function CourierDashboardPage() {
             </div>
 
             <div className="rounded-[18px] border border-amber-500/15 bg-amber-500/5 p-4 text-[13px] leading-6 text-amber-100">
-              Les noms vendeur/client restent masques dans le parcours operationnel. Le livreur travaille avec une
-              mission, une adresse de prise en charge, une adresse de remise et des codes de verification.
+              {t("cr1_dashboard.preuves.masked_names_notice")}
             </div>
 
             <div className="grid gap-3 md:grid-cols-3">
-              {["Photo etiquette", "Photo colis", "Signature relais/client"].map((item) => (
+              {[t("cr1_dashboard.preuves.photo_label"), t("cr1_dashboard.preuves.photo_package"), t("cr1_dashboard.preuves.signature_relay_client")].map((item) => (
                 <button
                   key={item}
                   type="button"
@@ -2382,7 +2428,7 @@ export default function CourierDashboardPage() {
                 >
                   {item}
                   <span className="mt-2 block text-[10px] font-bold uppercase tracking-[0.14em] text-[#8B949E]">
-                    A connecter
+                    {t("cr1_dashboard.preuves.to_connect")}
                   </span>
                 </button>
               ))}
@@ -2390,7 +2436,7 @@ export default function CourierDashboardPage() {
           </div>
         ) : (
           <div className="rounded-[18px] border border-dashed border-white/10 p-6 text-[13px] leading-6 text-[#8B949E]">
-            Selectionne une course pour preparer son dossier de preuve.
+            {t("cr1_dashboard.preuves.select_course_hint")}
           </div>
         )}
       </SectionShell>
@@ -2399,15 +2445,15 @@ export default function CourierDashboardPage() {
 
   const renderParametres = () => (
     <section className="grid gap-5 xl:grid-cols-[1fr_0.9fr]">
-      <SectionShell kicker="Configuration backend" title="Parametres livreur">
+      <SectionShell kicker={t("cr1_dashboard.parametres.kicker")} title={t("cr1_dashboard.parametres.title")}>
         <div className="grid gap-3 md:grid-cols-2">
           {([
-            ["Ville", currentCourierCity, MapPin],
-            ["Vehicule", VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle, Bike],
-            ["Statut", currentIsOnline ? "Disponible" : "Hors ligne", Gauge],
-            ["Langue", currentCourierLanguage.toUpperCase(), Settings2],
-            ["GPS", currentGpsGranted ? "Autorise" : "Non autorise", Navigation],
-            ["Camera", currentCameraGranted ? "Autorisee" : "Non autorisee", ScanLine],
+            [t("cr1_dashboard.parametres.city"), currentCourierCity, MapPin],
+            [t("cr1_dashboard.parametres.vehicle"), vehicleLabel(t, currentCourierVehicle), Bike],
+            [t("cr1_dashboard.quick_stats.status"), currentIsOnline ? t("cr1_dashboard.common.available") : t("cr1_dashboard.common.offline"), Gauge],
+            [t("cr1_dashboard.parametres.language"), currentCourierLanguage.toUpperCase(), Settings2],
+            [t("cr1_dashboard.parametres.gps"), currentGpsGranted ? t("cr1_dashboard.common.authorized") : t("cr1_dashboard.common.not_authorized"), Navigation],
+            [t("cr1_dashboard.parametres.camera"), currentCameraGranted ? t("cr1_dashboard.common.authorized_f") : t("cr1_dashboard.common.not_authorized_f"), ScanLine],
           ] as Array<[string, string, ComponentType<{ size?: number; className?: string }>]>) .map(([label, value, Icon]) => (
             <div key={String(label)} className="rounded-[18px] border border-white/5 bg-white/[0.03] p-4">
               <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">
@@ -2420,14 +2466,14 @@ export default function CourierDashboardPage() {
         </div>
       </SectionShell>
 
-      <SectionShell kicker="Actions backend" title="Reglages frequents" accent="text-orange-300">
+      <SectionShell kicker={t("cr1_dashboard.parametres.actions_kicker")} title={t("cr1_dashboard.parametres.frequent_settings")} accent="text-orange-300">
         <div className="space-y-3">
           <button
             type="button"
             onClick={() => updateCourierSettings("online", { is_online: !currentIsOnline })}
             className="flex w-full items-center justify-between rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
           >
-            <span>{currentIsOnline ? "Desactiver le mode disponible" : "Activer le mode disponible"}</span>
+            <span>{currentIsOnline ? t("cr1_dashboard.parametres.disable_available_mode") : t("cr1_dashboard.parametres.enable_available_mode")}</span>
             {settingsSaving === "online" ? <LoaderCircle size={15} className="animate-spin" /> : <ChevronRight size={15} />}
           </button>
           <div className="grid gap-2 md:grid-cols-2">
@@ -2442,12 +2488,12 @@ export default function CourierDashboardPage() {
                     : "border-white/5 bg-white/[0.03] text-white/80 hover:bg-white/[0.06]"
                 }`}
               >
-                Interface {language.toUpperCase()}
+                {t("cr1_dashboard.parametres.interface_language", { language: language.toUpperCase() })}
               </button>
             ))}
           </div>
           <div className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4">
-            <label className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">Zone principale</label>
+            <label className="text-[11px] font-black uppercase tracking-[0.14em] text-[#8B949E]">{t("cr1_dashboard.parametres.main_zone")}</label>
             <div className="mt-3 flex gap-2">
               <input
                 defaultValue={currentCourierCity}
@@ -2468,14 +2514,14 @@ export default function CourierDashboardPage() {
               onClick={() => updateCourierSettings("gps", { gps_permission_granted: !currentGpsGranted })}
               className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
             >
-              GPS: {currentGpsGranted ? "autorise" : "a verifier"}
+              {t("cr1_dashboard.parametres.gps_summary", { status: currentGpsGranted ? t("cr1_dashboard.common.authorized") : t("cr1_dashboard.parametres.to_verify") })}
             </button>
             <button
               type="button"
               onClick={() => updateCourierSettings("camera", { camera_permission_granted: !currentCameraGranted })}
               className="rounded-[16px] border border-white/5 bg-white/[0.03] p-4 text-left text-[13px] text-white/80 transition hover:bg-white/[0.06]"
             >
-              Camera: {currentCameraGranted ? "autorisee" : "a verifier"}
+              {t("cr1_dashboard.parametres.camera_summary", { status: currentCameraGranted ? t("cr1_dashboard.common.authorized_f") : t("cr1_dashboard.parametres.to_verify") })}
             </button>
           </div>
           {settingsFeedback ? <div className="text-[13px] font-semibold text-emerald-300">{settingsFeedback}</div> : null}
@@ -2483,7 +2529,7 @@ export default function CourierDashboardPage() {
       </SectionShell>
 
       <div className="xl:col-span-2">
-        <SectionShell kicker="Versements BelivaY" title="Compte Mobile Money livreur" accent="text-emerald-300">
+        <SectionShell kicker={t("cr1_dashboard.parametres.payouts_kicker")} title={t("cr1_dashboard.parametres.payouts_title")} accent="text-emerald-300">
           <PayoutAccountVerificationCard ownerRole="COURIER" accent="#10B981" surfaceClassName="border-white/10 bg-white/[0.04] text-white dark:bg-white/[0.04]" />
         </SectionShell>
       </div>
@@ -2554,7 +2600,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => setDrawerOpen(true)}
-            aria-label="Ouvrir le menu"
+            aria-label={t("cr1_dashboard.header.open_menu")}
             aria-haspopup="dialog"
             aria-expanded={drawerOpen}
             className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl transition active:scale-90 lg:hidden ${
@@ -2582,8 +2628,8 @@ export default function CourierDashboardPage() {
             />
           </div>
           <div className="min-w-0">
-            <div className={theme === "dark" ? "truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]" : "truncate text-[14px] font-extrabold tracking-tight text-emerald-700 sm:text-[15px]"}>Espace livreur</div>
-            <div className={theme === "dark" ? "truncate text-[10px] text-white/70 sm:text-[11px]" : "truncate text-[10px] text-slate-500 sm:text-[11px]"}>{isApprovedCourier ? "" : "Profil en attente"}</div>
+            <div className={theme === "dark" ? "truncate text-[14px] font-extrabold tracking-tight text-emerald-300 sm:text-[15px]" : "truncate text-[14px] font-extrabold tracking-tight text-emerald-700 sm:text-[15px]"}>{t("cr1_dashboard.header.title")}</div>
+            <div className={theme === "dark" ? "truncate text-[10px] text-white/70 sm:text-[11px]" : "truncate text-[10px] text-slate-500 sm:text-[11px]"}>{isApprovedCourier ? "" : t("cr1_dashboard.header.profile_pending")}</div>
           </div>
         </div>
 
@@ -2595,7 +2641,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => setTab("notifications")}
-            aria-label="Notifications"
+            aria-label={t("cr1_dashboard.header.notifications")}
             className={`relative flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
           >
             <Bell size={16} />
@@ -2609,7 +2655,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Changer de theme"
+            aria-label={t("cr1_dashboard.header.toggle_theme")}
             className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full border transition active:scale-90 ${headerButton}`}
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -2619,7 +2665,7 @@ export default function CourierDashboardPage() {
             type="button"
             onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
             className={`flex h-9 flex-shrink-0 items-center justify-center rounded-full border px-2.5 text-[10px] font-black tracking-[0.12em] transition active:scale-90 ${headerButton}`}
-            aria-label="Changer de langue"
+            aria-label={t("cr1_dashboard.header.toggle_language")}
           >
             {i18n.language.startsWith("fr") ? "FR" : "EN"}
           </button>
@@ -2627,7 +2673,7 @@ export default function CourierDashboardPage() {
           <button
             type="button"
             onClick={() => setProfileSheetOpen(true)}
-            aria-label="Mon compte"
+            aria-label={t("cr1_dashboard.header.my_account")}
             aria-haspopup="dialog"
             aria-expanded={profileSheetOpen}
             className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[linear-gradient(135deg,#10B981,#065F46)] text-[11px] font-black text-white ring-1 ring-emerald-300/40 transition active:scale-90"
@@ -2642,13 +2688,13 @@ export default function CourierDashboardPage() {
 
         <div className="ml-auto hidden items-center gap-2 lg:flex">
           <div className="rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-[11px] font-bold text-white">
-            {currentIsOnline ? "Disponible" : "Hors ligne"}
+            {currentIsOnline ? t("cr1_dashboard.common.available") : t("cr1_dashboard.common.offline")}
           </div>
           <button
             type="button"
             onClick={() => setTab("notifications")}
             className="relative flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Notifications"
+            aria-label={t("cr1_dashboard.header.notifications")}
           >
             <Bell size={16} />
             {unreadNotifications > 0 ? (
@@ -2661,7 +2707,7 @@ export default function CourierDashboardPage() {
             type="button"
             onClick={() => i18n.changeLanguage(i18n.language === "fr" ? "en" : "fr")}
             className="flex h-10 items-center justify-center rounded-full border border-white/15 bg-white/10 px-3 text-[11px] font-black tracking-[0.14em] text-white transition hover:bg-white/15"
-            aria-label="Changer de langue"
+            aria-label={t("cr1_dashboard.header.toggle_language")}
           >
             {i18n.language.startsWith("fr") ? "FR" : "EN"}
           </button>
@@ -2669,7 +2715,7 @@ export default function CourierDashboardPage() {
             type="button"
             onClick={toggleTheme}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Changer de thème"
+            aria-label={t("cr1_dashboard.header.toggle_theme")}
           >
             {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
           </button>
@@ -2677,8 +2723,8 @@ export default function CourierDashboardPage() {
             type="button"
             onClick={handleLogout}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition hover:bg-red-100"
-            aria-label="Se deconnecter"
-            title="Se deconnecter"
+            aria-label={t("cr1_dashboard.header.logout")}
+            title={t("cr1_dashboard.header.logout")}
           >
             <LogOut size={16} />
           </button>
@@ -2686,7 +2732,7 @@ export default function CourierDashboardPage() {
             type="button"
             onClick={() => setTab("profil")}
             className="flex h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white transition hover:bg-white/15"
-            aria-label="Compte utilisateur"
+            aria-label={t("cr1_dashboard.header.user_account")}
           >
             <User size={16} />
           </button>
@@ -2695,7 +2741,7 @@ export default function CourierDashboardPage() {
             onClick={() => navigate("/profile")}
             className="rounded-full border border-white/15 bg-white/10 px-4 py-2 text-[12px] font-bold text-white transition hover:bg-white/15"
           >
-            Mon compte client
+            {t("cr1_dashboard.header.client_account")}
           </button>
         </div>
       </header>
@@ -2717,7 +2763,7 @@ export default function CourierDashboardPage() {
                 type="button"
                 onClick={() => setSelectedNotification(null)}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                aria-label="Fermer la notification"
+                aria-label={t("cr1_dashboard.header.close_notification")}
               >
                 <XCircle size={18} />
               </button>
@@ -2727,7 +2773,7 @@ export default function CourierDashboardPage() {
             </div>
             {selectedNotification.action_url ? (
               <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
-                Reference backend : {selectedNotification.action_url}
+                {t("cr1_dashboard.header.backend_reference", { reference: selectedNotification.action_url })}
               </div>
             ) : null}
           </div>
@@ -2751,7 +2797,7 @@ export default function CourierDashboardPage() {
                 type="button"
                 onClick={() => setSelectedDispute(null)}
                 className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition hover:bg-white/10"
-                aria-label="Fermer le litige"
+                aria-label={t("cr1_dashboard.header.close_dispute")}
               >
                 <XCircle size={18} />
               </button>
@@ -2760,7 +2806,7 @@ export default function CourierDashboardPage() {
               {selectedDispute.detail}
             </div>
             <div className="mt-4 rounded-[16px] border border-white/5 bg-white/[0.03] p-3 text-[12px] text-[#8B949E]">
-              Motif : {selectedDispute.reason_display}
+              {t("cr1_dashboard.header.dispute_reason", { reason: selectedDispute.reason_display })}
             </div>
           </div>
         </div>
@@ -2772,7 +2818,7 @@ export default function CourierDashboardPage() {
         onLogout={handleLogout}
         badges={navBadges}
         courier={courierIdentity}
-        footer={COURIER_FOOTER}
+        footer={courierFooter}
       />
 
       <main className="px-4 pb-24 pt-[84px] lg:ml-[232px] lg:pb-12 lg:px-6">
@@ -2799,14 +2845,13 @@ export default function CourierDashboardPage() {
                 <div className="min-w-0">
                   <div className="mb-2 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.14em] text-emerald-300 sm:text-[11px] sm:tracking-[0.16em]">
                     <ShieldCheck size={13} />
-                    Acteur livreur
+                    {t("cr1_dashboard.header.actor_badge")}
                   </div>
                   <h1 className="text-[22px] font-extrabold leading-tight tracking-tight text-white sm:text-[30px]">
-                    {TAB_LABELS[tab]}
+                    {t(TAB_LABEL_KEYS[tab])}
                   </h1>
                   <p className="mt-2 max-w-[760px] text-[12.5px] leading-6 text-[#8B949E] sm:text-[14px] sm:leading-7">
-                    Cette interface reprend les vues utiles du modele BelivaY Livreur: operations, preuves,
-                    communication supervisee, navigation et suivi metier du livreur.
+                    {t("cr1_dashboard.header.description")}
                   </p>
                 </div>
                 {/* Trois faits courts (une ville, un vehicule, un etat) : en
@@ -2814,9 +2859,14 @@ export default function CourierDashboardPage() {
                     au lieu d'ajouter trois blocs a faire defiler. */}
                 <div className="grid grid-cols-3 gap-2 sm:gap-3 lg:flex-shrink-0">
                   {([
-                    ["Ville", currentCourierCity, "text-emerald-300", "border-emerald-500/10"],
-                    ["Vehicule", VEHICLE_LABELS[currentCourierVehicle] || currentCourierVehicle, "text-green-300", "border-green-500/10"],
-                    ["Statut", currentIsOnline ? "Disponible" : isApprovedCourier ? "Hors ligne" : "Pending", "text-emerald-300", "border-emerald-500/10"],
+                    [t("cr1_dashboard.parametres.city"), currentCourierCity, "text-emerald-300", "border-emerald-500/10"],
+                    [t("cr1_dashboard.header.fact_vehicle"), vehicleLabel(t, currentCourierVehicle), "text-green-300", "border-green-500/10"],
+                    [
+                      t("cr1_dashboard.quick_stats.status"),
+                      currentIsOnline ? t("cr1_dashboard.common.available") : isApprovedCourier ? t("cr1_dashboard.common.offline") : t("cr1_dashboard.common.pending"),
+                      "text-emerald-300",
+                      "border-emerald-500/10",
+                    ],
                   ] as Array<[string, string, string, string]>).map(([label, value, tone, border]) => (
                     <div key={label} className={`rounded-[16px] border bg-white/5 p-3 sm:rounded-[20px] sm:p-4 ${border}`}>
                       <div className="text-[9px] uppercase leading-tight tracking-[0.1em] text-[#8B949E] sm:text-[11px] sm:tracking-[0.16em]">
@@ -2853,7 +2903,7 @@ export default function CourierDashboardPage() {
         onLogout={handleLogout}
         badges={navBadges}
         courier={courierIdentity}
-        footer={COURIER_FOOTER}
+        footer={courierFooter}
       />
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
@@ -2873,7 +2923,7 @@ export default function CourierDashboardPage() {
           city: courierIdentity.city,
           vehicle: courierIdentity.vehicle,
           zones: currentCourierZones,
-          accountStatus: isApprovedCourier ? "Approuve" : "En validation",
+          accountStatus: isApprovedCourier ? t("cr1_dashboard.common.approved") : t("cr1_dashboard.common.under_review"),
           online: currentIsOnline,
           trustScore: dashboard
             ? `${dashboard.trust_score.score.toFixed(1)} · ${dashboard.trust_score.tier_display}`
@@ -2899,7 +2949,7 @@ export default function CourierDashboardPage() {
           setTab(next);
         }}
         onFeedback={setSettingsFeedback}
-        footer={COURIER_FOOTER}
+        footer={courierFooter}
       />
       {avatarFile ? (
         <AvatarCropDialog
@@ -2909,7 +2959,7 @@ export default function CourierDashboardPage() {
           onUploaded={(updatedUser) => {
             setUser(updatedUser);
             setAvatarFile(null);
-            setSettingsFeedback("Photo de profil mise à jour.");
+            setSettingsFeedback(t("cr1_dashboard.profil.photo_updated"));
           }}
         />
       ) : null}

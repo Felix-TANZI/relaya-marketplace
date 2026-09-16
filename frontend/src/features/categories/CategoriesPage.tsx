@@ -76,7 +76,7 @@ export default function CategoriesPage() {
           </div>
         ) : !selected ? (
           <div className="pf-card" style={{ textAlign: "center", padding: 40, color: "var(--pf-muted)" }}>
-            Aucune catégorie disponible pour le moment.
+            {t("cl4_categories.no_categories")}
           </div>
         ) : (
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[270px_1fr] lg:items-start">
@@ -137,7 +137,7 @@ export default function CategoriesPage() {
                   </div>
                 </div>
                 <Link to={`/catalog?category=${selected.id}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
-                  Voir tous les produits <ArrowRight size={15} />
+                  {t("cl4_categories.view_all_products")} <ArrowRight size={15} />
                 </Link>
               </div>
 
@@ -175,7 +175,7 @@ export default function CategoriesPage() {
                   <PackageSearch size={30} style={{ color: "var(--pf-muted)" }} />
                   <p style={{ fontSize: 13, fontWeight: 700, color: "var(--pf-text)" }}>{t("categories.main_category")}</p>
                   <p style={{ fontSize: 12, color: "var(--pf-muted)", maxWidth: 360 }}>
-                    Cet univers n'a pas de sous-catégories — explorez directement tous ses produits.
+                    {t("cl4_categories.no_subcategories_desc")}
                   </p>
                   <Link to={`/catalog?category=${selected.id}`} className="pf-btn-accent" style={{ textDecoration: "none", marginTop: 6 }}>
                     {t("categories.explore")} <ArrowRight size={15} />

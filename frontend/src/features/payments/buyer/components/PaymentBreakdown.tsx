@@ -13,6 +13,8 @@
 // renvoie d'ailleurs pas de ce cote.
 // ─────────────────────────────────────────────────────────────────────────
 
+import { useTranslation } from 'react-i18next';
+
 import Money from '../../shared/Money';
 import { FT } from '../../shared/tokens';
 import type { PaymentBreakdown as Breakdown } from '../../model/payment.types';
@@ -21,17 +23,18 @@ interface PaymentBreakdownProps {
   breakdown: Breakdown;
 }
 
-/** Libelles acheteur des composants economiques. */
+/** Cles de traduction des composants economiques, cote acheteur. */
 const LIBELLES: Record<string, string> = {
-  GOODS: 'Vos articles',
-  TRANSPORT: 'Livraison',
-  RELAY_HANDLING: 'Retrait en point relais',
-  INSURANCE: 'Assurance',
+  GOODS: 'pm2_buyer_breakdown.component_goods',
+  TRANSPORT: 'pm2_buyer_breakdown.component_transport',
+  RELAY_HANDLING: 'pm2_buyer_breakdown.component_relay_handling',
+  INSURANCE: 'pm2_buyer_breakdown.component_insurance',
 };
 
 export default function PaymentBreakdown({
   breakdown,
 }: PaymentBreakdownProps) {
+  const { t } = useTranslation();
   const lignes = Object.entries(breakdown.by_component_xaf)
     .filter(([, montant]) => montant > 0);
 
@@ -50,7 +53,7 @@ export default function PaymentBreakdown({
             }}
           >
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              {LIBELLES[composant] ?? composant}
+              {LIBELLES[composant] ? t(LIBELLES[composant]) : composant}
             </span>
             <Money value={montant} size={13.5} />
           </div>
@@ -62,7 +65,7 @@ export default function PaymentBreakdown({
             padding: '11px 0 0',
           }}>
             <span style={{ fontSize: 12.5, color: FT.muted }}>
-              Livraison et services
+              {t('pm2_buyer_breakdown.delivery_and_services')}
             </span>
             <Money value={reliquat} size={13.5} />
           </div>
@@ -78,7 +81,7 @@ export default function PaymentBreakdown({
           fontSize: 12, letterSpacing: '0.04em',
           textTransform: 'uppercase', color: FT.muted,
         }}>
-          Total payé
+          {t('pm2_buyer_breakdown.total_paid')}
         </span>
         <Money value={breakdown.total_xaf} size={16} showCurrency />
       </div>

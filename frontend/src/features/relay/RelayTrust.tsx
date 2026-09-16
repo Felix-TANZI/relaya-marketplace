@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ShieldCheck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { Panel, StatusPill } from "./RelayUi";
@@ -25,11 +26,11 @@ export interface RelayTrustScore {
 
 /** Libelles et explications des criteres, dans l'ordre d'affichage. */
 const CRITERIA: Array<[string, string, string]> = [
-  ["punctuality", "Ponctualité réception", "Délai entre la réception du colis et sa remise à l'acheteur."],
-  ["security", "Sécurité stockage", "Preuves de chaîne de garde déposées à chaque étape."],
-  ["satisfaction", "Satisfaction acheteur", "Notes laissées par les acheteurs après leur retrait."],
-  ["disputes", "Retraits sans litige", "Absence de litige sur les colis passés par le point relais."],
-  ["seniority", "Ancienneté", "Durée d'activité du point relais sur la plateforme."],
+  ["punctuality", "rl2_trust.criterion_punctuality_label", "rl2_trust.criterion_punctuality_desc"],
+  ["security", "rl2_trust.criterion_security_label", "rl2_trust.criterion_security_desc"],
+  ["satisfaction", "rl2_trust.criterion_satisfaction_label", "rl2_trust.criterion_satisfaction_desc"],
+  ["disputes", "rl2_trust.criterion_disputes_label", "rl2_trust.criterion_disputes_desc"],
+  ["seniority", "rl2_trust.criterion_seniority_label", "rl2_trust.criterion_seniority_desc"],
 ];
 
 function progressTone(value: number) {
@@ -45,6 +46,7 @@ function tierTone(tier: string): "emerald" | "blue" | "slate" {
 }
 
 export default function RelayTrust({ onError }: { onError: (error: unknown) => void }) {
+  const { t } = useTranslation();
   const [trust, setTrust] = useState<RelayTrustScore | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -67,8 +69,8 @@ export default function RelayTrust({ onError }: { onError: (error: unknown) => v
 
   return (
     <Panel
-      kicker="Score public"
-      title="Trust Score Point Relais"
+      kicker={t("rl2_trust.kicker_public_score")}
+      title={t("rl2_trust.header_title")}
       action={
         trust ? (
           <StatusPill tone={tierTone(trust.tier)}>
@@ -84,22 +86,22 @@ export default function RelayTrust({ onError }: { onError: (error: unknown) => v
             {loading ? "…" : score.toFixed(0)}
           </div>
           <div className="mt-1 text-xs font-black uppercase tracking-[0.16em] text-blue-900/55 dark:text-blue-200/60">
-            Trust / 100
+            {t("rl2_trust.score_out_of_100")}
           </div>
           <p className="mt-4 text-sm leading-6 text-blue-950/75 dark:text-blue-100/75">
-            Visible par l'acheteur au moment du choix du point relais.
+            {t("rl2_trust.visible_to_buyer_note")}
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
-            <StatusPill tone="slate">{trust?.sample_size ?? 0} observations</StatusPill>
+            <StatusPill tone="slate">{t("rl2_trust.observations_count", { count: trust?.sample_size ?? 0 })}</StatusPill>
             {trust?.parcel_value_cap_xaf ? (
-              <StatusPill tone="amber">Plafond {trust.parcel_value_cap_xaf.toLocaleString("fr-FR")} FCFA</StatusPill>
+              <StatusPill tone="amber">{t("rl2_trust.value_cap", { amount: trust.parcel_value_cap_xaf.toLocaleString("fr-FR") })}</StatusPill>
             ) : trust ? (
-              <StatusPill tone="emerald">Aucun plafond de valeur</StatusPill>
+              <StatusPill tone="emerald">{t("rl2_trust.no_value_cap")}</StatusPill>
             ) : null}
           </div>
           {trust?.candidate_tier ? (
             <p className="mt-3 text-xs font-bold text-blue-900/70 dark:text-blue-200/70">
-              Palier {trust.candidate_tier} en observation.
+              {t("rl2_trust.candidate_tier_note", { tier: trust.candidate_tier })}
             </p>
           ) : null}
         </div>
@@ -107,26 +109,26 @@ export default function RelayTrust({ onError }: { onError: (error: unknown) => v
         <div className="space-y-4">
           {trust?.veto_active ? (
             <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-800">
-              Veto actif : {trust.veto_reason || "score plafonné par BelivaY."}
+              {t("rl2_trust.veto_active", { reason: trust.veto_reason || t("rl2_trust.veto_default_reason") })}
             </div>
           ) : null}
 
-          {CRITERIA.map(([key, label, description]) => {
+          {CRITERIA.map(([key, labelKey, descKey]) => {
             const entry = trust?.breakdown?.[key];
             const value = entry?.score ?? 0;
             const samples = entry?.samples ?? 0;
             return (
               <div key={key} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <strong className="text-slate-950 dark:text-white">{label}</strong>
+                  <strong className="text-slate-950 dark:text-white">{t(labelKey)}</strong>
                   <div className="flex items-center gap-2">
-                    {entry ? <StatusPill tone="slate">poids {entry.weight} %</StatusPill> : null}
+                    {entry ? <StatusPill tone="slate">{t("rl2_trust.weight_pct", { weight: entry.weight })}</StatusPill> : null}
                     <StatusPill tone={samples > 0 ? "blue" : "slate"}>
-                      {samples > 0 ? `${value.toFixed(0)}/100 · ${samples} obs.` : "En attente"}
+                      {samples > 0 ? t("rl2_trust.score_with_samples", { value: value.toFixed(0), samples }) : t("rl2_trust.pending")}
                     </StatusPill>
                   </div>
                 </div>
-                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{description}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{t(descKey)}</p>
                 <div className="mt-3 h-3 overflow-hidden rounded-full bg-white dark:bg-slate-900">
                   <div
                     className={`h-full rounded-full transition-[width] duration-700 ease-out ${progressTone(value)}`}
@@ -139,7 +141,7 @@ export default function RelayTrust({ onError }: { onError: (error: unknown) => v
 
           {trust?.calculated_at ? (
             <p className="text-xs font-semibold text-slate-400">
-              Dernier calcul : {new Date(trust.calculated_at).toLocaleString("fr-FR")}
+              {t("rl2_trust.last_calculated", { date: new Date(trust.calculated_at).toLocaleString("fr-FR") })}
             </p>
           ) : null}
         </div>

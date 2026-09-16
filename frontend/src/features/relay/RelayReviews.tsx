@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ChartColumnBig, MessageSquareHeart, ThumbsUp } from "lucide-react";
 import { http } from "@/services/api/http";
 import { Panel, StatusPill } from "./RelayUi";
@@ -25,9 +26,10 @@ const LEVELS = [5, 4, 3, 2, 1];
  * l'impression d'une lumiere qui traverse la rangee.
  */
 function Stars({ value, size = "text-base" }: { value: number; size?: string }) {
+  const { t } = useTranslation();
   const filled = Math.round(value);
   return (
-    <span className={`inline-flex items-center gap-0.5 ${size} leading-none`} aria-label={`${value} sur 5`}>
+    <span className={`inline-flex items-center gap-0.5 ${size} leading-none`} aria-label={t("rl2_reviews.stars_aria", { value })}>
       {[1, 2, 3, 4, 5].map((index) => (
         <span
           key={index}
@@ -43,6 +45,7 @@ function Stars({ value, size = "text-base" }: { value: number; size?: string }) 
 }
 
 export default function RelayReviews({ onError }: { onError: (error: unknown) => void }) {
+  const { t } = useTranslation();
   const [payload, setPayload] = useState<RelayReviewPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [thanking, setThanking] = useState<number | null>(null);
@@ -90,9 +93,9 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
           <MessageSquareHeart size={21} strokeWidth={2.4} />
         </div>
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">Avis des acheteurs</h2>
+          <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{t("rl2_reviews.header_title")}</h2>
           <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Note publique sur la marketplace · alimente votre Trust Score (Satisfaction)
+            {t("rl2_reviews.header_subtitle")}
           </p>
         </div>
       </section>
@@ -104,11 +107,13 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
             <Stars value={summary?.average ?? 0} size="text-2xl" />
           </div>
           <p className="mt-3 text-sm font-semibold text-slate-500 dark:text-slate-400">
-            {loading ? "Chargement des avis..." : `${summary?.count ?? 0} avis acheteur${(summary?.count ?? 0) > 1 ? "s" : ""}`}
+            {loading
+              ? t("rl2_reviews.loading_reviews")
+              : t((summary?.count ?? 0) > 1 ? "rl2_reviews.reviews_count_plural" : "rl2_reviews.reviews_count", { count: summary?.count ?? 0 })}
           </p>
         </div>
 
-        <Panel kicker="Satisfaction" title="Répartition" action={<ChartColumnBig className="text-blue-700 dark:text-blue-300" size={19} />}>
+        <Panel kicker={t("rl2_reviews.kicker_satisfaction")} title={t("rl2_reviews.distribution_title")} action={<ChartColumnBig className="text-blue-700 dark:text-blue-300" size={19} />}>
           <div className="space-y-2.5">
             {LEVELS.map((level) => {
               const count = summary?.distribution?.[String(level)] ?? 0;
@@ -133,18 +138,18 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
       </section>
 
       <Panel
-        kicker="Retours terrain"
-        title="Tous les avis"
+        kicker={t("rl2_reviews.kicker_field_feedback")}
+        title={t("rl2_reviews.all_reviews_title")}
         action={<StatusPill tone={reviews.length > 0 ? "blue" : "slate"}>{reviews.length}</StatusPill>}
       >
         <div className="space-y-3">
           {loading ? (
             <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-semibold text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-              Chargement des avis...
+              {t("rl2_reviews.loading_reviews")}
             </div>
           ) : reviews.length === 0 ? (
             <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-              Aucun avis acheteur pour le moment. Les notes arrivent après les premiers retraits.
+              {t("rl2_reviews.no_reviews")}
             </div>
           ) : (
             reviews.map((review) => (
@@ -173,7 +178,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
 
                 <div className="mt-3 flex flex-wrap items-center gap-2">
                   {review.thanked_at ? (
-                    <StatusPill tone="emerald">Remercié</StatusPill>
+                    <StatusPill tone="emerald">{t("rl2_reviews.thanked_badge")}</StatusPill>
                   ) : (
                     <button
                       type="button"
@@ -182,7 +187,7 @@ export default function RelayReviews({ onError }: { onError: (error: unknown) =>
                       className="inline-flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-black text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 dark:bg-blue-950 dark:text-blue-200"
                     >
                       <ThumbsUp size={14} />
-                      {thanking === review.id ? "Envoi..." : "Remercier"}
+                      {thanking === review.id ? t("rl2_reviews.sending") : t("rl2_reviews.thank_button")}
                     </button>
                   )}
                   {review.parcel_ref ? <StatusPill tone="slate">{review.parcel_ref}</StatusPill> : null}

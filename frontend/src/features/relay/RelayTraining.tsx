@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { CheckCircle2, Clock3, GraduationCap, Play, RotateCcw, X } from "lucide-react";
 import { http } from "@/services/api/http";
 import { Panel, StatusPill } from "./RelayUi";
@@ -17,10 +18,10 @@ interface TrainingState {
 interface TrainingModule {
   key: string;
   emoji: string;
-  title: string;
+  titleKey: string;
   minutes: number;
   isNew?: boolean;
-  points: string[];
+  pointKeys: string[];
 }
 
 /**
@@ -32,85 +33,86 @@ const MODULES: TrainingModule[] = [
   {
     key: "reception",
     emoji: "📦",
-    title: "Réception & garde des colis",
+    titleKey: "rl2_training.module_reception_title",
     minutes: 20,
-    points: [
-      "Scanner le QR de la mission à l'arrivée du livreur.",
-      "Vérifier l'intégrité visuelle + l'étiquette avant d'accepter.",
-      "Prendre 3 photos (face, dos, étiquette) comme preuve.",
-      "Double signature gérant + livreur = transfert de responsabilité.",
+    pointKeys: [
+      "rl2_training.module_reception_point_1",
+      "rl2_training.module_reception_point_2",
+      "rl2_training.module_reception_point_3",
+      "rl2_training.module_reception_point_4",
     ],
   },
   {
     key: "cni",
     emoji: "🪪",
-    title: "Vérification CNI & cross-check ANTIC",
+    titleKey: "rl2_training.module_cni_title",
     minutes: 15,
-    points: [
-      "Demander systématiquement la CNI au retrait.",
-      "Lancer le cross-check ANTIC dans l'app.",
-      "Ne remettre le colis qu'au porteur du code valide.",
-      "En cas de doute, contacter le support BelivaY.",
+    pointKeys: [
+      "rl2_training.module_cni_point_1",
+      "rl2_training.module_cni_point_2",
+      "rl2_training.module_cni_point_3",
+      "rl2_training.module_cni_point_4",
     ],
   },
   {
     key: "stockage",
     emoji: "🔒",
-    title: "Sécurité du stockage",
+    titleKey: "rl2_training.module_storage_title",
     minutes: 18,
     isNew: true,
-    points: [
-      "Garder les colis dans un espace fermé à clé.",
-      "Ranger selon le numéro de slot généré par l'app.",
-      "Placer les colis proches de J+7 près de l'entrée.",
-      "Aucun colis perdu/volé = +25 pts de Trust « Sécurité ».",
+    pointKeys: [
+      "rl2_training.module_storage_point_1",
+      "rl2_training.module_storage_point_2",
+      "rl2_training.module_storage_point_3",
+      "rl2_training.module_storage_point_4",
     ],
   },
   {
     key: "litige",
     emoji: "⚖️",
-    title: "Gérer un litige & le médiateur",
+    titleKey: "rl2_training.module_dispute_title",
     minutes: 22,
-    points: [
-      "Colis non récupéré J+7 → décision retour livreur / BelivaY.",
-      "Colis perdu/volé → plainte 117 + photos + Activa.",
-      "Avis injuste → droit de réponse via médiateur (anonymisé).",
-      "Rester factuel et courtois dans toute réponse.",
+    pointKeys: [
+      "rl2_training.module_dispute_point_1",
+      "rl2_training.module_dispute_point_2",
+      "rl2_training.module_dispute_point_3",
+      "rl2_training.module_dispute_point_4",
     ],
   },
   {
     key: "relation",
     emoji: "🤝",
-    title: "Relation acheteur & avis",
+    titleKey: "rl2_training.module_relation_title",
     minutes: 14,
-    points: [
-      "Accueil rapide et souriant = meilleurs avis.",
-      "Un avis 5★ rapporte +20 Avantages.",
-      "Confirmer poliment l'identité sans la divulguer.",
-      "Le Trust « Satisfaction » dépend de ces avis.",
+    pointKeys: [
+      "rl2_training.module_relation_point_1",
+      "rl2_training.module_relation_point_2",
+      "rl2_training.module_relation_point_3",
+      "rl2_training.module_relation_point_4",
     ],
   },
   {
     key: "pidgin",
     emoji: "🗣️",
-    title: "Service en Pidgin",
+    titleKey: "rl2_training.module_pidgin_title",
     minutes: 16,
     isNew: true,
-    points: [
-      "Quelques phrases clés pour accueillir tous les acheteurs.",
-      "« How na » (Pidgin) pour accueillir.",
-      "Adapter la langue à la région (NW/SW anglophone).",
-      "Améliore l'expérience et les avis.",
+    pointKeys: [
+      "rl2_training.module_pidgin_point_1",
+      "rl2_training.module_pidgin_point_2",
+      "rl2_training.module_pidgin_point_3",
+      "rl2_training.module_pidgin_point_4",
     ],
   },
 ];
 
 function ModuleMeta({ module, mandatory }: { module: TrainingModule; mandatory: boolean }) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-semibold text-slate-500 dark:text-slate-400">
       <Clock3 size={13} className="text-slate-400" />
-      {module.minutes} min · +30 <span aria-hidden>🪙</span>
-      {mandatory ? <span className="text-red-500"> · obligatoire</span> : null}
+      {t("rl2_training.module_minutes", { minutes: module.minutes })} <span aria-hidden>🪙</span>
+      {mandatory ? <span className="text-red-500"> · {t("rl2_training.mandatory")}</span> : null}
     </div>
   );
 }
@@ -131,7 +133,9 @@ function ModuleDialog({
   onValidate: () => void;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [understood, setUnderstood] = useState(false);
+  const title = t(module.titleKey);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -151,7 +155,7 @@ function ModuleDialog({
       className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:p-4"
       role="dialog"
       aria-modal="true"
-      aria-label={module.title}
+      aria-label={title}
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -163,7 +167,7 @@ function ModuleDialog({
           <div>
             <h2 className="flex items-center gap-2 text-xl font-black leading-tight text-slate-950 dark:text-white">
               <span aria-hidden>{module.emoji}</span>
-              {module.title}
+              {title}
             </h2>
             <div className="mt-1">
               <ModuleMeta module={module} mandatory={mandatory} />
@@ -172,7 +176,7 @@ function ModuleDialog({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Fermer"
+            aria-label={t("rl2_training.close")}
             className="rounded-full bg-red-500 p-1.5 text-white transition hover:bg-red-600"
           >
             <X size={15} strokeWidth={3} />
@@ -181,17 +185,17 @@ function ModuleDialog({
 
         <div className="my-5 flex items-center gap-3">
           <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
-          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Points clés à retenir</span>
+          <span className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">{t("rl2_training.key_points_heading")}</span>
           <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" />
         </div>
 
         <ol className="space-y-2.5">
-          {module.points.map((point, index) => (
-            <li key={point} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800">
+          {module.pointKeys.map((pointKey, index) => (
+            <li key={pointKey} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-3.5 dark:bg-slate-800">
               <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">
                 {index + 1}
               </span>
-              <span className="text-sm leading-6 text-slate-700 dark:text-slate-200">{point}</span>
+              <span className="text-sm leading-6 text-slate-700 dark:text-slate-200">{t(pointKey)}</span>
             </li>
           ))}
         </ol>
@@ -201,7 +205,7 @@ function ModuleDialog({
             <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-950/40">
               <CheckCircle2 className="flex-shrink-0 text-emerald-600" size={18} />
               <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                Module déjà validé. Vous pouvez le revoir à tout moment.
+                {t("rl2_training.already_validated")}
               </p>
             </div>
             <button
@@ -209,7 +213,7 @@ function ModuleDialog({
               onClick={onClose}
               className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-700"
             >
-              Fermer
+              {t("rl2_training.close")}
             </button>
           </>
         ) : (
@@ -221,7 +225,7 @@ function ModuleDialog({
                 onChange={(event) => setUnderstood(event.target.checked)}
                 className="h-4 w-4 cursor-pointer accent-blue-600"
               />
-              J'ai lu et compris ce module
+              {t("rl2_training.understood_checkbox")}
             </label>
             <button
               type="button"
@@ -230,7 +234,7 @@ function ModuleDialog({
               className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-3.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <CheckCircle2 size={16} />
-              {busy ? "Validation..." : "Valider le module (+30 🪙)"}
+              {busy ? t("rl2_training.validating") : t("rl2_training.validate_module_button")}
             </button>
           </>
         )}
@@ -240,6 +244,7 @@ function ModuleDialog({
 }
 
 export default function RelayTraining({ onError }: { onError: (error: unknown) => void }) {
+  const { t } = useTranslation();
   const [state, setState] = useState<TrainingState | null>(null);
   const [openModule, setOpenModule] = useState<TrainingModule | null>(null);
   const [busy, setBusy] = useState(false);
@@ -271,7 +276,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
         body: JSON.stringify({ module_key: module.key }),
       });
       setState(updated);
-      setJustValidated(module.title);
+      setJustValidated(t(module.titleKey));
       setOpenModule(null);
     } catch (error) {
       onError(error);
@@ -287,9 +292,9 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
           <GraduationCap size={21} strokeWidth={2.4} />
         </div>
         <div>
-          <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">Formation continue</h2>
+          <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">{t("rl2_training.header_title")}</h2>
           <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-            Modules certifiants · +30 Avantages chacun · formation initiale 2 h obligatoire
+            {t("rl2_training.header_subtitle")}
           </p>
         </div>
       </section>
@@ -298,13 +303,13 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
         <div className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
           <p className="flex items-center gap-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
             <CheckCircle2 size={17} className="flex-shrink-0" />
-            Module « {justValidated} » validé · +{state?.points_per_module ?? 30} Avantages crédités.
+            {t("rl2_training.module_validated_notice", { title: justValidated, points: state?.points_per_module ?? 30 })}
           </p>
           <button
             type="button"
             onClick={() => setJustValidated(null)}
             className="rounded-lg p-1 text-emerald-700 hover:bg-emerald-100"
-            aria-label="Fermer"
+            aria-label={t("rl2_training.close")}
           >
             <X size={15} />
           </button>
@@ -314,39 +319,39 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
       <section className="grid gap-4 md:grid-cols-3">
         <article className="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white shadow-[0_14px_30px_rgba(30,64,175,.25)]">
           <div className="flex items-start justify-between gap-3">
-            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">Modules complétés</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">{t("rl2_training.completed_modules_label")}</span>
             <span aria-hidden className="text-lg">🎓</span>
           </div>
           <div className="mt-2 text-4xl font-black">
             {completed.length}
             <span className="text-xl text-blue-200/80">/{total}</span>
           </div>
-          <div className="mt-1 text-xs font-semibold text-blue-100/80">{progressPct} % du parcours</div>
+          <div className="mt-1 text-xs font-semibold text-blue-100/80">{t("rl2_training.progress_pct", { pct: progressPct })}</div>
         </article>
 
         <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-          <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Tronc obligatoire</span>
+          <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">{t("rl2_training.core_track_label")}</span>
           <div className="mt-2 text-4xl font-black text-slate-950 dark:text-white">
             {state?.core_completed ?? 0}/{state?.core_total ?? 3}
           </div>
-          <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">requis pour l'activation</div>
+          <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">{t("rl2_training.required_for_activation")}</div>
         </article>
 
         <article className="rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-900 p-5 text-white shadow-[0_14px_30px_rgba(30,64,175,.25)]">
           <div className="flex items-start justify-between gap-3">
-            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">Avantages gagnés</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">{t("rl2_training.advantages_earned_label")}</span>
             <span aria-hidden className="text-lg">🪙</span>
           </div>
           <div className="mt-2 text-4xl font-black">{state?.points ?? 0}</div>
-          <div className="mt-1 text-xs font-semibold text-blue-100/80">+{state?.points_per_module ?? 30} par module</div>
+          <div className="mt-1 text-xs font-semibold text-blue-100/80">{t("rl2_training.per_module", { points: state?.points_per_module ?? 30 })}</div>
         </article>
       </section>
 
       <Panel
-        kicker="Parcours"
-        title="Progression"
+        kicker={t("rl2_training.kicker_journey")}
+        title={t("rl2_training.progression_title")}
         action={
-          <StatusPill tone={coreDone ? "emerald" : "amber"}>{coreDone ? "Tronc validé" : "Tronc en cours"}</StatusPill>
+          <StatusPill tone={coreDone ? "emerald" : "amber"}>{coreDone ? t("rl2_training.core_validated") : t("rl2_training.core_in_progress")}</StatusPill>
         }
       >
         <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
@@ -356,8 +361,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
           />
         </div>
         <p className="mt-3 text-sm leading-6 text-slate-600 dark:text-slate-300">
-          La formation initiale de 2 h (réception, vérification CNI, sécurité du stockage) est obligatoire pour activer et
-          maintenir votre statut de partenaire.
+          {t("rl2_training.progression_description")}
         </p>
       </Panel>
 
@@ -380,10 +384,10 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-black leading-tight text-slate-950 dark:text-white">{module.title}</h3>
+                    <h3 className="font-black leading-tight text-slate-950 dark:text-white">{t(module.titleKey)}</h3>
                     {module.isNew && !done ? (
                       <span className="rounded-md border border-blue-200 px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider text-blue-700 dark:border-blue-800 dark:text-blue-300">
-                        Nouveau
+                        {t("rl2_training.new_badge")}
                       </span>
                     ) : null}
                   </div>
@@ -403,7 +407,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
                 }`}
               >
                 {done ? <RotateCcw size={15} /> : <Play size={15} />}
-                {done ? "Revoir le module" : "Démarrer le module"}
+                {done ? t("rl2_training.review_module") : t("rl2_training.start_module")}
               </button>
             </article>
           );

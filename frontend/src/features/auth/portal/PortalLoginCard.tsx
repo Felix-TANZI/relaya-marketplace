@@ -26,9 +26,9 @@ export default function PortalLoginCard({
       {!ctl.twoFA ? (
         <form onSubmit={ctl.handleSubmit} noValidate>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">
-            {content.card.title}
+            {ctl.t(content.card.titleKey)}
           </h1>
-          <p className="mt-1.5 text-sm text-gray-500 dark:text-white/60">{content.card.subtitle}</p>
+          <p className="mt-1.5 text-sm text-gray-500 dark:text-white/60">{ctl.t(content.card.subtitleKey)}</p>
 
           <div className="mt-6 space-y-3">
             <label className="relative block">
@@ -40,7 +40,7 @@ export default function PortalLoginCard({
                 autoComplete="username"
                 value={ctl.credentials.username}
                 onChange={ctl.handleChange}
-                placeholder="Adresse e-mail"
+                placeholder={ctl.t('cl6_portal_card.email_placeholder')}
                 disabled={ctl.loading}
                 required
                 className={field}
@@ -57,7 +57,7 @@ export default function PortalLoginCard({
                 autoComplete="current-password"
                 value={ctl.credentials.password}
                 onChange={ctl.handleChange}
-                placeholder="Mot de passe"
+                placeholder={ctl.t('cl6_portal_card.password_placeholder')}
                 disabled={ctl.loading}
                 required
                 className={`${field} pr-12`}
@@ -68,7 +68,7 @@ export default function PortalLoginCard({
                 onClick={() => ctl.setShowPassword(!ctl.showPassword)}
                 disabled={ctl.loading}
                 className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center text-gray-400 transition hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
-                aria-label={ctl.showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                aria-label={ctl.showPassword ? ctl.t('cl6_portal_card.hide_password') : ctl.t('cl6_portal_card.show_password')}
               >
                 {ctl.showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
               </button>
@@ -91,7 +91,7 @@ export default function PortalLoginCard({
               >
                 {ctl.remember && <Check size={11} strokeWidth={3.6} className="text-white" />}
               </span>
-              <span className="whitespace-nowrap">Se souvenir de moi</span>
+              <span className="whitespace-nowrap">{ctl.t('cl6_portal_card.remember_me')}</span>
             </button>
             <Link
               to="/forgot-password"
@@ -121,7 +121,7 @@ export default function PortalLoginCard({
           <div className="mt-4 flex items-center gap-3">
             <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
             <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-white/50">
-              ou continuer avec
+              {ctl.t('cl6_portal_card.or_continue_with')}
             </span>
             <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
           </div>
@@ -130,15 +130,15 @@ export default function PortalLoginCard({
 
           {content.card.registerPath ? (
             <p className="mt-5 text-center text-xs text-gray-500 dark:text-white/60">
-              Vous n'avez pas de compte ?{' '}
+              {ctl.t('cl6_portal_card.no_account_yet')}{' '}
               <Link to={content.card.registerPath} className="font-semibold" style={{ color: accent }}>
-                {content.card.registerLabel || "S'inscrire"}
+                {content.card.registerLabelKey ? ctl.t(content.card.registerLabelKey) : ctl.t('auth.register')}
               </Link>
             </p>
           ) : (
-            content.card.registerHint && (
+            content.card.registerHintKey && (
               <p className="mt-5 text-center text-xs text-gray-500 dark:text-white/60">
-                {content.card.registerHint}
+                {ctl.t(content.card.registerHintKey)}
               </p>
             )
           )}
@@ -153,13 +153,13 @@ export default function PortalLoginCard({
               <ShieldCheck size={20} />
             </span>
             <div>
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Vérification en deux étapes</h1>
-              <p className="text-xs text-gray-500 dark:text-white/60">Ce compte a la double authentification activée</p>
+              <h1 className="text-lg font-bold text-gray-900 dark:text-white">{ctl.t('cl6_portal_card.two_factor_title')}</h1>
+              <p className="text-xs text-gray-500 dark:text-white/60">{ctl.t('cl6_portal_card.two_factor_subtitle')}</p>
             </div>
           </div>
 
           <p className="mt-5 text-sm leading-6 text-gray-600 dark:text-white/70">
-            Un code à six chiffres a été envoyé à{' '}
+            {ctl.t('cl6_portal_card.two_factor_code_sent_to')}{' '}
             <span className="font-semibold text-gray-900 dark:text-white">{ctl.twoFA.email}</span>.
           </p>
 
@@ -186,7 +186,7 @@ export default function PortalLoginCard({
               <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
             ) : (
               <>
-                Vérifier et se connecter
+                {ctl.t('cl6_portal_card.verify_and_login')}
                 <ArrowRight size={16} />
               </>
             )}
@@ -194,7 +194,7 @@ export default function PortalLoginCard({
 
           <div className="mt-4 flex items-center justify-between text-xs">
             <button type="button" onClick={ctl.cancelTwoFA} className="font-medium text-gray-500 dark:text-white/60">
-              Changer de compte
+              {ctl.t('cl6_portal_card.change_account')}
             </button>
             <button
               type="button"
@@ -203,7 +203,7 @@ export default function PortalLoginCard({
               className="font-semibold disabled:opacity-50"
               style={{ color: accent }}
             >
-              {ctl.resending ? 'Envoi...' : 'Renvoyer le code'}
+              {ctl.resending ? ctl.t('cl6_portal_card.sending') : ctl.t('cl6_portal_card.resend_code')}
             </button>
           </div>
         </form>

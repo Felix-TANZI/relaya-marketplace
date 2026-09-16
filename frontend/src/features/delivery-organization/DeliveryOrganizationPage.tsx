@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { Capacitor } from "@capacitor/core";
 import EvidenceRequestInbox from "@/components/disputes/EvidenceRequestInbox";
 import AppDownloadBanner from "@/components/AppDownloadBanner";
@@ -189,306 +190,89 @@ interface OrganizationDispute {
   updated_at: string;
 }
 
-const copy = {
-  fr: {
-    shell: {
-      brand: "Organisation livraison",
-      space: "Espace entreprise partenaire",
-      status: "Statut partenaire",
-      profile: "Profil partenaire",
-      operationalData: "Données opérationnelles",
-      notConnected: "À connecter",
-      logout: "Se déconnecter",
-      profileMenu: "Menu profil",
-      openProfile: "Ouvrir le profil",
-      customerProfile: "Compte utilisateur",
-      close: "Fermer",
-    },
-    footer: [
-      "BelivaY Organisation Livraison v1.0 — Juillet 2026",
-      "Partenaire Indépendant · ANTIC · OHADA",
-      "Anonymat V5 ch.1",
-    ],
-    groups: {
-      pilotage: "Pilotage",
-      company: "Entreprise",
-      operations: "Opérations",
-      quality: "Qualité",
-      finance: "Finances",
-      support: "Support",
-    },
-    tabs: {
-      dashboard: "Tableau de bord",
-      contract: "Contrat & KYC",
-      fleet: "Flotte & livreurs",
-      missions: "Missions",
-      parcels: "Colis",
-      zones: "Zones & capacité",
-      pricing: "Prix & SLA",
-      proofs: "Preuves",
-      disputes: "Litiges",
-      performance: "Score qualité",
-      payments: "Règlements",
-      messages: "Messages",
-      settings: "Paramètres",
-    } satisfies Record<OrgTab, string>,
-  },
-  en: {
-    shell: {
-      brand: "Delivery organization",
-      space: "Partner company workspace",
-      status: "Partner status",
-      profile: "Partner profile",
-      operationalData: "Operational data",
-      notConnected: "To connect",
-      logout: "Log out",
-      profileMenu: "Profile menu",
-      openProfile: "Open profile",
-      customerProfile: "User account",
-      close: "Close",
-    },
-    footer: [
-      "BelivaY Delivery Organization v1.0 — July 2026",
-      "Independent partner · ANTIC · OHADA",
-      "Anonymity V5 ch.1",
-    ],
-    groups: {
-      pilotage: "Control",
-      company: "Company",
-      operations: "Operations",
-      quality: "Quality",
-      finance: "Finance",
-      support: "Support",
-    },
-    tabs: {
-      dashboard: "Dashboard",
-      contract: "Contract & KYC",
-      fleet: "Fleet & couriers",
-      missions: "Missions",
-      parcels: "Parcels",
-      zones: "Zones & capacity",
-      pricing: "Pricing & SLA",
-      proofs: "Proofs",
-      disputes: "Disputes",
-      performance: "Quality score",
-      payments: "Settlements",
-      messages: "Messages",
-      settings: "Settings",
-    } satisfies Record<OrgTab, string>,
-  },
-};
-
-const capabilitiesFr: Record<OrgTab, { title: string; description: string; methods: string[]; empty: string }> = {
+/**
+ * Cle de traduction par onglet : les libelles capabilities sont resolus via
+ * `t()` au rendu (dans le composant), jamais au niveau module — sinon ils ne
+ * suivraient pas un changement de langue en direct.
+ */
+const CAPABILITY_KEYS: Record<OrgTab, { titleKey: string; descriptionKey: string; emptyKey: string; methodKeys: string[] }> = {
   dashboard: {
-    title: "Vue d'ensemble operationnelle",
-    description: "Suivre l'etat global de l'entreprise partenaire : missions, livreurs, zones, blocages et qualite.",
-    empty: "Les statistiques opérationnelles seront visibles dès que les missions seront connectées.",
-    methods: [
-      "Voir les missions en cours et les missions bloquees.",
-      "Identifier les zones non couvertes ou en surcharge.",
-      "Suivre la disponibilite de la flotte et les alertes SLA.",
-    ],
+    titleKey: "do1_page.capabilities.dashboard.title",
+    descriptionKey: "do1_page.capabilities.dashboard.description",
+    emptyKey: "do1_page.capabilities.dashboard.empty",
+    methodKeys: ["do1_page.capabilities.dashboard.method_1", "do1_page.capabilities.dashboard.method_2", "do1_page.capabilities.dashboard.method_3"],
   },
   contract: {
-    title: "Contrat, KYC et validation entreprise",
-    description: "Garder les informations legales et contractuelles de l'organisation visibles pour le partenaire.",
-    empty: "Le dossier contrat/KYC utilise pour l'instant le profil créé par l'admin.",
-    methods: [
-      "Consulter le statut de validation de l'organisation.",
-      "Voir la reference contrat, les zones contractuelles et le responsable operationnel.",
-      "Preparrer les pieces KYC et informations administratives.",
-    ],
+    titleKey: "do1_page.capabilities.contract.title",
+    descriptionKey: "do1_page.capabilities.contract.description",
+    emptyKey: "do1_page.capabilities.contract.empty",
+    methodKeys: ["do1_page.capabilities.contract.method_1", "do1_page.capabilities.contract.method_2", "do1_page.capabilities.contract.method_3"],
   },
   fleet: {
-    title: "Flotte et livreurs rattaches",
-    description: "Gerer les livreurs et les vehicules appartenant a l'entreprise de livraison partenaire.",
-    empty: "Aucun module de création livreur par organisation n'est encore connecté.",
-    methods: [
-      "Lister les livreurs rattaches a l'organisation.",
-      "Suivre disponibilite, absence, conge et statut operationnel.",
-      "Affecter ou reaffecter les vehicules de l'entreprise aux livreurs disponibles.",
-    ],
+    titleKey: "do1_page.capabilities.fleet.title",
+    descriptionKey: "do1_page.capabilities.fleet.description",
+    emptyKey: "do1_page.capabilities.fleet.empty",
+    methodKeys: ["do1_page.capabilities.fleet.method_1", "do1_page.capabilities.fleet.method_2", "do1_page.capabilities.fleet.method_3"],
   },
   missions: {
-    title: "Missions de livraison",
-    description: "Piloter les missions assignees a l'entreprise, depuis la boutique jusqu'a la livraison.",
-    empty: "Aucune mission organisation n'est encore connectée.",
-    methods: [
-      "Voir les missions assignees, en route boutique, recuperees, en livraison et livrees.",
-      "Affecter une mission a un livreur compatible.",
-      "Suivre les echecs et demandes de reaffectation.",
-    ],
+    titleKey: "do1_page.capabilities.missions.title",
+    descriptionKey: "do1_page.capabilities.missions.description",
+    emptyKey: "do1_page.capabilities.missions.empty",
+    methodKeys: ["do1_page.capabilities.missions.method_1", "do1_page.capabilities.missions.method_2", "do1_page.capabilities.missions.method_3"],
   },
   parcels: {
-    title: "Colis et commandes",
-    description: "Consulter les colis confies a l'entreprise sans exposer les donnees client inutiles.",
-    empty: "Aucun flux colis organisation n'est encore connecté.",
-    methods: [
-      "Voir les colis par statut, boutique de depart et zone de destination.",
-      "Identifier les colis non affectes ou incompatibles capacite/transport.",
-      "Consulter uniquement les informations operationnelles necessaires.",
-    ],
+    titleKey: "do1_page.capabilities.parcels.title",
+    descriptionKey: "do1_page.capabilities.parcels.description",
+    emptyKey: "do1_page.capabilities.parcels.empty",
+    methodKeys: ["do1_page.capabilities.parcels.method_1", "do1_page.capabilities.parcels.method_2", "do1_page.capabilities.parcels.method_3"],
   },
   zones: {
-    title: "Zones, capacite et couverture",
-    description: "Controler la couverture geographique, les limites de capacite et les raisons de non-affectation.",
-    empty: "Les zones déclarées au profil sont visibles, les capacités fines restent à connecter.",
-    methods: [
-      "Declarer les zones couvertes par l'entreprise.",
-      "Suivre la capacite par zone, livreur et moyen de transport.",
-      "Rendre visibles les raisons de blocage : zone non couverte, capacite, indisponibilite.",
-    ],
+    titleKey: "do1_page.capabilities.zones.title",
+    descriptionKey: "do1_page.capabilities.zones.description",
+    emptyKey: "do1_page.capabilities.zones.empty",
+    methodKeys: ["do1_page.capabilities.zones.method_1", "do1_page.capabilities.zones.method_2", "do1_page.capabilities.zones.method_3"],
   },
   pricing: {
-    title: "Prix, SLA et grille operationnelle",
-    description: "Suivre les prix de livraison et les engagements de service attendus par BelivaY.",
-    empty: "La grille tarifaire et les SLA ne sont pas encore connectés.",
-    methods: [
-      "Voir les tarifs par zone, volume, poids ou moyen de transport.",
-      "Suivre les SLA de prise en charge et livraison.",
-      "Identifier les missions dont le prix ou la zone necessite une decision BelivaY.",
-    ],
+    titleKey: "do1_page.capabilities.pricing.title",
+    descriptionKey: "do1_page.capabilities.pricing.description",
+    emptyKey: "do1_page.capabilities.pricing.empty",
+    methodKeys: ["do1_page.capabilities.pricing.method_1", "do1_page.capabilities.pricing.method_2", "do1_page.capabilities.pricing.method_3"],
   },
   proofs: {
-    title: "Preuves de livraison",
-    description: "Centraliser les photos, scans, signatures, OTP et traces necessaires pour securiser la livraison.",
-    empty: "Les preuves de mission ne sont pas encore connectées à cette vue.",
-    methods: [
-      "Verifier les preuves de recuperation boutique.",
-      "Verifier les preuves de remise client.",
-      "Conserver les preuves utiles en cas de litige.",
-    ],
+    titleKey: "do1_page.capabilities.proofs.title",
+    descriptionKey: "do1_page.capabilities.proofs.description",
+    emptyKey: "do1_page.capabilities.proofs.empty",
+    methodKeys: ["do1_page.capabilities.proofs.method_1", "do1_page.capabilities.proofs.method_2", "do1_page.capabilities.proofs.method_3"],
   },
   disputes: {
-    title: "Litiges et incidents",
-    description: "Permettre a l'organisation de repondre aux litiges lorsque BelivaY l'autorise.",
-    empty: "Aucun litige organisation n'est encore connecté.",
-    methods: [
-      "Voir les litiges lies a ses missions.",
-      "Fournir les preuves livreur et commentaires operationnels.",
-      "Suivre les decisions BelivaY : livreur disculpe, remboursement, retour ou penalite.",
-    ],
+    titleKey: "do1_page.capabilities.disputes.title",
+    descriptionKey: "do1_page.capabilities.disputes.description",
+    emptyKey: "do1_page.capabilities.disputes.empty",
+    methodKeys: ["do1_page.capabilities.disputes.method_1", "do1_page.capabilities.disputes.method_2", "do1_page.capabilities.disputes.method_3"],
   },
   performance: {
-    title: "Score qualite partenaire",
-    description: "Mesurer la ponctualite, les echecs, les litiges et la qualite des preuves.",
-    empty: "Le score qualité sera calculé lorsque missions, preuves et litiges seront reliés.",
-    methods: [
-      "Suivre le taux de livraison reussie.",
-      "Suivre les retards, echecs, litiges et preuves manquantes.",
-      "Comparer la performance par zone et par livreur.",
-    ],
+    titleKey: "do1_page.capabilities.performance.title",
+    descriptionKey: "do1_page.capabilities.performance.description",
+    emptyKey: "do1_page.capabilities.performance.empty",
+    methodKeys: ["do1_page.capabilities.performance.method_1", "do1_page.capabilities.performance.method_2", "do1_page.capabilities.performance.method_3"],
   },
   payments: {
-    title: "Reglements partenaire",
-    description: "Raisonner le paiement au niveau de l'organisation, pas au niveau d'un livreur freelance.",
-    empty: "Le rapprochement financier partenaire n'est pas encore connecté.",
-    methods: [
-      "Voir les missions reglees et a regler.",
-      "Suivre les montants par periode, zone et statut.",
-      "Preparer le rapprochement Mobile Money ou virement partenaire.",
-    ],
+    titleKey: "do1_page.capabilities.payments.title",
+    descriptionKey: "do1_page.capabilities.payments.description",
+    emptyKey: "do1_page.capabilities.payments.empty",
+    methodKeys: ["do1_page.capabilities.payments.method_1", "do1_page.capabilities.payments.method_2", "do1_page.capabilities.payments.method_3"],
   },
   messages: {
-    title: "Communication operationnelle",
-    description: "Coordonner l'entreprise, ses livreurs et BelivaY pendant les missions actives.",
-    empty: "La messagerie organisation n'est pas encore connectée.",
-    methods: [
-      "Echanger avec BelivaY sur une mission ou un incident.",
-      "Suivre les conversations liees aux livreurs.",
-      "Garder la derniere recherche ou conversation recente visible.",
-    ],
+    titleKey: "do1_page.capabilities.messages.title",
+    descriptionKey: "do1_page.capabilities.messages.description",
+    emptyKey: "do1_page.capabilities.messages.empty",
+    methodKeys: ["do1_page.capabilities.messages.method_1", "do1_page.capabilities.messages.method_2", "do1_page.capabilities.messages.method_3"],
   },
   settings: {
-    title: "Parametres de l'espace",
-    description: "Gerer les preferences de base de l'espace organisation.",
-    empty: "Les préférences locales sont disponibles via les boutons du header.",
-    methods: [
-      "Changer la langue de l'interface.",
-      "Changer le theme clair/sombre.",
-      "Acceder au profil et se deconnecter.",
-    ],
-  },
-};
-
-const capabilitiesEn: Record<OrgTab, { title: string; description: string; methods: string[]; empty: string }> = {
-  dashboard: {
-    title: "Operational dashboard",
-    description: "Track the partner company's missions, couriers, zones, blocking reasons and quality.",
-    empty: "Operational statistics will appear once organization missions are connected.",
-    methods: ["View active and blocked missions.", "Identify uncovered or overloaded zones.", "Track fleet availability and SLA alerts."],
-  },
-  contract: {
-    title: "Contract, KYC and company validation",
-    description: "Keep legal and contractual information visible for the partner.",
-    empty: "The contract/KYC file currently uses the profile created by the admin.",
-    methods: ["Check organization validation status.", "View contract reference, contractual zones and operations manager.", "Prepare legal/KYC documents."],
-  },
-  fleet: {
-    title: "Fleet and attached couriers",
-    description: "Manage couriers and vehicles owned by the partner delivery company.",
-    empty: "Courier creation by organization is not connected yet.",
-    methods: ["List couriers attached to the organization.", "Track availability, absence, leave and operational status.", "Assign or reassign company-owned vehicles to available couriers."],
-  },
-  missions: {
-    title: "Delivery missions",
-    description: "Manage missions assigned to the company from pickup to delivery.",
-    empty: "No organization mission feed is connected yet.",
-    methods: ["View assigned, pickup, in-delivery and delivered missions.", "Assign a mission to a compatible courier.", "Track failures and reassignment requests."],
-  },
-  parcels: {
-    title: "Parcels and orders",
-    description: "View parcels entrusted to the company without exposing unnecessary customer data.",
-    empty: "No organization parcel feed is connected yet.",
-    methods: ["View parcels by status, pickup shop and destination zone.", "Identify unassigned or incompatible parcels.", "Show only required operational data."],
-  },
-  zones: {
-    title: "Zones, capacity and coverage",
-    description: "Control geographic coverage, capacity limits and non-assignment reasons.",
-    empty: "Profile zones are visible; detailed capacity rules remain to connect.",
-    methods: ["Declare company coverage zones.", "Track capacity by zone, courier and vehicle.", "Expose blocking reasons: uncovered zone, capacity, unavailability."],
-  },
-  pricing: {
-    title: "Pricing, SLA and operational grid",
-    description: "Track delivery prices and BelivaY service commitments.",
-    empty: "Pricing grid and SLA data are not connected yet.",
-    methods: ["View rates by zone, volume, weight or vehicle.", "Track pickup and delivery SLAs.", "Flag missions requiring BelivaY decision."],
-  },
-  proofs: {
-    title: "Delivery proofs",
-    description: "Centralize photos, scans, signatures, OTP and traces required to secure delivery.",
-    empty: "Mission proofs are not connected to this view yet.",
-    methods: ["Verify pickup proofs.", "Verify customer handoff proofs.", "Keep useful proof for disputes."],
-  },
-  disputes: {
-    title: "Disputes and incidents",
-    description: "Allow the organization to respond to disputes when BelivaY authorizes it.",
-    empty: "No organization dispute feed is connected yet.",
-    methods: ["View disputes linked to company missions.", "Provide courier proofs and operational notes.", "Track BelivaY decisions."],
-  },
-  performance: {
-    title: "Partner quality score",
-    description: "Measure punctuality, failures, disputes and proof quality.",
-    empty: "Quality score will be calculated when missions, proofs and disputes are connected.",
-    methods: ["Track successful delivery rate.", "Track delays, failures, disputes and missing proofs.", "Compare performance by zone and courier."],
-  },
-  payments: {
-    title: "Partner settlements",
-    description: "Handle payments at organization level, not as a freelance courier marketplace.",
-    empty: "Partner financial reconciliation is not connected yet.",
-    methods: ["View settled and pending missions.", "Track amounts by period, zone and status.", "Prepare Mobile Money or bank transfer reconciliation."],
-  },
-  messages: {
-    title: "Operational communication",
-    description: "Coordinate the company, its couriers and BelivaY during active missions.",
-    empty: "Organization messaging is not connected yet.",
-    methods: ["Discuss a mission or incident with BelivaY.", "Track conversations linked to couriers.", "Keep the latest search or conversation visible."],
-  },
-  settings: {
-    title: "Workspace settings",
-    description: "Manage base organization workspace preferences.",
-    empty: "Local preferences are available from the header buttons.",
-    methods: ["Change interface language.", "Switch light/dark theme.", "Open profile and log out."],
+    titleKey: "do1_page.capabilities.settings.title",
+    descriptionKey: "do1_page.capabilities.settings.description",
+    emptyKey: "do1_page.capabilities.settings.empty",
+    methodKeys: ["do1_page.capabilities.settings.method_1", "do1_page.capabilities.settings.method_2", "do1_page.capabilities.settings.method_3"],
   },
 };
 
@@ -516,30 +300,32 @@ function normalizeCoverageZones(zones: string[], city: string) {
   return uniqueZones.filter((zone) => zone.toUpperCase() !== normalizedCity);
 }
 
-function vehicleLabel(value?: string) {
-  const labels: Record<string, string> = {
-    MOTORBIKE: "Moto",
-    CAR: "Voiture",
-    VAN: "Fourgon",
-    TRUCK: "Camion",
-    BICYCLE: "Vélo",
+function vehicleLabel(value: string | undefined, t: TFunction) {
+  const keys: Record<string, string> = {
+    MOTORBIKE: "do1_page.common.vehicle_types.motorbike",
+    CAR: "do1_page.common.vehicle_types.car",
+    VAN: "do1_page.common.vehicle_types.van",
+    TRUCK: "do1_page.common.vehicle_types.truck",
+    BICYCLE: "do1_page.common.vehicle_types.bicycle",
   };
-  return labels[value || ""] || value || "-";
+  const key = keys[value || ""];
+  return key ? t(key) : value || "-";
 }
 
-function missionStatusLabel(status: string, fallback: string, locale: "fr" | "en") {
-  if (locale === "en") return fallback;
-  const labels: Record<string, string> = {
-    ASSIGNED: "Assignée",
-    PICKED_UP: "Collectée",
-    IN_TRANSIT: "En transit",
-    OUT_FOR_DELIVERY: "En livraison",
-    DELIVERED: "Livrée",
-    FAILED: "Échec",
-    RETURNED: "Retournée",
-    VALUE_LIMIT_EXCEEDED: "Valeur supérieure au plafond du livreur",
-  };
-  return labels[status] || fallback;
+const MISSION_STATUS_KEYS: Record<string, string> = {
+  ASSIGNED: "do1_page.common.mission_status.assigned",
+  PICKED_UP: "do1_page.common.mission_status.picked_up",
+  IN_TRANSIT: "do1_page.common.mission_status.in_transit",
+  OUT_FOR_DELIVERY: "do1_page.common.mission_status.out_for_delivery",
+  DELIVERED: "do1_page.common.mission_status.delivered",
+  FAILED: "do1_page.common.mission_status.failed",
+  RETURNED: "do1_page.common.mission_status.returned",
+  VALUE_LIMIT_EXCEEDED: "do1_page.common.mission_status.value_limit_exceeded",
+};
+
+function missionStatusLabel(status: string, fallback: string, t: TFunction) {
+  const key = MISSION_STATUS_KEYS[status];
+  return key ? t(key) : fallback;
 }
 
 function Panel({
@@ -575,12 +361,13 @@ function precisionTone(score: number): "emerald" | "amber" | "red" {
   return score >= 75 ? "emerald" : score >= 55 ? "amber" : "red";
 }
 
-function PrecisionHint({ precision, locale }: { precision?: Partial<LocationPrecisionResult>; locale: "fr" | "en" }) {
+function PrecisionHint({ precision }: { precision?: Partial<LocationPrecisionResult> }) {
+  const { t } = useTranslation();
   if (!precision || typeof precision.precisionScore !== "number") return null;
   return (
     <div className="mt-1 flex flex-wrap items-center gap-2">
       <StatusPill tone={precisionTone(precision.precisionScore)}>
-        {locale === "en" ? "Precision" : "Précision"} {precision.precisionScore}/100
+        {t("do1_page.common.precision_label")} {precision.precisionScore}/100
       </StatusPill>
       {precision.driverHint ? (
         <span className="text-xs font-semibold text-slate-500">{precision.driverHint}</span>
@@ -591,7 +378,7 @@ function PrecisionHint({ precision, locale }: { precision?: Partial<LocationPrec
 
 export default function DeliveryOrganizationPage() {
   const navigate = useNavigate();
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const [tab, setTab] = useState<OrgTab>(getInitialOrgTab);
@@ -622,24 +409,52 @@ export default function DeliveryOrganizationPage() {
   const [couriersLoading, setCouriersLoading] = useState(true);
   const [operationsLoading, setOperationsLoading] = useState(true);
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
-  const ui = copy[locale];
-  const capabilities = locale === "en" ? capabilitiesEn : capabilitiesFr;
   const orgProfile = user?.delivery_organization_profile;
-  const active = capabilities[tab];
+  const tabLabels: Record<OrgTab, string> = {
+    dashboard: t("do1_page.tabs.dashboard"),
+    contract: t("do1_page.tabs.contract"),
+    fleet: t("do1_page.tabs.fleet"),
+    missions: t("do1_page.tabs.missions"),
+    parcels: t("do1_page.tabs.parcels"),
+    zones: t("do1_page.tabs.zones"),
+    pricing: t("do1_page.tabs.pricing"),
+    proofs: t("do1_page.tabs.proofs"),
+    disputes: t("do1_page.tabs.disputes"),
+    performance: t("do1_page.tabs.performance"),
+    payments: t("do1_page.tabs.payments"),
+    messages: t("do1_page.tabs.messages"),
+    settings: t("do1_page.tabs.settings"),
+  };
+  const groupLabels = {
+    pilotage: t("do1_page.groups.pilotage"),
+    company: t("do1_page.groups.company"),
+    operations: t("do1_page.groups.operations"),
+    quality: t("do1_page.groups.quality"),
+    finance: t("do1_page.groups.finance"),
+    support: t("do1_page.groups.support"),
+  };
+  const footerLines = [t("do1_page.footer.line1"), t("do1_page.footer.line2"), t("do1_page.footer.line3")];
+  const activeCapabilityKeys = CAPABILITY_KEYS[tab];
+  const active = {
+    title: t(activeCapabilityKeys.titleKey),
+    description: t(activeCapabilityKeys.descriptionKey),
+    empty: t(activeCapabilityKeys.emptyKey),
+    methods: activeCapabilityKeys.methodKeys.map((key) => t(key)),
+  };
 
   useEffect(() => {
     setAvatarUrl(user?.avatar_url || "");
   }, [user?.avatar_url]);
 
   const organization = {
-    name: orgProfile?.company_name || ui.shell.brand,
-    manager: orgProfile?.manager_name || user?.first_name || user?.username || (locale === "en" ? "Manager" : "Responsable"),
-    city: orgProfile?.city || (locale === "en" ? "City to define" : "Ville à définir"),
-    phone: orgProfile?.phone || (locale === "en" ? "Phone to complete" : "Téléphone à compléter"),
+    name: orgProfile?.company_name || t("do1_page.shell.brand"),
+    manager: orgProfile?.manager_name || user?.first_name || user?.username || t("do1_page.common.manager_fallback"),
+    city: orgProfile?.city || t("do1_page.common.city_to_define"),
+    phone: orgProfile?.phone || t("do1_page.common.phone_to_complete"),
     zones: orgProfile?.zones || [],
-    address: orgProfile?.address || (locale === "en" ? "Address to complete" : "Adresse à compléter"),
-    contract: orgProfile?.contract_reference || (locale === "en" ? "Contract to define" : "Contrat à définir"),
-    status: orgProfile?.status === "APPROVED" ? (locale === "en" ? "Approved" : "Approuvée") : orgProfile?.status === "SUSPENDED" ? (locale === "en" ? "Suspended" : "Suspendue") : (locale === "en" ? "Pending" : "En attente"),
+    address: orgProfile?.address || t("do1_page.common.address_to_complete"),
+    contract: orgProfile?.contract_reference || t("do1_page.common.contract_to_define"),
+    status: orgProfile?.status === "APPROVED" ? t("do1_page.common.status_approved") : orgProfile?.status === "SUSPENDED" ? t("do1_page.common.status_suspended") : t("do1_page.common.status_pending"),
   };
 
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
@@ -667,9 +482,9 @@ export default function DeliveryOrganizationPage() {
         body: JSON.stringify({ availability_status: availabilityStatus }),
       });
       await refreshFleet();
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Courier availability updated." : "Disponibilité du livreur mise à jour." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.courier_availability_updated") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -686,9 +501,9 @@ export default function DeliveryOrganizationPage() {
       setVehicleLabelInput("");
       setVehicleRegistration("");
       await refreshFleet();
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Vehicle added to the company fleet." : "Véhicule ajouté au parc de l'entreprise." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.vehicle_added") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -702,9 +517,9 @@ export default function DeliveryOrganizationPage() {
         body: JSON.stringify({ vehicle_id: vehicleId, courier_id: courierId || null }),
       });
       await refreshFleet();
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Vehicle assignment updated." : "Affectation du véhicule mise à jour." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.vehicle_assignment_updated") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -721,9 +536,9 @@ export default function DeliveryOrganizationPage() {
       });
       setDisputeReplies((current) => ({ ...current, [disputeId]: "" }));
       setDisputes(await http<OrganizationDispute[]>("/api/auth/delivery-organization/disputes/open/"));
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Reply added to the dispute." : "Réponse ajoutée au dossier de litige." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.dispute_reply_added") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -735,10 +550,10 @@ export default function DeliveryOrganizationPage() {
     setOrganizationMessage(null);
     try {
       await http("/api/auth/delivery-organization/profile/", { method: "PATCH", body: JSON.stringify({ zones }) });
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Coverage zones updated." : "Zones de couverture enregistrées." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.zones_saved") });
       window.setTimeout(() => window.location.reload(), 500);
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
       setActionBusy(false);
     }
   };
@@ -751,9 +566,9 @@ export default function DeliveryOrganizationPage() {
       setCourierUsernameInput("");
       setShowAttachCourier(false);
       await refreshFleet();
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Courier attached to the organization." : "Livreur rattaché à l'organisation." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.courier_attached") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -775,9 +590,9 @@ export default function DeliveryOrganizationPage() {
       });
       setSupportSubject("");
       setSupportMessage("");
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Message sent to BelivaY support." : "Message transmis au support BelivaY." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.support_message_sent") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -793,9 +608,9 @@ export default function DeliveryOrganizationPage() {
     try {
       await http<ComplianceDocument>("/api/auth/compliance-documents/", { method: "POST", body });
       setComplianceDocuments(await http<ComplianceDocument[]>("/api/auth/compliance-documents/"));
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Document uploaded for BelivaY review." : "Document envoyé pour contrôle BelivaY." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.document_uploaded") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -813,9 +628,9 @@ export default function DeliveryOrganizationPage() {
         http<OrganizationSummary>("/api/auth/delivery-organization/summary/"),
       ]);
       setMissions(activeItems); setMissionQueue(queueItems); setSummary(summaryData);
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Mission assigned to the courier." : "Mission affectée au livreur." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.mission_assigned") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
     } finally {
       setActionBusy(false);
     }
@@ -831,9 +646,9 @@ export default function DeliveryOrganizationPage() {
         http<OrganizationSummary>("/api/auth/delivery-organization/summary/"),
       ]);
       setMissions(activeItems); setBourseTournees(bourseItems); setSummary(summaryData);
-      setOrganizationMessage({ tone: "success", text: locale === "en" ? "Package claimed — assigned to an available courier." : "Paquet revendiqué — affecté à un livreur disponible." });
+      setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.package_claimed") });
     } catch (error) {
-      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : "Action impossible." });
+      setOrganizationMessage({ tone: "error", text: error instanceof Error ? error.message : t("do1_page.common.action_impossible") });
       // Un autre transporteur a peut-être déjà revendiqué ce paquet : on rafraîchit la liste.
       http<BourseTournee[]>("/api/auth/delivery-organization/bourse/").then(setBourseTournees).catch(() => undefined);
     } finally {
@@ -843,7 +658,7 @@ export default function DeliveryOrganizationPage() {
   const tabIcon = ORG_NAV_ITEMS.find((item) => item.id === tab)?.icon ?? Gauge;
   const ActiveIcon = tabIcon;
   const displayZones = normalizeCoverageZones(organization.zones, organization.city);
-  const coveredZones = displayZones.length ? displayZones : [locale === "en" ? "No covered zone declared" : "Aucune zone couverte déclarée"];
+  const coveredZones = displayZones.length ? displayZones : [t("do1_page.common.no_covered_zone")];
   const approvedCouriers = summary?.couriers_approved ?? couriers.filter((courier) => courier.is_approved).length;
   const onlineCouriers = summary?.couriers_online ?? couriers.filter((courier) => courier.is_online).length;
   const activeMissionsCount = summary?.active_missions ?? missions.length;
@@ -885,12 +700,22 @@ export default function DeliveryOrganizationPage() {
   const hasAgencyAddress = Boolean(orgProfile?.address?.trim());
   const hasZones = organization.zones.length > 0;
   const hasFleet = approvedCouriers > 0;
-  const operationalStatus = isOrgSuspended
-    ? locale === "en" ? "Suspended" : "Suspendue"
+  // Le statut d'exploitation pilote a la fois le libelle affiche et la teinte
+  // du badge : on garde un identifiant stable (`operationalStatusKind`) pour la
+  // teinte, plutot que de comparer le texte traduit qui varie selon la langue.
+  const operationalStatusKind: "suspended" | "ready" | "configuring" = isOrgSuspended
+    ? "suspended"
     : isOrgApproved && hasContract && hasAgencyAddress && hasZones && hasFleet
-      ? locale === "en" ? "Ready" : "Opérationnelle"
-      : locale === "en" ? "Configuring" : "En configuration";
-  const operationalTone = isOrgSuspended ? "red" : operationalStatus === "Opérationnelle" || operationalStatus === "Ready" ? "emerald" : "amber";
+      ? "ready"
+      : "configuring";
+  const operationalStatus = t(
+    operationalStatusKind === "suspended"
+      ? "do1_page.common.status_suspended"
+      : operationalStatusKind === "ready"
+        ? "do1_page.common.status_operational"
+        : "do1_page.common.status_configuring",
+  );
+  const operationalTone = operationalStatusKind === "suspended" ? "red" : operationalStatusKind === "ready" ? "emerald" : "amber";
 
   /**
    * Reglages partages par la feuille ouverte depuis l'avatar et par l'onglet
@@ -925,22 +750,34 @@ export default function DeliveryOrganizationPage() {
     },
     onError: showOrganizationError,
     onSuccess: showOrganizationSuccess,
-    footer: ui.footer,
+    footer: footerLines,
   };
   const activationSteps = [
-    [locale === "en" ? "BelivaY validation" : "Validation BelivaY", isOrgApproved, organization.status],
-    [locale === "en" ? "Contract reference" : "Référence contrat", hasContract, organization.contract],
-    [locale === "en" ? "Covered zones" : "Zones couvertes", hasZones, hasZones ? displayZones.join(", ") : locale === "en" ? "To declare" : "À déclarer"],
-    [locale === "en" ? "Agency address" : "Adresse agence", hasAgencyAddress, organization.address],
-    [locale === "en" ? "Approved couriers" : "Livreurs approuvés", hasFleet, `${approvedCouriers}/${couriers.length}`],
+    [t("do1_page.contract.step_belivay_validation"), isOrgApproved, organization.status],
+    [t("do1_page.contract.contract_reference"), hasContract, organization.contract],
+    [t("do1_page.contract.kyc_coverage_label"), hasZones, hasZones ? displayZones.join(", ") : t("do1_page.contract.to_declare")],
+    [t("do1_page.contract.step_agency_address"), hasAgencyAddress, organization.address],
+    [t("do1_page.contract.step_approved_couriers"), hasFleet, `${approvedCouriers}/${couriers.length}`],
   ] as const;
   const kycItems = [
-    [locale === "en" ? "Legal company record" : "Registre de commerce", isOrgApproved ? locale === "en" ? "Verified" : "Vérifié" : locale === "en" ? "To send" : "À envoyer", locale === "en" ? "Legal document identifying the partner company." : "Document légal identifiant l'entreprise partenaire."],
-    [locale === "en" ? "Manager identity" : "Pièce du responsable", isOrgApproved ? locale === "en" ? "Verified" : "Vérifié" : locale === "en" ? "To send" : "À envoyer", locale === "en" ? "Identity document for the operations manager." : "Pièce d'identité du responsable opérationnel."],
-    [locale === "en" ? "Contract reference" : "Référence contrat", hasContract ? locale === "en" ? "Ready" : "Prêt" : locale === "en" ? "Missing" : "Manquant", locale === "en" ? "BelivaY contract used for pricing and payout rules." : "Contrat BelivaY utilisé pour la grille tarifaire et les paiements."],
-    [locale === "en" ? "Covered zones" : "Zones couvertes", hasZones ? locale === "en" ? "Ready" : "Prêt" : locale === "en" ? "Missing" : "Manquant", hasZones ? displayZones.join(", ") : locale === "en" ? "Declared delivery coverage for routing." : "Couverture déclarée pour le routage des missions."],
-    [locale === "en" ? "Payment method" : "Moyen de paiement", locale === "en" ? "To connect" : "À connecter", locale === "en" ? "Mobile Money or bank account for settlements." : "Compte Mobile Money ou virement pour les règlements."],
+    [t("do1_page.contract.kyc_company_record_label"), isOrgApproved ? "ok" : "to_send", t("do1_page.contract.kyc_company_record_body")],
+    [t("do1_page.contract.kyc_manager_id_label"), isOrgApproved ? "ok" : "to_send", t("do1_page.contract.kyc_manager_id_body")],
+    [t("do1_page.contract.contract_reference"), hasContract ? "ready" : "missing", t("do1_page.contract.kyc_contract_body")],
+    [t("do1_page.contract.kyc_coverage_label"), hasZones ? "ready" : "missing", hasZones ? displayZones.join(", ") : t("do1_page.contract.kyc_coverage_body_declared")],
+    [t("do1_page.contract.kyc_payment_label"), "to_connect", t("do1_page.contract.kyc_payment_body")],
   ] as const;
+  const kycStatusLabel = (kind: string) =>
+    kind === "ok" || kind === "ready"
+      ? kind === "ok"
+        ? t("do1_page.contract.kyc_verified")
+        : t("do1_page.contract.kyc_ready")
+      : kind === "to_send"
+        ? t("do1_page.contract.kyc_to_send")
+        : kind === "missing"
+          ? t("do1_page.contract.kyc_missing")
+          : t("do1_page.contract.kyc_to_connect");
+  const kycStatusTone = (kind: string): "emerald" | "slate" | "amber" =>
+    kind === "ok" || kind === "ready" ? "emerald" : kind === "to_connect" ? "slate" : "amber";
 
   const Field = ({ label, value, icon: Icon }: { label: string; value: string; icon: IconComponent }) => (
     <div className="flex gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -976,7 +813,7 @@ export default function DeliveryOrganizationPage() {
   );
 
   const renderSectionIntro = () => (
-    <Panel kicker={ui.tabs[tab]} title={active.title}>
+    <Panel kicker={tabLabels[tab]} title={active.title}>
       <div className="flex gap-4">
         <div className="flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-200">
           <ActiveIcon size={24} />
@@ -997,30 +834,26 @@ export default function DeliveryOrganizationPage() {
 
   const renderFleet = () => (
     <Panel
-      kicker={ui.tabs.fleet}
-      title={locale === "en" ? "Attached courier roster" : "Registre des livreurs rattachés"}
+      kicker={tabLabels.fleet}
+      title={t("do1_page.fleet.title")}
     >
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
         <p className="max-w-2xl text-sm font-semibold leading-6 text-cyan-950 dark:text-cyan-100">
-          {locale === "en"
-            ? "The partner company manages its couriers and owns the vehicles. A vehicle can be reassigned when a courier is absent, on leave or unavailable."
-            : "L'entreprise partenaire gère ses livreurs et possède les véhicules. Un véhicule peut être réaffecté lorsqu'un livreur est absent, en congé ou indisponible."}
+          {t("do1_page.fleet.banner_description")}
         </p>
         <button type="button" onClick={() => setShowAttachCourier((visible) => !visible)} className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white">
-          {locale === "en" ? "Add courier" : "Ajouter un livreur"}
+          {t("do1_page.fleet.add_courier_button")}
         </button>
       </div>
       {showAttachCourier ? (
         <div className="mb-4 flex flex-col gap-2 rounded-2xl border border-cyan-200 bg-white p-4 dark:border-cyan-800 dark:bg-slate-900 sm:flex-row sm:items-end">
-          <label className="min-w-0 flex-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{locale === "en" ? "Existing courier username" : "Identifiant d'un compte livreur existant"}<input value={courierUsernameInput} onChange={(event) => setCourierUsernameInput(event.target.value)} placeholder="livreur_mvan" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white" /></label>
-          <button type="button" onClick={attachCourier} disabled={actionBusy || !courierUsernameInput.trim()} className="rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{locale === "en" ? "Attach" : "Rattacher"}</button>
+          <label className="min-w-0 flex-1 text-xs font-black uppercase tracking-[0.12em] text-slate-500">{t("do1_page.fleet.existing_courier_label")}<input value={courierUsernameInput} onChange={(event) => setCourierUsernameInput(event.target.value)} placeholder="livreur_mvan" className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white" /></label>
+          <button type="button" onClick={attachCourier} disabled={actionBusy || !courierUsernameInput.trim()} className="rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{t("do1_page.fleet.attach_button")}</button>
         </div>
       ) : null}
       {couriers.length === 0 ? (
         <EmptyState>
-          {couriersLoading
-            ? locale === "en" ? "Loading couriers..." : "Chargement des livreurs..."
-            : locale === "en" ? "No courier is attached to this organization yet." : "Aucun livreur n'est encore rattaché à cette organisation."}
+          {couriersLoading ? t("do1_page.fleet.loading") : t("do1_page.fleet.empty")}
         </EmptyState>
       ) : (
         <>
@@ -1031,7 +864,7 @@ export default function DeliveryOrganizationPage() {
               destinationCity={missions[0].city}
               destinationPrecision={missions[0].address_precision}
               destinationLabel={`${missions[0].reference} · ${missions[0].delivery_address}`}
-              originLabel={missions[0].courier?.full_name || (locale === "en" ? "Assigned courier" : "Livreur affecté")}
+              originLabel={missions[0].courier?.full_name || t("do1_page.fleet.map_assigned_courier")}
               currentLocation={missions[0].latest_location
                 ? [missions[0].latest_location.latitude, missions[0].latest_location.longitude]
                 : undefined}
@@ -1044,16 +877,14 @@ export default function DeliveryOrganizationPage() {
             />
             <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-xs font-bold text-cyan-50">
               <span>{missions[0].latest_location
-                ? `${locale === "en" ? "Last GPS update" : "Dernière position GPS"}: ${new Date(missions[0].latest_location.captured_at).toLocaleString(locale === "en" ? "en-US" : "fr-FR")}`
-                : locale === "en" ? "Waiting for courier GPS position." : "En attente de la position GPS du livreur."}</span>
-              <span>{missions[0].location_history.length} {locale === "en" ? "captured points" : "points enregistrés"}</span>
+                ? `${t("do1_page.fleet.last_gps_update")}: ${new Date(missions[0].latest_location.captured_at).toLocaleString(locale === "en" ? "en-US" : "fr-FR")}`
+                : t("do1_page.fleet.waiting_gps")}</span>
+              <span>{missions[0].location_history.length} {t("do1_page.fleet.captured_points")}</span>
             </div>
           </div>
         ) : (
           <div className="mb-5 rounded-2xl border border-dashed border-cyan-200 bg-cyan-50 p-5 text-sm font-semibold text-cyan-950 dark:border-cyan-900 dark:bg-cyan-950/30 dark:text-cyan-100">
-            {locale === "en"
-              ? "No active mission to display on the map. The courier roster remains available below."
-              : "Aucune mission active à afficher sur la carte. Le registre des livreurs reste disponible ci-dessous."}
+            {t("do1_page.fleet.no_active_mission_map")}
           </div>
         )}
         <div className="grid gap-3 md:hidden">
@@ -1064,11 +895,11 @@ export default function DeliveryOrganizationPage() {
                   <h3 className="font-black text-slate-950 dark:text-white">{courier.full_name || courier.username}</h3>
                   <p className="mt-1 text-xs font-semibold text-slate-500">@{courier.username} · {courier.phone || courier.email}</p>
                 </div>
-                <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? locale === "en" ? "Online" : "En ligne" : locale === "en" ? "Offline" : "Hors ligne"}</StatusPill>
+                <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? t("do1_page.common.online") : t("do1_page.common.offline")}</StatusPill>
               </div>
               <div className="mt-4 grid gap-2">
-                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={vehicleLabel(courier.vehicle_type)} icon={Truck} />
-                <Field label={locale === "en" ? "City" : "Ville"} value={courier.city || "-"} icon={Map} />
+                <Field label={t("do1_page.common.assigned_vehicle")} value={vehicleLabel(courier.vehicle_type, t)} icon={Truck} />
+                <Field label={t("do1_page.common.city")} value={courier.city || "-"} icon={Map} />
               </div>
               <div className="mt-3 flex flex-wrap gap-2">
                 {(courier.zones.length ? normalizeCoverageZones(courier.zones, courier.city || organization.city) : ["-"]).map((zone) => (
@@ -1076,7 +907,7 @@ export default function DeliveryOrganizationPage() {
                 ))}
               </div>
               <select disabled={actionBusy} value={courier.availability_status || "AVAILABLE"} onChange={(event) => void updateCourierAvailability(courier.id, event.target.value as OrganizationCourier["availability_status"])} className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                <option value="AVAILABLE">Disponible</option><option value="ABSENT">Absent</option><option value="LEAVE">En congé</option><option value="SUSPENDED">Suspendu</option>
+                <option value="AVAILABLE">{t("do1_page.common.availability.available")}</option><option value="ABSENT">{t("do1_page.common.availability.absent")}</option><option value="LEAVE">{t("do1_page.common.availability.leave")}</option><option value="SUSPENDED">{t("do1_page.common.availability.suspended")}</option>
               </select>
             </article>
           ))}
@@ -1084,10 +915,10 @@ export default function DeliveryOrganizationPage() {
         <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
           <div className="min-w-[680px]">
             <div className="grid grid-cols-[1.2fr_.8fr_.8fr_.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-800/70">
-              <span>{locale === "en" ? "Courier" : "Livreur"}</span>
-              <span>{locale === "en" ? "Assigned vehicle" : "Véhicule affecté"}</span>
-              <span>{locale === "en" ? "Zones" : "Zones"}</span>
-              <span>{locale === "en" ? "Status" : "Statut"}</span>
+              <span>{t("do1_page.common.courier")}</span>
+              <span>{t("do1_page.common.assigned_vehicle")}</span>
+              <span>{t("do1_page.common.zones")}</span>
+              <span>{t("do1_page.common.status")}</span>
             </div>
             {couriers.map((courier) => (
               <div key={courier.id} className="grid grid-cols-[1.2fr_.8fr_.8fr_.8fr] gap-3 border-t border-slate-100 px-4 py-4 text-sm dark:border-slate-800">
@@ -1095,7 +926,7 @@ export default function DeliveryOrganizationPage() {
                   <div className="font-black text-slate-950 dark:text-white">{courier.full_name || courier.username}</div>
                   <div className="mt-1 text-xs font-semibold text-slate-500">@{courier.username} · {courier.phone || courier.email}</div>
                 </div>
-                <div className="font-bold text-slate-700 dark:text-slate-200">{vehicleLabel(courier.vehicle_type)}</div>
+                <div className="font-bold text-slate-700 dark:text-slate-200">{vehicleLabel(courier.vehicle_type, t)}</div>
                 <div className="flex flex-wrap gap-1">
                   {(courier.zones.length ? normalizeCoverageZones(courier.zones, courier.city || organization.city) : ["-"]).slice(0, 3).map((zone) => (
                     <span key={zone} className="rounded-full bg-cyan-100 px-2 py-1 text-[11px] font-bold text-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">{zone}</span>
@@ -1104,7 +935,7 @@ export default function DeliveryOrganizationPage() {
                 <div className="space-y-2">
                   <StatusPill tone={courier.availability_status === "AVAILABLE" ? "emerald" : "amber"}>{courier.availability_status || "AVAILABLE"}</StatusPill>
                   <select disabled={actionBusy} value={courier.availability_status || "AVAILABLE"} onChange={(event) => void updateCourierAvailability(courier.id, event.target.value as OrganizationCourier["availability_status"])} className="w-full rounded-xl border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-white">
-                    <option value="AVAILABLE">Disponible</option><option value="ABSENT">Absent</option><option value="LEAVE">En congé</option><option value="SUSPENDED">Suspendu</option>
+                    <option value="AVAILABLE">{t("do1_page.common.availability.available")}</option><option value="ABSENT">{t("do1_page.common.availability.absent")}</option><option value="LEAVE">{t("do1_page.common.availability.leave")}</option><option value="SUSPENDED">{t("do1_page.common.availability.suspended")}</option>
                   </select>
                 </div>
               </div>
@@ -1113,10 +944,10 @@ export default function DeliveryOrganizationPage() {
         </div>
         <div className="mt-4 hidden gap-3 md:grid md:grid-cols-4">
           {[
-            [locale === "en" ? "Approve / suspend" : "Approuver / suspendre", locale === "en" ? "Control which couriers can receive missions." : "Contrôler les livreurs autorisés à recevoir des missions."],
-            [locale === "en" ? "Absence / leave" : "Absence / congé", locale === "en" ? "Mark a courier unavailable without losing the vehicle." : "Marquer un livreur indisponible sans immobiliser le véhicule."],
-            [locale === "en" ? "Reassign vehicle" : "Réaffecter véhicule", locale === "en" ? "Move a company vehicle to another available courier." : "Affecter le véhicule de l'entreprise à un autre livreur disponible."],
-            [locale === "en" ? "Assign zones" : "Affecter les zones", locale === "en" ? "Limit missions to covered zones and vehicle capacity." : "Limiter les missions aux zones et capacités véhicule compatibles."],
+            [t("do1_page.fleet.cards.approve_suspend.title"), t("do1_page.fleet.cards.approve_suspend.body")],
+            [t("do1_page.fleet.cards.absence_leave.title"), t("do1_page.fleet.cards.absence_leave.body")],
+            [t("do1_page.fleet.cards.reassign_vehicle.title"), t("do1_page.fleet.cards.reassign_vehicle.body")],
+            [t("do1_page.fleet.cards.assign_zones.title"), t("do1_page.fleet.cards.assign_zones.body")],
           ].map(([title, body]) => (
             <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
               <div className="font-black text-slate-950 dark:text-white">{title}</div>
@@ -1131,9 +962,9 @@ export default function DeliveryOrganizationPage() {
 
   const renderMissions = () => (
     <div className="space-y-5">
-    <Panel kicker={locale === "en" ? "Freight exchange (V1.1)" : "Bourse aux courses (V1.1)"} title={locale === "en" ? "Published packages — first come, first served" : "Paquets publiés — premier arrivé, premier servi"}>
+    <Panel kicker={t("do1_page.missions.bourse_kicker")} title={t("do1_page.missions.bourse_title")}>
       {bourseTournees.length === 0 ? (
-        <EmptyState>{locale === "en" ? "No package published right now." : "Aucun paquet publié pour le moment."}</EmptyState>
+        <EmptyState>{t("do1_page.missions.bourse_empty")}</EmptyState>
       ) : (
         <div className="space-y-3">
           {bourseTournees.map((tournee) => (
@@ -1141,39 +972,37 @@ export default function DeliveryOrganizationPage() {
               <div>
                 <strong className="text-cyan-950 dark:text-cyan-100">{tournee.zone} · {tournee.city}</strong>
                 <p className="mt-1 text-xs text-cyan-900/70 dark:text-cyan-200/70">
-                  {tournee.colis_count} {locale === "en" ? "packages" : "colis"} · {tournee.period === "MORNING" ? (locale === "en" ? "Morning slot" : "Créneau matin") : (locale === "en" ? "Afternoon slot" : "Créneau après-midi")}
+                  {tournee.colis_count} {t("do1_page.missions.packages_label")} · {tournee.period === "MORNING" ? t("do1_page.missions.morning_slot") : t("do1_page.missions.afternoon_slot")}
                 </p>
               </div>
               <div className="text-sm font-semibold text-cyan-900 dark:text-cyan-100">
                 {new Date(tournee.slot_date).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}
               </div>
               <button type="button" onClick={() => void claimTournee(tournee.id)} disabled={actionBusy} className="rounded-xl bg-cyan-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">
-                {locale === "en" ? "Claim" : "Revendiquer"}
+                {t("do1_page.missions.claim_button")}
               </button>
             </div>
           ))}
         </div>
       )}
     </Panel>
-    <Panel kicker={locale === "en" ? "Dispatch queue" : "File d'affectation"} title={locale === "en" ? "Missions waiting for a courier" : "Missions en attente d'un livreur"}>
-      {missionQueue.length === 0 ? <EmptyState>{locale === "en" ? "No compatible mission is waiting." : "Aucune mission compatible en attente."}</EmptyState> : <div className="space-y-3">{missionQueue.map((mission) => (
+    <Panel kicker={t("do1_page.missions.dispatch_kicker")} title={t("do1_page.missions.dispatch_title")}>
+      {missionQueue.length === 0 ? <EmptyState>{t("do1_page.missions.dispatch_empty")}</EmptyState> : <div className="space-y-3">{missionQueue.map((mission) => (
         <div key={mission.id} className="grid gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30 md:grid-cols-[1fr_1.3fr_1fr_auto] md:items-center">
-          <div><strong className="text-amber-950 dark:text-amber-100">{mission.reference}</strong><p className="mt-1 text-xs text-amber-900/70">{missionStatusLabel(mission.status, mission.status_display, locale)} · {mission.order_total_xaf.toLocaleString("fr-FR")} FCFA</p></div>
+          <div><strong className="text-amber-950 dark:text-amber-100">{mission.reference}</strong><p className="mt-1 text-xs text-amber-900/70">{missionStatusLabel(mission.status, mission.status_display, t)} · {mission.order_total_xaf.toLocaleString("fr-FR")} FCFA</p></div>
           <div>
             <div className="text-sm font-semibold text-amber-900 dark:text-amber-100">{mission.city} · {mission.delivery_address}</div>
-            <PrecisionHint precision={mission.address_precision} locale={locale} />
+            <PrecisionHint precision={mission.address_precision} />
           </div>
-          <select value={missionAssignments[mission.id] || ""} onChange={(event) => setMissionAssignments((current) => ({ ...current, [mission.id]: event.target.value }))} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 dark:bg-slate-900 dark:text-white"><option value="">{locale === "en" ? "Choose courier" : "Choisir un livreur"}</option>{couriers.filter((courier) => courier.is_approved && courier.is_active && courier.availability_status === "AVAILABLE" && courier.assigned_vehicle).map((courier) => <option key={courier.id} value={courier.id}>{courier.full_name} · {courier.assigned_vehicle?.label}</option>)}</select>
-          <button type="button" onClick={() => void assignMission(mission.id)} disabled={actionBusy || !missionAssignments[mission.id]} className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{locale === "en" ? "Assign" : "Affecter"}</button>
+          <select value={missionAssignments[mission.id] || ""} onChange={(event) => setMissionAssignments((current) => ({ ...current, [mission.id]: event.target.value }))} className="rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm font-bold text-slate-900 dark:bg-slate-900 dark:text-white"><option value="">{t("do1_page.missions.choose_courier")}</option>{couriers.filter((courier) => courier.is_approved && courier.is_active && courier.availability_status === "AVAILABLE" && courier.assigned_vehicle).map((courier) => <option key={courier.id} value={courier.id}>{courier.full_name} · {courier.assigned_vehicle?.label}</option>)}</select>
+          <button type="button" onClick={() => void assignMission(mission.id)} disabled={actionBusy || !missionAssignments[mission.id]} className="rounded-xl bg-amber-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">{t("do1_page.missions.assign_button")}</button>
         </div>
       ))}</div>}
     </Panel>
-    <Panel kicker={ui.tabs.missions} title={locale === "en" ? "Active missions" : "Missions en cours"}>
+    <Panel kicker={tabLabels.missions} title={t("do1_page.missions.active_title")}>
       {missions.length === 0 ? (
         <EmptyState>
-          {operationsLoading
-            ? locale === "en" ? "Loading missions..." : "Chargement des missions..."
-            : locale === "en" ? "No active mission for this organization." : "Aucune mission en cours pour cette organisation."}
+          {operationsLoading ? t("do1_page.missions.active_loading") : t("do1_page.missions.active_empty")}
         </EmptyState>
       ) : (
         <>
@@ -1184,18 +1013,18 @@ export default function DeliveryOrganizationPage() {
                 <div>
                   <h3 className="font-black text-slate-950 dark:text-white">{mission.reference}</h3>
                   <p className="mt-1 text-xs font-semibold text-slate-500">{mission.city} · {mission.delivery_address}</p>
-                  <PrecisionHint precision={mission.address_precision} locale={locale} />
+                  <PrecisionHint precision={mission.address_precision} />
                 </div>
-                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
+                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, t)}</StatusPill>
               </div>
               <div className="mt-4 grid gap-2">
-                <Field label={locale === "en" ? "Courier" : "Livreur"} value={mission.courier?.full_name || "-"} icon={Users} />
-                <Field label={locale === "en" ? "Assigned vehicle" : "Véhicule affecté"} value={vehicleLabel(mission.courier?.vehicle_type)} icon={Truck} />
-                <Field label={locale === "en" ? "Updated" : "Mise à jour"} value={new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")} icon={Clock3} />
+                <Field label={t("do1_page.common.courier")} value={mission.courier?.full_name || "-"} icon={Users} />
+                <Field label={t("do1_page.common.assigned_vehicle")} value={vehicleLabel(mission.courier?.vehicle_type, t)} icon={Truck} />
+                <Field label={t("do1_page.common.updated")} value={new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")} icon={Clock3} />
               </div>
               {mission.vendor_names.length ? (
                 <p className="mt-3 rounded-2xl bg-white px-3 py-2 text-xs font-bold text-cyan-800 dark:bg-slate-900 dark:text-cyan-200">
-                  {locale === "en" ? "Origin" : "Origine"}: {mission.vendor_names.join(", ")}
+                  {t("do1_page.missions.origin_label")}: {mission.vendor_names.join(", ")}
                 </p>
               ) : null}
             </article>
@@ -1204,11 +1033,11 @@ export default function DeliveryOrganizationPage() {
         <div className="hidden overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800 md:block">
           <div className="min-w-[780px]">
             <div className="grid grid-cols-[.8fr_1fr_1.2fr_.9fr_.8fr] gap-3 bg-slate-50 px-4 py-3 text-xs font-black uppercase tracking-[0.12em] text-slate-400 dark:bg-slate-800/70">
-              <span>{locale === "en" ? "Mission" : "Mission"}</span>
-              <span>{locale === "en" ? "Courier" : "Livreur"}</span>
-              <span>{locale === "en" ? "Route" : "Trajet"}</span>
-              <span>{locale === "en" ? "Status" : "Statut"}</span>
-              <span>{locale === "en" ? "Updated" : "MAJ"}</span>
+              <span>{t("do1_page.missions.col_mission")}</span>
+              <span>{t("do1_page.common.courier")}</span>
+              <span>{t("do1_page.missions.col_route")}</span>
+              <span>{t("do1_page.common.status")}</span>
+              <span>{t("do1_page.missions.col_updated_short")}</span>
             </div>
             {missions.map((mission) => (
               <div key={mission.id} className="grid grid-cols-[.8fr_1fr_1.2fr_.9fr_.8fr] gap-3 border-t border-slate-100 px-4 py-4 text-sm dark:border-slate-800">
@@ -1220,10 +1049,10 @@ export default function DeliveryOrganizationPage() {
                 <div>
                   <div className="font-bold text-slate-800 dark:text-slate-100">{mission.city}</div>
                   <div className="mt-1 line-clamp-1 text-xs text-slate-500">{mission.delivery_address}</div>
-                  <PrecisionHint precision={mission.address_precision} locale={locale} />
+                  <PrecisionHint precision={mission.address_precision} />
                   {mission.vendor_names.length ? <div className="mt-1 text-xs font-semibold text-cyan-700 dark:text-cyan-300">{mission.vendor_names.join(", ")}</div> : null}
                 </div>
-                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
+                <StatusPill>{missionStatusLabel(mission.status, mission.status_display, t)}</StatusPill>
                 <div className="text-xs font-semibold text-slate-500">{new Date(mission.updated_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR")}</div>
               </div>
             ))}
@@ -1235,12 +1064,10 @@ export default function DeliveryOrganizationPage() {
   );
 
   const renderDisputes = () => (
-    <Panel kicker={ui.tabs.disputes} title={locale === "en" ? "Open logistics disputes" : "Litiges logistiques ouverts"}>
+    <Panel kicker={tabLabels.disputes} title={t("do1_page.disputes.title")}>
       {disputes.length === 0 ? (
         <EmptyState>
-          {operationsLoading
-            ? locale === "en" ? "Loading disputes..." : "Chargement des litiges..."
-            : locale === "en" ? "No open dispute is linked to this organization's missions." : "Aucun litige ouvert n'est lié aux missions de cette organisation."}
+          {operationsLoading ? t("do1_page.disputes.loading") : t("do1_page.disputes.empty")}
         </EmptyState>
       ) : (
         <div className="grid gap-3">
@@ -1252,12 +1079,10 @@ export default function DeliveryOrganizationPage() {
                     <h3 className="font-black text-slate-950 dark:text-white">{dispute.ref}</h3>
                     <StatusPill tone={dispute.status === "OPEN" ? "cyan" : "slate"}>{dispute.status_display}</StatusPill>
                     <StatusPill tone={dispute.organization_can_reply ? "emerald" : "slate"}>
-                      {dispute.organization_can_reply
-                        ? locale === "en" ? "Reply allowed" : "Réponse autorisée"
-                        : locale === "en" ? "Read only" : "Lecture seule"}
+                      {dispute.organization_can_reply ? t("do1_page.disputes.reply_allowed") : t("do1_page.disputes.read_only")}
                     </StatusPill>
                   </div>
-                  <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">{dispute.reason_display} · {dispute.mission_reference || `Commande #${dispute.order_id}`}</p>
+                  <p className="mt-2 text-sm font-bold text-slate-700 dark:text-slate-200">{dispute.reason_display} · {dispute.mission_reference || t("do1_page.disputes.order_ref", { id: dispute.order_id })}</p>
                   <p className="mt-2 line-clamp-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{dispute.description}</p>
                 </div>
                 <div className="text-right text-xs font-semibold text-slate-500">
@@ -1265,19 +1090,19 @@ export default function DeliveryOrganizationPage() {
                 </div>
               </div>
               <div className="mt-4 grid gap-3 text-sm md:grid-cols-4">
-                <Field label={locale === "en" ? "Courier" : "Livreur"} value={dispute.courier?.full_name || "-"} icon={Users} />
-                <Field label={locale === "en" ? "City" : "Ville"} value={dispute.city || "-"} icon={Map} />
-                <Field label={locale === "en" ? "Messages" : "Messages"} value={dispute.messages_count.toString()} icon={MessageSquareText} />
-                <Field label={locale === "en" ? "Evidence" : "Preuves"} value={dispute.evidences_count.toString()} icon={FileText} />
+                <Field label={t("do1_page.common.courier")} value={dispute.courier?.full_name || "-"} icon={Users} />
+                <Field label={t("do1_page.common.city")} value={dispute.city || "-"} icon={Map} />
+                <Field label={t("do1_page.common.messages")} value={dispute.messages_count.toString()} icon={MessageSquareText} />
+                <Field label={t("do1_page.common.evidence")} value={dispute.evidences_count.toString()} icon={FileText} />
               </div>
               <div className="mt-2">
                 <p className="text-xs font-semibold text-slate-500">{dispute.delivery_address}</p>
-                <PrecisionHint precision={dispute.address_precision} locale={locale} />
+                <PrecisionHint precision={dispute.address_precision} />
               </div>
               {dispute.organization_can_reply ? (
                 <div className="mt-4 flex flex-col gap-2 sm:flex-row">
-                  <textarea value={disputeReplies[dispute.id] || ""} onChange={(event) => setDisputeReplies((current) => ({ ...current, [dispute.id]: event.target.value }))} placeholder={locale === "en" ? "Add the organization's operational response" : "Ajouter la réponse opérationnelle de l'organisation"} className="min-h-20 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
-                  <button type="button" onClick={() => void replyToDispute(dispute.id)} disabled={actionBusy || !disputeReplies[dispute.id]?.trim()} className="self-end rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{locale === "en" ? "Send reply" : "Envoyer la réponse"}</button>
+                  <textarea value={disputeReplies[dispute.id] || ""} onChange={(event) => setDisputeReplies((current) => ({ ...current, [dispute.id]: event.target.value }))} placeholder={t("do1_page.disputes.reply_placeholder")} className="min-h-20 min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                  <button type="button" onClick={() => void replyToDispute(dispute.id)} disabled={actionBusy || !disputeReplies[dispute.id]?.trim()} className="self-end rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{t("do1_page.disputes.send_reply")}</button>
                 </div>
               ) : null}
             </article>
@@ -1296,20 +1121,20 @@ export default function DeliveryOrganizationPage() {
               quatre reperes poussaient le dispatch sous la ligne de flottaison.
               En 2x2 le responsable les embrasse d'un seul regard. */}
           <section className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-            <WorkCard title="SLA" value="48h" body={locale === "en" ? "BelivaY target for visible pickup and delivery tracking." : "Objectif BelivaY pour le suivi prise en charge et livraison."} icon={Clock3} />
-            <WorkCard title={locale === "en" ? "Fleet readiness" : "Disponibilité flotte"} value={`${approvedCouriers}/${couriers.length}`} body={locale === "en" ? "Approved couriers ready for assignment." : "Livreurs approuvés prêts à recevoir des missions."} icon={Users} />
-            <WorkCard title={locale === "en" ? "Active missions" : "Missions en cours"} value={activeMissionsCount.toString()} body={locale === "en" ? "Assigned to couriers from this organization." : "Assignées aux livreurs de cette organisation."} icon={Truck} />
-            <WorkCard title={locale === "en" ? "Open disputes" : "Litiges ouverts"} value={openDisputesCount.toString()} body={locale === "en" ? "Operational cases requiring BelivaY decision." : "Dossiers opérationnels en attente d'arbitrage BelivaY."} icon={AlertTriangle} />
+            <WorkCard title="SLA" value="48h" body={t("do1_page.dashboard.sla_body")} icon={Clock3} />
+            <WorkCard title={t("do1_page.dashboard.fleet_readiness_title")} value={`${approvedCouriers}/${couriers.length}`} body={t("do1_page.dashboard.fleet_readiness_body")} icon={Users} />
+            <WorkCard title={t("do1_page.dashboard.active_missions_title")} value={activeMissionsCount.toString()} body={t("do1_page.dashboard.active_missions_body")} icon={Truck} />
+            <WorkCard title={t("do1_page.dashboard.open_disputes_title")} value={openDisputesCount.toString()} body={t("do1_page.dashboard.open_disputes_body")} icon={AlertTriangle} />
           </section>
           <div className="grid gap-5 xl:grid-cols-[1.1fr_.9fr]">
-            <Panel kicker={locale === "en" ? "Live dispatch" : "Dispatch temps réel"} title={locale === "en" ? "Mission pipeline" : "Pipeline des missions"}>
+            <Panel kicker={t("do1_page.dashboard.live_dispatch_kicker")} title={t("do1_page.dashboard.mission_pipeline_title")}>
               {/* Deux etapes par rangee sur telephone : le pipeline reste lisible
                   d'un coup d'oeil au lieu de s'etirer sur trois ecrans. */}
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
                 {([
-                  [locale === "en" ? "Assigned" : "Assignées", assignedMissions, Truck],
-                  [locale === "en" ? "Picked up" : "Collectées", pickedUpMissions, PackageSearch],
-                  [locale === "en" ? "Last mile" : "Dernier km", outForDeliveryMissions, Route],
+                  [t("do1_page.dashboard.assigned_stage"), assignedMissions, Truck],
+                  [t("do1_page.dashboard.picked_up_stage"), pickedUpMissions, PackageSearch],
+                  [t("do1_page.dashboard.last_mile_stage"), outForDeliveryMissions, Route],
                 ] as Array<[string, number, IconComponent]>).map(([title, value, Icon]) => (
                   <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-800 sm:p-4">
                     <Icon className="h-4 w-4 text-cyan-700 dark:text-cyan-300 sm:h-5 sm:w-5" />
@@ -1325,48 +1150,48 @@ export default function DeliveryOrganizationPage() {
                       <div className="font-black text-slate-950 dark:text-white">{mission.reference}</div>
                       <div className="mt-1 text-sm text-slate-500">{mission.city} · {mission.courier?.full_name || "-"}</div>
                     </div>
-                    <StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
+                    <StatusPill>{missionStatusLabel(mission.status, mission.status_display, t)}</StatusPill>
                   </div>
                 ))}
-                {missions.length === 0 ? <EmptyState>{locale === "en" ? "No active mission for this organization yet." : "Aucune mission active pour cette organisation."}</EmptyState> : null}
+                {missions.length === 0 ? <EmptyState>{t("do1_page.dashboard.no_active_mission_yet")}</EmptyState> : null}
               </div>
             </Panel>
-            <Panel kicker={locale === "en" ? "Risk desk" : "Cellule risques"} title={locale === "en" ? "Disputes and blockers" : "Litiges et blocages"}>
+            <Panel kicker={t("do1_page.dashboard.risk_desk_kicker")} title={t("do1_page.dashboard.disputes_blockers_title")}>
               <div className="space-y-3">
                 {(disputes.length ? disputes.slice(0, 3) : []).map((dispute) => (
                   <div key={dispute.id} className="rounded-2xl border border-amber-100 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-950/20">
                     <div className="flex items-center justify-between gap-3">
                       <strong className="text-sm text-amber-950 dark:text-amber-100">{dispute.ref} · {dispute.reason_display}</strong>
                       <StatusPill tone={dispute.organization_can_reply ? "emerald" : "slate"}>
-                        {dispute.organization_can_reply ? "Action" : "Suivi"}
+                        {dispute.organization_can_reply ? t("do1_page.dashboard.action_label") : t("do1_page.dashboard.follow_label")}
                       </StatusPill>
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm leading-6 text-amber-900/75 dark:text-amber-100/75">{dispute.description}</p>
                   </div>
                 ))}
-                {disputes.length === 0 ? <EmptyState>{locale === "en" ? "No open logistics dispute." : "Aucun litige logistique ouvert."}</EmptyState> : null}
+                {disputes.length === 0 ? <EmptyState>{t("do1_page.dashboard.no_open_dispute")}</EmptyState> : null}
               </div>
             </Panel>
           </div>
           <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-            <Panel kicker={locale === "en" ? "Fleet control" : "Contrôle flotte"} title={locale === "en" ? "Courier availability" : "Disponibilité des livreurs"}>
+            <Panel kicker={t("do1_page.dashboard.fleet_control_kicker")} title={t("do1_page.dashboard.courier_availability_title")}>
               <div className="space-y-3">
                 {couriers.slice(0, 5).map((courier) => (
                   <div key={courier.id} className="flex items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                     <div>
                       <div className="font-black text-slate-950 dark:text-white">{courier.full_name}</div>
-                      <div className="mt-1 text-xs font-semibold text-slate-500">{courier.city} · {vehicleLabel(courier.vehicle_type)}</div>
+                      <div className="mt-1 text-xs font-semibold text-slate-500">{courier.city} · {vehicleLabel(courier.vehicle_type, t)}</div>
                     </div>
-                    <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? locale === "en" ? "Online" : "En ligne" : locale === "en" ? "Offline" : "Hors ligne"}</StatusPill>
+                    <StatusPill tone={courier.is_online ? "emerald" : "slate"}>{courier.is_online ? t("do1_page.common.online") : t("do1_page.common.offline")}</StatusPill>
                   </div>
                 ))}
-                {couriers.length === 0 ? <EmptyState>{locale === "en" ? "No courier attached yet." : "Aucun livreur rattaché pour le moment."}</EmptyState> : null}
+                {couriers.length === 0 ? <EmptyState>{t("do1_page.dashboard.no_courier_attached")}</EmptyState> : null}
               </div>
             </Panel>
-            <Panel kicker={locale === "en" ? "Coverage" : "Couverture"} title={locale === "en" ? "Zones and contract" : "Zones et contrat"}>
+            <Panel kicker={t("do1_page.dashboard.coverage_kicker")} title={t("do1_page.dashboard.zones_contract_title")}>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={locale === "en" ? "Contract" : "Contrat"} value={organization.contract} icon={FileText} />
-                <Field label={locale === "en" ? "Manager" : "Responsable"} value={organization.manager} icon={Users} />
+                <Field label={t("do1_page.common.contract")} value={organization.contract} icon={FileText} />
+                <Field label={t("do1_page.common.manager")} value={organization.manager} icon={Users} />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
                 {coveredZones.map((zone) => (
@@ -1382,45 +1207,43 @@ export default function DeliveryOrganizationPage() {
     if (tab === "contract") {
       return (
         <div className="grid gap-5 xl:grid-cols-[1fr_.9fr]">
-          <Panel kicker={ui.tabs.contract} title={locale === "en" ? "Company verification file" : "Dossier entreprise"}>
+          <Panel kicker={tabLabels.contract} title={t("do1_page.contract.company_file_title")}>
             <div className="mb-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div>
                   <div className="text-[11px] font-black uppercase tracking-[0.14em] text-cyan-700 dark:text-cyan-300">
-                    {locale === "en" ? "Activation status" : "Statut d'activation"}
+                    {t("do1_page.contract.activation_status_label")}
                   </div>
                   <p className="mt-1 text-sm font-semibold text-cyan-950 dark:text-cyan-100">
-                    {locale === "en"
-                      ? "The company can operate only after validation, zones, fleet and contract setup."
-                      : "L'entreprise ne peut opérer qu'après validation, zones, flotte et contrat configurés."}
+                    {t("do1_page.contract.activation_description")}
                   </p>
                 </div>
                 <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-2">
-              <Field label={locale === "en" ? "Legal name" : "Nom légal"} value={organization.name} icon={Building2} />
-              <Field label={locale === "en" ? "Contract reference" : "Référence contrat"} value={organization.contract} icon={FileText} />
-              <Field label={locale === "en" ? "Operations manager" : "Responsable opérationnel"} value={organization.manager} icon={Users} />
-              <Field label={locale === "en" ? "Operational address" : "Adresse opérationnelle"} value={organization.address} icon={Map} />
-              <Field label={locale === "en" ? "Phone" : "Téléphone"} value={organization.phone} icon={HeadphonesIcon} />
-              <Field label={locale === "en" ? "Validation" : "Validation"} value={organization.status} icon={ShieldCheck} />
+              <Field label={t("do1_page.contract.legal_name")} value={organization.name} icon={Building2} />
+              <Field label={t("do1_page.contract.contract_reference")} value={organization.contract} icon={FileText} />
+              <Field label={t("do1_page.contract.operations_manager")} value={organization.manager} icon={Users} />
+              <Field label={t("do1_page.contract.operational_address")} value={organization.address} icon={Map} />
+              <Field label={t("do1_page.common.phone")} value={organization.phone} icon={HeadphonesIcon} />
+              <Field label={t("do1_page.contract.validation_label")} value={organization.status} icon={ShieldCheck} />
             </div>
           </Panel>
-          <Panel kicker="KYC" title={locale === "en" ? "Compliance checklist" : "Checklist conformité"}>
+          <Panel kicker="KYC" title={t("do1_page.contract.kyc_title")}>
             <div className="space-y-3">
-              {kycItems.map(([label, status, body], index) => {
+              {kycItems.map(([label, statusKind, body], index) => {
                 const documentType = ["COMPANY_RECORD", "MANAGER_ID", "CONTRACT", "COVERAGE", "PAYOUT_ACCOUNT"][index];
                 const uploaded = complianceDocuments.find((document) => document.document_type === documentType);
                 return (
                 <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <span className="font-bold text-slate-800 dark:text-slate-100">{label}</span>
-                    <StatusPill tone={["Vérifié", "Verified", "Prêt", "Ready"].includes(status) ? "emerald" : status === "À connecter" || status === "To connect" ? "slate" : "amber"}>{status}</StatusPill>
+                    <StatusPill tone={kycStatusTone(statusKind)}>{kycStatusLabel(statusKind)}</StatusPill>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body}</p>
                   <label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl border border-cyan-200 bg-white px-4 py-2 text-sm font-black text-cyan-700 dark:border-cyan-800 dark:bg-slate-900 dark:text-cyan-200">
-                    {uploaded ? `${locale === "en" ? "Uploaded" : "Envoyé"} · ${uploaded.status}` : locale === "en" ? "Send document" : "Envoyer le document"}
+                    {uploaded ? `${t("do1_page.contract.uploaded_label")} · ${uploaded.status}` : t("do1_page.contract.send_document_label")}
                     <input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" className="sr-only" disabled={actionBusy} onChange={(event) => void uploadComplianceDocument(documentType, event.target.files?.[0])} />
                   </label>
                 </div>
@@ -1429,7 +1252,7 @@ export default function DeliveryOrganizationPage() {
             </div>
           </Panel>
           <div className="xl:col-span-2">
-            <Panel kicker={locale === "en" ? "Activation chain" : "Chaîne d'activation"} title={locale === "en" ? "What still blocks operations" : "Ce qui conditionne les opérations"}>
+            <Panel kicker={t("do1_page.contract.activation_chain_kicker")} title={t("do1_page.contract.activation_chain_title")}>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
                 {activationSteps.map(([label, ok, detail]) => (
                   <div key={label} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
@@ -1451,29 +1274,29 @@ export default function DeliveryOrganizationPage() {
       return (
         <div className="space-y-5">
           <section className="grid grid-cols-3 gap-2 sm:gap-4">
-            <WorkCard title={locale === "en" ? "Total couriers" : "Livreurs total"} value={couriers.length.toString()} body={locale === "en" ? "People attached to this organization." : "Personnes rattachées à cette organisation."} icon={Users} />
-            <WorkCard title={locale === "en" ? "Approved" : "Approuvés"} value={approvedCouriers.toString()} body={locale === "en" ? "Allowed to receive delivery missions." : "Autorisés à recevoir des missions."} icon={ShieldCheck} />
-            <WorkCard title={locale === "en" ? "Online" : "En ligne"} value={onlineCouriers.toString()} body={locale === "en" ? "Live availability will update from courier app." : "La disponibilité viendra de l'application livreur."} icon={Truck} />
+            <WorkCard title={t("do1_page.fleet.total_couriers_title")} value={couriers.length.toString()} body={t("do1_page.fleet.total_couriers_body")} icon={Users} />
+            <WorkCard title={t("do1_page.fleet.approved_title")} value={approvedCouriers.toString()} body={t("do1_page.fleet.approved_body")} icon={ShieldCheck} />
+            <WorkCard title={t("do1_page.fleet.online_title")} value={onlineCouriers.toString()} body={t("do1_page.fleet.online_body")} icon={Truck} />
           </section>
-          <Panel kicker={locale === "en" ? "Company assets" : "Actifs de l'entreprise"} title={locale === "en" ? "Vehicle pool" : "Parc véhicules"}>
+          <Panel kicker={t("do1_page.fleet.company_assets_kicker")} title={t("do1_page.fleet.vehicle_pool_title")}>
             <div className="grid gap-3 lg:grid-cols-[.85fr_1.15fr]">
               <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/30">
-                <h3 className="font-black text-cyan-950 dark:text-cyan-100">{locale === "en" ? "Add a company vehicle" : "Ajouter un véhicule d'entreprise"}</h3>
+                <h3 className="font-black text-cyan-950 dark:text-cyan-100">{t("do1_page.fleet.add_vehicle_title")}</h3>
                 <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
-                  <input value={vehicleLabelInput} onChange={(event) => setVehicleLabelInput(event.target.value)} placeholder={locale === "en" ? "Vehicle label" : "Nom du véhicule"} className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 font-semibold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
-                  <input value={vehicleRegistration} onChange={(event) => setVehicleRegistration(event.target.value.toUpperCase())} placeholder="Immatriculation" className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 font-semibold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
+                  <input value={vehicleLabelInput} onChange={(event) => setVehicleLabelInput(event.target.value)} placeholder={t("do1_page.fleet.vehicle_label_placeholder")} className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 font-semibold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
+                  <input value={vehicleRegistration} onChange={(event) => setVehicleRegistration(event.target.value.toUpperCase())} placeholder={t("do1_page.fleet.registration_placeholder")} className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 font-semibold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
                   <select value={vehicleTypeInput} onChange={(event) => setVehicleTypeInput(event.target.value)} className="rounded-xl border border-cyan-200 bg-white px-3 py-2.5 font-semibold text-slate-950 outline-none dark:bg-slate-900 dark:text-white">
-                    <option value="MOTORBIKE">Moto</option><option value="CAR">Voiture</option><option value="TRICYCLE">Tricycle</option><option value="VAN">Camionnette</option><option value="BIKE">Vélo</option>
+                    <option value="MOTORBIKE">{t("do1_page.fleet.vehicle_options.motorbike")}</option><option value="CAR">{t("do1_page.fleet.vehicle_options.car")}</option><option value="TRICYCLE">{t("do1_page.fleet.vehicle_options.tricycle")}</option><option value="VAN">{t("do1_page.fleet.vehicle_options.van")}</option><option value="BIKE">{t("do1_page.fleet.vehicle_options.bike")}</option>
                   </select>
-                  <button type="button" onClick={createVehicle} disabled={actionBusy || !vehicleLabelInput.trim() || !vehicleRegistration.trim()} className="rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{locale === "en" ? "Add vehicle" : "Ajouter au parc"}</button>
+                  <button type="button" onClick={createVehicle} disabled={actionBusy || !vehicleLabelInput.trim() || !vehicleRegistration.trim()} className="rounded-xl bg-cyan-700 px-4 py-2.5 text-sm font-black text-white disabled:opacity-50">{t("do1_page.fleet.add_vehicle_button")}</button>
                 </div>
               </div>
               <div className="space-y-2">
-                {vehicles.length === 0 ? <EmptyState>{locale === "en" ? "No company vehicle registered." : "Aucun véhicule d'entreprise enregistré."}</EmptyState> : vehicles.map((vehicle) => (
+                {vehicles.length === 0 ? <EmptyState>{t("do1_page.fleet.no_vehicle_registered")}</EmptyState> : vehicles.map((vehicle) => (
                   <div key={vehicle.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900 sm:grid-cols-[1fr_1fr] sm:items-center">
-                    <div><div className="font-black text-slate-950 dark:text-white">{vehicle.label} · {vehicle.registration}</div><div className="mt-1 text-xs font-semibold text-slate-500">{vehicleLabel(vehicle.vehicle_type)}</div></div>
+                    <div><div className="font-black text-slate-950 dark:text-white">{vehicle.label} · {vehicle.registration}</div><div className="mt-1 text-xs font-semibold text-slate-500">{vehicleLabel(vehicle.vehicle_type, t)}</div></div>
                     <select disabled={actionBusy} value={vehicle.assigned_courier?.id || ""} onChange={(event) => void assignVehicle(vehicle.id, event.target.value)} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-bold text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
-                      <option value="">{locale === "en" ? "Unassigned" : "Non affecté"}</option>
+                      <option value="">{t("do1_page.fleet.unassigned")}</option>
                       {couriers.filter((courier) => courier.is_approved && courier.is_active && courier.availability_status === "AVAILABLE").map((courier) => <option key={courier.id} value={courier.id}>{courier.full_name}</option>)}
                     </select>
                   </div>
@@ -1497,27 +1320,25 @@ export default function DeliveryOrganizationPage() {
       return (
         <div className="space-y-5">
           {renderSectionIntro()}
-          <Panel kicker={ui.tabs.zones} title={locale === "en" ? "Coverage declared by the partner" : "Couverture déclarée par l'entreprise"}>
+          <Panel kicker={tabLabels.zones} title={t("do1_page.zones.coverage_title")}>
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 dark:border-cyan-900 dark:bg-cyan-950/40">
               <p className="max-w-2xl text-sm font-semibold leading-6 text-cyan-950 dark:text-cyan-100">
-                {locale === "en"
-                  ? "Zones drive routing, courier compatibility and mission blocking reasons."
-                  : "Les zones pilotent le routage, la compatibilité livreur et les raisons de blocage mission."}
+                {t("do1_page.zones.banner_description")}
               </p>
               <div className="flex min-w-[280px] flex-1 gap-2 sm:max-w-xl">
-                <input value={zonesInput} onChange={(event) => setZonesInput(event.target.value)} placeholder={locale === "en" ? "Mvan, Bastos, Akwa" : "Mvan, Bastos, Akwa"} className="min-w-0 flex-1 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none dark:bg-slate-900 dark:text-white" />
+                <input value={zonesInput} onChange={(event) => setZonesInput(event.target.value)} placeholder={t("do1_page.zones.zone_input_placeholder")} className="min-w-0 flex-1 rounded-xl border border-cyan-200 bg-white px-3 py-2 text-sm font-semibold text-slate-900 outline-none dark:bg-slate-900 dark:text-white" />
                 <button type="button" onClick={saveZones} disabled={actionBusy || !zonesInput.trim()} className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white disabled:opacity-50">
-                  {locale === "en" ? "Save" : "Enregistrer"}
+                  {t("do1_page.common.save")}
                 </button>
               </div>
             </div>
             <div className="grid gap-3 md:grid-cols-3">
-              {(displayZones.length ? displayZones : [locale === "en" ? "No zone declared" : "Aucune zone déclarée"]).map((zone) => (
+              {(displayZones.length ? displayZones : [t("do1_page.zones.no_zone_declared")]).map((zone) => (
                 <div key={zone} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                   <Map className="text-cyan-700 dark:text-cyan-300" size={20} />
                   <div className="mt-3 font-black text-slate-950 dark:text-white">{zone}</div>
                   <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">
-                    {locale === "en" ? "Capacity, vehicle rules and attached couriers remain to connect." : "Capacité, moyens compatibles et livreurs rattachés restent à connecter."}
+                    {t("do1_page.zones.capacity_note")}
                   </p>
                 </div>
               ))}
@@ -1531,27 +1352,25 @@ export default function DeliveryOrganizationPage() {
       return (
         <div className="space-y-5">
           {renderSectionIntro()}
-          <Panel kicker={ui.tabs.pricing} title={locale === "en" ? "BelivaY contract pricing grid" : "Grille tarifaire contractuelle BelivaY"}>
+          <Panel kicker={tabLabels.pricing} title={t("do1_page.pricing.grid_title")}>
             <div className="rounded-2xl border border-cyan-100 bg-cyan-50 p-5 dark:border-cyan-900 dark:bg-cyan-950/40">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <h3 className="font-black text-cyan-950 dark:text-cyan-50">
-                    {hasContract ? organization.contract : locale === "en" ? "Contract pending" : "Contrat en attente"}
+                    {hasContract ? organization.contract : t("do1_page.pricing.contract_pending")}
                   </h3>
                   <p className="mt-2 max-w-3xl text-sm leading-6 text-cyan-950/75 dark:text-cyan-100/80">
-                    {locale === "en"
-                      ? "The partner views the negotiated grid in read-only mode. BelivaY defines prices by contract, zone, package profile and service level."
-                      : "Le partenaire consulte la grille négociée en lecture seule. BelivaY fixe les prix par contrat, zone, profil colis et niveau de service."}
+                    {t("do1_page.pricing.banner_description")}
                   </p>
                 </div>
-                <StatusPill tone={hasContract ? "emerald" : "amber"}>{hasContract ? locale === "en" ? "Active" : "Active" : locale === "en" ? "Pending" : "En attente"}</StatusPill>
+                <StatusPill tone={hasContract ? "emerald" : "amber"}>{hasContract ? t("do1_page.pricing.active_label") : t("do1_page.common.status_pending")}</StatusPill>
               </div>
             </div>
             <div className="mt-4 grid gap-3 md:grid-cols-3">
               {[
-                [locale === "en" ? "Zone rates" : "Tarifs par zone", locale === "en" ? "Waiting for BelivaY pricing data." : "En attente des données tarifaires BelivaY."],
-                ["SLA", locale === "en" ? "Pickup and delivery commitments by contract." : "Engagements de collecte et remise selon le contrat."],
-                [locale === "en" ? "Exceptions" : "Exceptions", locale === "en" ? "Missions requiring BelivaY decision." : "Missions nécessitant une décision BelivaY."],
+                [t("do1_page.pricing.zone_rates_title"), t("do1_page.pricing.zone_rates_body")],
+                ["SLA", t("do1_page.pricing.sla_body")],
+                [t("do1_page.pricing.exceptions_title"), t("do1_page.pricing.exceptions_body")],
               ].map(([title, body]) => (
                 <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                   <div className="font-black text-slate-950 dark:text-white">{title}</div>
@@ -1573,8 +1392,8 @@ export default function DeliveryOrganizationPage() {
             onOpenSettings={() => setTab("settings")}
           />
           <Panel
-            kicker={locale === "en" ? "Payment method" : "Moyen de paiement"}
-            title={locale === "en" ? "Settlement account" : "Compte de règlement"}
+            kicker={t("do1_page.payments.payment_method_kicker")}
+            title={t("do1_page.payments.settlement_account_title")}
           >
             <PayoutAccountVerificationCard
               ownerRole="DELIVERY_ORGANIZATION"
@@ -1590,12 +1409,12 @@ export default function DeliveryOrganizationPage() {
         <div className="space-y-5">
           {renderSectionIntro()}
           <div className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-            <Panel kicker={ui.tabs.messages} title={locale === "en" ? "Conversation channels" : "Canaux de conversation"}>
+            <Panel kicker={tabLabels.messages} title={t("do1_page.messages_tab.channels_title")}>
               <div className="space-y-3">
                 {[
-                  [locale === "en" ? "BelivaY operations" : "Opérations BelivaY", locale === "en" ? "Contract, mission and incident coordination." : "Coordination contrat, mission et incident."],
-                  [locale === "en" ? "Courier threads" : "Fils livreurs", locale === "en" ? "Messages linked to attached couriers." : "Messages liés aux livreurs rattachés."],
-                  [locale === "en" ? "Incident notes" : "Notes incidents", locale === "en" ? "Notes attached to disputes and exceptions." : "Notes attachées aux litiges et exceptions."],
+                  [t("do1_page.messages_tab.belivay_ops_title"), t("do1_page.messages_tab.belivay_ops_body")],
+                  [t("do1_page.messages_tab.courier_threads_title"), t("do1_page.messages_tab.courier_threads_body")],
+                  [t("do1_page.messages_tab.incident_notes_title"), t("do1_page.messages_tab.incident_notes_body")],
                 ].map(([title, body]) => (
                   <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
                     <div className="font-black text-slate-950 dark:text-white">{title}</div>
@@ -1604,13 +1423,13 @@ export default function DeliveryOrganizationPage() {
                 ))}
               </div>
             </Panel>
-            <Panel kicker={locale === "en" ? "Composer" : "Composer"} title={locale === "en" ? "New message" : "Nouveau message"}>
+            <Panel kicker={t("do1_page.messages_tab.composer_kicker")} title={t("do1_page.messages_tab.new_message_title")}>
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
                 <MessageSquareText className="text-cyan-700 dark:text-cyan-300" />
-                <input value={supportSubject} onChange={(event) => setSupportSubject(event.target.value)} placeholder={locale === "en" ? "Subject" : "Objet"} className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
-                <textarea value={supportMessage} onChange={(event) => setSupportMessage(event.target.value)} placeholder={locale === "en" ? "Describe the mission, incident or request" : "Décrivez la mission, l'incident ou la demande"} className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                <input value={supportSubject} onChange={(event) => setSupportSubject(event.target.value)} placeholder={t("do1_page.messages_tab.subject_placeholder")} className="mt-3 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
+                <textarea value={supportMessage} onChange={(event) => setSupportMessage(event.target.value)} placeholder={t("do1_page.messages_tab.describe_placeholder")} className="mt-2 min-h-32 w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-white" />
                 <button type="button" onClick={sendSupportMessage} disabled={actionBusy || supportSubject.trim().length < 3 || supportMessage.trim().length < 10} className="mt-3 rounded-xl bg-cyan-700 px-4 py-2 text-sm font-black text-white disabled:opacity-50">
-                  {locale === "en" ? "Send to support" : "Envoyer au support"}
+                  {t("do1_page.messages_tab.send_to_support")}
                 </button>
               </div>
             </Panel>
@@ -1622,19 +1441,19 @@ export default function DeliveryOrganizationPage() {
     if (tab === "proofs" || tab === "parcels" || tab === "performance") {
       const configs: Array<[string, IconComponent, string]> = {
         parcels: [
-          [locale === "en" ? "Pickup queue" : "File collecte", PackageSearch, locale === "en" ? "Vendor or relay pickup parcels." : "Colis à collecter chez vendeur ou point relais."],
-          [locale === "en" ? "In transit" : "En transit", Truck, locale === "en" ? "Parcels currently moving through the network." : "Colis en mouvement dans le réseau."],
-          [locale === "en" ? "Closed" : "Clôturés", CheckCircle2, locale === "en" ? "Delivered, returned or cancelled parcels." : "Colis livrés, retournés ou annulés."],
+          [t("do1_page.proofs_parcels_perf.parcels_pickup_title"), PackageSearch, t("do1_page.proofs_parcels_perf.parcels_pickup_body")],
+          [t("do1_page.proofs_parcels_perf.parcels_in_transit_title"), Truck, t("do1_page.proofs_parcels_perf.parcels_in_transit_body")],
+          [t("do1_page.proofs_parcels_perf.parcels_closed_title"), CheckCircle2, t("do1_page.proofs_parcels_perf.parcels_closed_body")],
         ],
         proofs: [
-          [locale === "en" ? "Pickup proof" : "Preuve collecte", ClipboardCheck, locale === "en" ? "Photo, scan or vendor OTP." : "Photo, scan ou OTP vendeur."],
-          [locale === "en" ? "Delivery proof" : "Preuve remise", FileCheck2, locale === "en" ? "Signature, OTP or handoff photo." : "Signature, OTP ou photo de remise."],
-          [locale === "en" ? "Review queue" : "File de revue", Search, locale === "en" ? "Proofs reviewed during disputes." : "Preuves examinées pendant les litiges."],
+          [t("do1_page.proofs_parcels_perf.proofs_pickup_title"), ClipboardCheck, t("do1_page.proofs_parcels_perf.proofs_pickup_body")],
+          [t("do1_page.proofs_parcels_perf.proofs_delivery_title"), FileCheck2, t("do1_page.proofs_parcels_perf.proofs_delivery_body")],
+          [t("do1_page.proofs_parcels_perf.proofs_review_title"), Search, t("do1_page.proofs_parcels_perf.proofs_review_body")],
         ],
         performance: [
-          [locale === "en" ? "Success rate" : "Taux réussite", BarChart3, locale === "en" ? "Completed missions compared with assigned missions." : "Missions terminées sur missions assignées."],
-          [locale === "en" ? "SLA delays" : "Retards SLA", Clock3, locale === "en" ? "Late pickup or delivery by zone and courier." : "Retards collecte ou livraison par zone et livreur."],
-          [locale === "en" ? "Proof quality" : "Qualité preuves", ShieldCheck, locale === "en" ? "Missing or rejected operational proofs." : "Preuves opérationnelles manquantes ou rejetées."],
+          [t("do1_page.proofs_parcels_perf.performance_success_rate_title"), BarChart3, t("do1_page.proofs_parcels_perf.performance_success_rate_body")],
+          [t("do1_page.proofs_parcels_perf.performance_sla_delays_title"), Clock3, t("do1_page.proofs_parcels_perf.performance_sla_delays_body")],
+          [t("do1_page.proofs_parcels_perf.performance_proof_quality_title"), ShieldCheck, t("do1_page.proofs_parcels_perf.performance_proof_quality_body")],
         ],
       }[tab] as Array<[string, IconComponent, string]>;
       return (
@@ -1646,27 +1465,27 @@ export default function DeliveryOrganizationPage() {
                 <Icon className="text-cyan-700 dark:text-cyan-300" size={24} />
                 <h3 className="mt-4 font-black text-slate-950 dark:text-white">{title as string}</h3>
                 <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-                <StatusPill tone="slate">{locale === "en" ? "Waiting for data" : "En attente de données"}</StatusPill>
+                <StatusPill tone="slate">{t("do1_page.proofs_parcels_perf.waiting_data")}</StatusPill>
               </div>
             ))}
           </section>
           {tab === "parcels" ? (
-            <Panel kicker={ui.tabs.parcels} title={locale === "en" ? "Operational parcel register" : "Registre opérationnel des colis"}>
-              {missions.length === 0 ? <EmptyState>{locale === "en" ? "No active parcel in this organization." : "Aucun colis actif dans cette organisation."}</EmptyState> : <div className="space-y-3">{missions.map((mission) => (
+            <Panel kicker={tabLabels.parcels} title={t("do1_page.proofs_parcels_perf.parcels_register_title")}>
+              {missions.length === 0 ? <EmptyState>{t("do1_page.proofs_parcels_perf.parcels_none_active")}</EmptyState> : <div className="space-y-3">{missions.map((mission) => (
                 <div key={mission.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800 md:grid-cols-[.7fr_1fr_1fr_.7fr]">
-                  <strong className="text-slate-950 dark:text-white">{mission.reference}</strong><span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{mission.city} · {mission.delivery_address}</span><span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{mission.courier?.full_name || "Non affecté"}</span><StatusPill>{missionStatusLabel(mission.status, mission.status_display, locale)}</StatusPill>
+                  <strong className="text-slate-950 dark:text-white">{mission.reference}</strong><span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{mission.city} · {mission.delivery_address}</span><span className="text-sm font-semibold text-slate-600 dark:text-slate-300">{mission.courier?.full_name || t("do1_page.fleet.unassigned")}</span><StatusPill>{missionStatusLabel(mission.status, mission.status_display, t)}</StatusPill>
                 </div>
               ))}</div>}
             </Panel>
           ) : tab === "proofs" ? (
-            <Panel kicker={ui.tabs.proofs} title={locale === "en" ? "Captured operational evidence" : "Preuves opérationnelles enregistrées"}>
-              {missions.filter((mission) => mission.last_event || mission.latest_location).length === 0 ? <EmptyState>{locale === "en" ? "No operational evidence captured yet." : "Aucune preuve opérationnelle enregistrée pour le moment."}</EmptyState> : <div className="space-y-3">{missions.filter((mission) => mission.last_event || mission.latest_location).map((mission) => (
-                <div key={mission.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"><div className="flex items-center justify-between gap-3"><strong className="text-slate-950 dark:text-white">{mission.reference}</strong><StatusPill tone={mission.latest_location ? "emerald" : "amber"}>{mission.location_history.length} points GPS</StatusPill></div><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{mission.last_event?.message || "Position GPS capturée"}</p></div>
+            <Panel kicker={tabLabels.proofs} title={t("do1_page.proofs_parcels_perf.proofs_captured_title")}>
+              {missions.filter((mission) => mission.last_event || mission.latest_location).length === 0 ? <EmptyState>{t("do1_page.proofs_parcels_perf.proofs_none_captured")}</EmptyState> : <div className="space-y-3">{missions.filter((mission) => mission.last_event || mission.latest_location).map((mission) => (
+                <div key={mission.id} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"><div className="flex items-center justify-between gap-3"><strong className="text-slate-950 dark:text-white">{mission.reference}</strong><StatusPill tone={mission.latest_location ? "emerald" : "amber"}>{mission.location_history.length} {t("do1_page.proofs_parcels_perf.proofs_gps_points")}</StatusPill></div><p className="mt-2 text-sm text-slate-600 dark:text-slate-300">{mission.last_event?.message || t("do1_page.proofs_parcels_perf.proofs_position_captured")}</p></div>
               ))}</div>}
             </Panel>
           ) : (
-            <Panel kicker={ui.tabs.performance} title={locale === "en" ? "30-day operational indicators" : "Indicateurs opérationnels sur 30 jours"}>
-              <div className="grid gap-3 sm:grid-cols-3"><Field label={locale === "en" ? "Delivered" : "Livrées"} value={`${summary?.delivered_30d || 0}`} icon={CheckCircle2} /><Field label={locale === "en" ? "Failed" : "Échecs"} value={`${summary?.failed_30d || 0}`} icon={AlertTriangle} /><Field label={locale === "en" ? "GPS points" : "Points GPS"} value={`${summary?.tracked_locations_30d || 0}`} icon={Map} /></div>
+            <Panel kicker={tabLabels.performance} title={t("do1_page.proofs_parcels_perf.performance_indicators_title")}>
+              <div className="grid gap-3 sm:grid-cols-3"><Field label={t("do1_page.proofs_parcels_perf.performance_delivered")} value={`${summary?.delivered_30d || 0}`} icon={CheckCircle2} /><Field label={t("do1_page.proofs_parcels_perf.performance_failed")} value={`${summary?.failed_30d || 0}`} icon={AlertTriangle} /><Field label={t("do1_page.proofs_parcels_perf.performance_gps_points")} value={`${summary?.tracked_locations_30d || 0}`} icon={Map} /></div>
             </Panel>
           )}
         </div>
@@ -1679,49 +1498,49 @@ export default function DeliveryOrganizationPage() {
       fleet: [],
       settings: [],
       missions: [
-        [locale === "en" ? "Active" : "En cours", activeMissionsCount.toString(), locale === "en" ? "Missions assigned to this partner's couriers." : "Missions assignées aux livreurs de ce partenaire.", Truck],
-        [locale === "en" ? "To dispatch" : "À affecter", missionQueue.length.toString(), locale === "en" ? "Compatible courier selection by zone, vehicle and capacity." : "Sélection livreur compatible par zone, moyen et capacité.", Route],
-        [locale === "en" ? "Exceptions" : "Exceptions", missionQueue.filter((mission) => ["VEHICLE_INCOMPATIBLE", "CAPACITY_BLOCKED"].includes(mission.status)).length.toString(), locale === "en" ? "Failures, refusals and reassignment requests." : "Échecs, refus et demandes de réaffectation.", AlertTriangle],
+        [t("do1_page.operational_cards.missions.active.title"), activeMissionsCount.toString(), t("do1_page.operational_cards.missions.active.body"), Truck],
+        [t("do1_page.operational_cards.missions.to_dispatch.title"), missionQueue.length.toString(), t("do1_page.operational_cards.missions.to_dispatch.body"), Route],
+        [t("do1_page.operational_cards.missions.exceptions.title"), missionQueue.filter((mission) => ["VEHICLE_INCOMPATIBLE", "CAPACITY_BLOCKED"].includes(mission.status)).length.toString(), t("do1_page.operational_cards.missions.exceptions.body"), AlertTriangle],
       ],
       parcels: [
-        [locale === "en" ? "Pickup queue" : "File collecte", ui.shell.notConnected, locale === "en" ? "Parcels waiting at vendors or relay points." : "Colis en attente chez vendeur ou point relais.", PackageSearch],
-        [locale === "en" ? "In transit" : "En transit", ui.shell.notConnected, locale === "en" ? "Operational visibility without unnecessary customer data." : "Visibilité opérationnelle sans données client inutiles.", Truck],
-        [locale === "en" ? "Closed" : "Clôturés", ui.shell.notConnected, locale === "en" ? "Delivered, returned or cancelled parcels." : "Colis livrés, retournés ou annulés.", CheckCircle2],
+        [t("do1_page.operational_cards.parcels.pickup_queue.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.parcels.pickup_queue.body"), PackageSearch],
+        [t("do1_page.operational_cards.parcels.in_transit.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.parcels.in_transit.body"), Truck],
+        [t("do1_page.operational_cards.parcels.closed.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.parcels.closed.body"), CheckCircle2],
       ],
       zones: [
-        [locale === "en" ? "Covered zones" : "Zones couvertes", organization.zones.length.toString(), locale === "en" ? "Declared in the organization profile." : "Déclarées dans le profil organisation.", Map],
-        [locale === "en" ? "Capacity" : "Capacité", ui.shell.notConnected, locale === "en" ? "Capacity rules per zone and courier remain to connect." : "Capacités par zone et livreur à connecter.", Gauge],
-        [locale === "en" ? "Blocked zones" : "Zones bloquées", ui.shell.notConnected, locale === "en" ? "Uncovered or saturated areas." : "Zones non couvertes ou saturées.", AlertTriangle],
+        [t("do1_page.operational_cards.zones.covered_zones.title"), organization.zones.length.toString(), t("do1_page.operational_cards.zones.covered_zones.body"), Map],
+        [t("do1_page.operational_cards.zones.capacity.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.zones.capacity.body"), Gauge],
+        [t("do1_page.operational_cards.zones.blocked_zones.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.zones.blocked_zones.body"), AlertTriangle],
       ],
       pricing: [
-        [locale === "en" ? "Base grid" : "Grille de base", ui.shell.notConnected, locale === "en" ? "Price by zone, weight, volume and service level." : "Prix par zone, poids, volume et niveau de service.", CreditCard],
-        ["SLA", ui.shell.notConnected, locale === "en" ? "Pickup and handoff commitments." : "Engagements de collecte et de remise.", Clock3],
-        [locale === "en" ? "Approval queue" : "Validation BelivaY", ui.shell.notConnected, locale === "en" ? "Cases requiring marketplace decision." : "Cas nécessitant une décision marketplace.", ShieldCheck],
+        [t("do1_page.operational_cards.pricing.base_grid.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.pricing.base_grid.body"), CreditCard],
+        ["SLA", t("do1_page.shell.notConnected"), t("do1_page.operational_cards.pricing.sla.body"), Clock3],
+        [t("do1_page.operational_cards.pricing.approval_queue.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.pricing.approval_queue.body"), ShieldCheck],
       ],
       proofs: [
-        [locale === "en" ? "Pickup proof" : "Preuve collecte", ui.shell.notConnected, locale === "en" ? "Vendor pickup photo, scan or OTP." : "Photo, scan ou OTP à la collecte vendeur.", ClipboardCheck],
-        [locale === "en" ? "Delivery proof" : "Preuve remise", ui.shell.notConnected, locale === "en" ? "Customer signature, OTP or delivery photo." : "Signature, OTP ou photo de remise client.", FileCheck2],
-        [locale === "en" ? "Review queue" : "File de revue", ui.shell.notConnected, locale === "en" ? "Proofs useful during disputes." : "Preuves utiles pendant les litiges.", Search],
+        [t("do1_page.operational_cards.proofs.pickup_proof.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.proofs.pickup_proof.body"), ClipboardCheck],
+        [t("do1_page.operational_cards.proofs.delivery_proof.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.proofs.delivery_proof.body"), FileCheck2],
+        [t("do1_page.operational_cards.proofs.review_queue.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.proofs.review_queue.body"), Search],
       ],
       disputes: [
-        [locale === "en" ? "Open cases" : "Dossiers ouverts", openDisputesCount.toString(), locale === "en" ? "Incidents tied to organization missions." : "Incidents liés aux missions de l'organisation.", AlertTriangle],
-        [locale === "en" ? "Evidence" : "Preuves", ui.shell.notConnected, locale === "en" ? "Courier notes and operational proofs." : "Notes livreur et preuves opérationnelles.", FileText],
-        [locale === "en" ? "Decision" : "Décision", ui.shell.notConnected, locale === "en" ? "BelivaY resolution and penalties if applicable." : "Résolution BelivaY et pénalités si applicable.", ShieldCheck],
+        [t("do1_page.operational_cards.disputes.open_cases.title"), openDisputesCount.toString(), t("do1_page.operational_cards.disputes.open_cases.body"), AlertTriangle],
+        [t("do1_page.operational_cards.disputes.evidence.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.disputes.evidence.body"), FileText],
+        [t("do1_page.operational_cards.disputes.decision.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.disputes.decision.body"), ShieldCheck],
       ],
       performance: [
-        [locale === "en" ? "Success rate" : "Taux réussite", ui.shell.notConnected, locale === "en" ? "Completed missions divided by assigned missions." : "Missions terminées sur missions assignées.", BarChart3],
-        [locale === "en" ? "Late rate" : "Retards", ui.shell.notConnected, locale === "en" ? "SLA breaches by zone and courier." : "Dépassements SLA par zone et livreur.", Clock3],
-        [locale === "en" ? "Proof quality" : "Qualité preuves", ui.shell.notConnected, locale === "en" ? "Missing or rejected proofs." : "Preuves manquantes ou rejetées.", ClipboardCheck],
+        [t("do1_page.operational_cards.performance.success_rate.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.performance.success_rate.body"), BarChart3],
+        [t("do1_page.operational_cards.performance.late_rate.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.performance.late_rate.body"), Clock3],
+        [t("do1_page.operational_cards.performance.proof_quality.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.performance.proof_quality.body"), ClipboardCheck],
       ],
       payments: [
-        [locale === "en" ? "To settle" : "À régler", ui.shell.notConnected, locale === "en" ? "Validated missions pending payout." : "Missions validées en attente de paiement.", WalletCards],
-        [locale === "en" ? "Paid" : "Payé", ui.shell.notConnected, locale === "en" ? "Closed settlements by period." : "Règlements clôturés par période.", CheckCircle2],
-        [locale === "en" ? "Reconciliation" : "Rapprochement", ui.shell.notConnected, locale === "en" ? "Mobile Money or bank transfer control." : "Contrôle Mobile Money ou virement.", CreditCard],
+        [t("do1_page.operational_cards.payments.to_settle.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.payments.to_settle.body"), WalletCards],
+        [t("do1_page.operational_cards.payments.paid.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.payments.paid.body"), CheckCircle2],
+        [t("do1_page.operational_cards.payments.reconciliation.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.payments.reconciliation.body"), CreditCard],
       ],
       messages: [
-        [locale === "en" ? "BelivaY channel" : "Canal BelivaY", ui.shell.notConnected, locale === "en" ? "Operational conversation with marketplace team." : "Conversation opérationnelle avec l'équipe marketplace.", MessageSquareText],
-        [locale === "en" ? "Courier threads" : "Fils livreurs", ui.shell.notConnected, locale === "en" ? "Conversations related to attached couriers." : "Conversations liées aux livreurs rattachés.", Users],
-        [locale === "en" ? "Incident notes" : "Notes incidents", ui.shell.notConnected, locale === "en" ? "Messages attached to missions and disputes." : "Messages liés aux missions et litiges.", AlertTriangle],
+        [t("do1_page.operational_cards.messages.belivay_channel.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.messages.belivay_channel.body"), MessageSquareText],
+        [t("do1_page.operational_cards.messages.courier_threads.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.messages.courier_threads.body"), Users],
+        [t("do1_page.operational_cards.messages.incident_notes.title"), t("do1_page.shell.notConnected"), t("do1_page.operational_cards.messages.incident_notes.body"), AlertTriangle],
       ],
     };
 
@@ -1734,7 +1553,7 @@ export default function DeliveryOrganizationPage() {
           ))}
         </section>
         {tab === "missions" ? renderMissions() : tab === "disputes" ? renderDisputes() : tab === "zones" ? (
-          <Panel kicker={ui.tabs.zones} title={locale === "en" ? "Declared coverage" : "Couverture déclarée"}>
+          <Panel kicker={tabLabels.zones} title={t("do1_page.zones.declared_coverage_title")}>
             <div className="flex flex-wrap gap-2">
               {coveredZones.map((zone) => (
                 <span key={zone} className="rounded-full bg-cyan-100 px-3 py-2 text-sm font-black text-cyan-800 dark:bg-cyan-950 dark:text-cyan-100">{zone}</span>
@@ -1813,11 +1632,11 @@ export default function DeliveryOrganizationPage() {
           activeTab={tab}
           onSelect={setTab}
           onLogout={handleLogout}
-          labels={ui.tabs}
-          groupLabels={ui.groups}
+          labels={tabLabels}
+          groupLabels={groupLabels}
           badges={navBadges}
-          brandKicker={ui.shell.brand}
-          logoutLabel={ui.shell.logout}
+          brandKicker={t("do1_page.shell.brand")}
+          logoutLabel={t("do1_page.shell.logout")}
           organization={{
             name: organization.name,
             manager: organization.manager,
@@ -1826,8 +1645,8 @@ export default function DeliveryOrganizationPage() {
             status: operationalStatus,
             avatarUrl: avatarUrl || undefined,
           }}
-          statusLabel={ui.shell.status}
-          footer={ui.footer}
+          statusLabel={t("do1_page.shell.status")}
+          footer={footerLines}
         />
 
         <section className="min-w-0 flex-1">
@@ -1843,7 +1662,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
-                aria-label={ui.shell.space}
+                aria-label={t("do1_page.shell.space")}
                 aria-haspopup="dialog"
                 aria-expanded={drawerOpen}
                 className="tap-target relative -ml-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
@@ -1863,7 +1682,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={() => setTab("dashboard")}
-                aria-label={ui.tabs.dashboard}
+                aria-label={tabLabels.dashboard}
                 className="flex min-w-0 flex-shrink items-center rounded-xl px-1 py-1 transition active:scale-95"
               >
                 <img src="/belivay-logo-delivery-org.png" alt="BelivaY" className="h-8 w-auto object-contain" />
@@ -1876,7 +1695,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={() => setTab("disputes")}
-                aria-label={ui.tabs.disputes}
+                aria-label={tabLabels.disputes}
                 className="tap-target relative flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 <AlertTriangle size={19} />
@@ -1890,7 +1709,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={toggleTheme}
-                aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                aria-label={theme === "dark" ? t("do1_page.shell.light_mode") : t("do1_page.shell.dark_mode")}
                 className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
@@ -1899,7 +1718,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={switchLanguage}
-                aria-label="Changer de langue"
+                aria-label={t("do1_page.shell.change_language_aria")}
                 className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl px-1 text-xs font-black text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
               >
                 {locale === "fr" ? "FR" : "EN"}
@@ -1908,7 +1727,7 @@ export default function DeliveryOrganizationPage() {
               <button
                 type="button"
                 onClick={() => setProfileSheetOpen(true)}
-                aria-label={ui.shell.openProfile}
+                aria-label={t("do1_page.shell.openProfile")}
                 aria-haspopup="dialog"
                 aria-expanded={profileSheetOpen}
                 className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-cyan-700 text-xs font-black text-white ring-1 ring-black/5 transition active:scale-90"
@@ -1924,13 +1743,13 @@ export default function DeliveryOrganizationPage() {
             {/* Titre de l'ecran : sorti du bandeau pour lui laisser toute sa
                 largeur, il garde sa place de repere de navigation. */}
             <div className="mt-2 min-w-0 lg:hidden">
-              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
-              <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{ui.tabs[tab]}</h1>
+              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-cyan-700 dark:text-cyan-300">{t("do1_page.shell.space")}</p>
+              <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{tabLabels[tab]}</h1>
             </div>
 
             <div className="hidden flex-wrap items-center justify-between gap-3 lg:flex">
               <div>
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{ui.shell.space}</p>
+                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-cyan-700 dark:text-cyan-300">{t("do1_page.shell.space")}</p>
                 <h1 className="mt-1 text-2xl font-black tracking-tight">{active.title}</h1>
               </div>
               <div className="flex flex-wrap items-center justify-end gap-2">
@@ -1939,7 +1758,7 @@ export default function DeliveryOrganizationPage() {
                   onClick={() => setProfileSheetOpen(true)}
                   aria-haspopup="dialog"
                   aria-expanded={profileSheetOpen}
-                  title={ui.shell.profile}
+                  title={t("do1_page.shell.profile")}
                   className="tap-target flex items-center gap-2 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold text-slate-700 transition active:scale-95 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
                 >
                   {avatarUrl ? <img src={avatarUrl} alt="" className="h-7 w-7 rounded-full object-cover" /> : <UserCircle size={17} />}
@@ -1952,7 +1771,7 @@ export default function DeliveryOrganizationPage() {
                 <button type="button" onClick={toggleTheme} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
                   {theme === "dark" ? <Sun size={17} /> : <Moon size={17} />}
                 </button>
-                <button type="button" onClick={handleLogout} title={ui.shell.logout} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100">
+                <button type="button" onClick={handleLogout} title={t("do1_page.shell.logout")} className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-100 bg-red-50 text-red-700 transition hover:bg-red-100">
                   <LogOut size={17} />
                 </button>
               </div>
@@ -1967,13 +1786,13 @@ export default function DeliveryOrganizationPage() {
                 <StatusPill tone={operationalTone}>{operationalStatus}</StatusPill>
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-cyan-200 bg-cyan-50 px-3 py-1 text-xs font-bold text-cyan-700 dark:border-cyan-800 dark:bg-cyan-950 dark:text-cyan-200">
-                {approvedCouriers}/{couriers.length} {locale === "en" ? "couriers" : "livreurs"}
+                {approvedCouriers}/{couriers.length} {t("do1_page.header.couriers_suffix")}
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {activeMissionsCount} missions
+                {activeMissionsCount} {t("do1_page.header.missions_suffix")}
               </span>
               <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {displayZones.length} zones
+                {displayZones.length} {t("do1_page.header.zones_suffix")}
               </span>
             </div>
           </header>
@@ -1985,7 +1804,7 @@ export default function DeliveryOrganizationPage() {
             {organizationMessage ? (
               <div className={`flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-bold ${organizationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{organizationMessage.text}</span>
-                <button type="button" onClick={() => setOrganizationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title={ui.shell.close}><X size={16} /></button>
+                <button type="button" onClick={() => setOrganizationMessage(null)} className="rounded-lg p-1 hover:bg-black/5" title={t("do1_page.shell.close")}><X size={16} /></button>
               </div>
             ) : null}
             {renderModuleContent()}
@@ -2003,9 +1822,9 @@ export default function DeliveryOrganizationPage() {
           setDrawerOpen(false);
           setTab(next);
         }}
-        labels={ui.tabs}
+        labels={tabLabels}
         badges={navBadges}
-        navLabel={ui.shell.space}
+        navLabel={t("do1_page.shell.space")}
       />
 
       <DeliveryDrawer
@@ -2017,11 +1836,11 @@ export default function DeliveryOrganizationPage() {
           setTab(next);
         }}
         onLogout={handleLogout}
-        labels={ui.tabs}
-        groupLabels={ui.groups}
+        labels={tabLabels}
+        groupLabels={groupLabels}
         badges={navBadges}
-        brandKicker={ui.shell.brand}
-        logoutLabel={ui.shell.logout}
+        brandKicker={t("do1_page.shell.brand")}
+        logoutLabel={t("do1_page.shell.logout")}
         organization={{
           name: organization.name,
           manager: organization.manager,
@@ -2030,10 +1849,10 @@ export default function DeliveryOrganizationPage() {
           status: operationalStatus,
           avatarUrl: avatarUrl || undefined,
         }}
-        statusLabel={ui.shell.status}
-        footer={ui.footer}
-        title={ui.shell.space}
-        closeLabel={ui.shell.close}
+        statusLabel={t("do1_page.shell.status")}
+        footer={footerLines}
+        title={t("do1_page.shell.space")}
+        closeLabel={t("do1_page.shell.close")}
       />
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
@@ -2049,7 +1868,7 @@ export default function DeliveryOrganizationPage() {
           onUploaded={(updatedUser) => {
             setAvatarUrl(updatedUser.avatar_url || "");
             setAvatarFile(null);
-            setOrganizationMessage({ tone: "success", text: locale === "en" ? "Profile photo updated." : "Photo de profil mise à jour." });
+            setOrganizationMessage({ tone: "success", text: t("do1_page.toasts.profile_photo_updated") });
           }}
         />
       ) : null}

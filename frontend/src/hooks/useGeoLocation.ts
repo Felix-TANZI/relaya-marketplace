@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getCachedGeo, requestGeolocation, type GeoCoords } from '@/services/geolocation';
 
 interface UseGeoLocationResult {
@@ -15,6 +16,7 @@ interface UseGeoLocationResult {
 }
 
 export function useGeoLocation(): UseGeoLocationResult {
+  const { t } = useTranslation();
   const [coords, setCoords] = useState<GeoCoords | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,14 +43,14 @@ export function useGeoLocation(): UseGeoLocationResult {
 
       return () => clearTimeout(timer);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur de géolocalisation');
+      setError(err instanceof Error ? err.message : t('misc1_geolocation.error_generic'));
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   const requestPermission = () => {
     if (!navigator.geolocation) {
-      setError('Géolocalisation non disponible');
+      setError(t('misc1_geolocation.error_unavailable'));
       return;
     }
 
@@ -68,11 +70,11 @@ export function useGeoLocation(): UseGeoLocationResult {
       },
       (err) => {
         const messages: { [key: string]: string } = {
-          'PERMISSION_DENIED': 'Permission refusée. Activez la géolocalisation dans les paramètres.',
-          'POSITION_UNAVAILABLE': 'Position indisponible',
-          'TIMEOUT': 'Délai d\'attente dépassé',
+          'PERMISSION_DENIED': t('misc1_geolocation.error_permission_denied'),
+          'POSITION_UNAVAILABLE': t('misc1_geolocation.error_position_unavailable'),
+          'TIMEOUT': t('misc1_geolocation.error_timeout'),
         };
-        setError(messages[err.code] || 'Erreur de géolocalisation');
+        setError(messages[err.code] || t('misc1_geolocation.error_generic'));
         setLoading(false);
       }
     );

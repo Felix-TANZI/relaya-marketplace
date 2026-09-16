@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   Baby,
   Copy,
@@ -26,10 +27,10 @@ type PromoProduct = Product & {
 };
 
 const CATEGORY_BANNERS = [
-  { slug: "all", eyebrow: "Top sélection", title: "Offres transversales", discount: "Jusqu'à -45%", bg: "from-[#111827] via-[#1f2937] to-[#0f172a]" },
-  { slug: "femme", eyebrow: "Flash mode", title: "Mode Femme", discount: "Jusqu'à -40%", bg: "from-[#c85e14] via-[#f47920] to-[#ffb36d]" },
-  { slug: "electronique", eyebrow: "Tech Week", title: "Électronique", discount: "Jusqu'à -25%", bg: "from-[#0f172a] via-[#1d4ed8] to-[#60a5fa]" },
-  { slug: "beaute", eyebrow: "Glow deals", title: "Beauté", discount: "Jusqu'à -30%", bg: "from-[#14532d] via-[#16a34a] to-[#86efac]" },
+  { slug: "all", eyebrowKey: "cl5_promotions.banner_all_eyebrow", titleKey: "cl5_promotions.banner_all_title", discountKey: "cl5_promotions.banner_all_discount", bg: "from-[#111827] via-[#1f2937] to-[#0f172a]" },
+  { slug: "femme", eyebrowKey: "cl5_promotions.banner_femme_eyebrow", titleKey: "cl5_promotions.banner_femme_title", discountKey: "cl5_promotions.banner_femme_discount", bg: "from-[#c85e14] via-[#f47920] to-[#ffb36d]" },
+  { slug: "electronique", eyebrowKey: "cl5_promotions.banner_electro_eyebrow", titleKey: "cl5_promotions.banner_electro_title", discountKey: "cl5_promotions.banner_electro_discount", bg: "from-[#0f172a] via-[#1d4ed8] to-[#60a5fa]" },
+  { slug: "beaute", eyebrowKey: "cl5_promotions.banner_beaute_eyebrow", titleKey: "cl5_promotions.banner_beaute_title", discountKey: "cl5_promotions.banner_beaute_discount", bg: "from-[#14532d] via-[#16a34a] to-[#86efac]" },
 ];
 
 /** Icône équivalente pour un filtre catégorie (à partir du slug + libellé). */
@@ -95,6 +96,7 @@ function buildScoredList(list: Product[]) {
 }
 
 export default function PromotionsPage() {
+  const { t } = useTranslation();
   const [allPromo, setAllPromo] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCat, setActiveCat] = useState("all");
@@ -182,7 +184,7 @@ export default function PromotionsPage() {
   }, [activeCat, allPromo]);
 
   const filterTabs = [
-    { key: "all", label: "Tout voir" },
+    { key: "all", label: t("cl5_promotions.filter_all") },
     ...categories.slice(0, 6).map((category) => ({ key: category.slug, label: category.name })),
   ];
 
@@ -205,13 +207,13 @@ export default function PromotionsPage() {
             <div className="pointer-events-none absolute right-[-70px] top-[-90px] h-72 w-72 rounded-full bg-[#f47920]/30 blur-3xl" />
 
             <div className="relative z-[1] text-[9.5px] font-black uppercase tracking-[0.1em] text-white/65 sm:text-[10.5px]">
-              Offres limitées
+              {t("cl5_promotions.hero_eyebrow")}
             </div>
             <h1 className="relative z-[1] mt-1.5 font-display text-[17px] font-extrabold tracking-tight sm:mt-2 sm:text-[30px]">
-              Promotions du Moment
+              {t("cl5_promotions.hero_title")}
             </h1>
             <p className="relative z-[1] mt-2 hidden max-w-[760px] text-[13px] leading-7 text-white/75 sm:block">
-              {displayed.length} offres actives · Mise à jour en temps réel · Escrow garanti sur tous les achats
+              {t("cl5_promotions.hero_subtitle", { count: displayed.length })}
             </p>
 
             <div className="relative z-[1] mt-3 flex flex-wrap items-center gap-1.5 sm:mt-5 sm:gap-2">
@@ -221,15 +223,15 @@ export default function PromotionsPage() {
                   <div className="min-w-[40px] rounded-[10px] border border-white/20 bg-white/10 px-1.5 py-1 text-center backdrop-blur-[4px] sm:min-w-[64px] sm:rounded-[12px] sm:px-3 sm:py-2">
                     <div className="font-display text-[15px] font-extrabold leading-none text-white sm:text-[24px]">{value}</div>
                     <div className="mt-0.5 text-[8px] font-bold uppercase tracking-[0.05em] text-white/55 sm:mt-1 sm:text-[9.5px]">
-                      {index === 0 ? "Heures" : index === 1 ? "Min" : "Sec"}
+                      {index === 0 ? t("cl5_promotions.countdown_hours") : index === 1 ? t("cl5_promotions.countdown_minutes") : t("cl5_promotions.countdown_seconds")}
                     </div>
                   </div>
                 </div>
               ))}
               <div className="ml-1.5 text-[9.5px] leading-[1.3] text-white/65 sm:ml-2 sm:text-[12px] sm:leading-[1.4]">
-                Fin du
+                {t("cl5_promotions.countdown_end_of")}
                 <br />
-                Flash Sale
+                {t("cl5_promotions.countdown_flash_sale")}
               </div>
             </div>
           </div>
@@ -247,12 +249,12 @@ export default function PromotionsPage() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="truncate text-[12px] font-extrabold text-[#15803d] dark:text-emerald-200 sm:text-[13.5px]">
-                <span className="sm:hidden">-10% avec le code BIENVENUE10</span>
-                <span className="hidden sm:inline">Code Bienvenue actif — BIENVENUE10</span>
+                <span className="sm:hidden">{t("cl5_promotions.promo_code_short")}</span>
+                <span className="hidden sm:inline">{t("cl5_promotions.promo_code_full")}</span>
               </div>
               <div className="truncate text-[10.5px] text-[#15803d]/85 dark:text-emerald-100/80 sm:text-[12px]">
-                <span className="sm:hidden">Sur votre 1ère commande · Encore 48h</span>
-                <span className="hidden sm:inline">-10% sur votre 1ère commande · Valable encore 48h · Applicable au checkout</span>
+                <span className="sm:hidden">{t("cl5_promotions.promo_code_desc_short")}</span>
+                <span className="hidden sm:inline">{t("cl5_promotions.promo_code_desc_full")}</span>
               </div>
             </div>
             <button
@@ -261,7 +263,7 @@ export default function PromotionsPage() {
               className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-[10px] bg-[#16a34a] px-2.5 py-1.5 text-[11px] font-extrabold text-white transition hover:bg-[#15803d] sm:gap-2 sm:px-4 sm:py-2 sm:text-[12px]"
             >
               {codeCopied ? <Gift size={13} /> : <Copy size={13} />}
-              {codeCopied ? "Copié !" : "Copier"}
+              {codeCopied ? t("cl5_promotions.promo_copied") : t("cl5_promotions.promo_copy")}
             </button>
           </div>
         </section>
@@ -291,11 +293,11 @@ export default function PromotionsPage() {
               <div className="absolute inset-x-0 bottom-0 h-[55%] bg-gradient-to-t from-black/35 to-transparent" />
               <div className="relative z-[1]">
                 <div className="text-[10px] font-black uppercase tracking-[0.08em] text-white/80">
-                  {banner.eyebrow}
+                  {t(banner.eyebrowKey)}
                 </div>
-                <div className="mt-6 text-[16px] font-extrabold text-white">{banner.title}</div>
+                <div className="mt-6 text-[16px] font-extrabold text-white">{t(banner.titleKey)}</div>
                 <div className="mt-1 inline-flex rounded-full border border-white/20 bg-white/10 px-3 py-1 text-[11px] font-extrabold text-white">
-                  {banner.discount}
+                  {t(banner.discountKey)}
                 </div>
               </div>
             </button>
@@ -332,10 +334,10 @@ export default function PromotionsPage() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2 font-display text-[14px] font-extrabold text-[#111827] dark:text-white sm:text-[16px]">
               <div className="h-[18px] w-[3px] rounded-full bg-[#f47920]" />
-              Produits en promotion
+              {t("cl5_promotions.grid_heading")}
             </div>
             <div className="flex-shrink-0 text-[12px] font-semibold text-[#9ca3af] dark:text-gray-400">
-              {displayed.length} produits
+              {t("cl5_promotions.grid_count", { count: displayed.length })}
             </div>
           </div>
 
@@ -348,9 +350,9 @@ export default function PromotionsPage() {
           ) : displayed.length === 0 ? (
             <div className="mt-6 rounded-[24px] border border-dashed border-[#e5e7eb] bg-[#f9fafb] px-4 py-10 text-center dark:border-gray-700 dark:bg-gray-900/60 sm:px-6 sm:py-14">
               <ShoppingBag size={40} className="mx-auto text-[#f47920]" />
-              <div className="mt-4 text-[16px] font-extrabold text-[#111827] dark:text-white sm:text-[20px]">Aucune promotion active</div>
+              <div className="mt-4 text-[16px] font-extrabold text-[#111827] dark:text-white sm:text-[20px]">{t("cl5_promotions.empty_title")}</div>
               <p className="mt-2 text-[13px] text-[#6b7280] dark:text-gray-400">
-                Reviens bientôt, ou change de catégorie pour voir d’autres offres.
+                {t("cl5_promotions.empty_text")}
               </p>
             </div>
           ) : (

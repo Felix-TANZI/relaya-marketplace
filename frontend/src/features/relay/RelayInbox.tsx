@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ArrowLeft, LifeBuoy, Lock, Mail, MessagesSquare, Scale, Send, Truck } from "lucide-react";
 import { http } from "@/services/api/http";
 import { ModuleHeader, Panel, StatusPill } from "./RelayUi";
@@ -22,6 +23,13 @@ interface RelayInboxProps {
 
 type ChannelKey = "support" | "mediateur" | "logistique";
 
+interface ChannelMessageSeed {
+  id: string;
+  from: "belivay" | "relais";
+  authorKey: string;
+  bodyKey: string;
+}
+
 interface ChannelMessage {
   id: string;
   from: "belivay" | "relais";
@@ -32,79 +40,73 @@ interface ChannelMessage {
 
 interface Channel {
   key: ChannelKey;
-  name: string;
+  nameKey: string;
   icon: typeof LifeBuoy;
   /** Pastille de tete de conversation, une couleur par interlocuteur. */
   tile: string;
-  role: string;
+  roleKey: string;
   /** Canal descendant : la reponse libre y est fermee. */
   readOnly: boolean;
   official?: boolean;
-  closedHint?: string;
-  seed: ChannelMessage[];
+  closedHintKey?: string;
+  seed: ChannelMessageSeed[];
 }
 
 const CHANNELS: Channel[] = [
   {
     key: "support",
-    name: "Support BelivaY",
+    nameKey: "rl2_inbox.channel_support_name",
     icon: LifeBuoy,
     tile: "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300",
-    role: "Assistance opérationnelle · réception, stockage, retrait",
+    roleKey: "rl2_inbox.channel_support_role",
     readOnly: false,
     seed: [
       {
         id: "support-1",
         from: "relais",
-        author: "Vous",
-        body: "Bonjour, un colis est arrivé sans étiquette lisible. Quelle procédure dois-je appliquer avant de le mettre en slot ?",
-        at: "",
+        authorKey: "rl2_inbox.author_you",
+        bodyKey: "rl2_inbox.seed_support_1_body",
       },
       {
         id: "support-2",
         from: "belivay",
-        author: "Support BelivaY",
-        body: "Bien reçu, on regarde ça tout de suite.",
-        at: "",
+        authorKey: "rl2_inbox.channel_support_name",
+        bodyKey: "rl2_inbox.seed_support_2_body",
       },
     ],
   },
   {
     key: "mediateur",
-    name: "Médiateur OHADA",
+    nameKey: "rl2_inbox.channel_mediator_name",
     icon: Scale,
     tile: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300",
-    role: "Arbitrage des litiges · droit de réponse encadré",
+    roleKey: "rl2_inbox.channel_mediator_role",
     readOnly: true,
-    closedHint:
-      "Canal d'arbitrage : votre version se dépose dans le dossier de litige concerné, jamais en message libre (traçabilité OHADA).",
+    closedHintKey: "rl2_inbox.channel_mediator_closed_hint",
     seed: [
       {
         id: "mediateur-1",
         from: "belivay",
-        author: "Médiateur OHADA",
-        body: "Votre droit de réponse a été transmis (anonymisé) à la partie adverse. Vous serez notifié de la décision sous 7 jours ouvrés.",
-        at: "",
+        authorKey: "rl2_inbox.channel_mediator_name",
+        bodyKey: "rl2_inbox.seed_mediator_1_body",
       },
     ],
   },
   {
     key: "logistique",
-    name: "Coordination logistique",
+    nameKey: "rl2_inbox.channel_logistics_name",
     icon: Truck,
     tile: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300",
-    role: "Tournées livreurs · transferts entre points relais",
+    roleKey: "rl2_inbox.channel_logistics_role",
     readOnly: true,
     official: true,
-    closedHint:
-      "Canal officiel descendant : confirmez les mouvements de colis depuis l'écran Réception, la coordination s'aligne automatiquement.",
+    closedHintKey: "rl2_inbox.channel_logistics_closed_hint",
     seed: [
       {
         id: "logistique-1",
         from: "belivay",
-        author: "Coordination logistique",
-        body: "Transfert programmé, un livreur passera à la fermeture pour récupérer les colis en attente. Préparez les slots concernés.",
-        at: "",
+        authorKey: "rl2_inbox.channel_logistics_name",
+        bodyKey: "rl2_inbox.seed_logistics_1_body",
       },
     ],
   },
@@ -146,6 +148,7 @@ function preview(text: string, size = 46) {
 }
 
 export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxProps) {
+  const { t } = useTranslation();
   const [inbox, setInbox] = useState<StoredInbox>(readStoredInbox);
   const [openKey, setOpenKey] = useState<ChannelKey | null>(null);
   const [draft, setDraft] = useState("");
@@ -158,8 +161,17 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
 
   /** Fil complet d'un canal : messages officiels + reponses deja envoyees. */
   const threadOf = useMemo(
-    () => (channel: Channel) => [...channel.seed, ...(inbox.sent[channel.key] ?? [])],
-    [inbox.sent],
+    () => (channel: Channel): ChannelMessage[] => [
+      ...channel.seed.map((message) => ({
+        id: message.id,
+        from: message.from,
+        author: t(message.authorKey),
+        body: t(message.bodyKey),
+        at: "",
+      })),
+      ...(inbox.sent[channel.key] ?? []),
+    ],
+    [inbox.sent, t],
   );
 
   const unreadCount = (channel: Channel) => (inbox.read.includes(channel.key) ? 0 : 1);
@@ -189,7 +201,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
           name: relay.name,
           email: relay.email,
           phone: relay.phone,
-          subject: `[Point relais] Message support — ${relay.name}`,
+          subject: t("rl2_inbox.contact_subject", { name: relay.name }),
           message: body,
         }),
       });
@@ -197,7 +209,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
       const message: ChannelMessage = {
         id: `${openChannel.key}-${Date.now()}`,
         from: "relais",
-        author: "Vous",
+        author: t("rl2_inbox.author_you"),
         body,
         at: new Date().toISOString(),
       };
@@ -206,7 +218,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
         sent: { ...previous.sent, [openChannel.key]: [...(previous.sent[openChannel.key] ?? []), message] },
       }));
       setDraft("");
-      setSentNotice("Message transmis au support BelivaY. Une réponse arrive sous 24 h ouvrées.");
+      setSentNotice(t("rl2_inbox.sent_notice"));
     } catch (error) {
       onError(error);
     } finally {
@@ -218,23 +230,23 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
     <div className="space-y-5">
       <ModuleHeader
         icon={Mail}
-        title="Messagerie support"
-        subtitle="Échanges supervisés avec BelivaY · support, médiateur, logistique"
+        title={t("rl2_inbox.header_title")}
+        subtitle={t("rl2_inbox.header_subtitle")}
       />
 
       <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
         <Lock size={17} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-300" />
         <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
-          Messagerie <strong className="font-black text-blue-800 dark:text-blue-200">supervisée par BelivaY</strong>. Vous n'avez
-          aucun contact direct avec les acheteurs ni les vendeurs (anonymat V5 ch.1). Toutes les communications passent par les
-          canaux officiels.
+          {t("rl2_inbox.supervised_notice_prefix")}{" "}
+          <strong className="font-black text-blue-800 dark:text-blue-200">{t("rl2_inbox.supervised_notice_strong")}</strong>.{" "}
+          {t("rl2_inbox.supervised_notice_suffix")}
         </p>
       </div>
 
       {openChannel === null ? (
         <Panel
           icon={MessagesSquare}
-          title="Conversations"
+          title={t("rl2_inbox.conversations_title")}
           action={<StatusPill tone={totalUnread > 0 ? "blue" : "slate"}>{CHANNELS.length}</StatusPill>}
         >
           <div className="space-y-2.5">
@@ -254,14 +266,14 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
                     <Icon size={18} strokeWidth={2.4} />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block font-black text-slate-950 dark:text-white">{channel.name}</span>
+                    <span className="block font-black text-slate-950 dark:text-white">{t(channel.nameKey)}</span>
                     <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {last ? preview(last.body) : channel.role}
+                      {last ? preview(last.body) : t(channel.roleKey)}
                     </span>
                   </span>
                   {channel.official ? (
                     <span className="flex-shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                      officiel
+                      {t("rl2_inbox.official_badge")}
                     </span>
                   ) : unread > 0 ? (
                     <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">
@@ -276,18 +288,18 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
       ) : (
         <Panel
           icon={openChannel.icon}
-          title={openChannel.name}
+          title={t(openChannel.nameKey)}
           action={
             <button
               type="button"
               onClick={() => setOpenKey(null)}
               className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
             >
-              <ArrowLeft size={14} strokeWidth={2.6} /> Conversations
+              <ArrowLeft size={14} strokeWidth={2.6} /> {t("rl2_inbox.back_to_conversations")}
             </button>
           }
         >
-          <p className="-mt-2 mb-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{openChannel.role}</p>
+          <p className="-mt-2 mb-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{t(openChannel.roleKey)}</p>
 
           <div className="space-y-3">
             {threadOf(openChannel).map((message) => {
@@ -316,7 +328,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
             <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
               <p className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300">
                 <Lock size={16} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-slate-400" />
-                {openChannel.closedHint}
+                {openChannel.closedHintKey ? t(openChannel.closedHintKey) : ""}
               </p>
               {onNavigate ? (
                 <button
@@ -324,7 +336,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
                   onClick={() => onNavigate(openChannel.key === "mediateur" ? "litiges" : "reception")}
                   className="mt-3 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200"
                 >
-                  {openChannel.key === "mediateur" ? "Ouvrir mes litiges" : "Ouvrir la réception colis"}
+                  {openChannel.key === "mediateur" ? t("rl2_inbox.open_disputes") : t("rl2_inbox.open_parcel_reception")}
                 </button>
               ) : null}
             </div>
@@ -336,17 +348,17 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
                 </div>
               ) : null}
               <label className="block">
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Votre message</span>
+                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">{t("rl2_inbox.your_message_label")}</span>
                 <textarea
                   value={draft}
                   onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Décrivez la situation avec la référence du colis (BV-…), jamais de coordonnées d'acheteur."
+                  placeholder={t("rl2_inbox.message_placeholder")}
                   className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-normal text-slate-900 outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
                 />
               </label>
               <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
                 <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {draft.trim().length < 10 ? "10 caractères minimum." : "Message prêt à être transmis."}
+                  {draft.trim().length < 10 ? t("rl2_inbox.min_characters") : t("rl2_inbox.ready_to_send")}
                 </span>
                 <button
                   type="button"
@@ -355,7 +367,7 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
                   className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <Send size={15} strokeWidth={2.6} />
-                  {busy ? "Envoi…" : "Envoyer"}
+                  {busy ? t("rl2_inbox.sending") : t("rl2_inbox.send_button")}
                 </button>
               </div>
             </div>

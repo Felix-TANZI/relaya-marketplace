@@ -5,6 +5,7 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { productsApi, type Product } from '@/services/api/products';
 import ProductCard from '@/components/product/ProductCard';
 import { getCachedGeo, requestGeolocation } from '@/services/geolocation';
@@ -19,6 +20,7 @@ export default function NearbyProductsSection({
   limit = 10,
   maxDistanceKm = 50
 }: NearbyProductsSectionProps) {
+  const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [geoAvailable, setGeoAvailable] = useState(false);
@@ -85,7 +87,7 @@ export default function NearbyProductsSection({
         <div className="flex items-center justify-center gap-2">
           <Loader size={20} className="animate-spin text-green-600" />
           <span className="text-green-700 dark:text-green-300">
-            Chargement des produits proches...
+            {t('home.loading_nearby')}
           </span>
         </div>
       </div>
@@ -118,10 +120,10 @@ export default function NearbyProductsSection({
           </div>
           <div>
             <h3 className="text-lg font-bold text-gray-900 dark:text-white">
-              Disponible près de vous
+              {t('home.nearby_title')}
             </h3>
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Vendeurs à proximité pour livraison plus rapide
+              {t('home.nearby_subtitle')}
             </p>
           </div>
         </div>
@@ -129,14 +131,14 @@ export default function NearbyProductsSection({
           <button
             onClick={() => scrollContainer('left')}
             className="rounded-lg bg-white p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-            aria-label="Scroll left"
+            aria-label={t('home.scroll_left')}
           >
             <ChevronLeft size={20} />
           </button>
           <button
             onClick={() => scrollContainer('right')}
             className="rounded-lg bg-white p-2 hover:bg-gray-100 dark:bg-gray-800 dark:hover:bg-gray-700"
-            aria-label="Scroll right"
+            aria-label={t('home.scroll_right')}
           >
             <ChevronRight size={20} />
           </button>

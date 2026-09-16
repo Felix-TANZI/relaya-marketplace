@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
   ChevronLeft,
@@ -124,6 +125,7 @@ export default function FlashPanel({
   trackHeight,
   topOffset,
 }: FlashPanelProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLElement | null>(null);
   const [current, setCurrent] = useState(0);
@@ -234,23 +236,23 @@ export default function FlashPanel({
               <Zap size={16} fill="currentColor" />
             </div>
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Offres rapides</p>
-              <h3 className="text-[16px] font-extrabold tracking-tight text-gray-900 dark:text-white">Flash Deals</h3>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">{t("home.quick_offers")}</p>
+              <h3 className="text-[16px] font-extrabold tracking-tight text-gray-900 dark:text-white">{t("home.flash_deals")}</h3>
             </div>
 
             <Link
               to="/flash-deals"
               className="ml-auto inline-flex items-center gap-1 rounded-full bg-[#fff0e6] px-3 py-1.5 text-[11px] font-bold text-primary transition hover:bg-[#ffe1cb] dark:bg-primary/10 dark:hover:bg-primary/20"
             >
-              Tout voir
+              {t("home.see_all_long")}
               <ArrowRight size={12} />
             </Link>
           </div>
 
           <div className="mb-4 rounded-[22px] bg-[linear-gradient(135deg,#111827,#2b3446)] p-3 shadow-inner">
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[10px] font-bold uppercase tracking-wide text-white/60">Expire dans</span>
-              <span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-white/80">Stock limité</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide text-white/60">{t("home.ends_in")}</span>
+              <span className="rounded-full bg-white/10 px-2 py-1 text-[9px] font-bold text-white/80">{t("home.limited_stock")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               {[cd.h, cd.m, cd.s].map((v, i) => (
@@ -276,7 +278,7 @@ export default function FlashPanel({
                 }
               }}
               className="group block w-full text-left"
-              aria-label={`Ouvrir le produit ${deal.name}`}
+              aria-label={t("home.open_product", { name: deal.name })}
             >
               <div className="relative aspect-[1.08] overflow-hidden bg-[#f8fafc] dark:bg-gray-800">
                 <img src={deal.img} alt={deal.name} loading="lazy" className="h-full w-full object-cover" />
@@ -292,7 +294,7 @@ export default function FlashPanel({
             <div className="p-4">
               <div className="flex items-end gap-2">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#b96c2d] dark:text-orange-300">Prix flash</p>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#b96c2d] dark:text-orange-300">{t("home.flash_price")}</p>
                   <p className="text-[18px] font-black text-primary">{deal.price.toLocaleString("fr-FR")} FCFA</p>
                 </div>
                 <p className="text-[12px] font-semibold text-gray-400 line-through dark:text-gray-500">{deal.old.toLocaleString("fr-FR")} FCFA</p>
@@ -307,7 +309,7 @@ export default function FlashPanel({
                   type="button"
                   onClick={() => setCurrent((value) => (value - 1 + deals.length) % deals.length)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  aria-label="Deal précédent"
+                  aria-label={t("home.prev_deal")}
                 >
                   <ChevronLeft size={16} />
                 </button>
@@ -316,13 +318,13 @@ export default function FlashPanel({
                   onClick={openDeal}
                   className="inline-flex flex-1 items-center justify-center rounded-full bg-primary px-4 py-3 text-[12px] font-bold text-white transition hover:bg-primary-dark"
                 >
-                  Voir le produit
+                  {t("home.view_product")}
                 </button>
                 <button
                   type="button"
                   onClick={() => setCurrent((value) => (value + 1) % deals.length)}
                   className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  aria-label="Deal suivant"
+                  aria-label={t("home.next_deal")}
                 >
                   <ChevronRight size={16} />
                 </button>
@@ -335,7 +337,7 @@ export default function FlashPanel({
                     type="button"
                     onClick={() => setCurrent(index)}
                     className={`h-2.5 rounded-full transition-all ${current === index ? "w-7 bg-primary" : "w-2.5 bg-[#f0d8c5] dark:bg-gray-700"}`}
-                    aria-label={`Aller au deal ${index + 1}`}
+                    aria-label={t("home.go_to_deal", { n: index + 1 })}
                   />
                 ))}
               </div>
@@ -344,15 +346,15 @@ export default function FlashPanel({
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             {[
-              { icon: ShieldCheck, label: "Escrow", text: "Paiement sécurisé" },
-              { icon: RotateCcw, label: "Retour", text: "Fenêtre 7 jours" },
-              { icon: LifeBuoy, label: "Support", text: "Assistance 7j/7" },
-              { icon: Sparkles, label: "Premium", text: "Sélection BelivaY" },
+              { icon: ShieldCheck, labelKey: "home.guarantee_escrow_label", textKey: "home.guarantee_escrow_text" },
+              { icon: RotateCcw, labelKey: "home.guarantee_return_label", textKey: "home.guarantee_return_text" },
+              { icon: LifeBuoy, labelKey: "home.guarantee_support_label", textKey: "home.guarantee_support_text" },
+              { icon: Sparkles, labelKey: "home.guarantee_premium_label", textKey: "home.guarantee_premium_text" },
             ].map((item) => (
-              <div key={item.label} className="rounded-[18px] border border-[#f2e2d7] bg-white px-3 py-3 dark:border-gray-800 dark:bg-gray-950">
+              <div key={item.labelKey} className="rounded-[18px] border border-[#f2e2d7] bg-white px-3 py-3 dark:border-gray-800 dark:bg-gray-950">
                 <item.icon size={16} className="text-primary" />
-                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#b96c2d] dark:text-orange-300">{item.label}</p>
-                <p className="mt-1 text-[11px] font-semibold leading-5 text-gray-600 dark:text-gray-300">{item.text}</p>
+                <p className="mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[#b96c2d] dark:text-orange-300">{t(item.labelKey)}</p>
+                <p className="mt-1 text-[11px] font-semibold leading-5 text-gray-600 dark:text-gray-300">{t(item.textKey)}</p>
               </div>
             ))}
           </div>

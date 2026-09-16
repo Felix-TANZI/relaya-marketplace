@@ -135,8 +135,7 @@ def _to_item(product: dict) -> ProductItem:
         old = int(compare_at)
     else:
         old = price_xaf if price_xaf > price else None
-    images = sorted(product.get("images") or [], key=lambda i: (not i.get("is_primary"), i.get("order") or 0))
-    image = next((i.get("image_url") or i.get("image") for i in images if i.get("image_url") or i.get("image")), None)
+    image = _first_image(product)
     return ProductItem(
         id=product["id"],
         title=product.get("title", ""),
@@ -151,6 +150,26 @@ def _to_item(product: dict) -> ProductItem:
     )
 
 
+def _first_image(product: dict) -> str | None:
+    """
+    La photo principale. BelivaY la range dans deux champs selon l'origine du
+    produit : « images » (televersee par le vendeur) ou « media » (galerie).
+    On regarde les deux, sinon la moitie du catalogue arriverait sans photo.
+    """
+    images = sorted(product.get("images") or [],
+                    key=lambda item: (not item.get("is_primary"), item.get("order") or 0))
+    for item in images:
+        url = item.get("image_url") or item.get("image")
+        if url:
+            return url
+
+    media = sorted(product.get("media") or [], key=lambda item: item.get("sort_order") or 0)
+    for item in media:
+        if item.get("media_type", "image") == "image" and item.get("url"):
+            return item["url"]
+    return None
+
+
 def buy_url(master_slug: str | None) -> str | None:
     """
     Page d'achat du produit sur le site, seulement si elle s'ouvre : la page
@@ -158,5 +177,10 @@ def buy_url(master_slug: str | None) -> str | None:
     """
     if not master_slug:
         return None
-    published = _cached(f"master:{master_slug}", lambda: bool(_get(f"/api/catalog/masters/{master_slug}/")))
+    # La route publique est « master-products », telle qu'enregistree dans
+    # apps/catalog/urls.py. Une erreur ici masque le bouton « Acheter » partout.
+    published = _cached(
+        f"master:{master_slug}",
+        lambda: bool(_get(f"/api/catalog/master-products/{master_slug}/")),
+    )
     return f"{_base()}/product/{master_slug}" if published else None

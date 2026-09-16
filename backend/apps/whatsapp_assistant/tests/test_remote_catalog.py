@@ -5,6 +5,9 @@
 from io import BytesIO
 from unittest.mock import MagicMock, patch
 
+import io
+import re
+
 import pytest
 from PIL import Image
 
@@ -60,7 +63,7 @@ def fake_site(url, params=None, **kwargs):
         return _response(PRODUCTS_PAGE_1)
     if url.endswith("page=2"):
         return _response(PRODUCTS_PAGE_2)
-    if url.endswith("/api/catalog/masters/fiche-1/"):        # seule la fiche 1 est publiée
+    if url.endswith("/api/catalog/master-products/fiche-1/"):   # seule la fiche 1 est publiée
         return _response({"id": 1, "slug": "fiche-1"})
     return _response({}, status=404)
 
@@ -143,3 +146,53 @@ def test_le_catalogue_est_garde_en_cache_quelques_secondes(provider, contact):
         catalog.root_categories()
 
     assert get.call_count == calls_after_first       # aucun nouvel appel au site
+
+def test_les_adresses_appelees_existent_vraiment_dans_le_site():
+    """
+    Garde-fou ne : le faux site de ces tests reproduisait la meme adresse
+    erronee que le code (« masters » au lieu de « master-products »), donc
+    l'erreur passait inapercue et le bouton « Acheter » etait masque partout.
+    On confronte desormais chaque adresse appelee aux routes reelles de Django.
+    """
+    from django.urls import resolve
+    from django.urls.exceptions import Resolver404
+
+    from apps.whatsapp_assistant.bridge.sources import remote
+
+    source = io.open(remote.__file__, encoding="utf-8").read()
+    appelees = set(re.findall(r'"(/api/[^"{}]*(?:\{[a-z_]+\}[^"]*)?)"', source))
+    assert appelees, "aucune adresse trouvee dans remote.py"
+
+    for adresse in sorted(appelees):
+        # Les gabarits contiennent une variable : on la remplit d'une valeur type.
+        concrete = re.sub(r"\{[a-z_]+\}", "essai", adresse)
+        try:
+            resolve(concrete)
+        except Resolver404:                     # pragma: no cover - c'est l'echec attendu
+            raise AssertionError(
+                f"remote.py appelle {adresse!r}, qui ne correspond a aucune route du site."
+            )
+
+def test_la_photo_est_trouvee_dans_les_deux_champs():
+    """
+    BelivaY range la photo tantot dans « images » (televersee par le vendeur),
+    tantot dans « media » (galerie). N'en lire qu'un seul laissait la moitie du
+    catalogue sans photo sur WhatsApp.
+    """
+    from apps.whatsapp_assistant.bridge.sources.remote import _first_image
+
+    televersee = {"images": [{"image_url": "https://site/a.webp", "is_primary": True, "order": 0}]}
+    galerie = {"media": [{"url": "https://site/b.jpg", "media_type": "image", "sort_order": 0}]}
+    les_deux = {**televersee, **galerie}
+    video_seule = {"media": [{"url": "https://site/c.mp4", "media_type": "video", "sort_order": 0}]}
+
+    assert _first_image(televersee) == "https://site/a.webp"
+    assert _first_image(galerie) == "https://site/b.jpg"
+    assert _first_image(les_deux) == "https://site/a.webp"      # la televersee prime
+    assert _first_image(video_seule) is None                    # une video n'est pas une photo
+    assert _first_image({}) is None
+
+    # L'ordre declare par le site est respecte.
+    desordre = {"media": [{"url": "https://site/2.jpg", "media_type": "image", "sort_order": 2},
+                          {"url": "https://site/1.jpg", "media_type": "image", "sort_order": 1}]}
+    assert _first_image(desordre) == "https://site/1.jpg"

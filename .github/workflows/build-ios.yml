@@ -1,0 +1,186 @@
+name: Build iOS (.ipa) - BelivaY Client
+
+# Déclenchement manuel uniquement (bouton "Run workflow" dans l'onglet
+# Actions) : contrairement à ci.yml, ce build ne tourne pas à chaque push,
+# il sert à produire un .ipa à la demande pour les tests internes.
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    name: Build iOS client
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci --legacy-peer-deps
+
+      - name: Construire le bundle web (portail client)
+        run: |
+          export VITE_API_URL=https://belivay.com/api
+          export VITE_GOOGLE_CLIENT_ID=582094155516-insnk09ptfqa6faunktufc5nhrrihsmj.apps.googleusercontent.com
+          npm run build:client
+
+      - name: Activer la config Capacitor du portail client
+        run: cp capacitor.client.config.ts capacitor.config.ts
+
+      # Le projet Xcode natif n'est pas versionné (contrairement aux dossiers
+      # android-*) : on le régénère à chaque run pour rester simple, plutôt
+      # que de maintenir un gros dossier Xcode dans git sans jamais pouvoir
+      # le tester localement (cette CI tourne sur Linux).
+      - name: Ajouter et synchroniser la plateforme iOS
+        run: |
+          npx cap add ios
+          npx cap sync ios
+
+      - name: Installer les pods CocoaPods
+        working-directory: frontend/ios/App
+        run: pod install
+
+      # Détermine si les secrets de signature (certificat + profil de
+      # provisionnement) ont été configurés dans Settings > Secrets. Sans
+      # eux, on ne peut produire qu'un build simulateur non signé — utile
+      # pour vérifier que la compilation passe, mais pas installable sur un
+      # vrai iPhone. Voir la doc en fin de fichier pour les générer.
+      - name: Vérifier la présence des secrets de signature
+        id: signing
+        run: |
+          if [ -n "${{ secrets.IOS_P12_BASE64 }}" ] && [ -n "${{ secrets.IOS_MOBILEPROVISION_BASE64 }}" ]; then
+            echo "has_signing=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_signing=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Chemin A : secrets de signature présents → vrai .ipa installable ──
+      - name: "[Signé] Importer le certificat et le profil de provisionnement"
+        if: steps.signing.outputs.has_signing == 'true'
+        env:
+          P12_BASE64: ${{ secrets.IOS_P12_BASE64 }}
+          P12_PASSWORD: ${{ secrets.IOS_P12_PASSWORD }}
+          PROVISION_BASE64: ${{ secrets.IOS_MOBILEPROVISION_BASE64 }}
+        run: |
+          KEYCHAIN_PASSWORD=$(openssl rand -base64 24)
+          security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security set-keychain-settings -lut 21600 build.keychain
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
+          security list-keychains -d user -s build.keychain $(security list-keychains -d user | sed 's/"//g')
+
+          echo "$P12_BASE64" | base64 --decode > certificate.p12
+          security import certificate.p12 -k build.keychain -P "$P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
+          rm certificate.p12
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISION_BASE64" | base64 --decode > profile.mobileprovision
+          PROFILE_UUID=$(security cms -D -i profile.mobileprovision | plutil -extract UUID xml1 -o - - | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$PROFILE_UUID.mobileprovision"
+          echo "PROFILE_UUID=$PROFILE_UUID" >> "$GITHUB_ENV"
+          rm profile.mobileprovision
+
+      - name: "[Signé] Archiver et exporter le .ipa"
+        if: steps.signing.outputs.has_signing == 'true'
+        working-directory: frontend/ios/App
+        run: |
+          cat > ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>${{ vars.IOS_EXPORT_METHOD || 'ad-hoc' }}</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>com.belivay.client</key>
+              <string>${PROFILE_UUID}</string>
+            </dict>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>compileBitcode</key>
+            <false/>
+          </dict>
+          </plist>
+          EOF
+
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -destination "generic/platform=iOS" \
+            archive
+
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath build/export
+
+      - name: "[Signé] Publier le .ipa"
+        if: steps.signing.outputs.has_signing == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: BelivaY-client.ipa
+          path: frontend/ios/App/build/export/*.ipa
+          retention-days: 30
+
+      # ── Chemin B : pas de secrets → build simulateur pour valider la compilation ──
+      - name: "[Non signé] Compiler pour le simulateur (validation seulement)"
+        if: steps.signing.outputs.has_signing == 'false'
+        working-directory: frontend/ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: "[Non signé] Résumé"
+        if: steps.signing.outputs.has_signing == 'false'
+        run: |
+          echo "## Build simulateur uniquement" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "Aucun secret de signature (IOS_P12_BASE64 / IOS_MOBILEPROVISION_BASE64) trouvé." >> "$GITHUB_STEP_SUMMARY"
+          echo "La compilation a réussi mais **aucun .ipa installable sur iPhone n'a été produit**." >> "$GITHUB_STEP_SUMMARY"
+          echo "Voir \`.github/workflows/build-ios.yml\` (commentaires en fin de fichier) pour générer les secrets nécessaires." >> "$GITHUB_STEP_SUMMARY"
+
+# ─────────────────────────────────────────────────────────────────────────
+# Pour obtenir un vrai .ipa installable sur un iPhone (chemin A), il faut
+# générer UNE FOIS, sur un Mac (même emprunté ou loué à l'heure), un
+# certificat de signature + un profil de provisionnement, puis les ajouter
+# comme secrets du dépôt (Settings > Secrets and variables > Actions) :
+#
+#   IOS_P12_BASE64            base64 du certificat exporté (.p12)
+#   IOS_P12_PASSWORD          mot de passe choisi à l'export du .p12
+#   IOS_MOBILEPROVISION_BASE64 base64 du fichier .mobileprovision
+#
+# Avec un Apple ID gratuit (compte "Personal Team", sans les 99 $/an) :
+#   1. Ouvrir Xcode > Settings > Accounts, ajouter l'Apple ID.
+#   2. Créer/ouvrir le projet iOS une fois (ou utiliser celui généré par
+#      cette CI en local), sélectionner l'équipe "Personal Team" dans
+#      Signing & Capabilities pour le target "App".
+#   3. Brancher chaque iPhone testeur en USB, l'ajouter dans Xcode > Window
+#      > Devices and Simulators pour qu'il soit enregistré, puis laisser
+#      Xcode générer/mettre à jour le profil de provisionnement en le
+#      incluant.
+#   4. Exporter le certificat depuis Keychain Access (clic droit > Exporter,
+#      format .p12, avec un mot de passe) et récupérer le profil dans
+#      ~/Library/MobileDevice/Provisioning Profiles/.
+#   5. Encoder chaque fichier : `base64 -i fichier -o fichier.b64`
+#      et coller le contenu dans les secrets ci-dessus.
+#
+# Limite du compte gratuit : le profil expire au bout de 7 jours et n'
+# autorise que les appareils déjà enregistrés à l'étape 3 — il faut relancer
+# la procédure (donc réexporter et remettre à jour les secrets) chaque
+# semaine tant qu'il n'y a pas de compte Apple Developer payant.
+# ─────────────────────────────────────────────────────────────────────────

@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Projet Xcode natif : régénéré à chaque run par le workflow build-ios.yml
+# (npx cap add ios), jamais commité — contrairement aux dossiers android-*.
+ios/
+
 # TypeScript build artifacts
 *.tsbuildinfo
 

@@ -27,7 +27,7 @@ export function usePortalLogin() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, googleLogin, verify2FA } = useAuth();
+  const { login, googleLogin, appleLogin, verify2FA } = useAuth();
   const { showToast } = useToast();
 
   const routeState = (location.state ?? null) as LoginRouteState | null;
@@ -89,6 +89,24 @@ export function usePortalLogin() {
     }
   };
 
+  const handleAppleCredential = async (credential: {
+    identityToken: string;
+    email: string | null;
+    givenName: string | null;
+    familyName: string | null;
+  }) => {
+    setLoading(true);
+    try {
+      const res = await appleLogin(credential);
+      if (res.twoFactorRequired) askForCode({ userId: res.userId, email: res.email });
+      else finishLogin();
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : t('cl6_social_auth.apple_login_failed'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVerify = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!twoFA || code.trim().length < 6) {
@@ -137,6 +155,7 @@ export function usePortalLogin() {
     googleUnavailable,
     setGoogleUnavailable,
     handleGoogleCredential,
+    handleAppleCredential,
     twoFA,
     code,
     setCode,

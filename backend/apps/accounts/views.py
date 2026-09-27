@@ -173,6 +173,138 @@ def google_login(request):
     return response
 
 
+def _available_apple_username(email, subject):
+    local_part = email.split("@", 1)[0] if email else ""
+    base = slugify(local_part).replace("-", "_")[:120] or f"apple_{subject[-12:]}"
+    candidate = base
+    suffix = 1
+    while User.objects.filter(username=candidate).exists():
+        suffix += 1
+        candidate = f"{base[:140]}_{suffix}"
+    return candidate
+
+
+def _verify_apple_identity_token(identity_token):
+    """Verifie la signature et les claims d'un identityToken "Sign in with
+    Apple", en validant contre les cles publiques JWKS d'Apple. Leve
+    jwt.PyJWTError (ou une sous-classe) si le jeton est invalide/expire, et
+    ValueError si l'audience ne correspond a aucun client Apple attendu."""
+    import jwt
+    from jwt import PyJWKClient
+
+    jwk_client = PyJWKClient("https://appleid.apple.com/auth/keys")
+    signing_key = jwk_client.get_signing_key_from_jwt(identity_token)
+    claims = jwt.decode(
+        identity_token,
+        signing_key.key,
+        algorithms=["RS256"],
+        audience=django_settings.APPLE_CLIENT_IDS,
+        issuer="https://appleid.apple.com",
+    )
+    return claims
+
+
+@extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def apple_login(request):
+    """Valide un identityToken "Sign in with Apple" puis ouvre une session
+    client BelivaY. Apple ne renvoie l'email (et le nom) que lors de la toute
+    premiere autorisation : le client doit alors les transmettre en plus du
+    jeton (`email`, `given_name`, `family_name`) pour la creation du compte —
+    les connexions suivantes n'ont besoin que du jeton, l'utilisateur etant
+    deja cree et retrouve par email."""
+    identity_token = str(request.data.get("identity_token", "")).strip()
+    if not django_settings.APPLE_CLIENT_IDS:
+        return Response(
+            {"detail": "La connexion Apple n'est pas configuree sur le serveur."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+    if not identity_token:
+        return Response({"detail": "Jeton Apple requis."}, status=status.HTTP_400_BAD_REQUEST)
+
+    import jwt as pyjwt
+
+    try:
+        claims = _verify_apple_identity_token(identity_token)
+    except pyjwt.PyJWTError as exc:
+        logger.info("Apple login rejected: %s", exc)
+        return Response({"detail": "Jeton Apple invalide ou expire."}, status=status.HTTP_401_UNAUTHORIZED)
+    except Exception as exc:  # indisponibilite du service JWKS d'Apple, etc.
+        logger.warning("Apple identity service unavailable: %s", exc)
+        return Response(
+            {"detail": "Apple est temporairement indisponible. Reessayez dans un instant."},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
+
+    subject = str(claims.get("sub", "")).strip()
+    if not subject:
+        return Response({"detail": "Jeton Apple invalide."}, status=status.HTTP_400_BAD_REQUEST)
+
+    # L'email n'est present dans le jeton que si Apple le fournit (relay
+    # prive inclus) ; a defaut, on retombe sur celui transmis par le client
+    # lors de la toute premiere autorisation.
+    email = str(claims.get("email") or request.data.get("email") or "").strip().lower()
+    email_verified = claims.get("email_verified") in (True, "true")
+
+    matches = User.objects.filter(email__iexact=email) if email else User.objects.none()
+    if matches.count() > 1:
+        return Response(
+            {"detail": "Plusieurs comptes utilisent cet email. Contactez le support BelivaY."},
+            status=status.HTTP_409_CONFLICT,
+        )
+
+    user = matches.first()
+    created = user is None
+    if created:
+        if not email or not email_verified:
+            return Response(
+                {"detail": "Apple n'a pas confirme d'adresse email pour ce compte. Reessayez la connexion."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        with transaction.atomic():
+            user = User(
+                username=_available_apple_username(email, subject),
+                email=email,
+                first_name=str(request.data.get("given_name", ""))[:150],
+                last_name=str(request.data.get("family_name", ""))[:150],
+            )
+            user.set_unusable_password()
+            user.save()
+
+    if not user.is_active:
+        return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
+
+    profile = get_or_create_profile(user)
+    if profile.two_factor_enabled:
+        try:
+            _create_and_send_otp(user, "2FA_LOGIN")
+        except Exception as exc:
+            logger.exception("Apple login 2FA delivery failed")
+            return Response(
+                {"detail": f"Erreur envoi code 2FA : {exc}"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        return Response({
+            "2fa_required": True,
+            "user_id": user.id,
+            "email": user.email,
+            "created": created,
+        })
+
+    from rest_framework_simplejwt.tokens import RefreshToken
+
+    refresh = RefreshToken.for_user(user)
+    response = Response({
+        "access": str(refresh.access_token),
+        "refresh": str(refresh),
+        "created": created,
+    })
+    _register_session_from_response(response, user, request)
+    update_last_login(None, user)
+    return response
+
+
 @extend_schema(tags=["Auth"], summary="Register new user", request=RegisterSerializer, responses={201: UserSerializer})
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()

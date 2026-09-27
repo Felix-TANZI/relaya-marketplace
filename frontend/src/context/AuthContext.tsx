@@ -14,6 +14,12 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<LoginOutcome>;
   googleLogin: (credential: string) => Promise<LoginOutcome>;
+  appleLogin: (payload: {
+    identityToken: string;
+    email?: string | null;
+    givenName?: string | null;
+    familyName?: string | null;
+  }) => Promise<LoginOutcome>;
   verify2FA: (userId: number, code: string) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
   logout: () => void;
@@ -66,6 +72,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { twoFactorRequired: false };
   };
 
+  const appleLogin: AuthContextType['appleLogin'] = async (payload) => {
+    const response = await authApi.appleLogin(payload);
+    if ('2fa_required' in response) {
+      return { twoFactorRequired: true, userId: response.user_id, email: response.email };
+    }
+    await applyTokens(response.access, response.refresh);
+    return { twoFactorRequired: false };
+  };
+
   const verify2FA = async (userId: number, code: string): Promise<void> => {
     const tokens = await authApi.verify2FALogin(userId, code);
     await applyTokens(tokens.access, tokens.refresh);
@@ -89,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, googleLogin, verify2FA, register, logout, isAuthenticated: !!user }}
+      value={{ user, loading, login, googleLogin, appleLogin, verify2FA, register, logout, isAuthenticated: !!user }}
     >
       {children}
     </AuthContext.Provider>

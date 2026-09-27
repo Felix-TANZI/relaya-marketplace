@@ -183,4 +183,12 @@ jobs:
 # autorise que les appareils déjà enregistrés à l'étape 3 — il faut relancer
 # la procédure (donc réexporter et remettre à jour les secrets) chaque
 # semaine tant qu'il n'y a pas de compte Apple Developer payant.
+#
+# "Sign in with Apple" (obligatoire côté App Store dès qu'un fournisseur
+# tiers comme Google est proposé) nécessite en plus, à l'étape 2 ci-dessus,
+# d'ajouter la capacité "Sign in with Apple" au target "App" dans Signing &
+# Capabilities — Xcode le propose lui-même en un clic ("Fix") dès qu'il
+# détecte l'appel à ASAuthorizationAppleIDProvider dans le code du plugin.
+# Comme le projet ios/ n'est pas versionné (régénéré à chaque run), cette
+# capacité doit être réactivée à chaque nouvelle génération locale du projet.
 # ─────────────────────────────────────────────────────────────────────────

@@ -19,6 +19,13 @@ ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") i
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
 
+# Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
+# Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
+# (flux web), séparés par des virgules si plusieurs.
+APPLE_CLIENT_IDS = [
+    v.strip() for v in os.getenv("APPLE_CLIENT_IDS", "com.belivay.client").split(",") if v.strip()
+]
+
 INSTALLED_APPS = [
     # Django
     "django.contrib.admin",

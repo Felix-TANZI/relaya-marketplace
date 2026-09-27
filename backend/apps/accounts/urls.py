@@ -62,6 +62,7 @@ from .views import (
     disable_2fa,
     verify_2fa_login,
     google_login,
+    apple_login,
 )
 
 urlpatterns = [
@@ -84,6 +85,7 @@ urlpatterns = [
     path("register/",       RegisterView.as_view(),                name="auth-register"),
     path("login/",          TwoFactorTokenObtainPairView.as_view(), name="auth-login"),   # 2FA aware
     path("google/",         google_login,                           name="auth-google"),
+    path("apple/",          apple_login,                            name="auth-apple"),
     path("logout/",         logout_view,                           name="auth-logout"),
     path("refresh/",        TokenRefreshView.as_view(),            name="auth-refresh"),
 

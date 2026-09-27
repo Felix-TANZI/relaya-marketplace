@@ -155,6 +155,23 @@ export const authApi = {
     });
   },
 
+  appleLogin: async (payload: {
+    identityToken: string;
+    email?: string | null;
+    givenName?: string | null;
+    familyName?: string | null;
+  }): Promise<LoginResult> => {
+    return http<LoginResult>('/api/auth/apple/', {
+      method: 'POST',
+      body: JSON.stringify({
+        identity_token: payload.identityToken,
+        email: payload.email || undefined,
+        given_name: payload.givenName || undefined,
+        family_name: payload.familyName || undefined,
+      }),
+    });
+  },
+
   /**
    * Vérifie le code OTP de connexion (2FA) et renvoie les tokens.
    * Fetch direct pour remonter le message d'erreur exact du backend.

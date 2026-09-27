@@ -21,10 +21,11 @@ export default {
   },
 
   cl6_social_auth: {
-    apple_coming_soon: 'Apple sign-in coming soon.',
     facebook_coming_soon: 'Facebook sign-in coming soon.',
     continue_with_apple: 'Continue with Apple',
     continue_with_facebook: 'Continue with Facebook',
+    apple_connecting: 'Signing in...',
+    apple_login_failed: 'Apple sign-in failed. Try again or use another sign-in method.',
   },
 
   cl6_portal_login: {

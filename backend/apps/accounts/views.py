@@ -96,11 +96,16 @@ def google_login(request):
         from google.auth.transport import requests as google_requests
         from google.oauth2 import id_token
 
+        # audience=None : on verifie nous-memes le champ "aud" pour accepter
+        # l'ID web ET les ID des apps natives (iOS), cf. GOOGLE_EXTRA_CLIENT_IDS.
         identity = id_token.verify_oauth2_token(
             credential,
             google_requests.Request(),
-            client_id,
+            None,
         )
+        allowed_audiences = {client_id, *getattr(django_settings, "GOOGLE_EXTRA_CLIENT_IDS", [])}
+        if identity.get("aud") not in allowed_audiences:
+            raise ValueError("Audience Google non autorisee: %s" % identity.get("aud"))
     except google_exceptions.TransportError as exc:
         logger.warning("Google identity service unavailable: %s", exc)
         return Response(

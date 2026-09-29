@@ -18,6 +18,15 @@ DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+# Identifiants OAuth Google supplementaires acceptes (apps natives iOS), separes par des virgules.
+GOOGLE_EXTRA_CLIENT_IDS = [
+    v.strip()
+    for v in os.getenv(
+        "GOOGLE_EXTRA_CLIENT_IDS",
+        "582094155516-m8somr2pbk9292ulebgo6338s8a0to0c.apps.googleusercontent.com",
+    ).split(",")
+    if v.strip()
+]
 
 # Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
 # Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID

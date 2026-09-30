@@ -18,7 +18,7 @@ requestGeolocation();
 // qui est indispensable pour que les env(safe-area-inset-*) du portail point
 // relais valent autre chose que 0. On ne l'active que pour ce portail : les
 // autres ont des barres `fixed top-0` sans padding d'inset, et passeraient
-// sous la barre de statut. A supprimer quand ils gereront leurs insets.
+// sous la barre de statut. A supprimer quand ils gereront leurs insets. ex
 if (portalRole === 'relay_point') {
   document
     .querySelector('meta[name="viewport"]')

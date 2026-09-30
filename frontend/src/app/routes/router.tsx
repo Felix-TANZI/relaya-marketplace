@@ -74,6 +74,8 @@ const SellerBoostPage = lazy(() => import('@/features/vendors/SellerBoostPage'))
 const SellerCertificationsPage = lazy(() => import('@/features/vendors/SellerCertificationsPage'));
 const SellerPlansPage = lazy(() => import('@/features/vendors/SellerPlansPage'));
 const SellerSettingsPage = lazy(() => import('@/features/vendors/SellerSettingsPage'));
+const SellerMenuPage = lazy(() => import('@/features/vendors/v2/MenuPage'));
+const SellerV2ComingSoonPage = lazy(() => import('@/features/vendors/v2/V2ComingSoonPage'));
 const SellerPaymentsPage = lazy(() => import('@/features/vendors/SellerPaymentsPage'));
 const SellerWalletPage = lazy(() => import('@/features/vendors/SellerWalletPage'));
 const SellerSettlementsPage = lazy(() => import('@/features/vendors/SellerSettlementsPage'));
@@ -240,6 +242,8 @@ export const router = createBrowserRouter([
       { path: 'certifications',    element: <SellerCertificationsPage /> },
       { path: 'plans',             element: <SellerPlansPage /> },
       { path: 'settings',          element: <SellerSettingsPage /> },
+      { path: 'menu',              element: <SellerMenuPage /> },
+      { path: 'v2/:screen',        element: <SellerV2ComingSoonPage /> },
 
       // Pages financières vendeur. Declarees AVANT `sellerPaymentRoutes` :
       // ce jeu generique expose aussi `wallet`, `payments` et `adjustments`,

@@ -6,7 +6,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import PageLoader from '@/components/PageLoader';
 import {
-  LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
+  LayoutDashboard, Package, ShoppingBag, Scale,
   FileText, Lock, CircleCheckBig, RotateCcw,
   Plus, TrendingUp, Zap, Store, Award, CreditCard, Wallet,
   Settings, Sun, Moon, Bell, X, Menu,
@@ -17,6 +17,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
 import SellerProfileSheet from '@/features/vendors/SellerProfileSheet';
+import DockNav from '@/features/vendors/v2/DockNav';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -237,7 +238,6 @@ export default function SellerLayout() {
   const location               = useLocation();
   const { i18n, t }            = useTranslation();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [sheetFeedback,    setSheetFeedback]    = useState('');
   const [profile,     setProfile]     = useState<VendorProfile | null>(null);
@@ -253,7 +253,6 @@ export default function SellerLayout() {
   useEffect(() => {
     if (prevPath.current !== location.pathname) {
       prevPath.current = location.pathname;
-      setSidebarOpen(false);
       setProfileSheetOpen(false);
     }
   }, [location.pathname]);
@@ -261,13 +260,6 @@ export default function SellerLayout() {
   const shopName = profile?.business_name ?? user?.username ?? t('seller_layout.shop_default');
 
   const nav = buildNav(t);
-
-  const MOBILE_TABS = [
-    { label: t('seller_layout.nav_home'),     path: '/seller/dashboard', icon: LayoutDashboard },
-    { label: t('seller_layout.nav_products'), path: '/seller/products',  icon: Package },
-    { label: t('seller_layout.nav_orders'),   path: '/seller/orders',    icon: ShoppingBag },
-    { label: t('seller_layout.nav_payments'), path: '/seller/payments',  icon: DollarSign },
-  ];
 
   return (
     /* `belivay-portal` : scope typographique des espaces metier.
@@ -284,8 +276,10 @@ export default function SellerLayout() {
           boxShadow: '0 1px 0 rgba(0,0,0,0.05)',
         }}
       >
-        {/* Burger mobile */}
-        <button onClick={() => setSidebarOpen(true)}
+        {/* Menu (VD-11 MEN-01) : remplace le tiroir mobile par l'écran Menu
+            en sept groupes — action VD-D12.A01. */}
+        <button onClick={() => navigate('/seller/menu')}
+          aria-label={t('sl5_fondations.dock_label')}
           className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all"
           style={{ color: T.muted }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
@@ -371,15 +365,6 @@ export default function SellerLayout() {
         <SidebarContent shopName={shopName} nav={nav} t={t} />
       </aside>
 
-      {/* ═══ SIDEBAR MOBILE OVERLAY ═══ */}
-      <div onClick={() => setSidebarOpen(false)}
-        className={`lg:hidden fixed inset-0 z-[790] transition-all duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(28,18,9,0.6)', backdropFilter: 'blur(4px)' }} />
-      <aside className={`lg:hidden fixed top-0 left-0 bottom-0 z-[800] w-[78vw] max-w-[270px] flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: T.sidebar }}>
-        <SidebarContent shopName={shopName} nav={nav} t={t} onClose={() => setSidebarOpen(false)} />
-      </aside>
-
       {/* ═══ MAIN ═══ */}
       <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
         {/* Gouttiere resserree sur telephone : a 16px de chaque cote plus 20px
@@ -392,40 +377,13 @@ export default function SellerLayout() {
         </div>
       </main>
 
-      {/* ═══ MOBILE BOTTOM NAV ═══
-          Quatre raccourcis du quotidien, sans bouton « Plus » : le reste du
-          menu s'ouvre par l'icone du bandeau, du meme cote que le tiroir. Un
-          second point d'entree en bas dupliquait le geste et volait un
-          cinquieme de la barre aux destinations du quotidien.
-          Fond OPAQUE et `fixed` seul, sans classe CSS maison : une regle
-          personnelle declarant `position` ecraserait l'utilitaire `fixed` de
-          Tailwind (meme specificite, declaree plus loin dans la feuille) et la
-          barre se remettrait a defiler avec la page. */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[700]"
-        style={{
-          background: T.topbar,
-          borderTop: `1px solid ${T.border}`,
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
-        }}>
-        <div className="flex items-center h-[56px] px-2">
-          {MOBILE_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const active = location.pathname === tab.path || location.pathname.startsWith(tab.path + '/');
-            return (
-              <NavLink key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center justify-center gap-[3px] py-1 transition active:scale-[.93]">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                  style={active ? { background: T.orange, boxShadow: `0 4px 14px rgba(244,121,32,0.45)` } : {}}>
-                  <Icon size={17} style={{ color: active ? '#fff' : T.muted }} />
-                </div>
-                <span className="text-[8.5px] font-semibold" style={{ color: active ? T.orange : T.muted }}>
-                  {tab.label}
-                </span>
-              </NavLink>
-            );
-          })}
-        </div>
-      </nav>
+      {/* ═══ DOCK MOBILE (VD-01 NAV-01) ═══
+          Remplace l'ancienne barre à 4 onglets : mêmes destinations pour
+          l'instant (lots 3/5/9 pas encore construits), mais détachée du bord
+          bas et capsule orangée, conformes à la spec. */}
+      <div className="lg:hidden">
+        <DockNav />
+      </div>
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
           le tiroir de navigation vient de gauche, les deux gestes restent donc

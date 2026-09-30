@@ -1,0 +1,65 @@
+export default {
+  sl5_fondations: {
+    dock_label: 'Seller navigation',
+    dock_home: 'Home',
+    dock_orders: 'Orders',
+    dock_products: 'Products',
+    dock_money: 'Money',
+
+    shop_default: 'My shop',
+    menu_owner: 'Owner',
+    menu_version: 'Seller space · version 1.0',
+
+    menu_group_to_handle: 'To handle',
+    menu_to_prepare: 'To prepare',
+    menu_disputes: 'Disputes',
+    menu_returns: 'Returns',
+
+    menu_group_messages: 'Messages and help',
+    menu_notifications: 'Notifications',
+    menu_messaging: 'Messaging',
+    menu_help: 'Help',
+
+    menu_group_money: 'My money',
+    menu_my_money: 'My money',
+    menu_payouts: 'Payouts',
+    menu_documents: 'Documents',
+
+    menu_group_catalog: 'My catalog',
+    menu_my_products: 'My products',
+    menu_new_offer: 'New offer',
+    menu_assisted_entry: 'Assisted entry',
+
+    menu_group_grow: 'Sell more',
+    menu_trust_score: 'Trust Score and tier',
+    menu_my_numbers: 'My numbers',
+    menu_plans: 'Plans & pricing',
+    menu_visibility: 'Get seen',
+
+    menu_group_shop: 'My shop',
+    menu_my_shop: 'My shop',
+    menu_hours: 'Hours and closures',
+    menu_reviews: 'Reviews and right of reply',
+    menu_team: 'My team',
+    menu_location: 'Location',
+
+    menu_group_account: 'My account',
+    menu_settings: 'Settings',
+    menu_security: 'Security, devices and data',
+    menu_install: 'Install the app',
+    menu_logout: 'Log out',
+
+    screen_generic: 'Coming soon',
+    screen_generic_desc: 'This screen is part of the new seller space, currently being built.',
+    screen_notifications: 'Notifications',
+    screen_messaging: 'Messaging',
+    screen_help: 'Help',
+    screen_assisted_entry: 'Assisted entry',
+    screen_hours: 'Hours and closures',
+    screen_location: 'Location',
+    screen_team: 'My team',
+    screen_reviews: 'Reviews and right of reply',
+    screen_security: 'Security, devices and data',
+    screen_install: 'Install the app',
+  },
+};

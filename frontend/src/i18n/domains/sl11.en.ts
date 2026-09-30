@@ -158,6 +158,7 @@ export default {
     sim_subtitle: 'What you would keep this month with each plan.',
     sim_sales_label: 'Your sales this month',
     sim_not_yet_profitable: 'not profitable yet',
+    sim_unavailable: 'Comparison unavailable for now: the plan pricing isn’t returned by the server yet.',
     sim_detail_title: 'See the detail',
     sim_detail_body: "What you would keep = your sales minus this plan's commission minus the plan's price (if any). The plan that leaves you the most is circled in green.",
     sim_stay_free_cta: 'Stay on Free',

@@ -64,31 +64,39 @@ export default function SimulateurPage() {
         />
       </div>
 
-      {/* 3 colonnes Free/Boost/Pro, meilleur cerclé de vert */}
-      <div className="grid grid-cols-3 gap-2 mb-4">
-        {kept.map(({ plan, value }) => {
-          const isBest = value === bestValue && bestValue > 0;
-          return (
-            <div
-              key={plan.id}
-              className="rounded-2xl p-3 text-center"
-              style={{ background: p.card, border: isBest ? `2px solid ${p.green}` : `1px solid ${p.border}` }}
-            >
-              <p className="font-bold mb-2" style={{ fontSize: 12, color: p.text }}>
-                {t(`sl11_compte.plan_${mapLegacyPlanCode(plan.code).toLowerCase()}`)}
-              </p>
-              <p className="font-black" style={{ fontSize: 13.5, color: isBest ? p.green : p.text }}>
-                {formatXAF(value)}
-              </p>
-              {!isBest && bestValue > value ? (
-                <p style={{ fontSize: 10, color: p.textMuted }}>
-                  {t('sl11_compte.sim_not_yet_profitable')}
+      {/* 3 colonnes Free/Boost/Pro, meilleur cerclé de vert — état honnête si le
+          serveur ne renvoie encore aucun plan tarifé (voir la note en tête de
+          fichier : /api/vendors/plans/ peut renvoyer plans: [] ici). */}
+      {kept.length > 0 ? (
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {kept.map(({ plan, value }) => {
+            const isBest = value === bestValue && bestValue > 0;
+            return (
+              <div
+                key={plan.id}
+                className="rounded-2xl p-3 text-center"
+                style={{ background: p.card, border: isBest ? `2px solid ${p.green}` : `1px solid ${p.border}` }}
+              >
+                <p className="font-bold mb-2" style={{ fontSize: 12, color: p.text }}>
+                  {t(`sl11_compte.plan_${mapLegacyPlanCode(plan.code).toLowerCase()}`)}
                 </p>
-              ) : null}
-            </div>
-          );
-        })}
-      </div>
+                <p className="font-black" style={{ fontSize: 13.5, color: isBest ? p.green : p.text }}>
+                  {formatXAF(value)}
+                </p>
+                {!isBest && bestValue > value ? (
+                  <p style={{ fontSize: 10, color: p.textMuted }}>
+                    {t('sl11_compte.sim_not_yet_profitable')}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="rounded-2xl p-4 mb-4 text-center" style={{ background: p.cardAlt, border: `1px solid ${p.border}` }}>
+          <p style={{ fontSize: 12, color: p.textMuted }}>{t('sl11_compte.sim_unavailable')}</p>
+        </div>
+      )}
 
       <Collapsible title={t('sl11_compte.sim_detail_title')}>
         <p>{t('sl11_compte.sim_detail_body')}</p>

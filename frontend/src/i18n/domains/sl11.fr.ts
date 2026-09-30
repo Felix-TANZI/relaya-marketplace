@@ -159,6 +159,7 @@ export default {
     sim_subtitle: 'Ce que vous garderiez ce mois-ci avec chaque plan.',
     sim_sales_label: 'Vos ventes ce mois',
     sim_not_yet_profitable: 'pas encore rentable',
+    sim_unavailable: 'Comparaison indisponible pour l’instant : le barème des plans n’est pas encore renvoyé par le serveur.',
     sim_detail_title: 'Voir le détail',
     sim_detail_body: 'Ce que vous garderiez = vos ventes moins la commission de ce plan moins le prix du plan (s’il y en a un). Le plan qui vous fait garder le plus est entouré de vert.',
     sim_stay_free_cta: 'Rester en Free',

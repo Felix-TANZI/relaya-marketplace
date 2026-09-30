@@ -7,7 +7,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Eye, EyeOff, Lock, Mail, ShieldCheck, Store } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
 import AppleAuthButton from '@/components/auth/AppleAuthButton';
@@ -137,10 +137,8 @@ export default function ConnexionPage() {
     <div className="min-h-screen flex items-center justify-center px-4 py-10" style={{ background: p.bg }}>
       <div className="w-full max-w-[400px]">
         <div className="flex flex-col items-center mb-5">
-          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: p.orange }}>
-            <Store size={26} color="#fff" />
-          </div>
-          <h1 className="font-black text-center" style={{ fontSize: 20, color: p.text }}>{t('sl9_ouverture.app_name')}</h1>
+          <img src="/belivay-logo.png" alt="BelivaY" className="h-12 w-auto object-contain mb-2" />
+          <p className="font-bold text-center" style={{ fontSize: 13, color: p.textMuted }}>{t('sl9_ouverture.app_name')}</p>
         </div>
 
         {ctl.view === 'credentials' ? <SellerPromise p={p} /> : null}

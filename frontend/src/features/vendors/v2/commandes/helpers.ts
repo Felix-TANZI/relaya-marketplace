@@ -175,13 +175,33 @@ export function useOrder(orderId: number | undefined): UseOrderState {
 }
 
 /** Résumé "1er article + n autres" pour une carte commande. */
-export function itemsSummary(order: VendorOrder): { title: string; extra: number; qty: number } {
+export function itemsSummary(order: VendorOrder): { title: string; extra: number; qty: number; imageUrl: string | null } {
   const first = order.items[0];
   return {
     title: first ? first.product_title : '—',
     extra: Math.max(0, order.items.length - 1),
     qty: first ? first.qty : 0,
+    imageUrl: first?.product_image ?? null,
   };
+}
+
+/**
+ * Libellé d'état affichable (CMD-01/CMD-09) — jamais le texte brut de l'API
+ * (`fulfillment_status_display` renvoie encore "Escrow bloqué" côté v1, un mot
+ * banni par GEN-11). Clé i18n à résoudre par l'appelant : `sl7_commandes.pill_*`.
+ */
+export function pillLabelKeyOf(order: VendorOrder): string {
+  const s = orderStateOf(order);
+  if (order.fulfillment_status === 'CANCELLED') return 'sl7_commandes.pill_cancelled';
+  if (s === 'dispute_frozen') return 'sl7_commandes.pill_problem';
+  if (order.payment_status !== 'PAID' && order.can_be_fulfilled) return 'sl7_commandes.pill_counter';
+  switch (s) {
+    case 'paid': return 'sl7_commandes.pill_paid';
+    case 'to_prepare': return 'sl7_commandes.pill_to_prepare';
+    case 'with_courier': return 'sl7_commandes.pill_with_courier';
+    case 'delivered': return 'sl7_commandes.pill_delivered';
+    default: return 'sl7_commandes.pill_paid';
+  }
 }
 
 // ── Actions bridgées sur vendorsApi (pas d'endpoint dédié VD-05/06) ─────────
@@ -302,8 +322,11 @@ export interface JournalEvent {
 export function journalEventsOf(order: VendorOrder): JournalEvent[] {
   const events: JournalEvent[] = [
     {
+      // Toujours "Payée" (jamais fulfillment_status_display, qui renvoie le
+      // libellé v1 ACTUEL — pas celui de la création — et peut contenir
+      // "Escrow", un mot banni par GEN-11).
       id: 'created',
-      label: order.fulfillment_status_display || 'Commande créée',
+      label: 'Payée',
       detail: orderRef(order.id),
       location: '',
       at: order.created_at,

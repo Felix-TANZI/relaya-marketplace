@@ -16,6 +16,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
+import { vendorsV2Api } from '@/services/api/vendorsV2';
 import SellerProfileSheet from '@/features/vendors/SellerProfileSheet';
 import DockNav from '@/features/vendors/v2/DockNav';
 
@@ -241,6 +242,7 @@ export default function SellerLayout() {
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [sheetFeedback,    setSheetFeedback]    = useState('');
   const [profile,     setProfile]     = useState<VendorProfile | null>(null);
+  const [dockBadges,  setDockBadges]  = useState<{ toPrepare?: number; frozen?: boolean }>({});
   const prevPath = useRef(location.pathname);
 
   useEffect(() => {
@@ -248,6 +250,28 @@ export default function SellerLayout() {
       .then(setProfile)
       .catch(() => navigate('/become-seller'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Badges réels du Dock (VD-01 NAV-02) : nombre de commandes à préparer sur
+  // l'onglet Commandes, point rouge sur Argent s'il y a un montant gelé.
+  // Best-effort — une erreur (boutique pas encore approuvée, etc.) laisse
+  // simplement les badges vides plutôt que de casser la mise en page.
+  useEffect(() => {
+    vendorsApi.getOrders()
+      .then((orders) => {
+        const toPrepare = orders.filter((o) =>
+          o.fulfillment_status === 'PAID_IN_ESCROW' ||
+          o.fulfillment_status === 'VENDOR_ACKNOWLEDGED' ||
+          o.fulfillment_status === 'PREPARING'
+        ).length;
+        setDockBadges((prev) => ({ ...prev, toPrepare }));
+      })
+      .catch(() => {});
+    vendorsV2Api.getMoneySummary()
+      .then((summary) => {
+        setDockBadges((prev) => ({ ...prev, frozen: summary.frozen.amount_xaf > 0 }));
+      })
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -261,13 +285,31 @@ export default function SellerLayout() {
 
   const nav = buildNav(t);
 
+  // Écrans v2 « racine » (rejoints directement par le Dock ou le burger) :
+  // ils gardent l'en-tête v1 le temps qu'un vrai en-tête NAV-03 existe. Tout
+  // autre écran v2 est un écran « enfant » (VD-01 NAV-04 : flèche retour +
+  // titre, JAMAIS l'en-tête racine en plus) — il fournit déjà sa propre
+  // en-tête ; lui superposer celle de SellerLayout produisait deux barres
+  // empilées (repéré en vérifiant les captures du rapport visuel).
+  const V2_ROOT_PATHS = ['/seller/v2/accueil', '/seller/v2/commandes', '/seller/v2/produits', '/seller/menu'];
+  const isV2 = location.pathname.startsWith('/seller/v2/') || location.pathname === '/seller/menu';
+  const isV2Root = V2_ROOT_PATHS.includes(location.pathname);
+  const showTopbar = !isV2 || isV2Root;
+  const showSidebar = !isV2;
+  const mainClasses = !isV2
+    ? 'lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0'
+    : isV2Root
+      ? 'pt-[62px] pb-[100px]'
+      : 'pt-3 pb-[100px]';
+
   return (
     /* `belivay-portal` : scope typographique des espaces metier.
        Voir index.css — les titres reprennent le Plus Jakarta Sans du corps de
        texte au lieu du Syne de `font-display`. */
     <div className="belivay-portal min-h-screen" style={{ background: T.cream }}>
 
-      {/* ═══ TOPBAR ═══ */}
+      {/* ═══ TOPBAR ═══ (masquée sur les écrans v2 « enfants » — voir isV2Root plus haut) */}
+      {showTopbar && (
       <header
         className="fixed top-0 left-0 right-0 z-[900] h-[62px] flex items-center gap-3 px-4"
         style={{
@@ -278,9 +320,12 @@ export default function SellerLayout() {
       >
         {/* Menu (VD-11 MEN-01) : remplace le tiroir mobile par l'écran Menu
             en sept groupes — action VD-D12.A01. */}
+        {/* Sur v1, la sidebar bureau couvre déjà l'accès au menu (lg:hidden).
+            Sur v2, il n'y a plus de sidebar du tout : ce bouton reste le seul
+            chemin vers l'écran Menu, y compris sur bureau. */}
         <button onClick={() => navigate('/seller/menu')}
           aria-label={t('sl5_fondations.dock_label')}
-          className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+          className={`${isV2 ? '' : 'lg:hidden'} w-9 h-9 rounded-xl flex items-center justify-center transition-all`}
           style={{ color: T.muted }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -358,15 +403,18 @@ export default function SellerLayout() {
           </button>
         </div>
       </header>
+      )}
 
-      {/* ═══ SIDEBAR DESKTOP ═══ */}
+      {/* ═══ SIDEBAR DESKTOP ═══ (aucun écran v2 n'en a besoin, le Dock couvre déjà mobile et bureau pour eux) */}
+      {showSidebar && (
       <aside className="hidden lg:flex flex-col fixed top-[62px] left-0 bottom-0 w-[232px] z-[800]"
         style={{ background: T.sidebar }}>
         <SidebarContent shopName={shopName} nav={nav} t={t} />
       </aside>
+      )}
 
       {/* ═══ MAIN ═══ */}
-      <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
+      <main className={`${mainClasses} min-h-screen`}>
         {/* Gouttiere resserree sur telephone : a 16px de chaque cote plus 20px
             de padding interne, chaque carte perdait un cinquieme de la
             largeur utile en fond creme. */}
@@ -377,13 +425,16 @@ export default function SellerLayout() {
         </div>
       </main>
 
-      {/* ═══ DOCK MOBILE (VD-01 NAV-01) ═══
-          Remplace l'ancienne barre à 4 onglets : mêmes destinations pour
-          l'instant (lots 3/5/9 pas encore construits), mais détachée du bord
-          bas et capsule orangée, conformes à la spec. */}
-      <div className="lg:hidden">
-        <DockNav />
-      </div>
+      {/* ═══ DOCK (VD-01 NAV-01) ═══
+          Sur les écrans v2 (racine ou enfant), c'est l'unique navigation —
+          affichée sur toutes les tailles d'écran puisqu'il n'y a plus de
+          sidebar bureau pour eux. Sur les écrans v1, elle reste réservée au
+          mobile (le sidebar bureau existant couvre déjà la navigation). */}
+      {isV2 ? <DockNav badges={dockBadges} /> : (
+        <div className="lg:hidden">
+          <DockNav badges={dockBadges} />
+        </div>
+      )}
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
           le tiroir de navigation vient de gauche, les deux gestes restent donc

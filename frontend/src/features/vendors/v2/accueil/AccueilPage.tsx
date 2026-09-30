@@ -28,6 +28,7 @@ import EarningsCard from './EarningsCard';
 import DiscoveryOfferCard from './DiscoveryOfferCard';
 import SuspendedCard from './SuspendedCard';
 import OfflineBanner from './OfflineBanner';
+import ShopIdentityBar from '../ShopIdentityBar';
 
 const SUPPORT_WHATSAPP_URL = 'https://wa.me/237689002812';
 
@@ -139,6 +140,7 @@ export default function AccueilPage() {
         <OfflineBanner lastLoadedAt={state.lastLoadedAt} onRetry={() => state.reload()} />
       ) : null}
 
+      <ShopIdentityBar />
       <ShopStatusBar />
 
       {state.isPrepAccess ? (

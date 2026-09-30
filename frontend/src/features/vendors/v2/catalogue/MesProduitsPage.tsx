@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type VendorProfile, type VendorProduct } from '@/services/api/vendors';
 import { palette } from '../theme';
 import { AttentionBand, Card, CenterState, Pill } from './ui';
+import ShopIdentityBar from '../ShopIdentityBar';
 import {
   buildListItems, fmtXAF, sortByUrgency, tierToCommissionTier, useDisputedProductIds,
 } from './helpers';
@@ -65,6 +66,7 @@ export default function MesProduitsPage() {
 
   return (
     <div className="pb-24 pt-2">
+      <ShopIdentityBar />
       <div className="flex items-start justify-between mb-1 gap-3">
         <h1 className="font-black" style={{ fontSize: 19, color: p.text }}>{t('sl10_catalogue.list_title')}</h1>
         <button

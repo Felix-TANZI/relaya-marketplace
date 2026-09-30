@@ -18,14 +18,13 @@ export interface DockBadges {
   frozen?: boolean;
 }
 
-// Les 4 destinations pointent encore vers les pages actuelles (lots 3/5/9 pas
-// construits) : Accueil/Commandes/Produits gardent leur route v1, "Argent"
-// pointe vers Mon argent (le plus proche de VD-09 tant que le lot 3 n'existe
-// pas). À rebrancher sur les nouveaux écrans au fur et à mesure des lots.
+// Accueil/Commandes/Produits rebranchés sur les écrans v2 (lots 5 et 9).
+// "Argent" reste sur la page v1 : les écrans Mon argent/Se libère/Gelé/Mes
+// gains (lot 3, frontend) n'ont pas encore été construits.
 const TABS = [
-  { key: 'home', path: '/seller/dashboard', icon: Home },
-  { key: 'orders', path: '/seller/orders', icon: ShoppingBag },
-  { key: 'products', path: '/seller/products', icon: Package },
+  { key: 'home', path: '/seller/v2/accueil', icon: Home },
+  { key: 'orders', path: '/seller/v2/commandes', icon: ShoppingBag },
+  { key: 'products', path: '/seller/v2/produits', icon: Package },
   { key: 'money', path: '/seller/wallet', icon: Wallet },
 ] as const;
 

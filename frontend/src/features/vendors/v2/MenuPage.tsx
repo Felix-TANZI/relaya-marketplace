@@ -33,9 +33,9 @@ export default function MenuPage() {
     {
       titleKey: 'sl5_fondations.menu_group_to_handle',
       items: [
-        { labelKey: 'sl5_fondations.menu_to_prepare', path: '/seller/orders' },
-        { labelKey: 'sl5_fondations.menu_disputes', path: '/seller/disputes' },
-        { labelKey: 'sl5_fondations.menu_returns', path: '/seller/returns' },
+        { labelKey: 'sl5_fondations.menu_to_prepare', path: '/seller/v2/commandes' },
+        { labelKey: 'sl5_fondations.menu_disputes', path: '/seller/v2/litiges' },
+        { labelKey: 'sl5_fondations.menu_returns', path: '/seller/v2/retours' },
       ],
     },
     {
@@ -57,18 +57,18 @@ export default function MenuPage() {
     {
       titleKey: 'sl5_fondations.menu_group_catalog',
       items: [
-        { labelKey: 'sl5_fondations.menu_my_products', path: '/seller/products' },
-        { labelKey: 'sl5_fondations.menu_new_offer', path: '/seller/products/new' },
+        { labelKey: 'sl5_fondations.menu_my_products', path: '/seller/v2/produits' },
+        { labelKey: 'sl5_fondations.menu_new_offer', path: '/seller/v2/produits/nouveau' },
         { labelKey: 'sl5_fondations.menu_assisted_entry', path: '/seller/v2/saisie-assistee' },
       ],
     },
     {
       titleKey: 'sl5_fondations.menu_group_grow',
       items: [
-        { labelKey: 'sl5_fondations.menu_trust_score', path: '/seller/certifications' },
+        { labelKey: 'sl5_fondations.menu_trust_score', path: '/seller/v2/palier' },
         { labelKey: 'sl5_fondations.menu_my_numbers', path: '/seller/analytics' },
-        { labelKey: 'sl5_fondations.menu_plans', path: '/seller/plans' },
-        { labelKey: 'sl5_fondations.menu_visibility', path: '/seller/boost' },
+        { labelKey: 'sl5_fondations.menu_plans', path: '/seller/v2/plans' },
+        { labelKey: 'sl5_fondations.menu_visibility', path: '/seller/v2/se-faire-voir' },
       ],
     },
     {
@@ -84,7 +84,7 @@ export default function MenuPage() {
     {
       titleKey: 'sl5_fondations.menu_group_account',
       items: [
-        { labelKey: 'sl5_fondations.menu_settings', path: '/seller/settings' },
+        { labelKey: 'sl5_fondations.menu_settings', path: '/seller/v2/parametres' },
         { labelKey: 'sl5_fondations.menu_security', path: '/seller/v2/securite' },
         { labelKey: 'sl5_fondations.menu_install', path: '/seller/v2/installer' },
         { labelKey: 'sl5_fondations.menu_logout', action: () => { logout(); navigate('/'); }, danger: true },

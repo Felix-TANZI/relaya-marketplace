@@ -5,6 +5,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import views
 from . import chart_views
+from . import views_money_v2
 
 app_name = 'vendors'
 
@@ -220,7 +221,10 @@ urlpatterns = [
     # BOUTIQUE PUBLIQUE
     #path('boutique/<slug:slug>/', views.public_shop,                name='public-shop'),
 
-    #  ADMINISTRATION - PARAMÈTRES 
+    #  ADMINISTRATION - PARAMÈTRES
     path('admin/settings/',         views.admin_get_settings,    name='admin-get-settings'),
     path('admin/settings/update/',  views.admin_update_settings, name='admin-update-settings'),
+
+    #  ESPACE VENDEUR V2 (Lot 2/3 — additif, lecture seule, voir views_money_v2.py)
+    path('v2/money-summary/', views_money_v2.vendor_money_summary_v2, name='vendor-v2-money-summary'),
 ]

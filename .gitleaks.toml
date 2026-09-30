@@ -1,0 +1,26 @@
+# Configuration Gitleaks du projet.
+#
+# On conserve la totalité des règles par défaut de Gitleaks et on n'ajoute
+# qu'une seule exception : les fichiers de tests du backend.
+#
+# Pourquoi : la règle par défaut « generic-api-key » signale toute affectation
+# du type password="..." dont l'entropie dépasse 3.5. Les suites de tests Django
+# créent leurs utilisateurs avec des mots de passe factices écrits en dur
+# (password="Secret-pass-123", "Courier2026", "Client2026"...). Ce ne sont pas
+# des secrets : ils n'existent que dans une base de test jetable. Sans cette
+# exception, chaque PR touchant un fichier de tests fait échouer le scan et
+# l'alerte devient du bruit que l'on finit par ignorer.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Identifiants factices des suites de tests backend"
+paths = [
+  # backend/apps/<app>/tests.py
+  '''(^|/)tests\.py$''',
+  # backend/tests/test_*.py, backend/apps/<app>/test_*.py
+  '''(^|/)test_[^/]+\.py$''',
+  # tout le contenu du répertoire backend/tests/ (fixtures, helpers)
+  '''(^|/)tests/.*\.py$''',
+]

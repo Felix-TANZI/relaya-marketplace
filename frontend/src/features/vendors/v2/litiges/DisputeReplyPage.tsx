@@ -136,11 +136,9 @@ export default function DisputeReplyPage() {
       <Banner tone={countdown.expired ? 'red' : 'amber'} p={p}>
         {countdown.expired
           ? t('sl8_litiges.reply_deadline_expired')
-          : t('sl8_litiges.reply_deadline_prefix') + ' ' + (
-            countdown.hours > 0
-              ? t('sl8_litiges.list_card_deadline', { h: countdown.hours, m: countdown.minutes })
-              : t('sl8_litiges.list_card_deadline_minutes', { m: countdown.minutes })
-          )}
+          : countdown.hours > 0
+            ? t('sl8_litiges.list_card_deadline', { h: countdown.hours, m: countdown.minutes })
+            : t('sl8_litiges.list_card_deadline_minutes', { m: countdown.minutes })}
       </Banner>
 
       <Card p={p}>

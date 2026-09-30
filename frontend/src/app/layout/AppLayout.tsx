@@ -47,7 +47,12 @@ export default function AppLayout() {
   const { showToast } = useToast();
   useFixedHeaderHeight();
   const { pathname } = useLocation();
-  const isAuthPage = ['/login', '/register', '/forgot-password'].some((path) => pathname.startsWith(path));
+  // "/vendeur/..." (Lot 7, espace vendeur v2) : écrans autonomes de
+  // connexion/ouverture de boutique, sans le chrome marketplace — sans ça,
+  // le Header authentifié (panier, notifications) 401 pour un visiteur
+  // anonyme et déclenche la redirection globale vers /login (services/api/
+  // http.ts), écrasant l'écran avant même qu'il ne s'affiche.
+  const isAuthPage = ['/login', '/register', '/forgot-password', '/vendeur/'].some((path) => pathname.startsWith(path));
   // Sur un portail dedie, `/` ne sert qu'a rediriger vers l'espace propre au
   // role (ex: /courier) — cette redirection passe par cet AppLayout avant de
   // s'y resoudre. Sans ce cas, le chrome marketplace (header, bandeau pub)

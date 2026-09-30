@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { AlertOctagon, Inbox, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, Collapsible, GhostRow, PageHeader, Toggle } from './ui';
+import { Card, CenterState, Collapsible, GhostRow, PageHeader, ProductThumb, Toggle } from './ui';
 import { itemsSummary, orderRef, reportStockout, useOrder } from './helpers';
 
 export default function RupturePage() {
@@ -77,13 +77,18 @@ export default function RupturePage() {
       <PageHeader title={t('sl7_commandes.rupture_title')} subtitle={t('sl7_commandes.rupture_subtitle')} onBack={() => navigate(-1)} p={p} />
 
       <Card p={p}>
-        <div className="flex items-center gap-2 mb-1">
-          <AlertOctagon size={16} color={p.amber} />
-          <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>
-            {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
-          </p>
+        <div className="flex items-center gap-3">
+          <ProductThumb imageUrl={summary.imageUrl} p={p} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <AlertOctagon size={15} color={p.amber} />
+              <p className="font-bold truncate" style={{ fontSize: 13.5, color: p.text }}>
+                {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
+              </p>
+            </div>
+            <p style={{ fontSize: 11.5, color: p.textMuted, marginTop: 2 }}>{orderRef(order.id)}</p>
+          </div>
         </div>
-        <p style={{ fontSize: 11.5, color: p.textMuted }}>{orderRef(order.id)}</p>
       </Card>
 
       <p className="font-black uppercase mt-4 mb-2 px-1" style={{ fontSize: 10.5, letterSpacing: '.1em', color: p.textMuted }}>

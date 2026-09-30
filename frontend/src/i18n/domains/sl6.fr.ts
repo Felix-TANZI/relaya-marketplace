@@ -12,10 +12,25 @@ export default {
     action_error: "Cette action n'a pas pu partir à temps : refaites-la.",
     prep_access_note: 'Les montants et les versements sont réservés au propriétaire de la boutique.',
 
+    // ── Salutation personnalisée, au-dessus de "Boutique ouverte" (ACC-écart) ─
+    greeting: 'Bonjour {{name}} · {{date}}',
+
     // ── Titre de la file "à faire" (ACC-01) ──────────────────────────────
     todo_title: '{{count}} chose(s) à faire',
     todo_title_one: '{{count}} chose à faire',
     todo_title_other: '{{count}} choses à faire',
+
+    // ── Pastilles catégorisées sous le titre, quand la file mélange plusieurs
+    // types ("2 à préparer · 2 litiges · 1 retour", ACC-01) ─────────────────
+    todo_pill_prepare: '{{count}} à préparer',
+    todo_pill_prepare_one: '{{count}} à préparer',
+    todo_pill_prepare_other: '{{count}} à préparer',
+    todo_pill_dispute: '{{count}} litige(s)',
+    todo_pill_dispute_one: '{{count}} litige',
+    todo_pill_dispute_other: '{{count}} litiges',
+    todo_pill_return: '{{count}} retour(s)',
+    todo_pill_return_one: '{{count}} retour',
+    todo_pill_return_other: '{{count}} retours',
 
     // ── Carte héros orange — commande la plus urgente (ACC-02/03) ───────
     hero_label: 'À préparer en priorité',
@@ -28,13 +43,32 @@ export default {
     hero_action_extend: 'Plus de temps',
     hero_action_detail: 'Détail',
 
-    // ── Cartes douces : à préparer restantes / litiges (ACC-02/04/05) ───
+    // ── Cartes douces : à préparer restantes / litiges / retours (ACC-02/04/05/06) ─
     row_prepare_badge: 'À préparer',
     row_dispute_badge: 'Litige — gelé',
     row_dispute_frozen: 'Gelé jusqu’à la décision · {{amount}}',
     row_dispute_frozen_no_amount: 'Gelé jusqu’à la décision.',
+    row_dispute_frozen_label: 'Montant gelé',
+    row_dispute_reason: 'Le client dit : « {{reason}} »',
+    row_dispute_deadline: 'Répondez avant {{when}}. Sans réponse, la décision est prise en faveur du client.',
+    row_dispute_mediation: 'Votre réponse est envoyée — BelivaY tranche.',
     row_prepare_action: "C'est prêt",
     row_dispute_action: 'Répondre',
+    row_dispute_action_view: 'Voir',
+    row_paid_at: 'Payée à {{time}}',
+    row_courier_unassigned: 'Livreur pas encore attribué',
+
+    row_return_badge: 'Retour',
+    row_return_reason: 'Motif : {{reason}}',
+    row_return_frozen_review: 'Gelé jusqu’à votre décision',
+    row_return_frozen_transit: 'Gelé jusqu’à la réception',
+    row_return_frozen_inspection: 'Gelé jusqu’à l’inspection',
+    row_return_inspection_deadline: 'Vous avez jusqu’à {{when}} pour l’inspecter.',
+    row_return_action: 'Voir le retour',
+    return_reason_not_as_described: 'Non conforme',
+    return_reason_damaged: 'Abîmé',
+    return_reason_counterfeit: 'Contrefaçon',
+    return_reason_hidden_defect: 'Défaut caché',
 
     // ── Carte "Boutique ouverte" (ACC-06/07) ─────────────────────────────
     shop_open: 'Boutique ouverte',
@@ -45,6 +79,14 @@ export default {
     low_stock: '{{count}} produit(s) en stock bas',
     low_stock_one: '{{count}} produit en stock bas',
     low_stock_other: '{{count}} produits en stock bas',
+    low_stock_title: 'Stock bas · {{title}}',
+    low_stock_detail: '{{count}} restant(s), seuil réglé à {{threshold}}',
+    low_stock_detail_one: '{{count}} restant, seuil réglé à {{threshold}}',
+    low_stock_detail_other: '{{count}} restants, seuil réglé à {{threshold}}',
+    low_stock_action: 'Réapprovisionner',
+
+    // ── Bas de page — état réseau (ACC-écart) ────────────────────────────
+    network_footer: 'Connecté · aucune action en attente d’envoi',
 
     // ── Palier de lancement (ACC-15/21) ──────────────────────────────────
     tier_bronze: 'Bronze',
@@ -66,7 +108,7 @@ export default {
     gesture_add_product: 'Ajouter un produit',
     gesture_set_hours: 'Régler mes horaires',
     gesture_verify_payout: 'Vérifier mon numéro de versement',
-    welcome_title: 'Bienvenue {{shop}} · jour 1',
+    welcome_title: 'Bienvenue {{name}} · jour 1',
 
     // ── Offre de découverte — Premier jour (KYC-05) ──────────────────────
     discovery_title: 'Offre de découverte',

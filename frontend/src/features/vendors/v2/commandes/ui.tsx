@@ -4,7 +4,7 @@
 // Tailwind identiques, tailles de police en px, lucide-react.
 
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronLeft, MoreVertical, Package } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { primaryGradient, type VendorPalette } from '../theme';
 
@@ -135,6 +135,39 @@ export function PageHeader({
   );
 }
 
+/**
+ * En-tête sombre de « document » (Bon de préparation, Reçu vendeur) — reprend
+ * le traitement visuel des maquettes Bon.jpg/Recu.jpg (bandeau BelivaY sur
+ * fond dégradé sombre), absent des premières versions de ces deux écrans qui
+ * réutilisaient le PageHeader générique.
+ */
+export function DocumentHeader({
+  label, refText, badge, lines,
+}: { label: string; refText: string; badge?: string; lines: string[] }) {
+  return (
+    <div className="rounded-2xl p-5 mb-4" style={{ background: 'linear-gradient(160deg, #2E2013 0%, #14100B 100%)' }}>
+      <div className="flex items-center justify-between mb-3">
+        <img src="/belivay-logo.png" alt="BelivaY" style={{ height: 20 }} />
+        <span className="font-black uppercase" style={{ fontSize: 10.5, letterSpacing: '.08em', color: '#F0C04C' }}>{label}</span>
+      </div>
+      <div className="flex items-center justify-between">
+        <p className="font-black" style={{ fontSize: 19, color: '#fff' }}>{refText}</p>
+        {badge ? (
+          <span
+            className="font-bold rounded-full"
+            style={{ fontSize: 11, padding: '4px 10px', color: '#fff', background: 'rgba(255,255,255,0.14)' }}
+          >
+            {badge}
+          </span>
+        ) : null}
+      </div>
+      {lines.map((l) => (
+        <p key={l} style={{ fontSize: 11.5, color: 'rgba(255,255,255,0.65)', marginTop: 2 }}>{l}</p>
+      ))}
+    </div>
+  );
+}
+
 export function ProgressBar({ ratio, p }: { ratio: number; p: VendorPalette }) {
   return (
     <div className="w-full rounded-full overflow-hidden" style={{ height: 6, background: p.border }}>
@@ -169,6 +202,68 @@ export function Toggle({
         />
       </span>
     </button>
+  );
+}
+
+/** Vignette produit (vraie photo si dispo) + titre + quantité — motif commun à
+ * toutes les cartes commande (liste, détail, rupture, remise, reçu…). */
+export function ProductThumb({ imageUrl, size = 44, p }: { imageUrl: string | null; size?: number; p: VendorPalette }) {
+  return (
+    <div
+      className="rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+      style={{ width: size, height: size, background: p.cardAlt }}
+    >
+      {imageUrl
+        ? <img src={imageUrl} alt="" className="w-full h-full object-cover" />
+        : <Package size={Math.round(size * 0.4)} color={p.textMuted} />}
+    </div>
+  );
+}
+
+/**
+ * Bouton ⋮ (VD-D06.A06 « Exporter/Factures ») : pas d'endpoint dédié
+ * aujourd'hui, donc les deux entrées restent affichées mais renvoient un état
+ * "bientôt disponible" honnête plutôt qu'une action muette ou inventée.
+ */
+export function HeaderMenu({ p }: { p: VendorPalette }) {
+  const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
+  const [notice, setNotice] = useState(false);
+  return (
+    <div className="relative flex-shrink-0">
+      <button
+        type="button"
+        aria-label={t('sl7_commandes.menu_more')}
+        onClick={() => { setOpen((o) => !o); setNotice(false); }}
+        className="rounded-xl flex items-center justify-center"
+        style={{ width: 40, height: 40, background: p.card, border: `1px solid ${p.border}` }}
+      >
+        <MoreVertical size={18} color={p.text} />
+      </button>
+      {open ? (
+        <div
+          className="absolute right-0 top-12 rounded-xl overflow-hidden z-10"
+          style={{ background: p.card, border: `1px solid ${p.border}`, minWidth: 176, boxShadow: '0 10px 24px rgba(0,0,0,0.14)' }}
+        >
+          {[t('sl7_commandes.menu_export'), t('sl7_commandes.menu_invoices')].map((label) => (
+            <button
+              key={label}
+              type="button"
+              onClick={() => setNotice(true)}
+              className="w-full text-left"
+              style={{ padding: '11px 14px', fontSize: 13, fontWeight: 600, color: p.text }}
+            >
+              {label}
+            </button>
+          ))}
+          {notice ? (
+            <p style={{ padding: '0 14px 11px', fontSize: 11, color: p.textMuted, lineHeight: 1.4 }}>
+              {t('sl7_commandes.menu_soon')}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

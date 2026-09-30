@@ -10,6 +10,13 @@
 // Le montant gelé par article n'est pas exposé avant décision (pas de champ
 // dédié sur OrderReturn) : affiché seulement quand refund_amount_xaf existe,
 // sinon un texte neutre « à confirmer après inspection » plutôt qu'un chiffre inventé.
+//
+// Alignement visuel sur Retours.jpg : sous-titre d'intro, vignette produit
+// (générique — OrderReturn n'expose pas d'URL image, seulement
+// order_item_title), pastille de statut brut (RETURN_STATUS_KEYS) en plus du
+// motif, motif cité avec la description réelle du client, et un « Voir le
+// détail » qui affiche les vrais champs disponibles (mode de transport, point
+// relais, note de décision) plutôt qu'une maquette vide.
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -20,18 +27,14 @@ import { vendorsApi } from '@/services/api/vendors';
 import type { OrderReturn } from '@/services/api/customer';
 import { palette } from '../theme';
 import {
-  Card, CenterState, Collapsible, FilterTabs, Pill,
+  Card, CenterState, Collapsible, FilterTabs, Pill, ProductThumb,
 } from './ui';
-import { fmtDateTime, fmtXAF, returnTabOf, type ReturnTab } from './helpers';
+import {
+  fmtDateTime, fmtXAF, orderRef, returnReasonLabel, returnStatusTone, returnTabOf,
+  RETURN_STATUS_KEYS, type ReturnTab,
+} from './helpers';
 
 const TABS: ReturnTab[] = ['to_decide', 'on_the_way', 'closed'];
-
-const REASON_KEYS: Record<string, string> = {
-  NOT_AS_DESCRIBED: 'returns_reason_not_as_described',
-  DAMAGED: 'returns_reason_damaged',
-  COUNTERFEIT: 'returns_reason_counterfeit',
-  HIDDEN_DEFECT: 'returns_reason_hidden_defect',
-};
 
 export default function ReturnsListPage() {
   const { t, i18n } = useTranslation();
@@ -93,7 +96,10 @@ export default function ReturnsListPage() {
 
   return (
     <div className="pb-24 pt-2">
-      <h1 className="font-black mb-4" style={{ fontSize: 19, color: p.text }}>{t('sl8_litiges.returns_title')}</h1>
+      <h1 className="font-black mb-1.5" style={{ fontSize: 19, color: p.text }}>{t('sl8_litiges.returns_title')}</h1>
+      <p className="mb-4" style={{ fontSize: 12.5, color: p.textMuted, lineHeight: 1.5 }}>
+        {t('sl8_litiges.returns_subtitle')}
+      </p>
 
       <FilterTabs tabs={TABS.map((k) => ({ key: k, label: tabLabels[k] }))} active={tab} onChange={setTab} counts={counts} p={p} />
 
@@ -106,16 +112,31 @@ export default function ReturnsListPage() {
       ) : (
         <div className="flex flex-col gap-3 mb-5">
           {visible.map((r) => {
-            const reasonKey = REASON_KEYS[r.reason];
-            const reasonLabel = reasonKey ? t(`sl8_litiges.${reasonKey}`) : r.reason;
+            const reasonLabel = returnReasonLabel(t, r.reason);
             const isDeciding = decidingId === r.id;
+            const hasDetail = Boolean(r.relay_point_name || r.review_note || r.transport_mode);
             return (
               <Card key={r.id} p={p} accent={returnTabOf(r) === 'to_decide' ? p.orange : undefined}>
                 <div className="flex items-center justify-between mb-2">
-                  <Pill label={reasonLabel} tone="muted" p={p} />
-                  <span style={{ fontSize: 11, color: p.textMuted }}>#{r.id}</span>
+                  <span
+                    className="font-bold"
+                    style={{ fontSize: 11, letterSpacing: 0.3, textTransform: 'uppercase', color: p.textMuted }}
+                  >
+                    {t('sl8_litiges.returns_card_kicker', { ref: orderRef(r.id) })}
+                  </span>
+                  <Pill label={t(`sl8_litiges.${RETURN_STATUS_KEYS[r.status]}`)} tone={returnStatusTone(r.status)} p={p} />
                 </div>
-                <p className="font-bold mb-2" style={{ fontSize: 13.5, color: p.text }}>{r.order_item_title}</p>
+
+                <div className="flex items-start gap-3 mb-2">
+                  <ProductThumb p={p} />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold" style={{ fontSize: 13.5, color: p.text, lineHeight: 1.3 }}>{r.order_item_title}</p>
+                    <p style={{ fontSize: 12, color: p.textMuted, marginTop: 2, lineHeight: 1.4 }}>
+                      {t('sl8_litiges.returns_card_reason_label')} : {reasonLabel}
+                      {r.description ? ` · « ${r.description} »` : ''}
+                    </p>
+                  </div>
+                </div>
 
                 <div className="flex flex-col gap-1 mb-2">
                   <Row label={t('sl8_litiges.returns_card_arrival')} value={r.received_at ? fmtDateTime(r.received_at, lang) : t('sl8_litiges.returns_card_arrival_pending')} p={p} />
@@ -133,6 +154,26 @@ export default function ReturnsListPage() {
                     strong
                   />
                 </div>
+
+                {hasDetail ? (
+                  <div className="mb-2">
+                    <Collapsible title={t('sl8_litiges.returns_detail_title')} p={p}>
+                      {r.transport_mode ? (
+                        <p style={{ marginBottom: 4 }}>
+                          {r.transport_mode === 'RELAY_DROPOFF'
+                            ? t('sl8_litiges.returns_detail_transport_relay')
+                            : t('sl8_litiges.returns_detail_transport_courier')}
+                        </p>
+                      ) : null}
+                      {r.relay_point_name ? (
+                        <p style={{ marginBottom: 4 }}>{t('sl8_litiges.returns_detail_relay_point')} : {r.relay_point_name}</p>
+                      ) : null}
+                      {r.review_note ? (
+                        <p>{t('sl8_litiges.returns_detail_review_note')} : {r.review_note}</p>
+                      ) : null}
+                    </Collapsible>
+                  </div>
+                ) : null}
 
                 {returnTabOf(r) === 'to_decide' && r.status === 'REQUESTED' ? (
                   isDeciding ? (

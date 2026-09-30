@@ -16,7 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type CertificationData } from '@/services/api/vendors';
 import { palette } from '../../theme';
-import ScreenHeader from '../shared/ScreenHeader';
+import TrustScoreTabs from './TrustScoreTabs';
 import Collapsible from '../shared/Collapsible';
 import { SCORE_CRITERIA } from '../shared/format';
 
@@ -38,7 +38,9 @@ export default function MonScorePage() {
 
   return (
     <div className="pb-24 pt-2">
-      <ScreenHeader title={t('sl11_compte.score_title')} />
+      <TrustScoreTabs />
+      <h1 className="font-black mb-1" style={{ fontSize: 20, color: p.text }}>{t('sl11_compte.score_title')}</h1>
+      <p className="mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl11_compte.score_subtitle')}</p>
 
       {loading ? (
         <div className="rounded-2xl p-6 text-center" style={{ background: p.card, border: `1px solid ${p.border}`, color: p.textMuted, fontSize: 12.5 }}>

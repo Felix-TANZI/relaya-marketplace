@@ -11,12 +11,13 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Inbox, RefreshCw } from 'lucide-react';
+import { Inbox, RefreshCw, Timer } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, Collapsible, GhostRow, PageHeader, PrimaryButton } from './ui';
+import { Card, CenterState, Collapsible, GhostRow, PageHeader, PrimaryButton, ProductThumb } from './ui';
 import {
-  absoluteDeadline, fmtDateTime, hasRequestedExtension, orderRef, requestExtension, useOrder,
+  absoluteDeadline, fmtDateTime, fmtDurationShort, hasRequestedExtension, itemsSummary, orderRef, requestExtension,
+  useOrder,
 } from './helpers';
 
 type ChoiceKey = '1' | '2' | 'd';
@@ -49,6 +50,8 @@ export default function ExtendPage() {
 
   const currentDue = order.vendor_reply_deadline ? new Date(order.vendor_reply_deadline) : new Date();
   const absolute = absoluteDeadline(order);
+  const summary = itemsSummary(order);
+  const remainingMs = order.vendor_reply_deadline ? currentDue.getTime() - Date.now() : null;
 
   const tomorrow8 = (() => {
     const d = new Date();
@@ -113,8 +116,20 @@ export default function ExtendPage() {
       <PageHeader title={t('sl7_commandes.extend_title')} subtitle={orderRef(order.id)} onBack={() => navigate(-1)} p={p} />
 
       <Card p={p}>
-        <p style={{ fontSize: 12, color: p.textMuted }}>{t('sl7_commandes.extend_current_due')}</p>
-        <p className="font-bold" style={{ fontSize: 15, color: p.text }}>{fmtDateTime(order.vendor_reply_deadline)}</p>
+        <div className="flex items-center gap-3">
+          <ProductThumb imageUrl={summary.imageUrl} p={p} />
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <Timer size={14} color={p.orange} />
+              <p style={{ fontSize: 12, color: p.textMuted, fontWeight: 700 }}>{t('sl7_commandes.extend_current_due')}</p>
+            </div>
+            <p className="font-bold" style={{ fontSize: 15, color: p.text }}>{fmtDateTime(order.vendor_reply_deadline)}</p>
+            <p style={{ fontSize: 11.5, color: p.textMuted, marginTop: 2 }}>
+              {orderRef(order.id)} · {summary.title}
+              {remainingMs !== null ? ` · ${remainingMs > 0 ? t('sl7_commandes.due_in', { time: fmtDurationShort(remainingMs) }) : t('sl7_commandes.due_overdue')}` : ''}
+            </p>
+          </div>
+        </div>
       </Card>
 
       <div className="flex flex-col gap-2 mt-4">

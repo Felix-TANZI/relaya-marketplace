@@ -21,7 +21,8 @@
 
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Globe, Type, Moon, Wifi, Bell, Pause } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Globe, Type, Moon, Wifi, Bell, Pause, ChevronRight } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import i18n from '@/i18n';
@@ -227,21 +228,36 @@ export default function ParametresPage() {
         <p className="mt-1" style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.settings_notif_no_sms_promo')}</p>
       </div>
 
-      {/* Pause boutique */}
-      <button
-        type="button"
-        disabled={savingPause}
-        onClick={togglePause}
-        className="w-full flex items-center justify-between rounded-2xl mb-3"
-        style={{ padding: '13px 14px', background: p.card, border: `1px solid ${p.border}` }}
-      >
-        <span className="flex items-center gap-2" style={{ fontSize: 13, color: p.text, fontWeight: 600 }}>
-          <Pause size={15} color={p.textMuted} /> {t('sl11_compte.settings_pause_shop')}
-        </span>
-        <span className="rounded-full" style={{ width: 40, height: 22, background: paused ? p.red : p.border, position: 'relative' }}>
-          <span className="absolute rounded-full bg-white" style={{ width: 18, height: 18, top: 2, left: paused ? 20 : 2, transition: 'left .15s' }} />
-        </span>
-      </button>
+      {/* Boutique — pause + fermeture ponctuelle (Parametres.jpg) */}
+      <div className="rounded-2xl overflow-hidden mb-3" style={{ background: p.card, border: `1px solid ${p.border}` }}>
+        <p className="font-bold px-3.5 pt-3" style={{ fontSize: 13, color: p.text }}>{t('sl11_compte.settings_shop_section')}</p>
+        <button
+          type="button"
+          disabled={savingPause}
+          onClick={togglePause}
+          className="w-full flex items-center justify-between"
+          style={{ padding: '11px 14px' }}
+        >
+          <span className="flex items-start gap-2 text-left">
+            <Pause size={15} color={p.textMuted} className="flex-shrink-0 mt-0.5" />
+            <span>
+              <span className="block" style={{ fontSize: 13, color: p.text, fontWeight: 600 }}>{t('sl11_compte.settings_pause_shop')}</span>
+              <span className="block" style={{ fontSize: 11, color: p.textMuted }}>{t('sl11_compte.settings_pause_desc')}</span>
+            </span>
+          </span>
+          <span className="rounded-full flex-shrink-0" style={{ width: 40, height: 22, background: paused ? p.red : p.border, position: 'relative' }}>
+            <span className="absolute rounded-full bg-white" style={{ width: 18, height: 18, top: 2, left: paused ? 20 : 2, transition: 'left .15s' }} />
+          </span>
+        </button>
+        <Link
+          to="/seller/v2/horaires"
+          className="flex items-center justify-between"
+          style={{ padding: '11px 14px', borderTop: `1px solid ${p.border}` }}
+        >
+          <span style={{ fontSize: 12.5, color: p.orange, fontWeight: 700 }}>{t('sl11_compte.settings_closed_today_cta')}</span>
+          <ChevronRight size={15} color={p.orange} />
+        </Link>
+      </div>
 
       {/* Profil (lecture seule — pas de pont d'écriture disponible) */}
       <div className="rounded-2xl p-4 mb-3" style={{ background: p.card, border: `1px solid ${p.border}` }}>
@@ -287,9 +303,11 @@ export default function ParametresPage() {
         </button>
       </div>
 
-      <button type="button" onClick={logout} className="w-full rounded-2xl font-bold" style={{ padding: '13px', border: `1.5px solid ${p.red}`, color: p.red, fontSize: 13.5 }}>
+      <button type="button" onClick={logout} className="w-full rounded-2xl font-bold mb-4" style={{ padding: '13px', border: `1.5px solid ${p.red}`, color: p.red, fontSize: 13.5 }}>
         {t('sl11_compte.settings_logout')}
       </button>
+
+      <p className="text-center" style={{ fontSize: 10.5, color: p.textMuted }}>{t('sl11_compte.settings_footer')}</p>
     </div>
   );
 }

@@ -38,6 +38,25 @@ export interface ProductListItem {
   /** "Vous gardez" par vente — estimation locale (voir helpers.ts::keptPerSale). */
   keptPerSaleXaf: number;
   primaryImageUrl: string | null;
+  /** Résumé "Ce mois" (ventes réglées + ventes gelées par litige) — voir helpers.ts::useMonthlyProductStats. */
+  monthly: MonthlyProductStats;
+}
+
+/**
+ * Résumé mensuel par produit (Produits.jpg : "Ce mois : 3 ventes · 53 520 F
+ * gardés" / "Ce mois : 2 ventes en litige · 670 648 F gelés"). Reconstruit
+ * depuis vendorsApi.getOrders() — voir helpers.ts::useMonthlyProductStats
+ * pour le détail et les approximations assumées (pas d'endpoint dédié).
+ */
+export interface MonthlyProductStats {
+  /** Lignes livrées et réglées ce mois-ci (escrow_status RELEASED). */
+  salesCount: number;
+  /** Montant gardé correspondant (approximé, voir helpers.ts). */
+  keptXaf: number;
+  /** Lignes actuellement gelées par un litige ce mois-ci. */
+  disputedSalesCount: number;
+  /** Montant qui serait gardé une fois le litige résolu (approximé). */
+  frozenXaf: number;
 }
 
 // ── Une offre (OFR-01 à OFR-05) ─────────────────────────────────────────────

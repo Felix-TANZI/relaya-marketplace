@@ -5,9 +5,10 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FileText } from 'lucide-react';
+import { CalendarClock, ChevronRight, FileText, Gauge, Signature, ShieldCheck, Wallet } from 'lucide-react';
 import { Collapsible, PrimaryButton, Toggle } from '../commandes/ui';
 import type { VendorPalette } from '../theme';
+import { DarkCard, DARK_HERO_TEXT, DARK_HERO_TEXT_MUTED } from './DarkCard';
 
 export interface ContractCardProps {
   p: VendorPalette;
@@ -21,53 +22,56 @@ export default function ContractCard({ p, onSign, signing }: ContractCardProps) 
   const [rccmNiu, setRccmNiu] = useState('');
 
   const lines = [
-    t('sl9_ouverture.contract_line_retention'),
-    t('sl9_ouverture.contract_line_minimum'),
-    t('sl9_ouverture.contract_line_payout'),
-    t('sl9_ouverture.contract_line_starter_cap'),
-    t('sl9_ouverture.contract_line_termination'),
+    { text: t('sl9_ouverture.contract_line_retention'), icon: Wallet },
+    { text: t('sl9_ouverture.contract_line_minimum'), icon: Wallet },
+    { text: t('sl9_ouverture.contract_line_payout'), icon: Wallet },
+    { text: t('sl9_ouverture.contract_line_starter_cap'), icon: Gauge },
+    { text: t('sl9_ouverture.contract_line_termination'), icon: CalendarClock },
   ];
 
   return (
     <div>
-      <div className="flex items-center gap-3 mb-4">
-        <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${p.orange}1F` }}>
-          <FileText size={20} color={p.orange} />
-        </div>
-        <div>
-          <h1 className="font-black" style={{ fontSize: 16, color: p.text }}>{t('sl9_ouverture.contract_title')}</h1>
-          <p style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl9_ouverture.contract_subtitle')}</p>
-        </div>
-      </div>
+      <h1 className="font-black" style={{ fontSize: 20, color: p.text }}>{t('sl9_ouverture.contract_title')}</h1>
+      <p className="mt-1 mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl9_ouverture.contract_subtitle')}</p>
 
-      <div className="rounded-2xl overflow-hidden mb-3" style={{ border: `1px solid ${p.border}` }}>
-        {lines.map((line, i) => (
-          <div
-            key={i}
-            className="flex items-start gap-2.5"
-            style={{ padding: '11px 14px', borderTop: i > 0 ? `1px solid ${p.border}` : undefined }}
+      <DarkCard className="mb-3">
+        <p className="font-black uppercase" style={{ fontSize: 10.5, letterSpacing: '.08em', color: p.orange, padding: '14px 14px 8px' }}>
+          {t('sl9_ouverture.contract_box_title')}
+        </p>
+        {lines.map((line, i) => {
+          const Icon = line.icon;
+          return (
+            <div
+              key={i}
+              className="flex items-start gap-2.5"
+              style={{ padding: '10px 14px', borderTop: `1px solid rgba(255,255,255,0.1)` }}
+            >
+              <Icon size={15} color={p.orange} className="flex-shrink-0" style={{ marginTop: 1 }} />
+              <span style={{ fontSize: 12.5, color: DARK_HERO_TEXT, lineHeight: 1.5 }}>{line.text}</span>
+            </div>
+          );
+        })}
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+          <a
+            href="/documents/contrat-vendeur-belivay.pdf"
+            target="_blank"
+            rel="noreferrer"
+            className="flex items-center justify-between font-bold"
+            style={{ padding: '13px 14px', fontSize: 12.5, color: DARK_HERO_TEXT }}
           >
-            <span className="font-black flex-shrink-0" style={{ fontSize: 11, color: p.orange, marginTop: 2 }}>{i + 1}</span>
-            <span style={{ fontSize: 12.5, color: p.text, lineHeight: 1.5 }}>{line}</span>
-          </div>
-        ))}
-      </div>
+            <span className="inline-flex items-center gap-2">
+              <FileText size={15} />
+              {t('sl9_ouverture.contract_read_full')}
+            </span>
+            <ChevronRight size={15} color={DARK_HERO_TEXT_MUTED} />
+          </a>
+        </div>
+      </DarkCard>
 
-      <p className="mb-3" style={{ fontSize: 11.5, color: p.green, fontWeight: 700 }}>
+      <p className="mb-3 flex items-center gap-1.5" style={{ fontSize: 11.5, color: p.green, fontWeight: 700 }}>
+        <ShieldCheck size={14} />
         {t('sl9_ouverture.contract_no_deposit')}
       </p>
-
-      <div className="mb-3">
-        <a
-          href="/documents/contrat-vendeur-belivay.pdf"
-          target="_blank"
-          rel="noreferrer"
-          className="font-bold underline"
-          style={{ fontSize: 12.5, color: p.orange }}
-        >
-          {t('sl9_ouverture.contract_read_full')}
-        </a>
-      </div>
 
       <div className="mb-3">
         <Collapsible title={t('sl9_ouverture.contract_why_amount')} p={p}>
@@ -99,7 +103,10 @@ export default function ContractCard({ p, onSign, signing }: ContractCardProps) 
       ) : null}
 
       <PrimaryButton p={p} onClick={() => onSign(isRegistered, rccmNiu)} disabled={signing || (isRegistered && rccmNiu.trim().length < 3)}>
-        {signing ? t('sl9_ouverture.signing') : t('sl9_ouverture.contract_sign_submit')}
+        <span className="inline-flex items-center justify-center gap-2">
+          <Signature size={16} />
+          {signing ? t('sl9_ouverture.signing') : t('sl9_ouverture.contract_sign_submit')}
+        </span>
       </PrimaryButton>
     </div>
   );

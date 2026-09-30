@@ -127,6 +127,53 @@ export function frozenTotal(disputes: VendorDisputeListItem[]): number {
 
 export type ReturnTab = 'to_decide' | 'on_the_way' | 'closed';
 
+/** Clé i18n du motif de retour — partagée entre ReturnsListPage et ReturnInspectionPage. */
+export const RETURN_REASON_KEYS: Record<string, string> = {
+  NOT_AS_DESCRIBED: 'returns_reason_not_as_described',
+  DAMAGED: 'returns_reason_damaged',
+  COUNTERFEIT: 'returns_reason_counterfeit',
+  HIDDEN_DEFECT: 'returns_reason_hidden_defect',
+};
+
+export function returnReasonLabel(t: (key: string) => string, reason: string): string {
+  const key = RETURN_REASON_KEYS[reason];
+  return key ? t(`sl8_litiges.${key}`) : reason;
+}
+
+/** Clé i18n + teinte du statut brut OrderReturn.status (Retours.jpg affiche un statut, pas seulement un motif). */
+export const RETURN_STATUS_KEYS: Record<OrderReturn['status'], string> = {
+  REQUESTED: 'returns_status_requested',
+  RECEIVED: 'returns_status_received',
+  APPROVED: 'returns_status_approved',
+  AWAITING_DROPOFF: 'returns_status_awaiting_dropoff',
+  REFUNDED: 'returns_status_refunded',
+  REJECTED: 'returns_status_rejected',
+  CLOSED_NO_REFUND: 'returns_status_closed_no_refund',
+};
+
+export function returnStatusTone(status: OrderReturn['status']): 'orange' | 'green' | 'red' | 'amber' | 'muted' {
+  switch (status) {
+    case 'REQUESTED':
+    case 'RECEIVED':
+      return 'orange';
+    case 'APPROVED':
+    case 'AWAITING_DROPOFF':
+      return 'amber';
+    case 'REFUNDED':
+      return 'green';
+    case 'REJECTED':
+    case 'CLOSED_NO_REFUND':
+    default:
+      return 'muted';
+  }
+}
+
+/** Détection grossière d'une image parmi les preuves (VendorDisputeEvidence.file_url) pour afficher une vraie vignette plutôt qu'un lien texte. */
+export function isImageUrl(url: string | null | undefined): boolean {
+  if (!url) return false;
+  return /\.(png|jpe?g|gif|webp|heic|bmp)(\?|#|$)/i.test(url);
+}
+
 export function returnTabOf(r: OrderReturn): ReturnTab {
   switch (r.status) {
     case 'REQUESTED':

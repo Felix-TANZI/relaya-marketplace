@@ -21,6 +21,13 @@ export default {
     pill_problem: 'Dispute or return',
     plus_n_others: '+ {{n}} more item(s)',
     paid_at: 'Paid on {{time}}',
+    item_meta_line: '×{{qty}} · {{price}}',
+    courier_line_home: 'Courier {{name}} at your place',
+    courier_line_relay: 'Courier {{name}} at the {{relay}} relay',
+    menu_more: 'More options',
+    menu_export: 'Export',
+    menu_invoices: 'Invoices',
+    menu_soon: 'Coming soon: no dedicated export yet.',
     you_keep: 'You keep',
     money_paid: 'Paid out',
     money_releasing: 'Releasing soon',
@@ -105,6 +112,7 @@ export default {
 
     // Preparation slip (VD-05 §BON-01/02)
     slip_title: 'Preparation slip',
+    slip_document_label: 'Preparation slip',
     slip_paid_at: 'Paid on {{time}}',
     slip_deadline: 'Deadline: {{time}}',
     slip_check_title: 'To check before the courier arrives',
@@ -185,6 +193,7 @@ export default {
     // Seller receipt (VD-06 §RCU-01 to RCU-04)
     receipt_title: 'Seller receipt',
     receipt_header: 'Seller receipt',
+    receipt_document_label: 'Seller receipt',
     receipt_row_article: 'Item',
     receipt_row_ref: 'Reference',
     receipt_row_date: 'Collected on',

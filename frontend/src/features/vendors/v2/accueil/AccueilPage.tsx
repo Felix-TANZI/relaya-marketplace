@@ -12,11 +12,12 @@
 
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { HelpCircle, MessageCircle, RefreshCw } from 'lucide-react';
+import { HelpCircle, MessageCircle, RefreshCw, Wifi } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
 import { useAccueilData } from './useAccueilData';
+import { formatTodayLabel } from './format';
 import type { TodoItem } from './types';
 import ShopStatusBar from './ShopStatusBar';
 import HeroCard from './HeroCard';
@@ -67,10 +68,38 @@ function HelpBlock() {
   );
 }
 
-export default function AccueilPage() {
+/** Pastilles catégorisées sous "N choses à faire" ("2 à préparer · 2 litiges · 1 retour", ACC-01) —
+ * affichées seulement quand la file mélange plusieurs types, sinon le titre suffit. */
+function TodoCategoryPills({ prepareCount, disputeCount, returnCount, p }: {
+  prepareCount: number;
+  disputeCount: number;
+  returnCount: number;
+  p: ReturnType<typeof palette>;
+}) {
   const { t } = useTranslation();
+  const pill = (label: string, color: string) => (
+    <span
+      key={label}
+      className="font-bold rounded-full px-2.5 py-1 flex-shrink-0"
+      style={{ fontSize: 11.5, color, background: `${color}1F` }}
+    >
+      {label}
+    </span>
+  );
+  return (
+    <div className="flex flex-wrap gap-2 mb-4">
+      {prepareCount > 0 ? pill(t('sl6_accueil.todo_pill_prepare', { count: prepareCount }), p.orange) : null}
+      {disputeCount > 0 ? pill(t('sl6_accueil.todo_pill_dispute', { count: disputeCount }), p.red) : null}
+      {returnCount > 0 ? pill(t('sl6_accueil.todo_pill_return', { count: returnCount }), p.amber) : null}
+    </div>
+  );
+}
+
+export default function AccueilPage() {
+  const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const p = palette(theme);
+  const locale = i18n.language.startsWith('en') ? 'en' : 'fr';
   const navigate = useNavigate();
   const state = useAccueilData();
 
@@ -92,7 +121,16 @@ export default function AccueilPage() {
   }, [state, t]);
 
   const goToOrder = useCallback((orderId: number) => navigate(`/seller/orders/${orderId}`), [navigate]);
-  const goToDisputes = useCallback(() => navigate('/seller/disputes'), [navigate]);
+  // Ouvre la vraie fiche du litige (VD-07) : réponse si le vendeur n'a pas
+  // encore répondu, décision si le dossier est déjà en médiation.
+  const goToDispute = useCallback((item: TodoItem) => {
+    if (!item.disputeId) return;
+    navigate(item.disputeReplied ? `/seller/v2/litiges/${item.disputeId}/decision` : `/seller/v2/litiges/${item.disputeId}`);
+  }, [navigate]);
+  const goToReturn = useCallback((item: TodoItem) => {
+    if (!item.returnId) return;
+    navigate(`/seller/v2/retours/${item.returnId}`);
+  }, [navigate]);
   const goToTier = useCallback(() => navigate('/seller/certifications'), [navigate]);
 
   // ── États de chargement / erreur ──────────────────────────────────────────
@@ -134,6 +172,12 @@ export default function AccueilPage() {
   const heroItem: TodoItem | null = state.todos.find((it) => it.kind === 'prepare') ?? null;
   const restItems = state.todos.filter((it) => it !== heroItem);
 
+  // Pastilles catégorisées (ACC-01) : seulement quand la file mélange plusieurs types.
+  const prepareCount = state.todos.filter((it) => it.kind === 'prepare').length;
+  const disputeCount = state.todos.filter((it) => it.kind === 'dispute').length;
+  const returnCount = state.todos.filter((it) => it.kind === 'return').length;
+  const showCategoryPills = [prepareCount, disputeCount, returnCount].filter((c) => c > 0).length > 1;
+
   return (
     <div className="pb-24 pt-2">
       {state.variant === 'offline' ? (
@@ -141,6 +185,13 @@ export default function AccueilPage() {
       ) : null}
 
       <ShopIdentityBar />
+
+      {state.variant === 'todo' || state.variant === 'empty' ? (
+        <p className="font-black uppercase mb-3" style={{ fontSize: 11, letterSpacing: '.06em', color: p.textMuted }}>
+          {t('sl6_accueil.greeting', { name: state.firstName, date: formatTodayLabel(locale) })}
+        </p>
+      ) : null}
+
       <ShopStatusBar />
 
       {state.isPrepAccess ? (
@@ -158,7 +209,7 @@ export default function AccueilPage() {
       {state.variant === 'first_day' ? (
         <>
           <p className="font-black mb-4" style={{ fontSize: 18, color: p.text }}>
-            {t('sl6_accueil.welcome_title', { shop: state.shopName })}
+            {t('sl6_accueil.welcome_title', { name: state.firstName })}
           </p>
           <GesturesCard gestures={state.gestures} />
           {state.launchTier ? <LaunchTierCard tier={state.launchTier} /> : null}
@@ -196,9 +247,12 @@ export default function AccueilPage() {
         </p>
       ) : (
         <>
-          <p className="font-black mb-4" style={{ fontSize: 18, color: p.text }}>
+          <p className={showCategoryPills ? 'font-black mb-1' : 'font-black mb-4'} style={{ fontSize: 18, color: p.text }}>
             {t('sl6_accueil.todo_title', { count: state.todos.length })}
           </p>
+          {showCategoryPills ? (
+            <TodoCategoryPills prepareCount={prepareCount} disputeCount={disputeCount} returnCount={returnCount} p={p} />
+          ) : null}
           {heroItem ? (
             <HeroCard
               item={heroItem}
@@ -215,7 +269,8 @@ export default function AccueilPage() {
               key={item.id}
               item={item}
               onReady={handleReady}
-              onRespondDispute={goToDisputes}
+              onRespondDispute={goToDispute}
+              onViewReturn={goToReturn}
               busy={busyOrderId === item.orderId}
               hideAmount={state.isPrepAccess}
             />
@@ -223,7 +278,14 @@ export default function AccueilPage() {
         </>
       )}
 
-      <LowStockRow count={state.lowStockCount} />
+      <LowStockRow item={state.lowStockItem} />
+
+      {state.variant !== 'offline' ? (
+        <div className="flex items-center gap-2 justify-center mt-3" style={{ minHeight: 44 }}>
+          <Wifi size={14} color={p.green} />
+          <span style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl6_accueil.network_footer')}</span>
+        </div>
+      ) : null}
     </div>
   );
 }

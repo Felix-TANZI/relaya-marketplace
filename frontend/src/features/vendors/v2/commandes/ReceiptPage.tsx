@@ -13,7 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { FileText, Inbox, RefreshCw, Share2 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, Collapsible, GhostRow, PageHeader } from './ui';
+import { Card, CenterState, Collapsible, DocumentHeader, GhostRow, PageHeader, ProductThumb } from './ui';
 import { fmtDateTime, fmtXAF, itemsSummary, orderRef, useOrder } from './helpers';
 
 export default function ReceiptPage() {
@@ -44,8 +44,6 @@ export default function ReceiptPage() {
 
   const rows: { labelKey: string; value: string }[] = [
     { labelKey: 'receipt_row_article', value: `${summary.title}${summary.qty > 1 ? ` ×${summary.qty}` : ''}` },
-    { labelKey: 'receipt_row_ref', value: orderRef(order.id) },
-    { labelKey: 'receipt_row_date', value: fmtDateTime(order.created_at) },
     { labelKey: 'receipt_row_customer', value: t('sl7_commandes.receipt_identity_masked') },
     { labelKey: 'receipt_row_collected_by', value: t('sl7_commandes.receipt_collected_by_value') },
     { labelKey: 'receipt_row_sale_price', value: fmtXAF(order.vendor_subtotal) },
@@ -55,15 +53,25 @@ export default function ReceiptPage() {
     <div className="pb-24 pt-2">
       <PageHeader title={t('sl7_commandes.receipt_title')} onBack={() => navigate(-1)} p={p} />
 
+      <DocumentHeader
+        label={t('sl7_commandes.receipt_document_label')}
+        refText={orderRef(order.id)}
+        lines={[t('sl7_commandes.receipt_row_date') + ' ' + fmtDateTime(order.created_at)]}
+      />
+
       <Card p={p}>
-        <p className="text-center font-black uppercase" style={{ fontSize: 14, letterSpacing: '.08em', color: p.text }}>
-          {t('sl7_commandes.receipt_header')}
-        </p>
-        <div className="mt-4 flex flex-col gap-2">
-          {rows.map((r) => (
-            <div key={r.labelKey} className="flex items-center justify-between" style={{ borderTop: `1px solid ${p.border}`, paddingTop: 8 }}>
+        <div className="flex flex-col gap-2">
+          {rows.map((r, i) => (
+            <div key={r.labelKey} className="flex items-center justify-between" style={{ borderTop: i > 0 ? `1px solid ${p.border}` : undefined, paddingTop: i > 0 ? 8 : 0 }}>
               <span style={{ fontSize: 12, color: p.textMuted }}>{t(`sl7_commandes.${r.labelKey}`)}</span>
-              <span style={{ fontSize: 12.5, color: p.text, fontWeight: 600, textAlign: 'right' }}>{r.value}</span>
+              {r.labelKey === 'receipt_row_article' ? (
+                <span className="flex items-center gap-2" style={{ minWidth: 0 }}>
+                  <ProductThumb imageUrl={summary.imageUrl} size={28} p={p} />
+                  <span style={{ fontSize: 12.5, color: p.text, fontWeight: 600, textAlign: 'right' }}>{r.value}</span>
+                </span>
+              ) : (
+                <span style={{ fontSize: 12.5, color: p.text, fontWeight: 600, textAlign: 'right' }}>{r.value}</span>
+              )}
             </div>
           ))}
         </div>

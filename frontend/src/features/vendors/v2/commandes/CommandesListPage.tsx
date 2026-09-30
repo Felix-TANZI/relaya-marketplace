@@ -7,15 +7,16 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronRight, Inbox, Package, RefreshCw } from 'lucide-react';
+import { ChevronRight, Inbox, RefreshCw, Truck } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type VendorOrder } from '@/services/api/vendors';
 import { palette } from '../theme';
-import { Card, CenterState, Pill } from './ui';
+import { Card, CenterState, HeaderMenu, Pill, ProductThumb } from './ui';
 import ShopIdentityBar from '../ShopIdentityBar';
 import {
-  bucketOf, fmtDateTime, fmtXAF, itemsSummary, markOrderReady, orderRef, pillLabelKeyOf, type OrderBucket,
+  bucketOf, courierOf, fmtDateTime, fmtXAF, itemsSummary, markOrderReady, orderRef, pickupLocationOf, pillLabelKeyOf,
+  type OrderBucket,
 } from './helpers';
 
 const FILTERS: OrderBucket[] = ['prep', 'in_progress', 'done', 'problems'];
@@ -103,9 +104,12 @@ export default function CommandesListPage() {
   return (
     <div className="pb-24 pt-2">
       <ShopIdentityBar />
-      <h1 className="font-black mb-1" style={{ fontSize: 19, color: p.text }}>
-        {t('sl7_commandes.list_title')}
-      </h1>
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h1 className="font-black" style={{ fontSize: 19, color: p.text }}>
+          {t('sl7_commandes.list_title')}
+        </h1>
+        <HeaderMenu p={p} />
+      </div>
       <p className="mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>{summary}</p>
 
       <div className="flex gap-2 mb-4 overflow-x-auto" style={{ scrollbarWidth: 'none' }}>
@@ -186,6 +190,7 @@ function OrderListCard({
 }) {
   const bucket = bucketOf(order);
   const summary = itemsSummary(order);
+  const pickup = pickupLocationOf(order);
   const isProblem = bucket === 'problems';
   const isDone = bucket === 'done';
 
@@ -201,18 +206,18 @@ function OrderListCard({
           <span style={{ fontSize: 11, color: p.textMuted }}>{orderRef(order.id)}</span>
         </div>
         <div className="flex items-center gap-3 mb-2">
-          <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden" style={{ background: p.cardAlt }}>
-            {summary.imageUrl
-              ? <img src={summary.imageUrl} alt="" className="w-full h-full object-cover" />
-              : <Package size={18} color={p.textMuted} />}
-          </div>
+          <ProductThumb imageUrl={summary.imageUrl} p={p} />
           <div className="min-w-0 flex-1">
             <p className="font-bold truncate" style={{ fontSize: 14, color: p.text }}>
               {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
             </p>
             {summary.extra > 0 ? (
               <p style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl7_commandes.plus_n_others', { n: summary.extra })}</p>
-            ) : null}
+            ) : (
+              <p style={{ fontSize: 11.5, color: p.textMuted }}>
+                {t('sl7_commandes.item_meta_line', { qty: summary.qty, price: fmtXAF(summary.unitPrice) })}
+              </p>
+            )}
           </div>
           <ChevronRight size={16} color={p.textMuted} />
         </div>
@@ -225,6 +230,15 @@ function OrderListCard({
         <span style={{ fontSize: 12, color: p.textMuted, fontWeight: 600 }}>{t('sl7_commandes.you_keep')}</span>
         <span className="font-black" style={{ fontSize: 16, color: p.green }}>{fmtXAF(order.vendor_net_amount)}</span>
       </div>
+
+      {pickup && !isDone && !isProblem ? (
+        <p className="flex items-center gap-1.5 mt-2" style={{ fontSize: 11.5, color: p.textMuted }}>
+          <Truck size={13} />
+          {pickup.kind === 'relay'
+            ? t('sl7_commandes.courier_line_relay', { name: courierOf(order)?.name, relay: pickup.relay })
+            : t('sl7_commandes.courier_line_home', { name: courierOf(order)?.name })}
+        </p>
+      ) : null}
 
       {isDone ? (
         <p className="mt-2" style={{ fontSize: 11.5, color: p.textMuted }}>

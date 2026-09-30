@@ -20,10 +20,11 @@ import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, Inbox, MessageCircle, RefreshCw, Truck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, Collapsible, GhostRow, PageHeader, Pill } from './ui';
+import { Card, CenterState, Collapsible, GhostRow, PageHeader, Pill, ProductThumb } from './ui';
 import { ErrorCard, HANDOVER_ERROR_CASES, type HandoverErrorKey } from './ErrorCard';
 import {
-  courierOf, detectHandoverIssue, fmtDateTime, handoverCodeOf, orderRef, useOnlineStatus, useOrder,
+  courierOf, detectHandoverIssue, fmtDateTime, handoverCodeOf, itemsSummary, orderRef, pickupLocationOf,
+  useOnlineStatus, useOrder,
 } from './helpers';
 
 const AFTER_READY = new Set(['DRIVER_ASSIGNED', 'PICKED_UP', 'OUT_FOR_DELIVERY', 'DELIVERED', 'BUYER_CONFIRMED', 'AUTO_CONFIRMED', 'RELEASED_TO_VENDOR']);
@@ -61,8 +62,10 @@ export default function HandoverPage() {
   }
 
   const courier = courierOf(order);
+  const pickup = pickupLocationOf(order);
   const code = handoverCodeOf(order);
   const issue = detectHandoverIssue(order, isOnline);
+  const summary = itemsSummary(order);
 
   const issueLabels: Record<HandoverErrorKey, { title: string; detail: string; action: string; why: string }> = {
     courier_absent: {
@@ -132,17 +135,29 @@ export default function HandoverPage() {
             onAction={actionFor(liveCase.key)}
             why={issueLabels[liveCase.key].why}
             p={p}
+            product={{ imageUrl: summary.imageUrl, title: summary.title, ref: orderRef(order.id) }}
           />
         </div>
       ) : null}
 
       <Card p={p}>
+        <div className="flex items-center gap-3 mb-3 pb-3" style={{ borderBottom: `1px solid ${p.border}` }}>
+          <ProductThumb imageUrl={summary.imageUrl} size={40} p={p} />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold truncate" style={{ fontSize: 13, color: p.text }}>{summary.title}</p>
+            <p style={{ fontSize: 11, color: p.textMuted }}>{orderRef(order.id)}</p>
+          </div>
+        </div>
         <div className="flex items-center gap-2 mb-2">
           <Truck size={16} color={p.textMuted} />
           <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>{t('sl7_commandes.pickup_title')}</p>
         </div>
-        {courier ? (
-          <p style={{ fontSize: 14, color: p.text, fontWeight: 700 }}>{courier.name}</p>
+        {courier && pickup ? (
+          <p style={{ fontSize: 14, color: p.text, fontWeight: 700 }}>
+            {pickup.kind === 'relay'
+              ? t('sl7_commandes.courier_line_relay', { name: courier.name, relay: pickup.relay })
+              : t('sl7_commandes.courier_line_home', { name: courier.name })}
+          </p>
         ) : (
           <p style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl7_commandes.pickup_not_assigned')}</p>
         )}

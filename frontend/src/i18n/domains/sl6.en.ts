@@ -12,10 +12,25 @@ export default {
     action_error: "This action couldn't go through in time: try again.",
     prep_access_note: 'Amounts and payouts are reserved for the shop owner.',
 
+    // ── Personalised greeting, above "Shop open" (ACC-gap) ───────────────
+    greeting: 'Hello {{name}} · {{date}}',
+
     // ── "To-do" list title (ACC-01) ──────────────────────────────────────
     todo_title: '{{count}} thing(s) to do',
     todo_title_one: '{{count}} thing to do',
     todo_title_other: '{{count}} things to do',
+
+    // ── Categorised pills under the title, when the queue mixes several
+    // types ("2 to prepare · 2 disputes · 1 return", ACC-01) ─────────────
+    todo_pill_prepare: '{{count}} to prepare',
+    todo_pill_prepare_one: '{{count}} to prepare',
+    todo_pill_prepare_other: '{{count}} to prepare',
+    todo_pill_dispute: '{{count}} dispute(s)',
+    todo_pill_dispute_one: '{{count}} dispute',
+    todo_pill_dispute_other: '{{count}} disputes',
+    todo_pill_return: '{{count}} return(s)',
+    todo_pill_return_one: '{{count}} return',
+    todo_pill_return_other: '{{count}} returns',
 
     // ── Orange hero card — most urgent order (ACC-02/03) ─────────────────
     hero_label: 'To prepare first',
@@ -28,13 +43,32 @@ export default {
     hero_action_extend: 'More time',
     hero_action_detail: 'Detail',
 
-    // ── Soft cards: remaining orders to prepare / disputes (ACC-02/04/05) ─
+    // ── Soft cards: remaining orders to prepare / disputes / returns (ACC-02/04/05/06) ─
     row_prepare_badge: 'To prepare',
     row_dispute_badge: 'Dispute — frozen',
     row_dispute_frozen: 'Frozen until the decision · {{amount}}',
     row_dispute_frozen_no_amount: 'Frozen until the decision.',
+    row_dispute_frozen_label: 'Frozen amount',
+    row_dispute_reason: 'The customer says: "{{reason}}"',
+    row_dispute_deadline: 'Respond before {{when}}. With no response, the decision is made in the customer\'s favour.',
+    row_dispute_mediation: 'Your response was sent — BelivaY will decide.',
     row_prepare_action: 'Ready',
     row_dispute_action: 'Respond',
+    row_dispute_action_view: 'View',
+    row_paid_at: 'Paid at {{time}}',
+    row_courier_unassigned: 'No courier assigned yet',
+
+    row_return_badge: 'Return',
+    row_return_reason: 'Reason: {{reason}}',
+    row_return_frozen_review: 'Frozen until your decision',
+    row_return_frozen_transit: 'Frozen until it reaches you',
+    row_return_frozen_inspection: 'Frozen until inspection',
+    row_return_inspection_deadline: 'You have until {{when}} to inspect it.',
+    row_return_action: 'View the return',
+    return_reason_not_as_described: 'Not as described',
+    return_reason_damaged: 'Damaged',
+    return_reason_counterfeit: 'Counterfeit',
+    return_reason_hidden_defect: 'Hidden defect',
 
     // ── "Shop open" card (ACC-06/07) ─────────────────────────────────────
     shop_open: 'Shop open',
@@ -45,6 +79,14 @@ export default {
     low_stock: '{{count}} product(s) low on stock',
     low_stock_one: '{{count}} product low on stock',
     low_stock_other: '{{count}} products low on stock',
+    low_stock_title: 'Low stock · {{title}}',
+    low_stock_detail: '{{count}} left, threshold set at {{threshold}}',
+    low_stock_detail_one: '{{count}} left, threshold set at {{threshold}}',
+    low_stock_detail_other: '{{count}} left, threshold set at {{threshold}}',
+    low_stock_action: 'Restock',
+
+    // ── Bottom of page — network state (ACC-gap) ─────────────────────────
+    network_footer: 'Connected · no action waiting to send',
 
     // ── Launch tier (ACC-15/21) ──────────────────────────────────────────
     tier_bronze: 'Bronze',
@@ -66,7 +108,7 @@ export default {
     gesture_add_product: 'Add a product',
     gesture_set_hours: 'Set my hours',
     gesture_verify_payout: 'Verify my payout number',
-    welcome_title: 'Welcome {{shop}} · day 1',
+    welcome_title: 'Welcome {{name}} · day 1',
 
     // ── Discovery offer — Day one (KYC-05) ───────────────────────────────
     discovery_title: 'Discovery offer',

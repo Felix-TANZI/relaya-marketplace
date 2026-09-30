@@ -15,8 +15,8 @@ import { Camera, CheckCircle2, Inbox, RefreshCw } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
-import { Card, CenterState, Collapsible, KeepAmount, PageHeader, PrimaryButton } from './ui';
-import { fmtXAF, orderRef, releaseDelayDays, useOrder } from './helpers';
+import { Card, CenterState, Collapsible, KeepAmount, PageHeader, PrimaryButton, ProductThumb } from './ui';
+import { fmtXAF, itemsSummary, orderRef, releaseDelayDays, useOrder } from './helpers';
 
 export default function HandoverDonePage() {
   const { id } = useParams();
@@ -40,10 +40,16 @@ export default function HandoverDonePage() {
   }
 
   const delayDays = releaseDelayDays(profile?.certification_tier);
+  const summary = itemsSummary(order);
 
   return (
     <div className="pb-24 pt-2">
       <PageHeader title={t('sl7_commandes.handover_done_title')} subtitle={orderRef(order.id)} p={p} />
+
+      <div className="flex items-center gap-3 mb-4">
+        <ProductThumb imageUrl={summary.imageUrl} size={40} p={p} />
+        <p className="font-bold truncate" style={{ fontSize: 13, color: p.text }}>{summary.title}</p>
+      </div>
 
       <div className="flex justify-center mb-4">
         <div className="rounded-full flex items-center justify-center" style={{ width: 56, height: 56, background: `${p.green}22` }}>

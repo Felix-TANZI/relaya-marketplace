@@ -174,14 +174,22 @@ export function useOrder(orderId: number | undefined): UseOrderState {
   return { order, loading, error, reload: () => setTick((n) => n + 1) };
 }
 
-/** Résumé "1er article + n autres" pour une carte commande. */
-export function itemsSummary(order: VendorOrder): { title: string; extra: number; qty: number; imageUrl: string | null } {
+/**
+ * Résumé "1er article + n autres" pour une carte commande. unitPrice vient de
+ * product_price (seul prix exposé par VendorOrderItem) : ni condition
+ * (Neuf/Occasion) ni classe de colis ne sont disponibles sur cet objet
+ * aujourd'hui (voir parcelClassOf) — volontairement omis plutôt qu'inventés.
+ */
+export function itemsSummary(order: VendorOrder): {
+  title: string; extra: number; qty: number; imageUrl: string | null; unitPrice: number | null;
+} {
   const first = order.items[0];
   return {
     title: first ? first.product_title : '—',
     extra: Math.max(0, order.items.length - 1),
     qty: first ? first.qty : 0,
     imageUrl: first?.product_image ?? null,
+    unitPrice: first ? first.product_price : null,
   };
 }
 
@@ -268,6 +276,18 @@ export function useOnlineStatus(): boolean {
 export function courierOf(order: VendorOrder): { name: string; phone: string } | null {
   if (!order.shipment?.courier_name) return null;
   return { name: order.shipment.courier_name, phone: order.shipment.courier_phone };
+}
+
+/**
+ * Lieu de ramassage réel (shipment.relay_point, seul champ dont on dispose
+ * pour distinguer "chez vous" de "au relais" — REM-03/PRE-03). Pas d'heure de
+ * créneau exposée (courier_name/courier_phone/relay_point/distance_km
+ * seulement) : "entre HHh et HHh" du paquet maquettes n'est donc pas
+ * reproduit, plutôt qu'inventé.
+ */
+export function pickupLocationOf(order: VendorOrder): { kind: 'relay'; relay: string } | { kind: 'home' } | null {
+  if (!order.shipment?.courier_name) return null;
+  return order.shipment.relay_point ? { kind: 'relay', relay: order.shipment.relay_point } : { kind: 'home' };
 }
 
 /**

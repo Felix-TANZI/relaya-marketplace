@@ -11,6 +11,13 @@
 // Résolution d'axe (couleur → variant réel) hors périmètre de ce lot — voir
 // la même note dans NouvelleOffreWizardPage.tsx : la couleur choisie est
 // tracée dans seller_note en attendant variantsApi.findOrCreate.
+//
+// La carte "Depuis : ..." (Dupliquer.jpg) n'affiche que des champs réels du
+// produit source (image, titre, prix, état). Le message "le vert existe déjà
+// au catalogue : votre offre y sera rattachée" de la maquette n'est PAS
+// reproduit : duplicateProduct() crée toujours un nouveau produit indépendant,
+// il n'existe aucun mécanisme de rattachement à une variante déjà publiée
+// (MANQUE BACKEND) — l'afficher tel quel aurait été trompeur.
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -22,8 +29,8 @@ import {
   vendorsApi, type MasterFiche, type ProductCondition, type VendorProduct, type VendorProfile,
 } from '@/services/api/vendors';
 import { palette } from '../theme';
-import { CenterState, Collapsible, PageHeader, Pill, PrimaryButton } from './ui';
-import { MIN_PUBLISHABLE_PRICE_XAF, parsePriceInput, tierToCommissionTier } from './helpers';
+import { Card, CenterState, Collapsible, PageHeader, Pill, PrimaryButton } from './ui';
+import { fmtXAF, MIN_PUBLISHABLE_PRICE_XAF, parsePriceInput, primaryImageOf, tierToCommissionTier } from './helpers';
 import { emptyDraft, type NewOfferDraft } from './types';
 import StepPhotos from './steps/StepPhotos';
 import StepStockPrix from './steps/StepStockPrix';
@@ -154,7 +161,6 @@ export default function DupliquerProduitPage() {
     <div className="pb-24 pt-2">
       <PageHeader
         title={t('sl10_catalogue.duplicate_title')}
-        subtitle={source.title}
         onBack={() => (phase === 'pick' ? navigate(-1) : setPhase('pick'))}
         backLabel={t('sl10_catalogue.back')}
         p={p}
@@ -162,7 +168,38 @@ export default function DupliquerProduitPage() {
 
       {phase === 'pick' ? (
         <>
-          <p className="font-semibold mb-2" style={{ fontSize: 12.5, color: p.text }}>{t('sl10_catalogue.duplicate_pick_variant')}</p>
+          <p className="font-black mb-3" style={{ fontSize: 19, color: p.text }}>{t('sl10_catalogue.duplicate_heading')}</p>
+          <p className="mb-3" style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl10_catalogue.duplicate_intro')}</p>
+
+          {/* Carte "Depuis : ..." (Dupliquer.jpg) : produit source, prix et état réels. */}
+          <div className="mb-4">
+            <Card p={p}>
+              <div className="flex items-center gap-3">
+                <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 flex items-center justify-center" style={{ background: p.cardAlt }}>
+                  {primaryImageOf(source) ? (
+                    <img src={primaryImageOf(source)!} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <Package size={20} color={p.textMuted} />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold truncate" style={{ fontSize: 13.5, color: p.text }}>
+                    {t('sl10_catalogue.duplicate_from', { title: source.title })}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span style={{ fontSize: 12, color: p.textMuted }}>{fmtXAF(source.price_xaf)}</span>
+                    <Pill
+                      label={source.is_active ? t('sl10_catalogue.state_selling') : t('sl10_catalogue.state_paused')}
+                      tone={source.is_active ? 'green' : 'muted'}
+                      p={p}
+                    />
+                  </div>
+                </div>
+              </div>
+            </Card>
+          </div>
+
+          <p className="font-semibold mb-2 uppercase" style={{ fontSize: 10.5, color: p.textMuted, letterSpacing: '0.04em' }}>{t('sl10_catalogue.duplicate_pick_variant')}</p>
           <div className="flex flex-wrap gap-2 mb-3">
             {COLOR_CHIPS.map((c) => (
               <button
@@ -223,6 +260,7 @@ export default function DupliquerProduitPage() {
             p={p}
             t={t}
           />
+          <p className="mt-1.5" style={{ fontSize: 11, color: p.textMuted }}>{t('sl10_catalogue.duplicate_photos_never_copied')}</p>
 
           <div className="mt-4">
             <PrimaryButton p={p} disabled={busy || !chosenColor} onClick={createDraft}>

@@ -8,7 +8,14 @@ export default {
 
     shop_default: 'My shop',
     menu_owner: 'Owner',
-    menu_version: 'Seller space · version 1.0',
+    menu_version: 'Seller space · version 2.0',
+
+    // Shop card (Menu.jpg) — real status, tier and plan.
+    menu_shop_status_open: 'Open',
+    menu_shop_status_suspended: 'Suspended',
+    menu_shop_status_rejected: 'Rejected',
+    menu_shop_status_pending: 'Pending',
+    menu_shop_plan_discovery: 'discovery',
 
     menu_group_to_handle: 'To handle',
     menu_to_prepare: 'To prepare',
@@ -19,25 +26,33 @@ export default {
     menu_notifications: 'Notifications',
     menu_messaging: 'Messaging',
     menu_help: 'Help',
+    menu_help_subtitle: 'FAQ · WhatsApp support',
 
     menu_group_money: 'My money',
     menu_my_money: 'My money',
+    menu_my_money_highlight: '{{amount}} to be paid',
     menu_payouts: 'Payouts',
+    menu_payouts_subtitle: 'Every Friday, no fees',
     menu_documents: 'Documents',
+    menu_documents_subtitle: 'Contract, invoices, statements',
 
     menu_group_catalog: 'My catalog',
     menu_my_products: 'My products',
+    menu_products_subtitle: '{{count}} products',
     menu_new_offer: 'New offer',
     menu_assisted_entry: 'Assisted entry',
+    menu_assisted_entry_subtitle: 'A BelivaY agent enters your listings',
 
     menu_group_grow: 'Sell more',
     menu_trust_score: 'Trust Score and tier',
+    menu_trust_score_subtitle: 'Your trust rating, out of 100',
     menu_my_numbers: 'My numbers',
     menu_plans: 'Plans & pricing',
     menu_visibility: 'Get seen',
 
     menu_group_shop: 'My shop',
     menu_my_shop: 'My shop',
+    menu_my_shop_subtitle: 'What the customer sees',
     menu_hours: 'Hours and closures',
     menu_reviews: 'Reviews and right of reply',
     menu_team: 'My team',
@@ -45,6 +60,7 @@ export default {
 
     menu_group_account: 'My account',
     menu_settings: 'Settings',
+    menu_settings_subtitle: 'Language, text size, notifications',
     menu_security: 'Security, devices and data',
     menu_install: 'Install the app',
     menu_logout: 'Log out',

@@ -191,9 +191,13 @@ export function CenterState({ icon, title, detail, p }: { icon: ReactNode; title
   );
 }
 
+/** `hint` : ligne d'explication sous le libellé (Offre.jpg : "Coupé, le client
+ * doit payer ce produit d'avance." / "Baisse seulement, 3 % par semaine au
+ * plus, jamais sous votre prix plancher.") — texte statique, n'affecte aucune
+ * donnée serveur. */
 export function Toggle({
-  checked, onChange, label, p, disabled,
-}: { checked: boolean; onChange: (v: boolean) => void; label: string; p: VendorPalette; disabled?: boolean }) {
+  checked, onChange, label, hint, p, disabled,
+}: { checked: boolean; onChange: (v: boolean) => void; label: string; hint?: string; p: VendorPalette; disabled?: boolean }) {
   return (
     <button
       type="button"
@@ -204,7 +208,10 @@ export function Toggle({
       className="w-full flex items-center justify-between rounded-xl disabled:opacity-50"
       style={{ padding: '12px 14px', minHeight: 44, background: p.cardAlt, border: `1px solid ${p.border}` }}
     >
-      <span className="font-semibold text-left" style={{ fontSize: 13, color: p.text }}>{label}</span>
+      <span className="flex flex-col items-start text-left" style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
+        <span className="font-semibold" style={{ fontSize: 13, color: p.text }}>{label}</span>
+        {hint ? <span className="mt-0.5" style={{ fontSize: 11, color: p.textMuted, lineHeight: 1.4 }}>{hint}</span> : null}
+      </span>
       <span
         className="relative flex-shrink-0 rounded-full transition-colors"
         style={{ width: 40, height: 24, background: checked ? p.orange : p.border }}

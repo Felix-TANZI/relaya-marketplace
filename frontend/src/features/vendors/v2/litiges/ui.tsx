@@ -7,7 +7,7 @@
 // pas coupler ce lot au travail en parallèle d'autres agents sur le dépôt.
 
 import { useState, type ReactNode } from 'react';
-import { ChevronDown, ChevronLeft } from 'lucide-react';
+import { Check, ChevronDown, ChevronLeft, Package } from 'lucide-react';
 import { primaryGradient, type VendorPalette } from '../theme';
 
 export function PageHeader({
@@ -227,6 +227,110 @@ export function Banner({ tone, children, p }: { tone: 'amber' | 'red' | 'muted';
       style={{ padding: '11px 13px', background: `${color}14`, border: `1px solid ${color}55`, fontSize: 12, color: p.text, lineHeight: 1.5 }}
     >
       {children}
+    </div>
+  );
+}
+
+// ── Enrichissements « richesse visuelle » (alignement sur les maquettes
+// Fond_clair/Litiges·Repondre·Decision·Retours·Inspection·Remplacement.jpg) ──
+
+/**
+ * Vignette produit. Les endpoints VD-07 (VendorDisputeListItem/Detail,
+ * OrderReturn) n'exposent aucune URL de photo produit — seul le titre
+ * (order_item_title, retours uniquement) est disponible. On affiche donc une
+ * icône générique plutôt que d'inventer une image, en gardant le même
+ * gabarit que la vraie photo des maquettes pour la mise en page.
+ */
+export function ProductThumb({ p, size = 52 }: { p: VendorPalette; size?: number }) {
+  return (
+    <div
+      className="flex-shrink-0 rounded-xl flex items-center justify-center"
+      style={{ width: size, height: size, background: p.cardAlt, border: `1px solid ${p.border}` }}
+    >
+      <Package size={Math.round(size * 0.42)} color={p.textMuted} />
+    </div>
+  );
+}
+
+const HERO_GRADIENT: Record<'neutral' | 'green' | 'red', string> = {
+  neutral: 'linear-gradient(160deg, #2E2013 0%, #14100B 100%)',
+  green: 'linear-gradient(160deg, #0E3A28 0%, #0A2318 100%)',
+  red: 'linear-gradient(160deg, #431414 0%, #230B0B 100%)',
+};
+
+// eslint-disable-next-line react-refresh/only-export-components -- constante de teinte colocalisée avec DarkHero, ses seuls consommateurs
+export const HERO_ACCENT: Record<'neutral' | 'green' | 'red', string> = {
+  neutral: '#F0C04C',
+  green: '#7FE3B4',
+  red: '#FF9C90',
+};
+
+/**
+ * Carte « héro » à fond sombre en dégradé, volontairement indépendante du
+ * thème clair/sombre de l'app (comme les cartes « Argent gelé »/« Décision »
+ * des maquettes, sombres même sur fond clair) — sert à mettre en avant les
+ * montants et l'issue d'un litige.
+ */
+export function DarkHero({ tone, children }: { tone: 'neutral' | 'green' | 'red'; children: ReactNode }) {
+  return (
+    <div className="rounded-2xl p-5 mb-4" style={{ background: HERO_GRADIENT[tone] }}>
+      {children}
+    </div>
+  );
+}
+
+interface StepState { label: string; state: 'done' | 'current' | 'upcoming'; }
+
+/** Frise horizontale à 4 étapes (Décision.jpg) — utilisée seulement pendant la médiation. */
+export function Stepper({ steps, p }: { steps: StepState[]; p: VendorPalette }) {
+  return (
+    <div className="flex items-start">
+      {steps.map((s, i) => (
+        <div key={s.label} className="flex items-center" style={{ flex: i === steps.length - 1 ? '0 0 auto' : '1 1 auto' }}>
+          <div className="flex flex-col items-center" style={{ minWidth: 58 }}>
+            <div
+              className="rounded-full flex items-center justify-center font-bold flex-shrink-0"
+              style={{
+                width: 30,
+                height: 30,
+                fontSize: 12.5,
+                background: s.state === 'done' ? `${p.green}22` : s.state === 'current' ? p.orange : p.cardAlt,
+                color: s.state === 'done' ? p.green : s.state === 'current' ? '#fff' : p.textMuted,
+                border: s.state === 'upcoming' ? `1.5px solid ${p.border}` : 'none',
+              }}
+            >
+              {s.state === 'done' ? <Check size={15} /> : i + 1}
+            </div>
+            <span
+              className="text-center mt-1.5"
+              style={{ fontSize: 10.5, fontWeight: 700, color: s.state === 'upcoming' ? p.textMuted : p.text, lineHeight: 1.25 }}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 ? (
+            <div style={{ flex: 1, height: 2, marginTop: 15, background: s.state === 'done' ? p.green : p.border }} />
+          ) : null}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Ligne « ce qui peut arriver » (Decision.jpg, section informative — pas de navigation). */
+export function OutcomeRow({
+  icon, tone, title, detail, p, first,
+}: { icon: ReactNode; tone: 'green' | 'red' | 'amber'; title: string; detail: string; p: VendorPalette; first?: boolean }) {
+  const bg = tone === 'green' ? `${p.green}1F` : tone === 'red' ? `${p.red}1F` : `${p.amber}1F`;
+  return (
+    <div className="flex items-start gap-3 py-3" style={first ? undefined : { borderTop: `1px solid ${p.border}` }}>
+      <div className="rounded-xl flex items-center justify-center flex-shrink-0" style={{ width: 36, height: 36, background: bg }}>
+        {icon}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-bold" style={{ fontSize: 13, color: p.text }}>{title}</p>
+        <p style={{ fontSize: 11.5, color: p.textMuted, marginTop: 2, lineHeight: 1.4 }}>{detail}</p>
+      </div>
     </div>
   );
 }

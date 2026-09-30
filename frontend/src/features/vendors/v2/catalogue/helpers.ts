@@ -14,7 +14,7 @@ import {
   type CommissionFamily,
   type CommissionTier,
 } from '@/services/api/vendorsV2';
-import type { ProductAttention, ProductCardState, ProductListItem } from './types';
+import type { MonthlyProductStats, ProductAttention, ProductCardState, ProductListItem } from './types';
 
 // ── Constantes verrouillées (PRX-03, référentiel unique) ────────────────────
 
@@ -32,7 +32,12 @@ export const OVERSIZE_DIM_CM = 50;
 /** Seuil de stock bas par défaut quand le produit n'a pas de stock_threshold
  * propre (champ optionnel côté API) — purement local, à remplacer si l'API
  * expose un jour un seuil global de plateforme. */
-const DEFAULT_LOW_STOCK_THRESHOLD = 3;
+export const DEFAULT_LOW_STOCK_THRESHOLD = 3;
+
+/** Résumé mensuel neutre — produit sans commande ce mois-ci. */
+export const EMPTY_MONTHLY_STATS: MonthlyProductStats = {
+  salesCount: 0, keptXaf: 0, disputedSalesCount: 0, frozenXaf: 0,
+};
 
 /**
  * Famille de commission M01 utilisée pour l'aperçu "Vous gardez" — aucune
@@ -100,6 +105,8 @@ export interface AttentionLabels {
   lowStock: (stock: number) => string;
   lowStockAction: string;
   dispute: string;
+  /** Variante enrichie quand le résumé mensuel du litige est calculable (voir useMonthlyProductStats). */
+  disputeMonthly: (count: number, frozenAmountLabel: string) => string;
   disputeAction: string;
 }
 
@@ -107,6 +114,9 @@ export interface AttentionLabels {
  * Bandes d'attention réellement détectables aujourd'hui (PRD-05) :
  *  - low_stock : calcul réel (stock_quantity vs stock_threshold du produit).
  *  - dispute : réel mais coûteux — voir useDisputedProductIds ci-dessous.
+ *    Enrichi avec "N ventes en litige · X F gelés" quand le résumé mensuel
+ *    (monthly) contient au moins une ligne gelée ce mois-ci, sinon repli sur
+ *    le libellé générique.
  *  - cheaper ("moins cher ailleurs") et moderation ("en vérification") ne
  *    sont PAS posées : aucune donnée de comparaison marché ni de statut de
  *    modération n'est exposée par l'API vendeur aujourd'hui (MANQUE BACKEND :
@@ -117,6 +127,7 @@ export function attentionsOf(
   product: VendorProduct,
   hasDispute: boolean,
   labels: AttentionLabels,
+  monthly?: MonthlyProductStats,
 ): ProductAttention[] {
   const out: ProductAttention[] = [];
   const threshold = product.stock_threshold ?? DEFAULT_LOW_STOCK_THRESHOLD;
@@ -128,7 +139,10 @@ export function attentionsOf(
     });
   }
   if (hasDispute) {
-    out.push({ type: 'dispute', label: labels.dispute, actionLabel: labels.disputeAction });
+    const label = monthly && monthly.disputedSalesCount > 0
+      ? labels.disputeMonthly(monthly.disputedSalesCount, fmtXAF(monthly.frozenXaf))
+      : labels.dispute;
+    out.push({ type: 'dispute', label, actionLabel: labels.disputeAction });
   }
   return out;
 }
@@ -154,18 +168,37 @@ export function primaryImageOf(product: VendorProduct): string | null {
   return primary?.image_url ?? null;
 }
 
+/**
+ * "Photos réelles" (Offre.jpg : "3 · prises le 12 mai", OFR-01) : compte réel
+ * + date de prise approximée par la plus ancienne ProductImage.created_at
+ * (aucun champ "taken_at" dédié n'existe côté API — MANQUE BACKEND pour une
+ * date de prise distincte de la date d'upload, approximation documentée).
+ */
+export function photosSummaryOf(product: VendorProduct): { count: number; takenLabel: string | null } {
+  const images = product.images ?? [];
+  if (images.length === 0) return { count: 0, takenLabel: null };
+  const earliest = images.reduce((min, img) => (img.created_at < min ? img.created_at : min), images[0].created_at);
+  const date = new Date(earliest);
+  const takenLabel = Number.isNaN(date.getTime())
+    ? null
+    : date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+  return { count: images.length, takenLabel };
+}
+
 export function buildListItems(
   products: VendorProduct[],
   disputedProductIds: Set<number>,
   tier: CommissionTier,
   labels: AttentionLabels,
+  monthlyStats: Map<number, MonthlyProductStats>,
 ): ProductListItem[] {
   return products.map((product) => ({
     product,
     state: stateOf(product),
-    attentions: attentionsOf(product, disputedProductIds.has(product.id), labels),
+    attentions: attentionsOf(product, disputedProductIds.has(product.id), labels, monthlyStats.get(product.id)),
     keptPerSaleXaf: keptPerSaleOf(product, tier),
     primaryImageUrl: primaryImageOf(product),
+    monthly: monthlyStats.get(product.id) ?? EMPTY_MONTHLY_STATS,
   }));
 }
 
@@ -205,6 +238,70 @@ export function useDisputedProductIds(): Set<number> {
   }, []);
 
   return ids;
+}
+
+/**
+ * Résumé "Ce mois" par produit (Produits.jpg : "Ce mois : 3 ventes · 53 520 F
+ * gardés" / "Ce mois : 2 ventes en litige · 670 648 F gelés, pas encore
+ * gardés"). Aucun endpoint GET /offers/{id}/monthly-stats n'existe : on relit
+ * vendorsApi.getOrders() (déjà filtré sur les articles de ce vendeur) et on
+ * agrège par produit les lignes du mois calendaire en cours :
+ *  - "ventes" = lignes dont la commande est réglée (escrow_status RELEASED) ;
+ *  - "gelées" = lignes dont la commande est en litige (escrow_status DISPUTED
+ *    /BLOCKED ou fulfillment_status DISPUTED).
+ * Le montant gardé par ligne réutilise la même formule déjà en prod ailleurs
+ * dans l'espace vendeur (SellerOrderDetailPage.tsx) :
+ * line_total_xaf * (1 - commission_rate / 100). commission_rate est un taux
+ * unique par commande (pas par ligne) : une commande multi-produits à familles
+ * de commission différentes serait légèrement lissée — MANQUE BACKEND pour un
+ * détail par ligne, approximation documentée plutôt que silencieuse.
+ * Les commandes encore en attente de règlement (PENDING/BLOCKED avant litige,
+ * RELEASE_PENDING) ne sont comptées ni comme "vente" ni comme "gelée" : elles
+ * ne sont pas encore un fait acquis, les afficher serait trompeur.
+ */
+export function useMonthlyProductStats(): Map<number, MonthlyProductStats> {
+  const [stats, setStats] = useState<Map<number, MonthlyProductStats>>(new Map());
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const orders = await vendorsApi.getOrders();
+        const now = new Date();
+        const map = new Map<number, MonthlyProductStats>();
+        const bump = (productId: number, patch: Partial<MonthlyProductStats>) => {
+          const prev = map.get(productId) ?? { ...EMPTY_MONTHLY_STATS };
+          map.set(productId, {
+            salesCount: prev.salesCount + (patch.salesCount ?? 0),
+            keptXaf: prev.keptXaf + (patch.keptXaf ?? 0),
+            disputedSalesCount: prev.disputedSalesCount + (patch.disputedSalesCount ?? 0),
+            frozenXaf: prev.frozenXaf + (patch.frozenXaf ?? 0),
+          });
+        };
+        orders.forEach((order) => {
+          const created = new Date(order.created_at);
+          if (created.getFullYear() !== now.getFullYear() || created.getMonth() !== now.getMonth()) return;
+          const isDisputed = order.escrow_status === 'DISPUTED' || order.escrow_status === 'BLOCKED' || order.fulfillment_status === 'DISPUTED';
+          const isReleased = order.escrow_status === 'RELEASED';
+          if (!isDisputed && !isReleased) return;
+          order.items.forEach((item) => {
+            const lineKept = item.line_total_xaf * (1 - order.commission_rate / 100);
+            if (isDisputed) {
+              bump(item.product, { disputedSalesCount: item.qty, frozenXaf: lineKept });
+            } else {
+              bump(item.product, { salesCount: item.qty, keptXaf: lineKept });
+            }
+          });
+        });
+        if (!cancelled) setStats(map);
+      } catch {
+        if (!cancelled) setStats(new Map());
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  return stats;
 }
 
 // ── Débounce générique (A22 : service de commission appelé à chaque frappe,

@@ -15,6 +15,15 @@
 // présentée comme « présomption en faveur du client — BelivaY décide »,
 // jamais comme un remboursement automatique déclenché par le système
 // (contrairement à VD-D08.A12 / tâche planifiée H5 du document source).
+// La maquette Inspection.jpg écrit littéralement « Passé ce délai, le client
+// est remboursé automatiquement » sous le titre : ce n'est PAS repris tel
+// quel (règle produit ci-dessus, non négociable) — le bandeau existant
+// (inspection_deadline_prefix/expired) reste la seule formulation utilisée.
+//
+// Alignement visuel : ajout de la carte « reçu » (vignette produit générique
+// — OrderReturn n'a pas d'URL image —, motif, description réelle du client
+// citée, date de réception) qui manquait entièrement entre l'en-tête et
+// l'étape 1, alors que la maquette la place juste après le bandeau d'échéance.
 
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -23,15 +32,20 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi } from '@/services/api/vendors';
 import { palette } from '../theme';
-import { Banner, Card, CenterState, PageHeader, PrimaryButton, RadioOption, SecondaryButton } from './ui';
-import { useCountdownFromDeadline, useReturnById } from './helpers';
+import {
+  Banner, Card, CenterState, PageHeader, PrimaryButton, ProductThumb, RadioOption, SecondaryButton,
+} from './ui';
+import {
+  fmtDateTime, returnReasonLabel, useCountdownFromDeadline, useReturnById,
+} from './helpers';
 
 const MIN_PHOTOS = 2;
 
 export default function ReturnInspectionPage() {
   const { id } = useParams<{ id: string }>();
   const returnId = Number(id);
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.startsWith('en') ? 'en' : 'fr';
   const { theme } = useTheme();
   const p = palette(theme);
   const navigate = useNavigate();
@@ -120,11 +134,29 @@ export default function ReturnInspectionPage() {
           ? t('sl8_litiges.inspection_deadline_expired')
           : `${t('sl8_litiges.inspection_deadline_prefix')} ${
             countdown.hours > 0
-              ? t('sl8_litiges.list_card_deadline', { h: countdown.hours, m: countdown.minutes })
-              : t('sl8_litiges.list_card_deadline_minutes', { m: countdown.minutes })
+              ? t('sl8_litiges.countdown_hm', { h: countdown.hours, m: countdown.minutes })
+              : t('sl8_litiges.countdown_m', { m: countdown.minutes })
           }`}
       </Banner>
 
+      <Card p={p}>
+        <div className="flex items-start gap-3 mb-2">
+          <ProductThumb p={p} />
+          <div className="min-w-0 flex-1">
+            <p className="font-bold" style={{ fontSize: 13.5, color: p.text, lineHeight: 1.3 }}>{item.order_item_title}</p>
+            <p style={{ fontSize: 12, color: p.textMuted, marginTop: 2, lineHeight: 1.4 }}>
+              {returnReasonLabel(t, item.reason)}
+              {item.description ? ` · « ${item.description} »` : ''}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center justify-between" style={{ paddingTop: 8, borderTop: `1px solid ${p.border}` }}>
+          <span style={{ fontSize: 12, color: p.textMuted }}>{t('sl8_litiges.inspection_received_label')}</span>
+          <span style={{ fontSize: 12.5, color: p.text, fontWeight: 700 }}>{fmtDateTime(item.received_at, lang)}</span>
+        </div>
+      </Card>
+
+      <div style={{ height: 12 }} />
       <Card p={p}>
         <p className="font-bold mb-3" style={{ fontSize: 13.5, color: p.text }}>{t('sl8_litiges.inspection_step1_title')}</p>
         <div className="flex flex-col gap-2">

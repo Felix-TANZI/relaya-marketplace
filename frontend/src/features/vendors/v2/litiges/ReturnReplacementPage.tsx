@@ -12,6 +12,17 @@
 // défaut confirmé (RMP-03 : 500 F de trajet, effet Trust Score) est un
 // rappel informatif issu de la spec, pas une valeur recalculée dynamiquement
 // (aucun champ dédié exposé aujourd'hui par l'API).
+//
+// Alignement visuel sur Remplacement.jpg : vignette produit (générique —
+// pas d'URL image exposée par OrderReturn) au-dessus de la carte de coût, et
+// scission en deux cartes (le rappel « expédition/ramassage » n'a de sens que
+// si le choix est « remplacement »). Écart volontaire : la maquette affiche
+// une pastille « En stock : 3 » — aucun champ de stock n'est exposé sur
+// OrderReturn, ce chiffre serait inventé, donc omis. La maquette écrit aussi
+// « Passé ce délai → Remboursement automatique » ; on garde la mécanique
+// (le vendeur s'est engagé sur un délai d'expédition, ce n'est pas la
+// décision d'un litige) mais sans le mot « automatique », par la même
+// prudence que sur l'écran Répondre — voir replacement_ship_deadline_value.
 
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -20,7 +31,9 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi } from '@/services/api/vendors';
 import { palette } from '../theme';
-import { Card, CenterState, PageHeader, PrimaryButton, RadioOption } from './ui';
+import {
+  Card, CenterState, PageHeader, PrimaryButton, ProductThumb, RadioOption,
+} from './ui';
 import { fmtXAF, useReturnById } from './helpers';
 
 type Choice = 'replace' | 'refund';
@@ -94,6 +107,13 @@ export default function ReturnReplacementPage() {
         {t('sl8_litiges.replacement_intro')}
       </p>
 
+      <div className="flex items-center gap-3 mb-4">
+        <ProductThumb p={p} />
+        <p className="font-bold" style={{ fontSize: 13.5, color: p.text, lineHeight: 1.3 }}>
+          {item.order_item_title} {t('sl8_litiges.replacement_new_suffix')}
+        </p>
+      </div>
+
       <div className="flex flex-col gap-2">
         <RadioOption
           selected={choice === 'replace'}
@@ -110,26 +130,51 @@ export default function ReturnReplacementPage() {
           p={p}
         />
       </div>
-      <p className="mt-2" style={{ fontSize: 11, color: p.textMuted, fontStyle: 'italic' }}>
-        {t('sl8_litiges.replacement_stock_hint')}
-      </p>
+      {choice === 'refund' ? (
+        <p className="mt-2" style={{ fontSize: 11, color: p.textMuted, fontStyle: 'italic' }}>
+          {t('sl8_litiges.replacement_stock_hint')}
+        </p>
+      ) : null}
 
-      <div style={{ height: 14 }} />
+      {choice === 'replace' ? (
+        <>
+          <div style={{ height: 14 }} />
+          <Card p={p}>
+            <Row label={t('sl8_litiges.replacement_ship_expedition_label')} value={t('sl8_litiges.replacement_ship_expedition_value')} p={p} />
+            <div style={{ height: 8 }} />
+            <Row label={t('sl8_litiges.replacement_ship_pickup_label')} value={t('sl8_litiges.replacement_ship_pickup_value')} p={p} />
+            <div style={{ height: 8 }} />
+            <Row label={t('sl8_litiges.replacement_ship_deadline_label')} value={t('sl8_litiges.replacement_ship_deadline_value')} p={p} />
+            <div
+              className="rounded-xl flex items-center justify-between mt-3"
+              style={{ padding: '10px 13px', background: `${p.green}14` }}
+            >
+              <span style={{ fontSize: 12.5, color: p.text, fontWeight: 600 }}>{t('sl8_litiges.replacement_you_keep')}</span>
+              <span className="font-black" style={{ fontSize: 17, color: p.green }}>
+                {fmtXAF(Math.max(0, (item.refund_amount_xaf ?? 0)))}
+              </span>
+            </div>
+            <p className="mt-2" style={{ fontSize: 11, color: p.textMuted, lineHeight: 1.4 }}>
+              {t('sl8_litiges.replacement_ship_note')}
+            </p>
+          </Card>
+        </>
+      ) : null}
+
+      <div style={{ height: 12 }} />
       <Card p={p}>
         <p className="font-bold mb-2" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.replacement_cost_title')}</p>
-        <div className="flex items-center justify-between mb-1.5">
-          <span style={{ fontSize: 12, color: p.textMuted }}>{t('sl8_litiges.replacement_cost_transport')}</span>
-          <span style={{ fontSize: 13, color: p.text, fontWeight: 700 }}>{fmtXAF(500)}</span>
-        </div>
-        <div className="flex items-center justify-between mb-2">
+        <Row label={t('sl8_litiges.replacement_cost_transport')} value={fmtXAF(500)} p={p} />
+        <div style={{ height: 8 }} />
+        <div className="flex items-center justify-between">
           <span style={{ fontSize: 12, color: p.textMuted }}>{t('sl8_litiges.replacement_cost_trust')}</span>
         </div>
-        <div className="flex items-center justify-between pt-2" style={{ borderTop: `1px solid ${p.border}` }}>
-          <span style={{ fontSize: 12.5, color: p.textMuted, fontWeight: 600 }}>{t('sl8_litiges.replacement_you_keep')}</span>
-          <span className="font-black" style={{ fontSize: 15, color: choice === 'replace' ? p.green : p.textMuted }}>
-            {choice === 'replace' ? fmtXAF(Math.max(0, (item.refund_amount_xaf ?? 0))) : t('sl8_litiges.replacement_you_keep_na')}
-          </span>
-        </div>
+        {choice !== 'replace' ? (
+          <div className="flex items-center justify-between pt-2 mt-2" style={{ borderTop: `1px solid ${p.border}` }}>
+            <span style={{ fontSize: 12.5, color: p.textMuted, fontWeight: 600 }}>{t('sl8_litiges.replacement_you_keep')}</span>
+            <span className="font-black" style={{ fontSize: 15, color: p.textMuted }}>{t('sl8_litiges.replacement_you_keep_na')}</span>
+          </div>
+        ) : null}
       </Card>
 
       <div style={{ height: 18 }} />
@@ -141,6 +186,20 @@ export default function ReturnReplacementPage() {
             ? t('sl8_litiges.replacement_confirm_refund')
             : t('sl8_litiges.replacement_confirm_replace')}
       </PrimaryButton>
+      {choice === 'replace' ? (
+        <p className="text-center mt-2" style={{ fontSize: 11, color: p.textMuted, lineHeight: 1.5 }}>
+          {t('sl8_litiges.replacement_refuse_note')}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
+function Row({ label, value, p }: { label: string; value: string; p: ReturnType<typeof palette> }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span style={{ fontSize: 12, color: p.textMuted }}>{label}</span>
+      <span style={{ fontSize: 12.5, color: p.text, fontWeight: 700 }}>{value}</span>
     </div>
   );
 }

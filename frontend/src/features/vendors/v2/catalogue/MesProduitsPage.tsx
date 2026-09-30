@@ -3,6 +3,12 @@
 // GET /offers (VD-D09.A01, compteurs + attention[] serveur) n'existe pas :
 // on charge vendorsApi.getProducts() et on calcule tout côté client — voir
 // helpers.ts pour chaque pont documenté (bandes d'attention, tri, "vous gardez").
+// Le résumé "Ce mois : N ventes · X F gardés" (Produits.jpg) est calculé côté
+// client depuis vendorsApi.getOrders() (useMonthlyProductStats, helpers.ts) —
+// pas de GET /offers/{id}/monthly-stats. La comparaison de prix ("Un vendeur
+// est passé à 19 000 F · Ajuster") reste absente : aucun endpoint
+// GET /offers/{id}/price-advice n'existe (MANQUE BACKEND, voir aussi
+// UneOffrePage.tsx et steps/StepStockPrix.tsx).
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -14,7 +20,7 @@ import { palette } from '../theme';
 import { AttentionBand, Card, CenterState, Pill } from './ui';
 import ShopIdentityBar from '../ShopIdentityBar';
 import {
-  buildListItems, fmtXAF, sortByUrgency, tierToCommissionTier, useDisputedProductIds,
+  buildListItems, fmtXAF, sortByUrgency, tierToCommissionTier, useDisputedProductIds, useMonthlyProductStats,
 } from './helpers';
 import type { ProductListItem } from './types';
 
@@ -29,6 +35,7 @@ export default function MesProduitsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const disputedIds = useDisputedProductIds();
+  const monthlyStats = useMonthlyProductStats();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -53,10 +60,11 @@ export default function MesProduitsPage() {
       lowStock: (stock: number) => t('sl10_catalogue.attention_low_stock', { count: stock }),
       lowStockAction: t('sl10_catalogue.attention_low_stock_action'),
       dispute: t('sl10_catalogue.attention_dispute'),
+      disputeMonthly: (count: number, amount: string) => t('sl10_catalogue.attention_dispute_monthly', { count, amount }),
       disputeAction: t('sl10_catalogue.attention_dispute_action'),
     };
-    return sortByUrgency(buildListItems(products, disputedIds, tier, labels));
-  }, [products, disputedIds, tier, t]);
+    return sortByUrgency(buildListItems(products, disputedIds, tier, labels, monthlyStats));
+  }, [products, disputedIds, tier, t, monthlyStats]);
 
   const counts = useMemo(() => ({
     total: products.length,
@@ -97,6 +105,11 @@ export default function MesProduitsPage() {
         />
       ) : (
         <div className="flex flex-col gap-3">
+          {/* Eyebrow (VD-D09.A02) : le tri par urgence ci-dessus (sortByUrgency)
+              est réel — ce libellé décrit fidèlement ce que l'utilisateur voit. */}
+          <p className="font-bold uppercase" style={{ fontSize: 10.5, color: p.textMuted, letterSpacing: '0.05em' }}>
+            {t('sl10_catalogue.list_urgent_label')}
+          </p>
           {items.map((item) => (
             <ProductListCard
               key={item.product.id}
@@ -128,6 +141,12 @@ function ProductListCard({
 }) {
   const { product } = item;
   const accent = item.state === 'paused' ? undefined : item.attentions.length > 0 ? p.amber : p.green;
+  const hasDisputeAttention = item.attentions.some((a) => a.type === 'dispute');
+  // Résumé "Ce mois" (Produits.jpg) : affiché seulement quand l'offre est en
+  // vente et a au moins une vente réglée ce mois-ci ; masqué quand un litige
+  // est déjà affiché (la bande de litige porte alors son propre résumé, voir
+  // helpers.ts::attentionsOf) pour ne jamais répéter la même information.
+  const showMonthlySummary = item.state === 'selling' && !hasDisputeAttention && item.monthly.salesCount > 0;
 
   return (
     <Card p={p} accent={accent}>
@@ -172,14 +191,24 @@ function ProductListCard({
         />
       ))}
 
-      <button
-        type="button"
-        onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
-        className="mt-3 flex items-center gap-1.5 font-semibold"
-        style={{ fontSize: 12, color: p.orange }}
-      >
-        <Copy size={13} /> {t('sl10_catalogue.duplicate')}
-      </button>
+      <div className="mt-3 flex items-center justify-between gap-2">
+        {showMonthlySummary ? (
+          <p className="min-w-0 truncate" style={{ fontSize: 11.5, color: p.textMuted }}>
+            {t('sl10_catalogue.monthly_summary_lead', { count: item.monthly.salesCount })}{' '}
+            <span className="font-bold" style={{ color: p.green }}>
+              {t('sl10_catalogue.monthly_summary_kept', { amount: fmtXAF(item.monthly.keptXaf) })}
+            </span>
+          </p>
+        ) : <span />}
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onDuplicate(); }}
+          className="flex-shrink-0 flex items-center gap-1.5 font-semibold"
+          style={{ fontSize: 12, color: p.orange }}
+        >
+          <Copy size={13} /> {t('sl10_catalogue.duplicate')}
+        </button>
+      </div>
     </Card>
   );
 }

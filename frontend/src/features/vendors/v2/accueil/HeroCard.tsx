@@ -7,7 +7,7 @@ import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { palette, primaryGradient } from '../theme';
 import type { TodoItem } from './types';
-import { formatClockTime, formatRelativeDeadline, formatXaf } from './format';
+import { formatClockTime, formatRelativeDeadline, formatXaf, orderRef } from './format';
 
 interface Props {
   item: TodoItem;
@@ -32,8 +32,11 @@ export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail
       style={{ background: primaryGradient(p), boxShadow: '0 16px 32px rgba(204,74,11,0.28)' }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
-        <span className="font-black uppercase" style={{ fontSize: 10.5, letterSpacing: '.1em', opacity: 0.85 }}>
-          {t('sl6_accueil.hero_label')}
+        <span className="flex items-center gap-1.5 min-w-0">
+          <span className="font-black uppercase truncate" style={{ fontSize: 10.5, letterSpacing: '.1em', opacity: 0.85 }}>
+            {t('sl6_accueil.hero_label')}
+          </span>
+          <span className="flex-shrink-0" style={{ fontSize: 10.5, opacity: 0.7 }}>· {orderRef(item.orderId)}</span>
         </span>
         {deadline ? (
           <span
@@ -61,6 +64,9 @@ export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail
             {item.productTitle || t('sl6_accueil.hero_untitled_product')}
             {item.qty > 1 ? ` ×${item.qty}` : ''}
           </p>
+          <p style={{ fontSize: 12, opacity: 0.85 }}>
+            {t('sl6_accueil.row_paid_at', { time: formatClockTime(item.createdAt) })}
+          </p>
           {item.dueAt ? (
             <p style={{ fontSize: 12, opacity: 0.85 }}>
               {t('sl6_accueil.hero_due_at', { time: formatClockTime(item.dueAt) })}
@@ -69,11 +75,11 @@ export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail
         </div>
       </div>
 
-      {item.courierName ? (
-        <p className="mb-3" style={{ fontSize: 12, opacity: 0.85 }}>
-          {t('sl6_accueil.hero_courier', { name: item.courierName })}
-        </p>
-      ) : null}
+      <p className="mb-3" style={{ fontSize: 12, opacity: 0.85 }}>
+        {item.courierName
+          ? t('sl6_accueil.hero_courier', { name: item.courierName })
+          : t('sl6_accueil.row_courier_unassigned')}
+      </p>
 
       {!hideAmount ? (
         <div className="flex items-center justify-between mb-3">

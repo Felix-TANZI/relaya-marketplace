@@ -11,18 +11,19 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, AlertTriangle, Ban, Lock, ShieldOff } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type CertificationData } from '@/services/api/vendors';
-import { palette } from '../../theme';
+import { palette, type VendorPalette } from '../../theme';
 import ScreenHeader from '../shared/ScreenHeader';
 
-const SANCTION_LEVELS = [
-  { icon: AlertTriangle, key: 'level_1' },
-  { icon: ShieldOff, key: 'level_2' },
-  { icon: Ban, key: 'level_3' },
-  { icon: Lock, key: 'level_4' },
-] as const;
+// Sanctions.jpg : les 4 niveaux sont des cercles numérotés 1→4, de plus en
+// plus "chauds" (jaune pâle → rouge), jamais de simples icônes génériques.
+const SANCTION_LEVEL_KEYS = ['level_1', 'level_2', 'level_3', 'level_4'] as const;
+
+function levelColor(p: VendorPalette, index: number): string {
+  return index === 0 ? p.amber : index === 1 ? p.orange : p.red;
+}
 
 export default function SanctionsControlePage() {
   const { t } = useTranslation();
@@ -69,15 +70,23 @@ export default function SanctionsControlePage() {
 
       {/* 4 niveaux de sanction — jamais niveau 2 à 4 sans validation humaine (SAN-01). */}
       <div className="rounded-2xl overflow-hidden mb-4" style={{ background: p.card, border: `1px solid ${p.border}` }}>
-        {SANCTION_LEVELS.map(({ icon: Icon, key }, i) => (
-          <div key={key} className="flex items-start gap-3" style={{ padding: '13px 14px', borderTop: i > 0 ? `1px solid ${p.border}` : undefined }}>
-            <Icon size={17} color={p.amber} className="flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="font-semibold" style={{ fontSize: 13, color: p.text }}>{t(`sl11_compte.sanctions_${key}_title`)}</p>
-              <p style={{ fontSize: 11.5, color: p.textMuted }}>{t(`sl11_compte.sanctions_${key}_desc`)}</p>
+        {SANCTION_LEVEL_KEYS.map((key, i) => {
+          const color = levelColor(p, i);
+          return (
+            <div key={key} className="flex items-start gap-3" style={{ padding: '13px 14px', borderTop: i > 0 ? `1px solid ${p.border}` : undefined }}>
+              <div
+                className="rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ width: 28, height: 28, background: `${color}26` }}
+              >
+                <span className="font-black" style={{ fontSize: 13, color }}>{i + 1}</span>
+              </div>
+              <div>
+                <p className="font-semibold" style={{ fontSize: 13, color: p.text }}>{t(`sl11_compte.sanctions_${key}_title`)}</p>
+                <p style={{ fontSize: 11.5, color: p.textMuted }}>{t(`sl11_compte.sanctions_${key}_desc`)}</p>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Historique des décisions — état vide prévu par la spec. */}

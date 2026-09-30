@@ -12,7 +12,7 @@
 import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Camera, Check, CreditCard, ScanFace, Smartphone } from 'lucide-react';
-import { Collapsible, PrimaryButton } from '../commandes/ui';
+import { Collapsible, Pill, PrimaryButton } from '../commandes/ui';
 import type { VendorPalette } from '../theme';
 import { verifyPayoutNumber } from './api';
 import type { KycItemKey } from './types';
@@ -24,6 +24,13 @@ const LABEL_KEY: Record<KycItemKey, string> = {
   id_back: 'sl9_ouverture.kyc_id_back',
   selfie: 'sl9_ouverture.kyc_selfie',
   payout: 'sl9_ouverture.kyc_payout',
+};
+
+const HINT_KEY: Record<KycItemKey, string> = {
+  id_front: 'sl9_ouverture.kyc_hint_id_front',
+  id_back: 'sl9_ouverture.kyc_hint_id_back',
+  selfie: 'sl9_ouverture.kyc_hint_selfie',
+  payout: 'sl9_ouverture.kyc_hint_payout',
 };
 
 const CTA_KEY: Record<KycItemKey, string> = {
@@ -120,17 +127,20 @@ export default function KycCaptureFlow({ p, onAllDone, onSkipForNow }: KycCaptur
               style={{ padding: '12px 14px', borderTop: i > 0 ? `1px solid ${p.border}` : undefined, minHeight: 52 }}
             >
               <div
-                className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                style={{ background: done ? `${p.green}1F` : p.cardAlt }}
+                className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0"
+                style={{ background: done ? `${p.green}1F` : `${p.orange}1F` }}
               >
-                {done ? <Check size={15} color={p.green} /> : <Icon size={14} color={p.textMuted} />}
+                {done ? <Check size={16} color={p.green} /> : <Icon size={15} color={p.orange} />}
               </div>
-              <span className="font-semibold flex-1" style={{ fontSize: 13, color: done ? p.text : p.textMuted }}>
-                {t(LABEL_KEY[key])}
-              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold" style={{ fontSize: 13, color: p.text }}>{t(LABEL_KEY[key])}</p>
+                <p className="truncate" style={{ fontSize: 11, color: p.textMuted }}>{t(HINT_KEY[key])}</p>
+              </div>
               {previews[key] ? (
                 <img src={previews[key]} alt="" className="w-9 h-9 rounded-lg object-cover flex-shrink-0" />
-              ) : null}
+              ) : (
+                <Pill label={done ? t('sl9_ouverture.kyc_status_verified') : t('sl9_ouverture.kyc_status_todo')} tone={done ? 'green' : 'amber'} p={p} />
+              )}
             </div>
           );
         })}

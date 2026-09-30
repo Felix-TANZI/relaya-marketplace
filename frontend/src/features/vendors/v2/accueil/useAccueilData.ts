@@ -7,13 +7,25 @@
 import { useCallback, useEffect, useState } from 'react';
 import { vendorsApi } from '@/services/api/vendors';
 import { vendorsV2Api } from '@/services/api/vendorsV2';
+import { deriveFirstName } from './format';
 import type {
   AccueilState,
   AccueilVariant,
   LaunchTierInfo,
+  LowStockItem,
   OnboardingGesture,
+  OpenReturnStatus,
   TodoItem,
 } from './types';
+
+/** Seuil de stock bas par défaut quand le produit n'a pas de stock_threshold
+ * propre — même valeur que catalogue/helpers.ts (DEFAULT_LOW_STOCK_THRESHOLD),
+ * dupliquée ici pour rester à l'intérieur du dossier accueil/. */
+const DEFAULT_LOW_STOCK_THRESHOLD = 3;
+
+/** Statuts OrderReturn encore "ouverts" pour le vendeur — mêmes retours que
+ * ceux affichés dans l'onglet "À décider"/"En route" de litiges/ReturnsListPage.tsx. */
+const OPEN_RETURN_STATUSES = new Set<OpenReturnStatus>(['REQUESTED', 'APPROVED', 'AWAITING_DROPOFF', 'RECEIVED']);
 
 const LAUNCH_THRESHOLDS = { argent: 15, or: 40, platine: 80 } as const;
 
@@ -42,9 +54,11 @@ const initialState: AccueilState = {
   loading: true,
   error: null,
   shopName: '',
+  firstName: '',
   isPrepAccess: false,
   todos: [],
   lowStockCount: 0,
+  lowStockItem: null,
   launchTier: null,
   gestures: [],
   lifetimeEarnedXaf: null,
@@ -91,11 +105,12 @@ export function useAccueilData() {
           loading: false,
           variant: 'suspended',
           shopName: profile.business_name,
+          firstName: deriveFirstName(profile),
         }));
         return;
       }
 
-      const [orders, stats, moneySummaryV2, paymentSummary] = await Promise.all([
+      const [orders, stats, moneySummaryV2, paymentSummary, disputes, returns, products] = await Promise.all([
         vendorsApi.getOrders().catch(() => []),
         vendorsApi.getStats().catch(() => null),
         // Source préférée pour "Gagné avec BelivaY" (VD-D05.A12) : approxime
@@ -104,11 +119,19 @@ export function useAccueilData() {
         // non-vendeur, 403 boutique pas encore approuvée, etc.).
         vendorsV2Api.getMoneySummary().catch(() => null),
         vendorsApi.getPaymentSummary().catch(() => null),
+        // Litiges et retours réels (déjà branchés pour l'écran VD-07 "Litiges et
+        // retours") : remplace l'ancienne approximation sur escrow_status ===
+        // 'DISPUTED' et comble le "toujours vide" des retours (ACC-04/05/06).
+        vendorsApi.getDisputes().catch(() => []),
+        vendorsApi.getReturns().catch(() => []),
+        vendorsApi.getProducts().catch(() => []),
       ]);
+
+      const orderById = new Map(orders.map((o) => [o.id, o]));
 
       // "À préparer" — seuls types que le vendeur peut faire passer par "C'est prêt".
       const prepareStatuses = new Set(['PAID_IN_ESCROW', 'VENDOR_ACKNOWLEDGED', 'PREPARING']);
-      const todos: TodoItem[] = orders
+      const prepareTodos: TodoItem[] = orders
         .filter((o) => prepareStatuses.has(o.fulfillment_status))
         .map((o): TodoItem => ({
           id: `prepare-${o.id}`,
@@ -124,34 +147,89 @@ export function useAccueilData() {
           isPayableOnPickup: false,
           createdAt: o.created_at,
           fulfillmentStatus: o.fulfillment_status,
-        }))
-        .concat(
-          // Litiges : escrow_status DISPUTED. Pas d'échéance ni de motif exposés
-          // aujourd'hui (VD-D05 ACC-05 attend un champ dédié) → tri par ancienneté.
-          orders
-            .filter((o) => o.escrow_status === 'DISPUTED')
-            .map((o): TodoItem => ({
-              id: `dispute-${o.id}`,
-              kind: 'dispute' as const,
-              orderId: o.id,
-              dueAt: null,
-              productTitle: o.items[0]?.product_title ?? '',
-              productImage: o.items[0]?.product_image ?? null,
-              qty: o.items.reduce((sum, it) => sum + it.qty, 0),
-              keepAmount: o.vendor_net_amount,
-              courierName: null,
-              isPayableOnPickup: false,
-              createdAt: o.created_at,
-            })),
-        )
-        // Retours : aucun statut/endpoint de retour n'existe encore côté vendeur
-        // (pas de champ "en retour" sur VendorOrder) → liste toujours vide pour l'instant.
-        .sort((a, b) => {
-          if (a.dueAt && b.dueAt) return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
-          if (a.dueAt) return -1;
-          if (b.dueAt) return 1;
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        });
+        }));
+
+      // Litiges (VendorDisputeListItem) : motif réel, échéance réelle, identifiant
+      // réel pour ouvrir la bonne fiche. Le produit/l'image sont retrouvés dans
+      // la commande déjà chargée (le litige lui-même n'en porte pas).
+      const openDisputes = disputes.filter((d) => d.status !== 'RESOLVED' && d.status !== 'CLOSED');
+      const disputeTodos: TodoItem[] = openDisputes.map((d): TodoItem => {
+        const order = orderById.get(d.order);
+        const items = order?.items ?? [];
+        return {
+          id: `dispute-${d.id}`,
+          kind: 'dispute' as const,
+          orderId: d.order,
+          // Plus de compte à rebours vendeur une fois répondu : le dossier est en médiation (BelivaY tranche).
+          dueAt: d.vendor_replied ? null : d.vendor_deadline_iso,
+          productTitle: items[0]?.product_title ?? '',
+          productImage: items[0]?.product_image ?? null,
+          qty: items.reduce((sum, it) => sum + it.qty, 0) || 1,
+          keepAmount: d.vendor_escrow_amount,
+          courierName: null,
+          isPayableOnPickup: false,
+          createdAt: d.created_at,
+          disputeId: d.id,
+          disputeReason: d.reason_display,
+          disputeReplied: d.vendor_replied,
+        };
+      });
+
+      // Retours (OrderReturn) : motif réel, statut réel, échéance d'inspection
+      // réelle (received_at + 48h) une fois le colis arrivé.
+      const openReturns = returns.filter((r) => OPEN_RETURN_STATUSES.has(r.status as OpenReturnStatus));
+      const returnTodos: TodoItem[] = openReturns.map((r): TodoItem => {
+        const order = orderById.get(r.order);
+        const items = order?.items ?? [];
+        const matchedItem = items.find((it) => it.id === r.order_item) ?? items[0];
+        return {
+          id: `return-${r.id}`,
+          kind: 'return' as const,
+          orderId: r.order,
+          dueAt: r.status === 'RECEIVED' && r.received_at
+            ? new Date(new Date(r.received_at).getTime() + 48 * 3600_000).toISOString()
+            : null,
+          productTitle: r.order_item_title || matchedItem?.product_title || '',
+          productImage: matchedItem?.product_image ?? null,
+          qty: matchedItem?.qty ?? 1,
+          // Refund pas encore arbitré tant que le retour est ouvert (sinon il
+          // serait déjà clos) : le montant réellement gelé est celui de la
+          // commande, pas un chiffre inventé.
+          keepAmount: r.refund_amount_xaf ?? order?.vendor_net_amount ?? 0,
+          courierName: null,
+          isPayableOnPickup: false,
+          createdAt: r.created_at,
+          returnId: r.id,
+          returnStatus: r.status as OpenReturnStatus,
+          returnReasonCode: r.reason,
+          returnReceivedAt: r.received_at,
+        };
+      });
+
+      const todos: TodoItem[] = prepareTodos.concat(disputeTodos, returnTodos).sort((a, b) => {
+        if (a.dueAt && b.dueAt) return new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime();
+        if (a.dueAt) return -1;
+        if (b.dueAt) return 1;
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      });
+
+      // Stock bas (ACC-06) : calcul réel stock_quantity vs stock_threshold, même
+      // règle que catalogue/helpers.ts:attentionsOf (seuil par défaut 3). GET
+      // /seller/today doit un jour fournir ce champ pré-calculé côté serveur ;
+      // en attendant, on le dérive de vendorsApi.getProducts() déjà chargé.
+      const lowStockProducts = products
+        .filter((pr) => pr.is_active && pr.stock_quantity > 0 && pr.stock_quantity <= (pr.stock_threshold ?? DEFAULT_LOW_STOCK_THRESHOLD))
+        .sort((a, b) => a.stock_quantity - b.stock_quantity);
+      const lowStockTop = lowStockProducts[0] ?? null;
+      const lowStockItem: LowStockItem | null = lowStockTop
+        ? {
+            productId: lowStockTop.id,
+            title: lowStockTop.title,
+            image: lowStockTop.images?.find((im) => im.is_primary)?.image_url ?? lowStockTop.images?.[0]?.image_url ?? null,
+            quantityLeft: lowStockTop.stock_quantity,
+            threshold: lowStockTop.stock_threshold ?? DEFAULT_LOW_STOCK_THRESHOLD,
+          }
+        : null;
 
       const activeProducts = stats?.active_products ?? 0;
       const launchTier = computeLaunchTier(activeProducts);
@@ -198,12 +276,11 @@ export function useAccueilData() {
         error: null,
         variant,
         shopName: profile.business_name,
+        firstName: deriveFirstName(profile),
         isPrepAccess: false,
         todos,
-        // GET /seller/today doit fournir low_stock côté serveur (A05) ; en
-        // attendant, aucune source fiable de seuil de stock bas n'est exposée
-        // par getProducts() pour tous les produits d'un coup → 0 par défaut.
-        lowStockCount: 0,
+        lowStockCount: lowStockProducts.length,
+        lowStockItem,
         launchTier,
         gestures,
         lifetimeEarnedXaf,

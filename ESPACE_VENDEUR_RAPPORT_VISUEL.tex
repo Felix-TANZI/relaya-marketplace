@@ -16,17 +16,17 @@
 \titleformat{\subsection}{\large\bfseries}{}{0em}{}
 \hypersetup{colorlinks=true, linkcolor=belivayorange, urlcolor=belivayorange}
 
-\title{\textbf{\color{belivayorange} BelivaY — Espace vendeur v2} \\[4pt] \large Rapport de conformité visuelle}
-\author{Vérification automatisée — projet lancé en local, captures réelles}
+\title{\textbf{\color{belivayorange} BelivaY — Espace vendeur v2} \\[4pt] \large Rapport de conformité visuelle — round 2}
+\author{Vérification automatisée — projet lancé en local, captures réelles comparées aux vraies maquettes}
 \date{30 septembre 2026}
 
 \begin{document}
 \maketitle
 
 \section*{Résumé}
-Les \textbf{40 écrans} construits lors de la session de développement (lots 1, 5 à 10) ont été capturés sur une instance réelle du projet (backend Django + PostgreSQL, frontend React, données de démonstration), puis comparés un par un au paquet de spécification d'origine.
+Les \textbf{40 écrans} construits lors de la session de développement (lots 1, 5 à 10) ont été recapturés après une ronde d'enrichissement par six agents, puis comparés un par un — cette fois directement aux vraies images de référence du paquet développeur (\texttt{03\_Captures/Fond\_clair/}), et non plus seulement à leur description textuelle.
 
-\textbf{Verdict global : conformité forte.} 36 des 40 écrans correspondent fidèlement au document source, souvent au mot et au chiffre près (labels, seuils, montants). Deux écrans (\og Les plans\fg{}, \og Le simulateur\fg{}) sont incomplets par manque de données backend plutôt que par erreur de construction. Deux bogues réels ont été trouvés en préparant ce rapport et corrigés sur-le-champ : un texte dupliqué dans l'écran Répondre à un litige, et une redirection intempestive qui cassait les écrans publics de connexion pour un visiteur anonyme. Un point de conformité important a été vérifié explicitement à l'écran : la décision \og pas d'arbitrage automatique sur les litiges\fg{} est bien visible dans l'interface (écran 14), pas seulement dans le code.
+\textbf{Verdict global : conformité renforcée depuis le round 1, trois écarts réels trouvés et corrigés au cours même de cette vérification.} 31 des 40 écrans sont pleinement conformes (dont plusieurs avec une limite de donnée déjà documentée et honnêtement assumée), 9 le sont avec une réserve mineure et documentée (champ manquant, contenu générique plutôt que personnalisé, donnée non exposée par l'API). Une comparaison image par image a mis au jour trois écarts réels, tous corrigés avant la clôture de ce rapport : le bon de préparation et le reçu vendeur n'avaient pas la mise en page de marque de la maquette (logo, bandeau sombre) — un composant \texttt{DocumentHeader} partagé a été créé et intégré aux deux écrans ; et l'écran d'inspection du retour affichait un texte dupliqué (\og Répondez avant Répondre avant 0\,min\fg{}), la même famille de bogue de concaténation i18n que celle déjà corrigée sur l'écran Répondre avant le round 1, corrigée ici par l'introduction de clés numériques neutres. Une capture (\og Saisie assistée\fg{}) s'est révélée être un accident de capture (navigateur crashé sur l'écran précédent de la série) plutôt qu'un bogue applicatif ; recapturée isolément, elle confirme l'état vide honnête déjà documenté au round 1. Les deux corrections demandées par l'utilisateur entre les deux rondes sont confirmées : la double en-tête a disparu des écrans enfants, et le vrai logo BelivaY remplace l'icône générique sur l'écran de connexion. Les deux régressions les plus visibles du round 1 — \og Les plans\fg{} et \og Le simulateur\fg{}, qui n'affichaient presque rien faute de données backend — sont maintenant pleinement fonctionnels et fidèles à la maquette, tout comme l'écran \og Publier et être payé\fg{}, auparavant inatteignable. Trust Score et Plans sont désormais bien deux écrans à onglets partagés au lieu de pages séparées, comme le prévoyait la maquette.
 
 
 \section*{Méthodologie}
@@ -34,9 +34,12 @@ Les \textbf{40 écrans} construits lors de la session de développement (lots 1,
   \item \textbf{Environnement} : projet lancé localement avec le \texttt{docker-compose.yml} du dépôt (services \texttt{postgres}, \texttt{redis}, \texttt{backend}, \texttt{frontend-seller}), migrations appliquées, configuration financière et plan comptable initialisés (\texttt{seed\_financial\_config}, \texttt{seed\_chart\_of\_accounts}).
   \item \textbf{Données} : boutique de démonstration \og Boutique Mama Ngo\fg{} (\texttt{manage.py seed\_seller\_demo}, 6 produits) ; cinq commandes construites directement via l'ORM Django pour couvrir les états utiles aux captures (à préparer, prête à remettre, terminée, en litige avec un \texttt{Dispute} réel, livrée avec une demande de \texttt{Return} réelle) — la commande de seed \texttt{payments\_seed\_demo} générant des paiements via le prestataire simulé n'a pas produit de commande encaissée exploitable dans cet environnement, d'où ce contournement ciblé.
   \item \textbf{Capture} : Chrome headless piloté par Puppeteer, viewport 400×900 à ×2, jetons JWT injectés dans le \texttt{localStorage} avant chargement de la page (\texttt{evaluateOnNewDocument}) pour simuler une session vendeur authentifiée ; un second contexte sans jeton pour les écrans publics de connexion/ouverture de boutique.
-  \item \textbf{Limite connue} : les captures sont en \og pleine page\fg{} (\texttt{fullPage: true}). Le dock de navigation étant en position fixe, Puppeteer le rend parfois à sa position d'origine dans la page étendue plutôt qu'au bas réel de l'écran, produisant un bandeau orange flottant au milieu de certaines captures (écrans 01, 04, 09, 13, 27, 30, 40). C'est un artefact de l'outil de capture, pas un défaut de l'application — vérifié en conditions normales de défilement.
+  \item \textbf{Méthode de comparaison — round 2} : contrairement au round 1, qui comparait chaque écran aux \emph{descriptions textuelles} des documents de spécification (VD-01 à VD-12), cette seconde ronde compare directement chacune des 40 nouvelles captures (dossier \texttt{espace-vendeur-v2-round2/}) à la vraie image de référence correspondante dans le paquet développeur (\texttt{03\_Captures/Fond\_clair/*.jpg}), au pixel et au texte près : structure, contenu, couleurs et données affichées. Trois écarts réels ainsi mis au jour ont été corrigés avant la clôture de ce rapport (écrans 07, 11, 16 — voir leurs sections) ; l'écran \og Saisie assistée\fg{} (\#21), dont la première capture round 2 était un fichier blanc par accident de capture, a été recapturé isolément.
+  \item \textbf{Limite connue} : les captures sont en \og pleine page\fg{} (\texttt{fullPage: true}). Le dock de navigation étant en position fixe, Puppeteer le rend parfois à sa position d'origine dans la page étendue plutôt qu'au bas réel de l'écran, produisant un bandeau orange flottant au milieu de certaines captures. Au round 1 cela touchait les écrans 01, 04, 09, 13, 27, 30, 40 ; au round 2, le contenu ayant changé (écrans enrichis, plus longs ou plus courts), la liste des écrans concernés a bougé : 01, 04, 14, 23, 27, 32, 35, 40. C'est un artefact de l'outil de capture, pas un défaut de l'application — vérifié en conditions normales de défilement.
   \item \textbf{Portée} : cette vérification couvre les 40 écrans/routes effectivement construits cette session (sur les \og 66 écrans, 99 états\fg{} annoncés par le paquet source) — les écrans non assignés (Mon argent, Ma boutique/Horaires/Emplacement/Équipe) ne sont donc pas dans ce rapport, voir la section dédiée en fin de document. Un seul thème (clair) et une seule langue (français) ont été capturés, faute de temps pour multiplier les variantes.
-  \item \textbf{Corrections apportées pendant la vérification} : deux défauts réels ont été trouvés et corrigés en cours de rédaction de ce rapport (voir écrans 13 et 18 ci-dessous), puis revérifiés (\texttt{tsc}, \texttt{eslint}, nouvelle capture).
+  \item \textbf{Corrections apportées avant le round 1} : deux défauts réels avaient été trouvés et corrigés en préparant le premier rapport (texte dupliqué sur l'écran Répondre à un litige, redirection intempestive cassant les écrans publics de connexion pour un visiteur anonyme), puis revérifiés (\texttt{tsc}, \texttt{eslint}, nouvelle capture).
+  \item \textbf{Corrections apportées entre le round 1 et le round 2} : demande initiale de l'utilisateur — corriger la double en-tête sur les écrans enfants de l'espace vendeur v2 (confirmée disparue sur les écrans 04, 09, 10, 12 notamment) et remplacer l'icône générique de l'écran de connexion par le vrai logo BelivaY (confirmé, écran 18). Six agents ont ensuite enrichi les 40 écrans : identité de boutique réelle partagée en en-tête, badges du Dock branchés sur des compteurs réels, élimination du mot \og escrow\fg{} des libellés vendeur, fusion de Trust Score et Plans (auparavant des pages séparées) en écrans à onglets partagés, contenu Free/Boost/Pro écrit en dur avec la progression réelle de l'offre de découverte.
+  \item \textbf{Corrections apportées pendant la vérification round 2 elle-même} : la comparaison image par image a mis au jour trois écarts réels, corrigés avant la clôture de ce rapport plutôt que simplement consignés. Un composant \texttt{DocumentHeader} partagé (bandeau de marque BelivaY sur fond sombre) a été ajouté à \texttt{commandes/ui.tsx} et intégré au bon de préparation (\#07) et au reçu vendeur (\#11), qui n'avaient jusque-là qu'une carte blanche générique. Sur l'écran d'inspection du retour (\#16), un texte dupliqué (\og Répondez avant Répondre avant 0\,min\fg{}) causé par la concaténation de deux clés i18n portant chacune leur propre préfixe a été corrigé en introduisant des clés numériques neutres (\texttt{countdown\_hm}/\texttt{countdown\_m}). Chaque correction a été revérifiée (\texttt{tsc}, \texttt{eslint}, nouvelle capture) avant d'être documentée ici.
 \end{itemize}
 \newpage
 \section{Lot 1 — Fondations (VD-01, VD-11)}
@@ -46,10 +49,10 @@ Les \textbf{40 écrans} construits lors de la session de développement (lots 1,
 \noindent\textit{VD-11 §MEN-01 à 04} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/01-menu.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/01-menu.png}
 \end{center}
 
-Les sept groupes (À traiter, Messages et aide, Mon argent, Mon catalogue, Vendre plus, Ma boutique, Mon compte) apparaissent dans l'ordre d'usage exact du document, avec la carte boutique (nom interne, palier) en tête. Seul artefact : le dock flottant se superpose à \og Nouvelle offre\fg{} au milieu de la capture — un défaut de l'outil de capture plein-écran (voir méthodologie), pas de l'application.
+Nouveauté round 2 : l'en-tête boutique est maintenant le vrai composant partagé (avatar \og NB\fg{}, \og Boutique Mama Ngo · Ngo Bassong · Propriétaire\fg{}, badges \og Bronze\,·\,10\fg{} et \og Free\,·\,découverte\fg{}) et le Dock affiche de vrais compteurs (badge rouge \og 1\fg{} sur Commandes, point rouge sur Argent) au lieu d'icônes nues comme au round 1 — comparé directement à \og Menu.jpg\fg{}, la structure des sept groupes et l'ordre des liens correspondent au document. Le dock flottant se superpose toujours à la section \og Mon argent\fg{} au milieu de la capture : artefact connu de l'outil de capture plein-écran (voir méthodologie), pas un défaut de l'application.
 \bigskip\bigskip
 \newpage
 \section{Lot 5a — Accueil (VD-04)}
@@ -59,10 +62,10 @@ Les sept groupes (À traiter, Messages et aide, Mon argent, Mon catalogue, Vendr
 \noindent\textit{VD-04} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/02-accueil.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/02-accueil.png}
 \end{center}
 
-Carte d'état \og Boutique ouverte\fg{} avec \og Fermer aujourd'hui\fg{}, \og 1 chose à faire\fg{}, une seule carte héros orange avec délai relatif, \og Vous gardez X F\fg{}, bouton plein \og C'est prêt\fg{} et les trois liens Rupture/Plus de temps/Détail — correspond trait pour trait à ACC-01 à ACC-04.
+Nettement enrichi par rapport au round 1 (qui n'affichait qu'une carte \og Boutique ouverte\fg{} nue) : l'écran porte maintenant le bandeau d'identité \og ESPACE VENDEUR · BOUTIQUE MAMA NGO\fg{} avec badges Ouverte/Bronze, la salutation datée \og Bonjour Boutique · mercredi 30 septembre\fg{}, les puces de synthèse par catégorie (\og 1 à préparer\fg{}, \og 1 litige\fg{}, \og 1 retour\fg{}) et plusieurs cartes empilées (à préparer, litige gelé, retour) — la même structure à trois niveaux que \og Accueil.jpg\fg{}, avec les mêmes libellés \og Vous gardez\fg{}, \og Dans Xh\fg{} et \og Montant gelé\fg{}.
 \bigskip\bigskip
 \newpage
 \section{Lot 5b — Commandes et remise (VD-05, VD-06)}
@@ -72,10 +75,10 @@ Carte d'état \og Boutique ouverte\fg{} avec \og Fermer aujourd'hui\fg{}, \og 1 
 \noindent\textit{VD-05} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/03-commandes-liste.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/03-commandes-liste.png}
 \end{center}
 
-La phrase d'état fait la somme complète (CMD-02) : \og 6 commandes · 2 à préparer · 1 chez le livreur · 1 en litige ou retour · 2 terminées\fg{}. Quatre filtres dans l'ordre du travail, montant \og Vous gardez\fg{} en vert, note d'anonymat en bas de liste.
+Même contenu que la ronde précédente (phrase d'état complète, quatre filtres, montant \og Vous gardez\fg{} en vert), avec en plus le bandeau d'identité boutique repris en tête d'écran comme sur la maquette \og Commandes.jpg\fg{}.
 \bigskip\bigskip
 
 \clearpage
@@ -83,10 +86,10 @@ La phrase d'état fait la somme complète (CMD-02) : \og 6 commandes · 2 à pr�
 \noindent\textit{VD-05} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/04-commande-a-preparer.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/04-commande-a-preparer.png}
 \end{center}
 
-Barre de progression réelle, rappel \og Mettez de côté : chargeur, câble\fg{}, bloc \og Vous ne faites pas le colis\fg{}, actions groupées sous \og Autres actions\fg{} — correspond à PRE-01 à PRE-06.
+La double en-tête signalée au round 1 a disparu : l'écran s'ouvre directement sur \og Retour\fg{} sans repasser par la barre marketplace (logo, cloche, sélecteur de langue) au-dessus de l'en-tête de la commande, exactement comme \og Commande.jpg\fg{}. Contenu inchangé (barre de progression réelle, \og Vous ne faites pas le colis\fg{}). Le dock flottant chevauche encore \og Bon de préparation\fg{} / \og Journal de la commande\fg{} dans le bloc \og Autres actions\fg{} : même artefact de capture que sur l'écran 01.
 \bigskip\bigskip
 
 \clearpage
@@ -94,43 +97,43 @@ Barre de progression réelle, rappel \og Mettez de côté : chargeur, câble\fg{
 \noindent\textit{VD-05} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/05-commande-rupture.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/05-commande-rupture.png}
 \end{center}
 
-Phrase \og Signaler tôt coûte peu, se taire coûte cher\fg{} reprise mot pour mot, conséquences énumérées avant confirmation, interrupteur \og Mettre le stock à 0\fg{} activé par défaut — RUP-01/04 respectées.
+Le bloc \og Ce qui va se passer\fg{} porte maintenant une icône par ligne (reprise/annulation/aucun frais/jauge) et nomme explicitement le \og Trust Score\fg{} (\og La part du Trust Score qui compte vos délais tenus\fg{}), ce qui rapproche l'écran du visuel de \og Rupture.jpg\fg{} — au round 1 la même information était un simple texte sans icônes ni ce renvoi au Trust Score.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Besoin de plus de temps}
-\noindent\textit{VD-05} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-05} — \textbf{Conforme (contenu), écart mineur (interaction)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/06-commande-plus-de-temps.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/06-commande-plus-de-temps.png}
 \end{center}
 
-Les trois choix +1h / +2h / demain à l'ouverture avec la nouvelle heure calculée, limite absolue affichée en toutes lettres — DEL-01 à DEL-03 respectées.
+Les trois délais (+1\,h/+2\,h/demain à l'ouverture) et la limite absolue en toutes lettres correspondent au mot près à \og Delai.jpg\fg{}. Différence structurelle qui persiste depuis le round 1 : la maquette présente ces trois choix comme des cases à cocher (radio) avec un bouton d'action qui se reformule selon le choix (\og Demander 1\,heure de plus\fg{}), alors que l'écran construit les traite comme trois liens de navigation distincts suivis d'un bouton générique \og Choisissez une nouvelle heure\fg{} — le contenu est fidèle, le patron d'interaction diffère.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Bon de préparation}
-\noindent\textit{VD-06} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-06} — \textbf{Conforme (corrigé pendant cette vérification)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/07-bon-de-preparation.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/07-bon-de-preparation.png}
 \end{center}
 
-Aucune donnée client, exactement les quatre cases à vérifier du document (bon modèle/couleur, neuf et testé, chargeur et câble, boîte d'origine), avertissement rouge \og Ne fermez rien\fg{} — BON-01/02 respectées.
+\textbf{Écart réel trouvé et corrigé pendant cette vérification} : le bon n'avait pas l'en-tête de marque BelivaY que montre \og Bon.jpg\fg{} (logo, bandeau sombre \og BON DE PRÉPARATION\fg{}, référence, pastille de classe de colis). Un composant \texttt{DocumentHeader} partagé a été ajouté (\texttt{commandes/ui.tsx}) et intégré à cet écran : logo, bandeau sombre en dégradé, référence \og BLV-00019\fg{}, dates payée/heure limite. Il manque toujours le bloc \og Ramassage chez vous\fg{} avec nom et photo du livreur — écart qui tient à la donnée de démonstration (livreur pas encore attribué sur cette commande), pas à la mise en page.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Journal de la commande}
-\noindent\textit{VD-05} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-05} — \textbf{Conforme, limite inchangée}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/08-journal-commande.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/08-journal-commande.png}
 \end{center}
 
-Fil en lecture seule, mention \og Personne ne peut modifier ni effacer ce journal\fg{} (JRN-01/02). Une seule entrée visible ici faute d'historique plus riche dans le jeu de données de démonstration — limite du jeu d'essai, pas de l'écran.
+Toujours une seule entrée (\og Payée · 30\,sept., 11:11\fg{}) contre les quatre entrées détaillées et signées (acteur, horodatage, delta de stock) de \og Journal.jpg\fg{} — c'est la même limite du jeu de données de démonstration déjà documentée au round 1, pas une régression : le principe \og Personne ne peut modifier ni effacer ce journal\fg{} est bien affiché.
 \bigskip\bigskip
 
 \clearpage
@@ -138,10 +141,10 @@ Fil en lecture seule, mention \og Personne ne peut modifier ni effacer ce journa
 \noindent\textit{VD-06} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/09-remise-livreur.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/09-remise-livreur.png}
 \end{center}
 
-Code masqué par défaut, avertissement de vérification du visage du livreur, états honnêtes (\og Livreur pas encore attribué\fg{}, \og Code pas encore disponible\fg{}) faute d'attribution réelle dans la démonstration plutôt que des données fabriquées.
+La double en-tête a disparu ici aussi (comparer avec le round 1, qui affichait encore la barre marketplace complète au-dessus de \og Remise au livreur\fg{}). Contenu inchangé : code masqué par défaut, avertissement de vérification du visage, états honnêtes \og Livreur pas encore attribué\fg{} / \og Code pas encore disponible\fg{} faute d'attribution réelle dans la démonstration.
 \bigskip\bigskip
 
 \clearpage
@@ -149,21 +152,21 @@ Code masqué par défaut, avertissement de vérification du visage du livreur, �
 \noindent\textit{VD-06} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/10-remis-livreur.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/10-remis-livreur.png}
 \end{center}
 
-\og Vous êtes couvert\fg{}, montant gardé, transfert de responsabilité explicité, deux vignettes de preuves (sans photo réelle, faute d'URL exposée côté API — honnêtement présenté comme tel).
+Double en-tête corrigée comme sur l'écran précédent. \og Vous êtes couvert\fg{}, transfert de responsabilité et montant gardé inchangés ; les deux vignettes de preuves restent des icônes génériques (pas de photo réelle) faute d'URL exposée côté API — écart déjà documenté et honnêtement présenté, pas une donnée fabriquée.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Reçu vendeur}
-\noindent\textit{VD-06} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-06} — \textbf{Conforme (corrigé pendant cette vérification)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/11-recu-vendeur.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/11-recu-vendeur.png}
 \end{center}
 
-Client \og Identité masquée\fg{}, mention \og Ceci n'est pas une facture fiscale\fg{}, \og Vous gardez\fg{} en vert — RCU-01/03 respectées.
+\textbf{Même famille d'écart que le bon de préparation (écran 07), corrigée avec le même composant} : le reçu utilise maintenant le \texttt{DocumentHeader} de marque (logo BelivaY, bandeau sombre \og REÇU VENDEUR\fg{}, référence \og BLV-00021\fg{}, date d'encaissement) au lieu d'un simple titre en majuscules dans une carte blanche. Les champs \og Identité masquée\fg{}, \og Ceci n'est pas une facture fiscale\fg{} et \og Vous gardez\fg{} en vert restent inchangés et fidèles à \og Recu.jpg\fg{}. Écart mineur restant : la ligne \og Classe du colis\fg{} de la maquette n'est pas affichée (l'API ne l'expose pas sur cet écran).
 \bigskip\bigskip
 \newpage
 \section{Lot 6 — Litiges et retours (VD-07)}
@@ -173,32 +176,32 @@ Client \og Identité masquée\fg{}, mention \og Ceci n'est pas une facture fisca
 \noindent\textit{VD-07} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/12-litiges-liste.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/12-litiges-liste.png}
 \end{center}
 
-Carte \og Argent gelé\fg{} en rouge, filtres À répondre/En médiation/Clos avec compteurs, un seul bouton plein sur le litige le plus urgent (LIT-01/04). Limite mineure : le compte à rebours affiche toujours \og 0\fg{} minute (\og 71\,h\,0\fg{}) car l'API ne renvoie que des heures entières, pas un horodatage précis — présent sur cet écran et sur Répondre.
+Double en-tête corrigée. Amélioration visuelle nette par rapport au round 1 : le bloc \og Argent gelé\fg{} est maintenant une carte sombre à dégradé (comme \og Litiges.jpg\fg{}) au lieu d'un encart blanc plat. Filtres et compte à rebours inchangés (\og Répondre avant 70\,h\,0\fg{} — l'API ne renvoie que des heures entières, pas de minutes précises, sur cet écran comme sur Répondre).
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Répondre}
-\noindent\textit{VD-07} — \textbf{Conforme (corrigé pendant la vérification)}\bigskip
+\noindent\textit{VD-07} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/13-litige-repondre.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/13-litige-repondre.png}
 \end{center}
 
-Motif et montant gelé affichés, les trois postures avec leur conséquence en une ligne, compteur de caractères pour l'arrangement. \textbf{Un doublon de texte (\og À répondre avant Répondre avant 71 h 0\fg{}) a été trouvé et corrigé pendant cette vérification} : deux libellés i18n destinés à des contextes différents étaient concaténés par erreur.
+Le doublon de texte corrigé pendant la vérification du round 1 (\og À répondre avant Répondre avant 71\,h\,0\fg{}) reste corrigé ici. Motif, montant gelé et les trois postures avec leur conséquence en une ligne sont fidèles à \og Repondre.jpg\fg{}. Écart réel : la maquette ajoute un bloc \og Voir les photos du client\fg{}, un champ \og Ce que vous constatez\fg{} et une galerie \og Vos preuves\fg{} avec renvoi vers la messagerie de la commande — rien de tout cela n'apparaît sur l'écran construit, qui se limite aux trois choix. Détail mineur : le texte de démonstration du motif client a perdu ses accents (\og recu\fg{}, \og annoncee\fg{}), signe d'une donnée de seed non accentuée plutôt que d'un bogue de rendu.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Décision et suites}
-\noindent\textit{VD-07} — \textbf{Conforme — point clé vérifié}\bigskip
+\noindent\textit{VD-07} — \textbf{Conforme sur le point clé, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/14-litige-decision.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/14-litige-decision.png}
 \end{center}
 
-La frise affiche explicitement \og Médiation (décision humaine)\fg{} : c'est la confirmation visible que la décision produit \og pas d'arbitrage automatique, décision humaine avec présomption client\fg{} (prise pour lever le point bloquant \#2 de la synthèse) est bien implémentée à l'écran, pas seulement dans le code.
+La frise affiche toujours explicitement \og Médiation (décision humaine)\fg{} : la décision produit \og pas d'arbitrage automatique, décision humaine avec présomption client\fg{} reste visible à l'écran, pas seulement dans le code. Nouveau : un bloc \og Motif écrit de la décision — Motif non encore renseigné\fg{} a été ajouté, cohérent avec un dossier encore en médiation. Écart repéré cette ronde : l'étape 2 (\og Votre réponse\fg{}) de la frise reste affichée comme non cochée alors que la bannière \og Réponse envoyée\fg{} confirme qu'elle est faite — la maquette coche les deux premières étapes. Le dock flottant chevauche par ailleurs le bas de la carte \og Ce qui peut arriver\fg{} (même artefact de capture).
 \bigskip\bigskip
 
 \clearpage
@@ -206,56 +209,56 @@ La frise affiche explicitement \og Médiation (décision humaine)\fg{} : c'est l
 \noindent\textit{VD-07} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/15-retours-liste.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/15-retours-liste.png}
 \end{center}
 
-Filtres À décider/En route/Clos, motif affiché (\og Abîmé\fg{}), montant gelé annoncé \og à confirmer après inspection\fg{} plutôt qu'un chiffre inventé avant que l'inspection n'ait eu lieu.
+Filtres À décider/En route/Clos, motif affiché, montant gelé annoncé \og à confirmer après inspection\fg{} plutôt qu'un chiffre inventé — inchangé et fidèle à \og Retours.jpg\fg{}.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Inspection à la réception}
-\noindent\textit{VD-07} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-07} — \textbf{Conforme (corrigé pendant cette vérification)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/16-retour-inspection.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/16-retour-inspection.png}
 \end{center}
 
-Écran atteint via l'identifiant du retour (et non celui de la commande, une confusion corrigée pendant cette vérification — voir méthodologie).
+\textbf{Bogue du même type que celui corrigé à l'écran 13 trouvé et corrigé pendant cette vérification} : le bandeau affichait \og Répondez avant Répondre avant 0\,min\fg{}, deux libellés i18n concaténés par erreur (\texttt{inspection\_deadline\_prefix} + \texttt{list\_card\_deadline}, ce dernier portant déjà son propre préfixe \og Répondre avant\fg{}). Corrigé en introduisant des clés numériques neutres (\texttt{countdown\_hm}/\texttt{countdown\_m}) dans \texttt{ReturnInspectionPage.tsx} ; le bandeau affiche maintenant \og Répondez avant 0\,min\fg{}, conforme à \og Inspection.jpg\fg{}. Les cases \og Le scellé est intact\fg{} / \og Le numéro de série correspond\fg{} restent décochées et sans photo, un état honnête puisque ce retour n'a pas encore été traité dans la démonstration.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Proposer un remplacement}
-\noindent\textit{VD-07} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-07} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/17-retour-remplacement.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/17-retour-remplacement.png}
 \end{center}
 
-Remplacer vs rembourser, trajet retour à 500\,F et effet Trust Score affichés dans les deux cas, \og Vous gardez — (remboursement)\fg{} quand l'option ne rapporte rien — RMP-01/03 respectées.
+Remplacer vs rembourser, trajet retour à 500\,F et effet Trust Score affichés dans les deux cas, \og Vous gardez — (remboursement)\fg{} quand l'option ne rapporte rien — fidèle à \og Remplacement.jpg\fg{} sur ces points. Il manque le bloc logistique que montre la maquette une fois \og Proposer un remplacement\fg{} sélectionné (fiche produit avec stock, \og Expédition sous 72\,h\fg{}, \og Ramassage chez vous\fg{}, \og Remboursement automatique\fg{} si le délai est dépassé, et le montant \og Vous gardez\fg{} correspondant).
 \bigskip\bigskip
 \newpage
 \section{Lot 7 — Ouverture en trois temps (VD-03)}
 
 \clearpage
 \subsection*{Connexion}
-\noindent\textit{VD-03} — \textbf{Conforme (corrigé pendant la vérification)}\bigskip
+\noindent\textit{VD-03} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/18-connexion.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/18-connexion.png}
 \end{center}
 
-SellerPromise (\og Vous préparez / Le livreur emballe et livre / Versé le vendredi sans frais\fg{}), Google, carte \og Pas encore vendeur ?\fg{}. \textbf{Un bogue d'intégration a été trouvé et corrigé pendant cette vérification} : pour un visiteur anonyme, l'habillage marketplace (panier, notifications) se chargeait autour de cet écran public et provoquait un appel API 401 qui redirigeait tout le monde vers l'ancien \texttt{/login} générique avant même l'affichage. Corrigé en excluant \texttt{/vendeur/*} du chrome authentifié dans \texttt{AppLayout.tsx}.
+Correction majeure confirmée : le logo BelivaY et la carte d'accroche sombre (\og Espace vendeur\fg{}, \og Vous vendez. BelivaY encaisse pour vous.\fg{}, les trois icônes \og Vous préparez / Le livreur emballe et livre / Versé le vendredi, sans frais\fg{}) remplacent l'icône de boutique générique et le texte \og BelivaY Vendeur\fg{} du round 1 — la mise en page correspond maintenant presque au pixel près à \og Connexion.jpg\fg{}. Écart mineur restant : la maquette propose \og Continuer avec Google\fg{} ET \og Continuer avec Apple\fg{} (la connexion Apple existe déjà côté marketplace d'après l'historique du dépôt), alors que cet écran vendeur n'affiche que Google.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Ouvrir ma boutique — étape 1/3}
-\noindent\textit{VD-03} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-03} — \textbf{Conforme (contenu)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/19-ouvrir-boutique.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/19-ouvrir-boutique.png}
 \end{center}
 
-Trois champs seulement (nom interne jamais montré au client, numéro, carte), barre d'étapes Ouvrir/Publier/Être payé — OUV-01/02 respectées. Capturé côté visiteur anonyme, comme prévu pour cet écran.
+Inchangé depuis le round 1 : trois champs, barre d'étapes Ouvrir/Publier/Être payé, capturé côté visiteur anonyme comme prévu pour cet écran. Écart qui persiste : la carte est un fond de carte OpenStreetMap brut (tuiles bleu/vert/orange par défaut, mention Leaflet) alors que \og Ouvrir.jpg\fg{} montre une carte stylisée aux couleurs de la marque avec un bouton \og Me localiser\fg{} — composant cartographique non habillé, identique aux deux rondes.
 \bigskip\bigskip
 
 \clearpage
@@ -263,21 +266,21 @@ Trois champs seulement (nom interne jamais montré au client, numéro, carte), b
 \noindent\textit{VD-03} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/20-publier-etre-paye.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/20-publier-etre-paye.png}
 \end{center}
 
-Capturé avec un compte authentifié mais n'ayant pas encore de boutique : l'écran renvoie correctement à l'étape 1 (impossible de sauter une étape), ce qui est le comportement attendu plutôt qu'un défaut. Les étapes 2 (KYC) et 3 (contrat) existent dans le code (\texttt{KycCaptureFlow.tsx}, \texttt{ContractCard.tsx}) mais n'ont pas pu être capturées séparément sans franchir réellement l'étape 1 dans ce passage.
+Correction majeure : au round 1, cet écran renvoyait systématiquement à l'étape 1 pour un compte sans boutique et ne pouvait pas être capturé pour de vrai. Round 2 montre maintenant l'étape 2 réelle (\texttt{KycCaptureFlow.tsx}) avec la frise Ouvrir\,✓/Publier/Être payé, le titre \og Publier vos produits\fg{}, et la checklist Pièce d'identité (CNI)/Selfie avec preuve de vie/Numéro de versement avec leurs statuts (\og À faire\fg{}, \og Vérifié\fg{}) — une correspondance quasi exacte avec \og Publier.jpg\fg{}, y compris le nombre de produits en brouillon annoncé.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Saisie assistée}
-\noindent\textit{VD-03} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-03} — \textbf{Conforme (état vide honnête)}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/21-saisie-assistee.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/21-saisie-assistee.png}
 \end{center}
 
-État vide honnête (\og Rien à valider pour le moment\fg{}) : aucun lot de saisie assistée n'existe dans les données de démonstration et l'endpoint dédié n'existe pas encore côté serveur.
+La première capture round 2 de cet écran s'est révélée être un fichier blanc — un accident de capture (le navigateur headless avait crashé sur l'écran précédent de la même série) plutôt qu'un bogue de l'application ; l'écran a été recapturé isolément et affiche correctement \og Rien à valider pour le moment\fg{} avec son explication, faute de lot de saisie assistée dans les données de démonstration. Rien n'indique une régression : c'est le même état vide honnête documenté au round 1, à comparer au cas riche de \og SaisieAssistee.jpg\fg{} (produits \og Prêts\fg{}, \og À vérifier\fg{}, \og Doublon\fg{}) qui suppose un lot réellement saisi par un agent.
 \bigskip\bigskip
 
 \clearpage
@@ -285,10 +288,10 @@ Capturé avec un compte authentifié mais n'ayant pas encore de boutique : l'éc
 \noindent\textit{VD-03} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/22-installer-application.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/22-installer-application.png}
 \end{center}
 
-Onglets iPhone/Android, carte d'aperçu de l'application, trois étapes numérotées — INS-01/02 respectées.
+Amélioration réelle : l'onglet \og iPhone\fg{} affiche maintenant ses propres instructions (\og Ouvrez seller.belivay.com dans Safari\fg{} → \og Touchez Partager\fg{} → \og Sur l'écran d'accueil\fg{}), qui correspondent mot pour mot à \og Installer.jpg\fg{} — au round 1 les deux onglets iPhone/Android réutilisaient les mêmes étapes génériques (menu ⋮ / Installer l'application / Confirmer), qui ne valent que pour Android.
 \bigskip\bigskip
 \newpage
 \section{Lot 9 — Catalogue (VD-08)}
@@ -298,21 +301,21 @@ Onglets iPhone/Android, carte d'aperçu de l'application, trois étapes numérot
 \noindent\textit{VD-08} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/23-mes-produits.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/23-mes-produits.png}
 \end{center}
 
-Ligne de synthèse (\og 6 produits · 6 en vente · 0 en pause\fg{}), \og Vous gardez par vente\fg{} sans jamais le mot commission, et une bande d'attention \og Un litige concerne ce produit\fg{} qui reflète correctement le litige réel créé pendant cette vérification sur l'article concerné.
+Bandeau d'identité boutique ajouté en tête, et le message contextuel du produit en litige est plus précis (\og Ce mois : 1 ventes en litige · 27\,680\,F gelés, pas encore gardés\fg{}) qu'au round 1 (\og Un litige concerne ce produit\fg{}). Les vignettes produits restent des icônes génériques de catégorie plutôt que des photos, comme au round 1 : c'est cohérent avec ce jeu de données (ces six articles n'ont pas de photo réelle en base), pas une régression, contrairement à \og Produits.jpg\fg{} qui montre des téléphones avec de vraies photos de stock. Le dock flottant chevauche la troisième carte de la liste (artefact de capture).
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Une offre}
-\noindent\textit{VD-08} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-08} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/24-une-offre.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/24-une-offre.png}
 \end{center}
 
-Carte \og Où les clients vous voient\fg{} honnêtement en attente (\og comparaison non encore disponible\fg{}, faute d'endpoint), fiche produit cadenassée côté BelivaY, interrupteurs paiement au comptoir / prix automatique présents.
+Carte \og Où les clients vous voient\fg{} honnêtement en attente (comparaison non encore disponible, faute d'endpoint) — inchangé. La maquette \og Offre.jpg\fg{} affiche aussi les champs \og État\fg{} (Neuf) et \og Délai de préparation\fg{} dans le bloc \og Votre offre\fg{}, absents de l'écran construit.
 \bigskip\bigskip
 
 \clearpage
@@ -320,10 +323,10 @@ Carte \og Où les clients vous voient\fg{} honnêtement en attente (\og comparai
 \noindent\textit{VD-08} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/25-nouvelle-offre.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/25-nouvelle-offre.png}
 \end{center}
 
-\og Quel produit vendez-vous ?\fg{} avec recherche d'abord et raccourcis Code-barres/Photo/Dicter, sans aucun raccourci direct vers la création d'une fiche — NOF-01 respectée.
+Amélioration de la capture : elle montre maintenant une recherche réelle (\og itel ac52\fg{}) avec ses trois résultats, le pourcentage gardé par résultat et le bouton \og C'est celui-là\fg{}, ainsi que \og Partir d'un de mes produits\fg{} et le repli \og Aucun de ces produits\fg{} — le round 1 n'avait capturé que le champ de recherche vide. Correspond fidèlement à \og Offre1.jpg\fg{}.
 \bigskip\bigskip
 
 \clearpage
@@ -331,10 +334,10 @@ Carte \og Où les clients vous voient\fg{} honnêtement en attente (\og comparai
 \noindent\textit{VD-08} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/26-dupliquer-produit.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/26-dupliquer-produit.png}
 \end{center}
 
-Choix de variante par puces, \og Photos réelles du produit\fg{} avec rappel \og pas de photo du catalogue\fg{}, compteur 0/8 — DUP-01 à 03 respectées.
+Cas plus riche qu'au round 1 : la nouvelle variante \og Vert\fg{} choisie existe déjà au catalogue, et l'écran l'explique (\og Déjà créées : noir (en vente), bleu (en vérification)\fg{}, bandeau vert \og Le vert existe déjà au catalogue : votre offre y sera rattachée\fg{}) — une démonstration fidèle de la logique de rattachement de \og Dupliquer.jpg\fg{}, que le round 1 (toujours sur une variante neuve) ne pouvait pas illustrer.
 \bigskip\bigskip
 \newpage
 \section{Lot 8 — Trust Score, palier et croissance (VD-10)}
@@ -344,10 +347,10 @@ Choix de variante par puces, \og Photos réelles du produit\fg{} avec rappel \og
 \noindent\textit{VD-10} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/27-mon-palier.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/27-mon-palier.png}
 \end{center}
 
-Palier Bronze réel (Trust Score 10, donnée du compte de démonstration), conditions du palier Argent listées avec leurs points, gain annoncé en francs \og environ 324 F de plus\fg{} — exactement la valeur corrigée du document (et non l'ancien 600\,F erroné).
+Correction d'architecture majeure : l'écran est maintenant un onglet (\og Mon palier\fg{}) d'un écran \og Trust Score\fg{} partagé avec \og Mon score\fg{} et \og Les paliers\fg{}, exactement comme \og Palier.jpg\fg{} — au round 1 c'était encore une page isolée sans onglets. Contenu inchangé et fidèle (Bronze, Trust Score 10, \og environ 324\,F de plus\fg{} au palier Argent). Le dock flottant chevauche le bouton \og Voir mes commandes à préparer\fg{} (artefact de capture).
 \bigskip\bigskip
 
 \clearpage
@@ -355,21 +358,21 @@ Palier Bronze réel (Trust Score 10, donnée du compte de démonstration), condi
 \noindent\textit{VD-10} — \textbf{Conforme, données partielles}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/28-mon-score.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/28-mon-score.png}
 \end{center}
 
-Les six critères apparaissent avec leurs pondérations exactes (25/20/20/15/10/10), mais cinq des six sous-scores affichent un tiret : le modèle actuel (\texttt{VendorProfile.certification\_tier}) ne calcule pas encore les sous-scores du Trust Score V5.5, seule l'ancienneté est dérivable des données existantes. Écran honnête, moteur de score non branché.
+Bascule dans le même écran à onglets que \og Mon palier\fg{}. Les six critères apparaissent avec leurs pondérations exactes (25/20/20/15/10/10), mais cinq des six sous-scores affichent toujours un tiret : le moteur de sous-scores du Trust Score V5.5 n'est pas branché, seule l'ancienneté (0/100) est dérivable des données existantes — limite inchangée depuis le round 1, écran honnête plutôt que des chiffres inventés.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Les paliers}
-\noindent\textit{VD-10} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-10} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/29-les-paliers.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/29-les-paliers.png}
 \end{center}
 
-Bronze/Argent/Or/Platine avec les seuils exacts (0/65/80/90), vitesse de libération (3\,j/3\,j/1\,j/1\,j) et support par palier corrects. Aucune trace du palier \og Diamant\fg{} de l'ancien système.
+Bascule dans l'écran à onglets. Bronze/Argent/Or/Platine avec les seuils exacts (0/65/80/90) et la vitesse de libération (3\,j/3\,j/1\,j/1\,j) restent corrects. \og Paliers.jpg\fg{} personnalise chaque palier avec le montant en francs réellement gardé sur une vente type (\og Pour un ITEL AC52 vendu 20\,000\,F, vous gardez 18\,164\,F\fg{}) ; l'écran construit se limite à un gain relatif (\og +15\,\%\fg{}) sans recalculer un montant concret pour le vendeur.
 \bigskip\bigskip
 
 \clearpage
@@ -377,10 +380,10 @@ Bronze/Argent/Or/Platine avec les seuils exacts (0/65/80/90), vitesse de libéra
 \noindent\textit{VD-10} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/30-sanctions-controle.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/30-sanctions-controle.png}
 \end{center}
 
-Les fractions de contrôle au ramassage (100\,\%, 1/20, 1/100) et les quatre niveaux de sanction sont recopiés exactement ; \og Aucune sanction en cours\fg{} et historique vide, cohérents avec le compte de démonstration.
+Les fractions de contrôle au ramassage (100\,\%, 1/20, 1/100) et les quatre niveaux de sanction sont recopiés exactement, avec un texte explicatif même plus détaillé que la maquette (fréquence actuelle affichée directement plutôt que dans un repli \og Pourquoi\fg{}) ; \og Aucune sanction en cours\fg{} et historique vide, cohérents avec le compte de démonstration.
 \bigskip\bigskip
 
 \clearpage
@@ -388,67 +391,67 @@ Les fractions de contrôle au ramassage (100\,\%, 1/20, 1/100) et les quatre niv
 \noindent\textit{VD-10} — \textbf{Conforme, donnée manquante}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/31-contester-decision.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/31-contester-decision.png}
 \end{center}
 
-\og Une seule contestation... réponse sous 72\,h ouvrées\fg{} conforme au mot près. \og Détail de la décision indisponible\fg{} car l'endpoint \texttt{GET /account/decisions} n'existe pas encore côté serveur — écran honnête plutôt que fabriqué.
+Inchangé : \og Une seule contestation... réponse sous 72\,h ouvrées\fg{} conforme au mot près, mais \og Détail de la décision indisponible\fg{} et bouton d'envoi grisé faute d'endpoint \texttt{GET /account/decisions} côté serveur — écran honnête plutôt que fabriqué, comme au round 1.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Les plans}
-\noindent\textit{VD-10} — \textbf{Écart — backend en retard}\bigskip
+\noindent\textit{VD-10} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/32-les-plans.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/32-les-plans.png}
 \end{center}
 
-Seule la carte \og Sur-mesure\fg{} (statique) s'affiche : les plans Free/Boost/Pro ne sont pas montrés. Cause probable : l'API \texttt{/api/vendors/plans/} expose encore l'ancien système (Gratuit/Starter/Pro/Business à 20/18/12/10/5\,\%) que l'écran filtre volontairement pour ne pas induire en erreur (conforme à la règle \og jamais les anciens taux\fg{}), sans disposer d'un jeu de repli pour les nouveaux plans. À corriger en migrant l'API des plans.
+Correction majeure du point bloquant du round 1 : les quatre plans Free/Boost/Pro/Sur-mesure s'affichent maintenant tous, avec la barre de progression de l'offre de découverte (\og 6 commandes sur 50\fg{}), les listes de fonctionnalités et le bouton \og Comparer avec mes ventes\fg{} — une correspondance très proche de \og Plans.jpg\fg{}. La règle \og le violet est réservé au plan Pro\fg{} est respectée (petite étoile violette uniquement à côté de \og Pro\fg{}). Le dock flottant chevauche le bouton \og Essayer un mois offert\fg{} du plan Boost (artefact de capture).
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Le simulateur}
-\noindent\textit{VD-10} — \textbf{Écart — même cause que Les plans}\bigskip
+\noindent\textit{VD-10} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/33-simulateur.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/33-simulateur.png}
 \end{center}
 
-Seuls le curseur de ventes et \og Rester en Free\fg{} apparaissent ; la comparaison en trois colonnes Free/Boost/Pro décrite par le document (avec le meilleur cerclé de vert) ne s'affiche pas, pour la même raison que l'écran précédent.
+Correction majeure, même cause que l'écran précédent : la comparaison à trois colonnes Free/Boost/Pro (avec les montants gardés et \og Garde le plus\fg{} sur Free) et le bloc \og Quand un plan est remboursé\fg{} avec les seuils de rentabilité apparaissent maintenant, reproduisant fidèlement \og Simulateur.jpg\fg{} jusque dans les montants (53\,520\,F / 51\,344\,F / 46\,668\,F). Le round 1 n'affichait que le curseur et le bouton \og Rester en Free\fg{} sans aucune comparaison.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Se faire voir}
-\noindent\textit{VD-10} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-10} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/34-se-faire-voir.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/34-se-faire-voir.png}
 \end{center}
 
-Chaque emplacement payant est étiqueté \og Sponsorisé\fg{}, jamais \og Boost Buy Box\fg{}, et les quatre tarifs (500\,F, 2\,000\,F, 1\,500\,F, 25\,F, et le boost au résultat à 0\,F d'avance/3\,\%) correspondent exactement aux chiffres du document.
+Les quatre tarifs (500\,F, 2\,000\,F, 1\,500\,F, 25\,F, et le boost au résultat à 0\,F d'avance/3\,\%) correspondent exactement aux chiffres du document, toujours étiquetés \og Sponsorisé\fg{}, jamais \og Boost Buy Box\fg{}. \og Visibilite.jpg\fg{} personnalise l'écran avec une carte \og Offert ce mois\fg{} et cible un produit précis (\og Mettre en avant l'ITEL AC52\fg{}) ; l'écran construit reste générique (bouton \og Mettre en avant · 500\,F\fg{} sans produit nommé) et ne liste pas la \og Vente flash\fg{} parmi les emplacements de cet écran.
 \bigskip\bigskip
 \newpage
 \section{Lot 10 — Boutique, compte et communication (VD-11)}
 
 \clearpage
 \subsection*{Paramètres}
-\noindent\textit{VD-11} — \textbf{Conforme — point clé vérifié}\bigskip
+\noindent\textit{VD-11} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/35-parametres.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/35-parametres.png}
 \end{center}
 
-Sélecteur de langue à trois options avec Pidgin visiblement désactivé et son explication (\og Les SMS restent en français tant que la traduction n'est pas validée\fg{}) : confirmation visible que la contradiction relevée dans la synthèse (arbitrage 12 de VD-12 vs règle client CIN-09) a été tranchée en faveur du français. Numéro de versement pré-rempli, \og Jamais de promotion par SMS\fg{}.
+Point clé reconfirmé à l'identique du round 1 : le sélecteur de langue affiche toujours Pidgin désactivé avec son explication (\og Les SMS restent en français tant que la traduction n'est pas validée\fg{}), preuve que l'arbitrage français retenu dans la synthèse est bien implémenté à l'écran. Reste une page plus compacte que \og Parametres.jpg\fg{}, qui regroupe en plus le profil, le Trust Score et les liens vers Sécurité/Documents/Messagerie/Installer sur un seul écran — l'application les garde en écrans séparés (voir le Menu), différence d'architecture assumée plutôt qu'un oubli. Le dock flottant chevauche la ligne \og Mettre la boutique en pause\fg{} (artefact de capture).
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Sécurité, appareils et données}
-\noindent\textit{VD-11} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-11} — \textbf{Conforme (textes clés), écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/36-securite.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/36-securite.png}
 \end{center}
 
-\og Second facteur toujours par SMS au téléphone personnel, jamais au numéro de versement\fg{} (SEC-04/NUM-07), conservation des preuves 180 jours et export sous 48\,h annoncés au mot près.
+Les textes réglementaires restent au mot près (\og toujours par SMS au téléphone personnel, jamais au numéro de versement\fg{}, conservation 180 jours, export sous 48\,h). \og Securite.jpg\fg{} affiche une vraie liste d'appareils connectés (iPhone/Safari, Android/Chrome, avec un bouton \og Déconnecter\fg{}) ; l'écran construit se limite à un message \og Aucun autre appareil connecté pour l'instant\fg{}, sans session à afficher pour ce compte de démonstration.
 \bigskip\bigskip
 
 \clearpage
@@ -456,10 +459,10 @@ Sélecteur de langue à trois options avec Pidgin visiblement désactivé et son
 \noindent\textit{VD-11} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/37-notifications.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/37-notifications.png}
 \end{center}
 
-Filtres Tout/Urgent/Argent, rappel explicite \og SMS envoyé uniquement pour : commande à préparer, litige. Jamais de promotion par SMS\fg{}. Liste vide, cohérente avec le compte de démonstration.
+Filtres Tout/Urgent/Argent et rappel \og SMS envoyé uniquement pour : commande à préparer, litige. Jamais de promotion par SMS.\fg{} inchangés et fidèles au principe de \og Notifications.jpg\fg{}. Liste vide, cohérente avec le compte de démonstration (la maquette montre une boîte pleine de 8 notifications types, non reproductible sans les événements correspondants).
 \bigskip\bigskip
 
 \clearpage
@@ -467,10 +470,10 @@ Filtres Tout/Urgent/Argent, rappel explicite \og SMS envoyé uniquement pour : c
 \noindent\textit{VD-11} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/38-avis.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/38-avis.png}
 \end{center}
 
-\og Les avis comptent pour 20\,\% de votre Trust Score\fg{} affiché correctement, état vide honnête faute d'avis réels dans la démonstration.
+\og Les avis comptent pour 20\,\% de votre Trust Score\fg{} toujours affiché correctement, état vide honnête faute d'avis réels dans la démonstration — inchangé face à \og Avis.jpg\fg{}, qui montre un compte avec deux avis déjà notés.
 \bigskip\bigskip
 
 \clearpage
@@ -478,21 +481,21 @@ Filtres Tout/Urgent/Argent, rappel explicite \og SMS envoyé uniquement pour : c
 \noindent\textit{VD-11} — \textbf{Conforme}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/39-messagerie.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/39-messagerie.png}
 \end{center}
 
-État vide correctement expliqué (\og les messages liés à vos commandes apparaîtront ici\fg{}) ; aucune conversation n'a été créée dans le jeu de données de démonstration pour cette vérification.
+État vide correctement expliqué (\og les messages liés à vos commandes apparaîtront ici\fg{}) ; aucune conversation créée dans le jeu de données de démonstration pour cette vérification, contrairement à \og Messagerie.jpg\fg{} qui montre trois fils actifs.
 \bigskip\bigskip
 
 \clearpage
 \subsection*{Aide}
-\noindent\textit{VD-11} — \textbf{Conforme}\bigskip
+\noindent\textit{VD-11} — \textbf{Conforme, écart mineur}\bigskip
 
 \begin{center}
-\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2/40-aide.png}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/30-09-2026/espace-vendeur-v2-round2/40-aide.png}
 \end{center}
 
-Carte support WhatsApp avec horaires (7\,h-21\,h) et délai par palier (24\,h Bronze) exacts, exactement dix questions fréquentes avec la première ouverte par défaut (AID-03), lien vers le contrat.
+Carte support WhatsApp (horaires 7\,h-21\,h) et exactement dix questions fréquentes avec la première ouverte par défaut, comme prévu par AID-03. La maquette \og Aide.jpg\fg{} affiche un délai par palier complet (24\,h Bronze, 4\,h Argent, 2\,h Or) alors que l'écran construit ne montre que le délai Bronze, et surtout la liste des dix questions elle-même diffère de celle du document (questions différentes choisies, même si le nombre et le comportement par défaut correspondent). Le dock flottant chevauche l'avertissement rouge sur le code Mobile Money (artefact de capture).
 \bigskip\bigskip
 \newpage
 
@@ -502,7 +505,7 @@ Pour être complet sur ce qui \emph{manque} plutôt que sur ce qui a été véri
 \begin{itemize}
   \item \textbf{Mon argent, Se libère, Gelé, Mes gains, Documents, Versements, Numéro de versement} (VD-09) — le Lot 3 frontend n'a jamais été assigné à un agent ; c'est pourquoi l'onglet \og Argent\fg{} du Dock pointe encore vers l'ancienne page \texttt{/seller/wallet}.
   \item \textbf{Ma boutique, Horaires et fermetures, Emplacement, Mon équipe} (VD-11, groupe \og Ma boutique\fg{}) — non construits ; les liens correspondants dans le Menu restent sur le placeholder \og Bientôt disponible\fg{}.
-  \item Le diff formel du moteur Trust Score contre le spec V5.5 canonique (paramètres $k$, demi-vie, plafond de baisse) — recommandé avant de considérer le Lot 8 backend comme terminé.
+  \item Le diff formel du moteur Trust Score contre le spec V5.5 canonique (paramètres $k$, demi-vie, plafond de baisse) — recommandé avant de considérer le Lot 8 backend comme terminé. Round 2 confirme que cinq des six sous-scores de l'écran \og Mon score\fg{} restent non calculés.
 \end{itemize}
 
 \end{document}

@@ -18,7 +18,7 @@ import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type PlansResponse } from '@/services/api/vendors';
 import { palette } from '../../theme';
-import ScreenHeader from '../shared/ScreenHeader';
+import PlansTabs from './PlansTabs';
 import Collapsible from '../shared/Collapsible';
 import { formatXAF, mapLegacyPlanCode } from '../shared/format';
 
@@ -44,7 +44,9 @@ export default function SimulateurPage() {
 
   return (
     <div className="pb-24 pt-2">
-      <ScreenHeader title={t('sl11_compte.sim_title')} />
+      <PlansTabs />
+      <h1 className="font-black mb-1" style={{ fontSize: 20, color: p.text }}>{t('sl11_compte.sim_title')}</h1>
+      <p className="mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl11_compte.sim_subtitle')}</p>
 
       {/* Curseur de ventes */}
       <div className="rounded-2xl p-5 mb-4" style={{ background: p.card, border: `1px solid ${p.border}` }}>

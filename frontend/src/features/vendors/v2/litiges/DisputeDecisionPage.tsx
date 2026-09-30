@@ -10,15 +10,29 @@
 // bridge sur vendorsApi.sendDisputeMessage pour transmettre la contestation
 // dans le fil déjà existant, à remplacer par un vrai POST /disputes/{id}/contest
 // quand il existera côté backend.
+//
+// Alignement visuel sur Decision.jpg/Decision_gagne.jpg/Decision_perdu.jpg :
+// carte « héro » sombre par issue (neutre en médiation, verte si gagné, rouge
+// si perdu), frise horizontale + aperçu « ce qui peut arriver » pendant la
+// médiation seulement, motif + effet Trust Score + « Décidé par » regroupés
+// dans une seule carte. Écart volontaire : la maquette « gagné » affiche une
+// date/mode de versement précis (« versés vendredi 25 septembre vers MTN
+// ···· 4217 ») — VendorDisputeDetail n'expose ni date de versement ni moyen
+// de paiement masqué, donc ce détail est remplacé par une phrase générique
+// (decision_hero_won_body) plutôt que d'inventer une date ou un numéro.
 
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { AlertTriangle, CheckCircle2, Clock, RefreshCw, XCircle } from 'lucide-react';
+import {
+  AlertTriangle, CheckCircle2, Gavel, RefreshCw, Send, XCircle,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/context/ThemeContext';
 import { vendorsApi, type VendorDisputeDetail } from '@/services/api/vendors';
-import { palette } from '../theme';
-import { Card, CenterState, PageHeader, PrimaryButton, SecondaryButton } from './ui';
+import { palette, type VendorPalette } from '../theme';
+import {
+  Card, CenterState, DarkHero, HERO_ACCENT, OutcomeRow, PageHeader, PrimaryButton, SecondaryButton, Stepper,
+} from './ui';
 import { disputeIssueOf, fmtDateTime, fmtXAF, type DisputeIssue } from './helpers';
 
 export default function DisputeDecisionPage() {
@@ -58,18 +72,21 @@ export default function DisputeDecisionPage() {
   const refund = dispute.refund_amount_xaf ?? 0;
   const kept = Math.max(0, dispute.vendor_escrow_amount - refund);
 
-  const issueMeta: Record<DisputeIssue, { icon: ReactNode; color: string; titleKey: string; bodyKey: string; amount: string }> = {
-    mediation: { icon: <Clock size={20} color={p.amber} />, color: p.amber, titleKey: 'decision_mediation_title', bodyKey: 'decision_mediation_body', amount: fmtXAF(dispute.vendor_escrow_amount) },
-    won: { icon: <CheckCircle2 size={20} color={p.green} />, color: p.green, titleKey: 'decision_won_title', bodyKey: 'decision_won_body', amount: fmtXAF(kept) },
-    lost: { icon: <XCircle size={20} color={p.red} />, color: p.red, titleKey: 'decision_lost_title', bodyKey: 'decision_lost_body', amount: fmtXAF(refund) },
-    compromise: { icon: <CheckCircle2 size={20} color={p.amber} />, color: p.amber, titleKey: 'decision_compromise_title', bodyKey: 'decision_compromise_body', amount: fmtXAF(refund) },
-  };
-  const meta = issueMeta[issue];
+  const heroTone: 'neutral' | 'green' | 'red' = issue === 'won' ? 'green' : issue === 'lost' ? 'red' : 'neutral';
+  const heroKickerKey = issue === 'mediation' ? 'decision_hero_kicker_mediation'
+    : issue === 'won' ? 'decision_hero_kicker_won'
+      : issue === 'lost' ? 'decision_hero_kicker_lost'
+        : 'decision_hero_kicker_compromise';
+  const heroIcon = issue === 'mediation' ? <Send size={13} />
+    : issue === 'won' ? <CheckCircle2 size={13} />
+      : issue === 'lost' ? <XCircle size={13} />
+        : <CheckCircle2 size={13} />;
 
   const trustKey = issue === 'mediation' ? 'decision_trust_mediation'
     : issue === 'won' ? 'decision_trust_won'
       : issue === 'lost' ? 'decision_trust_lost'
         : 'decision_trust_compromise';
+  const trustColor = issue === 'won' ? p.green : issue === 'lost' ? p.red : p.text;
 
   async function handleContestSubmit() {
     if (!contestText.trim()) return;
@@ -95,35 +112,140 @@ export default function DisputeDecisionPage() {
         p={p}
       />
 
-      <Card p={p} accent={meta.color}>
-        <div className="flex items-center gap-2 mb-2">
-          {meta.icon}
-          <p className="font-black" style={{ fontSize: 15, color: p.text }}>{t(`sl8_litiges.${meta.titleKey}`)}</p>
+      <DarkHero tone={heroTone}>
+        <div className="flex items-center justify-between mb-2">
+          <span
+            className="font-bold flex items-center gap-1.5"
+            style={{ fontSize: 11, letterSpacing: 0.4, textTransform: 'uppercase', color: HERO_ACCENT[heroTone] }}
+          >
+            {heroIcon} {t(`sl8_litiges.${heroKickerKey}`)}
+          </span>
         </div>
-        <p style={{ fontSize: 13, color: p.textMuted, lineHeight: 1.5 }}>
-          {t(`sl8_litiges.${meta.bodyKey}`, { amount: meta.amount })}
-        </p>
-      </Card>
 
-      <div style={{ height: 12 }} />
+        {issue === 'mediation' ? (
+          <>
+            <p className="font-black mb-2" style={{ fontSize: 19, color: '#fff', lineHeight: 1.3 }}>
+              {t('sl8_litiges.decision_mediation_title')}
+            </p>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5 }}>
+              {t('sl8_litiges.decision_hero_mediation_body')}
+            </p>
+            <div className="flex items-center justify-between" style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,0.14)' }}>
+              <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', fontWeight: 600 }}>{t('sl8_litiges.decision_hero_frozen_label')}</span>
+              <span className="font-black" style={{ fontSize: 18, color: '#fff' }}>{fmtXAF(dispute.vendor_escrow_amount)}</span>
+            </div>
+          </>
+        ) : issue === 'won' ? (
+          <>
+            <p className="font-black mb-1" style={{ fontSize: 19, color: '#fff', lineHeight: 1.3 }}>
+              {t('sl8_litiges.decision_won_headline')}
+            </p>
+            <p className="font-black mb-2" style={{ fontSize: 30, color: '#fff' }}>{fmtXAF(kept)}</p>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5 }}>
+              {t('sl8_litiges.decision_hero_won_body')}
+            </p>
+          </>
+        ) : issue === 'lost' ? (
+          <>
+            <p className="font-black mb-2" style={{ fontSize: 19, color: '#fff', lineHeight: 1.3 }}>
+              {t('sl8_litiges.decision_lost_headline')}
+            </p>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5, marginBottom: 4 }}>
+              {t('sl8_litiges.decision_hero_lost_body_1')}
+            </p>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5 }}>
+              {t('sl8_litiges.decision_hero_lost_body_2')}
+            </p>
+          </>
+        ) : (
+          <>
+            <p className="font-black mb-2" style={{ fontSize: 19, color: '#fff', lineHeight: 1.3 }}>
+              {t('sl8_litiges.decision_compromise_title')}
+            </p>
+            <p style={{ fontSize: 12.5, color: 'rgba(255,255,255,0.72)', lineHeight: 1.5 }}>
+              {t('sl8_litiges.decision_compromise_body', { amount: fmtXAF(refund) })}
+            </p>
+          </>
+        )}
+      </DarkHero>
+
       <Card p={p}>
         <p className="font-bold mb-2" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.decision_reason_title')}</p>
         <p style={{ fontSize: 12.5, color: p.textMuted, lineHeight: 1.5 }}>
           {dispute.resolution_note || dispute.resolution || t('sl8_litiges.decision_reason_empty')}
         </p>
+
+        <div style={{ height: 1, background: p.border, margin: '14px 0' }} />
+        {issue === 'mediation' ? (
+          <p style={{ fontSize: 12.5, color: p.textMuted }}>{t(`sl8_litiges.${trustKey}`)}</p>
+        ) : (
+          <>
+            <InfoRow label={t('sl8_litiges.decision_trust_title')} value={t(`sl8_litiges.${trustKey}`)} valueColor={trustColor} p={p} />
+            <div style={{ height: 10 }} />
+            <InfoRow
+              label={t('sl8_litiges.decision_decided_by_label')}
+              value={`${t('sl8_litiges.decision_decided_by_value')} · ${fmtDateTime(dispute.resolved_at, lang)}`}
+              bold
+              p={p}
+            />
+          </>
+        )}
       </Card>
 
-      <div style={{ height: 12 }} />
-      <Card p={p}>
-        <p className="font-bold mb-1" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.decision_trust_title')}</p>
-        <p style={{ fontSize: 12.5, color: p.textMuted }}>{t(`sl8_litiges.${trustKey}`)}</p>
-      </Card>
+      {issue === 'mediation' ? (
+        <>
+          <div style={{ height: 12 }} />
+          <Card p={p}>
+            <p className="font-bold mb-3" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.decision_timeline_title')}</p>
+            <Stepper
+              p={p}
+              steps={[
+                { label: t('sl8_litiges.decision_steps_received'), state: 'done' },
+                { label: t('sl8_litiges.decision_steps_replied'), state: dispute.vendor_replied_at ? 'done' : 'upcoming' },
+                { label: t('sl8_litiges.decision_steps_mediation'), state: 'current' },
+                { label: t('sl8_litiges.decision_steps_decision'), state: 'upcoming' },
+              ]}
+            />
+          </Card>
 
-      <div style={{ height: 12 }} />
-      <Card p={p}>
-        <p className="font-bold mb-3" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.decision_timeline_title')}</p>
-        <Timeline p={p} issue={issue} repliedAt={dispute.vendor_replied_at} resolvedAt={dispute.resolved_at} lang={lang} />
-      </Card>
+          <div style={{ height: 12 }} />
+          <Card p={p}>
+            <p className="font-bold mb-1" style={{ fontSize: 13, color: p.text }}>{t('sl8_litiges.decision_outcomes_title')}</p>
+            <OutcomeRow
+              first
+              icon={<CheckCircle2 size={18} color={p.green} />}
+              tone="green"
+              title={t('sl8_litiges.decision_outcome_won_title')}
+              detail={t('sl8_litiges.decision_outcome_won_detail')}
+              p={p}
+            />
+            <OutcomeRow
+              icon={<XCircle size={18} color={p.red} />}
+              tone="red"
+              title={t('sl8_litiges.decision_outcome_lost_title')}
+              detail={t('sl8_litiges.decision_outcome_lost_detail')}
+              p={p}
+            />
+            <OutcomeRow
+              icon={<Gavel size={18} color={p.amber} />}
+              tone="amber"
+              title={t('sl8_litiges.decision_outcome_contest_title')}
+              detail={t('sl8_litiges.decision_outcome_contest_detail')}
+              p={p}
+            />
+          </Card>
+        </>
+      ) : null}
+
+      {issue === 'won' ? (
+        <>
+          <div style={{ height: 12 }} />
+          <div className="rounded-xl flex items-start gap-2" style={{ padding: '12px 14px', background: p.cardAlt, border: `1px solid ${p.border}` }}>
+            <Gavel size={15} color={p.textMuted} style={{ marginTop: 1, flexShrink: 0 }} />
+            <p style={{ fontSize: 12, color: p.textMuted, lineHeight: 1.5 }}>{t('sl8_litiges.decision_client_may_contest_note')}</p>
+          </div>
+        </>
+      ) : null}
 
       <div style={{ height: 18 }} />
       <PrimaryButton onClick={() => navigate('/seller/v2/litiges')} p={p}>
@@ -161,31 +283,18 @@ export default function DisputeDecisionPage() {
   );
 }
 
-function Timeline({
-  p, issue, repliedAt, resolvedAt, lang,
-}: { p: ReturnType<typeof palette>; issue: DisputeIssue; repliedAt: string | null; resolvedAt: string | null; lang: 'fr' | 'en' }) {
-  const { t } = useTranslation();
-  const steps: { labelKey: string; done: boolean; at: string | null }[] = [
-    { labelKey: 'decision_timeline_replied', done: Boolean(repliedAt), at: repliedAt },
-    { labelKey: 'decision_timeline_mediation', done: issue !== 'mediation', at: null },
-    { labelKey: 'decision_timeline_decided', done: issue !== 'mediation', at: resolvedAt },
-  ];
+function InfoRow({
+  label, value, p, bold, valueColor,
+}: { label: string; value: ReactNode; p: VendorPalette; bold?: boolean; valueColor?: string }) {
   return (
-    <div className="flex flex-col gap-3">
-      {steps.map((s) => (
-        <div key={s.labelKey} className="flex items-center gap-2.5">
-          <span
-            className="rounded-full flex-shrink-0"
-            style={{ width: 9, height: 9, background: s.done ? p.green : p.border }}
-          />
-          <div className="min-w-0">
-            <p style={{ fontSize: 12.5, color: s.done ? p.text : p.textMuted, fontWeight: s.done ? 700 : 500 }}>
-              {t(`sl8_litiges.${s.labelKey}`)}
-            </p>
-            {s.at ? <p style={{ fontSize: 11, color: p.textMuted }}>{fmtDateTime(s.at, lang)}</p> : null}
-          </div>
-        </div>
-      ))}
+    <div className="flex items-center justify-between gap-3">
+      <span style={{ fontSize: 12, color: p.textMuted }}>{label}</span>
+      <span
+        className="text-right"
+        style={{ fontSize: 12.5, color: valueColor ?? p.text, fontWeight: bold ? 700 : 600 }}
+      >
+        {value}
+      </span>
     </div>
   );
 }

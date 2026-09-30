@@ -21,6 +21,13 @@ export default {
     pill_problem: 'Litige ou retour',
     plus_n_others: '+ {{n}} autre(s) article(s)',
     paid_at: 'Payée le {{time}}',
+    item_meta_line: '×{{qty}} · {{price}}',
+    courier_line_home: 'Livreur {{name}} chez vous',
+    courier_line_relay: 'Livreur {{name}} au relais {{relay}}',
+    menu_more: 'Plus d’options',
+    menu_export: 'Exporter',
+    menu_invoices: 'Factures',
+    menu_soon: 'Bientôt disponible : pas encore d’export dédié.',
     you_keep: 'Vous gardez',
     money_paid: 'Versé',
     money_releasing: 'Se libère bientôt',
@@ -105,6 +112,7 @@ export default {
 
     // Bon de préparation (VD-05 §BON-01/02)
     slip_title: 'Bon de préparation',
+    slip_document_label: 'Bon de préparation',
     slip_paid_at: 'Payée le {{time}}',
     slip_deadline: 'Heure limite : {{time}}',
     slip_check_title: 'À vérifier avant l’arrivée du livreur',
@@ -187,6 +195,7 @@ export default {
     // Reçu vendeur (VD-06 §RCU-01 à RCU-04)
     receipt_title: 'Reçu vendeur',
     receipt_header: 'Reçu vendeur',
+    receipt_document_label: 'Reçu vendeur',
     receipt_row_article: 'Article',
     receipt_row_ref: 'Référence',
     receipt_row_date: 'Encaissé le',

@@ -6,14 +6,15 @@
 // comptes au plus par téléphone — OUV-03).
 
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, Store, User } from 'lucide-react';
+import { ArrowRight, Home, Smartphone, User } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { PhoneInput } from '@/components/ui/PhoneInput';
 import { palette } from '../theme';
 import { Collapsible, PrimaryButton } from '../commandes/ui';
 import OnboardingSteps from './OnboardingSteps';
+import OuvertureAppBar from './OuvertureAppBar';
 import ShopLocationPicker from './ShopLocationPicker';
 import { useSmsOtp } from './useSmsOtp';
 import { saveShopDraft } from './api';
@@ -90,107 +91,119 @@ export default function OuvrirBoutiquePage() {
   return (
     <div className="min-h-screen px-4 py-8" style={{ background: p.bg }}>
       <div className="w-full max-w-[440px] mx-auto">
-        {!showOtp ? (
-          <Link to={LOGIN_PATH} className="mb-4 inline-flex items-center gap-1 font-semibold" style={{ fontSize: 12.5, color: p.textMuted }}>
-            <ChevronLeft size={14} /> {t('sl9_ouverture.back_to_login')}
-          </Link>
-        ) : null}
+        <OuvertureAppBar
+          p={p}
+          onBack={showOtp ? () => { setShowOtp(false); otp.reset(); } : () => navigate(LOGIN_PATH)}
+        />
+        <OnboardingSteps current="open" p={p} />
 
-        <div className="rounded-2xl p-5" style={{ background: p.card, border: `1px solid ${p.border}`, boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}>
-          <OnboardingSteps current="open" p={p} />
-
-          {showOtp ? (
-            <form onSubmit={handleVerify}>
-              <h1 className="font-black" style={{ fontSize: 16, color: p.text }}>{t('sl9_ouverture.otp_title')}</h1>
-              <p className="mt-1 mb-4" style={{ fontSize: 12.5, color: p.textMuted, lineHeight: 1.5 }}>
+        {showOtp ? (
+          <form onSubmit={handleVerify}>
+            <div className="flex flex-col items-center text-center mb-4">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3" style={{ background: `${p.orange}1F` }}>
+                <Smartphone size={22} color={p.orange} />
+              </div>
+              <h1 className="font-black" style={{ fontSize: 18, color: p.text }}>{t('sl9_ouverture.otp_title')}</h1>
+              <p className="mt-1" style={{ fontSize: 12.5, color: p.textMuted, lineHeight: 1.5 }}>
                 {t('sl9_ouverture.otp_sent_to_phone', { phone })}
               </p>
-              <CodeBoxesInline value={otp.code} onChange={otp.setCode} disabled={otp.step === 'verifying'} />
-              {otp.error ? <p className="mt-2" style={{ fontSize: 12, color: p.red }}>{t(otp.error)}</p> : null}
-              <div className="mt-4">
-                <PrimaryButton p={p} type="submit" disabled={otp.step === 'verifying' || otp.code.length < 6}>
+            </div>
+            <CodeBoxesInline value={otp.code} onChange={otp.setCode} disabled={otp.step === 'verifying'} />
+            {otp.error ? <p className="mt-2 text-center" style={{ fontSize: 12, color: p.red }}>{t(otp.error)}</p> : null}
+            <div className="mt-3 flex items-center justify-center gap-3">
+              <span style={{ fontSize: 12, color: p.textMuted }}>
+                {otp.cooldown > 0 ? `${t('sl9_ouverture.resend_code_in', { seconds: otp.cooldown })}` : (
+                  <button type="button" onClick={() => void otp.send()} disabled={otp.sending} className="font-bold disabled:opacity-50" style={{ color: p.orange }}>
+                    {t('sl9_ouverture.resend_code')}
+                  </button>
+                )}
+              </span>
+              <span style={{ color: p.border }}>·</span>
+              <button type="button" onClick={() => { setShowOtp(false); otp.reset(); }} className="font-bold" style={{ fontSize: 12, color: p.orange }}>
+                {t('sl9_ouverture.change_number')}
+              </button>
+            </div>
+            <div className="mt-4">
+              <PrimaryButton p={p} type="submit" disabled={otp.step === 'verifying' || otp.code.length < 6}>
+                <span className="inline-flex items-center justify-center gap-2">
+                  <ArrowRight size={16} />
                   {otp.step === 'verifying' ? t('sl9_ouverture.verifying') : t('sl9_ouverture.otp_verify')}
-                </PrimaryButton>
-              </div>
-              <div className="mt-4 flex items-center justify-between">
-                <button type="button" onClick={() => { setShowOtp(false); otp.reset(); }} className="font-semibold" style={{ fontSize: 12, color: p.textMuted }}>
-                  {t('sl9_ouverture.change_number')}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void otp.send()}
-                  disabled={!otp.canResend || otp.sending}
-                  className="font-bold disabled:opacity-50"
-                  style={{ fontSize: 12, color: p.orange }}
-                >
-                  {otp.cooldown > 0 ? `${t('sl9_ouverture.resend_code')} (${otp.cooldown}s)` : t('sl9_ouverture.resend_code')}
-                </button>
-              </div>
-              <p className="mt-4 text-center" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.two_accounts_per_phone')}</p>
-            </form>
-          ) : (
-            <form onSubmit={handleContinue}>
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: `${p.orange}1F` }}>
-                  <Store size={20} color={p.orange} />
-                </div>
-                <div>
-                  <h1 className="font-black" style={{ fontSize: 16, color: p.text }}>{t('sl9_ouverture.open_shop_title')}</h1>
-                  <p style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl9_ouverture.open_shop_subtitle')}</p>
-                </div>
-              </div>
-
-              <label className="block mb-3">
-                <span className="mb-1.5 flex items-center gap-1 font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>
-                  <User size={12} /> {t('sl9_ouverture.business_name_label')}
                 </span>
-                <input
-                  type="text"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder={t('sl9_ouverture.business_name_placeholder')}
-                  className="w-full rounded-xl outline-none"
-                  style={{ padding: '13px 14px', fontSize: 13.5, background: p.cardAlt, border: `1px solid ${p.border}`, color: p.text }}
-                />
-                <span className="mt-1 block" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.business_name_hint')}</span>
-              </label>
+              </PrimaryButton>
+            </div>
+            <p className="mt-4 text-center" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.two_accounts_per_phone')}</p>
+          </form>
+        ) : (
+          <form onSubmit={handleContinue}>
+            <h1 className="font-black" style={{ fontSize: 20, color: p.text }}>{t('sl9_ouverture.open_shop_title')}</h1>
+            <p className="mt-1 mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl9_ouverture.open_shop_subtitle')}</p>
 
-              <div className="mb-3">
-                <span className="mb-1.5 block font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl9_ouverture.phone_label')}</span>
-                <PhoneInput
-                  value={phone}
-                  onChange={setPhone}
-                  onValidityChange={setPhoneValid}
-                  placeholder={t('sl9_ouverture.phone_placeholder')}
-                />
-              </div>
+            <label className="block mb-3">
+              <span className="mb-1.5 flex items-center gap-1 font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>
+                <User size={12} /> {t('sl9_ouverture.business_name_label')} <span style={{ color: p.red }}>*</span>
+              </span>
+              <input
+                type="text"
+                value={businessName}
+                onChange={(e) => setBusinessName(e.target.value)}
+                placeholder={t('sl9_ouverture.business_name_placeholder')}
+                className="w-full rounded-xl outline-none"
+                style={{ padding: '13px 14px', fontSize: 13.5, background: p.cardAlt, border: `1px solid ${p.border}`, color: p.text }}
+              />
+              <span className="mt-1 block" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.business_name_hint')}</span>
+            </label>
 
-              <div className="mb-2">
-                <span className="mb-1.5 block font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>{t('sl9_ouverture.location_label')}</span>
-                <ShopLocationPicker
-                  lat={lat}
-                  lng={lng}
-                  zoneLabel={zoneLabel}
-                  onChange={(nLat, nLng, zone) => { setLat(nLat); setLng(nLng); setZoneLabel(zone); setPinError(false); }}
-                  p={p}
-                />
-                {pinError ? <p className="mt-1.5" style={{ fontSize: 11.5, color: p.red }}>{t('sl9_ouverture.pin_required_error')}</p> : null}
-              </div>
+            <div className="mb-3">
+              <span className="mb-1.5 block font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>
+                {t('sl9_ouverture.phone_label')} <span style={{ color: p.red }}>*</span>
+              </span>
+              <PhoneInput
+                value={phone}
+                onChange={setPhone}
+                onValidityChange={setPhoneValid}
+                placeholder={t('sl9_ouverture.phone_placeholder')}
+              />
+              <span className="mt-1 block" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.phone_hint')}</span>
+            </div>
 
-              <div className="mt-4">
-                <PrimaryButton p={p} type="submit" disabled={!canSubmit}>
+            <div className="mb-2">
+              <span className="mb-1.5 block font-bold" style={{ fontSize: 11.5, color: p.textMuted }}>
+                {t('sl9_ouverture.location_label')} <span style={{ color: p.red }}>*</span>
+              </span>
+              <ShopLocationPicker
+                lat={lat}
+                lng={lng}
+                zoneLabel={zoneLabel}
+                onChange={(nLat, nLng, zone) => { setLat(nLat); setLng(nLng); setZoneLabel(zone); setPinError(false); }}
+                p={p}
+              />
+              {pinError ? <p className="mt-1.5" style={{ fontSize: 11.5, color: p.red }}>{t('sl9_ouverture.pin_required_error')}</p> : null}
+              <span className="mt-1.5 block" style={{ fontSize: 11, color: p.textMuted }}>{t('sl9_ouverture.location_helper_note')}</span>
+            </div>
+
+            <div className="mt-4">
+              <PrimaryButton p={p} type="submit" disabled={!canSubmit}>
+                <span className="inline-flex items-center justify-center gap-2">
+                  <Home size={16} />
                   {t('sl9_ouverture.open_shop_submit')}
-                </PrimaryButton>
-              </div>
+                </span>
+              </PrimaryButton>
+            </div>
 
-              <div className="mt-4">
-                <Collapsible title={t('sl9_ouverture.how_it_works')} p={p}>
-                  {t('sl9_ouverture.open_shop_how_it_works_body')}
-                </Collapsible>
-              </div>
-            </form>
-          )}
-        </div>
+            <div className="mt-4">
+              <Collapsible title={t('sl9_ouverture.how_it_works')} p={p}>
+                {t('sl9_ouverture.open_shop_how_it_works_body')}
+              </Collapsible>
+            </div>
+
+            <p className="mt-4 text-center" style={{ fontSize: 12, color: p.textMuted }}>
+              {t('sl9_ouverture.already_seller')}{' '}
+              <button type="button" onClick={() => navigate(LOGIN_PATH)} className="font-bold" style={{ color: p.orange }}>
+                {t('sl9_ouverture.login_submit')}
+              </button>
+            </p>
+          </form>
+        )}
       </div>
     </div>
   );

@@ -108,7 +108,7 @@ export default function SaisieAssisteePage() {
           {readyProducts.length > 0 ? (
             <section className="mb-6">
               <p className="font-black uppercase mb-2" style={{ fontSize: 10.5, letterSpacing: '.1em', color: p.green }}>
-                {t('sl9_ouverture.group_ready')}
+                {t('sl9_ouverture.group_ready')} · {readyProducts.length}
               </p>
               <div className="space-y-2 mb-3">
                 {readyProducts.map((pr) => (
@@ -136,7 +136,7 @@ export default function SaisieAssisteePage() {
           {toCheckProducts.length > 0 ? (
             <section className="mb-6">
               <p className="font-black uppercase mb-2" style={{ fontSize: 10.5, letterSpacing: '.1em', color: p.amber }}>
-                {t('sl9_ouverture.group_to_check')}
+                {t('sl9_ouverture.group_to_check')} · {toCheckProducts.length}
               </p>
               <div className="space-y-2">
                 {toCheckProducts.map((pr) => (
@@ -176,7 +176,7 @@ export default function SaisieAssisteePage() {
           {duplicateProducts.length > 0 ? (
             <section className="mb-6">
               <p className="font-black uppercase mb-2" style={{ fontSize: 10.5, letterSpacing: '.1em', color: p.textMuted }}>
-                {t('sl9_ouverture.group_duplicate')}
+                {t('sl9_ouverture.group_duplicate')} · {duplicateProducts.length}
               </p>
               <div className="space-y-2">
                 {duplicateProducts.map((pr) => (

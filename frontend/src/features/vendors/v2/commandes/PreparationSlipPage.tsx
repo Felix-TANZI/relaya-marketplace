@@ -14,7 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { Inbox, Printer, RefreshCw, Share2 } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
-import { Card, CenterState, PageHeader } from './ui';
+import { Card, CenterState, DocumentHeader, PageHeader, ProductThumb } from './ui';
 import {
   fmtDateTime, fmtXAF, itemsSummary, orderRef, parcelClassOf, preparationWindowLabel, useOrder,
 } from './helpers';
@@ -49,6 +49,8 @@ export default function PreparationSlipPage() {
         h1{font-size:20px;margin:0 0 4px;}
         .muted{color:#7C6E5A;font-size:12px;}
         .article{font-size:22px;font-weight:900;margin:18px 0 4px;}
+        .article-row{display:flex;align-items:center;gap:14px;margin-top:18px;}
+        .article-row img{width:56px;height:56px;object-fit:cover;border-radius:12px;border:1px solid #E8E2D9;}
         ul{padding-left:18px;font-size:13px;line-height:1.7;}
         .keep{font-size:18px;font-weight:900;color:#16A34A;margin-top:18px;}
         .box{border:1px solid #E8E2D9;border-radius:12px;padding:12px;margin-top:14px;font-size:12.5px;}
@@ -57,7 +59,10 @@ export default function PreparationSlipPage() {
       <p class="muted">${orderRef(order!.id)}${parcelClass ? ` · ${parcelClass}` : ''}</p>
       <p class="muted">${t('sl7_commandes.slip_paid_at', { time: fmtDateTime(order!.created_at) })}</p>
       <p class="muted">${t('sl7_commandes.slip_deadline', { time: preparationWindowLabel(order!) })}</p>
-      <p class="article">${summary.title}${summary.qty > 1 ? ` ×${summary.qty}` : ''}</p>
+      <div class="article-row">
+        ${summary.imageUrl ? `<img src="${summary.imageUrl}" alt="" />` : ''}
+        <p class="article" style="margin:0;">${summary.title}${summary.qty > 1 ? ` ×${summary.qty}` : ''}</p>
+      </div>
       <p class="muted">${t('sl7_commandes.slip_check_title')}</p>
       <ul>${rows}</ul>
       <p style="font-weight:700;">${t('sl7_commandes.slip_dont_close')}</p>
@@ -94,19 +99,25 @@ export default function PreparationSlipPage() {
 
   return (
     <div className="pb-24 pt-2">
-      <PageHeader title={t('sl7_commandes.slip_title')} subtitle={orderRef(order.id)} onBack={() => navigate(-1)} p={p} />
+      <PageHeader title={t('sl7_commandes.slip_title')} onBack={() => navigate(-1)} p={p} />
+
+      <DocumentHeader
+        label={t('sl7_commandes.slip_document_label')}
+        refText={orderRef(order.id)}
+        badge={parcelClass ?? undefined}
+        lines={[
+          t('sl7_commandes.slip_paid_at', { time: fmtDateTime(order.created_at) }),
+          t('sl7_commandes.slip_deadline', { time: preparationWindowLabel(order) }),
+        ]}
+      />
 
       <Card p={p}>
-        <p style={{ fontSize: 11.5, color: p.textMuted }}>
-          {t('sl7_commandes.slip_paid_at', { time: fmtDateTime(order.created_at) })}
-        </p>
-        <p style={{ fontSize: 11.5, color: p.textMuted }}>
-          {t('sl7_commandes.slip_deadline', { time: preparationWindowLabel(order) })}
-        </p>
-        {parcelClass ? <p style={{ fontSize: 11.5, color: p.textMuted }}>{parcelClass}</p> : null}
-        <p className="font-black mt-3" style={{ fontSize: 20, color: p.text }}>
-          {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
-        </p>
+        <div className="flex items-center gap-3">
+          <ProductThumb imageUrl={summary.imageUrl} size={52} p={p} />
+          <p className="font-black" style={{ fontSize: 20, color: p.text }}>
+            {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
+          </p>
+        </div>
       </Card>
 
       <p className="font-black uppercase mt-4 mb-2 px-1" style={{ fontSize: 10.5, letterSpacing: '.1em', color: p.textMuted }}>

@@ -15,11 +15,11 @@ import {
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from '../theme';
 import {
-  Card, CenterState, Collapsible, GhostRow, KeepAmount, PageHeader, Pill, PrimaryButton, ProgressBar,
+  Card, CenterState, Collapsible, GhostRow, KeepAmount, PageHeader, Pill, PrimaryButton, ProductThumb, ProgressBar,
 } from './ui';
 import {
   courierOf, fmtDateTime, fmtDurationShort, fmtXAF, isCounterPayment, itemsSummary,
-  markOrderReady, orderRef, progressRatio, useOrder,
+  markOrderReady, orderRef, pickupLocationOf, progressRatio, useOrder,
 } from './helpers';
 
 const PREPARING_STATES = new Set(['PAID_IN_ESCROW', 'VENDOR_ACKNOWLEDGED', 'PREPARING']);
@@ -58,6 +58,7 @@ export default function CommandeDetailPage() {
 
   const summary = itemsSummary(order);
   const courier = courierOf(order);
+  const pickup = pickupLocationOf(order);
   const counter = isCounterPayment(order);
   const ratio = progressRatio(order.created_at, order.vendor_reply_deadline);
   const remainingMs = order.vendor_reply_deadline
@@ -95,14 +96,21 @@ export default function CommandeDetailPage() {
           </>
         ) : null}
 
-        <div className="mt-4 mb-1">
-          <p className="font-black" style={{ fontSize: 17, color: p.text }}>
-            {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
-          </p>
-          {summary.extra > 0 ? (
-            <p style={{ fontSize: 12, color: p.textMuted }}>{t('sl7_commandes.plus_n_others', { n: summary.extra })}</p>
-          ) : null}
-          <p style={{ fontSize: 11.5, color: p.textMuted, marginTop: 2 }}>{orderRef(order.id)}</p>
+        <div className="mt-4 mb-1 flex items-start gap-3">
+          <ProductThumb imageUrl={summary.imageUrl} size={52} p={p} />
+          <div className="min-w-0 flex-1">
+            <p className="font-black truncate" style={{ fontSize: 17, color: p.text }}>
+              {summary.title}{summary.qty > 1 ? ` ×${summary.qty}` : ''}
+            </p>
+            {summary.extra > 0 ? (
+              <p style={{ fontSize: 12, color: p.textMuted }}>{t('sl7_commandes.plus_n_others', { n: summary.extra })}</p>
+            ) : (
+              <p style={{ fontSize: 12, color: p.textMuted }}>
+                {t('sl7_commandes.item_meta_line', { qty: summary.qty, price: fmtXAF(summary.unitPrice) })}
+              </p>
+            )}
+            <p style={{ fontSize: 11.5, color: p.textMuted, marginTop: 2 }}>{orderRef(order.id)}</p>
+          </div>
         </div>
 
         <div className="rounded-xl mt-3 mb-3" style={{ background: p.cardAlt, padding: '10px 12px' }}>
@@ -134,8 +142,12 @@ export default function CommandeDetailPage() {
           <Truck size={16} color={p.textMuted} />
           <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>{t('sl7_commandes.pickup_title')}</p>
         </div>
-        {courier ? (
-          <p style={{ fontSize: 13, color: p.text }}>{courier.name}</p>
+        {courier && pickup ? (
+          <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>
+            {pickup.kind === 'relay'
+              ? t('sl7_commandes.courier_line_relay', { name: courier.name, relay: pickup.relay })
+              : t('sl7_commandes.courier_line_home', { name: courier.name })}
+          </p>
         ) : (
           <p style={{ fontSize: 12.5, color: p.textMuted }}>{t('sl7_commandes.pickup_not_assigned')}</p>
         )}

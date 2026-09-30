@@ -35,6 +35,16 @@ APPLE_CLIENT_IDS = [
     v.strip() for v in os.getenv("APPLE_CLIENT_IDS", "com.belivay.client").split(",") if v.strip()
 ]
 
+# Clé serveur "Sign in with Apple" (.p8, Apple Developer > Keys) : sert à
+# signer le client_secret pour échanger le code d'autorisation et révoquer
+# l'autorisation Apple à la suppression d'un compte (Guideline 5.1.1(v)).
+# APPLE_PRIVATE_KEY = contenu du .p8 (les "\n" échappés sont acceptés), ou
+# APPLE_PRIVATE_KEY_PATH = chemin vers le fichier.
+APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID", "").strip()
+APPLE_KEY_ID = os.getenv("APPLE_KEY_ID", "").strip()
+APPLE_PRIVATE_KEY = os.getenv("APPLE_PRIVATE_KEY", "")
+APPLE_PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "").strip()
+
 INSTALLED_APPS = [
     # Django
     "django.contrib.admin",

@@ -45,7 +45,7 @@ from django.utils.crypto import constant_time_compare
 from django.db.models import Q
 
 from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
-from .models import AppRelease, ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
+from .models import AppleIdentity, AppRelease, ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
 from apps.common.phone import normalize_cameroon_phone
 from apps.orders.models import Dispute, DisputeMessage
 from apps.shipping.models import Shipment, ShipmentEvent
@@ -209,6 +209,30 @@ def _verify_apple_identity_token(identity_token):
     return claims
 
 
+def _link_apple_identity(user, claims, authorization_code):
+    """Mémorise l'identité Apple du compte et, si le client a transmis le code
+    d'autorisation, l'échange contre un refresh_token Apple (chiffré) : il
+    permettra de révoquer l'autorisation à la suppression du compte
+    (Guideline 5.1.1(v)). Ne bloque jamais la connexion en cas d'échec."""
+    from . import apple
+
+    try:
+        client_id = str(claims.get("aud") or "")
+        identity, _ = AppleIdentity.objects.get_or_create(
+            user=user,
+            defaults={"subject": str(claims.get("sub", "")), "client_id": client_id},
+        )
+        identity.subject = str(claims.get("sub", ""))
+        identity.client_id = client_id
+        if authorization_code and apple.is_configured():
+            refresh_token = apple.exchange_authorization_code(authorization_code, client_id)
+            if refresh_token:
+                identity.refresh_token_encrypted = apple.encrypt_token(refresh_token)
+        identity.save()
+    except Exception as exc:
+        logger.warning("Apple authorization code exchange skipped for user %s: %s", user.pk, exc)
+
+
 @extend_schema(tags=["Auth"], summary="Connexion ou inscription avec Apple")
 @api_view(["POST"])
 @permission_classes([AllowAny])
@@ -218,7 +242,9 @@ def apple_login(request):
     premiere autorisation : le client doit alors les transmettre en plus du
     jeton (`email`, `given_name`, `family_name`) pour la creation du compte —
     les connexions suivantes n'ont besoin que du jeton, l'utilisateur etant
-    deja cree et retrouve par email."""
+    deja cree et retrouve par email. Le client transmet aussi
+    `authorization_code` : echange contre un refresh_token Apple, conserve
+    pour revoquer l'autorisation a la suppression du compte."""
     identity_token = str(request.data.get("identity_token", "")).strip()
     if not django_settings.APPLE_CLIENT_IDS:
         return Response(
@@ -279,6 +305,8 @@ def apple_login(request):
 
     if not user.is_active:
         return Response({"detail": "Ce compte BelivaY est desactive."}, status=status.HTTP_403_FORBIDDEN)
+
+    _link_apple_identity(user, claims, str(request.data.get("authorization_code", "")).strip())
 
     profile = get_or_create_profile(user)
     if profile.two_factor_enabled:
@@ -1819,13 +1847,36 @@ class ComplianceDocumentListCreateView(APIView):
         return Response(self._payload(document, request), status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
 
-@extend_schema(tags=["Auth"], summary="Get current user profile")
-@api_view(["GET"])
+@extend_schema(tags=["Auth"], summary="Get current user profile / delete account")
+@api_view(["GET", "DELETE"])
 @permission_classes([IsAuthenticated])
 def me(request):
+    if request.method == "DELETE":
+        return _delete_own_account(request)
     get_or_create_profile(request.user)
     serializer = UserSerializer(request.user, context={'request': request})
     return Response(serializer.data)
+
+
+def _delete_own_account(request):
+    """Suppression du compte par son titulaire (Guideline 5.1.1(v)).
+    Les comptes avec mot de passe doivent le ressaisir ; les comptes créés
+    via Google/Apple (sans mot de passe) confirment en envoyant
+    confirm="SUPPRIMER"."""
+    from .account_deletion import AccountDeletionBlocked, delete_account
+
+    user = request.user
+    if user.has_usable_password():
+        if not user.check_password(str(request.data.get("password", ""))):
+            return Response({"password": ["Mot de passe incorrect."]}, status=status.HTTP_400_BAD_REQUEST)
+    elif str(request.data.get("confirm", "")).strip().upper() != "SUPPRIMER":
+        return Response({"confirm": ["Confirmation requise."]}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        delete_account(user)
+    except AccountDeletionBlocked as exc:
+        return Response({"detail": str(exc)}, status=status.HTTP_409_CONFLICT)
+    return Response(status=status.HTTP_204_NO_CONTENT)
 
 @extend_schema(
     tags=["Auth"], 

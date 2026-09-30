@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 export interface AppleCredential {
   identityToken: string;
+  authorizationCode: string | null;
   email: string | null;
   givenName: string | null;
   familyName: string | null;
@@ -48,6 +49,7 @@ export default function AppleAuthButton({ onCredential, disabled = false, onErro
       });
       await onCredential({
         identityToken: response.identityToken,
+        authorizationCode: response.authorizationCode,
         email: response.email,
         givenName: response.givenName,
         familyName: response.familyName,

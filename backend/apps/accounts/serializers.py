@@ -380,6 +380,7 @@ class UserSerializer(serializers.ModelSerializer):
     sms_notifications = serializers.SerializerMethodField()
     loyalty_points = serializers.SerializerMethodField()
     loyalty_tier = serializers.SerializerMethodField()
+    has_usable_password = serializers.SerializerMethodField()
     
     class Meta:
         model = User
@@ -406,9 +407,15 @@ class UserSerializer(serializers.ModelSerializer):
             "sms_notifications",
             "loyalty_points",
             "loyalty_tier",
+            "has_usable_password",
         ]
         read_only_fields = fields
     
+    def get_has_usable_password(self, obj):
+        """False pour les comptes créés via Google/Apple (confirmation de
+        suppression sans mot de passe)."""
+        return obj.has_usable_password()
+
     def get_is_vendor(self, obj):
         """Vérifier si l'utilisateur a un profil vendeur actif"""
         return hasattr(obj, 'vendor_profile') and str(obj.vendor_profile.status).upper() == 'APPROVED'

@@ -49,6 +49,21 @@ export default {
     cancel: "Annuler",
   },
 
+  cl7_delete_account: {
+    title: "Supprimer mon compte",
+    subtitle: "Effacez définitivement votre compte et vos données personnelles.",
+    open_button: "Supprimer",
+    warning_title: "Action irréversible",
+    warning_body: "Votre profil, vos coordonnées, vos favoris, vos notifications et vos moyens de paiement enregistrés seront effacés et vous serez déconnecté. Vos commandes et paiements passés sont conservés de façon anonyme pour nos obligations légales. Si vous êtes vendeur, votre boutique sera fermée.",
+    password_placeholder: "Votre mot de passe pour confirmer",
+    confirm_label: "Tapez {{word}} pour confirmer",
+    confirm_button: "Supprimer définitivement",
+    deleting: "Suppression…",
+    cancel: "Annuler",
+    success: "Votre compte a été supprimé.",
+    error: "Impossible de supprimer le compte. Réessayez.",
+  },
+
   cl7_sessions_card: {
     just_now: "à l'instant",
     minutes_ago: "il y a {{count}} min",

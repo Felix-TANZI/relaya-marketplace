@@ -91,6 +91,7 @@ export function usePortalLogin() {
 
   const handleAppleCredential = async (credential: {
     identityToken: string;
+    authorizationCode: string | null;
     email: string | null;
     givenName: string | null;
     familyName: string | null;

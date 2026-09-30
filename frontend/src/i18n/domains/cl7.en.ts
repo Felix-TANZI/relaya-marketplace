@@ -49,6 +49,21 @@ export default {
     cancel: "Cancel",
   },
 
+  cl7_delete_account: {
+    title: "Delete my account",
+    subtitle: "Permanently erase your account and personal data.",
+    open_button: "Delete",
+    warning_title: "This cannot be undone",
+    warning_body: "Your profile, contact details, favorites, notifications and saved payment methods will be erased and you will be signed out. Your past orders and payments are kept anonymously for our legal obligations. If you are a seller, your shop will be closed.",
+    password_placeholder: "Your password to confirm",
+    confirm_label: "Type {{word}} to confirm",
+    confirm_button: "Delete permanently",
+    deleting: "Deleting…",
+    cancel: "Cancel",
+    success: "Your account has been deleted.",
+    error: "Unable to delete the account. Please try again.",
+  },
+
   cl7_sessions_card: {
     just_now: "just now",
     minutes_ago: "{{count}} min ago",

@@ -835,3 +835,27 @@ class AppRelease(models.Model):
 
     def __str__(self):
         return f"{self.get_portal_display()} v{self.version}"
+
+
+class AppleIdentity(models.Model):
+    """
+    Liaison "Sign in with Apple" d'un compte : identifiant Apple stable (sub)
+    et refresh_token obtenu en échangeant le code d'autorisation à la
+    connexion. Le jeton est chiffré (cf. apps.accounts.apple) et sert
+    uniquement à révoquer l'autorisation Apple lors de la suppression du
+    compte (App Store Review Guideline 5.1.1(v)).
+    """
+
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="apple_identity")
+    subject = models.CharField(max_length=255, db_index=True, verbose_name="Identifiant Apple (sub)")
+    client_id = models.CharField(max_length=255, verbose_name="Client ID Apple (aud)")
+    refresh_token_encrypted = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Identité Apple"
+        verbose_name_plural = "Identités Apple"
+
+    def __str__(self):
+        return f"Apple {self.subject[-8:]} → {self.user_id}"

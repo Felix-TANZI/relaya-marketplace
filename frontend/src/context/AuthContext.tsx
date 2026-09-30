@@ -16,6 +16,7 @@ interface AuthContextType {
   googleLogin: (credential: string) => Promise<LoginOutcome>;
   appleLogin: (payload: {
     identityToken: string;
+    authorizationCode?: string | null;
     email?: string | null;
     givenName?: string | null;
     familyName?: string | null;

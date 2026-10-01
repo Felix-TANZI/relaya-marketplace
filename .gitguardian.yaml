@@ -1,0 +1,23 @@
+# Configuration GitGuardian du projet.
+#
+# Les 14 occurrences remontees sur la PR #53 proviennent de deux fichiers
+# de tests/demo du backend (backend/apps/shipping/tests.py et
+# backend/apps/shipping/management/commands/seed_relay_counter_demo.py).
+# Ce sont des mots de passe factices en dur ("Relay2026", "Client2026",
+# "p", "DemoComptoir2026!", "secret-de-test"...) utilises uniquement pour
+# creer des utilisateurs de test/demo jetables dans une base de test —
+# aucun n'est un secret reel. Confirme sur le detail des findings de la
+# PR #53 (type "Generic Password" sur les commits dde0269 et 62ef4d2).
+#
+# On ignore les chemins plutot que des hash de match individuels : les
+# IDs affiches sur le dashboard GitGuardian (ex. 34923601) sont des IDs
+# d'incident, pas le SHA256 attendu par `ignored_matches` — l'exclusion
+# par chemin est donc le moyen fiable et verifiable de fermer ce bruit,
+# sur le meme principe que l'exception tests/ de .gitleaks.toml.
+
+version: 2
+
+secret:
+  ignored_paths:
+    - 'backend/apps/shipping/tests.py'
+    - 'backend/apps/shipping/management/commands/seed_relay_counter_demo.py'

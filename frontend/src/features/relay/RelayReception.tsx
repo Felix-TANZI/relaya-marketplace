@@ -3,19 +3,20 @@ import {
   ArrowRight,
   Camera,
   CheckCircle2,
-  ClipboardList,
+  KeyRound,
   LockKeyhole,
   PackagePlus,
   QrCode,
-  ScanLine,
   ShieldAlert,
-  Truck,
   X,
 } from "lucide-react";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import { useQrCamera } from "@/lib/useQrCamera";
 import SignaturePad from "@/components/ui/SignaturePad";
-import { Panel, StatusPill } from "./RelayUi";
+import { RelaySheet, RelaySheetHeader, StatusPill } from "./RelayUi";
+import RelayReceptionControl from "./RelayReceptionControl";
+import RelayReceptionDone from "./RelayReceptionDone";
+import { ZONES, placesOf, zoneOf } from "./relayShelf";
 
 export interface RelayArrival {
   id: number;
@@ -49,20 +50,14 @@ const REFUSAL_REASONS: Array<[string, string]> = [
   ["OTHER", "Autre motif"],
 ];
 
-/** Les 11 etapes affichees au gerant, dans l'ordre exact du workflow V5. */
-const RECEPTION_STEPS: Array<[string, string]> = [
-  ["Le livreur arrive avec le ou les colis", ""],
-  ["Scannez le QR de la mission", "depuis votre app"],
-  ["L'app affiche les détails du colis", "réf interne, taille, code acheteur — sans vendeur"],
-  ["Examinez le colis", "intégrité visuelle + étiquette"],
-  ["Prenez 3 photos", "face · dos · côté avec étiquette"],
-  ["Signez numériquement", "acceptation de garde"],
-  ["Le livreur signe aussi", "transfert de responsabilité"],
-  ["L'app génère un slot (casier)", "rangez le colis"],
-  ["SMS + push à l'acheteur", "code retrait 6 chiffres + adresse + horaires"],
-  ["+5 Avantages crédités", "réception validée"],
-  ["Le colis apparaît dans « Colis en stock »", "prêt au retrait"],
-];
+/**
+ * Les trois temps de la reception, tels que le gerant les vit au comptoir.
+ *
+ * C'est un resume des 11 etapes detaillees plus bas : le fil du haut sert a se
+ * situer, la liste sert a apprendre. Les deux ne disent pas la meme chose au
+ * meme moment, donc les deux ont leur place.
+ */
+const RECEPTION_PHASES: Array<[string]> = [["Code"], ["Contrôler"], ["Valider"]];
 
 const PHOTO_SLOTS = [
   { key: "face", label: "Face" },
@@ -93,93 +88,25 @@ function parseMissionId(raw: string): number | null {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-/** Coquille commune aux deux modales : fond flouté, fermeture Échap, scroll interne. */
-function ReceptionModal({
-  label,
-  onClose,
-  children,
-  size = "md",
-}: {
-  label: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  size?: "sm" | "md";
-}) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previous;
-    };
-  }, [onClose]);
-
-  return (
-    /* Sur telephone la boite s'ancre en bas et occupe toute la largeur : c'est
-       la forme attendue d'une feuille modale mobile, et elle laisse le contenu
-       a portee de pouce. A partir de `sm` on retrouve la modale centree. */
-    <div
-      className="fixed inset-0 z-[120] flex items-end justify-center bg-slate-950/55 backdrop-blur-sm sm:items-center sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={label}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <div
-        className={`animate-sheet-up overscroll-none-y safe-pb max-h-[92vh] w-full overflow-y-auto rounded-t-3xl border border-slate-200 bg-white p-5 shadow-[0_-8px_40px_rgba(2,6,23,.32)] dark:border-slate-800 dark:bg-slate-900 sm:animate-page-in sm:rounded-3xl sm:p-6 sm:shadow-[0_30px_80px_rgba(15,23,42,.35)] ${
-          size === "sm" ? "sm:max-w-md" : "sm:max-w-2xl"
-        }`}
-      >
-        {/* Poignee visuelle : signale que la feuille se ferme vers le bas. */}
-        <div className="mx-auto mb-3 h-1.5 w-11 flex-shrink-0 rounded-full bg-slate-300 dark:bg-slate-700 sm:hidden" aria-hidden />
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ModalHeader({ icon: Icon, title, subtitle, onClose }: { icon: typeof QrCode; title: string; subtitle?: string; onClose: () => void }) {
-  return (
-    <div className="mb-4 flex items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200">
-          <Icon size={19} />
-        </div>
-        <div>
-          <h2 className="text-lg font-black leading-tight text-slate-950 dark:text-white">{title}</h2>
-          {subtitle ? <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{subtitle}</p> : null}
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={onClose}
-        aria-label="Fermer"
-        className="rounded-full bg-red-50 p-1.5 text-red-600 transition hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300"
-      >
-        <X size={17} />
-      </button>
-    </div>
-  );
-}
-
 /** Etape 2 : viseur camera, avec saisie manuelle de secours si le QR est illisible. */
 function ScanDialog({
   presetLabel,
+  manualFirst,
   onCancel,
   onConfirm,
 }: {
   presetLabel: string;
+  /** Le gerant a declare que le livreur n'a pas de QR : on lui donne le clavier. */
+  manualFirst: boolean;
   onCancel: () => void;
   onConfirm: (missionId: number) => void;
 }) {
   const [detected, setDetected] = useState<number | null>(null);
   const [manualId, setManualId] = useState("");
+  const manualRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (manualFirst) manualRef.current?.focus();
+  }, [manualFirst]);
   const { videoRef, canvasRef, error, streaming } = useQrCamera({
     onDecode: (value) => {
       const missionId = parseMissionId(value);
@@ -191,8 +118,8 @@ function ScanDialog({
   const resolved = detected ?? (Number.isInteger(manualParsed) && manualParsed > 0 ? manualParsed : null);
 
   return (
-    <ReceptionModal label="Scanner le QR du livreur" onClose={onCancel} size="sm">
-      <ModalHeader
+    <RelaySheet label="Scanner le QR du livreur" onClose={onCancel} size="sm">
+      <RelaySheetHeader
         icon={Camera}
         title="Scanner le QR du livreur"
         subtitle="Présentez le QR code de la mission affiché par le livreur dans le viseur."
@@ -242,6 +169,7 @@ function ScanDialog({
       <label className="mt-4 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
         QR illisible ? Saisissez l'ID de mission
         <input
+          ref={manualRef}
           value={manualId}
           onChange={(event) => setManualId(event.target.value.replace(/\D/g, ""))}
           inputMode="numeric"
@@ -269,7 +197,7 @@ function ScanDialog({
           Continuer <ArrowRight size={16} />
         </button>
       </div>
-    </ReceptionModal>
+    </RelaySheet>
   );
 }
 
@@ -305,8 +233,8 @@ function RefusalDialog({
   };
 
   return (
-    <ReceptionModal label="Refuser le colis" onClose={onCancel} size="sm">
-      <ModalHeader icon={ShieldAlert} title="Refuser ce colis" subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
+    <RelaySheet label="Refuser le colis" onClose={onCancel} size="sm">
+      <RelaySheetHeader icon={ShieldAlert} title="Refuser ce colis" subtitle={`Mission ${missionId} — le colis ne sera pas mis en stock.`} onClose={onCancel} />
 
       <label className="mt-1 block text-[11px] font-black uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
         Motif du refus
@@ -382,7 +310,7 @@ function RefusalDialog({
           <ShieldAlert size={16} /> {busy ? "Envoi..." : "Confirmer le refus"}
         </button>
       </div>
-    </ReceptionModal>
+    </RelaySheet>
   );
 }
 
@@ -450,8 +378,8 @@ function ReceptionDialog({
   const complete = photoCount === PHOTO_SLOTS.length && Boolean(managerSignature) && Boolean(courierSignature);
 
   return (
-    <ReceptionModal label="Réception, QR scanné" onClose={onCancel}>
-      <ModalHeader icon={PackagePlus} title="Réception · QR scanné" onClose={onCancel} />
+    <RelaySheet label="Réception, QR scanné" onClose={onCancel}>
+      <RelaySheetHeader icon={PackagePlus} title="Réception · QR scanné" onClose={onCancel} />
 
       <div className="flex items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
         <CheckCircle2 className="mt-0.5 flex-shrink-0 text-emerald-600" size={18} />
@@ -573,46 +501,204 @@ function ReceptionDialog({
           <CheckCircle2 size={16} /> {busy ? "Validation..." : "Valider la réception"}
         </button>
       </div>
-    </ReceptionModal>
+    </RelaySheet>
+  );
+}
+
+/**
+ * Etape 1 : le code de depot.
+ *
+ * Le livreur annonce le lot qu'il remet ; le gerant le saisit avant d'ouvrir
+ * quoi que ce soit. Tant que le code ne designe pas une arrivee reellement
+ * attendue chez ce relais, le bouton reste ferme : c'est ce qui empeche de
+ * receptionner le colis d'un autre point de depot.
+ *
+ * Le code est confronte aux arrivees deja annoncees par BelivaY — numero de
+ * mission ou numero de commande. Le libelle de l'ecran parle de « 6 chiffres »
+ * parce que c'est ce que le livreur lit dans son application ; ici on accepte
+ * la forme courte comme la forme longue, un gerant presse ne compte pas ses
+ * chiffres.
+ */
+function CodeDialog({
+  arrivals,
+  onCancel,
+  onConfirm,
+  onNoCode,
+}: {
+  arrivals: RelayArrival[];
+  onCancel: () => void;
+  onConfirm: (missionId: number) => void;
+  onNoCode: () => void;
+}) {
+  const [code, setCode] = useState("");
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  const matched = useMemo(() => {
+    const typed = Number(code);
+    if (!code || !Number.isInteger(typed) || typed <= 0) return null;
+    return arrivals.find((arrival) => arrival.shipmentId === typed || arrival.orderId === typed) ?? null;
+  }, [arrivals, code]);
+
+  // On ne crie pas a l'erreur des le premier chiffre : le gerant tape encore.
+  const notFound = code.length >= 3 && !matched;
+
+  return (
+    <RelaySheet label="Saisir le code de dépôt" onClose={onCancel} size="sm">
+      <RelaySheetHeader
+        icon={KeyRound}
+        tone="bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-300"
+        title="Code de dépôt"
+        subtitle="Le livreur le lit dans sa mission. Il désigne le lot qu'il vous remet."
+        onClose={onCancel}
+      />
+
+      <input
+        ref={inputRef}
+        value={code}
+        onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+        inputMode="numeric"
+        autoComplete="off"
+        placeholder="000000"
+        className={`w-full rounded-2xl border-2 bg-white px-4 py-4 text-center text-[30px] font-black tracking-[0.3em] text-slate-950 outline-none transition dark:bg-slate-950 dark:text-white ${
+          notFound
+            ? "border-red-400 focus:border-red-500"
+            : matched
+              ? "border-emerald-400 focus:border-emerald-500"
+              : "border-slate-200 focus:border-amber-500 dark:border-slate-700"
+        }`}
+      />
+
+      {matched ? (
+        <div className="mt-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 dark:border-emerald-800 dark:bg-emerald-950/50">
+          <div className="flex items-center gap-2 text-[13px] font-black text-emerald-700 dark:text-emerald-300">
+            <CheckCircle2 size={15} strokeWidth={2.6} /> Arrivée reconnue
+          </div>
+          <div className="mt-1 text-sm font-bold text-slate-950 dark:text-white">
+            {matched.internalRef} · {matched.sizeLabel}
+          </div>
+          <div className="mt-0.5 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {matched.courierRef || "Livreur à assigner"}
+            {matched.vehicleLabel ? ` · ${matched.vehicleLabel}` : ""}
+          </div>
+        </div>
+      ) : notFound ? (
+        <p className="mt-3 flex items-start gap-2 text-sm font-semibold text-red-600 dark:text-red-400">
+          <ShieldAlert size={16} className="mt-0.5 flex-shrink-0" />
+          Aucune arrivée annoncée chez vous ne porte ce code. Vérifiez-le avec le livreur avant d'ouvrir le lot.
+        </p>
+      ) : (
+        <p className="mt-3 text-sm font-medium leading-relaxed text-slate-500 dark:text-slate-400">
+          {arrivals.length > 0
+            ? `${arrivals.length} arrivée${arrivals.length > 1 ? "s" : ""} annoncée${arrivals.length > 1 ? "s" : ""} chez vous en ce moment.`
+            : "Aucune arrivée n'est annoncée chez vous pour l'instant."}
+        </p>
+      )}
+
+      <div className="mt-5 flex items-center justify-end gap-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-2xl border border-slate-200 bg-white px-5 py-2.5 text-sm font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
+        >
+          Annuler
+        </button>
+        <button
+          type="button"
+          disabled={!matched}
+          onClick={() => matched && onConfirm(matched.shipmentId)}
+          className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-5 py-2.5 text-sm font-black text-white transition disabled:cursor-not-allowed disabled:from-slate-300 disabled:to-slate-300 dark:disabled:from-slate-700 dark:disabled:to-slate-700"
+        >
+          Continuer <ArrowRight size={16} />
+        </button>
+      </div>
+
+      <button
+        type="button"
+        onClick={onNoCode}
+        className="mt-4 w-full text-center text-sm font-semibold text-blue-700 underline underline-offset-4 transition active:scale-95 dark:text-blue-300"
+      >
+        Le livreur n'a pas de code ?
+      </button>
+    </RelaySheet>
   );
 }
 
 export default function RelayReception({
   arrivals,
-  loading,
   busy,
-  suggestedSlot,
+  occupiedSlots,
   managerName,
   onReceive,
   onRefuse,
+  onReserve,
+  onReportGap,
+  placesUsed,
+  capacityMax,
+  outbound,
+  onOpenOutbound,
 }: {
   arrivals: RelayArrival[];
-  loading: boolean;
   busy: boolean;
-  suggestedSlot: string;
+  /** Casiers deja pris : le calcul d'emplacement ne doit pas les reproposer. */
+  occupiedSlots: string[];
   managerName: string;
   onReceive: (input: ReceiveInput) => Promise<boolean>;
   onRefuse: (input: RefuseInput) => Promise<boolean>;
+  /** Accepter un colis en le signalant : la photo part en preuve de reception. */
+  onReserve: (input: { parcelId: number; photo: File; note: string }) => Promise<boolean>;
+  /** Ecart de comptage, trace aupres du support pendant que le livreur est la. */
+  onReportGap: (note: string) => Promise<boolean>;
+  /** Places occupees et declarees : l'ecran de fin annonce le nouveau taux. */
+  placesUsed: number;
+  capacityMax: number;
+  /** Colis que le livreur doit emporter en repartant. */
+  outbound: number;
+  /** Ouvre l'ecran des sorties, livreur encore present. */
+  onOpenOutbound: () => void;
 }) {
+  const [codeOpen, setCodeOpen] = useState(false);
   const [scanOpen, setScanOpen] = useState(false);
   const [selected, setSelected] = useState<RelayArrival | null>(null);
   const [missionId, setMissionId] = useState<number | null>(null);
-  const [slot, setSlot] = useState(suggestedSlot);
   const [refusalOpen, setRefusalOpen] = useState(false);
+  /** Colis du lot dont le scelle a ete verifie, par identifiant d'expedition. */
+  const [checked, setChecked] = useState<number[]>([]);
+  /** Les preuves ne s'ouvrent qu'une fois le lot entierement controle. */
+  const [proofOpen, setProofOpen] = useState(false);
+  /**
+   * Le lot qui vient d'entrer.
+   *
+   * On garde un resume plutot que de fermer : le livreur est encore la, et
+   * l'ecran doit lui dire ce qu'il emporte avant de repartir.
+   */
+  const [done, setDone] = useState<{
+    count: number;
+    places: number;
+    at: string;
+    buyers: number;
+    waiting: number;
+  } | null>(null);
+  /** Le scan s'ouvre directement sur la saisie manuelle quand le QR est hors jeu. */
+  const [manualFirst, setManualFirst] = useState(false);
 
-  const openScan = (arrival: RelayArrival | null) => {
+  const openScan = (arrival: RelayArrival | null, manual = false) => {
     setSelected(arrival);
     setMissionId(null);
+    setManualFirst(manual);
     setScanOpen(true);
   };
 
   const confirmScan = (scannedId: number) => {
-    // Le QR fait foi : s'il pointe une autre arrivee que celle pre-selectionnee,
-    // on bascule sur la mission reellement scannee.
+    // Le code fait foi : s'il pointe une autre arrivee que celle
+    // pre-selectionnee, on bascule sur celle reellement designee.
     const matched = arrivals.find((arrival) => arrival.shipmentId === scannedId) ?? null;
     setSelected(matched ?? (selected?.shipmentId === scannedId ? selected : null));
-    setSlot(suggestedSlot);
     setMissionId(scannedId);
+    setChecked([]);
+    setProofOpen(false);
     setScanOpen(false);
   };
 
@@ -620,20 +706,94 @@ export default function RelayReception({
     setMissionId(null);
     setSelected(null);
     setRefusalOpen(false);
+    setProofOpen(false);
+    setChecked([]);
+    setDone(null);
   };
+
+  /**
+   * Le lot : tous les colis annonces par le meme livreur.
+   *
+   * Le serveur n'a pas de notion de mission — il a des expeditions et un
+   * transporteur. Regrouper par transporteur redonne ce que le gerant voit
+   * arriver : un homme, plusieurs cartons.
+   */
+  const lot = useMemo(() => {
+    if (!missionId) return [] as RelayArrival[];
+    const pivot = arrivals.find((arrival) => arrival.shipmentId === missionId);
+    if (!pivot) return selected ? [selected] : [];
+    if (!pivot.courierRef) return [pivot];
+    return arrivals.filter((arrival) => arrival.courierRef === pivot.courierRef);
+  }, [arrivals, missionId, selected]);
+
+  /**
+   * Un casier par colis, calcule une fois pour tout le lot.
+   *
+   * La zone vient de la taille, l'index est le premier libre de cette zone —
+   * en tenant compte des casiers deja occupes ET de ceux qu'on vient
+   * d'attribuer dans ce meme lot.
+   */
+  const slots = useMemo(() => {
+    const pris = new Set(occupiedSlots.map((code) => code.toUpperCase().replace("-", "")));
+    const attribues: Record<number, string> = {};
+    lot.forEach((arrival) => {
+      const zone = zoneOf(arrival.sizeLabel);
+      const max = ZONES.find((candidate) => candidate.key === zone)?.places ?? 1;
+      void max;
+      for (let index = 1; index <= 999; index += 1) {
+        const code = `${zone}-${String(index).padStart(2, "0")}`;
+        if (pris.has(code.replace("-", ""))) continue;
+        pris.add(code.replace("-", ""));
+        attribues[arrival.shipmentId] = code;
+        break;
+      }
+    });
+    return attribues;
+  }, [lot, occupiedSlots]);
+
+  const toggle = (shipmentId: number) =>
+    setChecked((current) =>
+      current.includes(shipmentId) ? current.filter((item) => item !== shipmentId) : [...current, shipmentId],
+    );
 
   const validate = async (photos: PhotoMap, signatures: { manager: string | null; courier: string | null }) => {
     if (!missionId) return;
     const captured = PHOTO_SLOTS.filter((slotDef) => photos[slotDef.key]).map((slotDef) => slotDef.label.toLowerCase());
     const proofNote = [
-      `Réception V5 · mission ${missionId}`,
+      `Réception V5 · mission ${missionId} · ${lot.length} colis`,
       `photos preuve : ${captured.join(", ")}`,
       `double signature : gérant ${managerName}${signatures.courier ? ` + livreur ${selected?.courierRef || "présent"}` : ""}`,
       `horodatage ${new Date().toLocaleString("fr-FR")}`,
     ].join(" · ");
 
-    const success = await onReceive({ shipmentId: missionId, slotCode: slot.trim(), proofNote });
-    if (success) closeReception();
+    // Un appel par colis : le serveur receptionne une expedition a la fois,
+    // et chacune porte son propre casier.
+    let tout = true;
+    for (const arrival of lot) {
+      const ok = await onReceive({
+        shipmentId: arrival.shipmentId,
+        slotCode: slots[arrival.shipmentId] || "",
+        proofNote,
+      });
+      if (!ok) tout = false;
+    }
+    if (!tout) return;
+
+    // Un client par commande : deux colis d'une meme commande ne font qu'un
+    // destinataire, et il ne recoit son code qu'au colis complet.
+    const commandes = new Set(lot.map((arrival) => arrival.orderId));
+    const restants = arrivals.filter(
+      (arrival) => !lot.includes(arrival) && commandes.has(arrival.orderId),
+    );
+    setDone({
+      count: lot.length,
+      places: lot.reduce((total, arrival) => total + placesOf(arrival.sizeLabel), 0),
+      at: new Date().toISOString(),
+      buyers: commandes.size,
+      waiting: new Set(restants.map((arrival) => arrival.orderId)).size,
+    });
+    setProofOpen(false);
+    setChecked([]);
   };
 
   const confirmRefusal = async (input: { reason: string; note: string; photo: File }) => {
@@ -645,128 +805,154 @@ export default function RelayReception({
     }
   };
 
-  const arrivalCount = arrivals.length;
   const selectedLabel = useMemo(
     () => (selected ? `${selected.courierRef || selected.internalRef} · ${selected.sizeLabel}` : ""),
     [selected],
   );
 
   return (
-    <div className="space-y-5">
-      <section className="flex flex-wrap items-start justify-between gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
-        <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200">
-            <PackagePlus size={21} />
-          </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tight text-slate-950 dark:text-white">Réception colis</h2>
-            <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-              Scannez le QR du livreur à son arrivée · workflow sécurisé V5
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={() => openScan(null)}
-          className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white transition hover:bg-blue-700"
-        >
-          <ScanLine size={16} /> Scanner le QR
-        </button>
-      </section>
+    <div className="space-y-4">
+      {done ? (
+        <RelayReceptionDone
+          count={done.count}
+          places={done.places}
+          at={done.at}
+          buyers={done.buyers}
+          waiting={done.waiting}
+          placesUsed={placesUsed}
+          capacityMax={capacityMax}
+          outbound={outbound}
+          onOutbound={onOpenOutbound}
+          onNew={closeReception}
+        />
+      ) : missionId && !refusalOpen && !proofOpen ? (
+        <RelayReceptionControl
+          lot={lot}
+          checked={checked}
+          slots={slots}
+          courier={selected?.courierRef || ""}
+          missionRef={`M-${missionId}`}
+          outbound={outbound}
+          busy={busy}
+          onToggle={toggle}
+          onValidate={() => setProofOpen(true)}
+          onRefuse={() => setRefusalOpen(true)}
+          onCancel={closeReception}
+          onReserve={onReserve}
+          onReportGap={onReportGap}
+        />
+      ) : (
+        <>
+      {/* ── Entree du workflow ───────────────────────────────────────────────
+          Bandeau pleine largeur, colle sous le bandeau du portail : il n'est
+          pas une carte posee sur la page, il EST le haut de l'ecran. C'est ce
+          qui le rend impossible a manquer — et cet ecran n'a qu'un geste.
 
-      <div className="flex items-start gap-3 rounded-2xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-900 dark:bg-blue-950/50">
-        <LockKeyhole className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
-        <p className="text-sm leading-6 text-blue-950/80 dark:text-blue-100/80">
-          Vous ne voyez <strong>jamais</strong> le vendeur ni la provenance commerciale du colis — uniquement la{" "}
-          <strong>référence interne BelivaY</strong> et le QR associé. (Anonymat constitutionnel V5 ch.1)
-        </p>
-      </div>
-
-      <Panel
-        kicker="Arrivées en cours"
-        title="Livreurs en approche"
-        action={<StatusPill tone={arrivalCount > 0 ? "blue" : "slate"}>{arrivalCount}</StatusPill>}
+          `-mx-4 -mt-4` annule la gouttiere du conteneur pour que le bleu
+          touche les bords, comme une barre d'en-tete. Le degrade : bleu nuit
+          en diagonale, traverse d'une lueur chaude au coin haut droit — les
+          deux couleurs de BelivaY se rejoignent la ou le travail commence. */}
+      <section
+        className="-mx-4 -mt-4 px-4 pb-5 pt-4 text-white sm:-mx-6 sm:-mt-6 sm:px-6"
+        style={{
+          backgroundImage:
+            "radial-gradient(75% 110% at 99% -6%, rgba(214,116,62,.42) 0%, rgba(160,80,60,.14) 40%, rgba(160,80,60,0) 68%),"
+            + " linear-gradient(132deg, #0B1734 0%, #12254C 46%, #1B3570 100%)",
+        }}
       >
-        <div className="space-y-3">
-          {loading ? (
-            <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-semibold text-blue-900 dark:border-blue-900 dark:bg-blue-950/40 dark:text-blue-100">
-              Chargement des arrivées...
-            </div>
-          ) : arrivalCount === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-              Aucune arrivée annoncée pour le moment. Vous pouvez réceptionner directement en scannant le QR du livreur.
-            </div>
-          ) : (
-            arrivals.map((arrival) => (
-              <div
-                key={arrival.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800"
+        {/* Le fil ① ② ③ n'est pas decoratif : il dit au gerant, avant meme
+            qu'il commence, que le livreur ne repartira pas apres la saisie —
+            il reste pour le controle et la double signature. */}
+        <ol className="flex items-center justify-between gap-2">
+          {RECEPTION_PHASES.map(([label], index) => (
+            <li key={label} className="flex min-w-0 items-center gap-2">
+              <span
+                className={`flex h-[22px] w-[22px] flex-shrink-0 items-center justify-center rounded-full text-[11.5px] font-black ${
+                  index === 0 ? "bg-[#E9A93A] text-[#1B2540]" : "bg-[#1E2F55] text-[#8A97B8]"
+                }`}
               >
-                <div className="flex min-w-0 items-center gap-3">
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                    <Truck size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <StatusPill tone="emerald">
-                      <Truck size={12} className="mr-1.5" />
-                      {arrival.courierRef || "Livreur à assigner"}
-                    </StatusPill>
-                    <div className="mt-1 truncate text-sm font-semibold text-slate-500 dark:text-slate-400">
-                      {arrival.internalRef} · {arrival.sizeLabel}
-                      {arrival.vehicleLabel ? ` · ${arrival.vehicleLabel}` : ""}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => openScan(arrival)}
-                  className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white transition hover:bg-blue-700"
-                >
-                  Réceptionner
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-      </Panel>
-
-      <Panel kicker="Procédure" title="Les 11 étapes de la réception" action={<ClipboardList className="text-blue-700 dark:text-blue-300" size={19} />}>
-        <ol className="space-y-0">
-          {RECEPTION_STEPS.map(([title, hint], index) => (
-            <li key={title} className="flex gap-4">
-              <div className="flex flex-col items-center">
-                <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-emerald-500 text-xs font-black text-white">
-                  {index + 1}
-                </span>
-                {index < RECEPTION_STEPS.length - 1 ? <span className="w-0.5 flex-1 bg-emerald-500/35" /> : null}
-              </div>
-              <div className={index < RECEPTION_STEPS.length - 1 ? "pb-5" : ""}>
-                <div className="font-black leading-tight text-slate-950 dark:text-white">{title}</div>
-                {hint ? <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{hint}</div> : null}
-              </div>
+                {index + 1}
+              </span>
+              <span className={`truncate text-[13px] font-black ${index === 0 ? "text-white" : "text-[#C3CCE2]"}`}>
+                {label}
+              </span>
             </li>
           ))}
         </ol>
-      </Panel>
 
-      <button
-        type="button"
-        onClick={() => openScan(null)}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-blue-600 px-5 py-4 text-sm font-black text-white shadow-[0_14px_30px_rgba(37,99,235,.28)] transition hover:bg-blue-700"
-      >
-        <ScanLine size={17} /> Démarrer une réception
-      </button>
+        <div className="mt-4 flex items-start gap-4">
+          {/* Cadre pointille : la place du code, montree vide tant que rien
+              n'est saisi. Il retrecit avec l'ecran plutot que de disparaitre —
+              c'est lui qui dit d'un coup d'oeil de quoi parle ce bloc. */}
+          <div
+            aria-hidden
+            className="flex h-[88px] w-[88px] flex-shrink-0 items-center justify-center rounded-[14px] border-2 border-dashed border-[#E9A93A] text-[#E9A93A]"
+          >
+            <KeyRound size={38} strokeWidth={1.8} />
+          </div>
 
-      {scanOpen ? (
-        <ScanDialog presetLabel={selectedLabel} onCancel={() => setScanOpen(false)} onConfirm={confirmScan} />
+          <div className="min-w-0 flex-1">
+            <h2 className="text-[19px] font-black leading-tight tracking-[-0.01em]">Saisissez le code de dépôt</h2>
+            <p className="mt-1.5 text-[13.5px] font-medium leading-[1.45] text-white/65">
+              6 chiffres donnés par le livreur. Pas de code, pas de lot.
+            </p>
+
+            <button
+              type="button"
+              onClick={() => setCodeOpen(true)}
+              className="mt-3.5 flex w-full items-center justify-center gap-2.5 rounded-[10px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(232,89,12,.4)] transition active:scale-[.97]"
+            >
+              <KeyRound size={19} strokeWidth={2.5} /> Saisir le code
+            </button>
+
+            {/* Le code peut etre illisible, l'ecran du livreur casse, la
+                batterie vide. Sans cette porte de sortie, la reception
+                s'arrete la. */}
+            <button
+              type="button"
+              onClick={() => openScan(null, true)}
+              className="mt-3 text-[13.5px] font-semibold text-[#8AB4F8] underline underline-offset-4 transition active:scale-95"
+            >
+              Le livreur n'a pas de code ?
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <div className="flex items-start gap-3 rounded-xl border border-blue-100 bg-[#EFF4FE] p-4 dark:border-blue-900 dark:bg-blue-950/50">
+        <LockKeyhole className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" size={18} />
+        <p className="text-[13.5px] font-medium leading-[1.5] text-[#4A5E8A] dark:text-blue-100/80">
+          Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et l'emplacement.
+        </p>
+      </div>
+        </>
+      )}
+
+            {codeOpen ? (
+        <CodeDialog
+          arrivals={arrivals}
+          onCancel={() => setCodeOpen(false)}
+          onConfirm={(missionId) => {
+            setCodeOpen(false);
+            confirmScan(missionId);
+          }}
+          onNoCode={() => {
+            setCodeOpen(false);
+            openScan(null, true);
+          }}
+        />
       ) : null}
 
-      {missionId && !refusalOpen ? (
+      {scanOpen ? (
+        <ScanDialog presetLabel={selectedLabel} manualFirst={manualFirst} onCancel={() => setScanOpen(false)} onConfirm={confirmScan} />
+      ) : null}
+
+      {missionId && proofOpen && !refusalOpen ? (
         <ReceptionDialog
           arrival={selected}
           missionId={missionId}
-          slot={slot}
-          onSlotChange={setSlot}
+          slot={slots[missionId] || ""}
+          onSlotChange={() => undefined}
           busy={busy}
           onCancel={closeReception}
           onValidate={(photos, signatures) => void validate(photos, signatures)}

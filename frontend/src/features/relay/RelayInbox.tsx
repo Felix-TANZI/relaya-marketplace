@@ -1,187 +1,160 @@
-import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, LifeBuoy, Lock, Mail, MessagesSquare, Scale, Send, Truck } from "lucide-react";
-import { http } from "@/services/api/http";
-import { ModuleHeader, Panel, StatusPill } from "./RelayUi";
-
 /**
- * Messagerie supervisee du point relais.
+ * Messagerie supervisée du point relais.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * TROIS INTERLOCUTEURS, UN SEUL DESTINATAIRE
  *
  * L'anonymat V5 ch.1 interdit tout contact direct avec les acheteurs et les
- * vendeurs : le gerant ne dispose que de trois canaux officiels. Seul le canal
- * support accepte une reponse libre (transmise via /api/contact/) ; le
- * mediateur et la coordination logistique sont des canaux descendants, ou la
- * reponse passe par le dossier litige ou par la mission concernee.
+ * vendeurs. Le gérant n'écrit jamais « au client » : il écrit à BelivaY, qui
+ * relaie. Les trois conversations ne sont donc pas trois correspondants —
+ * c'est le même, sur trois sujets, et le bandeau du bas le rappelle parce que
+ * c'est exactement ce qu'on oublie quand une messagerie ressemble à WhatsApp.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * CE QUI EST VRAI, ET CE QUI NE L'EST PAS
+ *
+ * Il n'existe pas de fil de discussion côté serveur pour un point relais.
+ * Deux mécanismes réels tiennent lieu de messagerie :
+ *
+ *   · le support reçoit un message par `/api/contact/` — un envoi, pas un
+ *     échange : la réponse arrive par notification, pas dans ce fil ;
+ *   · les demandes de preuve sur litige (`/orders/evidence-requests/`) sont
+ *     de vrais allers-retours : BelivaY demande une photo, le gérant répond
+ *     avec le fichier, et le statut passe à SUBMITTED.
+ *
+ * Le fil « Dossier » est donc le seul réellement conversationnel. Les deux
+ * autres le disent au lieu de faire semblant.
  */
+import { useEffect, useMemo, useRef, useState } from "react";
+import { Camera, Lock, Send, ShoppingCart, Truck } from "lucide-react";
+import { http } from "@/services/api/http";
+import { customerApi, type DisputeEvidenceRequest } from "@/services/api/customer";
+import { ensureImageUnderLimit } from "@/lib/imageCompression";
 
 interface RelayInboxProps {
   onError: (error: unknown) => void;
   relay: { name: string; email: string; phone: string };
-  /** Bascule vers un autre onglet du portail (lien "ouvrir le dossier litige"). */
-  onNavigate?: (tab: "litiges" | "reception") => void;
+  /** Bascule vers un autre onglet du portail. */
+  onNavigate?: (tab: "litiges" | "reception" | "sortie") => void;
+  /** Colis qui doivent quitter le local : la seule matière du canal logistique. */
+  outbound?: number;
+  /** Colis annoncés par un livreur. */
+  arrivals?: number;
 }
 
-type ChannelKey = "support" | "mediateur" | "logistique";
+type Sender = "belivay" | "relais";
 
-interface ChannelMessage {
+interface Message {
   id: string;
-  from: "belivay" | "relais";
-  author: string;
+  from: Sender;
   body: string;
   at: string;
+  /** Bulle sombre à part : un fichier transmis, pas une phrase. */
+  attachment?: boolean;
 }
 
-interface Channel {
-  key: ChannelKey;
-  name: string;
-  icon: typeof LifeBuoy;
-  /** Pastille de tete de conversation, une couleur par interlocuteur. */
-  tile: string;
-  role: string;
-  /** Canal descendant : la reponse libre y est fermee. */
-  readOnly: boolean;
-  official?: boolean;
-  closedHint?: string;
-  seed: ChannelMessage[];
-}
+const HEURE = new Intl.DateTimeFormat("fr-FR", { hour: "2-digit", minute: "2-digit" });
 
-const CHANNELS: Channel[] = [
-  {
-    key: "support",
-    name: "Support BelivaY",
-    icon: LifeBuoy,
-    tile: "bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-300",
-    role: "Assistance opérationnelle · réception, stockage, retrait",
-    readOnly: false,
-    seed: [
-      {
-        id: "support-1",
-        from: "relais",
-        author: "Vous",
-        body: "Bonjour, un colis est arrivé sans étiquette lisible. Quelle procédure dois-je appliquer avant de le mettre en slot ?",
-        at: "",
-      },
-      {
-        id: "support-2",
-        from: "belivay",
-        author: "Support BelivaY",
-        body: "Bien reçu, on regarde ça tout de suite.",
-        at: "",
-      },
-    ],
-  },
-  {
-    key: "mediateur",
-    name: "Médiateur OHADA",
-    icon: Scale,
-    tile: "bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-300",
-    role: "Arbitrage des litiges · droit de réponse encadré",
-    readOnly: true,
-    closedHint:
-      "Canal d'arbitrage : votre version se dépose dans le dossier de litige concerné, jamais en message libre (traçabilité OHADA).",
-    seed: [
-      {
-        id: "mediateur-1",
-        from: "belivay",
-        author: "Médiateur OHADA",
-        body: "Votre droit de réponse a été transmis (anonymisé) à la partie adverse. Vous serez notifié de la décision sous 7 jours ouvrés.",
-        at: "",
-      },
-    ],
-  },
-  {
-    key: "logistique",
-    name: "Coordination logistique",
-    icon: Truck,
-    tile: "bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-300",
-    role: "Tournées livreurs · transferts entre points relais",
-    readOnly: true,
-    official: true,
-    closedHint:
-      "Canal officiel descendant : confirmez les mouvements de colis depuis l'écran Réception, la coordination s'aligne automatiquement.",
-    seed: [
-      {
-        id: "logistique-1",
-        from: "belivay",
-        author: "Coordination logistique",
-        body: "Transfert programmé, un livreur passera à la fermeture pour récupérer les colis en attente. Préparez les slots concernés.",
-        at: "",
-      },
-    ],
-  },
-];
-
-const STORAGE_KEY = "belivay.relay.inbox";
-
-interface StoredInbox {
-  read: ChannelKey[];
-  sent: Record<string, ChannelMessage[]>;
-}
-
-function readStoredInbox(): StoredInbox {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    const parsed = raw ? (JSON.parse(raw) as Partial<StoredInbox>) : null;
-    return { read: parsed?.read ?? [], sent: parsed?.sent ?? {} };
-  } catch {
-    return { read: [], sent: {} };
-  }
-}
-
-function writeStoredInbox(state: StoredInbox) {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch {
-    /* stockage indisponible : la messagerie reste utilisable, sans memoire locale. */
-  }
-}
-
-function timeLabel(value: string) {
+function heure(value: string | null) {
   if (!value) return "";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.getTime()) ? "" : parsed.toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" });
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "" : HEURE.format(date);
 }
 
-function preview(text: string, size = 46) {
-  return text.length > size ? `${text.slice(0, size)}…` : text;
-}
+/** Réponses d'un mot, celles qu'on tape dix fois par semaine. */
+const RAPIDES = ["Photo ajoutée", "Le colis est rangé", "Rappelez-moi"];
 
-export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxProps) {
-  const [inbox, setInbox] = useState<StoredInbox>(readStoredInbox);
-  const [openKey, setOpenKey] = useState<ChannelKey | null>(null);
+export default function RelayInbox({ onError, relay, onNavigate, outbound = 0, arrivals = 0 }: RelayInboxProps) {
+  const [requests, setRequests] = useState<DisputeEvidenceRequest[]>([]);
+  const [active, setActive] = useState<string>("support");
   const [draft, setDraft] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [sentNotice, setSentNotice] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  /** Ce que le gérant a envoyé au support pendant cette session. */
+  const [sent, setSent] = useState<Message[]>([]);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const load = () =>
+    customerApi
+      .getPendingEvidenceRequests()
+      .then(setRequests)
+      .catch(() => setRequests([]));
 
   useEffect(() => {
-    writeStoredInbox(inbox);
-  }, [inbox]);
+    void load();
+  }, []);
 
-  /** Fil complet d'un canal : messages officiels + reponses deja envoyees. */
-  const threadOf = useMemo(
-    () => (channel: Channel) => [...channel.seed, ...(inbox.sent[channel.key] ?? [])],
-    [inbox.sent],
-  );
+  /**
+   * Les conversations, dans l'ordre où elles pressent : le support répond,
+   * les dossiers attendent une pièce, la logistique informe.
+   */
+  const conversations = useMemo(() => {
+    const dossiers = requests.map((demande) => ({
+      key: `dossier-${demande.id}`,
+      title: `Dossier LT-${String(demande.dispute).padStart(4, "0")}`,
+      subtitle: `${demande.evidence_types.join(", ") || "Pièce demandée"} · demande de ${demande.requested_by_name}`,
+      preview: demande.instructions || "BelivaY vous demande une pièce.",
+      badge: demande.status === "PENDING" ? 1 : 0,
+      time: heure(demande.created_at),
+      avatar: "initials" as const,
+      initials: "LT",
+      status: demande.status === "PENDING" ? "En examen" : "Pièce envoyée",
+      request: demande,
+      messages: [
+        {
+          id: `d-${demande.id}-ask`,
+          from: "belivay" as Sender,
+          body: demande.instructions || "Pouvez-vous ajouter une photo ?",
+          at: demande.created_at,
+        },
+        ...(demande.responded_at
+          ? [{ id: `d-${demande.id}-ok`, from: "relais" as Sender, body: "Photo envoyée", at: demande.responded_at, attachment: true }]
+          : []),
+      ],
+    }));
 
-  const unreadCount = (channel: Channel) => (inbox.read.includes(channel.key) ? 0 : 1);
-  const totalUnread = CHANNELS.reduce((sum, channel) => sum + unreadCount(channel), 0);
+    return [
+      {
+        key: "support",
+        title: "Support BelivaY",
+        subtitle: "Assistance opérationnelle · réception, stockage, retrait",
+        preview: sent.length > 0 ? sent[sent.length - 1].body : "Écrivez-nous : réponse sous un jour ouvré.",
+        badge: 0,
+        time: sent.length > 0 ? heure(sent[sent.length - 1].at) : "",
+        avatar: "cart" as const,
+        initials: "",
+        status: "Ouvert",
+        request: null,
+        messages: sent,
+      },
+      ...dossiers,
+      {
+        key: "logistique",
+        title: "Collectes et livraisons",
+        subtitle: "Canal descendant · BelivaY vous informe",
+        preview:
+          outbound > 0
+            ? `${outbound} colis à remettre au prochain passage.`
+            : arrivals > 0
+              ? `${arrivals} colis annoncés à réceptionner.`
+              : "Aucun mouvement prévu pour l'instant.",
+        badge: 0,
+        time: "",
+        avatar: "truck" as const,
+        initials: "",
+        status: "Lecture seule",
+        request: null,
+        messages: [] as Message[],
+      },
+    ];
+  }, [arrivals, outbound, requests, sent]);
 
-  const open = (channel: Channel) => {
-    setOpenKey(channel.key);
-    setDraft("");
-    setSentNotice(null);
-    if (!inbox.read.includes(channel.key)) {
-      setInbox((previous) => ({ ...previous, read: [...previous.read, channel.key] }));
-    }
-  };
+  const courante = conversations.find((conversation) => conversation.key === active) ?? conversations[0];
+  const lectureSeule = courante.key === "logistique";
 
-  const openChannel = CHANNELS.find((channel) => channel.key === openKey) ?? null;
-
-  const send = async () => {
-    if (!openChannel || openChannel.readOnly || draft.trim().length < 10) return;
-    setBusy(true);
-    setSentNotice(null);
-    const body = draft.trim();
-
+  const envoyer = async () => {
+    const texte = draft.trim();
+    if (!texte || sending) return;
+    setSending(true);
     try {
       await http("/api/contact/", {
         method: "POST",
@@ -189,179 +162,230 @@ export default function RelayInbox({ onError, relay, onNavigate }: RelayInboxPro
           name: relay.name,
           email: relay.email,
           phone: relay.phone,
-          subject: `[Point relais] Message support — ${relay.name}`,
-          message: body,
+          subject: `[Point relais] ${courante.title}`,
+          message: texte,
         }),
       });
-
-      const message: ChannelMessage = {
-        id: `${openChannel.key}-${Date.now()}`,
-        from: "relais",
-        author: "Vous",
-        body,
-        at: new Date().toISOString(),
-      };
-      setInbox((previous) => ({
-        ...previous,
-        sent: { ...previous.sent, [openChannel.key]: [...(previous.sent[openChannel.key] ?? []), message] },
-      }));
+      setSent((current) => [
+        ...current,
+        { id: `s-${Date.now()}`, from: "relais", body: texte, at: new Date().toISOString() },
+      ]);
       setDraft("");
-      setSentNotice("Message transmis au support BelivaY. Une réponse arrive sous 24 h ouvrées.");
     } catch (error) {
       onError(error);
     } finally {
-      setBusy(false);
+      setSending(false);
+    }
+  };
+
+  /**
+   * La photo n'est pas une pièce jointe de discussion : c'est une réponse à
+   * une demande officielle, qui clôt la demande côté serveur. Hors d'un
+   * dossier, elle n'aurait aucun destinataire.
+   */
+  const envoyerPhoto = async (file: File | null) => {
+    if (!file || !courante.request) return;
+    setSending(true);
+    try {
+      const optimized = await ensureImageUnderLimit(file);
+      await customerApi.respondToEvidenceRequest(courante.request.id, [optimized], "Pièce transmise par le point relais");
+      await load();
+    } catch (error) {
+      onError(error);
+    } finally {
+      setSending(false);
     }
   };
 
   return (
-    <div className="space-y-5">
-      <ModuleHeader
-        icon={Mail}
-        title="Messagerie support"
-        subtitle="Échanges supervisés avec BelivaY · support, médiateur, logistique"
-      />
-
-      <div className="flex items-start gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
-        <Lock size={17} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-blue-600 dark:text-blue-300" />
-        <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
-          Messagerie <strong className="font-black text-blue-800 dark:text-blue-200">supervisée par BelivaY</strong>. Vous n'avez
-          aucun contact direct avec les acheteurs ni les vendeurs (anonymat V5 ch.1). Toutes les communications passent par les
-          canaux officiels.
-        </p>
-      </div>
-
-      {openChannel === null ? (
-        <Panel
-          icon={MessagesSquare}
-          title="Conversations"
-          action={<StatusPill tone={totalUnread > 0 ? "blue" : "slate"}>{CHANNELS.length}</StatusPill>}
-        >
-          <div className="space-y-2.5">
-            {CHANNELS.map((channel) => {
-              const Icon = channel.icon;
-              const thread = threadOf(channel);
-              const last = thread[thread.length - 1];
-              const unread = unreadCount(channel);
-              return (
+    <div className="space-y-3">
+      {/* ── Les conversations ──────────────────────────────────────────── */}
+      <section className="overflow-hidden rounded-[18px] border border-slate-200/70 bg-white shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+        <ul>
+          {conversations.map((conversation) => {
+            const on = conversation.key === courante.key;
+            return (
+              <li key={conversation.key}>
                 <button
-                  key={channel.key}
                   type="button"
-                  onClick={() => open(channel)}
-                  className="flex w-full items-center gap-3 rounded-2xl border border-slate-100 bg-white p-3.5 text-left transition hover:border-blue-200 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-900 dark:hover:border-blue-800 dark:hover:bg-slate-800"
+                  onClick={() => setActive(conversation.key)}
+                  className={`flex w-full items-center gap-3 px-4 py-3.5 text-left transition active:scale-[.99] ${
+                    on ? "bg-[#EEF3FE] dark:bg-blue-950/40" : ""
+                  }`}
                 >
-                  <span className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl ${channel.tile}`}>
-                    <Icon size={18} strokeWidth={2.4} />
+                  <span
+                    className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full ${
+                      conversation.avatar === "cart"
+                        ? "border border-slate-200 bg-white text-[#E8590C] dark:border-slate-700 dark:bg-slate-800"
+                        : conversation.avatar === "truck"
+                          ? "bg-[#0F1C3F] text-[#E9A93A]"
+                          : "bg-[#8B6914] text-[13px] font-black text-white"
+                    }`}
+                  >
+                    {conversation.avatar === "cart" ? (
+                      <ShoppingCart size={20} strokeWidth={2.2} />
+                    ) : conversation.avatar === "truck" ? (
+                      <Truck size={20} strokeWidth={2.2} />
+                    ) : (
+                      conversation.initials
+                    )}
                   </span>
+
                   <span className="min-w-0 flex-1">
-                    <span className="block font-black text-slate-950 dark:text-white">{channel.name}</span>
-                    <span className="mt-0.5 block truncate text-xs font-semibold text-slate-500 dark:text-slate-400">
-                      {last ? preview(last.body) : channel.role}
+                    <span className="block text-[15px] font-black leading-tight text-slate-900 dark:text-white">
+                      {conversation.title}
+                    </span>
+                    <span className="mt-1 block truncate text-[13px] font-medium text-slate-500 dark:text-slate-400">
+                      {conversation.preview}
                     </span>
                   </span>
-                  {channel.official ? (
-                    <span className="flex-shrink-0 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-700 dark:bg-emerald-950 dark:text-emerald-200">
-                      officiel
+
+                  {conversation.badge > 0 ? (
+                    <span className="flex h-[26px] min-w-[26px] flex-shrink-0 items-center justify-center rounded-full bg-[#FDF0DC] px-1.5 text-[12.5px] font-black text-[#D98324] dark:bg-orange-950 dark:text-orange-300">
+                      {conversation.badge}
                     </span>
-                  ) : unread > 0 ? (
-                    <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-blue-600 text-[11px] font-black text-white">
-                      {unread}
+                  ) : conversation.time ? (
+                    <span className="flex-shrink-0 text-[12px] font-medium text-slate-400 dark:text-slate-500">
+                      {conversation.time}
                     </span>
                   ) : null}
                 </button>
-              );
-            })}
-          </div>
-        </Panel>
-      ) : (
-        <Panel
-          icon={openChannel.icon}
-          title={openChannel.name}
-          action={
-            <button
-              type="button"
-              onClick={() => setOpenKey(null)}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-black text-slate-600 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-            >
-              <ArrowLeft size={14} strokeWidth={2.6} /> Conversations
-            </button>
-          }
-        >
-          <p className="-mt-2 mb-4 text-xs font-semibold text-slate-500 dark:text-slate-400">{openChannel.role}</p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
 
-          <div className="space-y-3">
-            {threadOf(openChannel).map((message) => {
-              const mine = message.from === "relais";
-              return (
-                <div key={message.id} className={`flex ${mine ? "justify-end" : "justify-start"}`}>
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-6 ${
-                      mine
-                        ? "bg-blue-600 text-white"
-                        : "border border-slate-100 bg-slate-50 text-slate-700 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-200"
-                    }`}
-                  >
-                    <div className={`text-[11px] font-black uppercase tracking-[0.12em] ${mine ? "text-white/70" : "text-slate-400"}`}>
-                      {message.author}
-                      {message.at ? ` · ${timeLabel(message.at)}` : ""}
-                    </div>
-                    <p className="mt-1.5">{message.body}</p>
+      {/* ── Le fil ─────────────────────────────────────────────────────── */}
+      <section className="rounded-[18px] border border-slate-200/70 bg-white px-4 pb-4 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+        <div className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 dark:border-slate-800">
+          <div className="min-w-0">
+            <h3 className="truncate text-[16px] font-black text-slate-900 dark:text-white">{courante.title}</h3>
+            <p className="mt-0.5 truncate text-[12.5px] font-medium text-slate-400 dark:text-slate-500">
+              {courante.subtitle}
+            </p>
+          </div>
+          <span className="flex-shrink-0 rounded-full bg-[#FDF3DC] px-3 py-[5px] text-[12.5px] font-bold text-[#B4791A] dark:bg-amber-950 dark:text-amber-300">
+            {courante.status}
+          </span>
+        </div>
+
+        <div className="space-y-3 py-4">
+          {courante.messages.length === 0 ? (
+            <p className="py-4 text-center text-[13.5px] font-medium text-slate-400 dark:text-slate-500">
+              {lectureSeule
+                ? "BelivaY publie ici les collectes et les arrivées. Ce canal ne se répond pas."
+                : "Aucun message pour l'instant."}
+            </p>
+          ) : (
+            courante.messages.map((message) =>
+              message.attachment ? (
+                <div key={message.id} className="flex justify-end">
+                  <div className="flex items-center gap-2 rounded-[14px] bg-[#0F1C3F] px-4 py-3.5 text-[14.5px] font-black text-[#E9A93A]">
+                    <Camera size={17} strokeWidth={2.4} /> {message.body}
                   </div>
                 </div>
-              );
-            })}
-          </div>
-
-          {openChannel.readOnly ? (
-            <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-              <p className="flex items-start gap-2 text-sm font-semibold leading-6 text-slate-600 dark:text-slate-300">
-                <Lock size={16} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-slate-400" />
-                {openChannel.closedHint}
-              </p>
-              {onNavigate ? (
-                <button
-                  type="button"
-                  onClick={() => onNavigate(openChannel.key === "mediateur" ? "litiges" : "reception")}
-                  className="mt-3 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700 transition hover:bg-blue-50 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200"
-                >
-                  {openChannel.key === "mediateur" ? "Ouvrir mes litiges" : "Ouvrir la réception colis"}
-                </button>
-              ) : null}
-            </div>
-          ) : (
-            <div className="mt-5">
-              {sentNotice ? (
-                <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-sm font-bold text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
-                  {sentNotice}
+              ) : message.from === "relais" ? (
+                <div key={message.id} className="flex justify-end">
+                  <div className="max-w-[82%] rounded-[14px] bg-gradient-to-r from-[#F58A1F] to-[#E8590C] px-4 py-3 text-white">
+                    <p className="text-[14.5px] font-medium leading-[1.45]">{message.body}</p>
+                    <p className="mt-1.5 text-[11.5px] font-medium text-white/80">
+                      Vous · {heure(message.at)}
+                    </p>
+                  </div>
                 </div>
-              ) : null}
-              <label className="block">
-                <span className="text-sm font-bold text-slate-700 dark:text-slate-200">Votre message</span>
-                <textarea
-                  value={draft}
-                  onChange={(event) => setDraft(event.target.value)}
-                  placeholder="Décrivez la situation avec la référence du colis (BV-…), jamais de coordonnées d'acheteur."
-                  className="mt-2 min-h-24 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm font-normal text-slate-900 outline-none focus:border-blue-400 dark:border-slate-700 dark:bg-slate-900 dark:text-white"
-                />
-              </label>
-              <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
-                  {draft.trim().length < 10 ? "10 caractères minimum." : "Message prêt à être transmis."}
-                </span>
-                <button
-                  type="button"
-                  onClick={send}
-                  disabled={busy || draft.trim().length < 10}
-                  className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-black text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <Send size={15} strokeWidth={2.6} />
-                  {busy ? "Envoi…" : "Envoyer"}
-                </button>
-              </div>
-            </div>
+              ) : (
+                <div key={message.id} className="flex justify-start">
+                  <div className="max-w-[82%] rounded-[14px] border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                    <p className="text-[14.5px] font-medium leading-[1.45] text-slate-900 dark:text-white">
+                      {message.body}
+                    </p>
+                    <p className="mt-1.5 text-[11.5px] font-medium text-slate-400 dark:text-slate-500">
+                      BelivaY · {heure(message.at)}
+                    </p>
+                  </div>
+                </div>
+              ),
+            )
           )}
-        </Panel>
-      )}
+        </div>
+
+        {lectureSeule ? (
+          <button
+            type="button"
+            onClick={() => onNavigate?.(outbound > 0 ? "sortie" : "reception")}
+            className="w-full rounded-[12px] border border-slate-200 bg-white px-4 py-3 text-[15px] font-black text-slate-700 transition active:scale-[.97] dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {outbound > 0 ? "Voir ce qui doit partir" : "Voir les arrivées"}
+          </button>
+        ) : (
+          <>
+            <div className="flex flex-wrap gap-2">
+              {RAPIDES.map((texte) => (
+                <button
+                  key={texte}
+                  type="button"
+                  onClick={() => setDraft(texte)}
+                  className="rounded-full border border-[#C3D4FA] bg-[#EEF3FE] px-3.5 py-[7px] text-[13px] font-semibold text-[#2A5BD7] transition active:scale-95 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+                >
+                  {texte}
+                </button>
+              ))}
+            </div>
+
+            <div className="mt-3 flex items-center gap-2.5">
+              {/* L'appareil photo ne s'allume que dans un dossier : ailleurs,
+                  la pièce n'aurait aucune demande à laquelle répondre. */}
+              <button
+                type="button"
+                onClick={() => photoRef.current?.click()}
+                disabled={!courante.request || sending}
+                aria-label="Joindre une photo"
+                className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-[12px] border border-slate-200 bg-white text-slate-600 transition active:scale-90 disabled:opacity-40 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300"
+              >
+                <Camera size={20} strokeWidth={2.2} />
+              </button>
+              <input
+                ref={photoRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="sr-only"
+                onChange={(event) => void envoyerPhoto(event.target.files?.[0] || null)}
+              />
+
+              <input
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") void envoyer();
+                }}
+                placeholder="Votre message"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-white px-4 py-3 text-[14.5px] font-medium text-slate-900 outline-none transition focus:border-[#1D4ED8] dark:border-slate-700 dark:bg-slate-950 dark:text-white"
+              />
+
+              <button
+                type="button"
+                onClick={() => void envoyer()}
+                disabled={!draft.trim() || sending}
+                aria-label="Envoyer"
+                className="flex h-[46px] w-[46px] flex-shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#F58A1F] to-[#E8590C] text-white transition active:scale-90 disabled:opacity-40"
+              >
+                <Send size={19} strokeWidth={2.4} />
+              </button>
+            </div>
+          </>
+        )}
+      </section>
+
+      {/* ── Le rappel qui compte ───────────────────────────────────────── */}
+      <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
+        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+          Vous échangez uniquement avec BelivaY, jamais directement avec un client, un vendeur ou un
+          livreur. Les messages servent de preuve.
+        </p>
+      </div>
     </div>
   );
 }

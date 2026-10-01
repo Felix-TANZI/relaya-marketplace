@@ -1,42 +1,35 @@
+/**
+ * La colonne de navigation du portail point relais, sur grand écran.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * POURQUOI ELLE N'EST PLUS BLEU NUIT
+ *
+ * L'ancienne colonne était une console : fond bleu profond, icônes à halo,
+ * libellés en capitales espacées. C'était cohérent avec elle-même, mais plus
+ * du tout avec le reste du portail — le téléphone travaille sur un gris
+ * clair, des cartes blanches, et ne réserve les couleurs pleines qu'à ce qui
+ * presse. Un gérant qui passe du comptoir à son ordinateur changeait
+ * d'application.
+ *
+ * La colonne reprend donc la même langue : surface blanche, une seule tache
+ * orange pour l'identité, du bleu pour la position courante, du pêche pour
+ * ce qui réclame. Rien n'y brille.
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * CE QU'ELLE GARDE DE L'ANCIENNE
+ *
+ * Les vingt-et-une destinations et leurs six groupes, lus depuis
+ * `RELAY_NAV_ITEMS`. Sur un écran large on ne hiérarchise pas en cachant :
+ * tout tient dans la colonne, et le groupe suffit à s'orienter. C'est le
+ * téléphone qui a besoin d'une grille de quatre cartes, pas le bureau.
+ */
 import { LogOut } from "lucide-react";
 import { RELAY_NAV_ITEMS, type RelayNavGroup, type RelayNavItem, type RelayTab } from "./relayNav";
 
 const GROUP_ORDER: RelayNavGroup[] = ["pilotage", "operations", "qualite", "gestion", "risque", "compte"];
 
-/**
- * Fond du menu, partage par la colonne de bureau et le tiroir mobile.
- *
- * Deux halos bleus poses sur un bleu nuit profond. Les teintes viennent de la
- * meme echelle que le bleu des ecrans (`blue-900` #1E3A8A, `blue-800` #1E40AF,
- * halos en `blue-400`/`blue-500`) : le menu et les titres des pages parlent
- * ainsi la meme langue chromatique. Les deux surfaces lisent cette seule
- * constante, sinon la couleur derive des qu'on retouche l'une des deux.
- */
-export const RELAY_SIDEBAR_SURFACE =
-  "bg-[radial-gradient(115%_55%_at_88%_8%,rgba(96,165,250,.22),transparent_62%),radial-gradient(85%_45%_at_6%_74%,rgba(59,130,246,.16),transparent_66%),linear-gradient(176deg,#0A1330_0%,#1E3A8A_54%,#1E40AF_100%)]";
-
-/**
- * Icone du menu : trait fin lucide en blanc, pose sur un halo bleu.
- *
- * Le `drop-shadow` colore fait tout le travail — l'icone reste blanche (donc
- * lisible) mais parait s'allumer, comme sur les consoles de pilotage dont
- * s'inspire le portail.
- */
-function NavIcon({ item, active }: { item: RelayNavItem; active: boolean }) {
-  const Icon = item.icon;
-  return (
-    <span
-      aria-hidden
-      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center text-white transition duration-300 ease-out group-hover:scale-110 group-hover:drop-shadow-[0_0_12px_rgba(147,197,253,.95)] ${
-        active
-          ? "animate-nav-float drop-shadow-[0_0_14px_rgba(147,197,253,1)]"
-          : "drop-shadow-[0_0_7px_rgba(147,197,253,.6)]"
-      }`}
-    >
-      <Icon size={19} strokeWidth={1.7} />
-    </span>
-  );
-}
+/** Circonference de l'anneau du Trust Score (r = 15.5 dans un viewBox de 36). */
+const TRUST_RING = 2 * Math.PI * 15.5;
 
 export interface RelaySidebarProps {
   activeTab: RelayTab;
@@ -52,14 +45,61 @@ export interface RelaySidebarProps {
 }
 
 /**
- * Corps du menu point relais : logo, carte du relais, destinations groupees et
- * mentions legales.
+ * Une destination.
  *
- * Extrait de l'`aside` pour que le tiroir mobile (RelayDrawer) affiche
- * exactement le meme menu que la colonne de bureau — un seul rendu a maintenir,
- * donc aucune derive possible entre les deux tailles d'ecran.
+ * L'icône est orange au repos, bleue quand on y est : la même règle que les
+ * listes du téléphone. Pas de pastille sous l'icône au repos — une colonne
+ * de vingt-et-une pastilles ne dit plus rien.
  */
-export function RelaySidebarContent({
+function NavRow({
+  item,
+  active,
+  label,
+  badge,
+  onSelect,
+}: {
+  item: RelayNavItem;
+  active: boolean;
+  label: string;
+  badge?: number;
+  onSelect: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-current={active ? "page" : undefined}
+      className={`flex w-full items-center gap-3 rounded-[12px] px-3 py-2.5 text-left transition ${
+        active
+          ? "bg-[#EEF3FE] dark:bg-blue-950/50"
+          : "hover:bg-slate-50 dark:hover:bg-slate-800/60"
+      }`}
+    >
+      <Icon
+        size={19}
+        strokeWidth={2.2}
+        className={`flex-shrink-0 ${
+          active ? "text-[#1D4ED8] dark:text-blue-300" : "text-[#E8590C] dark:text-orange-400"
+        }`}
+      />
+      <span
+        className={`min-w-0 flex-1 truncate text-[14px] font-bold ${
+          active ? "text-[#1D4ED8] dark:text-blue-200" : "text-slate-700 dark:text-slate-200"
+        }`}
+      >
+        {label}
+      </span>
+      {badge ? (
+        <span className="flex h-[22px] min-w-[22px] flex-shrink-0 items-center justify-center rounded-full bg-[#FDF0DC] px-1.5 text-[11.5px] font-black text-[#D98324] dark:bg-orange-950 dark:text-orange-300">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
+    </button>
+  );
+}
+
+export default function RelaySidebar({
   activeTab,
   onSelect,
   onLogout,
@@ -71,134 +111,122 @@ export function RelaySidebarContent({
   profile,
   footer,
 }: RelaySidebarProps) {
+  const trust = Math.min(100, Math.max(0, Math.round(profile.trust)));
+  const ouvert = profile.status === "Ouvert";
+
   return (
-    <>
-      <div className="rounded-[22px] border border-blue-300/25 bg-[linear-gradient(145deg,rgba(96,165,250,.16),rgba(255,255,255,.03))] p-4 shadow-[0_18px_40px_rgba(2,18,29,.55)]">
-        <div className="flex min-h-16 items-center justify-center">
-          {/* `brightness-0 invert` ramene le panier et le mot BelivaY en blanc pur
-              sur le bleu nuit, sans dependre d'un second fichier de logo. */}
-          <img
-            src="/belivay-logo-relay-point.png"
-            alt="BelivaY"
-            className="h-14 w-full object-contain brightness-0 invert drop-shadow-[0_0_18px_rgba(147,197,253,.5)]"
-          />
-        </div>
-        <p className="mt-3 text-center text-[10px] font-black uppercase tracking-[0.22em] text-blue-100">{brandKicker}</p>
+    <aside className="sticky top-0 hidden h-screen w-[288px] flex-shrink-0 flex-col overflow-y-auto border-r border-slate-200 bg-white [scrollbar-color:#CBD5E1_transparent] [scrollbar-width:thin] dark:border-slate-800 dark:bg-slate-900 lg:flex">
+      {/* ── La marque ────────────────────────────────────────────────────
+          Le logo orange sur blanc, comme dans le bandeau du telephone. Il ne
+          se met plus en blanc sur bleu nuit : c'est la meme marque, elle a la
+          meme couleur partout. */}
+      <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-800">
+        <img
+          src="/belivay-logo.png"
+          alt="BelivaY"
+          className="h-9 w-auto object-contain dark:brightness-0 dark:invert"
+        />
+        <p className="mt-2.5 text-[11px] font-black uppercase tracking-[0.12em] text-[#1D4ED8] dark:text-blue-300">
+          {brandKicker}
+        </p>
       </div>
 
-      <div className="mt-4 rounded-2xl border border-blue-300/20 bg-white/[.06] p-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-gradient-to-br from-blue-400 to-blue-700 ring-1 ring-blue-200/30">
-            {profile.avatarUrl ? (
-              <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
-            ) : (
-              <span className="text-base font-black text-white">{profile.name.slice(0, 1).toUpperCase()}</span>
-            )}
-          </div>
-          <div className="min-w-0">
-            <div className="truncate font-black text-white">{profile.name}</div>
-            <div className="mt-0.5 truncate text-xs font-semibold text-blue-100/70">
-              {profile.status} · {profile.city}
+      {/* ── L'identité ───────────────────────────────────────────────────
+          La seule surface pleine de la colonne, et elle dit OU l'on travaille.
+          Meme carte orange que le menu du telephone. */}
+      <div className="px-4 pt-4">
+        <div className="rounded-[16px] bg-gradient-to-br from-[#F79020] via-[#F07E16] to-[#E85D04] px-4 py-3.5 text-white shadow-[0_4px_14px_rgba(232,93,4,.25)]">
+          <div className="flex items-center gap-3">
+            <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#101C3D] text-[14px] font-black text-white ring-2 ring-white/70">
+              {profile.avatarUrl ? (
+                <img src={profile.avatarUrl} alt="" className="h-full w-full object-cover" />
+              ) : (
+                profile.name.slice(0, 2).toUpperCase()
+              )}
+            </span>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-[15px] font-black leading-tight">{profile.name}</div>
+              <div className="mt-0.5 truncate text-[12.5px] font-medium text-white/85">{profile.city}</div>
             </div>
           </div>
-        </div>
-        <div className="mt-3 flex items-center justify-between border-t border-blue-300/20 pt-3 text-xs">
-          <span className="font-semibold uppercase tracking-[0.08em] text-blue-100/70">Trust Score PR</span>
-          <span className="flex items-center gap-2 font-black text-white">
-            {profile.trust}/100
-            <span className="h-2.5 w-2.5 rounded-full bg-gradient-to-br from-blue-200 to-blue-400 shadow-[0_0_12px_rgba(147,197,253,1)]" />
-          </span>
+
+          <div className="mt-3 flex items-center justify-between gap-3 border-t border-white/25 pt-3">
+            <span
+              className={`flex items-center rounded-full px-2.5 py-[4px] text-[12px] font-bold ${
+                ouvert ? "bg-[#E8F7EE] text-[#2E7D4F]" : "bg-white/25 text-white"
+              }`}
+            >
+              <span
+                aria-hidden
+                className={`mr-1.5 h-[6px] w-[6px] rounded-full ${ouvert ? "bg-[#2E7D4F]" : "bg-white"}`}
+              />
+              {profile.status}
+            </span>
+
+            {/* Le Trust Score en anneau, comme sur l'accueil : une proportion
+                se lit avant un chiffre. */}
+            <span className="relative flex h-9 w-9 flex-shrink-0 items-center justify-center">
+              <svg viewBox="0 0 36 36" className="absolute inset-0 h-full w-full -rotate-90" aria-hidden>
+                <circle cx="18" cy="18" r="15.5" fill="none" strokeWidth="4" className="stroke-white/30" />
+                <circle
+                  cx="18"
+                  cy="18"
+                  r="15.5"
+                  fill="none"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  className="stroke-white transition-[stroke-dasharray] duration-700"
+                  strokeDasharray={`${(trust / 100) * TRUST_RING} ${TRUST_RING}`}
+                />
+              </svg>
+              <span className="text-[12px] font-black">{trust}</span>
+            </span>
+          </div>
         </div>
       </div>
 
-      <nav className="mt-5 flex-1 space-y-5">
+      {/* ── Les destinations ─────────────────────────────────────────────── */}
+      <nav className="flex-1 px-3 pt-4">
         {GROUP_ORDER.map((group) => {
           const items = RELAY_NAV_ITEMS.filter((item) => item.group === group);
+          if (items.length === 0) return null;
           return (
-            <div key={group}>
-              <div className="mb-2 px-2 text-[10px] font-black uppercase tracking-[0.18em] text-blue-300/75">
+            <div key={group} className="mb-4">
+              <div className="mb-1 px-3 text-[11px] font-black uppercase leading-none tracking-[0.1em] text-slate-400 dark:text-slate-500">
                 {groupLabels[group]}
               </div>
-              <div>
-                {items.map((item) => {
-                  const active = item.id === activeTab;
-                  const badge = badges[item.id];
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => onSelect(item.id)}
-                      aria-current={active ? "page" : undefined}
-                      /* Filet sous chaque entree : il structure la liste sans
-                         cadre ni pastille, comme sur les consoles de pilotage. */
-                      className={`group relative flex w-full items-center gap-3 border-b border-white/[.07] py-2.5 pl-2.5 pr-3 text-left transition duration-300 last:border-b-0 ${
-                        active
-                          ? "bg-[linear-gradient(90deg,rgba(96,165,250,.22),transparent)]"
-                          : "hover:bg-blue-300/[.10]"
-                      }`}
-                    >
-                      {active ? (
-                        <span
-                          aria-hidden
-                          className="absolute -left-1 top-1/2 h-7 w-1 -translate-y-1/2 rounded-r-full bg-blue-300 shadow-[0_0_14px_rgba(147,197,253,1)]"
-                        />
-                      ) : null}
-                      <NavIcon item={item} active={active} />
-                      <span
-                        className={`min-w-0 flex-1 truncate text-[12.5px] font-semibold uppercase tracking-[0.07em] transition ${
-                          active ? "text-blue-200 drop-shadow-[0_0_10px_rgba(147,197,253,.65)]" : "text-white"
-                        }`}
-                      >
-                        {labels[item.id]}
-                      </span>
-                      {badge ? (
-                        <span
-                          className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-gradient-to-br ${item.accent} px-1.5 text-[10px] font-black text-white shadow-[0_2px_10px_rgba(2,18,29,.6)] ring-1 ring-white/25`}
-                        >
-                          {badge}
-                        </span>
-                      ) : null}
-                    </button>
-                  );
-                })}
-                {group === "compte" ? (
-                  <button
-                    type="button"
-                    onClick={onLogout}
-                    className="group relative flex w-full items-center gap-3 py-2.5 pl-2.5 pr-3 text-left transition duration-300 hover:bg-rose-400/[.12]"
-                  >
-                    <span
-                      aria-hidden
-                      className="flex h-8 w-8 flex-shrink-0 items-center justify-center text-rose-200 drop-shadow-[0_0_7px_rgba(253,164,175,.6)] transition duration-300 ease-out group-hover:scale-110 group-hover:text-white group-hover:drop-shadow-[0_0_12px_rgba(253,164,175,.95)]"
-                    >
-                      <LogOut size={19} strokeWidth={1.7} />
-                    </span>
-                    <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold uppercase tracking-[0.07em] text-rose-200 transition group-hover:text-white">
-                      {logoutLabel}
-                    </span>
-                  </button>
-                ) : null}
-              </div>
+              {items.map((item) => (
+                <NavRow
+                  key={item.id}
+                  item={item}
+                  active={item.id === activeTab}
+                  label={labels[item.id]}
+                  badge={badges[item.id]}
+                  onSelect={() => onSelect(item.id)}
+                />
+              ))}
             </div>
           );
         })}
       </nav>
 
-      <div className="mt-6 border-t border-blue-300/20 pt-4 text-[10px] leading-5 text-blue-100/35">
-        {footer.map((line) => (
-          <div key={line}>{line}</div>
-        ))}
-      </div>
-    </>
-  );
-}
+      <div className="px-4 pb-4">
+        <button
+          type="button"
+          onClick={onLogout}
+          className="flex w-full items-center justify-center gap-2 rounded-[12px] border border-red-100 bg-[#FDECEC] px-4 py-3 text-[14px] font-black text-[#D84B4B] transition active:scale-[.97] dark:border-red-900 dark:bg-red-950/40 dark:text-red-300"
+        >
+          <LogOut size={17} strokeWidth={2.4} /> {logoutLabel}
+        </button>
 
-export default function RelaySidebar(props: RelaySidebarProps) {
-  return (
-    <aside
-      className={`sticky top-0 hidden h-screen w-[288px] flex-shrink-0 flex-col overflow-y-auto border-r border-blue-300/15 p-4 text-white [scrollbar-color:rgba(147,197,253,.3)_transparent] [scrollbar-width:thin] lg:flex ${RELAY_SIDEBAR_SURFACE}`}
-    >
-      <RelaySidebarContent {...props} />
+        <div className="mt-4 space-y-0.5 border-t border-slate-100 pt-4 dark:border-slate-800">
+          {footer.map((line) => (
+            <p key={line} className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
+              {line}
+            </p>
+          ))}
+        </div>
+      </div>
     </aside>
   );
 }

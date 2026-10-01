@@ -304,6 +304,14 @@
    ═══════════════════════════════════════════════════════════════════════════ */
 
 .safe-pt   { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* En-tete colle en haut de l'ecran.
+   `.safe-pt` seul ECRASE le padding vertical de Tailwind — il est declare
+   apres `@tailwind utilities` — et vaut donc 0 sur un ecran sans encoche :
+   les icones se retrouvent collees au bord. Ici le retrait s'AJOUTE a
+   l'encoche, ce qui donne la meme respiration partout. */
+.safe-pt-header { padding-top: calc(env(safe-area-inset-top, 0px) + 0.875rem); }
+
 .safe-pb   { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-pl   { padding-left:   env(safe-area-inset-left,   0px); }
 .safe-pr   { padding-right:  env(safe-area-inset-right,  0px); }
@@ -316,6 +324,31 @@
 :root { --mobile-tabbar-h: 4.25rem; }
 
 .pb-tabbar { padding-bottom: calc(var(--mobile-tabbar-h) + env(safe-area-inset-bottom, 0px)); }
+
+/* Barre du point relais : elle flotte (marge laterale + decollement du bord)
+   et sa plaque d'onglet actif l'epaissit encore. Sans ce supplement, le
+   dernier bloc de l'ecran finit dessous. A poser sur le meme element que
+   `.pb-tabbar`, qui lit la variable sur lui-meme. */
+.pb-tabbar-tall { --mobile-tabbar-h: 4.9rem; }
+
+/* -- En application installee -------------------------------------------
+   Declarees ICI, apres les primitives ci-dessus, parce qu'elles les
+   surchargent.
+
+   La barre d'etat se superpose au contenu et certaines WebView Android
+   renvoient un inset nul : l'en-tete vient alors se coller sous l'heure et la
+   batterie, qui disparaissent. On reserve donc au moins la hauteur standard
+   d'une barre d'etat (24 dp) en haut, et de la barre gestuelle (16 dp) en bas.
+   `max()` garde l'inset reel des qu'il est renseigne -- encoche iPhone
+   comprise. Le navigateur, lui, n'est pas touche : son inset est juste. */
+:root[data-native="1"] .safe-pt-header {
+  padding-top: calc(max(env(safe-area-inset-top, 0px), 24px) + 0.875rem);
+}
+:root[data-native="1"] .safe-mb { margin-bottom:  max(env(safe-area-inset-bottom, 0px), 16px); }
+:root[data-native="1"] .safe-pb { padding-bottom: max(env(safe-area-inset-bottom, 0px), 16px); }
+:root[data-native="1"] .pb-tabbar {
+  padding-bottom: calc(var(--mobile-tabbar-h) + max(env(safe-area-inset-bottom, 0px), 16px));
+}
 
 /* Cible tactile minimale recommandee (44x44 iOS / 48dp Android). */
 .tap-target { min-height: 2.75rem; min-width: 2.75rem; }

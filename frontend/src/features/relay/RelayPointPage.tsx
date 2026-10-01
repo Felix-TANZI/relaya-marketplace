@@ -7,33 +7,25 @@ import AppDownloadBanner from "@/components/AppDownloadBanner";
 import type { LocationPrecisionResult } from "@/services/api/location";
 import { ensureImageUnderLimit } from "@/lib/imageCompression";
 import {
-  AlertTriangle,
   ArrowLeft,
   BadgeCheck,
   Bell,
   BookOpen,
-  Camera,
-  CheckCircle2,
-  ChevronRight,
-  Clock3,
+  ChevronLeft,
+  Clock,
   FileCheck2,
-  FileText,
   HelpCircle,
   IdCard,
-  KeyRound,
+  Layers,
   Layers3,
   LockKeyhole,
   Menu as MenuIcon,
   LogOut,
   MessageSquareText,
   Moon,
-  PackageCheck,
-  PackagePlus,
-  QrCode,
   Scale,
   ShieldCheck,
   Sun,
-  TimerReset,
   Truck,
   UserCircle,
   Warehouse,
@@ -42,11 +34,18 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useTheme } from "@/context/ThemeContext";
 import { http } from "@/services/api/http";
+// Meme formateur de date que l'onglet Finances : « 25 sept. » doit s'ecrire
+// pareil sur l'accueil et sur le releve.
+import { formatCourt } from "@/services/api/relaySettlements";
 import { PayoutAccountVerificationCard } from "@/components/payments/PayoutAccountVerificationCard";
 import RelayFinancePanel from "./RelayFinancePanel";
 import AvatarCropDialog from "@/components/profile/AvatarCropDialog";
-import SignaturePad from "@/components/ui/SignaturePad";
 import RelayReception, { type RelayArrival, type RefuseInput } from "./RelayReception";
+import RelayPickup, {
+  type CounterIssueInput,
+  type HandOverInput,
+  type RelayPickupParcel,
+} from "./RelayPickup";
 import RelayReviews from "./RelayReviews";
 import RelayTrust, { type RelayTrustScore } from "./RelayTrust";
 import RelayTraining from "./RelayTraining";
@@ -56,10 +55,31 @@ import RelayInbox from "./RelayInbox";
 import RelayOnboarding from "./RelayOnboarding";
 import RelaySidebar from "./RelaySidebar";
 import RelayMobileNav from "./RelayMobileNav";
+import RelayToday, { type RelayTodoItem } from "./RelayToday";
+import RelayStates from "./RelayStates";
+import RelayOutbound, {
+  type CollectionPassage,
+  type OutboundParcel,
+  type OutboundReason,
+  type RelayCollectionSchedule,
+} from "./RelayOutbound";
+import RelayCapacity from "./RelayCapacity";
+import RelayDisputes, { type DisputeFile, type DisputeParcel } from "./RelayDisputes";
+import RelayPayouts from "./RelayPayouts";
+import { parseOpeningHours, todayClosing } from "./relayHours";
+import RelayShelfPlan, { type ShelfParcel } from "./RelayShelfPlan";
+import { placesOf } from "./relayShelf";
+import RelayStockList from "./RelayStockList";
+import RelayGardeGrid from "./RelayGardeGrid";
 import RelayDrawer from "./RelayDrawer";
-import RelayProfileSheet, { RelaySettingsContent, type RelaySettingsProps } from "./RelayProfileSheet";
+import RelayProfileSheet, { type RelaySettingsProps } from "./RelayProfileSheet";
+import RelaySettings from "./RelaySettings";
+import RelaySettingsBody from "./RelaySettingsBody";
 import { RELAY_TABS, type RelayNavGroup, type RelayTab } from "./relayNav";
 import { Panel, StatusPill } from "./RelayUi";
+
+/** Les destinations de la barre du bas : elles gardent le bandeau complet. */
+const PRIMARY_TABS: RelayTab[] = ["dashboard", "reception", "retrait", "stock"];
 
 function getInitialRelayTab(): RelayTab {
   const requested = new URLSearchParams(window.location.search).get("tab") as RelayTab | null;
@@ -85,6 +105,16 @@ interface RelayParcel {
   received_at: string | null;
   picked_up_at: string | null;
   returned_at: string | null;
+  /**
+   * Garde au relais (Addendum Decisions v1.0 §3.2) : gratuite J0->J+3, puis
+   * 200 F/jour jusqu'a J+7, prolongeable une fois. Le serveur calcule les deux
+   * echeances, le portail se contente de les lire — dupliquer la regle ici
+   * garantirait qu'elle diverge un jour.
+   */
+  garde_free_until: string | null;
+  garde_deadline: string | null;
+  garde_fee_due_xaf: number;
+  garde_extended: boolean;
   updated_at: string;
 }
 
@@ -109,6 +139,15 @@ interface RelayDispute {
   delivery_address?: string;
   address_precision?: Partial<LocationPrecisionResult>;
   updated_at: string;
+  created_at: string;
+  // Avancement du dossier — ajoute par `relay_point_open_disputes`.
+  vendor_contacted: boolean;
+  vendor_replied: boolean;
+  vendor_reply_deadline: string | null;
+  has_mediator: boolean;
+  resolution_display: string;
+  is_closed: boolean;
+  evidence_requests: Array<{ instructions: string; due_at: string | null }>;
 }
 
 interface ComplianceDocument {
@@ -135,11 +174,11 @@ const relayCopy = {
       retrait: "Retrait acheteur",
       historique: "Historique 30 j",
       notifications: "Notifications",
-      trust: "Trust Score PR",
-      avis: "Avis acheteurs",
+      trust: "Trust Score",
+      avis: "Avis des clients",
       niveaux: "Niveaux PR",
       formation: "Formation",
-      finances: "Finances MoMo",
+      finances: "Versements",
       rapports: "Rapports & export",
       capacite: "Capacité & horaires",
       reseau: "Réseau partenaires",
@@ -147,11 +186,25 @@ const relayCopy = {
       litiges: "Litiges",
       kyc: "Documents KYC",
       inscription: "Inscription & cycle de vie",
-      messagerie: "Messagerie support",
+      messagerie: "Messagerie",
       aide: "Aide & support",
       parametres: "Paramètres",
       tokens: "Relais Tokens",
+      etats: "Écrans d'état et d'accès",
+      sortie: "À faire partir",
     } satisfies Record<RelayTab, string>,
+    /**
+     * Libelles courts de la barre du bas. « Retrait acheteur » s'y tronquait en
+     * « Retrait ach... » sur un ecran de 360 px : autant nommer court des le
+     * depart. Le menu lateral et le tiroir gardent les intitules complets, qui
+     * y ont la place de lever toute ambiguite.
+     */
+    tabsShort: {
+      dashboard: "Aujourd'hui",
+      reception: "Réception",
+      retrait: "Retrait",
+      stock: "Stock",
+    },
     space: "Espace gérant point relais",
     brand: "Point relais",
     brandKicker: "Point relais · Partenaire",
@@ -164,10 +217,7 @@ const relayCopy = {
     openProfile: "Ouvrir le profil",
     logout: "Se déconnecter",
     close: "Fermer",
-    emptyArrivals: "Aucune arrivée livreur connectée pour le moment.",
-    emptyActivity: "Aucune activité opérationnelle connectée pour le moment.",
     emptyStock: "Aucun colis en stock connecté pour le moment.",
-    dev: "En dev",
   },
   en: {
     groups: {
@@ -189,7 +239,7 @@ const relayCopy = {
       avis: "Buyer reviews",
       niveaux: "Relay levels",
       formation: "Training",
-      finances: "MoMo finances",
+      finances: "Payouts",
       rapports: "Reports & export",
       capacite: "Capacity & hours",
       reseau: "Partner network",
@@ -197,11 +247,19 @@ const relayCopy = {
       litiges: "Disputes",
       kyc: "KYC documents",
       inscription: "Onboarding & lifecycle",
-      messagerie: "Support inbox",
+      messagerie: "Messages",
       aide: "Help & support",
       parametres: "Settings",
       tokens: "Relay tokens",
+      etats: "Status & access screens",
+      sortie: "To ship out",
     } satisfies Record<RelayTab, string>,
+    tabsShort: {
+      dashboard: "Today",
+      reception: "Check-in",
+      retrait: "Pickup",
+      stock: "Stock",
+    },
     space: "Relay point manager workspace",
     brand: "Relay point",
     brandKicker: "Relay point · Partner",
@@ -214,14 +272,10 @@ const relayCopy = {
     openProfile: "Open profile",
     logout: "Log out",
     close: "Close",
-    emptyArrivals: "No courier arrival connected yet.",
-    emptyActivity: "No operational activity connected yet.",
     emptyStock: "No stored parcel connected yet.",
-    dev: "In dev",
   },
 };
 
-const history: Array<[string, string, string, string]> = [];
 
 const training = [
   ["Réception & garde des colis", "Obligatoire", "Scan QR, contrôle colis, photos et transfert de responsabilité."],
@@ -242,20 +296,6 @@ function dataUrlToBlob(dataUrl: string): Blob {
 function anonymizedBuyerRef(parcel: RelayParcel) {
   const seed = `${parcel.order_id || parcel.id}`.padStart(4, "0").slice(-4);
   return `BV-ACH-${seed}`;
-}
-
-function precisionTone(score: number): "emerald" | "amber" | "red" {
-  return score >= 75 ? "emerald" : score >= 55 ? "amber" : "red";
-}
-
-function PrecisionHint({ precision }: { precision?: Partial<LocationPrecisionResult> }) {
-  if (!precision || typeof precision.precisionScore !== "number") return null;
-  return (
-    <div className="mt-2 flex flex-wrap items-center gap-2">
-      <StatusPill tone={precisionTone(precision.precisionScore)}>Précision {precision.precisionScore}/100</StatusPill>
-      {precision.driverHint ? <span className="text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">{precision.driverHint}</span> : null}
-    </div>
-  );
 }
 
 export default function RelayPointPage() {
@@ -279,19 +319,15 @@ export default function RelayPointPage() {
     setTabHistory((previous) => [...previous, current].slice(-20));
     setTabState(next);
   }, []);
-  const [pickupCode, setPickupCode] = useState("");
-  const [pickupPhoto, setPickupPhoto] = useState<File | null>(null);
-  const [pickupIdReference, setPickupIdReference] = useState("");
-  const [pickupSignature, setPickupSignature] = useState<string | null>(null);
-  const [returnOrderNumber, setReturnOrderNumber] = useState("");
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  /** Le formulaire de numero de versement ne s'ouvre que sur demande. */
+  const [payoutFormOpen, setPayoutFormOpen] = useState(false);
+  /** Entree de l'ecran d'etats a deplier, quand on y arrive depuis le menu. */
+  const [stateFocus, setStateFocus] = useState<string | null>(null);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [avatarUrl, setAvatarUrl] = useState(user?.avatar_url || "");
   const [relayParcels, setRelayParcels] = useState<RelayParcel[]>([]);
-  const [parcelsLoading, setParcelsLoading] = useState(true);
-  const [capacityInput, setCapacityInput] = useState("");
-  const [hoursInput, setHoursInput] = useState("");
   const [notifications, setNotifications] = useState<RelayNotification[]>([]);
   const [relayDisputes, setRelayDisputes] = useState<RelayDispute[]>([]);
   const [operationBusy, setOperationBusy] = useState(false);
@@ -299,6 +335,10 @@ export default function RelayPointPage() {
   const [supportSubject, setSupportSubject] = useState("");
   const [supportBody, setSupportBody] = useState("");
   const [complianceDocuments, setComplianceDocuments] = useState<ComplianceDocument[]>([]);
+  /** Passages annonces au comptoir — voir `RelayPointCollectionScheduleView`. */
+  const [collectionPassages, setCollectionPassages] = useState<CollectionPassage[]>([]);
+  /** Onglet a ouvrir sur « Constats et retours » quand on y arrive d'ailleurs. */
+  const [disputeFocus, setDisputeFocus] = useState("");
   const locale = i18n.language.startsWith("en") ? "en" : "fr";
   const ui = relayCopy[locale];
   const activeLabel = ui.tabs[tab] ?? ui.brand;
@@ -307,18 +347,23 @@ export default function RelayPointPage() {
     setAvatarUrl(user?.avatar_url || "");
   }, [user?.avatar_url]);
   const refreshRelayData = useCallback(async () => {
-    setParcelsLoading(true);
-    const [parcelResult, notificationResult, disputeResult, documentResult] = await Promise.allSettled([
-      http<RelayParcel[]>("/api/shipping/relay-point/parcels/"),
-      http<RelayNotification[]>("/api/auth/notifications/"),
-      http<RelayDispute[]>("/api/auth/relay-point/disputes/open/"),
-      http<ComplianceDocument[]>("/api/auth/compliance-documents/"),
-    ]);
+    const [parcelResult, notificationResult, disputeResult, documentResult, collectionResult] =
+      await Promise.allSettled([
+        http<RelayParcel[]>("/api/shipping/relay-point/parcels/"),
+        http<RelayNotification[]>("/api/auth/notifications/"),
+        http<RelayDispute[]>("/api/auth/relay-point/disputes/open/"),
+        http<ComplianceDocument[]>("/api/auth/compliance-documents/"),
+        http<RelayCollectionSchedule>("/api/shipping/relay-point/collections/"),
+      ]);
     setRelayParcels(parcelResult.status === "fulfilled" && Array.isArray(parcelResult.value) ? parcelResult.value : []);
     setNotifications(notificationResult.status === "fulfilled" && Array.isArray(notificationResult.value) ? notificationResult.value : []);
     setRelayDisputes(disputeResult.status === "fulfilled" && Array.isArray(disputeResult.value) ? disputeResult.value : []);
     setComplianceDocuments(documentResult.status === "fulfilled" && Array.isArray(documentResult.value) ? documentResult.value : []);
-    setParcelsLoading(false);
+    setCollectionPassages(
+      collectionResult.status === "fulfilled" && Array.isArray(collectionResult.value?.passages)
+        ? collectionResult.value.passages
+        : [],
+    );
   }, []);
 
   useEffect(() => {
@@ -328,10 +373,39 @@ export default function RelayPointPage() {
   // Score de confiance affiche dans le menu lateral et le tableau de bord.
   // Il est calcule par le serveur a partir des operations reelles.
   const [trustScore, setTrustScore] = useState(0);
+  /** Palier public, affiche en pastille sur l'ecran Parametres. */
+  const [trustTier, setTrustTier] = useState("");
   useEffect(() => {
     http<RelayTrustScore>("/api/auth/trust-score/?role=RELAY_POINT")
-      .then((payload) => setTrustScore(Math.round(payload.score)))
+      .then((payload) => {
+        setTrustScore(Math.round(payload.score));
+        setTrustTier(payload.tier_display || "");
+      })
       .catch(() => setTrustScore(0));
+  }, []);
+
+  /**
+   * Numero de versement masque, pour l'ecran Parametres.
+   *
+   * Lu ici plutot que dans le composant : l'ecran des versements l'affiche
+   * deja, et deux composants qui interrogent le meme endpoint au meme
+   * moment ne se valent pas un appel de plus.
+   */
+  const [payoutMasked, setPayoutMasked] = useState("");
+  useEffect(() => {
+    http<Array<{ operator: string; masked_phone: string; is_primary: boolean; status: string }>>(
+      "/api/auth/payout-accounts/",
+    )
+      .then((comptes) => {
+        const principal =
+          comptes.find((compte) => compte.is_primary)
+          ?? comptes.find((compte) => compte.status === "VERIFIED")
+          ?? comptes[0];
+        setPayoutMasked(
+          principal ? `${principal.operator.replace("_MOMO", "").replace("_MONEY", "")} ${principal.masked_phone}` : "",
+        );
+      })
+      .catch(() => setPayoutMasked(""));
   }, []);
 
   const parcels = useMemo(
@@ -367,18 +441,14 @@ export default function RelayPointPage() {
     [relayParcels],
   );
 
-  const suggestedSlot = useMemo(() => {
-    const used = new Set(
+  /** Casiers occupes : le calcul d'emplacement a la reception les evite. */
+  const occupiedSlots = useMemo(
+    () =>
       relayParcels
-        .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status))
-        .map((parcel) => (parcel.slot_code || "").toUpperCase()),
-    );
-    for (let index = 1; index <= 999; index += 1) {
-      const candidate = `A-${String(index).padStart(2, "0")}`;
-      if (!used.has(candidate)) return candidate;
-    }
-    return "";
-  }, [relayParcels]);
+        .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.slot_code)
+        .map((parcel) => parcel.slot_code),
+    [relayParcels],
+  );
 
   const navBadges = useMemo<Partial<Record<RelayTab, number>>>(
     () => ({
@@ -450,8 +520,190 @@ export default function RelayPointPage() {
     address: relayProfile.address,
     status: relayAccount?.status ?? null,
   };
-  const capacityPct = Math.round((relayProfile.capacityUsed / relayProfile.capacityMax) * 100);
-  const safeCapacityPct = Number.isFinite(capacityPct) ? capacityPct : 0;
+  /**
+   * « 19 h » : l'echeance que le gerant repete toute la journee a ses clients.
+   *
+   * Lue dans la semaine, pas dans la chaine brute : un samedi qui ferme a 17 h
+   * ne doit pas devenir l'heure annoncee le mercredi.
+   */
+  const closingLabel = useMemo(() => todayClosing(parseOpeningHours(relayProfile.hours)), [relayProfile.hours]);
+
+  /**
+   * Les quatre compteurs de l'ecran « Aujourd'hui ».
+   *
+   * Ils lisent les memes colis que le reste du portail : un chiffre affiche en
+   * haut de l'accueil et l'ecran qu'il ouvre ne peuvent pas se contredire.
+   */
+  const todayCounters = useMemo(() => {
+    const inStock = relayParcels.filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status));
+
+    // « Dernier jour » = la garde se termine aujourd'hui, ou elle est deja
+    // depassee. Les deux cas appellent le meme geste au guichet, donc la meme
+    // ligne : relancer l'acheteur, ou declencher le retour vendeur.
+    const endOfToday = new Date();
+    endOfToday.setHours(23, 59, 59, 999);
+    const deadlineReached = (value: string | null) => {
+      if (!value) return false;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime()) && date <= endOfToday;
+    };
+
+    const now = Date.now();
+    const stillFree = (value: string | null) => {
+      if (!value) return false;
+      const date = new Date(value);
+      return !Number.isNaN(date.getTime()) && date.getTime() > now;
+    };
+
+    const lastDayParcels = inStock.filter((parcel) => deadlineReached(parcel.garde_deadline));
+    const freeGardeParcels = inStock.filter((parcel) => stillFree(parcel.garde_free_until));
+
+    // Prochaine sortie de garde gratuite : c'est la date qui interesse le
+    // gerant, pas la liste des colis concernes.
+    const nextFreeEnd = freeGardeParcels
+      .map((parcel) => parcel.garde_free_until)
+      .filter((value): value is string => Boolean(value))
+      .sort()[0] ?? null;
+
+    return {
+      readyForPickup: inStock.filter((parcel) => parcel.pickup_code).length,
+      lastDay: lastDayParcels.length,
+      // Ce qui doit QUITTER le local au prochain passage du livreur. Un colis
+      // deja parti porte une date de retour : il ne compte plus.
+      outbound: relayParcels.filter(
+        (parcel) => ["RETURN_REQUESTED", "REFUSED"].includes(parcel.status) && !parcel.returned_at,
+      ).length,
+      freeGarde: freeGardeParcels.length,
+      nextFreeEnd,
+    };
+  }, [relayParcels]);
+
+  /**
+   * Identite du transporteur annonce. Quand plusieurs missions convergent, on
+   * annonce leur nombre plutot que d'en elire une au hasard.
+   */
+  const arrivalCourier = useMemo(() => {
+    const refs = [...new Set(arrivals.map((arrival) => arrival.courierRef).filter(Boolean))];
+    if (refs.length === 0) return "";
+    if (refs.length === 1) return refs[0];
+    return locale === "en" ? `${refs.length} couriers` : `${refs.length} transporteurs`;
+  }, [arrivals, locale]);
+
+  const arrivalVehicle = useMemo(() => {
+    const labels = [...new Set(arrivals.map((arrival) => arrival.vehicleLabel).filter(Boolean))];
+    return labels.length === 1 ? labels[0] : "";
+  }, [arrivals]);
+
+  /**
+   * Reference de la mission attendue.
+   *
+   * Elle n'a de sens que pour une arrivee unique : annoncer « mission M-412 »
+   * quand trois livreurs convergent enverrait le gerant chercher la mauvaise.
+   */
+  const arrivalMission = useMemo(
+    () => (arrivals.length === 1 ? `mission M-${arrivals[0].shipmentId}` : ""),
+    [arrivals],
+  );
+
+  /**
+   * « A faire maintenant » : la liste des choses reellement en attente, dans
+   * l'ordre ou elles coutent cher si on les laisse trainer.
+   *
+   * Aucune ligne de remplissage — une liste qui affiche quelque chose en
+   * permanence cesse d'etre lue. Quand il n'y a rien, elle le dit.
+   */
+  const todayTodos = useMemo<RelayTodoItem[]>(() => {
+    const items: RelayTodoItem[] = [];
+
+    if (todayCounters.outbound > 0) {
+      items.push({
+        id: "outbound",
+        icon: Truck,
+        tone: "blue",
+        title: locale === "en"
+          ? `Prepare the courier collection`
+          : `Préparer la collecte livreur`,
+        detail: locale === "en"
+          ? `${todayCounters.outbound} parcel(s) to hand back: return, send-back, transfer.`
+          : `${todayCounters.outbound} colis à remettre au livreur : renvoi, retour, transfert.`,
+        onClick: () => setTab("sortie"),
+      });
+    }
+
+    if (todayCounters.lastDay > 0) {
+      items.push({
+        id: "last-day",
+        icon: Clock,
+        tone: "amber",
+        title: locale === "en"
+          ? `${todayCounters.lastDay} buyer(s) on the last day`
+          : `${todayCounters.lastDay} client(s) au dernier jour`,
+        detail: locale === "en"
+          ? "Storage ends today — chase the buyer, or start the return to the seller."
+          : "La garde se termine — relancez l'acheteur, ou lancez le retour vendeur.",
+        onClick: () => setTab("stock"),
+      });
+    }
+
+    if (relayDisputes.length > 0) {
+      const first = relayDisputes[0];
+      items.push({
+        id: "disputes",
+        icon: Scale,
+        tone: "orange",
+        title: locale === "en"
+          ? `${relayDisputes.length} report to complete`
+          : `${relayDisputes.length} constat à compléter`,
+        detail: `${first.ref} · ${first.reason_display}`,
+        onClick: () => setTab("litiges"),
+      });
+    }
+
+    if (!isKycApproved) {
+      items.push({
+        id: "kyc",
+        icon: IdCard,
+        tone: "red",
+        title: locale === "en" ? "KYC file to complete" : "Dossier KYC à compléter",
+        detail: locale === "en"
+          ? "BelivaY cannot pay you out until your documents are verified."
+          : "BelivaY ne peut pas vous verser vos gains tant que vos pièces ne sont pas vérifiées.",
+        onClick: () => setTab("kyc"),
+      });
+    }
+
+    if (!hasCapacity || !hasHours) {
+      items.push({
+        id: "setup",
+        icon: Warehouse,
+        tone: "red",
+        title: locale === "en" ? "Finish your setup" : "Terminer votre configuration",
+        detail: !hasCapacity
+          ? (locale === "en" ? "Declare how many slots your relay has." : "Déclarez le nombre de places de votre relais.")
+          : (locale === "en" ? "Set your opening days and hours." : "Renseignez vos jours et horaires d'ouverture."),
+        onClick: () => setTab("capacite"),
+      });
+    }
+
+    if (todayCounters.freeGarde > 0) {
+      items.push({
+        id: "free-garde",
+        icon: Layers,
+        tone: "slate",
+        title: locale === "en"
+          ? `${todayCounters.freeGarde} parcel(s) under free storage`
+          : `${todayCounters.freeGarde} colis en garde gratuite`,
+        detail: todayCounters.nextFreeEnd
+          ? (locale === "en"
+              ? `No fee until ${formatCourt(todayCounters.nextFreeEnd)}, then 200 F per day.`
+              : `Sans frais jusqu'au ${formatCourt(todayCounters.nextFreeEnd)}, puis 200 F par jour.`)
+          : (locale === "en" ? "No storage fee yet." : "Aucun frais de garde pour l'instant."),
+        onClick: () => setTab("stock"),
+      });
+    }
+
+    return items;
+  }, [hasCapacity, hasHours, isKycApproved, locale, relayDisputes, setTab, todayCounters]);
   const statusTone = relayProfile.status === "Ouvert" ? "emerald" : relayProfile.status === "Suspendu" ? "red" : "amber";
   const switchLanguage = () => i18n.changeLanguage(i18n.language.startsWith("fr") ? "en" : "fr");
   const changeLanguage = (next: "fr" | "en") => void i18n.changeLanguage(next);
@@ -539,87 +791,135 @@ export default function RelayPointPage() {
     }
   };
 
-  const pickupParcel = async () => {
-    const parcel = relayParcels.find(
-      (item) => ["RECEIVED", "STORED"].includes(item.status) && item.pickup_code.toUpperCase() === pickupCode.toUpperCase(),
-    );
-    if (!parcel) {
-      setOperationMessage({ tone: "error", text: "Aucun colis en stock ne correspond à ce code de retrait." });
-      return;
-    }
-    if (parcel.authorized_pickup_name) {
-      const confirmed = window.confirm(
-        `Ce client a autorisé ${parcel.authorized_pickup_name}${parcel.authorized_pickup_phone ? ` (${parcel.authorized_pickup_phone})` : ""} à retirer ce colis à sa place.\n\nVérifiez l'identité de la personne présente au guichet avant de continuer.`,
-      );
-      if (!confirmed) return;
-      if (!pickupIdReference.trim()) {
-        setOperationMessage({ tone: "error", text: "Retrait par un tiers : renseignez sa pièce d'identité (type + numéro) avant de valider." });
-        return;
-      }
-    }
-    if (!pickupPhoto) {
-      setOperationMessage({ tone: "error", text: "Prenez une photo de la remise avant de valider (point de garde strict, synchro immédiate requise)." });
-      return;
-    }
-    if (!pickupSignature) {
-      setOperationMessage({ tone: "error", text: "Faites signer le client avant de valider (contrôle au retrait : code + pièce d'identité + photo + signature)." });
-      return;
-    }
+  /**
+   * Remise au comptoir.
+   *
+   * Un seul code couvre tous les colis de la commande presents chez nous
+   * (§8.3) : les preuves partent donc colis par colis — chaque expedition doit
+   * pouvoir se defendre seule devant un litige — mais la remise, elle, part en
+   * un seul appel.
+   *
+   * Point de garde strict (regle verrouillee) : le relais est un lieu fixe,
+   * presume connecte. Les preuves doivent REUSSIR avant la remise, pas etre
+   * mises en file d'attente.
+   */
+  const handOverParcels = async (input: HandOverInput): Promise<boolean> => {
+    if (input.parcelIds.length === 0) return false;
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      // Point de garde strict (regle verrouillee) : le point relais est
-      // presume toujours connecte, la preuve doit reussir AVANT de
-      // considerer la remise terminee — pas de file d'attente ici.
-      const evidenceForm = new FormData();
-      evidenceForm.append("parcel_id", String(parcel.id));
-      evidenceForm.append("stage", "RELAY_RELEASED");
-      evidenceForm.append("file", pickupPhoto, pickupPhoto.name || "remise.jpg");
-      await http("/api/shipping/relay-point/evidence/", { method: "POST", body: evidenceForm });
+      for (const parcelId of input.parcelIds) {
+        const photoForm = new FormData();
+        photoForm.append("parcel_id", String(parcelId));
+        photoForm.append("stage", "RELAY_RELEASED");
+        photoForm.append("file", input.photo, input.photo.name || "remise.jpg");
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: photoForm });
 
-      const signatureForm = new FormData();
-      signatureForm.append("parcel_id", String(parcel.id));
-      signatureForm.append("stage", "RELAY_RELEASED_SIGNATURE");
-      signatureForm.append("file", dataUrlToBlob(pickupSignature), "signature.png");
-      await http("/api/shipping/relay-point/evidence/", { method: "POST", body: signatureForm });
+        const signatureForm = new FormData();
+        signatureForm.append("parcel_id", String(parcelId));
+        signatureForm.append("stage", "RELAY_RELEASED_SIGNATURE");
+        signatureForm.append("file", dataUrlToBlob(input.signature), "signature.png");
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: signatureForm });
+      }
 
       await http<RelayParcel>("/api/shipping/relay-point/pickup/", {
         method: "POST",
         body: JSON.stringify({
-          parcel_id: parcel.id,
-          pickup_code: pickupCode.toUpperCase(),
-          proof_note: "Remise confirmée au guichet",
-          picked_up_by_name: parcel.authorized_pickup_name || "",
-          picked_up_by_id_reference: pickupIdReference.trim(),
+          parcel_id: input.parcelIds[0],
+          pickup_code: input.code,
+          buyer_inspection: input.inspection,
+          proof_note:
+            input.inspection === "ACCEPTED"
+              ? "Colis ouvert et accepte par le client au comptoir"
+              : "Remise au comptoir sans ouverture",
+          picked_up_by_name: input.authorizedName,
+          picked_up_by_id_reference: input.idReference,
         }),
       });
-      setOperationMessage({ tone: "success", text: `Retrait de la commande BV-${parcel.order_id} confirmé.` });
-      setPickupCode("");
-      setPickupPhoto(null);
-      setPickupIdReference("");
-      setPickupSignature(null);
+
+      const count = input.parcelIds.length;
+      setOperationMessage({
+        tone: "success",
+        text:
+          input.inspection === "ACCEPTED"
+            ? `${count > 1 ? `${count} colis remis` : "Colis remis"} et accepté par le client — le vendeur va être payé.`
+            : `${count > 1 ? `${count} colis remis` : "Colis remis"}. Le client garde 7 jours pour signaler un problème.`,
+      });
       await refreshRelayData();
+      return true;
     } catch (error) {
       showOperationError(error);
+      return false;
     } finally {
       setOperationBusy(false);
     }
   };
 
-  const receiveReturn = async () => {
-    const orderId = returnOrderNumber.trim();
-    if (!orderId) return;
+  /**
+   * Constat au comptoir : le colis NE SORT PAS.
+   *
+   * On n'appelle donc pas la remise — le colis reste en stock, et la preuve
+   * photo suffit a ouvrir le dossier cote BelivaY. Un point relais ne peut pas
+   * ouvrir de litige sur la commande d'un acheteur, et c'est voulu : il
+   * constate, il ne juge pas.
+   */
+  const reportCounterIssue = async (input: CounterIssueInput): Promise<boolean> => {
     setOperationBusy(true);
     setOperationMessage(null);
     try {
-      await http("/api/shipping/relay-point/returns/receive/", {
-        method: "POST",
-        body: JSON.stringify({ order_id: orderId }),
+      // Une preuve par cliche : le serveur attache un fichier par appel, et
+      // deux vues valent mieux qu'une devant une mediation.
+      for (const [index, photo] of input.photos.entries()) {
+        const form = new FormData();
+        form.append("parcel_id", String(input.parcelId));
+        form.append("stage", "RELAY_RELEASED");
+        form.append("file", photo, photo.name || `constat-${index + 1}.jpg`);
+        form.append("description", `Constat au comptoir — ${input.description}`);
+        await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      }
+
+      setOperationMessage({
+        tone: "success",
+        text: "Constat transmis à BelivaY. Le colis reste en stock chez vous jusqu'à la décision.",
       });
-      setOperationMessage({ tone: "success", text: `Retour de la commande #${orderId} confirmé — direction inspection.` });
-      setReturnOrderNumber("");
+      await refreshRelayData();
+      return true;
     } catch (error) {
       showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  /**
+   * Dépôt d'un retour au comptoir, avec ses deux photos de scellé.
+   *
+   * Le serveur les EXIGE désormais (`RelayPointReturnReceiveView`) : un
+   * retour déposé ne crée aucun `RelayParcel`, il échappe donc à toutes les
+   * preuves de colis. Ces deux clichés sont la seule trace de l'état du
+   * paquet au moment où le gérant l'a pris en charge.
+   *
+   * L'envoi passe en `FormData` — pas de JSON, il transporte des fichiers.
+   */
+  const receiveReturn = async (returnId: number, photos: File[]): Promise<boolean> => {
+    if (!returnId || photos.length !== 2) return false;
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      const form = new FormData();
+      form.append("return_id", String(returnId));
+      photos.forEach((photo) => form.append("photos", photo));
+      await http("/api/shipping/relay-point/returns/receive/", { method: "POST", body: form });
+      setOperationMessage({
+        tone: "success",
+        text: `Retour RT-${returnId} enregistré — il part à l'inspection avec la prochaine collecte.`,
+      });
+      await refreshRelayData();
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
     } finally {
       setOperationBusy(false);
     }
@@ -677,318 +977,324 @@ export default function RelayPointPage() {
   };
 
 
+  /**
+   * L'onglet d'accueil.
+   *
+   * Tout ce qui se lit au guichet vit dans `RelayToday` : salutation, arrivee
+   * livreur, etat du local, actions en attente, gains, reputation. Cet ecran
+   * est concu pour un telephone tenu d'une main, et s'elargit proprement.
+   *
+   * Il ne porte plus le rappel des 4 etapes du guichet ni le journal
+   * operationnel : le premier repetait la procedure detaillee de l'ecran
+   * Reception, le second n'a jamais eu de source de donnees. Deux panneaux de
+   * lecture sous la pile d'actions donnaient surtout a l'accueil une longueur
+   * que personne ne faisait defiler.
+   */
   const renderDashboard = () => (
-    <div className="space-y-5">
-      {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="RELAY_POINT" />}
-      {/* Deux cartes par rangee des le telephone : empilees une par une, ces
-          quatre reperes poussaient les arrivees du jour sous la ligne de
-          flottaison. En 2x2 le gerant les embrasse d'un seul regard. */}
-      <section className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
-        {[
-          ["Arrivees a confirmer", arrivals.length.toString(), PackagePlus, "Scan QR + preuves"],
-          ["Colis en stock", parcels.length.toString(), PackageCheck, "Slots anonymisés"],
-          ["Capacite", `${relayProfile.capacityUsed}/${relayProfile.capacityMax}`, Warehouse, `${safeCapacityPct}% utilise`],
-          [ui.tabs.tokens, ui.dev, BadgeCheck, locale === "en" ? "Module pending" : "Module en cours"],
-        ].map(([label, value, Icon, sub]) => (
-          <article key={label as string} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900 sm:p-5">
-            {/* Libelle et icone sur la meme ligne : a demi-largeur, une pastille
-                posee au-dessus du texte mangeait la moitie de la carte. */}
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 text-[10px] font-black uppercase leading-tight tracking-[0.1em] text-slate-500 sm:text-[11px] sm:tracking-[0.14em]">
-                {label as string}
-              </div>
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-200 sm:h-11 sm:w-11 sm:rounded-2xl">
-                <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-              </div>
-            </div>
-            <div className="mt-2 text-2xl font-black leading-none text-slate-950 dark:text-white sm:mt-3 sm:text-3xl">{value as string}</div>
-            <div className="mt-1.5 text-xs font-semibold leading-snug text-slate-500 dark:text-slate-400 sm:text-sm">{sub as string}</div>
-          </article>
-        ))}
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
-        <Panel
-          kicker="Arrivees prevues"
-          title="Livreurs en approche"
-          action={<button onClick={() => setTab("reception")} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white">Receptionner</button>}
-        >
-          <div className="space-y-3">
-            {arrivals.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500">
-                {ui.emptyArrivals}
-              </div>
-            ) : arrivals.map((arrival) => (
-              <div key={arrival.id} className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-                    <Truck size={20} />
-                  </div>
-                  <div>
-                    <div className="font-black text-slate-950 dark:text-white">{arrival.internalRef} · {arrival.sizeLabel}</div>
-                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                      {arrival.courierRef || "Livreur à assigner"}{arrival.vehicleLabel ? ` · ${arrival.vehicleLabel}` : ""}
-                    </div>
-                  </div>
-                </div>
-                <button onClick={() => setTab("reception")} className="rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-black text-blue-700">
-                  Scanner QR
-                </button>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel kicker="Trust & revenus" title="Performance point relais">
-          <div className="flex items-center gap-5">
-            <div className="flex h-28 w-28 flex-shrink-0 items-center justify-center rounded-full border-[10px] border-blue-100 bg-white dark:border-blue-950 dark:bg-slate-900">
-              <div className="text-center">
-                <div className="text-3xl font-black text-blue-700">{relayProfile.trust}</div>
-                <div className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">/100</div>
-              </div>
-            </div>
-            <div className="min-w-0 flex-1">
-              <StatusPill tone={relayProfile.trust > 0 ? "blue" : "slate"}>{relayProfile.trust > 0 ? "Score public acheteur" : "Score en attente de données"}</StatusPill>
-              <p className="mt-3 text-sm leading-6 text-slate-600">
-                Le Trust Score dépend de la ponctualité, de la sécurité du stockage, des retraits sans litige et de la satisfaction acheteur.
-                Il reste à 0 tant que BelivaY n'a pas assez d'opérations réelles pour le calculer.
-              </p>
-              <button onClick={() => setTab("trust")} className="mt-4 inline-flex items-center gap-2 text-sm font-black text-blue-700">
-                Voir le detail <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        </Panel>
-      </section>
-
-      <section className="grid gap-5 xl:grid-cols-[0.95fr_1.05fr]">
-        <Panel kicker="Workflow guichet" title="Actions attendues">
-          <div className="space-y-3">
-            {[
-              ["1", "Reception livreur", "Scanner la mission, controler l'etat du colis, prendre les preuves.", QrCode],
-              ["2", "Stockage anonyme", "Attribuer un slot sans exposer le vendeur ni le détail client inutile.", Warehouse],
-              ["3", "Retrait acheteur", "Vérifier le code de retrait et la pièce d'identité si BelivaY l'exige.", KeyRound],
-              ["4", "Litige J+7", "Remonter tout colis bloque, endommage ou non retire.", Scale],
-            ].map(([step, title, body, Icon]) => (
-              <div key={step as string} className="flex gap-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white text-blue-700 shadow-sm dark:bg-slate-900 dark:text-blue-300">
-                  <Icon size={18} />
-                </div>
-                <div>
-                  <div className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-700 dark:text-blue-300">Etape {step as string}</div>
-                  <div className="font-black text-slate-950 dark:text-white">{title as string}</div>
-                  <div className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-
-        <Panel kicker="Activite recente" title="Journal operationnel">
-          <div className="grid gap-3">
-            {history.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-400">
-                {ui.emptyActivity}
-              </div>
-            ) : history.map(([time, action, ref, detail]) => (
-              <div key={`${time}-${ref}`} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-                <div className="flex items-center justify-between gap-3">
-                  <strong className="text-sm text-slate-950 dark:text-white">{action}</strong>
-                  <span className="text-xs font-bold text-slate-400">{time}</span>
-                </div>
-                <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">{ref} · {detail}</div>
-              </div>
-            ))}
-          </div>
-        </Panel>
-      </section>
-    </div>
+    <RelayToday
+      locale={locale}
+      manager={relayProfile.manager}
+      arrivalCount={arrivals.length}
+      arrivalCourier={arrivalCourier}
+      arrivalVehicle={arrivalVehicle}
+      arrivalMission={arrivalMission}
+      readyForPickup={todayCounters.readyForPickup}
+      lastDay={todayCounters.lastDay}
+      outbound={todayCounters.outbound}
+      capacityUsed={relayProfile.capacityUsed}
+      capacityMax={relayProfile.capacityMax}
+      closingLabel={closingLabel}
+      todos={todayTodos}
+      trust={relayProfile.trust}
+      onNavigate={setTab}
+      footer={
+        <>
+          <EvidenceRequestInbox accent="#2563EB" />
+          {!Capacitor.isNativePlatform() && <AppDownloadBanner portal="RELAY_POINT" />}
+        </>
+      }
+    />
   );
+
+  /**
+   * Reserve a la reception : le colis entre, mais son etat est date.
+   *
+   * On ne refuse pas — le client attend son colis et un angle enfonce ne le
+   * rend pas inutilisable. La photo part en preuve `RELAY_RECEIVED`, donc
+   * attachee a l'expedition : si le contenu est casse, la reserve prouve que
+   * le dommage etait la avant nous.
+   */
+  const reserveOnReception = async (input: { parcelId: number; photo: File; note: string }): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      const form = new FormData();
+      form.append("parcel_id", String(input.parcelId));
+      form.append("stage", "RELAY_RECEIVED");
+      form.append("file", input.photo, input.photo.name || "reserve.jpg");
+      form.append("description", `Réserve au contrôle — ${input.note}`);
+      await http("/api/shipping/relay-point/evidence/", { method: "POST", body: form });
+      setOperationMessage({ tone: "success", text: "Réserve enregistrée. Le colis peut entrer en stock." });
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
+  /**
+   * Ecart de comptage.
+   *
+   * Aucun endpoint ne compare l'annonce au reel : on le trace par le canal
+   * support, horodate, pendant que le livreur est encore la. C'est ce qui
+   * fait la difference entre un ecart constate et un colis disparu.
+   */
+  const reportLotGap = async (note: string): Promise<boolean> => {
+    setOperationBusy(true);
+    setOperationMessage(null);
+    try {
+      await http("/api/contact/", {
+        method: "POST",
+        body: JSON.stringify({
+          name: relayProfile.name,
+          email: user?.email || "support@belivay.com",
+          phone: relayAccount?.phone || "",
+          subject: "[Point relais] Écart de comptage à la réception",
+          message: note,
+        }),
+      });
+      setOperationMessage({ tone: "success", text: "Écart signalé à BelivaY. Le livreur en répond." });
+      return true;
+    } catch (error) {
+      showOperationError(error);
+      return false;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
 
   const renderReception = () => (
     <RelayReception
       arrivals={arrivals}
-      loading={parcelsLoading}
       busy={operationBusy}
-      suggestedSlot={suggestedSlot}
+      occupiedSlots={occupiedSlots}
       managerName={relayProfile.manager}
       onReceive={receiveScannedParcel}
       onRefuse={refuseScannedParcel}
+      onReserve={reserveOnReception}
+      onReportGap={reportLotGap}
+      placesUsed={placesUsed}
+      capacityMax={relayProfile.capacityMax}
+      outbound={todayCounters.outbound}
+      onOpenOutbound={() => setTab("sortie")}
     />
   );
 
+  /**
+   * Les colis en stock, vus par le plan des etageres.
+   *
+   * Le plan a besoin des echeances de garde, que le serveur calcule deja, et
+   * de la taille brute — c'est elle qui decide de la zone. Il n'a besoin ni
+   * du telephone du client ni de son adresse.
+   */
+  const shelfParcels = useMemo<ShelfParcel[]>(
+    () =>
+      relayParcels
+        .filter((parcel) => !["PICKED_UP", "RETURNED_TO_VENDOR", "RETURNED_TO_BELIVAY"].includes(parcel.status))
+        .map((parcel) => ({
+          id: parcel.id,
+          orderId: parcel.order_id,
+          ref: `BV-${parcel.order_id}`,
+          slot: parcel.slot_code || "",
+          size: parcel.parcel_size || "STANDARD",
+          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+          buyerRef: anonymizedBuyerRef(parcel),
+          status: parcel.status,
+          pickupCode: parcel.pickup_code || "",
+          receivedAt: parcel.received_at,
+          gardeFreeUntil: parcel.garde_free_until,
+          gardeDeadline: parcel.garde_deadline,
+          gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
+        })),
+    [relayParcels],
+  );
+
+  /**
+   * Places occupees, et non nombre de colis.
+   *
+   * Un encombrant mange la place de cinq petits : compter les colis pour
+   * mesurer un local revient a dire qu'un refrigerateur et une enveloppe
+   * s'equivalent.
+   */
+  const placesUsed = useMemo(
+    () => shelfParcels.reduce((total, parcel) => total + placesOf(parcel.size), 0),
+    [shelfParcels],
+  );
+
+  /**
+   * Les sorties du relais.
+   *
+   * Un colis quitte le local pour trois raisons que le serveur sait dire :
+   * refuse au controle, renvoye faute de retrait, ou retour valide. Le motif
+   * n'est pas un champ — il se lit du statut et de l'echeance de garde, et
+   * c'est lui qui decide de la couleur et de la phrase affichees.
+   */
+  const outboundParcels = useMemo(() => {
+    const now = Date.now();
+
+    const jourDeGarde = (parcel: RelayParcel) => {
+      if (!parcel.received_at) return 0;
+      const recu = new Date(parcel.received_at);
+      if (Number.isNaN(recu.getTime())) return 0;
+      return Math.floor((now - recu.getTime()) / 86_400_000) + 1;
+    };
+
+    const motif = (parcel: RelayParcel): OutboundReason => {
+      if (parcel.status === "REFUSED") return "refus";
+      const echeance = parcel.garde_deadline ? new Date(parcel.garde_deadline) : null;
+      if (echeance && !Number.isNaN(echeance.getTime()) && echeance.getTime() < now) return "renvoi";
+      return "retour";
+    };
+
+    const decrire = (parcel: RelayParcel, reason: OutboundReason) => {
+      if (reason === "refus") return "refusé au contrôle → vendeur";
+      if (reason === "renvoi") return `non retiré (J${jourDeGarde(parcel)}) → vendeur`;
+      return "retour validé → vendeur";
+    };
+
+    const vers = (parcel: RelayParcel, reason: OutboundReason): OutboundParcel => ({
+      id: parcel.id,
+      ref: `BV-${parcel.order_id}`,
+      slot: parcel.slot_code || "",
+      reason,
+      detail: decrire(parcel, reason),
+      returnedAt: parcel.returned_at,
+    });
+
+    const pending = relayParcels
+      .filter((parcel) => ["RETURN_REQUESTED", "REFUSED"].includes(parcel.status) && !parcel.returned_at)
+      .map((parcel) => vers(parcel, motif(parcel)));
+
+    const departed = relayParcels
+      .filter((parcel) => Boolean(parcel.returned_at))
+      .sort((a, b) => (b.returned_at || "").localeCompare(a.returned_at || ""))
+      .map((parcel) => vers(parcel, parcel.status === "REFUSED" ? "refus" : "renvoi"));
+
+    return { pending, departed };
+  }, [relayParcels]);
+
+  /**
+   * Sortie validee : un appel par colis, vers le vendeur.
+   *
+   * On ne s'arrete pas au premier echec — le livreur est deja reparti avec
+   * les colis acceptes, et marquer les autres comme restes est plus juste
+   * que d'annuler tout le lot.
+   */
+  const validateOutbound = async (ids: number[]): Promise<boolean> => {
+    if (ids.length === 0) return false;
+    setOperationBusy(true);
+    setOperationMessage(null);
+    const echecs: number[] = [];
+    try {
+      for (const parcelId of ids) {
+        try {
+          await http("/api/shipping/relay-point/return/", {
+            method: "POST",
+            body: JSON.stringify({
+              parcel_id: parcelId,
+              destination: "VENDOR",
+              proof_note: `Sortie validée au comptoir · ${new Date().toLocaleString("fr-FR")}`,
+            }),
+          });
+        } catch {
+          echecs.push(parcelId);
+        }
+      }
+      const partis = ids.length - echecs.length;
+      setOperationMessage(
+        echecs.length === 0
+          ? { tone: "success", text: `${partis} colis remis au livreur — la garde ne vous incombe plus.` }
+          : {
+              tone: "error",
+              text: `${partis} colis sortis, ${echecs.length} refusés par le serveur. Les colis refusés restent chez vous.`,
+            },
+      );
+      await refreshRelayData();
+      return echecs.length === 0;
+    } finally {
+      setOperationBusy(false);
+    }
+  };
+
   const renderStock = () => (
-    <div className="space-y-5">
-      <Panel kicker="Stock anonyme" title="Colis en stock">
-        <div className="mb-4 rounded-2xl border border-blue-100 bg-blue-50 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-bold text-blue-950">Capacite utilisee</span>
-            <strong className="text-sm text-blue-700">{safeCapacityPct}%</strong>
-          </div>
-          <div className="mt-3 h-3 overflow-hidden rounded-full bg-white">
-            <div className={`h-full ${safeCapacityPct > 85 ? "bg-amber-500" : "bg-blue-600"}`} style={{ width: `${safeCapacityPct}%` }} />
-          </div>
-        </div>
-        <div className="grid gap-3 md:hidden">
-          {parcelsLoading ? (
-            <div className="rounded-2xl border border-dashed border-blue-200 bg-blue-50 p-5 text-sm font-semibold text-blue-900">Chargement des colis...</div>
-          ) : parcels.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-800 dark:text-slate-300">
-              {ui.emptyStock}
-            </div>
-          ) : parcels.map((parcel) => (
-            <article key={parcel.ref} className="rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h3 className="font-black text-slate-950 dark:text-white">{parcel.ref}</h3>
-                  <p className="mt-1 text-xs font-semibold text-slate-500">{parcel.buyer}</p>
-                </div>
-                <StatusPill tone={parcel.tone as "emerald" | "amber" | "red"}>{parcel.status}</StatusPill>
-              </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <div className="rounded-2xl bg-white p-3 dark:bg-slate-900">
-                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Slot</div>
-                  <div className="mt-1 font-black text-slate-950 dark:text-white">{parcel.slot}</div>
-                </div>
-                <div className="rounded-2xl bg-white p-3 dark:bg-slate-900">
-                  <div className="text-[10px] font-black uppercase tracking-[0.12em] text-slate-400">Recu</div>
-                  <div className="mt-1 font-black text-slate-950 dark:text-white">{parcel.age}</div>
-                </div>
-              </div>
-              <button onClick={() => setTab("retrait")} className="mt-3 w-full rounded-2xl border border-blue-200 bg-white px-4 py-3 text-sm font-black text-blue-700 dark:border-blue-800 dark:bg-slate-900 dark:text-blue-200">Passer au retrait</button>
-            </article>
-          ))}
-        </div>
-        <div className="hidden overflow-x-auto md:block">
-          <table className="min-w-[760px] w-full text-left text-sm">
-            <thead className="text-xs uppercase tracking-[0.12em] text-slate-400">
-              <tr>
-                <th className="py-3">Reference</th>
-                <th>Slot</th>
-                <th>Acheteur</th>
-                <th>Delai</th>
-                <th>Statut</th>
-                <th className="text-right">Action</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {parcels.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="py-8 text-center text-sm font-semibold text-slate-500">
-                    {ui.emptyStock}
-                  </td>
-                </tr>
-              ) : parcels.map((parcel) => (
-                <tr key={parcel.ref}>
-                  <td className="py-4 font-black text-slate-950">{parcel.ref}</td>
-                  <td>{parcel.slot}</td>
-                  <td>{parcel.buyer}</td>
-                  <td>{parcel.age}</td>
-                  <td><StatusPill tone={parcel.tone as "emerald" | "amber" | "red"}>{parcel.status}</StatusPill></td>
-                  <td className="text-right">
-                    <button onClick={() => setTab("retrait")} className="rounded-xl border border-blue-200 px-3 py-2 text-xs font-black text-blue-700">Retrait</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Panel>
+    <div className="space-y-4">
+      <header className="pt-0.5">
+        <h2 className="text-[27px] font-black leading-[1.15] tracking-[-0.015em] text-slate-900 dark:text-white">
+          Colis en stock
+        </h2>
+        <p className="mt-1.5 text-[14.5px] font-medium text-slate-500 dark:text-slate-400">
+          {shelfParcels.length} colis · {placesUsed} places sur {relayProfile.capacityMax}
+        </p>
+      </header>
+
+      <RelayShelfPlan
+        parcels={shelfParcels}
+        capacityPlaces={relayProfile.capacityMax}
+        onOpenParcel={() => setTab("retrait")}
+      />
+
+      <RelayStockList parcels={shelfParcels} onOpenParcel={() => setTab("retrait")} />
+
+      <RelayGardeGrid />
     </div>
+  );
+
+
+  /**
+   * Les colis en stock, tels que le comptoir a besoin de les voir.
+   *
+   * On ne passe pas `RelayParcel` brut a l'ecran de retrait : celui-ci n'a
+   * aucune raison de connaitre le telephone du client ni son adresse. Il lui
+   * faut de quoi retrouver un casier et controler une identite, rien de plus.
+   */
+  const pickupParcels = useMemo<RelayPickupParcel[]>(
+    () =>
+      relayParcels
+        .filter((parcel) => ["RECEIVED", "STORED"].includes(parcel.status) && parcel.pickup_code)
+        .map((parcel) => ({
+          id: parcel.id,
+          orderId: parcel.order_id,
+          ref: `BV-${parcel.order_id}`,
+          slot: parcel.slot_code || "à définir",
+          sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+          pickupCode: parcel.pickup_code,
+          authorizedName: parcel.authorized_pickup_name || "",
+          authorizedPhone: parcel.authorized_pickup_phone || "",
+          gardeFeeXaf: parcel.garde_fee_due_xaf || 0,
+        })),
+    [relayParcels],
   );
 
   const renderRetrait = () => (
-    <div className="grid gap-5 xl:grid-cols-[0.8fr_1.2fr]">
-      <Panel kicker="Retrait acheteur" title="Code de retrait">
-        <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
-          <label className="text-xs font-black uppercase tracking-[0.14em] text-slate-500">Code a 6 chiffres</label>
-          <input
-            value={pickupCode}
-            onChange={(event) => setPickupCode(event.target.value.replace(/[^a-z0-9]/gi, "").toUpperCase().slice(0, 6))}
-            className="mt-3 w-full rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center text-3xl font-black tracking-[0.35em] outline-none focus:border-blue-500"
-            placeholder="000000"
-          />
-          <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-slate-300 bg-white px-4 py-3 text-sm font-black text-slate-600">
-            <Camera size={16} />
-            {pickupPhoto ? "Photo prête" : "Photo de la remise (obligatoire)"}
-            <input
-              type="file"
-              accept="image/*"
-              capture="environment"
-              className="sr-only"
-              onChange={(event) => setPickupPhoto(event.target.files?.[0] || null)}
-            />
-          </label>
-          {(() => {
-            const matched = relayParcels.find(
-              (item) => ["RECEIVED", "STORED"].includes(item.status) && item.pickup_code.toUpperCase() === pickupCode.toUpperCase(),
-            );
-            if (!matched?.authorized_pickup_name) return null;
-            return (
-              <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4">
-                <p className="text-xs font-black uppercase tracking-[0.14em] text-amber-700">
-                  Retrait par un tiers — {matched.authorized_pickup_name}
-                </p>
-                <label className="mt-2 block text-xs font-bold text-slate-600">Pièce d'identité présentée (type + numéro)</label>
-                <input
-                  value={pickupIdReference}
-                  onChange={(event) => setPickupIdReference(event.target.value)}
-                  placeholder="Ex : CNI n° 1234567890"
-                  className="mt-1 w-full rounded-xl border border-amber-300 bg-white px-3 py-2.5 text-sm font-semibold outline-none focus:border-amber-500"
-                />
-              </div>
-            );
-          })()}
-          <div className="mt-4">
-            <SignaturePad
-              label="Signature du client"
-              hint="Contrôle au retrait : code + pièce d'identité + photo + signature"
-              onChange={setPickupSignature}
-              disabled={operationBusy}
-            />
-          </div>
-          <button
-            type="button"
-            onClick={pickupParcel}
-            disabled={operationBusy || pickupCode.length !== 6 || !pickupPhoto || !pickupSignature}
-            className="mt-4 w-full rounded-2xl bg-blue-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {operationBusy ? "Vérification..." : "Vérifier et remettre"}
-          </button>
-        </div>
-        <div className="mt-5 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
-          <label className="text-xs font-black uppercase tracking-[0.14em] text-emerald-700">Dépôt d'un retour acheteur</label>
-          <p className="mt-1 text-xs text-emerald-800/80">Un client vient déposer un colis retourné (retour approuvé par le vendeur).</p>
-          <input
-            value={returnOrderNumber}
-            onChange={(event) => setReturnOrderNumber(event.target.value.replace(/\D/g, ""))}
-            className="mt-3 w-full rounded-2xl border border-emerald-200 bg-white px-4 py-3 text-center text-lg font-black tracking-wide outline-none focus:border-emerald-500"
-            placeholder="Numéro de commande (ex: 128)"
-          />
-          <button type="button" onClick={receiveReturn} disabled={operationBusy || !returnOrderNumber.trim()} className="mt-3 w-full rounded-2xl bg-emerald-600 px-5 py-3 text-sm font-black text-white disabled:cursor-not-allowed disabled:opacity-45">
-            {operationBusy ? "Vérification..." : "Confirmer le dépôt"}
-          </button>
-        </div>
-      </Panel>
-      <Panel kicker="Procedure de remise" title="Verification avant sortie">
-        <div className="grid gap-3 md:grid-cols-3">
-          {[
-            ["Code retrait", "Correspondance exacte avec le colis.", KeyRound],
-            ["Identité", "Contrôle CNI si requis par BelivaY.", IdCard],
-            ["Photo remise", "Preuve de remise avant clôture.", Camera],
-          ].map(([title, body, Icon]) => (
-            <div key={title as string} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-              <Icon className="text-blue-700" size={22} />
-              <div className="mt-3 font-black text-slate-950">{title as string}</div>
-              <div className="mt-1 text-sm leading-6 text-slate-600">{body as string}</div>
-            </div>
-          ))}
-        </div>
-      </Panel>
-    </div>
+    <RelayPickup
+      parcels={pickupParcels}
+      busy={operationBusy}
+      onHandOver={handOverParcels}
+      onIssue={reportCounterIssue}
+      onOpenReturnDeposit={() => {
+        setDisputeFocus("retour");
+        setTab("litiges");
+      }}
+      onOpenErrorStates={() => {
+        setStateFocus("erreur");
+        setTab("etats");
+      }}
+    />
   );
 
-  const renderTrust = () => <RelayTrust onError={showOperationError} />;
+  const renderTrust = () => <RelayTrust onError={showOperationError} onNavigate={setTab} />;
 
   const renderTokens = () => (
     <Panel kicker="Relais Tokens" title="Module en cours de developpement">
@@ -1020,98 +1326,89 @@ export default function RelayPointPage() {
     </Panel>
   );
 
+  /**
+   * L'ecran des versements.
+   *
+   * `RelayPayouts` repond aux trois questions du gerant — combien, quand, sur
+   * quel numero. Le panneau complet reste dessous : grille tarifaire,
+   * ajustements, historique des versements. On ne perd rien, on hierarchise.
+   */
   const renderFinances = () => (
-    <>
+    <div className="space-y-4">
+      <RelayPayouts
+        onSupport={() => setTab("messagerie")}
+        onChangeNumber={() => setPayoutFormOpen(true)}
+      />
+      {/* Le parcours de changement de numero — deux codes SMS puis
+          verification — ne se deroule que si on le demande : sur un ecran
+          qu'on ouvre pour voir son argent, un formulaire de numero ouvert en
+          permanence invite a toucher a ce qui marche. */}
+      {payoutFormOpen ? <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" /> : null}
       <RelayFinancePanel onOpenKyc={() => setTab("kyc")} />
-      <div className="mt-4">
-        <PayoutAccountVerificationCard ownerRole="RELAY_POINT" accent="#1D4ED8" />
-      </div>
-    </>
+    </div>
   );
 
   const renderCapacite = () => (
-    <Panel kicker="Capacite & horaires" title="Disponibilite du point relais">
-      <div className="grid gap-4 lg:grid-cols-[1fr_1fr]">
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
-          <Warehouse className="text-blue-700 dark:text-blue-300" />
-          <div className="mt-3 font-black text-slate-950 dark:text-white">Stockage par slots</div>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {relayProfile.capacityUsed} colis stockés sur {relayProfile.capacityMax} places. La capacité doit être déclarée avant ouverture.
-          </p>
-          <div className="mt-4 h-3 overflow-hidden rounded-full bg-white dark:bg-slate-900">
-            <div className={`h-full ${safeCapacityPct > 85 ? "bg-amber-500" : "bg-blue-600"}`} style={{ width: `${safeCapacityPct}%` }} />
-          </div>
-          <div className="mt-4 flex gap-2">
-            <input value={capacityInput} onChange={(event) => setCapacityInput(event.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder={`${relayProfile.capacityMax || 50}`} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-4 py-2 font-bold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
-            <button type="button" disabled={operationBusy || !capacityInput} onClick={() => void updateRelaySettings({ storage_capacity: Number(capacityInput) })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">Enregistrer</button>
-          </div>
-        </div>
-        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
-          <Clock3 className="text-blue-700 dark:text-blue-300" />
-          <div className="mt-3 font-black text-slate-950 dark:text-white">Horaires d'accueil</div>
-          <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
-            {relayProfile.hours}. Les horaires alimentent la sélection côté acheteur et les tournées livreur.
-          </p>
-          <div className="mt-4 flex gap-2">
-            <input value={hoursInput} onChange={(event) => setHoursInput(event.target.value)} placeholder={relayProfile.hours} className="min-w-0 flex-1 rounded-xl border border-blue-200 bg-white px-4 py-2 text-sm font-bold text-slate-950 outline-none dark:bg-slate-900 dark:text-white" />
-            <button type="button" disabled={operationBusy || !hoursInput.trim()} onClick={() => void updateRelaySettings({ opening_hours: hoursInput.trim() })} className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-black text-white disabled:opacity-50">Enregistrer</button>
-          </div>
-        </div>
-      </div>
-      <div className="mt-5 grid gap-3 md:grid-cols-3">
-        {readiness.map(([label, ok, detail]) => (
-          <div key={label} className="rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-            <div className="flex items-center justify-between gap-3">
-              <strong className="text-sm text-slate-950 dark:text-white">{label}</strong>
-              {ok ? <CheckCircle2 className="text-emerald-600" size={18} /> : <TimerReset className="text-amber-600" size={18} />}
-            </div>
-            <p className="mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300">{detail}</p>
-          </div>
-        ))}
-      </div>
-    </Panel>
+    <RelayCapacity
+      capacity={relayProfile.capacityMax}
+      used={placesUsed}
+      hours={relayAccount?.opening_hours || ""}
+      busy={operationBusy}
+      onSave={(payload) => void updateRelaySettings(payload)}
+      onOpenClosure={() => setTab("fermeture")}
+    />
+  );
+
+  /**
+   * Les colis du relais, vus par l'ecran de constat.
+   *
+   * On ne filtre pas sur le stock : un client revient contester APRES avoir
+   * emporte son colis, et c'est precisement la que le constat compte.
+   */
+  const disputeParcels = useMemo<DisputeParcel[]>(
+    () =>
+      relayParcels.map((parcel) => ({
+        id: parcel.id,
+        orderId: parcel.order_id,
+        ref: `BV-${parcel.order_id}`,
+        slot: parcel.slot_code || "",
+        sizeLabel: parcel.parcel_size_label || "Taille non renseignée",
+        pickupCode: parcel.pickup_code || "",
+        pickedUpAt: parcel.picked_up_at,
+      })),
+    [relayParcels],
+  );
+
+  const disputeFiles = useMemo<DisputeFile[]>(
+    () =>
+      relayDisputes.map((dispute) => ({
+        ref: dispute.ref,
+        orderId: dispute.order_id,
+        reason: dispute.reason_display,
+        status: dispute.status_display,
+        createdAt: dispute.created_at,
+        vendorContacted: Boolean(dispute.vendor_contacted),
+        vendorReplied: Boolean(dispute.vendor_replied),
+        vendorReplyDeadline: dispute.vendor_reply_deadline ?? null,
+        hasMediator: Boolean(dispute.has_mediator),
+        resolution: dispute.resolution_display || "",
+        isClosed: Boolean(dispute.is_closed),
+        requests: dispute.evidence_requests ?? [],
+      })),
+    [relayDisputes],
   );
 
   const renderLitiges = () => (
-    <Panel kicker="Risque & mediation" title="Litiges Point Relais">
-      <div className="grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-3">
-          {relayDisputes.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-5 dark:border-slate-800 dark:bg-slate-800">
-              <div className="flex items-start gap-3">
-                <Scale className="mt-0.5 text-blue-700 dark:text-blue-300" size={20} />
-                <div><div className="font-black text-slate-950 dark:text-white">Aucun litige ouvert</div><p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">Les dossiers liés aux colis traités par ce point relais apparaîtront ici.</p></div>
-              </div>
-            </div>
-          ) : relayDisputes.map((dispute) => (
-            <article key={dispute.id} className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-              <div className="flex items-center justify-between gap-3"><strong className="text-amber-950 dark:text-amber-100">{dispute.ref} · Commande #{dispute.order_id}</strong><StatusPill tone="amber">{dispute.status_display}</StatusPill></div>
-              <p className="mt-2 text-sm font-bold text-amber-900 dark:text-amber-200">{dispute.reason_display}</p>
-              <p className="mt-1 text-sm leading-6 text-amber-900/75 dark:text-amber-100/75">{dispute.description}</p>
-              {dispute.delivery_address ? (
-                <p className="mt-2 text-xs font-semibold text-amber-900/75 dark:text-amber-100/75">{dispute.city} · {dispute.delivery_address}</p>
-              ) : null}
-              <PrecisionHint precision={dispute.address_precision} />
-            </article>
-          ))}
-        </div>
-        <div className="grid gap-3">
-          {[
-            ["Rappel J+6", "Notifier le client avant bascule litige.", Bell],
-            ["Escalade J+7", "Créer un dossier avec preuves, historique et photos.", AlertTriangle],
-            ["Décision", "Retour livreur vers vendeur ou arbitrage BelivaY.", FileText],
-          ].map(([title, body, Icon]) => (
-            <div key={title as string} className="flex gap-3 rounded-2xl border border-slate-100 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-              <Icon className="mt-0.5 flex-shrink-0 text-blue-700 dark:text-blue-300" size={18} />
-              <div>
-                <div className="font-black text-slate-950 dark:text-white">{title as string}</div>
-                <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{body as string}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </Panel>
+    <RelayDisputes
+      parcels={disputeParcels}
+      files={disputeFiles}
+      busy={operationBusy}
+      onReport={(input) =>
+        reportCounterIssue({ parcelId: input.parcelId, photos: input.photos, description: input.description })
+      }
+      focus={disputeFocus}
+      onReturnDeposit={receiveReturn}
+    />
   );
 
   const renderSimple = (kind: RelayTab) => {
@@ -1321,12 +1618,81 @@ export default function RelayPointPage() {
     reseau: () => renderSimple("reseau"),
     fermeture: () => <RelayClosure onError={showOperationError} relay={relayIdentity} />,
     inscription: () => <RelayOnboarding onError={showOperationError} relay={relayIdentity} />,
-    messagerie: () => <RelayInbox onError={showOperationError} relay={relayIdentity} onNavigate={setTab} />,
-    parametres: () => <RelaySettingsContent {...settingsProps} />,
+    messagerie: () => (
+      <RelayInbox
+        onError={showOperationError}
+        relay={relayIdentity}
+        onNavigate={setTab}
+        outbound={todayCounters.outbound}
+        arrivals={arrivals.length}
+      />
+    ),
+    parametres: () => (
+      <RelaySettings
+        profile={{
+          name: relayProfile.name,
+          manager: relayProfile.manager,
+          city: relayProfile.city,
+          address: relayProfile.address,
+          relayCode: relayAccount?.relay_code || "",
+          status: relayProfile.status,
+          memberSince: relayAccount?.created_at || null,
+          tier: trustTier,
+        }}
+        username={user?.username || relayProfile.manager}
+        avatarUrl={avatarUrl || undefined}
+        onAvatarFile={setAvatarFile}
+        onRequestChange={() => setTab("messagerie")}
+      >
+        <RelaySettingsBody
+          locale={locale}
+          theme={theme}
+          onToggleTheme={toggleTheme}
+          onChangeLanguage={changeLanguage}
+          version={ui.footer[0] || ""}
+          payoutMasked={payoutMasked}
+          onOpenPayout={() => setTab("finances")}
+          onInstall={() => {
+            setStateFocus("install");
+            setTab("etats");
+          }}
+          onSupport={() => setTab("messagerie")}
+          onLogout={handleLogout}
+        />
+      </RelaySettings>
+    ),
+    sortie: () => (
+      <RelayOutbound
+        pending={outboundParcels.pending}
+        departed={outboundParcels.departed}
+        courierRef={arrivalCourier}
+        passages={collectionPassages}
+        busy={operationBusy}
+        onValidate={validateOutbound}
+      />
+    ),
+    etats: () => (
+      <RelayStates
+        focus={stateFocus}
+        readiness={readiness}
+        status={relayProfile.status}
+        manager={relayProfile.manager}
+        email={user?.email || ""}
+        lastError={operationMessage?.tone === "error" ? operationMessage.text : null}
+        parcelCount={relayParcels.length}
+        onNavigate={setTab}
+        onLogout={handleLogout}
+      />
+    ),
   }[tab];
 
+  // Gris clair tres legerement chaud : les cartes blanches s'en detachent
+  // sans que le fond ne tire vers l'orange de la marque, qui doit rester
+  // reserve a ce qui presse.
+  // `bg-fixed` cale le degrade sur la fenetre, pas sur la hauteur de page :
+  // sans lui, un ecran long l'etire et un ecran court le coupe.
   return (
-    <main className="belivay-portal min-h-screen bg-[#f6f7fb] font-sans text-slate-950 dark:bg-slate-950 dark:text-white">
+    <main className="belivay-portal min-h-screen bg-[linear-gradient(180deg,#F5F4F2_0%,#F1EFEC_55%,#EDEAE5_100%)] bg-fixed font-sans text-slate-950 dark:bg-slate-950 dark:bg-none dark:text-white">
       <div className="flex">
         <RelaySidebar
           activeTab={tab}
@@ -1351,12 +1717,43 @@ export default function RelayPointPage() {
           {/* `safe-pt` : sous l'encoche, la barre collante ne passe plus sous le
               statut systeme. La densite se resserre sur telephone (icone + titre
               + avatar) et retrouve toutes les actions a partir de `lg`. */}
-          <header className="safe-pt sticky top-0 z-30 border-b border-slate-200 bg-white/90 px-3 py-2.5 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90 sm:px-6 sm:py-3">
+          {/* Le bandeau se detache du contenu par une ombre douce, pas par un
+              trait : un filet de 1 px se lit comme une separation de tableau,
+              une ombre comme une surface posee au-dessus de la page qui
+              defile dessous. */}
+          <header className="safe-pt-header sticky top-0 z-30 bg-white/90 px-4 pb-3.5 shadow-[0_1px_2px_rgba(15,23,42,.05),0_4px_12px_rgba(15,23,42,.04)] backdrop-blur-xl dark:bg-slate-900/90 dark:shadow-[0_1px_2px_rgba(0,0,0,.4)] sm:px-6 sm:pb-4">
+            {/* ── Bandeau de sous-page ───────────────────────────────────────
+                Les quatre destinations de la barre du bas sont l'application :
+                elles gardent le bandeau complet. Tout le reste est une page ou
+                l'on entre et d'ou l'on ressort — retour, titre, marque, rien
+                d'autre. Y laisser le menu et la cloche inviterait a partir
+                ailleurs au milieu d'un reglage. */}
+            {!PRIMARY_TABS.includes(tab) ? (
+              <div className="flex min-h-[44px] items-center gap-2 lg:hidden">
+                <button
+                  type="button"
+                  onClick={goBack}
+                  aria-label={locale === "en" ? "Back" : "Retour"}
+                  className="tap-target -ml-2 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-800 transition active:scale-90 dark:text-slate-100"
+                >
+                  <ChevronLeft size={26} strokeWidth={2.4} />
+                </button>
+                <h1 className="min-w-0 flex-1 truncate text-[18px] font-black tracking-[-0.01em]">
+                  {activeLabel}
+                </h1>
+                <img
+                  src="/favicon-belivay-cart.png"
+                  alt="BelivaY"
+                  className="h-8 w-auto flex-shrink-0 object-contain dark:brightness-0 dark:invert"
+                />
+              </div>
+            ) : null}
+
             {/* ── Bandeau telephone/tablette ──────────────────────────────────
                 Menu et logo a gauche, reglages a droite. Le tiroir s'ouvrant
                 depuis la gauche, son bouton d'appel reste de ce cote : le geste
                 et l'animation vont dans le meme sens. */}
-            <div className="flex items-center gap-1 lg:hidden">
+            <div className={`min-h-[44px] items-center gap-1 lg:hidden ${PRIMARY_TABS.includes(tab) ? "flex" : "hidden"}`}>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(true)}
@@ -1365,7 +1762,7 @@ export default function RelayPointPage() {
                 aria-expanded={drawerOpen}
                 className="tap-target relative -ml-1 flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-100 dark:hover:bg-slate-800"
               >
-                <MenuIcon size={22} strokeWidth={2.2} />
+                <MenuIcon size={24} strokeWidth={2.2} />
                 {/* Le menu porte desormais seul les alertes des destinations
                     hors barre du bas : un point suffit a dire « il y a quelque
                     chose la-dedans » sans encombrer l'icone d'un compteur. */}
@@ -1383,20 +1780,43 @@ export default function RelayPointPage() {
                 aria-label={ui.tabs.dashboard}
                 className="flex min-w-0 flex-shrink items-center rounded-xl px-1 py-1 transition active:scale-95"
               >
-                <img src="/belivay-logo-relay-point.png" alt="BelivaY" className="h-8 w-auto object-contain dark:brightness-0 dark:invert" />
+                {/* Logo BelivaY orange, pas la declinaison bleue du portail :
+                    le gerant est chez BelivaY, la couleur de la marque ne
+                    change pas selon le metier de celui qui regarde l'ecran.
+                    En mode sombre l'orange passerait mal sur fond ardoise, on
+                    le rend alors en blanc plein. */}
+                <img
+                  src="/belivay-logo.png"
+                  alt="BelivaY"
+                  className="h-[34px] w-auto object-contain dark:brightness-0 dark:invert"
+                />
               </button>
 
               <div className="flex-1" />
+
+              {/* Theme puis cloche puis avatar — trois boutons, pas quatre.
+                  La bascule de langue vivait ici et n'y avait rien a faire :
+                  on change de langue une fois dans sa vie, on regarde ses
+                  notifications vingt fois par jour. Elle reste accessible dans
+                  la feuille compte, a cote du reste des reglages. */}
+              <button
+                type="button"
+                onClick={toggleTheme}
+                aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
+                className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
+              >
+                {theme === "dark" ? <Sun size={22} /> : <Moon size={22} />}
+              </button>
 
               <button
                 type="button"
                 onClick={() => setTab("notifications")}
                 aria-label={ui.tabs.notifications}
-                className="tap-target relative flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                className="tap-target relative flex flex-shrink-0 items-center justify-center rounded-xl text-slate-700 transition active:scale-90 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
               >
-                <Bell size={19} />
+                <Bell size={22} />
                 {navBadges.notifications ? (
-                  <span className="absolute right-1 top-1 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-gradient-to-br from-rose-500 to-red-600 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white dark:ring-slate-900">
+                  <span className="absolute right-0.5 top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full bg-gradient-to-br from-orange-400 to-orange-600 px-1 text-[10px] font-black leading-none text-white ring-2 ring-white dark:ring-slate-900">
                     {navBadges.notifications > 99 ? "99+" : navBadges.notifications}
                   </span>
                 ) : null}
@@ -1404,29 +1824,9 @@ export default function RelayPointPage() {
 
               <button
                 type="button"
-                onClick={toggleTheme}
-                aria-label={theme === "dark" ? "Mode clair" : "Mode sombre"}
-                className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                {theme === "dark" ? <Sun size={19} /> : <Moon size={19} />}
-              </button>
-
-              <button
-                type="button"
-                onClick={switchLanguage}
-                aria-label="Changer de langue"
-                className="tap-target flex flex-shrink-0 items-center justify-center rounded-xl px-1 text-xs font-black text-slate-600 transition active:scale-90 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
-              >
-                {locale === "fr" ? "FR" : "EN"}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setProfileSheetOpen(true)}
+                onClick={() => setTab("parametres")}
                 aria-label={ui.openProfile}
-                aria-haspopup="dialog"
-                aria-expanded={profileSheetOpen}
-                className="flex h-9 w-9 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-blue-500 to-blue-700 text-xs font-black text-white ring-1 ring-blue-300/40 shadow-[0_2px_10px_rgba(37,99,235,.45)] transition active:scale-90"
+                className="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#101C3D] text-[12px] font-black tracking-wide text-white ring-2 ring-blue-500 transition active:scale-90 dark:bg-slate-800"
               >
                 {avatarUrl ? (
                   <img src={avatarUrl} alt="" className="h-full w-full object-cover" />
@@ -1436,11 +1836,23 @@ export default function RelayPointPage() {
               </button>
             </div>
 
-            {/* Titre de l'ecran : sorti du bandeau pour lui laisser toute sa
-                largeur, il garde sa place de repere de navigation. */}
-            <div className="mt-2 min-w-0 lg:hidden">
-              <p className="truncate text-[10px] font-black uppercase tracking-[0.16em] text-blue-700 dark:text-blue-300">{ui.space}</p>
-              <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{activeLabel}</h1>
+            {/* Identite du relais, puis titre de l'ecran.
+                Sur telephone c'est le seul endroit qui dit OU l'on est : le
+                gerant qui tient deux points de depot doit le verifier sans
+                ouvrir le tiroir.
+                L'accueil, lui, n'affiche pas de titre : « Bonjour X » ouvre
+                l'ecran trois lignes plus bas, et deux titres empiles valent
+                zero titre. */}
+            <div className={`mt-2.5 min-w-0 lg:hidden ${PRIMARY_TABS.includes(tab) ? "" : "hidden"}`}>
+              <p className="flex items-center gap-2 text-[12px] font-black uppercase leading-none tracking-[0.055em] text-[#1D4ED8] dark:text-blue-300">
+                <span aria-hidden className="h-[9px] w-[9px] flex-shrink-0 rounded-[2px] bg-[#1D4ED8] dark:bg-blue-400" />
+                <span className="truncate">
+                  {ui.brand} · {relayProfile.name}{relayProfile.city ? `, ${relayProfile.city}` : ""}
+                </span>
+              </p>
+              {tab === "dashboard" ? null : (
+                <h1 className="truncate text-[19px] font-black leading-tight tracking-tight">{activeLabel}</h1>
+              )}
             </div>
 
             <div className="hidden items-center justify-between gap-2 lg:flex sm:flex-wrap sm:gap-3">
@@ -1511,15 +1923,35 @@ export default function RelayPointPage() {
                 permanence (etat d'ouverture, places restantes, horaires). Il
                 remplace l'ancien defilement lateral des 22 onglets, desormais
                 repartis entre la barre du bas et la feuille « Menu ». */}
-            <div className="no-scrollbar mt-2 flex gap-1.5 overflow-x-auto lg:hidden">
-              <span className="flex-shrink-0 whitespace-nowrap">
-                <StatusPill tone={statusTone}>{relayProfile.status}</StatusPill>
+            <div className={`no-scrollbar mt-2.5 gap-2 overflow-x-auto lg:hidden ${PRIMARY_TABS.includes(tab) ? "flex" : "hidden"}`}>
+              {/* Etat et heure de fermeture dans la meme pastille : « ouvert »
+                  sans « jusqu'a quand » ne repond pas a la question que se
+                  pose le gerant en arrivant le matin. Le point coloré porte
+                  l'etat a lui seul, lisible avant meme d'avoir lu le mot. */}
+              <span
+                className={`inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border px-3 py-[5px] text-[12.5px] font-semibold ${
+                  statusTone === "emerald"
+                    ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-200"
+                    : statusTone === "red"
+                      ? "border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950 dark:text-red-200"
+                      : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-200"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className={`mr-1.5 h-[6px] w-[6px] flex-shrink-0 rounded-full ${
+                    statusTone === "emerald" ? "bg-emerald-500" : statusTone === "red" ? "bg-red-500" : "bg-amber-500"
+                  }`}
+                />
+                {relayProfile.status} · {closingLabel || relayProfile.hours}
               </span>
-              <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
-                {relayProfile.capacityUsed}/{relayProfile.capacityMax} places
+              {/* La capacite est le seul chiffre du bandeau qui peut devenir
+                  bloquant : il porte donc l'orange, pas le bleu d'information. */}
+              <span className="inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border border-orange-200 bg-orange-50 px-3 py-[5px] text-[12.5px] font-semibold text-orange-600 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-200">
+                {relayProfile.capacityUsed} / {relayProfile.capacityMax} places
               </span>
-              <span className="flex-shrink-0 whitespace-nowrap rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-bold text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
-                {relayProfile.hours}
+              <span className="inline-flex flex-shrink-0 items-center whitespace-nowrap rounded-full border border-blue-200 bg-blue-50 px-3 py-[5px] text-[12.5px] font-semibold text-blue-700 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200">
+                Trust {relayProfile.trust}
               </span>
             </div>
 
@@ -1527,8 +1959,12 @@ export default function RelayPointPage() {
 
           {/* `pb-tabbar` : le dernier bloc de chaque ecran reste atteignable
               au-dessus de la barre d'onglets fixe et de la barre gestuelle. */}
-          <div className="pb-tabbar p-4 sm:p-6 lg:pb-6">
-            <EvidenceRequestInbox accent="#2563EB" />
+          <div className="pb-tabbar pb-tabbar-tall p-4 sm:p-6 lg:pb-6">
+            {/* Les demandes de preuve ouvrent chaque ecran metier — sauf
+                l'accueil, ou elles passeraient devant « Bonjour X » et
+                l'arrivee livreur. Elles y sont rendues en pied de page, et la
+                ligne « constat a completer » les annonce depuis le haut. */}
+            {tab === "dashboard" ? null : <EvidenceRequestInbox accent="#2563EB" />}
             {operationMessage ? (
               <div className={`mb-5 flex items-start justify-between gap-3 rounded-2xl border p-4 text-sm font-bold ${operationMessage.tone === "success" ? "border-emerald-200 bg-emerald-50 text-emerald-800" : "border-red-200 bg-red-50 text-red-800"}`}>
                 <span>{operationMessage.text}</span>
@@ -1559,7 +1995,7 @@ export default function RelayPointPage() {
           setDrawerOpen(false);
           setTab(next);
         }}
-        labels={ui.tabs}
+        labels={{ ...ui.tabs, ...ui.tabsShort }}
         badges={navBadges}
         navLabel={ui.space}
       />
@@ -1567,22 +2003,20 @@ export default function RelayPointPage() {
       <RelayDrawer
         open={drawerOpen}
         onClose={() => setDrawerOpen(false)}
-        activeTab={tab}
-        onSelect={(next) => {
+        onSelect={(next, focus) => {
           setDrawerOpen(false);
+          setStateFocus(focus ?? null);
           setTab(next);
         }}
-        onLogout={handleLogout}
         labels={ui.tabs}
-        groupLabels={ui.groups}
         badges={navBadges}
-        brandKicker={ui.brandKicker}
-        logoutLabel={ui.logout}
+        outbound={todayCounters.outbound}
+        trust={relayProfile.trust}
         profile={{
           name: relayProfile.name,
           status: relayProfile.status,
           city: relayProfile.city,
-          trust: relayProfile.trust,
+          manager: relayProfile.manager,
           avatarUrl: avatarUrl || undefined,
         }}
         footer={ui.footer}

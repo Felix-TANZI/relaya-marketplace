@@ -110,6 +110,9 @@ jobs:
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           VITE_GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
 
+          # ── Traduction automatique (Google Cloud Translation) ─────────
+          GOOGLE_TRANSLATE_API_KEY=${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
+
           # ── Assistant IA (OpenRouter) ────────────────────────────────
           OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
           OPENROUTER_MODEL=${{ vars.OPENROUTER_MODEL }}

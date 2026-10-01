@@ -136,7 +136,7 @@ const REVIEWABLE_STATUSES: FulfillmentStatus[] = [
 ];
 
 export default function OrderDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { showToast } = useToast();
   const { id } = useParams<{ id: string }>();
@@ -313,7 +313,7 @@ export default function OrderDetailPage() {
 
     let cancelled = false;
     const fetchMessages = () => {
-      customerApi.getOrderChatMessages(order.id)
+      customerApi.getOrderChatMessages(order.id, i18n.language)
         .then((msgs) => { if (!cancelled) setCourierMessages(msgs); })
         .catch(() => {/* shipment peut ne pas encore exister */});
     };
@@ -321,7 +321,7 @@ export default function OrderDetailPage() {
     fetchMessages();
     const interval = window.setInterval(fetchMessages, showCourierChat ? 4000 : 12000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [order, showCourierChat]);
+  }, [order, showCourierChat, i18n.language]);
 
   useEffect(() => {
     if (!showCourierChat) return;
@@ -1038,8 +1038,13 @@ export default function OrderDetailPage() {
                       >
                         <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "CLIENT" ? "text-white/70" : "text-gray-400"}`}>
                           {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
+                          {message.message_translated ? (
+                            <span className="ml-2 normal-case tracking-normal opacity-70">
+                              ({t("cl2_order_detail.courier_chat_translated_badge")})
+                            </span>
+                          ) : null}
                         </div>
-                        {message.message}
+                        {message.message_translated || message.message}
                       </div>
                     )) : (
                       <div className="rounded-2xl border border-dashed border-orange-200 p-5 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">

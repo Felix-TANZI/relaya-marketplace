@@ -5,6 +5,33 @@ from rest_framework import serializers
 from django.db.models import Avg
 import re
 from .models import Product, Category, ProductMedia, ProductImage, ProductReview, MasterProduct, ProductCondition, PromotionCampaign, Brand, ColorDictionary, ProductAttribute, MasterProduct, AttributeRole, ProductVariant, ColorFamily
+from apps.common.translation import translate_fields, request_language
+
+
+def translate_for_buyer(data: dict, fields: list[str], context: dict) -> dict:
+    """
+    Traduit les `fields` d'un dict de representation (title/description/
+    short_description d'une fiche produit) vers la langue demandee par la
+    requete courante (`?lang=` ou Accept-Language, voir request_language()).
+
+    Traduction A LA LECTURE uniquement — le contenu stocke en base n'est
+    jamais modifie, seule cette representation API change selon la requete.
+
+    Desactivee si :
+      - `context['translate_content']` vaut explicitement False (ex. le
+        vendeur consultant SES PROPRES produits : il doit toujours voir
+        exactement ce qu'il a ecrit, jamais une traduction) ;
+      - aucune `request` n'est presente dans le contexte (serializer
+        instancie hors requete HTTP : commande de management, test unitaire,
+        shell) — on ne devine jamais une langue cible dans ce cas.
+    """
+    if context.get('translate_content') is False:
+        return data
+    request = context.get('request')
+    if request is None:
+        return data
+    lang = request_language(request)
+    return translate_fields(data, fields, target_lang=lang)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -345,7 +372,11 @@ class ProductSerializer(serializers.ModelSerializer):
             
         ]
         read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
-    
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['title', 'description', 'short_description'], self.context)
+
     def get_stock_quantity(self, obj):
         try:
             return obj.inventory.quantity
@@ -565,6 +596,10 @@ class OfferSerializer(serializers.ModelSerializer):
             'short_description', 'faq',
         ]
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['short_description'], self.context)
+
     def get_stock_quantity(self, obj):
         try:
             return obj.inventory.quantity
@@ -631,6 +666,10 @@ class MasterProductListSerializer(serializers.ModelSerializer):
         offer = obj.buy_box_offer
         return OfferSerializer(offer, context=self.context).data if offer else None
 
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['title'], self.context)
+
 
 class MasterProductDetailSerializer(MasterProductListSerializer):
     images = serializers.SerializerMethodField()
@@ -638,6 +677,11 @@ class MasterProductDetailSerializer(MasterProductListSerializer):
 
     class Meta(MasterProductListSerializer.Meta):
         fields = MasterProductListSerializer.Meta.fields + ['description', 'images', 'offers']
+
+    def to_representation(self, instance):
+        # super() (MasterProductListSerializer.to_representation) traduit deja 'title'.
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ['description'], self.context)
 
     def get_images(self, obj):
         request = self.context.get('request')

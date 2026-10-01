@@ -1959,7 +1959,7 @@ class NotificationsListView(generics.ListAPIView):
     serializer_class = NotificationSerializer
 
     def get_queryset(self):
-        qs = UserNotification.objects.filter(user=self.request.user)
+        qs = UserNotification.objects.filter(user=self.request.user).select_related("user__courier_profile")
         audience = (self.request.query_params.get("audience") or "customer").strip().lower()
 
         if audience in {"courier", "driver", "livreur"}:
@@ -1988,7 +1988,7 @@ class NotificationMarkReadView(APIView):
         )
         notification.is_read = True
         notification.save(update_fields=['is_read', 'updated_at'])
-        return Response(NotificationSerializer(notification).data)
+        return Response(NotificationSerializer(notification, context={'request': request}).data)
 
 
 @extend_schema(tags=["Client"], summary="Delete one notification")

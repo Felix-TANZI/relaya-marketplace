@@ -1208,7 +1208,7 @@ class ClientOrderMessagesView(generics.GenericAPIView):
     def get(self, request, order_id):
         shipment, _ = self._resolve()
         messages = shipment.messages.filter(channel=ShipmentMessage.Channel.CLIENT)
-        return Response(ShipmentMessageSerializer(messages, many=True).data)
+        return Response(ShipmentMessageSerializer(messages, many=True, context={"request": request}).data)
 
     def post(self, request, order_id):
         shipment, sender_role = self._resolve()
@@ -1246,7 +1246,10 @@ class ClientOrderMessagesView(generics.GenericAPIView):
                 action_url=f"/orders/{order_id}",
             )
 
-        return Response(ShipmentMessageSerializer(msg).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ShipmentMessageSerializer(msg, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["Shipping"], summary="Messages d'une livraison pour le livreur")
@@ -1268,7 +1271,10 @@ class CourierShipmentMessageListCreateView(generics.GenericAPIView):
         messages = shipment.messages.all()
         if channel:
             messages = messages.filter(channel=channel.upper())
-        return Response(ShipmentMessageSerializer(messages, many=True).data, status=status.HTTP_200_OK)
+        return Response(
+            ShipmentMessageSerializer(messages, many=True, context={"request": request}).data,
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, id):
         shipment = self.get_shipment()
@@ -1287,7 +1293,10 @@ class CourierShipmentMessageListCreateView(generics.GenericAPIView):
             message=f"Message {message.channel.lower()} envoye par le livreur",
             location=shipment.order.city,
         )
-        return Response(ShipmentMessageSerializer(message).data, status=status.HTTP_201_CREATED)
+        return Response(
+            ShipmentMessageSerializer(message, context={"request": request}).data,
+            status=status.HTTP_201_CREATED,
+        )
 
 
 @extend_schema(tags=["Shipping"], summary="Scanner QR de test pour une livraison")

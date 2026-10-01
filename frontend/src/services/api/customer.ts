@@ -178,6 +178,13 @@ export interface OrderChatMessage {
   sender_role: 'CLIENT' | 'COURIER' | 'SYSTEM';
   sender_name: string;
   message: string;
+  /**
+   * Traduction du message dans la langue du lecteur courant (voir
+   * ShipmentMessageSerializer.get_message_translated côté backend).
+   * `null`/absent si rien n'a été traduit (langue cible inconnue, identique
+   * à la source, ou échec de l'API) : afficher `message` dans ce cas.
+   */
+  message_translated?: string | null;
   created_at: string;
 }
 
@@ -190,8 +197,14 @@ export const customerApi = {
   removeFavorite: async (favoriteId: number): Promise<void> =>
     api.delete<void>(`/auth/favorites/${favoriteId}/`),
 
-  getNotifications: async (): Promise<CustomerNotification[]> =>
-    api.get<CustomerNotification[]>('/auth/notifications/?audience=customer'),
+  // `lang` (optionnel) : langue courante de l'app (i18n.language, ex. "fr"/"en").
+  // Transmise en `?lang=` pour que le backend traduise title/message a la
+  // lecture si elle differe de la langue d'origine (fr) des notifications —
+  // voir NotificationSerializer._target_language() cote backend.
+  getNotifications: async (lang?: string): Promise<CustomerNotification[]> =>
+    api.get<CustomerNotification[]>(
+      `/auth/notifications/?audience=customer${lang ? `&lang=${encodeURIComponent(lang)}` : ''}`,
+    ),
 
   markNotificationRead: async (id: number): Promise<CustomerNotification> =>
     api.post<CustomerNotification>(`/auth/notifications/${id}/read/`),
@@ -251,8 +264,16 @@ export const customerApi = {
     return api.post<DisputeMessage>(`/orders/disputes/${disputeId}/messages/`, form);
   },
 
-  getOrderChatMessages: async (orderId: number): Promise<OrderChatMessage[]> =>
-    api.get<OrderChatMessage[]>(`/shipping/orders/${orderId}/messages/`),
+  /**
+   * `lang` (optionnel) : langue courante de l'app (i18n.language, ex. "fr"/"en").
+   * Transmise en `?lang=` pour que le backend traduise `message_translated` à
+   * la lecture si elle diffère de la langue d'écriture du message (voir
+   * ShipmentMessageSerializer). Omise = le backend retombe sur
+   * Accept-Language puis "fr" (voir request_language()). Même convention que
+   * productsApi.getMaster.
+   */
+  getOrderChatMessages: async (orderId: number, lang?: string): Promise<OrderChatMessage[]> =>
+    api.get<OrderChatMessage[]>(`/shipping/orders/${orderId}/messages/`, lang ? { params: { lang } } : undefined),
 
   sendOrderChatMessage: async (orderId: number, message: string): Promise<OrderChatMessage> =>
     api.post<OrderChatMessage>(`/shipping/orders/${orderId}/messages/`, { message }),

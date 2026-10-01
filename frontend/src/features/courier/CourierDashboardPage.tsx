@@ -619,7 +619,7 @@ export default function CourierDashboardPage() {
 
     let cancelled = false;
     const fetchMessages = () => {
-      customerApi.getOrderChatMessages(selectedShipment.order)
+      customerApi.getOrderChatMessages(selectedShipment.order, i18n.language)
         .then((msgs) => { if (!cancelled) setClientMessages(msgs); })
         .catch(() => {});
     };
@@ -627,7 +627,7 @@ export default function CourierDashboardPage() {
     fetchMessages();
     const interval = window.setInterval(fetchMessages, 4000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [selectedShipment]);
+  }, [selectedShipment, i18n.language]);
 
   useEffect(() => {
     clientChatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -1663,8 +1663,13 @@ export default function CourierDashboardPage() {
                   >
                     <div className={`mb-1 text-[10px] font-black uppercase tracking-[0.14em] ${message.sender_role === "COURIER" ? "text-white/70" : "text-white/45"}`}>
                       {message.sender_name} · {new Date(message.created_at).toLocaleString("fr-FR")}
+                      {message.message_translated ? (
+                        <span className="ml-2 normal-case tracking-normal opacity-70">
+                          ({t("cr1_dashboard.courses.message_translated_badge")})
+                        </span>
+                      ) : null}
                     </div>
-                    {message.message}
+                    {message.message_translated || message.message}
                   </div>
                 )) : (
                   <div className="rounded-[16px] border border-dashed border-white/10 p-4 text-center text-[13px] text-white/55">

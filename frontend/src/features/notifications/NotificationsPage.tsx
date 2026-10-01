@@ -84,7 +84,7 @@ export default function NotificationsPage() {
     const fetchNotifications = async () => {
       try {
         if (localStorage.getItem('access_token')) {
-          const data = await customerApi.getNotifications();
+          const data = await customerApi.getNotifications(i18n.language);
           setNotifications(data);
         } else {
           setNotifications(
@@ -110,7 +110,7 @@ export default function NotificationsPage() {
     };
     window.addEventListener("belivay-new-notification", handleNewNotification);
     return () => window.removeEventListener("belivay-new-notification", handleNewNotification);
-  }, []);
+  }, [i18n.language]);
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
   const notificationText = (notification: NotificationCard) =>

@@ -210,6 +210,7 @@ export default {
       message_count: '{{count}} message',
       message_count_plural: '{{count}} messages',
       no_client_message: 'No client message for this delivery.',
+      message_translated_badge: 'translated',
       reply_client_placeholder: 'Reply to client...',
       reply_client_aria: 'Reply to client',
       add_note_title: 'Add a note or a position',

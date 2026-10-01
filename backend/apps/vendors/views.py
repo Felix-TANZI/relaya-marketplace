@@ -181,6 +181,10 @@ class VendorProductViewSet(viewsets.ModelViewSet):
                 context['stock_quantity'] = int(self.request.data['stock_quantity'])
             elif self.action == 'create':
                 context['stock_quantity'] = 0
+        # Le vendeur voit TOUJOURS sa propre fiche telle qu'il l'a ecrite,
+        # jamais une traduction automatique (voir translate_for_buyer dans
+        # apps.catalog.serializers).
+        context['translate_content'] = False
         return context
     
     def perform_create(self, serializer):
@@ -246,7 +250,7 @@ class VendorProductViewSet(viewsets.ModelViewSet):
             # Le vendeur devra en rajouter manuellement
  
             from apps.catalog.serializers import ProductSerializer
-            serializer = ProductSerializer(copy, context={'request': request})
+            serializer = ProductSerializer(copy, context={'request': request, 'translate_content': False})
             return Response(serializer.data, status=status.HTTP_201_CREATED)
  
         except Exception as e:
@@ -287,7 +291,7 @@ class VendorProductViewSet(viewsets.ModelViewSet):
                     pass
  
             from apps.catalog.serializers import ProductSerializer
-            return Response(ProductSerializer(product, context={'request': request}).data)
+            return Response(ProductSerializer(product, context={'request': request, 'translate_content': False}).data)
  
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)

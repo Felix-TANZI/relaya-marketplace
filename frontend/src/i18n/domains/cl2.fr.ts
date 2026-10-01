@@ -138,6 +138,7 @@ export default {
     courier_chat_title: 'Chat avec le livreur',
     courier_chat_subtitle: 'Le livreur peut répondre directement à ces messages.',
     courier_chat_empty: 'Aucun message. Lancez la conversation avec le livreur.',
+    courier_chat_translated_badge: 'traduit',
     courier_chat_placeholder: 'Votre message au livreur...',
     send_to_courier_aria: 'Envoyer au livreur',
     item_ref: 'Article #{{id}} · {{qty}} × {{price}} FCFA',

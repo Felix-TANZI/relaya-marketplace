@@ -147,6 +147,10 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: ${{ vars.SSH_PORT || 22 }}
+          # Par défaut cette action coupe la connexion après 10 minutes.
+          # Le build complet (8 images Docker, dont 6 frontends, sans cache)
+          # a fini par dépasser cette limite — on l'augmente avec de la marge.
+          command_timeout: 25m
           script: |
             set -e
             cd "${{ vars.TARGET_PATH }}"

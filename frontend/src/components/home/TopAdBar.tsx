@@ -1,11 +1,12 @@
 import { useTranslation } from "react-i18next";
-import { BadgeCheck, Gift, Lock, ShieldCheck, Truck } from "lucide-react";
+import { Lock, ShieldCheck, Truck } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
+/* CCO-25 / CCH-41 : le message "Programme Fidélité" (aucun programme de points
+   au lancement) et le chiffre "3 200+ Vendeurs certifiés" (aucune donnée API
+   réelle derrière ce nombre) ont été retirés de la rotation. */
 const MESSAGES: { icon: LucideIcon; grad: string; textKey: string }[] = [
-  { icon: Gift,       grad: "linear-gradient(135deg,#ffa04d,#f4610f)", textKey: "home.ad_loyalty" },
   { icon: Lock,       grad: "linear-gradient(135deg,#34d399,#059669)", textKey: "home.ad_secure_payment" },
-  { icon: BadgeCheck, grad: "linear-gradient(135deg,#5bb8ff,#2563eb)", textKey: "home.ad_certified_vendors" },
   { icon: Truck,      grad: "linear-gradient(135deg,#ffd45c,#f59e0b)", textKey: "home.ad_delivery" },
   { icon: ShieldCheck,grad: "linear-gradient(135deg,#6ee7b7,#059669)", textKey: "home.ad_refund" },
 ];

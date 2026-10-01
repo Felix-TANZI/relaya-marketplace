@@ -68,9 +68,12 @@ export default function WhyBelivaySection() {
   /* Les volumes viennent du thème « Tout voir » : une seule source à maintenir. */
   const catalogue = getCategoryTheme("all");
 
+  // Le nombre de vendeurs a ete retire (CCH-41 : aucun chiffre non réel) — la
+  // valeur venait d'une configuration de theme statique, pas d'un comptage
+  // reel, et la maquette de reference n'affiche aucune statistique de
+  // nombre de vendeurs a cet endroit.
   const marketplaceStats = [
     { value: catalogue?.count ?? "15 240", labelKey: "why_belivay.stat_products" },
-    { value: catalogue?.vendors ?? "3 200", labelKey: "why_belivay.stat_vendors" },
     { value: "50K+", labelKey: "why_belivay.stat_clients" },
     { value: (catalogue?.rating ?? "4.8 / 5").split(" ")[0], labelKey: "why_belivay.stat_satisfaction", star: true },
   ];

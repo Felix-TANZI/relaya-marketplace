@@ -91,7 +91,7 @@ export default {
     hero_to_pay: 'Amount due',
     hero_confirm_prefix: 'Automatic confirmation on',
     hero_confirm_suffix: ', or as soon as you confirm receipt.',
-    hero_release_no_deadline: 'Released to the seller as soon as you confirm receipt.',
+    hero_release_no_deadline: 'The seller is paid as soon as you confirm receipt.',
     hero_not_paid: 'The items remain reserved until payment. No debit has occurred.',
     countdown_days: 'in {{days}} day',
     countdown_days_plural: 'in {{days}} days',

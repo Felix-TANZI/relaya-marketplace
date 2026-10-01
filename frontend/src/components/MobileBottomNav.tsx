@@ -9,7 +9,7 @@ const NAV_ITEMS = [
   { icon: Home, label: "Accueil", to: "/" },
   { icon: LayoutGrid, label: "Catégories", to: "/categories" },
   { icon: ShoppingCart, label: "Panier", to: "/cart", badge: "cart" as const },
-  { icon: Heart, label: "Favoris", to: "/wishlist", badge: "favorites" as const },
+  { icon: Heart, label: "Sauvegardés", to: "/wishlist", badge: "favorites" as const },
   { icon: UserCircle, label: "Compte", to: "/profile" },
 ];
 

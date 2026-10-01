@@ -5,6 +5,18 @@ import { useCart } from "@/features/cart/useCart";
 import { cartTotalXaf } from "@/features/cart/cartStore";
 import { loadCheckoutDraft } from "./storage";
 
+// CL-07 — page orpheline, constat fait lors de la passe "Panier et frais" :
+// routee sur /checkout/confirm mais aucun lien ni redirection de l'app n'y
+// mene (le flux reel passe par CheckoutPage.tsx -> PaymentSheet). Elle lit en
+// plus un panier LEGACY (features/cart/cartStore.ts, cle localStorage
+// "relaya_cart_v1") totalement deconnecte du panier reel de l'app
+// (@/context/CartContext, synchronise via /auth/cart/) : rien n'ecrit plus
+// jamais dans ce store legacy, donc `items` ici est toujours vide pour un
+// vrai utilisateur. Le `deliveryFee = 2500` ci-dessous est bien un montant
+// fabrique cote client (viole CL-07 regle #1), mais corriger ce calcul ne
+// changerait aucun comportement observable tant que la page reste
+// inatteignable avec de vraies donnees — non retouche ici pour eviter de
+// toucher a une suppression de route/fichier hors mandat de cette passe.
 export default function CheckoutConfirmPage() {
   const { t } = useTranslation();
   const items = useCart();

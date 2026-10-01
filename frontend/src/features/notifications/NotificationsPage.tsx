@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+  ArrowLeft,
   Bell,
   ChevronRight,
   CheckCircle2,
@@ -11,6 +12,8 @@ import {
   type LucideIcon,
   MessageCircleMore,
   Package,
+  Search,
+  Settings,
   ShieldCheck,
   Trash2,
   X,
@@ -169,6 +172,8 @@ export default function NotificationsPage() {
           // La lecture reste visible cote interface meme si le backend demo ne repond pas.
         }
       }
+      // Garde la pastille de la cloche (en-tete) synchronisee avec cette liste.
+      window.dispatchEvent(new Event("belivay-new-notification"));
     }
   };
 
@@ -184,41 +189,80 @@ export default function NotificationsPage() {
         // La suppression reste appliquee cote interface pour ne pas bloquer le client.
       }
     }
+    window.dispatchEvent(new Event("belivay-new-notification"));
   };
 
   return (
     <div className="min-h-screen bg-[#f8f5f1] py-3 dark:bg-gray-950 sm:py-10">
       <div className="container mx-auto max-w-5xl px-3 sm:px-4">
 
-        {/* ══════════ EN-TÊTE MOBILE — slim, sans carte ══════════ */}
+        {/* ══════════ EN-TÊTE MOBILE — flèche retour + titre + réglages ══════════ */}
         <div className="mb-3 flex items-center justify-between gap-3 px-1 sm:hidden">
-          <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">
-            {t('notifications.title')}
-          </h1>
-          {unreadCount > 0 && (
-            <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white">
-              {unreadCount} {t('notifications.unread_label')}
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label={t('notifications.back_aria')}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:ring-gray-800"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <h1 className="text-lg font-extrabold text-gray-900 dark:text-white">
+              {t('notifications.title')}
+            </h1>
+          </div>
+          <div className="flex items-center gap-2">
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center rounded-full bg-primary px-2.5 py-1 text-[11px] font-bold text-white">
+                {unreadCount} {t('notifications.unread_label')}
+              </span>
+            )}
+            <Link
+              to="/profile"
+              aria-label={t('notifications.settings_aria')}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-gray-700 shadow-sm ring-1 ring-gray-100 transition hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-200 dark:ring-gray-800"
+            >
+              <Settings size={17} />
+            </Link>
+          </div>
         </div>
 
         {/* ══════════ EN-TÊTE DESKTOP — carte complète ══════════ */}
         <div className="mb-8 hidden rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800 sm:block">
           <div className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-                {t('notifications.breadcrumb')}
-              </p>
-              <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
-                {t('notifications.title')}
-              </h1>
-              <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                {t('notifications.subtitle')}
-              </p>
+            <div className="flex items-start gap-3">
+              <button
+                type="button"
+                onClick={() => navigate(-1)}
+                aria-label={t('notifications.back_aria')}
+                className="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-orange-50 text-primary transition hover:bg-orange-100 dark:bg-primary/10"
+              >
+                <ArrowLeft size={18} />
+              </button>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
+                  {t('notifications.breadcrumb')}
+                </p>
+                <h1 className="mt-2 text-3xl font-bold text-gray-900 dark:text-white">
+                  {t('notifications.title')}
+                </h1>
+                <p className="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                  {t('notifications.subtitle')}
+                </p>
+              </div>
             </div>
-            <div className="rounded-2xl bg-orange-50 px-4 py-3 text-right dark:bg-primary/10">
-              <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('notifications.unread_label')}</p>
-              <p className="text-2xl font-bold text-primary">{unreadCount}</p>
+            <div className="flex items-center gap-3">
+              <div className="rounded-2xl bg-orange-50 px-4 py-3 text-right dark:bg-primary/10">
+                <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{t('notifications.unread_label')}</p>
+                <p className="text-2xl font-bold text-primary">{unreadCount}</p>
+              </div>
+              <Link
+                to="/profile"
+                aria-label={t('notifications.settings_aria')}
+                className="flex h-11 w-11 items-center justify-center rounded-full bg-orange-50 text-primary transition hover:bg-orange-100 dark:bg-primary/10"
+              >
+                <Settings size={19} />
+              </Link>
             </div>
           </div>
         </div>
@@ -230,9 +274,25 @@ export default function NotificationsPage() {
               {t('notifications.loading')}
             </div>
           ) : notifications.length === 0 ? (
-            <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
-              <p className="text-sm font-semibold text-gray-700 dark:text-gray-200">{t('notifications.empty_title')}</p>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t('notifications.empty_description')}</p>
+            <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-orange-50 text-primary dark:bg-primary/10">
+                <Bell size={28} />
+              </div>
+              <p className="text-base font-bold text-gray-900 dark:text-white">{t('notifications.empty_title')}</p>
+              <p className="mx-auto mt-2 max-w-xs text-xs leading-5 text-gray-500 dark:text-gray-400">{t('notifications.empty_description')}</p>
+              <Link
+                to="/"
+                className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark"
+              >
+                <Search size={18} />
+                {t('notifications.empty_button')}
+              </Link>
+              <Link
+                to="/profile"
+                className="mt-4 inline-block text-sm font-semibold text-primary hover:underline"
+              >
+                {t('notifications.settings_link')}
+              </Link>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
@@ -281,6 +341,25 @@ export default function NotificationsPage() {
           {loading && (
             <article className="rounded-[1.75rem] border border-gray-100 bg-white p-5 shadow-sm dark:border-gray-800 dark:bg-gray-900">
               <p className="text-sm text-gray-500 dark:text-gray-400">{t('notifications.loading')}</p>
+            </article>
+          )}
+          {!loading && notifications.length === 0 && (
+            <article className="rounded-[1.75rem] border border-gray-100 bg-white p-10 text-center shadow-sm dark:border-gray-800 dark:bg-gray-900">
+              <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-orange-50 text-primary dark:bg-primary/10">
+                <Bell size={34} />
+              </div>
+              <p className="text-xl font-bold text-gray-900 dark:text-white">{t('notifications.empty_title')}</p>
+              <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-gray-500 dark:text-gray-400">{t('notifications.empty_description')}</p>
+              <Link
+                to="/"
+                className="mx-auto mt-6 flex w-full max-w-xs items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-white shadow-sm transition hover:bg-primary-dark"
+              >
+                <Search size={18} />
+                {t('notifications.empty_button')}
+              </Link>
+              <Link to="/profile" className="mt-4 inline-block text-sm font-semibold text-primary hover:underline">
+                {t('notifications.settings_link')}
+              </Link>
             </article>
           )}
           {notifications.map((notification) => {

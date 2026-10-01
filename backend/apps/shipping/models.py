@@ -400,6 +400,20 @@ class RelayParcel(models.Model):
     )
     status = models.CharField(max_length=24, choices=Status.choices, default=Status.EXPECTED)
     slot_code = models.CharField(max_length=80, blank=True, default="")
+    # ÉCART CONNU (spec CL-09 "Commandes, code de retrait et suivi") : la spec
+    # developpeur demande que le code de retrait ne soit JAMAIS stocke en
+    # clair (hachage cote serveur) et qu'un blocage de 24h se declenche apres
+    # 3 codes faux (nouveau code genere, ancien refuse). Aujourd'hui ce champ
+    # est un CharField en clair, compare par egalite directe dans
+    # RelayParcelPickupSerializer.save() (voir shipping/serializers.py), et
+    # aucun compteur de tentatives echouees / verrou 24h n'existe. Corriger
+    # cela implique de hacher le code (ex. Argon2/bcrypt tronque, le code
+    # etant un court alphanumerique a verifier cote relais) et d'ajouter un
+    # modele/compteur de tentatives — un changement de logique de securite
+    # sensible qui ne doit pas etre fait sans validation explicite (risque de
+    # casser le flux de remise en points relais deja en production). Laisse
+    # tel quel intentionnellement ; a trancher avec le CEO/CTO avant d'y
+    # toucher.
     pickup_code = models.CharField(max_length=24, blank=True, default="")
     proof_note = models.TextField(blank=True, default="")
     received_at = models.DateTimeField(null=True, blank=True)

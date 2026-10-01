@@ -77,11 +77,11 @@ export default function FeaturedProductsRotation({
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
-          {[...Array(5)].map((_, i) => (
+        <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
+          {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="h-64 animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-700"
+              className="h-44 animate-pulse rounded-2xl bg-gray-200 dark:bg-gray-700 sm:h-64"
             />
           ))}
         </div>
@@ -140,9 +140,12 @@ export default function FeaturedProductsRotation({
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
+      {/* Grille régulière à 3 colonnes de cartes compactes (au lieu d'une colonne
+          unique pleine largeur) : cohérent avec les sections "Produits populaires"
+          / "Nouveaux Arrivages" plus bas sur la page d'accueil. */}
+      <div className="grid grid-cols-3 gap-2 sm:gap-4 lg:grid-cols-4 xl:grid-cols-5">
         {data.results.map(product => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} compact showPromo />
         ))}
       </div>
 

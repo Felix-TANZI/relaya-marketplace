@@ -136,14 +136,16 @@ class OrderCreateView(generics.CreateAPIView):
                 order.pk,
             )
 
-        if request.user.is_authenticated:
-            UserNotification.objects.create(
-                user=request.user,
-                title=f"Commande #{order.id} creee",
-                message="Votre commande a bien ete enregistree et attend le paiement.",
-                notification_type=UserNotification.NotificationType.ORDER,
-                action_url=f"/orders/{order.id}",
-            )
+        # CL-10 (Centre de notifications) : la spec interdit toute notification
+        # avant que le paiement soit confirme. Une commande vient d'etre creee
+        # ici mais n'est pas encore payee (le paiement est seulement PREPARE
+        # au-dessus) : on ne notifie donc plus a ce stade. TODO(backend) : il
+        # n'existe aujourd'hui AUCUN UserNotification.objects.create() au
+        # moment ou le paiement est reellement confirme (recherche faite sur
+        # apps/payments) — ce declencheur manque et devra etre ajoute la ou
+        # la confirmation de paiement est traitee, une fois le cycle d'etats
+        # de commande aligne sur la spec (decision CTO en attente, cf. items
+        # ouverts du groupe CL-11/CL-10).
 
         out = OrderDetailSerializer(order)
         donnees = dict(out.data)

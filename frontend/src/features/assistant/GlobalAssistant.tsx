@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   ArrowRight,
-  Bot,
   Compass,
   Home,
   Loader2,
@@ -495,34 +494,13 @@ export default function GlobalAssistant() {
     }
   };
 
+  /* CCH-38 / CAC-26 : le bouton rond orange flottant (robot + étincelle) a été
+     supprimé — aucune maquette de référence ne le montre. Le panneau de chat
+     reste disponible, ouvert uniquement par l'événement "belivay-open-assistant"
+     (ex. le bouton "Chat IA" de la page À propos) plutôt que par un déclencheur
+     flottant global. */
   return (
     <>
-      <div className={`fixed bottom-20 right-4 ${assistantLayer} lg:bottom-6 lg:right-6 lg:z-[80]`}>
-        {/* Pulse ring - attention grabber */}
-        {!isOpen && (
-          <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" />
-        )}
-        {/* Outer glow ring */}
-        {!isOpen && (
-          <span className="absolute -inset-1 animate-pulse rounded-full border-2 border-primary/40" />
-        )}
-        <button
-          type="button"
-          onClick={() => setIsOpen((current) => !current)}
-          className="relative flex h-14 w-14 items-center justify-center rounded-full bg-primary text-white shadow-xl shadow-primary/40 transition-all hover:scale-110 hover:bg-primary-dark"
-          aria-label={t("cl5_assistant.open_assistant_aria")}
-          data-tutorial="chatbot"
-        >
-          {isOpen ? <X size={20} /> : <Bot size={22} />}
-          {/* Sparkle dot */}
-          {!isOpen && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-yellow-400 text-[8px] shadow-sm">
-              ✦
-            </span>
-          )}
-        </button>
-      </div>
-
       {isOpen && (
         <section className={`fixed bottom-36 right-4 ${assistantLayer} flex h-[min(620px,calc(100dvh-10rem))] w-[min(430px,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl dark:border-gray-700 dark:bg-gray-900 lg:bottom-24 lg:right-6 lg:z-[80] lg:h-[min(680px,calc(100dvh-8rem))]`}>
           <header className="border-b border-slate-200 bg-[linear-gradient(180deg,#fff,rgba(248,250,252,0.92))] px-5 py-4 dark:border-slate-800 dark:bg-slate-950">

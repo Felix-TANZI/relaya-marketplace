@@ -1,7 +1,11 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Heart } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { Product } from "@/services/api/products";
+import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
+import { hasValidAccessToken } from "@/lib/authTokens";
+import { customerApi } from "@/services/api/customer";
 
 interface MiniProductRowProps {
   title: string;
@@ -22,6 +26,80 @@ interface MiniProductRowProps {
 
 function productImage(product: Product) {
   return product.media?.[0]?.url || product.images?.[0]?.image_url || "";
+}
+
+/* Carte compacte d'une rangée (ex. « À la une ») : image, nom, prix, et un
+   bouton favori fonctionnel relié au système de favoris de la Wishlist.
+   NB : pas de badge "vérifié" ni de distance ici — ces deux informations
+   nécessiteraient une donnée API (statut vendeur vérifié, position du
+   client) qui n'est pas encore exposée par le backend pour ce composant ;
+   on ne les invente pas plutôt que d'afficher une fausse valeur. */
+function MiniProductTile({ product, href }: { product: Product; href: string }) {
+  const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
+
+  useEffect(() => {
+    const sync = () => setIsFavorite(isFavoriteProduct(product.id));
+    window.addEventListener("belivay-favorites-updated", sync);
+    return () => window.removeEventListener("belivay-favorites-updated", sync);
+  }, [product.id]);
+
+  const handleToggleFavorite = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextIds = toggleFavoriteProduct(product.id);
+    const nextIsFavorite = nextIds.includes(product.id);
+    setIsFavorite(nextIsFavorite);
+    if (!hasValidAccessToken()) return;
+    try {
+      if (nextIsFavorite) {
+        await customerApi.addFavorite(product.id);
+        return;
+      }
+      const favorites = await customerApi.getFavorites();
+      const favorite = favorites.find((item) => item.product.id === product.id);
+      if (favorite) await customerApi.removeFavorite(favorite.id);
+    } catch {
+      const reverted = toggleFavoriteProduct(product.id);
+      setIsFavorite(reverted.includes(product.id));
+    }
+  };
+
+  const price = product.price_final ?? product.price_xaf;
+
+  return (
+    <Link
+      to={href}
+      className="group flex w-[112px] flex-shrink-0 flex-col gap-1.5"
+      style={{ scrollSnapAlign: "start" }}
+    >
+      <span className="relative block aspect-square w-full overflow-hidden rounded-2xl bg-[#f4f6f8] dark:bg-gray-800">
+        <img
+          src={productImage(product)}
+          alt={product.title}
+          loading="lazy"
+          className="h-full w-full object-cover"
+        />
+        <button
+          type="button"
+          onClick={handleToggleFavorite}
+          aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+          className={`absolute right-1.5 top-1.5 flex h-6 w-6 items-center justify-center rounded-full shadow-sm backdrop-blur-sm transition-all ${
+            isFavorite ? "bg-pink-50 dark:bg-pink-500/20" : "bg-white/90 dark:bg-gray-900/80"
+          }`}
+        >
+          <Heart size={12} className={isFavorite ? "fill-pink-500 text-pink-500" : "text-gray-500"} />
+        </button>
+      </span>
+
+      <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-gray-700 dark:text-gray-200">
+        {product.title}
+      </span>
+
+      <span className="text-[12.5px] font-black text-primary">
+        {price.toLocaleString("fr-FR")} FCFA
+      </span>
+    </Link>
+  );
 }
 
 /**
@@ -75,36 +153,13 @@ export default function MiniProductRow({
         }`}
         style={{ scrollSnapType: "x proximity", WebkitOverflowScrolling: "touch" }}
       >
-        {products.map((product) => {
-          const price = product.price_final ?? product.price_xaf;
-          const href = isMockProducts ? `/product/${product.id}?mock=1` : `/product/${product.id}`;
-
-          return (
-            <Link
-              key={product.id}
-              to={href}
-              className="flex w-[112px] flex-col gap-1.5"
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <span className="block aspect-square w-full overflow-hidden rounded-2xl bg-[#f4f6f8] dark:bg-gray-800">
-                <img
-                  src={productImage(product)}
-                  alt={product.title}
-                  loading="lazy"
-                  className="h-full w-full object-cover"
-                />
-              </span>
-
-              <span className="line-clamp-2 text-[11px] font-semibold leading-tight text-gray-700 dark:text-gray-200">
-                {product.title}
-              </span>
-
-              <span className="text-[12.5px] font-black text-primary">
-                {price.toLocaleString("fr-FR")} FCFA
-              </span>
-            </Link>
-          );
-        })}
+        {products.map((product) => (
+          <MiniProductTile
+            key={product.id}
+            product={product}
+            href={isMockProducts ? `/product/${product.id}?mock=1` : `/product/${product.id}`}
+          />
+        ))}
       </div>
     </section>
   );

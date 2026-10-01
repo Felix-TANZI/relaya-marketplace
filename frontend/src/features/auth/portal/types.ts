@@ -91,5 +91,13 @@ export interface PortalLoginContent {
     registerPath?: string;
     registerLabelKey?: string;
     registerHintKey?: string;
+    /**
+     * Met en avant Google/Apple en premier (gros boutons), le formulaire
+     * e-mail/mot de passe passant en option secondaire sous un second
+     * separateur. Par defaut (absent/false) : ordre historique, identifiants
+     * d'abord. Reserve a l'espace client pour l'instant — les portails
+     * dedies gardent l'ordre existant.
+     */
+    socialFirst?: boolean;
   };
 }

@@ -32,6 +32,14 @@ export default {
     price_preset_5_15k: '5 000 – 15 000 F',
     price_preset_15_50k: '15 000 – 50 000 F',
     price_preset_over_50k: 'Plus de 50 000 F',
+    history_heading: 'Tes recherches',
+    history_clear: 'Effacer',
+    history_remove_aria: 'Supprimer cette recherche',
+    in_stock_badge: 'En stock',
+    back_aria: 'Retour',
+    search_input_aria: 'Rechercher un produit',
+    clear_search_aria: 'Effacer la recherche',
+    voice_search_aria: 'Recherche vocale',
   },
 
   cl4_category_theme: {

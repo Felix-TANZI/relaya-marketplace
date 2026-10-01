@@ -91,7 +91,7 @@ export default {
     hero_to_pay: 'Reste à payer',
     hero_confirm_prefix: 'Confirmation automatique le',
     hero_confirm_suffix: ', ou dès que vous confirmez la réception.',
-    hero_release_no_deadline: 'Libération au vendeur dès que vous confirmez la réception.',
+    hero_release_no_deadline: 'Le vendeur est payé dès que vous confirmez la réception.',
     hero_not_paid: "Les articles restent réservés jusqu'au paiement. Aucun débit n'a eu lieu.",
     countdown_days: 'dans {{days}} jour',
     countdown_days_plural: 'dans {{days}} jours',

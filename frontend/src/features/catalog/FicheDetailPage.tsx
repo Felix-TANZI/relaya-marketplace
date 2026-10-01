@@ -5,11 +5,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { recordProductView } from '@/lib/recentlyViewed';
 import Seo from '@/components/seo/Seo';
 import {
   Bell, BadgeCheck, ChevronDown, ChevronLeft, ChevronRight, Clock, Heart, HelpCircle, Link2, Lock,
-  MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag,
+  MapPin, MessageCircle, MessageSquare, Minus, Plus, RotateCcw, ShieldCheck, ShoppingBag,
   ShoppingCart, Star, Trophy, Truck, X, Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -99,31 +100,54 @@ function ReviewItem({ r }: { r: ProductReview }) {
   );
 }
 
-function ReviewsModal({ offer, reviews, onClose }: { offer: MasterOffer; reviews: ProductReview[]; onClose: () => void }) {
+/**
+ * Écran "Poser une question au vendeur" — CL-06 / CQV-01 à CQV-08.
+ *
+ * Aucun modèle de messagerie produit n'existe côté backend (recherché dans
+ * tous les apps/*: seul `apps.contact.ContactMessage` existe, un formulaire
+ * de contact générique non anonymisé et non threadé — pas adapté au fil
+ * CQV décrit par la spec). Plutôt que de fabriquer un faux fil de
+ * conversation ou des boutons de questions pré-rédigées qui ne mèneraient
+ * nulle part, on applique ici exactement le même parti pris honnête que
+ * `MessageriePage.tsx` côté vendeur (VD-11 §MSG) : écran réel, mais état
+ * "bientôt disponible" tant que l'API n'existe pas.
+ *
+ * Quand le backend existera, le fil devra respecter : le client voit "le
+ * vendeur" (jamais de nom), le vendeur voit "Un client", 3 questions
+ * pré-rédigées + champ libre, coordonnées masquées des deux côtés, fil
+ * fermé à la fin du délai de litige.
+ */
+function AskQuestionModal({ sellerTier, onClose }: { sellerTier: string | null; onClose: () => void }) {
   const { t } = useTranslation();
-  const avg = reviews.length ? reviews.reduce((s, r) => s + r.rating, 0) / reviews.length : 0;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white shadow-xl dark:bg-gray-800">
-        <div className="sticky top-0 flex items-center justify-between border-b border-gray-100 bg-white px-5 py-4 dark:border-gray-700 dark:bg-gray-800">
-          <div className="flex items-center gap-3">
-            {offer.real_image
-              ? <img src={offer.real_image} alt="" className="h-10 w-10 rounded-lg object-cover" />
-              : <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-700"><ShoppingBag size={16} className="text-gray-300" /></div>}
-            <div>
-              <p className="text-sm font-bold text-gray-900 dark:text-white">{t('product_detail.offer_reviews')}</p>
-              <p className="text-xs text-gray-400">{fmtXAF(offer.price_final)}{offer.condition ? ` · ${offer.condition}` : ''}</p>
+      <div className="relative w-full max-w-md rounded-2xl bg-white shadow-xl dark:bg-gray-800">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-4 dark:border-gray-700">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
+              <MessageCircle size={16} />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-gray-900 dark:text-white">{t('product_detail.ask_question_modal_title')}</p>
+              {/* Jamais de nom de boutique : seul le palier (quand connu) qualifie le vendeur. */}
+              <p className="truncate text-[11.5px] text-gray-400">
+                {t('product_detail.ask_question_seller_label', { tier: sellerTier ?? t('product_detail.certified') })}
+              </p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+          <button onClick={onClose} aria-label={t('product_detail.close')} className="flex-shrink-0 text-gray-400 hover:text-gray-600">
+            <X size={20} />
+          </button>
         </div>
-        <div className="px-5 py-4">
-          <div className="mb-4 flex items-center gap-3">
-            <span className="text-3xl font-black text-gray-900 dark:text-white">{avg.toFixed(1)}</span>
-            <div><Stars value={avg} size={16} /><p className="mt-0.5 text-xs text-gray-400">{t('product_detail.reviews_verified', { count: reviews.length })}</p></div>
+        <div className="px-5 py-5">
+          <div className="mb-4 rounded-xl border border-dashed border-gray-200 p-6 text-center dark:border-gray-700">
+            <MessageCircle size={26} className="mx-auto mb-2 text-gray-300" />
+            <p className="text-sm font-semibold text-gray-600 dark:text-gray-300">{t('product_detail.ask_question_coming_soon')}</p>
           </div>
-          <div className="space-y-3">{reviews.map(r => <ReviewItem key={r.id} r={r} />)}</div>
+          <p className="text-[12px] leading-relaxed text-gray-500 dark:text-gray-400">
+            {t('product_detail.ask_question_how')}
+          </p>
         </div>
       </div>
     </div>
@@ -264,19 +288,17 @@ export default function FicheDetailPage() {
   const [loading, setLoading] = useState(true);
   const [imgIndex, setImgIndex] = useState(0);
   const [imgError, setImgError] = useState(false);
-  const [condFilter, setCondFilter] = useState<string>('all');
   const [qty, setQty] = useState(1);
   const [reviewsByOffer, setReviewsByOffer] = useState<Record<number, ProductReview[]>>({});
   // Variants
   const [masterAxes, setMasterAxes] = useState<MasterProductAxes | null>(null);
   const [variants, setVariants] = useState<ProductVariantLight[]>([]);
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(null);
-  const [reviewModalOffer, setReviewModalOffer] = useState<MasterOffer | null>(null);
   const [similar, setSimilar] = useState<MasterFicheCard[]>([]);
   const [recos, setRecos] = useState<MasterFicheCard[]>([]);
   // Affichage
-  const [showOffers, setShowOffers] = useState(false);
   const [tab, setTab] = useState<'specs' | 'reviews'>('specs');
+  const [showAskQuestion, setShowAskQuestion] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
@@ -285,7 +307,7 @@ export default function FicheDetailPage() {
       setLoading(true);
       try {
         const m = await productsApi.getMaster(slug, i18n.language);
-        if (!cancelled) { setMaster(m); setImgIndex(0); setQty(1); setCondFilter('all'); setImgError(false); }
+        if (!cancelled) { setMaster(m); setImgIndex(0); setQty(1); setImgError(false); }
       } catch {
         if (!cancelled) setMaster(null);
       } finally {
@@ -391,20 +413,36 @@ export default function FicheDetailPage() {
     ? master.offers.filter((o) => o.variant === selectedVariantId)
     : master.offers;
 
-  // Buy Box = offre la moins chère du variant (ou master.buy_box en fallback)
+  /*
+   * Buy Box — CFP-01 ("Décidé") : une seule offre attribuée par le serveur,
+   * jamais de sélection manuelle côté client ("pas d'Autres vendeurs ni
+   * Choisir"). `master.buy_box` est déjà calculé côté backend par
+   * `MasterProduct.buy_box_offer` (apps/catalog/models.py), qui classe les
+   * offres actives/approuvées via `ranked_offers()` (coût livré le plus bas,
+   * Trust Score en départage) : on ne réimplémente pas cette logique ici,
+   * on se contente de ne jamais exposer d'UI de choix entre offres.
+   * Pour un variant sélectionné, on retrouve ce même principe (prix le plus
+   * bas) faute d'endpoint de buy-box par variant.
+   */
   const buyBox = hasVariantAxes && selectedVariantId
-    ? (filteredMasterOffers.sort((a, b) => a.price_xaf - b.price_xaf)[0] ?? null)
+    ? ([...filteredMasterOffers].sort((a, b) => a.price_xaf - b.price_xaf)[0] ?? null)
     : master.buy_box;
 
-  const otherOffers = filteredMasterOffers.filter((o) => !buyBox || o.id !== buyBox.id);
-  const conditions = Array.from(new Set(otherOffers.map(o => o.condition).filter((c): c is string => !!c)));
-  const filteredOffers = otherOffers.filter(o => condFilter === 'all' || o.condition === condFilter);
   const shortDesc = buyBox?.short_description?.trim();
   const bbReviews = buyBox ? (reviewsByOffer[buyBox.id] ?? []) : [];
   const avgRating = bbReviews.length ? bbReviews.reduce((s, r) => s + r.rating, 0) / bbReviews.length : 0;
 
-  /* Le palier vendeur n'a pas de champ dédié : on le lit dans la note du vendeur
-     quand elle le mentionne, sinon la pastille reste générique. */
+  /*
+   * CFP-11 (anonymat vendeur) : la fiche ne doit montrer que palier + Trust
+   * Score + distance, jamais de nom/boutique/numéro/adresse. `MasterOffer`
+   * (products.ts) ne porte aucun de ces champs d'identité — rien à corriger
+   * de ce côté. En revanche le palier n'a pas de champ dédié : on le lit
+   * dans la note libre du vendeur quand elle le mentionne, sinon la pastille
+   * reste générique. Le Trust Score numérique et la distance ne sont eux
+   * exposés par aucun endpoint consommé par cette fiche (l'`offer_score`
+   * renvoyé par OfferSerializer est un score de classement marketplace
+   * interne, pas le Trust Score vendeur V5.x) : on ne les affiche donc pas,
+   * plutôt que d'inventer une valeur. */
   const SELLER_TIERS = ["Platine", "Platinum", "Or", "Gold", "Argent", "Silver", "Bronze"];
   const sellerTier =
     SELLER_TIERS.find((tier) =>
@@ -521,7 +559,19 @@ export default function FicheDetailPage() {
 
                 <div className="relative flex min-w-0 flex-1 items-center justify-center overflow-hidden rounded-2xl border border-gray-200/80 bg-gradient-to-br from-[#fff6ee] via-white to-[#fff1e2] dark:border-gray-700 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
                   {heroImage && !imgError
-                    ? <img src={heroImage} alt={master.title} onError={() => setImgError(true)} className="h-full max-h-[420px] w-full object-contain p-4" />
+                    ? (
+                      <motion.img
+                        // anim_07 — même layoutId que la vignette carte (ProductCard /
+                        // CatalogProductCard), partagé via `slug` = identifiant d'URL
+                        // commun aux deux. framer-motion anime l'agrandissement de la
+                        // photo quand elle "réapparaît" ici après la navigation.
+                        layoutId={`product-photo-${slug}`}
+                        src={heroImage}
+                        alt={master.title}
+                        onError={() => setImgError(true)}
+                        className="h-full max-h-[420px] w-full object-contain p-4"
+                      />
+                    )
                     : <div className="flex flex-col items-center gap-2 py-20 text-gray-300 dark:text-gray-600"><ShoppingBag size={52} strokeWidth={1.5} /><span className="text-xs font-medium">{t('product_detail.image_coming')}</span></div>}
 
                   {onPromo && (
@@ -552,12 +602,16 @@ export default function FicheDetailPage() {
               </span>
             </Panel>
 
-            <Link
-              to="/contact"
+            {/* CQV-01 à CQV-08 : messagerie interne dédiée, jamais WhatsApp,
+                jamais vers le formulaire de contact générique. Voir
+                AskQuestionModal ci-dessus pour l'état "bientôt disponible". */}
+            <button
+              type="button"
+              onClick={() => setShowAskQuestion(true)}
               className="flex items-center justify-center gap-2 rounded-xl border border-primary/40 bg-white px-4 py-2.5 text-[12.5px] font-bold text-primary transition-all duration-200 hover:-translate-y-0.5 hover:bg-primary/5 dark:bg-gray-800"
             >
               <MessageCircle size={14} /> {t('product_detail.ask_question')}
-            </Link>
+            </button>
 
             {/* Description */}
             <Panel className="p-5">
@@ -686,11 +740,19 @@ export default function FicheDetailPage() {
                   </span>
                 </div>
 
-                {/* Livraison */}
-                <p className="flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-2.5 text-[12.5px] text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
-                  <Truck size={14} className="flex-shrink-0" />
-                  {t('product_detail.delivery_today')}
-                </p>
+                {/*
+                  * Livraison — CFP-20-30 : les deux modes doivent être visibles.
+                  * L'API fiche (MasterOffer / MasterProductDetailSerializer) ne
+                  * renvoie aucun délai réel par offre/destination (pas de champ
+                  * SLA/ETA) ni les classes de colis ou suppléments M/L/XL —
+                  * d'ailleurs listés "à trancher" par la spec elle-même. On
+                  * affiche donc les deux modes sans fabriquer de délai ou de
+                  * supplément que le serveur n'expose pas.
+                  */}
+                <div className="space-y-1.5 rounded-xl border border-emerald-100 bg-emerald-50/70 px-3.5 py-2.5 text-[12.5px] text-emerald-800 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300">
+                  <p className="flex items-center gap-2"><Truck size={14} className="flex-shrink-0" /> {t('product_detail.delivery_home_mode')}</p>
+                  <p className="flex items-center gap-2"><MapPin size={14} className="flex-shrink-0" /> {t('product_detail.delivery_relay_mode')}</p>
+                </div>
 
                 {/* Stock */}
                 <div className="flex flex-wrap items-center gap-3">
@@ -755,76 +817,6 @@ export default function FicheDetailPage() {
               </>
             ) : (
               <Panel className="p-5 text-center text-sm text-gray-500">{t('product_detail.no_offer_available')}</Panel>
-            )}
-
-            {/* Autres vendeurs */}
-            {otherOffers.length > 0 && (
-              <Panel className="overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setShowOffers(v => !v)}
-                  className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left"
-                >
-                  <span className="flex items-center gap-3">
-                    <ShoppingCart size={16} className="text-gray-400" />
-                    <span>
-                      <span className="block text-[13.5px] font-extrabold text-gray-900 dark:text-white">
-                        {t('product_detail.other_sellers')} <span className="text-primary">({otherOffers.length})</span>
-                      </span>
-                      <span className="block text-[11.5px] text-gray-400">{t('product_detail.other_offers_for_product')}</span>
-                    </span>
-                  </span>
-                  <ChevronDown size={18} className={`flex-shrink-0 text-gray-400 transition-transform duration-200 ${showOffers ? 'rotate-180' : ''}`} />
-                </button>
-
-                {showOffers && (
-                  <div className="border-t border-gray-100 px-4 py-4 dark:border-gray-700">
-                    {conditions.length > 0 && (
-                      <div className="mb-3 flex flex-wrap gap-2">
-                        <button onClick={() => setCondFilter('all')} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${condFilter === 'all' ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-500 hover:border-primary/40 dark:border-gray-700'}`}>{t('product_detail.all_conditions')}</button>
-                        {conditions.map(c => (
-                          <button key={c} onClick={() => setCondFilter(c)} className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-all ${condFilter === c ? 'border-primary bg-primary text-white' : 'border-gray-200 text-gray-500 hover:border-primary/40 dark:border-gray-700'}`}>{c}</button>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="flex flex-col gap-2">
-                      {filteredOffers.map(o => {
-                        const oReviews = reviewsByOffer[o.id] ?? [];
-                        return (
-                          <div key={o.id} className="flex flex-wrap items-center gap-3 rounded-xl bg-gray-50 p-2.5 dark:bg-gray-900/40">
-                            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg border border-gray-200/80 bg-white dark:border-gray-700 dark:bg-gray-800">
-                              {o.real_image ? <img src={o.real_image} alt="" className="h-full w-full object-cover" /> : <ShoppingBag size={16} className="text-gray-300" />}
-                            </div>
-
-                            <div className="min-w-0 flex-1">
-                              <p className="text-[13.5px] font-extrabold text-gray-900 dark:text-white">{fmtXAF(o.price_final)}</p>
-                              <p className="truncate text-[11.5px] text-gray-400">
-                                {o.condition ? `${o.condition} · ` : ''}{o.seller_note || t('product_detail.default_seller_note')}
-                              </p>
-                              {oReviews.length > 0 && (
-                                <button onClick={() => setReviewModalOffer(o)} className="mt-0.5 inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline">
-                                  <MessageSquare size={11} /> {t('product_detail.reviews_verified', { count: oReviews.length })}
-                                </button>
-                              )}
-                            </div>
-
-                            <StockBadge inStock={o.stock_quantity > 0} />
-
-                            <button onClick={() => addOffer(o, 1)} disabled={o.stock_quantity <= 0}
-                              className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-primary px-3.5 py-2 text-xs font-semibold text-primary transition-all hover:bg-primary hover:text-white disabled:opacity-50">
-                              <ShoppingCart size={13} /> {t('product_detail.add_short')}
-                            </button>
-                          </div>
-                        );
-                      })}
-                      {filteredOffers.length === 0 && (
-                        <p className="py-3 text-sm text-gray-400">{t('product_detail.no_offer_for_condition')}</p>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </Panel>
             )}
 
             {/* Garanties */}
@@ -934,8 +926,8 @@ export default function FicheDetailPage() {
         )}
       </div>
 
-      {reviewModalOffer && (
-        <ReviewsModal offer={reviewModalOffer} reviews={reviewsByOffer[reviewModalOffer.id] ?? []} onClose={() => setReviewModalOffer(null)} />
+      {showAskQuestion && (
+        <AskQuestionModal sellerTier={sellerTier} onClose={() => setShowAskQuestion(false)} />
       )}
     </div>
   );

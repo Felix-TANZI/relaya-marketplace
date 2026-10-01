@@ -1,10 +1,11 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Check, Clock, Download, Lock, RefreshCw, ShieldCheck, Smartphone, TriangleAlert, X } from "lucide-react";
 import { CAMEROON, detectOperator, isValidNationalNumber, toE164, toNationalNumber } from "@/lib/phone";
 import { PhoneInput } from "@/components/ui/PhoneInput";
 import { PROVIDER_LABELS, type PaymentProvider, type PaymentTransaction } from "@/services/api/payments";
 import { PfShellStyles } from "@/styles/pfShell";
+import ConfettiBurst from "@/components/common/ConfettiBurst";
 import { OperatorLogo } from "./OperatorLogo";
 import { PAYMENT_TIMEOUT_S, usePaymentTransaction } from "./usePaymentTransaction";
 
@@ -32,6 +33,21 @@ export default function PaymentSheet({ orderId, amountXaf, defaultPhone, onClose
   const mismatch = phoneValid && operator &&
     ((provider === "MTN_MOMO" && operator.name !== "MTN") || (provider === "ORANGE_MONEY" && operator.name !== "Orange"));
   const mmss = `${Math.floor(secondsLeft / 60)}:${String(secondsLeft % 60).padStart(2, "0")}`;
+
+  // anim_04 — "Paiement accepté" : retour haptique léger au moment du succès.
+  // navigator.vibrate() ne fonctionne que sur Android/Chrome (WebView inclus) ;
+  // iOS Safari/WKWebView n'expose pas cette API web. Un vrai retour haptique
+  // iOS nécessiterait @capacitor/haptics dans une app Capacitor compilée —
+  // volontairement non ajouté ici (voir rapport), ce n'est pas une dépendance
+  // à installer pour un effet qui ne jouerait rien dans un navigateur web.
+  useEffect(() => {
+    if (phase !== "success") return;
+    try {
+      navigator.vibrate?.([15, 40, 15]);
+    } catch {
+      // ignore — navigateur sans support
+    }
+  }, [phase]);
 
   return (
     <div className="pf-root">
@@ -172,10 +188,13 @@ export default function PaymentSheet({ orderId, amountXaf, defaultPhone, onClose
 
           {phase === "success" && tx && (
             <>
-              <div className="pf-ok-badge">
-                <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M21.801 10A10 10 0 1 1 17 3.335" /><path d="m9 11 3 3L22 4" />
-                </svg>
+              <div style={{ position: "relative" }}>
+                <div className="pf-ok-badge">
+                  <svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21.801 10A10 10 0 1 1 17 3.335" /><path d="m9 11 3 3L22 4" />
+                  </svg>
+                </div>
+                <ConfettiBurst active={phase === "success"} />
               </div>
               <div style={{ textAlign: "center", marginTop: 20 }}>
                 <div className="pf-hello" style={{ fontSize: 24 }}>{t('cl1_payment_sheet.payment_confirmed')}</div>

@@ -1,7 +1,10 @@
 import { useMemo, useState, useEffect, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronRight, ArrowRight, PackageSearch } from "lucide-react";
+import {
+  ChevronRight, ArrowRight, PackageSearch,
+  Zap, Percent, Star, Gem,
+} from "lucide-react";
 import { categoryIcon } from "@/components/home/CategorySidebar";
 import { categoriesApi, type CategoryTreeNode } from "@/services/api/categories";
 import { PfShellStyles } from "@/styles/pfShell";
@@ -13,6 +16,15 @@ const TILE_GRADIENTS = [
   "linear-gradient(135deg,#34d399,#059669)",
   "linear-gradient(135deg,#ffd45c,#f59e0b)",
   "linear-gradient(135deg,#a78bfa,#7c3aed)",
+];
+
+/* Bloc « À DÉCOUVRIR » — tuiles de navigation vers des pages déjà existantes
+   de l'app (pas de nouvelle donnée à exposer, uniquement du routage). */
+const DISCOVER_TILES = [
+  { to: "/flash-deals", icon: Zap, titleKey: "categories.discover_flash_title", subtitleKey: "categories.discover_flash_subtitle", gradient: "linear-gradient(135deg,#ff6b6b,#e11d48)" },
+  { to: "/promotions", icon: Percent, titleKey: "categories.discover_promo_title", subtitleKey: "categories.discover_promo_subtitle", gradient: "linear-gradient(135deg,#ffa04d,#f4610f)" },
+  { to: "/selection-premium", icon: Star, titleKey: "categories.discover_selection_title", subtitleKey: "categories.discover_selection_subtitle", gradient: "linear-gradient(135deg,#d97706,#92400e)" },
+  { to: "/premium", icon: Gem, titleKey: "categories.discover_premium_title", subtitleKey: "categories.discover_premium_subtitle", gradient: "linear-gradient(135deg,#7c3aed,#4c1d95)" },
 ];
 
 const glass: CSSProperties = {
@@ -69,6 +81,34 @@ export default function CategoriesPage() {
           </p>
         </header>
 
+        {/* ── À DÉCOUVRIR — tuiles 2×2 vers des pages déjà existantes ── */}
+        <section style={{ marginBottom: 18 }}>
+          <p style={{ marginBottom: 8, fontSize: 11, fontWeight: 800, letterSpacing: ".16em", textTransform: "uppercase", color: "var(--pf-accent)" }}>
+            {t("categories.discover_heading")}
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {DISCOVER_TILES.map((tile) => {
+              const TileIcon = tile.icon;
+              return (
+                <Link
+                  key={tile.to}
+                  to={tile.to}
+                  className="group relative overflow-hidden rounded-2xl p-3.5 text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-4"
+                  style={{ background: tile.gradient, minHeight: 92 }}
+                >
+                  <TileIcon size={20} className="opacity-90" />
+                  <p className="mt-5 text-[13px] font-extrabold leading-tight sm:text-[14px]">
+                    {t(tile.titleKey)}
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-white/80 sm:text-[11px]">
+                    {t(tile.subtitleKey)}
+                  </p>
+                </Link>
+              );
+            })}
+          </div>
+        </section>
+
         {loading ? (
           <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[270px_1fr]">
             <div className="skeleton h-[420px] rounded-[18px]" />
@@ -122,50 +162,60 @@ export default function CategoriesPage() {
 
             {/* ── Panneau : détail du sélectionné ── */}
             <div className="pf-card">
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 13 }}>
-                  <span style={{ width: 50, height: 50, borderRadius: 14, display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", background: TILE_GRADIENTS[selectedIndex % TILE_GRADIENTS.length], boxShadow: "0 6px 16px rgba(0,0,0,.12)" }}>
-                    {SelectedIcon ? <SelectedIcon size={24} /> : null}
+              {/* Bannière héro — couleur de dégradé par catégorie, faute d'image
+                  dédiée exposée par l'API (CategoryTreeNode n'a pas de champ photo). */}
+              <div
+                className="relative mb-4 overflow-hidden rounded-[18px] p-5 text-white"
+                style={{ background: TILE_GRADIENTS[selectedIndex % TILE_GRADIENTS.length] }}
+              >
+                {SelectedIcon ? (
+                  <span aria-hidden className="pointer-events-none absolute -right-5 -top-6 opacity-20">
+                    <SelectedIcon size={120} />
                   </span>
-                  <div>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "var(--pf-text)" }}>{selected.name}</div>
-                    <div style={{ fontSize: 12, color: "var(--pf-muted)" }}>
+                ) : null}
+                <div className="relative flex flex-wrap items-end justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[10.5px] font-black uppercase tracking-[0.18em] text-white/80">
                       {selected.children.length > 0
                         ? t("categories.subcategory_count_plural", { count: selected.children.length })
                         : t("categories.main_category")}
-                    </div>
+                    </p>
+                    <h2 className="mt-1 text-[21px] font-black leading-tight">{selected.name}</h2>
+                    {selected.description ? (
+                      <p className="mt-1 max-w-md text-[12px] text-white/85">{selected.description}</p>
+                    ) : null}
                   </div>
+                  <Link
+                    to={`/catalog?category=${selected.id}`}
+                    className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-full bg-white px-4 py-2 text-[12.5px] font-extrabold text-gray-900 shadow-sm transition hover:-translate-y-0.5"
+                  >
+                    {t("cl4_categories.view_all_products")} <ArrowRight size={14} />
+                  </Link>
                 </div>
-                <Link to={`/catalog?category=${selected.id}`} className="pf-btn-accent" style={{ textDecoration: "none" }}>
-                  {t("cl4_categories.view_all_products")} <ArrowRight size={15} />
-                </Link>
               </div>
 
               {selected.children.length > 0 ? (
-                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-4">
                   {selected.children.map((child) => {
                     const ChildIcon = categoryIcon({ slug: child.slug, name: child.name, iconName: child.icon_name });
                     return (
                       <Link
                         key={child.id}
                         to={`/catalog?category=${child.id}`}
-                        className="flex items-center gap-3 rounded-xl px-3 py-3 transition-all hover:-translate-y-0.5"
+                        className="flex flex-col items-center gap-2 rounded-xl px-2.5 py-4 text-center transition-all hover:-translate-y-0.5"
                         style={{ background: "var(--pf-s3)", border: "1px solid var(--pf-border)" }}
                       >
-                        <span style={{ width: 34, height: 34, flexShrink: 0, borderRadius: 9, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--pf-asoft)", color: "var(--pf-accent)" }}>
-                          <ChildIcon size={16} />
+                        <span style={{ width: 44, height: 44, flexShrink: 0, borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--pf-asoft)", color: "var(--pf-accent)" }}>
+                          <ChildIcon size={20} />
                         </span>
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span style={{ display: "block", fontSize: 12.5, fontWeight: 700, color: "var(--pf-text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {child.name}
+                        <span style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", fontSize: 12, fontWeight: 700, color: "var(--pf-text)", lineHeight: 1.25 }}>
+                          {child.name}
+                        </span>
+                        {child.children.length > 0 ? (
+                          <span style={{ fontSize: 10, color: "var(--pf-muted)" }}>
+                            {t("categories.subcategory_count_plural", { count: child.children.length })}
                           </span>
-                          {child.children.length > 0 ? (
-                            <span style={{ display: "block", fontSize: 10.5, color: "var(--pf-muted)" }}>
-                              {t("categories.subcategory_count_plural", { count: child.children.length })}
-                            </span>
-                          ) : null}
-                        </span>
-                        <ChevronRight size={15} style={{ color: "#c2b6bf", flexShrink: 0 }} />
+                        ) : null}
                       </Link>
                     );
                   })}

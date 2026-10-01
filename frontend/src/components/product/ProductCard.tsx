@@ -15,11 +15,13 @@
 } from "lucide-react";
 import { useEffect, useState, createElement } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useCart } from "@/context/CartContext";
 import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
+import { flyToCart } from "@/lib/flyToCart";
 
 interface ProductImage {
   id: number;
@@ -130,9 +132,14 @@ export default function ProductCard({
   const canOrder = inStock;
   const hasReviews = Boolean(product.reviews_count && product.reviews_count > 0);
   const compactCategoryIcon = getCompactCategoryIcon(product.category?.slug);
-  const productUrl = `/product/${product.master_slug ?? product.id}${isMock ? "?mock=1" : ""}`;
+  const productIdentifier = product.master_slug ?? product.id;
+  const productUrl = `/product/${productIdentifier}${isMock ? "?mock=1" : ""}`;
+  // anim_07 — transition d'élément partagé : même layoutId que l'image
+  // principale de FicheDetailPage.tsx (param `slug` de la route = ce même
+  // identifiant), pour que framer-motion anime l'agrandissement de la photo.
+  const photoLayoutId = `product-photo-${productIdentifier}`;
 
-  const handleAddToCart = (event: React.MouseEvent) => {
+  const handleAddToCart = (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
     if (!canOrder) return;
     addItem({
@@ -144,6 +151,11 @@ export default function ProductCard({
       image: displayImage,
       isDemo: isMock,
     });
+    // anim_01 — vol du produit vers l'icône panier du header, purement
+    // visuel : l'ajout au panier ci-dessus a déjà eu lieu.
+    const card = event.currentTarget.closest("article");
+    const sourceImg = card?.querySelector("img") ?? event.currentTarget;
+    flyToCart(sourceImg, displayImage);
   };
 
   const handleToggleFavorite = async (event: React.MouseEvent) => {
@@ -206,7 +218,8 @@ export default function ProductCard({
             </button>
             {/* Image */}
             {!imageError && displayImage ? (
-              <img
+              <motion.img
+                layoutId={photoLayoutId}
                 src={displayImage}
                 alt={product.title}
                 loading="lazy"
@@ -300,7 +313,8 @@ export default function ProductCard({
             <Heart size={18} className={isFavorite ? "fill-red-500 text-red-500" : ""} />
           </button>
           {!imageError && displayImage ? (
-            <img
+            <motion.img
+              layoutId={photoLayoutId}
               src={displayImage}
               alt={product.title}
               loading="lazy"

@@ -10,6 +10,7 @@ export default {
     hide_password: 'Hide password',
     remember_me: 'Remember me',
     or_continue_with: 'or continue with',
+    or_with_email: 'or with email and password',
     no_account_yet: "Don't have an account?",
     two_factor_title: 'Two-step verification',
     two_factor_subtitle: 'This account has two-factor authentication enabled',

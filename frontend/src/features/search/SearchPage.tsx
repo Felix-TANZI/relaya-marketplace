@@ -1,13 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Search, SlidersHorizontal, ChevronDown, ChevronUp,
-  ArrowUpDown, Star, Tag, Package, Lightbulb,
+  ArrowLeft, Search, SlidersHorizontal, ChevronDown, ChevronUp,
+  ArrowUpDown, Star, Tag, Package, Lightbulb, Clock, X, Mic,
+  ShoppingBag, Heart, ShoppingCart,
 } from "lucide-react";
-import CatalogProductCard from "@/components/product/CatalogProductCard";
 import { productsApi, type Category, type Product, type ProductListResponse, type SearchMeta } from "@/services/api/products";
 import { searchMockProducts, MOCK_PRODUCTS } from "@/lib/mockProducts";
+import { useCart } from "@/context/CartContext";
+import { isFavoriteProduct, toggleFavoriteProduct } from "@/lib/favorites";
+import { hasValidAccessToken } from "@/lib/authTokens";
+import { customerApi } from "@/services/api/customer";
 
 type SortKey = "relevance" | "price_asc" | "price_desc" | "newest";
 
@@ -25,13 +29,43 @@ const PRICE_PRESETS = [
   { labelKey: "cl4_search.price_preset_over_50k", min: 50000, max: 9999999 },
 ];
 
-const LAST_SEARCH_STORAGE_KEY = "belivay_last_search";
+/* Historique de recherche — conservé en localStorage, aucune API dédiée
+   n'existe côté backend pour ça. On garde jusqu'à 10 entrées, on en affiche 3. */
+const SEARCH_HISTORY_KEY = "belivay_search_history";
+const MAX_HISTORY_ENTRIES = 10;
+const HISTORY_DISPLAY_COUNT = 3;
 
-type LastSearch = {
-  query: string;
-  category: string;
-  createdAt: string;
-};
+type SearchHistoryEntry = { query: string; createdAt: string };
+
+function readSearchHistory(): SearchHistoryEntry[] {
+  try {
+    const raw = localStorage.getItem(SEARCH_HISTORY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeSearchHistory(entries: SearchHistoryEntry[]) {
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(entries));
+  } catch {
+    /* stockage indisponible (navigation privée, quota…) : l'historique reste en mémoire pour la session en cours */
+  }
+}
+
+function pushSearchHistory(query: string): SearchHistoryEntry[] {
+  const trimmed = query.trim();
+  if (!trimmed) return readSearchHistory();
+  const existing = readSearchHistory().filter(
+    (entry) => entry.query.toLowerCase() !== trimmed.toLowerCase(),
+  );
+  const next = [{ query: trimmed, createdAt: new Date().toISOString() }, ...existing].slice(0, MAX_HISTORY_ENTRIES);
+  writeSearchHistory(next);
+  return next;
+}
 
 function sortProducts(products: Product[], sort: SortKey): Product[] {
   const arr = [...products];
@@ -44,12 +78,147 @@ function sortProducts(products: Product[], sort: SortKey): Product[] {
 function normalizeValue(value: string) {
   return value
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[̀-ͯ]/g, "")
     .toLowerCase();
 }
 
+type SpeechRecognitionResultEvent = {
+  results: ArrayLike<ArrayLike<{ transcript: string }>>;
+};
+
+interface SpeechRecognitionLike {
+  lang: string;
+  onresult: (event: SpeechRecognitionResultEvent) => void;
+  start: () => void;
+}
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionLike;
+
+function productImage(product: Product) {
+  return (
+    product.images?.find((img) => img.is_primary)?.image_url ||
+    product.images?.[0]?.image_url ||
+    product.media?.find((media) => media.media_type === "image")?.url
+  );
+}
+
+/** Ligne de résultat — liste à une colonne (vignette carrée + texte), au lieu
+ * de la grille à 2 colonnes utilisée ailleurs dans le catalogue. */
+function SearchResultRow({ product }: { product: Product }) {
+  const { t } = useTranslation();
+  const { addItem } = useCart();
+  const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
+
+  useEffect(() => {
+    const sync = () => setIsFavorite(isFavoriteProduct(product.id));
+    window.addEventListener("belivay-favorites-updated", sync);
+    return () => window.removeEventListener("belivay-favorites-updated", sync);
+  }, [product.id]);
+
+  const finalPrice = product.price_final ?? product.price_xaf;
+  const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
+  const image = productImage(product);
+  const productUrl = `/product/${product.master_slug ?? product.id}`;
+
+  const handleToggleFavorite = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    const nextIds = toggleFavoriteProduct(product.id);
+    const nextIsFavorite = nextIds.includes(product.id);
+    setIsFavorite(nextIsFavorite);
+    if (!hasValidAccessToken()) return;
+    try {
+      if (nextIsFavorite) {
+        await customerApi.addFavorite(product.id);
+        return;
+      }
+      const favorites = await customerApi.getFavorites();
+      const favorite = favorites.find((item) => item.product.id === product.id);
+      if (favorite) await customerApi.removeFavorite(favorite.id);
+    } catch {
+      const reverted = toggleFavoriteProduct(product.id);
+      setIsFavorite(reverted.includes(product.id));
+    }
+  };
+
+  const handleAddToCart = (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (!inStock) return;
+    addItem({
+      id: product.id,
+      master_id: product.master ?? undefined,
+      name: product.title,
+      price: finalPrice,
+      quantity: 1,
+      image,
+    });
+  };
+
+  return (
+    <Link
+      to={productUrl}
+      className="flex gap-3 border-b border-gray-100 bg-white px-3 py-3 transition hover:bg-gray-50 dark:border-gray-800 dark:bg-gray-900 dark:hover:bg-gray-800"
+    >
+      <div className="relative h-[84px] w-[84px] flex-shrink-0 overflow-hidden rounded-xl bg-[#fff7ef] dark:bg-gray-800">
+        {image ? (
+          <img src={image} alt={product.title} loading="lazy" className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full items-center justify-center text-primary/40">
+            <ShoppingBag size={24} />
+          </div>
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-start justify-between gap-2">
+          <h3 className="line-clamp-2 text-[13.5px] font-bold leading-snug text-gray-900 dark:text-white">
+            {product.title}
+          </h3>
+          <span
+            className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+              inStock
+                ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                : "bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400"
+            }`}
+          >
+            {inStock ? t("cl4_search.in_stock_badge") : t("product_card.sold_out")}
+          </span>
+        </div>
+
+        <p className="mt-1.5 text-[15px] font-black text-primary">
+          {finalPrice.toLocaleString("fr-FR")} FCFA
+        </p>
+
+        {/* Pas de ligne logistique ("Livraison à domicile" / "+900F de retrait") :
+            le backend n'expose pas encore de type de livraison ni de distance par
+            produit pour ce compte démo. On omet plutôt que d'inventer une valeur. */}
+
+        <div className="mt-2 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleToggleFavorite}
+            aria-label={isFavorite ? t("product_detail.removed_from_favorites") : t("product_detail.add_to_favorites")}
+            className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border border-gray-200 text-gray-400 transition hover:border-pink-300 hover:text-pink-500 dark:border-gray-700"
+          >
+            <Heart size={13} className={isFavorite ? "fill-pink-500 text-pink-500" : ""} />
+          </button>
+          <button
+            type="button"
+            onClick={handleAddToCart}
+            disabled={!inStock}
+            className="flex h-7 flex-shrink-0 items-center gap-1.5 rounded-full bg-primary px-3 text-[11px] font-bold text-white transition disabled:bg-gray-300"
+          >
+            <ShoppingCart size={12} />
+            {inStock ? t("product_card.add_to_cart") : t("product_card.unavailable")}
+          </button>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
 export default function SearchPage() {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -64,7 +233,7 @@ export default function SearchPage() {
   const [sort, setSort]           = useState<SortKey>("relevance");
   const [sortOpen, setSortOpen]   = useState(false);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [lastSearch, setLastSearch] = useState<LastSearch | null>(null);
+  const [searchHistory, setSearchHistory] = useState<SearchHistoryEntry[]>([]);
   const [searchMeta, setSearchMeta] = useState<SearchMeta | null>(null);
 
   /* ── Filter state ── */
@@ -100,13 +269,7 @@ export default function SearchPage() {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem(LAST_SEARCH_STORAGE_KEY);
-    if (!stored) return;
-    try {
-      setLastSearch(JSON.parse(stored) as LastSearch);
-    } catch {
-      localStorage.removeItem(LAST_SEARCH_STORAGE_KEY);
-    }
+    setSearchHistory(readSearchHistory());
   }, []);
 
   const runSearch = useCallback(async (q: string) => {
@@ -131,16 +294,8 @@ export default function SearchPage() {
     const categoryLabel = searchParams.get("category_label") ?? "";
     setQuery(q);
     setSelectedCategoryLabel(categoryLabel);
-    if (q.trim() || categoryLabel) {
-      const nextLastSearch = {
-        query: q,
-        category: categoryLabel,
-        createdAt: new Date().toISOString(),
-      };
-      setLastSearch(nextLastSearch);
-      localStorage.setItem(LAST_SEARCH_STORAGE_KEY, JSON.stringify(nextLastSearch));
-    }
     if (q.trim()) {
+      setSearchHistory(pushSearchHistory(q));
       runSearch(q);
       return;
     }
@@ -187,210 +342,313 @@ export default function SearchPage() {
     setFilterOpen(false);
   };
 
-  const applyLastSearch = () => {
-    if (!lastSearch) return;
+  const submitSearch = (value?: string) => {
+    const trimmed = (value ?? query).trim();
     const params: Record<string, string> = {};
-    if (lastSearch.query) params.q = lastSearch.query;
-    if (lastSearch.category) params.category_label = lastSearch.category;
+    if (trimmed) params.q = trimmed;
+    if (selectedCategoryLabel) params.category_label = selectedCategoryLabel;
     setSearchParams(params);
   };
 
+  const handleSearchKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") submitSearch();
+  };
+
+  const clearSearchInput = () => {
+    setQuery("");
+    setSearchParams({});
+  };
+
+  const handleVoiceSearch = () => {
+    const speechWindow = window as unknown as {
+      SpeechRecognition?: SpeechRecognitionCtor;
+      webkitSpeechRecognition?: SpeechRecognitionCtor;
+    };
+    const SR = speechWindow.SpeechRecognition || speechWindow.webkitSpeechRecognition;
+    if (!SR) return;
+    const rec = new SR();
+    rec.lang = "fr-FR";
+    rec.onresult = (event: SpeechRecognitionResultEvent) => {
+      const transcript = event.results[0][0].transcript;
+      setQuery(transcript);
+      submitSearch(transcript);
+    };
+    rec.start();
+  };
+
+  const removeHistoryItem = (historyQuery: string) => {
+    const next = readSearchHistory().filter((entry) => entry.query !== historyQuery);
+    writeSearchHistory(next);
+    setSearchHistory(next);
+  };
+
+  const clearHistory = () => {
+    writeSearchHistory([]);
+    setSearchHistory([]);
+  };
+
+  const displayedHistory = searchHistory.slice(0, HISTORY_DISPLAY_COUNT);
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-      <div className="mx-auto max-w-7xl px-4 py-4">
-        <div className="flex gap-4">
+    /* Mode plein écran dédié : pas de header/logo/panier/avatar du site — cet
+       overlay se pose au-dessus du chrome global (header fixe + bandeau pub)
+       plutôt que de modifier AppLayout, pour ne rien casser sur les autres pages. */
+    <div className="fixed inset-0 z-[65] flex flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="flex-1 overflow-y-auto">
+        {/* ── Barre du haut : retour + champ de recherche ── */}
+        <div className="sticky top-0 z-10 border-b border-gray-200 bg-white px-3 py-3 dark:border-gray-800 dark:bg-gray-950">
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              aria-label={t("cl4_search.back_aria")}
+              className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full text-gray-600 transition hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
+            >
+              <ArrowLeft size={20} />
+            </button>
 
-          {/* ── LEFT FILTER SIDEBAR ── */}
-          <aside
-            className={`flex-shrink-0 transition-all duration-200 max-md:fixed max-md:inset-x-3 max-md:top-[82px] max-md:z-[60] max-md:rounded-xl max-md:shadow-2xl ${
-              filterOpen ? "w-[240px] opacity-100 max-md:w-auto" : "w-0 overflow-hidden opacity-0 max-md:pointer-events-none"
-            }`}
-          >
-            <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style={{ minWidth: "240px" }}>
-              <div className="mb-4 flex items-center justify-between">
-                <span className="text-[13px] font-extrabold text-gray-900 dark:text-white">{t("cl4_search.filters_heading")}</span>
-                {activeFiltersCount > 0 && (
-                  <button onClick={resetFilters} className="text-[11px] font-semibold text-primary hover:underline">
-                    {t("cl4_search.reset")}
-                  </button>
-                )}
-              </div>
+            <div className="flex h-11 flex-1 items-center overflow-hidden rounded-xl border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+              <span className="pl-3 text-gray-400">
+                <Search size={16} />
+              </span>
+              <input
+                type="text"
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={handleSearchKey}
+                placeholder={t("header.search_placeholder") ?? undefined}
+                aria-label={t("cl4_search.search_input_aria")}
+                autoFocus
+                className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-[14px] text-gray-900 outline-none placeholder:text-gray-400 dark:text-white"
+              />
+              {query ? (
+                <button
+                  type="button"
+                  onClick={clearSearchInput}
+                  aria-label={t("cl4_search.clear_search_aria")}
+                  className="flex h-full flex-shrink-0 items-center px-2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              ) : null}
+              <button
+                type="button"
+                onClick={handleVoiceSearch}
+                aria-label={t("cl4_search.voice_search_aria")}
+                className="flex h-full flex-shrink-0 items-center px-2.5 text-gray-400 hover:text-primary"
+              >
+                <Mic size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={() => submitSearch()}
+                aria-label={t("header.run_search")}
+                className="flex h-full w-12 flex-shrink-0 items-center justify-center bg-primary text-white transition hover:bg-primary-dark"
+              >
+                <Search size={16} />
+              </button>
+            </div>
+          </div>
+        </div>
 
-              {/* Prix */}
-              <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
-                <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                  <Tag size={13} /> {t("cl4_search.price_fcfa")}
-                </p>
-                <div className="mb-2 flex gap-2">
-                  <input
-                    type="number"
-                    placeholder={t("cl4_search.min_placeholder") ?? undefined}
-                    value={minPrice}
-                    onChange={(e) => {
-                      setMinPrice(e.target.value);
-                      closeFiltersAfterApply();
-                    }}
-                    className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  />
-                  <input
-                    type="number"
-                    placeholder={t("cl4_search.max_placeholder") ?? undefined}
-                    value={maxPrice}
-                    onChange={(e) => {
-                      setMaxPrice(e.target.value);
-                      closeFiltersAfterApply();
-                    }}
-                    className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  {PRICE_PRESETS.map((p) => (
+        <div className="mx-auto max-w-3xl px-3 py-4">
+          {!searched ? (
+            /* ── Avant toute recherche : historique + suggestions ── */
+            <div>
+              {displayedHistory.length > 0 && (
+                <div className="mb-6">
+                  <div className="mb-2 flex items-center justify-between">
+                    <p className="text-[11px] font-extrabold uppercase tracking-[0.2em] text-gray-400">
+                      {t("cl4_search.history_heading")}
+                    </p>
                     <button
-                      key={p.labelKey}
-                      onClick={() => applyPricePreset(p.min, p.max)}
-                      className="rounded-lg border border-gray-100 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-all hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-800 dark:text-gray-400 dark:hover:bg-primary/10"
+                      type="button"
+                      onClick={clearHistory}
+                      className="text-[12px] font-bold text-primary hover:underline"
                     >
-                      {t(p.labelKey)}
+                      {t("cl4_search.history_clear")}
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Catégorie */}
-              {categories.length > 0 && (
-                <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
-                  <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                    <Package size={13} /> {t("cl4_search.category_heading")}
-                  </p>
-                  <div className="flex flex-col gap-0.5">
-                    {categories.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => {
-                          setSelCat(selCat === cat.id ? null : cat.id);
-                          closeFiltersAfterApply();
-                        }}
-                        className={`rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-semibold transition-all ${
-                          selCat === cat.id
-                            ? "bg-orange-50 text-primary dark:bg-primary/10"
-                            : "text-gray-600 hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
-                        }`}
-                      >
-                        {cat.name}
-                      </button>
+                  </div>
+                  <div className="divide-y divide-gray-100 rounded-xl border border-gray-100 bg-white px-3 dark:divide-gray-800 dark:border-gray-800 dark:bg-gray-900">
+                    {displayedHistory.map((entry) => (
+                      <div key={entry.query} className="flex items-center justify-between gap-2 py-3">
+                        <button
+                          type="button"
+                          onClick={() => submitSearch(entry.query)}
+                          className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                        >
+                          <Clock size={16} className="flex-shrink-0 text-gray-400" />
+                          <span className="truncate text-[14px] font-semibold text-gray-800 dark:text-gray-100">
+                            {entry.query}
+                          </span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeHistoryItem(entry.query)}
+                          aria-label={t("cl4_search.history_remove_aria")}
+                          className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
                     ))}
                   </div>
                 </div>
               )}
 
-              {/* Note minimale */}
-              <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
-                <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
-                  <Star size={13} /> {t("cl4_search.min_rating_heading")}
-                </p>
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={n}
-                      onClick={() => {
-                        setMinRating(minRating === n ? 0 : n);
-                        closeFiltersAfterApply();
-                      }}
-                      className={`flex items-center justify-center rounded-lg border px-2 py-1 text-[11px] font-bold transition-all ${
-                        minRating >= n
-                          ? "border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-900/20"
-                          : "border-gray-200 text-gray-400 hover:border-amber-300 dark:border-gray-700"
-                      }`}
-                    >
-                      {n}★
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Pas de section "Recherché dans ta zone" : nécessiterait une API de
+                  tendances de recherche géolocalisées qui n'existe pas encore côté
+                  backend — on ne l'invente pas plutôt que d'afficher de fausses données. */}
 
-              {/* En stock */}
-              <label className="flex cursor-pointer items-center gap-2">
-                <div
-                  onClick={() => {
-                    setInStock((v) => !v);
-                    closeFiltersAfterApply();
-                  }}
-                  className={`relative h-5 w-9 rounded-full transition-colors ${inStock ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${inStock ? "translate-x-4" : "translate-x-0.5"}`}
-                  />
-                </div>
-                <span className="text-[12px] font-semibold text-gray-700 dark:text-gray-300">{t("cl4_search.in_stock_only")}</span>
-              </label>
-            </div>
-          </aside>
-
-          {/* ── MAIN RESULTS AREA ── */}
-          <div className="min-w-0 flex-1">
-            {lastSearch && (lastSearch.query || lastSearch.category) && (
-              <div className="mb-4 rounded-xl border border-orange-100 bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                <p className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-primary">
-                  {t("cl4_search.last_search_label")}
-                </p>
-                <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-bold text-gray-900 dark:text-white">
-                      {lastSearch.category ? `[${lastSearch.category}] ` : ""}
-                      {lastSearch.query || t("cl4_search.category_only")}
-                    </p>
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {new Date(lastSearch.createdAt).toLocaleString(i18n.language === "fr" ? "fr-FR" : "en-US")}
-                    </p>
-                  </div>
+              <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                {t("cl4_search.suggested_searches")}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {categories.map((cat) => (
                   <button
-                    type="button"
-                    onClick={applyLastSearch}
-                    className="rounded-lg bg-primary px-4 py-2 text-[12px] font-bold text-white transition-all hover:bg-orange-700"
+                    key={cat.id}
+                    onClick={() => {
+                      setQuery(cat.name);
+                      setSelectedCategoryLabel("");
+                      setSearchParams({ q: cat.name });
+                    }}
+                    className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                   >
-                    {t("cl4_search.resume")}
+                    {cat.name}
                   </button>
-                </div>
-              </div>
-            )}
-
-            {/* Pas encore cherché */}
-            {!searched && (
-              <div>
-                <p className="mb-3 text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                  {t("cl4_search.suggested_searches")}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => {
-                        setQuery(cat.name);
-                        setSelectedCategoryLabel("");
-                        setSearchParams({ q: cat.name });
-                        runSearch(cat.name);
-                      }}
-                      className="rounded-full border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-all hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-                    >
-                      {cat.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Loading */}
-            {loading && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="aspect-[0.85] animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
                 ))}
               </div>
-            )}
+            </div>
+          ) : (
+            <div className="flex gap-4">
+              {/* ── LEFT FILTER SIDEBAR / panneau flottant mobile ── */}
+              <aside
+                className={`flex-shrink-0 transition-all duration-200 max-md:fixed max-md:inset-x-3 max-md:top-[78px] max-md:z-[20] max-md:rounded-xl max-md:shadow-2xl ${
+                  filterOpen ? "w-[240px] opacity-100 max-md:w-auto" : "w-0 overflow-hidden opacity-0 max-md:pointer-events-none"
+                }`}
+              >
+                <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900" style={{ minWidth: "240px" }}>
+                  <div className="mb-4 flex items-center justify-between">
+                    <span className="text-[13px] font-extrabold text-gray-900 dark:text-white">{t("cl4_search.filters_heading")}</span>
+                    {activeFiltersCount > 0 && (
+                      <button onClick={resetFilters} className="text-[11px] font-semibold text-primary hover:underline">
+                        {t("cl4_search.reset")}
+                      </button>
+                    )}
+                  </div>
 
-            {/* Results */}
-            {!loading && searched && (
-              <>
+                  {/* Prix */}
+                  <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
+                    <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
+                      <Tag size={13} /> {t("cl4_search.price_fcfa")}
+                    </p>
+                    <div className="mb-2 flex gap-2">
+                      <input
+                        type="number"
+                        placeholder={t("cl4_search.min_placeholder") ?? undefined}
+                        value={minPrice}
+                        onChange={(e) => {
+                          setMinPrice(e.target.value);
+                          closeFiltersAfterApply();
+                        }}
+                        className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                      <input
+                        type="number"
+                        placeholder={t("cl4_search.max_placeholder") ?? undefined}
+                        value={maxPrice}
+                        onChange={(e) => {
+                          setMaxPrice(e.target.value);
+                          closeFiltersAfterApply();
+                        }}
+                        className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-[12px] outline-none focus:border-primary dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      {PRICE_PRESETS.map((p) => (
+                        <button
+                          key={p.labelKey}
+                          onClick={() => applyPricePreset(p.min, p.max)}
+                          className="rounded-lg border border-gray-100 px-2 py-1.5 text-left text-[11px] font-semibold text-gray-600 transition-all hover:border-primary hover:bg-orange-50 hover:text-primary dark:border-gray-800 dark:text-gray-400 dark:hover:bg-primary/10"
+                        >
+                          {t(p.labelKey)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Catégorie */}
+                  {categories.length > 0 && (
+                    <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
+                      <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
+                        <Package size={13} /> {t("cl4_search.category_heading")}
+                      </p>
+                      <div className="flex flex-col gap-0.5">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat.id}
+                            onClick={() => {
+                              setSelCat(selCat === cat.id ? null : cat.id);
+                              closeFiltersAfterApply();
+                            }}
+                            className={`rounded-lg px-2.5 py-1.5 text-left text-[11.5px] font-semibold transition-all ${
+                              selCat === cat.id
+                                ? "bg-orange-50 text-primary dark:bg-primary/10"
+                                : "text-gray-600 hover:bg-gray-50 hover:text-primary dark:text-gray-400 dark:hover:bg-gray-800"
+                            }`}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Note minimale */}
+                  <div className="mb-4 border-b border-gray-100 pb-4 dark:border-gray-800">
+                    <p className="mb-2 flex items-center gap-1.5 text-[12px] font-bold text-gray-700 dark:text-gray-300">
+                      <Star size={13} /> {t("cl4_search.min_rating_heading")}
+                    </p>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <button
+                          key={n}
+                          onClick={() => {
+                            setMinRating(minRating === n ? 0 : n);
+                            closeFiltersAfterApply();
+                          }}
+                          className={`flex items-center justify-center rounded-lg border px-2 py-1 text-[11px] font-bold transition-all ${
+                            minRating >= n
+                              ? "border-amber-300 bg-amber-50 text-amber-600 dark:bg-amber-900/20"
+                              : "border-gray-200 text-gray-400 hover:border-amber-300 dark:border-gray-700"
+                          }`}
+                        >
+                          {n}★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* En stock */}
+                  <label className="flex cursor-pointer items-center gap-2">
+                    <div
+                      onClick={() => {
+                        setInStock((v) => !v);
+                        closeFiltersAfterApply();
+                      }}
+                      className={`relative h-5 w-9 rounded-full transition-colors ${inStock ? "bg-primary" : "bg-gray-200 dark:bg-gray-700"}`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${inStock ? "translate-x-4" : "translate-x-0.5"}`}
+                      />
+                    </div>
+                    <span className="text-[12px] font-semibold text-gray-700 dark:text-gray-300">{t("cl4_search.in_stock_only")}</span>
+                  </label>
+                </div>
+              </aside>
+
+              {/* ── MAIN RESULTS AREA ── */}
+              <div className="min-w-0 flex-1">
                 {/* Résultats approchants — on explique pourquoi ils diffèrent de la demande. */}
                 {searchMeta?.is_fallback && displayedProducts.length > 0 && (
                   <div className="mb-3 flex items-start gap-2.5 rounded-xl border border-orange-200 bg-orange-50 px-3.5 py-3 dark:border-primary/30 dark:bg-primary/10">
@@ -428,33 +686,32 @@ export default function SearchPage() {
                   </div>
                 )}
 
-                {/* Sort bar */}
-                <div className="mb-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-400">
-                      <span className="font-extrabold text-gray-900 dark:text-white">{displayedProducts.length}</span>
-                      {" "}{t(displayedProducts.length > 1 ? "cl4_search.results_found_plural" : "cl4_search.results_found")}
-                      {query && <> {t("cl4_search.results_for_prefix")} <span className="text-primary">"{query}"</span></>}
-                    </p>
+                {/* Compteur + barre de filtres/tri */}
+                <div className="mb-3 flex flex-col gap-3">
+                  <p className="text-[13px] font-semibold text-gray-600 dark:text-gray-400">
+                    <span className="font-extrabold text-gray-900 dark:text-white">{displayedProducts.length}</span>
+                    {" "}{t(displayedProducts.length > 1 ? "cl4_search.results_found_plural" : "cl4_search.results_found")}
+                    {query && <> {t("cl4_search.results_for_prefix")} <span className="text-primary">"{query}"</span></>}
                     {selectedCategoryLabel && (
-                      <span className="rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-primary">
+                      <span className="ml-2 rounded-full border border-orange-200 bg-orange-50 px-3 py-1 text-[11px] font-bold text-primary">
                         [{selectedCategoryLabel}]
                       </span>
                     )}
-                  </div>
+                  </p>
 
-                  <div className="order-first flex items-center gap-2 sm:order-none">
+                  <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+                    {/* "Filtres" n'apparaît qu'ici, une fois la recherche effectuée (CRE-37) */}
                     <button
                       type="button"
                       onClick={() => setFilterOpen((v) => !v)}
-                      className={`relative flex h-[38px] flex-shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12.5px] font-bold transition-all ${
+                      className={`relative flex h-[38px] flex-shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[12.5px] font-bold transition-all ${
                         filterOpen || activeFiltersCount > 0
                           ? "border-primary bg-orange-50 text-primary dark:bg-primary/10"
                           : "border-gray-200 bg-white text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300"
                       }`}
                     >
                       <SlidersHorizontal size={15} />
-                      <span className="hidden sm:inline">{t("cl4_search.filters_heading")}</span>
+                      {t("cl4_search.filters_heading")}
                       {activeFiltersCount > 0 && (
                         <span className="flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[9px] font-bold text-white">
                           {activeFiltersCount}
@@ -462,17 +719,17 @@ export default function SearchPage() {
                       )}
                     </button>
 
-                    <div className="relative">
+                    <div className="relative flex-shrink-0">
                       <button
                         onClick={() => setSortOpen((v) => !v)}
-                        className="flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-bold text-gray-700 transition-all hover:border-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="flex h-[38px] items-center gap-1.5 rounded-full border border-gray-200 bg-white px-3.5 text-[12px] font-bold text-gray-700 transition-all hover:border-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                       >
                         <ArrowUpDown size={13} />
                         {t(SORT_OPTIONS.find((o) => o.key === sort)?.labelKey ?? "")}
                         {sortOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                       {sortOpen && (
-                        <div className="absolute right-0 top-full z-30 mt-1 w-44 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
+                        <div className="absolute left-0 top-full z-30 mt-1 w-44 rounded-xl border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900">
                           {SORT_OPTIONS.map((o) => (
                             <button
                               key={o.key}
@@ -492,36 +749,55 @@ export default function SearchPage() {
                   </div>
                 </div>
 
-                {displayedProducts.length > 0 ? (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">
-                    {displayedProducts.map((product) => (
-                      <CatalogProductCard key={product.id} product={product} showPromo />
+                {/* Loading */}
+                {loading && (
+                  <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+                    {Array.from({ length: 6 }).map((_, i) => (
+                      <div key={i} className="flex gap-3 border-b border-gray-100 bg-white p-3 last:border-b-0 dark:border-gray-800 dark:bg-gray-900">
+                        <div className="h-[84px] w-[84px] flex-shrink-0 animate-pulse rounded-xl bg-gray-100 dark:bg-gray-800" />
+                        <div className="flex-1 space-y-2 py-1">
+                          <div className="h-3 w-3/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                          <div className="h-3 w-1/3 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                          <div className="h-5 w-1/4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />
+                        </div>
+                      </div>
                     ))}
                   </div>
-                ) : (
-                  <div className="mt-16 flex flex-col items-center gap-4 text-center">
-                    <div className="flex h-20 w-20 items-center justify-center rounded-full bg-orange-50 dark:bg-gray-800">
-                      <Search size={36} className="text-primary/60" />
-                    </div>
-                    <p className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {t("cl4_search.no_results_title")}
-                    </p>
-                    <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
-                      {t("cl4_search.no_results_desc")}
-                    </p>
-                    {activeFiltersCount > 0 && (
-                      <button
-                        onClick={resetFilters}
-                        className="mt-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-orange-700"
-                      >
-                        {t("cl4_search.reset_filters_button")}
-                      </button>
-                    )}
-                  </div>
                 )}
-              </>
-            )}
-          </div>
+
+                {/* Results — liste à 1 colonne */}
+                {!loading && (
+                  displayedProducts.length > 0 ? (
+                    <div className="overflow-hidden rounded-xl border border-gray-100 dark:border-gray-800">
+                      {displayedProducts.map((product) => (
+                        <SearchResultRow key={product.id} product={product} />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-16 flex flex-col items-center gap-4 text-center">
+                      <div className="flex h-20 w-20 items-center justify-center rounded-full bg-orange-50 dark:bg-gray-800">
+                        <Search size={36} className="text-primary/60" />
+                      </div>
+                      <p className="text-lg font-semibold text-gray-900 dark:text-white">
+                        {t("cl4_search.no_results_title")}
+                      </p>
+                      <p className="max-w-xs text-sm text-gray-500 dark:text-gray-400">
+                        {t("cl4_search.no_results_desc")}
+                      </p>
+                      {activeFiltersCount > 0 && (
+                        <button
+                          onClick={resetFilters}
+                          className="mt-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-white transition-all hover:bg-orange-700"
+                        >
+                          {t("cl4_search.reset_filters_button")}
+                        </button>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

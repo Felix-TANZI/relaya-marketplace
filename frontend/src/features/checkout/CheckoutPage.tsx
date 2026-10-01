@@ -34,6 +34,16 @@ export default function CheckoutPage() {
   const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [payingOrderId, setPayingOrderId] = useState<number | null>(null);
+  // Montant reellement facture au paiement : TOUJOURS celui que le serveur a
+  // calcule a la creation de la commande (order.total_xaf), jamais le
+  // `finalTotal` estime ci-dessous. Ce dernier sert uniquement a afficher un
+  // montant AVANT que la commande n'existe (aucun endpoint de devis panier
+  // n'existe cote backend — cf. commentaire plus bas) ; une fois la commande
+  // creee, le vrai total (grille de frais par vendeur/zone, voir
+  // backend/apps/orders/serializers.py::_compute_delivery_price) peut
+  // differer de l'estimation. CL-07 regle #1 : le frontend n'affiche jamais
+  // un montant qu'il a lui-meme calcule quand le serveur en fournit un.
+  const [payingOrderTotal, setPayingOrderTotal] = useState<number | null>(null);
   const [addressPrecision, setAddressPrecision] = useState<LocationPrecisionResult | null>(null);
   const [addressAnalyzing, setAddressAnalyzing] = useState(false);
   const locale = i18n.language === 'fr' ? 'fr-FR' : 'en-US';
@@ -84,6 +94,19 @@ export default function CheckoutPage() {
   const selectedIds = useMemo(() => readCheckoutSelection(), [items.length]);
   const checkoutItems = selectedIds.length > 0 ? items.filter((i) => selectedIds.includes(i.id)) : items;
   const subtotal = checkoutItems.reduce((s, i) => s + i.price * i.quantity, 0);
+  // ECART CONNU (CL-07 regle #1) : il n'existe aucun endpoint de devis panier
+  // cote backend (pas de /orders/preview/ ni /cart/quote/) — le seul calcul
+  // serveur des frais de livraison a lieu DANS la creation de la commande
+  // (POST /orders/, voir backend/apps/orders/serializers.py
+  // OrderCreateSerializer.create -> _compute_delivery_price ->
+  // apps.payments.bridge.queries.delivery_fee_xaf). Ce calcul reel est une
+  // grille par vendeur/zone (PAS un forfait plat, PAS un seuil de gratuite a
+  // 30000F/50000F), donc ce `shipping` affiche ici AVANT la creation de la
+  // commande est une estimation placeholder, potentiellement differente du
+  // frais reel. Tant qu'aucun endpoint de devis n'existe, le frontend ne
+  // peut pas afficher mieux sans fabriquer une donnee — a signaler au
+  // backend plutot qu'a corriger ici. Le montant reellement facture, lui,
+  // vient bien du serveur : voir `payingOrderTotal` / handleSubmit.
   const shipping = isPickup ? 0 : 2000;
   const finalTotal = subtotal + shipping;
   const fmt = (n: number) => `${n.toLocaleString(locale)} FCFA`;
@@ -203,6 +226,7 @@ export default function CheckoutPage() {
         })),
       });
       setPayingOrderId(order.id);
+      setPayingOrderTotal(order.total_xaf);
     } catch (error) {
       showToast(error instanceof Error ? t('cl1_checkout.order_rejected_with_reason', { reason: error.message }) : t('cl1_checkout.order_rejected_by_server'), "error");
     } finally {
@@ -488,6 +512,21 @@ export default function CheckoutPage() {
               </section>
 
               {/* 3 — Paiement */}
+              {/*
+                ECARTS CONNUS vs spec CL-07 (a trancher par CEO/CTO, non resolus ici) :
+                - La spec demande d'afficher "Carte : 2% de frais de service" a cote
+                  du moyen CARD. Le backend actuel (apps/payments, tests du ledger)
+                  absorbe ce frais PSP cote plateforme plutot que de le repercuter
+                  sur l'acheteur, et n'expose aucun champ de frais carte cote client
+                  (pas de card_fee / percent dans ProviderConfig ni dans aucune API).
+                  Ajouter "2%" ici fabriquerait une charge que l'acheteur ne paie pas
+                  reellement — et le prestataire carte (CinetPay vs autre) n'est pas
+                  encore tranche. Laisse tel quel ; "single_debit_no_hidden_fees" reste
+                  juste tant que ce choix n'est pas fait.
+                - Le "panier partage / quelqu'un paie pour toi" (paiement international)
+                  decrit par la spec n'existe nulle part (front ou back) et depend du
+                  meme choix de PSP carte : non construit dans cette passe.
+              */}
               <section className="pf-card pf-anim" style={{ borderColor: "var(--pf-aring)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18, flexWrap: "wrap" }}>
                   {stepBadge(3, false)}
@@ -579,7 +618,11 @@ export default function CheckoutPage() {
       {payingOrderId !== null && (
         <PaymentSheet
           orderId={payingOrderId}
-          amountXaf={finalTotal}
+          // Montant affiche au paiement = total server-side (order.total_xaf),
+          // jamais `finalTotal` (estimation client pre-commande) — voir
+          // commentaire sur `payingOrderTotal` plus haut. Repli sur
+          // `finalTotal` uniquement en cas de reponse serveur incomplete.
+          amountXaf={payingOrderTotal ?? finalTotal}
           defaultPhone={formData.phone}
           onClose={() => { const id = payingOrderId; setPayingOrderId(null); navigate(`/orders/${id}`); }}
           onSuccess={handlePaid}

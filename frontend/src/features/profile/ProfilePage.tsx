@@ -27,12 +27,10 @@ import {
   X,
   Bell,
   Mail,
-  Truck,
   Check,
   ArrowRight,
   LogOut,
   Calendar,
-  ShoppingCart,
   Sparkles,
   HelpCircle,
   ArrowDownToLine,
@@ -41,6 +39,7 @@ import {
   RefreshCw,
   RotateCcw,
   Settings,
+  Lock,
 } from "lucide-react";
 import { authApi, type User as UserType } from "@/services/api/auth";
 import { api } from "@/services/api/client";
@@ -59,10 +58,7 @@ import { SavedPaymentMethods } from "@/features/payments/SavedPaymentMethods";
 import { PaymentsHistoryPanel } from "@/features/payments/PaymentsHistoryPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import { ordersApi } from "@/services/api/orders";
-import type { Order } from "@/types/order";
 import { useAuth } from "@/context/AuthContext";
-import { getFavoriteProductIds } from "@/lib/favorites";
-import { useCart } from "@/context/CartContext";
 import PhoneInput from './PhoneInput';
 import { useTranslation } from "react-i18next";
 import SessionsCard from './SessionsCard';
@@ -227,15 +223,10 @@ export default function ProfilePage() {
   const { theme, toggleTheme } = useTheme();
   const { showToast } = useToast();
   const { logout } = useAuth();
-  const { itemCount, total } = useCart();
   const { t, i18n } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<UserType | null>(null);
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [orderCount, setOrderCount] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [favoritesCount, setFavoritesCount] = useState(0);
   const [pfForm, setPfForm] = useState({ first_name: "", last_name: "", email: "", phone: "", bio: "" });
   const [pfNewsletter, setPfNewsletter] = useState(true);
   const [pfSms, setPfSms] = useState(true);
@@ -303,34 +294,10 @@ export default function ProfilePage() {
   }, [showToast]);
 
   useEffect(() => {
-    const isActive = (order: Order) =>
-      ![
-        "DELIVERED",
-        "BUYER_CONFIRMED",
-        "AUTO_CONFIRMED",
-        "RELEASED_TO_VENDOR",
-        "CANCELLED",
-        "REFUNDED",
-      ].includes(order.fulfillment_status);
     ordersApi
       .getMyOrders()
-      .then((orders) => {
-        setActiveOrder(orders.find(isActive) ?? null);
-        setRecentOrders(orders.slice(0, 3));
-        setOrderCount(orders.length);
-        setActiveCount(orders.filter(isActive).length);
-      })
-      .catch(() => {
-        setActiveOrder(null);
-        setRecentOrders([]);
-      });
-  }, []);
-
-  useEffect(() => {
-    const sync = () => setFavoritesCount(getFavoriteProductIds().length);
-    sync();
-    window.addEventListener("belivay-favorites-updated", sync);
-    return () => window.removeEventListener("belivay-favorites-updated", sync);
+      .then((orders) => setOrderCount(orders.length))
+      .catch(() => setOrderCount(0));
   }, []);
 
   useEffect(() => {
@@ -436,7 +403,6 @@ export default function ProfilePage() {
   const fidelityTier = clientReward?.tier_display ?? user?.loyalty_tier ?? t("cl3_profile_loyalty.tier_bronze");
   const fidelityTrust = clientReward?.trust_score ?? 70;
 
-  const greetingName = user?.first_name?.trim() || displayName.split(" ")[0] || t("cl3_profile_dashboard.greeting_fallback_name");
   const unreadMessages = conversations.reduce((sum, conversation) => sum + (conversation.unread || 0), 0);
   const joinedDate = user?.date_joined;
   const memberSince = joinedDate
@@ -446,39 +412,7 @@ export default function ProfilePage() {
     normalizedAddresses.find((address) => address.default)?.line.split("·").pop()?.trim() ||
     normalizedAddresses[0]?.line.split("·").pop()?.trim() ||
     t("cl3_profile_shell.default_country");
-  const TIER_LADDER = [
-    { name: t("cl3_profile_loyalty.tier_bronze"), threshold: 0 },
-    { name: t("cl3_profile_loyalty.tier_silver"), threshold: 500 },
-    { name: t("cl3_profile_loyalty.tier_gold"), threshold: 1500 },
-    { name: t("cl3_profile_loyalty.tier_platinum"), threshold: 3000 },
-  ];
-  const TIER_THRESHOLDS = TIER_LADDER.map((tier) => tier.threshold);
-  const nextTier = TIER_LADDER.find((tier) => tier.threshold > fidelityPoints) ?? null;
-  const nextTierLabel = nextTier ? nextTier.name : t("cl3_profile_loyalty.max_level");
-  const nextTierThreshold = nextTier ? nextTier.threshold : 3000;
-  const prevTierThreshold = [...TIER_THRESHOLDS].reverse().find((threshold) => threshold <= fidelityPoints) ?? 0;
-  const tierProgress =
-    nextTierThreshold > prevTierThreshold
-      ? Math.min(100, ((fidelityPoints - prevTierThreshold) / (nextTierThreshold - prevTierThreshold)) * 100)
-      : 100;
-  const pointsToNextTier = Math.max(0, nextTierThreshold - fidelityPoints);
-
   const defaultAddress = normalizedAddresses.find((address) => address.default) || normalizedAddresses[0] || null;
-  const profileChecks = [
-    Boolean(user?.first_name?.trim()),
-    Boolean(user?.last_name?.trim()),
-    Boolean(user?.email?.trim()),
-    Boolean(user?.phone),
-    Boolean(avatar),
-    normalizedAddresses.length > 0,
-  ];
-  const profileComplete = Math.round((profileChecks.filter(Boolean).length / profileChecks.length) * 100);
-  const profileMissing = [
-    !user?.last_name?.trim() ? t("cl3_profile_dashboard.missing_last_name") : null,
-    !user?.phone ? t("cl3_profile_dashboard.missing_phone") : null,
-    !avatar ? t("cl3_profile_dashboard.missing_photo") : null,
-    normalizedAddresses.length === 0 ? t("cl3_profile_dashboard.missing_address") : null,
-  ].filter(Boolean) as string[];
 
   const handleSaveProfile = async () => {
     setPfSaving(true);
@@ -708,264 +642,263 @@ export default function ProfilePage() {
     );
   }
 
+  /*
+    CL-13 « Compte » — liste de réglages par sections, alignée sur la
+    maquette officielle (Compte.jpg). Remplace l'ancien tableau de bord
+    (bannière, stats, stepper de commande) qui ne correspondait plus à la
+    référence. Wallet, Programme fidélité et Parrainage sont verrouillés
+    ici (tuiles grisées + cadenas) car CCO-25 (doc CL-13) exclut points,
+    niveaux client, parrainage et porte-monnaie au lancement — décision à
+    valider par le CEO, voir le rapport de livraison.
+  */
   const renderDashboard = () => {
-    const status = activeOrder?.fulfillment_status ?? "";
-    const activeStep = !activeOrder
-      ? 0
-      : ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(status)
-        ? 3
-        : ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP", "DRIVER_ASSIGNED"].includes(status)
-          ? 2
-          : ["READY_FOR_PICKUP"].includes(status)
-            ? 1
-            : 1;
-    const trackerSteps = [
-      t("cl3_profile_dashboard.tracker_confirmed"),
-      t("cl3_profile_dashboard.tracker_prepared"),
-      t("cl3_profile_dashboard.tracker_en_route"),
-      t("cl3_profile_dashboard.tracker_delivered"),
-    ];
-    const stat = (
-      Icon: React.ComponentType<{ size?: number }>,
-      value: React.ReactNode,
-      label: string,
-      tone: string,
-    ) => (
-      <div className="pf-stat pf-anim">
-        <div className={`pf-stat-ic ${tone}`}><Icon size={18} /></div>
-        <div className="pf-stat-body">
-          <div className="pf-stat-n">{value}</div>
-          <div className="pf-stat-l">{label}</div>
-        </div>
-      </div>
+    const langLabel = (i18n.language || "fr").startsWith("en") ? "English" : "Français";
+    const themeLabel = theme === "dark" ? t("cl3_profile_settings.dark") : t("cl3_profile_settings.light");
+    const openSupportChat = () => openPanel("messages", "support");
+    const openDisputes = () => openPanel("messages", "litige");
+    const notifyComingSoon = (label: string) =>
+      showToast(`${label} · Bientôt disponible`, {
+        description: "Cette fonctionnalité BelivaY ouvrira après le lancement.",
+        type: "info",
+      });
+
+    const SettingsRow = ({
+      icon: Icon,
+      title,
+      subtitle,
+      badge,
+      onClick,
+      danger,
+    }: {
+      icon: React.ComponentType<{ size?: number }>;
+      title: string;
+      subtitle?: string;
+      badge?: number;
+      onClick: () => void;
+      danger?: boolean;
+    }) => (
+      <button type="button" className="pf-support-item" onClick={onClick}>
+        <span className={`pf-support-ic${danger ? "" : " accent"}`}>
+          <Icon size={18} />
+        </span>
+        <span className="pf-support-txt">
+          <span className="pf-support-t" style={danger ? { color: "#dc2626" } : undefined}>{title}</span>
+          {subtitle ? <span className="pf-muted-sm">{subtitle}</span> : null}
+        </span>
+        {typeof badge === "number" && badge > 0 ? <span className="pf-badge">{badge}</span> : null}
+        <ArrowRight size={16} className="pf-muted" />
+      </button>
     );
+
+    const ServiceTile = ({
+      icon: Icon,
+      label,
+      locked,
+      onClick,
+    }: {
+      icon: React.ComponentType<{ size?: number }>;
+      label: string;
+      locked?: boolean;
+      onClick: () => void;
+    }) => (
+      <button
+        type="button"
+        className="pf-quick-tile"
+        style={{ position: "relative", ...(locked ? { opacity: 0.6 } : null) }}
+        onClick={onClick}
+        aria-label={locked ? `${label} · Bientôt disponible` : label}
+      >
+        <span
+          className="pf-quick-ic o"
+          style={locked ? { background: "var(--pf-bstrong)", boxShadow: "none", color: "var(--pf-muted)" } : undefined}
+        >
+          <Icon size={18} />
+        </span>
+        {label}
+        {locked ? (
+          <span
+            style={{
+              position: "absolute",
+              top: 10,
+              right: 10,
+              width: 20,
+              height: 20,
+              borderRadius: "50%",
+              background: "var(--pf-s3)",
+              color: "var(--pf-muted)",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Lock size={11} />
+          </span>
+        ) : null}
+      </button>
+    );
+
     return (
       <div className="pf-stack">
         <div className="pf-anim">
-          <div className="pf-hello">{t("cl3_profile_dashboard.greeting", { name: greetingName })}</div>
-          <div className="pf-hello-sub">{t("cl3_profile_dashboard.greeting_sub")}</div>
+          <div className="pf-sec" style={{ padding: "0 0 8px" }}>MES ACHATS</div>
+          <section className="pf-glass-panel pf-supportrow">
+            <SettingsRow
+              icon={Package}
+              title={t("cl3_profile_nav.orders")}
+              subtitle={orderCount > 1 ? `${orderCount} commandes` : orderCount === 1 ? "1 commande" : "Aucune commande pour l'instant"}
+              badge={orderCount}
+              onClick={() => navigate("/orders")}
+            />
+            <SettingsRow
+              icon={Star}
+              title="Avis à donner"
+              subtitle="Notez vos commandes livrées"
+              onClick={() => navigate("/orders")}
+            />
+            <SettingsRow
+              icon={Shield}
+              title={t("cl3_profile_messages.tab_disputes")}
+              subtitle={disputes.length > 0 ? `${disputes.length} en cours` : "Aucun litige en cours"}
+              badge={disputes.length}
+              onClick={openDisputes}
+            />
+          </section>
         </div>
-
-        {activeOrder ? (
-          <div className="pf-card pf-anim">
-            <div className="pf-tk-head">
-              <div>
-                <div className="pf-k">{t("cl3_profile_dashboard.active_order_label", { id: activeOrder.id })}</div>
-                <div className="pf-t">{t("cl3_profile_dashboard.active_order_title")}</div>
-              </div>
-              <button type="button" className="pf-btn-accent" onClick={() => navigate(`/orders/${activeOrder.id}`)}>
-                <Truck size={14} />{t("cl3_profile_dashboard.track_btn")}
-              </button>
-            </div>
-            <div className="pf-steps">
-              <div className="pf-track" />
-              <div className="pf-fill" style={{ width: `${(activeStep / 3) * 75}%` }} />
-              <div className="pf-steps-row">
-                {trackerSteps.map((label, index) => {
-                  const done = index < activeStep;
-                  const current = index === activeStep;
-                  return (
-                    <div key={label} className="pf-st">
-                      <span className={`pf-d ${done ? "done" : current ? "cur" : "todo"}`}>
-                        {done ? <Check size={11} /> : current ? <Truck size={11} /> : null}
-                      </span>
-                      <div className={`pf-lbl ${current ? "cur" : ""}`}>{label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="pf-card pf-anim pf-row-between">
-            <div>
-              <div className="pf-t">{t("cl3_profile_dashboard.no_active_order")}</div>
-              <div className="pf-sub">{t("cl3_profile_dashboard.no_active_order_sub")}</div>
-            </div>
-            <button type="button" className="pf-btn-accent" onClick={() => navigate("/catalog")}>
-              <Package size={14} />{t("cl3_profile_dashboard.explore_btn")}
-            </button>
-          </div>
-        )}
-
-        <div className="pf-stats">
-          {stat(Package, orderCount, t("cl3_profile_dashboard.stat_orders"), "o")}
-          {stat(Truck, activeCount, t("cl3_profile_dashboard.stat_in_progress"), "b")}
-          {stat(Heart, favoritesCount, t("cl3_profile_dashboard.stat_favorites"), "p")}
-          {stat(Award, fidelityPoints.toLocaleString("fr-FR"), t("cl3_profile_dashboard.stat_points"), "a")}
-        </div>
-
-        <div className="pf-twoup">
-          <div className="pf-card pf-anim">
-            <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">{t("cl3_profile_dashboard.loyalty_program")}</span>
-              <span className="pf-muted-sm">
-                {fidelityTier} → <span style={{ color: "var(--pf-accent)", fontWeight: 600 }}>{t("cl3_profile_dashboard.tier_silver")}</span>
-              </span>
-            </div>
-            <div className="pf-bar"><i style={{ width: `${tierProgress}%` }} /></div>
-            <div className="pf-muted-sm pf-mt">
-              {fidelityPoints.toLocaleString("fr-FR")} / {nextTierThreshold.toLocaleString("fr-FR")} pts
-              {pointsToNextTier > 0
-                ? t("cl3_profile_dashboard.points_remaining", { points: pointsToNextTier.toLocaleString("fr-FR") })
-                : t("cl3_profile_dashboard.max_level")}
-            </div>
-          </div>
-          <button type="button" className="pf-card pf-anim pf-notif" onClick={() => openPanel("messages", "support")}>
-            <span className="pf-notif-ic">
-              <Bell size={20} />
-              {unreadMessages > 0 && <span className="pf-notif-b">{unreadMessages}</span>}
-            </span>
-            <span>
-              <span className="pf-notif-t">{t("cl3_profile_dashboard.notifications")}</span>
-              <span className="pf-muted-sm">
-                {unreadMessages > 0
-                  ? t(unreadMessages > 1 ? "cl3_profile_dashboard.unread_count_plural" : "cl3_profile_dashboard.unread_count", { count: unreadMessages })
-                  : t("cl3_profile_dashboard.up_to_date")}
-              </span>
-            </span>
-          </button>
-        </div>
-
-        {recentOrders.length > 0 && (
-          <div className="pf-card pf-anim">
-            <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">{t("cl3_profile_dashboard.recent_orders")}</span>
-              <button type="button" className="pf-link" onClick={() => navigate("/orders")}>{t("cl3_profile_dashboard.see_all")}</button>
-            </div>
-            {recentOrders.map((order) => (
-              <div key={order.id} className="pf-order-line">
-                <div className="pf-order-ic"><Package size={16} /></div>
-                <div className="pf-order-mid">
-                  <div className="pf-order-id">{t("cl3_profile_dashboard.order_label", { id: order.id })}</div>
-                  <div className="pf-muted-sm">
-                    {new Date(order.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short", year: "numeric" })}
-                  </div>
-                </div>
-                <div className="pf-order-total">{order.total_xaf.toLocaleString("fr-FR")} FCFA</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div className="pf-card pf-anim pf-supportrow">
-          <button type="button" className="pf-support-item" onClick={() => openPanel("messages", "support")}>
-            <span className="pf-support-ic accent"><MessageSquare size={18} /></span>
-            <span className="pf-support-txt">
-              <span className="pf-support-t">{t("cl3_profile_dashboard.contact_support")}</span>
-              <span className="pf-muted-sm">{t("cl3_profile_dashboard.contact_support_sub")}</span>
-            </span>
-            <ArrowRight size={16} className="pf-muted" />
-          </button>
-          <button
-            type="button"
-            className="pf-support-item"
-            onClick={() => (isVendor ? navigate("/seller/dashboard") : openPanel("vendeur"))}
-          >
-            <span className="pf-support-ic"><Store size={18} /></span>
-            <span className="pf-support-txt">
-              <span className="pf-support-t">{isVendor ? t("cl3_profile_dashboard.seller_space") : t("cl3_profile_dashboard.become_seller")}</span>
-              <span className="pf-muted-sm">
-                {isVendor ? (vendorProfile?.business_name || t("cl3_profile_dashboard.your_shop")) : t("cl3_profile_dashboard.open_your_shop")}
-              </span>
-            </span>
-            <ArrowRight size={16} className="pf-muted" />
-          </button>
-        </div>
-
-        <div className="pf-twoup pf-anim">
-          {itemCount > 0 ? (
-            <button type="button" className="pf-card pf-notif" onClick={() => navigate("/cart")}>
-              <span className="pf-support-ic accent"><ShoppingCart size={18} /></span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="pf-notif-t">{t("cl3_profile_dashboard.your_cart")}</span>
-                <span className="pf-muted-sm">
-                  {t(itemCount > 1 ? "cl3_profile_dashboard.cart_items_plural" : "cl3_profile_dashboard.cart_items", { count: itemCount })}
-                  {" · "}{total.toLocaleString("fr-FR")} FCFA
-                </span>
-              </span>
-              <span className="pf-pill">{t("cl3_profile_dashboard.order_cta")}</span>
-            </button>
-          ) : (
-            <button type="button" className="pf-card pf-notif" onClick={() => navigate("/catalog")}>
-              <span className="pf-support-ic"><ShoppingCart size={18} /></span>
-              <span style={{ flex: 1, minWidth: 0 }}>
-                <span className="pf-notif-t">{t("cl3_profile_dashboard.empty_cart")}</span>
-                <span className="pf-muted-sm">{t("cl3_profile_dashboard.browse_catalog")}</span>
-              </span>
-              <ArrowRight size={16} className="pf-muted" />
-            </button>
-          )}
-
-          <div className="pf-card">
-            <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">{t("cl3_profile_dashboard.delivery_address")}</span>
-              <button type="button" className="pf-link" onClick={() => openPanel("adresses")}>{t("cl3_profile_dashboard.manage")}</button>
-            </div>
-            {defaultAddress ? (
-              <div style={{ display: "flex", gap: 11, alignItems: "flex-start" }}>
-                <span className="pf-order-ic"><MapPin size={16} /></span>
-                <div style={{ minWidth: 0 }}>
-                  <div className="pf-order-id">{defaultAddress.label}{defaultAddress.default ? ` · ${t("cl3_profile_dashboard.default_suffix")}` : ""}</div>
-                  <div className="pf-muted-sm">{defaultAddress.line}</div>
-                </div>
-              </div>
-            ) : (
-              <button type="button" className="pf-btn-accent" onClick={() => openPanel("adresses")}>
-                <Plus size={14} />{t("cl3_profile_dashboard.add_address")}
-              </button>
-            )}
-          </div>
-        </div>
-
-        {profileComplete < 100 && (
-          <div className="pf-card pf-anim">
-            <div className="pf-row-between pf-mb">
-              <span className="pf-card-title">{t("cl3_profile_dashboard.complete_profile")}</span>
-              <span style={{ color: "var(--pf-accent)", fontWeight: 700, fontSize: 13 }}>{profileComplete}%</span>
-            </div>
-            <div className="pf-bar"><i style={{ width: `${profileComplete}%` }} /></div>
-            <div className="pf-row-between" style={{ marginTop: 12, gap: 10 }}>
-              <span className="pf-muted-sm">
-                {profileMissing.length > 0
-                  ? t("cl3_profile_dashboard.to_add", { items: profileMissing.join(", ") })
-                  : t("cl3_profile_dashboard.profile_complete")}
-              </span>
-              <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>{t("cl3_profile_dashboard.complete_btn")}</button>
-            </div>
-          </div>
-        )}
 
         <div className="pf-anim">
-          <div className="pf-card-title pf-mb">{t("cl3_profile_dashboard.shortcuts")}</div>
-          <div className="pf-quick">
-            <button type="button" className="pf-quick-tile" onClick={() => navigate("/promotions")}>
-              <span className="pf-quick-ic o"><Sparkles size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_promotions")}
-            </button>
-            <button type="button" className="pf-quick-tile" onClick={() => navigate("/notifications")}>
-              <span className="pf-quick-ic b"><Bell size={18} /></span>
-              {t("cl3_profile_dashboard.notifications")}
-            </button>
-            <button type="button" className="pf-quick-tile" onClick={() => openPanel("parrain")}>
-              <span className="pf-quick-ic p"><Gift size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_referral")}
-            </button>
-            <button type="button" className="pf-quick-tile" onClick={() => navigate("/help")}>
-              <span className="pf-quick-ic a"><HelpCircle size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_help_center")}
-            </button>
-            <button type="button" className="pf-quick-tile" onClick={() => openPanel("compte-belivay")}>
-              <span className="pf-quick-ic o"><Wallet size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_belivay_account")}
-              <span className="pf-muted-sm">{formatXaf(account.availableXaf)}</span>
-            </button>
-            <button type="button" className="pf-quick-tile" onClick={() => openPanel("reglages")}>
-              <span className="pf-quick-ic b"><Settings size={18} /></span>
-              {t("cl3_profile_dashboard.shortcut_settings")}
-            </button>
-          </div>
+          <div className="pf-sec" style={{ padding: "0 0 8px" }}>MES SERVICES BELIVAY</div>
+          <section className="pf-glass-panel">
+            <div className="pf-quick">
+              <ServiceTile
+                icon={Wallet}
+                label={t("cl3_profile_nav.belivay_account")}
+                locked
+                onClick={() => notifyComingSoon(t("cl3_profile_nav.belivay_account"))}
+              />
+              <ServiceTile
+                icon={Award}
+                label={t("cl3_profile_nav.loyalty")}
+                locked
+                onClick={() => notifyComingSoon(t("cl3_profile_nav.loyalty"))}
+              />
+              <ServiceTile
+                icon={Gift}
+                label={t("cl3_profile_nav.referral")}
+                locked
+                onClick={() => notifyComingSoon(t("cl3_profile_nav.referral"))}
+              />
+              <ServiceTile
+                icon={Sparkles}
+                label={t("cl3_profile_dashboard.shortcut_promotions")}
+                onClick={() => navigate("/promotions")}
+              />
+              <ServiceTile
+                icon={Store}
+                label={isVendor ? t("cl3_profile_dashboard.seller_space") : t("cl3_profile_dashboard.become_seller")}
+                onClick={() => (isVendor ? navigate("/seller/dashboard") : openPanel("vendeur"))}
+              />
+            </div>
+            <div className="pf-muted-sm" style={{ marginTop: 14, display: "flex", alignItems: "center", gap: 6 }}>
+              <Lock size={12} />
+              Wallet, Fidélité et Parrainage ouvriront après le lancement de BelivaY.
+            </div>
+          </section>
         </div>
+
+        <div className="pf-anim">
+          <div className="pf-sec" style={{ padding: "0 0 8px" }}>MON COMPTE ET SÉCURITÉ</div>
+          <section className="pf-glass-panel pf-supportrow">
+            <SettingsRow
+              icon={User}
+              title={t("cl3_profile_account.personal_info")}
+              subtitle={user?.email || undefined}
+              onClick={() => openPanel("profil")}
+            />
+            <SettingsRow
+              icon={MapPin}
+              title={t("cl3_profile_addresses.title")}
+              subtitle={defaultAddress?.line}
+              onClick={() => openPanel("adresses")}
+            />
+            <SettingsRow
+              icon={CreditCard}
+              title={t("cl3_profile_nav.payment")}
+              subtitle="Mobile money et cartes enregistrées"
+              onClick={() => openPanel("paiements")}
+            />
+            <SettingsRow
+              icon={Clock}
+              title={t("cl3_profile_nav.payment_history")}
+              subtitle="Vos transactions BelivaY"
+              onClick={() => openPanel("historique-paiements")}
+            />
+            <SettingsRow
+              icon={ShieldCheck}
+              title={t("cl3_profile_security.title")}
+              subtitle={t("cl3_profile_security.subtitle")}
+              onClick={() => openPanel("securite")}
+            />
+          </section>
+        </div>
+
+        <div className="pf-anim">
+          <div className="pf-sec" style={{ padding: "0 0 8px" }}>PRÉFÉRENCES</div>
+          <section className="pf-glass-panel pf-supportrow">
+            <SettingsRow
+              icon={Bell}
+              title={t("cl3_profile_dashboard.notifications")}
+              subtitle="Alertes et mises à jour de commande"
+              onClick={() => navigate("/notifications")}
+            />
+            <SettingsRow
+              icon={Settings}
+              title="Langue et affichage"
+              subtitle={`${langLabel} · ${themeLabel}`}
+              onClick={() => openPanel("reglages")}
+            />
+          </section>
+        </div>
+
+        <div className="pf-anim">
+          <div className="pf-sec" style={{ padding: "0 0 8px" }}>AIDE</div>
+          <section className="pf-glass-panel pf-supportrow">
+            <SettingsRow
+              icon={HelpCircle}
+              title={t("cl3_profile_dashboard.shortcut_help_center")}
+              subtitle="Questions fréquentes"
+              onClick={() => navigate("/help")}
+            />
+            <SettingsRow
+              icon={MessageSquare}
+              title={t("cl3_profile_dashboard.contact_support")}
+              subtitle={
+                unreadMessages > 0
+                  ? t(unreadMessages > 1 ? "cl3_profile_dashboard.unread_count_plural" : "cl3_profile_dashboard.unread_count", { count: unreadMessages })
+                  : t("cl3_profile_dashboard.up_to_date")
+              }
+              badge={unreadMessages}
+              onClick={openSupportChat}
+            />
+            <SettingsRow
+              icon={Mail}
+              title="Nous contacter"
+              subtitle="Adresse, téléphone, WhatsApp"
+              onClick={() => navigate("/contact")}
+            />
+          </section>
+        </div>
+
+        <section className="pf-glass-panel pf-anim pf-supportrow">
+          <SettingsRow
+            icon={LogOut}
+            title={t("cl3_profile_settings.logout")}
+            onClick={() => {
+              logout();
+              navigate("/");
+            }}
+            danger
+          />
+        </section>
       </div>
     );
   };
@@ -1002,7 +935,6 @@ export default function ProfilePage() {
           <div className="pf-summary">
             <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.member_since")}</span><span className="pf-summary-v">{memberSince || "—"}</span></div>
             <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.account_type")}</span><span className="pf-summary-v">{isVendor ? t("cl3_profile_account.account_type_seller") : t("cl3_profile_account.account_type_client")}</span></div>
-            <div className="pf-summary-row"><span className="pf-muted-sm">{t("cl3_profile_account.loyalty")}</span><span className="pf-summary-v">{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span></div>
           </div>
         </section>
 
@@ -2011,48 +1943,6 @@ export default function ProfilePage() {
     { key: "reglages", label: t("cl3_profile_nav.settings"), icon: Settings, panel: "reglages" },
   ];
 
-  /* Les quatre tuiles de raccourci sous l'identité, en mobile. */
-  const mobileTiles: Array<{
-    key: string;
-    label: string;
-    icon: React.ComponentType<{ size?: number; className?: string }>;
-    badge?: number;
-    active: boolean;
-    onSelect: () => void;
-  }> = [
-    {
-      key: "orders",
-      label: t("cl3_profile_nav.orders"),
-      icon: Package,
-      badge: orderCount || undefined,
-      active: false,
-      onSelect: () => navigate("/orders"),
-    },
-    {
-      key: "favorites",
-      label: t("cl3_profile_nav.favorites"),
-      icon: Heart,
-      badge: favoritesCount || undefined,
-      active: false,
-      onSelect: () => navigate("/wishlist"),
-    },
-    {
-      key: "messages",
-      label: t("cl3_profile_nav.messages"),
-      icon: MessageSquare,
-      badge: unreadMessages || undefined,
-      active: activePanel === "messages",
-      onSelect: () => openPanel("messages"),
-    },
-    {
-      key: "wallet",
-      label: t("cl3_profile_nav.wallet"),
-      icon: Wallet,
-      active: activePanel === "compte-belivay",
-      onSelect: () => openPanel("compte-belivay"),
-    },
-  ];
-
   return (
     <div
       className={`pf-root min-h-screen px-4 md:px-8 lg:px-14 py-6 md:py-8 ${fontSizeClassMap[fontSize]}`}
@@ -2078,7 +1968,6 @@ export default function ProfilePage() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <span className="pf-chip"><Award size={14} style={{ color: "var(--pf-accent)" }} />{fidelityTier} · {fidelityPoints.toLocaleString("fr-FR")} pts</span>
             <button type="button" className="pf-btn-ghost" onClick={() => openPanel("profil")}>
               <Pencil size={13} />{t("cl3_profile_shell.edit")}
             </button>
@@ -2086,9 +1975,15 @@ export default function ProfilePage() {
         </div>
 
         {/*
-          En-tête mobile : identité, progression de fidélité, tuiles de
-          raccourci et rail de sections. Il remplace, sous 1024px, la carte
-          d'identité et la colonne de navigation (masquées en CSS).
+          En-tête mobile : bandeau d'identité discret (avatar, nom, ville).
+          Il remplace, sous 1024px, la carte d'identité et la colonne de
+          navigation (masquées en CSS). Aucun badge de palier de confiance
+          n'est affiché ici : ces paliers (Bronze/Argent/Or/Platine) sont
+          réservés à l'espace vendeur et ne doivent jamais être montrés à un
+          client (règle métier verrouillée). Le rail de sections ne
+          s'affiche que depuis un sous-panneau (pas sur l'accueil « Compte »)
+          pour servir de retour/navigation, sans dupliquer la liste de
+          réglages de la vue d'ensemble.
         */}
         <div className="pf-mhead">
           <div className="pf-mid">
@@ -2099,64 +1994,27 @@ export default function ProfilePage() {
               <div className="pf-mid-n">{displayName}</div>
               <div className="pf-mid-s">• {defaultCity}</div>
             </div>
-            <span className="pf-mid-tier">
-              <Medal size={14} />
-              {fidelityTier}
-            </span>
           </div>
 
-          <button
-            type="button"
-            className="pf-mprog"
-            onClick={() => openPanel("fidelite")}
-            aria-label={t("cl3_profile_shell.view_loyalty_program")}
-          >
-            <span className="pf-mprog-l">
-              → {nextTierLabel} <Medal size={12} />
-            </span>
-            <span className="pf-mprog-b">
-              <i style={{ width: `${tierProgress}%` }} />
-            </span>
-            <span className="pf-mprog-v">{fidelityPoints.toLocaleString("fr-FR")} pts</span>
-          </button>
-
-          <div className="pf-mtiles">
-            {mobileTiles.map((tile) => {
-              const Icon = tile.icon;
-              return (
-                <button
-                  key={tile.key}
-                  type="button"
-                  className={`pf-mtile${tile.active ? " on" : ""}`}
-                  onClick={tile.onSelect}
-                >
-                  <span className="pf-mtile-ic">
-                    <Icon size={19} />
-                    {tile.badge ? <span className="pf-mtile-b">{tile.badge}</span> : null}
-                  </span>
-                  {tile.label}
-                </button>
-              );
-            })}
-          </div>
-
-          <div className="pf-rail">
-            {railNav.map((item) => {
-              const Icon = item.icon;
-              return (
-                <button
-                  key={item.key}
-                  type="button"
-                  className={`pf-rail-btn${activePanel === item.panel ? " on" : ""}`}
-                  onClick={() => openPanel(item.panel)}
-                >
-                  <Icon size={15} />
-                  {item.label}
-                  {item.badge ? <span className="pf-rail-b">{item.badge}</span> : null}
-                </button>
-              );
-            })}
-          </div>
+          {activePanel === "dashboard" ? null : (
+            <div className="pf-rail">
+              {railNav.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.key}
+                    type="button"
+                    className={`pf-rail-btn${activePanel === item.panel ? " on" : ""}`}
+                    onClick={() => openPanel(item.panel)}
+                  >
+                    <Icon size={15} />
+                    {item.label}
+                    {item.badge ? <span className="pf-rail-b">{item.badge}</span> : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
         <div className="pf-grid">

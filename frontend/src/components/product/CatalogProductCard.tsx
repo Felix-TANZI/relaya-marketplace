@@ -5,14 +5,16 @@
 // Reprend la logique panier + favori de ProductCard — aucune dépendance à
 // ProductCard, donc pas de double bouton.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Check, Heart, ShoppingBag, ShoppingCart, Star, Truck } from "lucide-react";
 import type { Product } from "@/services/api/products";
 import { useCart } from "@/context/CartContext";
 import { toggleFavoriteProduct, isFavoriteProduct } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
+import { flyToCart } from "@/lib/flyToCart";
 
 const fmt = (n: number) => `${Math.round(n).toLocaleString("fr-FR")} FCFA`;
 
@@ -30,6 +32,7 @@ export default function CatalogProductCard({
   const { addItem } = useCart();
   const [isFavorite, setIsFavorite] = useState(() => isFavoriteProduct(product.id));
   const [added, setAdded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   useEffect(() => {
     const sync = () => setIsFavorite(isFavoriteProduct(product.id));
@@ -51,7 +54,11 @@ export default function CatalogProductCard({
     product.images?.[0]?.image_url ||
     product.media?.find((media) => media.media_type === "image")?.url;
   const inStock = product.stock_quantity ? product.stock_quantity > 0 : true;
-  const productUrl = `/product/${product.master_slug ?? product.id}${isMock ? "?mock=1" : ""}`;
+  const productIdentifier = product.master_slug ?? product.id;
+  const productUrl = `/product/${productIdentifier}${isMock ? "?mock=1" : ""}`;
+  // anim_07 — même convention que ProductCard.tsx : identifiant partagé avec
+  // la route `slug` de FicheDetailPage.tsx.
+  const photoLayoutId = `product-photo-${productIdentifier}`;
 
   const handleAddToCart = () => {
     if (!inStock) return;
@@ -66,6 +73,9 @@ export default function CatalogProductCard({
     });
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1100);
+    // anim_01 — vol du produit vers l'icône panier du header (purement
+    // visuel, l'ajout ci-dessus a déjà eu lieu).
+    flyToCart(imgRef.current, image);
   };
 
   const handleToggleFavorite = async () => {
@@ -92,7 +102,9 @@ export default function CatalogProductCard({
       <div className="relative aspect-square overflow-hidden bg-[#fff7ef] dark:bg-gray-800">
         <Link to={productUrl} className="block h-full w-full">
           {image ? (
-            <img
+            <motion.img
+              layoutId={photoLayoutId}
+              ref={imgRef}
               src={image}
               alt={product.title}
               loading="lazy"

@@ -1,7 +1,15 @@
 import type { Order } from "@/types/order";
 
 const STORAGE_KEY = "belivay_order_disputes";
-const DISPUTE_WINDOW_MS = 7 * 24 * 60 * 60 * 1000;
+// Verrouillé à 4 jours, calé sur l'auto-confirmation — Addendum Décisions
+// v1.0 §4.4 / PlatformSettings.litige_window_days (backend, valeur par
+// défaut configurable par l'admin). Ce compte à rebours est purement
+// indicatif côté client : seule la fenêtre réellement configurée côté
+// serveur fait foi au moment de l'ouverture (voir le message d'erreur
+// renvoyé par OrderDisputeListCreateView/OrderReturnListCreateView, qui
+// cite le nombre de jours exact si celui-ci diffère de cette valeur par
+// défaut).
+const DISPUTE_WINDOW_MS = 4 * 24 * 60 * 60 * 1000;
 const DISPUTABLE_STATUSES = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"] as const;
 
 export interface StoredDisputeMessage {
@@ -78,7 +86,7 @@ export function getDisputeEligibility(order: Order | null) {
       eligible: false,
       expiresAt,
       remainingMs,
-      message: "Le délai de 7 jours après réception est dépassé pour cette commande.",
+      message: "Le délai de 4 jours après réception est dépassé pour cette commande.",
     };
   }
 

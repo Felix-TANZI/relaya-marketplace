@@ -18,19 +18,20 @@ import {
   Scale,
   Star,
   Truck,
-  Warehouse,
   UserCircle2,
   XCircle,
   FileUp,
   Paperclip,
   QrCode,
   KeyRound,
+  Eye,
+  ShoppingCart,
 } from "lucide-react";
 import * as QRCode from "qrcode";
 import { ordersApi } from "@/services/api/orders";
 import { productsApi } from "@/services/api/products";
 import { customerApi, type Dispute, type Shipment, type OrderChatMessage, type OrderReturn } from "@/services/api/customer";
-import TrackingMap from "@/components/TrackingMap";
+import { listPaymentsByOrder, type PaymentTransaction } from "@/services/api/payments";
 import { OrderPaymentPanel } from "@/features/payments/OrderPaymentPanel";
 import { PfShellStyles } from "@/styles/pfShell";
 import QrScanner from "@/components/QrScanner";
@@ -39,6 +40,21 @@ import type { FulfillmentStatus, Order, PaymentStatus } from "@/types/order";
 import { formatRemainingDisputeTime, getDisputeEligibility } from "@/lib/orderDisputes";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useCart } from "@/context/CartContext";
+import { OrderStepper, getOrderStepIndex } from "@/features/orders/components/OrderStepper";
+import { OrderTimeline, type TimelineEntry } from "@/features/orders/components/OrderTimeline";
+import { PickupCodeScreen } from "@/features/orders/components/PickupCodeScreen";
+import { CourierCard } from "@/features/orders/components/CourierCard";
+import { DisputeProofCard } from "@/features/orders/components/DisputeProofCard";
+import { PaymentLifecycleCard } from "@/features/orders/components/PaymentLifecycleCard";
+
+/** Masque le milieu du numéro (CDA-04) : aucun numéro en clair, pas même le sien. */
+function maskPhone(p?: string) {
+  if (!p) return "—";
+  const d = p.replace(/\D/g, "");
+  if (d.length < 9) return p;
+  return `+237 ${d.slice(-9, -8)} •• •• ${d.slice(-4, -2)} ${d.slice(-2)}`;
+}
 
 const DISPUTE_REASONS = [
   "Produit non conforme à la description",
@@ -139,10 +155,15 @@ export default function OrderDetailPage() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const { showToast } = useToast();
+  const { addItem } = useCart();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<Order | null>(null);
   const [tracking, setTracking] = useState<Shipment | null>(null);
+  // Transactions de paiement réelles de la commande — seule source fiable
+  // d'un horodatage de "paiement confirmé" (l'Order n'a pas de champ paid_at).
+  const [paymentTransactions, setPaymentTransactions] = useState<PaymentTransaction[]>([]);
+  const [rebuying, setRebuying] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [disputes, setDisputes] = useState<Dispute[]>([]);
@@ -173,6 +194,16 @@ export default function OrderDetailPage() {
   const [reviewDrafts, setReviewDrafts] = useState<Record<number, { rating: number; title: string; comment: string }>>({});
   const [reviewStatus, setReviewStatus] = useState<Record<number, "idle" | "saving" | "saved" | "error" | "exists">>({});
   const [pickupQrDataUrl, setPickupQrDataUrl] = useState<string | null>(null);
+  // Point de sécurité central (CL-09) : le code de retrait n'est jamais affiché
+  // en permanence sur cette page. `pickupCodeRevealed` pilote maintenant
+  // l'ouverture de l'écran dédié <PickupCodeScreen> (geste explicite
+  // "Afficher mon code"), qui se referme automatiquement après un court
+  // délai, dès qu'on change de commande, ou simplement en quittant l'écran
+  // (démontage du composant, qui réinitialise cet état). L'API renvoie
+  // aujourd'hui le code embarqué dans la réponse de suivi (pas d'endpoint
+  // séparé "à la demande") — voir le commentaire plus bas pour le détail de
+  // cet écart laissé au backend.
+  const [pickupCodeRevealed, setPickupCodeRevealed] = useState(false);
   const [extendingGarde, setExtendingGarde] = useState(false);
   const [gardeExtendError, setGardeExtendError] = useState<string | null>(null);
   const [showConfirmReceipt, setShowConfirmReceipt] = useState(false);
@@ -310,6 +341,15 @@ export default function OrderDetailPage() {
 
   useEffect(() => {
     if (!order) return;
+    let cancelled = false;
+    listPaymentsByOrder(order.id)
+      .then((data) => { if (!cancelled) setPaymentTransactions(data); })
+      .catch(() => { if (!cancelled) setPaymentTransactions([]); });
+    return () => { cancelled = true; };
+  }, [order]);
+
+  useEffect(() => {
+    if (!order) return;
 
     let cancelled = false;
     const fetchMessages = () => {
@@ -340,6 +380,21 @@ export default function OrderDetailPage() {
       .catch(() => { if (!cancelled) setPickupQrDataUrl(null); });
     return () => { cancelled = true; };
   }, [tracking?.relay_parcel?.pickup_code]);
+
+  // Re-masque le code dès qu'il change (nouveau code émis après blocage ou
+  // nouveau colis) — l'ancien code affiché ne doit jamais rester visible.
+  useEffect(() => {
+    setPickupCodeRevealed(false);
+  }, [tracking?.relay_parcel?.pickup_code]);
+
+  // Re-masquage automatique après un court délai pendant que l'écran reste
+  // ouvert, pour limiter la fenêtre d'exposition même si l'acheteur ne
+  // retouche pas la barre lui-même.
+  useEffect(() => {
+    if (!pickupCodeRevealed) return;
+    const timeout = window.setTimeout(() => setPickupCodeRevealed(false), 20000);
+    return () => window.clearTimeout(timeout);
+  }, [pickupCodeRevealed]);
 
   const disputeEligibility = useMemo(() => getDisputeEligibility(order), [order]);
   const activeDispute =
@@ -381,30 +436,86 @@ export default function OrderDetailPage() {
   const payment = getPaymentInfo(order.payment_status);
   const fulfillment = getFulfillmentInfo(order.fulfillment_status);
   const PaymentIcon = payment.icon;
-  const trackingEvents = Array.isArray(tracking?.events)
-    ? tracking.events
-        .filter((event): event is NonNullable<Shipment["events"]>[number] => Boolean(event))
-        .map((event) => ({
-          time: event.created_at
-            ? new Date(event.created_at).toLocaleTimeString("fr-FR", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })
-            : "ETA",
-          label: event.message || event.status || t('order.detail.timeline.processing'),
-          completed: true,
-        }))
-        .filter((event) => Boolean(event.label))
-    : [];
 
-  const timelineSteps = trackingEvents.length
-    ? trackingEvents
-    : [
-        { time: "10:15", label: t('order.detail.timeline.received'), completed: fulfillment.step >= 0 },
-        { time: "14:30", label: t('order.detail.timeline.processing'), completed: fulfillment.step >= 1 },
-        { time: "14:45", label: t('order.detail.timeline.shipped'), completed: fulfillment.step >= 2 },
-        { time: "ETA", label: order.fulfillment_status === "DELIVERED" ? t('order.detail.timeline.delivered') : t('order.detail.timeline.eta'), completed: fulfillment.step >= 3 },
-      ];
+  // Anonymat strict côté client (CL-09) : le livreur n'est jamais identifié
+  // par son numéro de téléphone, seulement par son prénom (et sa photo si
+  // disponible un jour). L'API renvoie courier_name en nom complet et expose
+  // courier_phone — on ne les affiche pas tels quels ici. Aucune fonction
+  // d'appel masqué n'existe ailleurs dans le projet (vérifié) : le seul canal
+  // de contact client → livreur réellement disponible est le chat in-app
+  // (showCourierChat ci-dessous), donc on ne l'invente pas.
+  const courierFirstName = tracking?.courier_name?.trim().split(/\s+/)[0] || "";
+
+  const stepIndex = getOrderStepIndex(order.fulfillment_status);
+
+  function formatChronoDateTime(iso: string): string {
+    const d = new Date(iso);
+    const datePart = d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" });
+    const timePart = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+    return `${datePart} · ${timePart}`;
+  }
+
+  // Chronologie — règle d'or : jamais d'horodatage inventé. Chaque entrée
+  // datée ci-dessous vient d'un champ `created_at` réel de l'API (transaction
+  // de paiement réussie, ShipmentEvent, preuve de remise, ouverture de
+  // litige). L'étape "Emballé, scellé" n'a aucun horodatage exposé côté
+  // client (le backend ne trace pas cette preuve pour l'acheteur) : elle est
+  // donc affichée sans date plutôt qu'avec une date fabriquée.
+  const successPayment = paymentTransactions.find((tx) => tx.status === "SUCCESS");
+  const isPaid = order.payment_status === "PAID";
+  const paidDateIso = successPayment?.created_at ?? (isPaid ? order.created_at : null);
+
+  const datedChronoEntries: { key: string; label: string; iso: string; note?: string }[] = [];
+  (tracking?.events ?? []).forEach((event, index) => {
+    if (!event?.created_at) return;
+    const label = event.message || event.status;
+    if (!label) return;
+    datedChronoEntries.push({ key: `evt-${event.id ?? index}`, label, iso: event.created_at });
+  });
+  (tracking?.delivery_evidences ?? []).forEach((evidence) => {
+    if (!evidence?.created_at) return;
+    datedChronoEntries.push({ key: `evd-${evidence.id}`, label: evidence.stage_label || evidence.stage, iso: evidence.created_at });
+  });
+  if (activeDispute?.created_at) {
+    datedChronoEntries.push({
+      key: `dispute-${activeDispute.id}`,
+      label: "Dossier litige ouvert",
+      iso: activeDispute.created_at,
+      note: activeDispute.reason,
+    });
+  }
+  datedChronoEntries.sort((a, b) => new Date(a.iso).getTime() - new Date(b.iso).getTime());
+
+  const chronologyEntries: TimelineEntry[] = [
+    {
+      key: "paid",
+      label: "Commande payée",
+      dateLabel: paidDateIso ? formatChronoDateTime(paidDateIso) : null,
+      state: isPaid ? "done" : "pending",
+    },
+    {
+      key: "packed",
+      label: "Emballé et scellé devant le vendeur",
+      dateLabel: null,
+      state: stepIndex >= 1 ? "done" : stepIndex === 0 && isPaid ? "current" : "pending",
+    },
+    ...datedChronoEntries.map((entry) => ({
+      key: entry.key,
+      label: entry.label,
+      dateLabel: formatChronoDateTime(entry.iso),
+      state: "done" as const,
+      note: entry.note,
+    })),
+  ];
+
+  if (stepIndex >= 0 && stepIndex < 3) {
+    chronologyEntries.push({
+      key: "upcoming",
+      label: order.delivery_mode === "PICKUP" ? "Retrait au point relais" : "Livraison à domicile",
+      dateLabel: null,
+      state: stepIndex >= 2 ? "current" : "pending",
+    });
+  }
 
   const submitReceiptCode = async (code: string) => {
     if (!order) return;
@@ -675,6 +786,54 @@ export default function OrderDetailPage() {
     }
   };
 
+  // "Racheter" (commande livrée) — réutilise la logique d'ajout au panier déjà
+  // existante (useCart().addItem, identique à FicheDetailPage/CartPage). Le
+  // prix courant du produit est relu via productsApi plutôt que réutiliser
+  // price_xaf_snapshot (prix figé au moment de l'ancienne commande) : on ne
+  // doit pas faire payer un prix d'hier sans vérifier qu'il tient toujours.
+  // Un article retiré du catalogue depuis est signalé honnêtement, jamais
+  // rajouté avec des données inventées.
+  const handleRebuyOrder = async () => {
+    if (!order || rebuying) return;
+    setRebuying(true);
+    let addedCount = 0;
+    let unavailableCount = 0;
+    try {
+      for (const item of order.items) {
+        try {
+          const product = await productsApi.get(item.product);
+          if (!product.is_active || product.stock_quantity <= 0) {
+            unavailableCount += 1;
+            continue;
+          }
+          addItem({
+            id: product.id,
+            name: product.title,
+            price: product.price_final,
+            quantity: item.qty,
+            image: product.images?.[0]?.image_url || product.media?.[0]?.url,
+          });
+          addedCount += 1;
+        } catch {
+          unavailableCount += 1;
+        }
+      }
+      if (addedCount > 0) {
+        showToast(
+          unavailableCount > 0
+            ? `${addedCount} article(s) ajouté(s) au panier · ${unavailableCount} indisponible(s)`
+            : "Articles ajoutés à ton panier",
+          "success",
+        );
+        navigate("/cart");
+      } else {
+        showToast("Ces articles ne sont plus disponibles à la vente.", "error");
+      }
+    } finally {
+      setRebuying(false);
+    }
+  };
+
   return (
     <div className="pf-root" style={{ minHeight: "100vh" }}>
       <PfShellStyles />
@@ -729,9 +888,11 @@ export default function OrderDetailPage() {
                     {t('order.detail.tracking_title')}
                   </h2>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {order.delivery_mode === "PICKUP"
-                      ? t("cl2_order_detail.preparing_for_pickup", { id: order.id })
-                      : t('order.detail.in_delivery', { id: order.id })}
+                    {["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order.fulfillment_status)
+                      ? t("cl2_order_detail.order_delivered_subtitle", { id: order.id })
+                      : order.delivery_mode === "PICKUP"
+                        ? t("cl2_order_detail.preparing_for_pickup", { id: order.id })
+                        : t('order.detail.in_delivery', { id: order.id })}
                   </p>
                 </div>
               </div>
@@ -749,83 +910,23 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
-              <div className="mb-6 overflow-hidden rounded-[1.75rem] bg-white ring-1 ring-orange-100 dark:bg-gray-900 dark:ring-gray-800">
-                {order.delivery_mode === "PICKUP" ? (
-                  <div className="flex h-56 flex-col justify-between bg-gradient-to-br from-[#fff6ee] via-white to-[#f7f7f7] p-5 dark:from-gray-800 dark:via-gray-900 dark:to-gray-900">
-                    <div className="flex items-center justify-between text-sm text-gray-500 dark:text-gray-400">
-                      <span>{t('order.detail.city_label')}: {order.city}</span>
-                      <span>{t("cl2_order_detail.pickup_point_label")}</span>
-                    </div>
-                    <div className="flex items-center justify-center gap-6 text-5xl">
-                      <Package className="text-primary" size={44} strokeWidth={1.75} />
-                      <Store className="text-gray-500 dark:text-gray-400" size={44} strokeWidth={1.75} />
-                      <Warehouse className="text-primary" size={44} strokeWidth={1.75} />
-                    </div>
-                    <div className="rounded-2xl bg-white/90 px-4 py-3 text-sm font-medium text-gray-700 shadow-sm dark:bg-gray-800/90 dark:text-gray-200">
-                      {t("cl2_order_detail.pickup_in_city", { city: order.city })}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="relative">
-                    <TrackingMap
-                      destinationAddress={order.address}
-                      destinationCity={order.city}
-                      destinationPrecision={order.address_precision}
-                      destinationLabel={t("cl2_order_detail.delivery_address_label", { address: order.address })}
-                      originLabel={tracking?.courier_name ? t("cl2_order_detail.courier_origin_label", { name: tracking.courier_name }) : t("cl2_order_detail.courier_origin_pending")}
-                      currentLocation={tracking?.latest_location
-                        ? [Number(tracking.latest_location.latitude), Number(tracking.latest_location.longitude)]
-                        : undefined}
-                      locationHistory={(tracking?.location_history || []).map((location) => [
-                        Number(location.latitude),
-                        Number(location.longitude),
-                      ] as [number, number])}
-                      height={280}
-                      className="rounded-none border-0"
-                    />
-                    <div className="absolute left-3 right-3 top-3 z-[500] flex flex-wrap gap-2">
-                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
-                        {t("cl2_order_detail.city_badge", { city: order.city })}
-                      </span>
-                      <span className="rounded-full bg-white/95 px-3 py-1.5 text-[12px] font-bold text-gray-700 shadow-sm dark:bg-gray-900/90 dark:text-gray-200">
-                        {tracking?.latest_location
-                          ? t("cl2_order_detail.gps_updated_at", { time: new Date(tracking.latest_location.captured_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }) })
-                          : t("cl2_order_detail.gps_waiting")}
-                      </span>
-                    </div>
-                    <div className="border-t border-orange-100 bg-white px-4 py-3 text-sm font-medium text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
-                      {t("cl2_order_detail.delivery_address_label", { address: order.address })}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <OrderStepper
+                deliveryMode={order.delivery_mode}
+                fulfillmentStatus={order.fulfillment_status}
+                relayPointName={tracking?.relay_parcel?.relay_point_name ?? tracking?.relay_point ?? null}
+              />
 
-              <div className="space-y-4">
-                {timelineSteps.map((step) => {
-                  const isActive = step.completed;
+              {/* Carte livreur nommée — uniquement pour la livraison à domicile en
+                  cours (étape "En route"). Anonymat strict conservé : prénom seul,
+                  aucun numéro affiché (CL-09 / correctif CDA-04). */}
+              {order.delivery_mode !== "PICKUP" && stepIndex === 2 && (
+                <div className="mb-6">
+                  <CourierCard firstName={courierFirstName || null} />
+                </div>
+              )}
 
-                  return (
-                    <div key={step.label} className="flex items-start gap-4">
-                      <div
-                        className={`mt-1 flex h-10 w-10 items-center justify-center rounded-full ${
-                          isActive
-                            ? "bg-primary text-white"
-                            : "bg-gray-100 text-gray-400 dark:bg-gray-800"
-                        }`}
-                      >
-                        {isActive ? <CheckCircle size={18} /> : <Clock3 size={18} />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-semibold uppercase tracking-[0.2em] text-gray-400">
-                          {step.time}
-                        </p>
-                        <p className="mt-1 text-base font-semibold text-gray-900 dark:text-white">
-                          {step.label}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
+              <div className="mb-6">
+                <OrderTimeline entries={chronologyEntries} />
               </div>
 
               <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -874,20 +975,34 @@ export default function OrderDetailPage() {
               </div>
 
               {tracking?.relay_parcel?.pickup_code && (
-                <div className="mt-4 flex flex-col items-center gap-4 rounded-2xl border border-primary/20 bg-[#fff8f0] p-5 dark:border-primary/30 dark:bg-primary/5 sm:flex-row sm:items-center sm:justify-between">
-                  <div>
-                    <p className="text-xs font-black uppercase tracking-[0.16em] text-primary">{t("cl2_order_detail.pickup_code_label")}</p>
-                    <p className="mt-1 text-3xl font-black tracking-[0.2em] text-gray-900 dark:text-white">
-                      {tracking.relay_parcel.pickup_code}
-                    </p>
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                      {t("cl2_order_detail.relay_pickup_instructions_pre")} <strong>{tracking.relay_parcel.relay_point_name}</strong> {t("cl2_order_detail.relay_pickup_instructions_post")}
-                    </p>
-                  </div>
-                  {pickupQrDataUrl && (
-                    <img src={pickupQrDataUrl} alt={t("cl2_order_detail.pickup_qr_alt")} className="h-28 w-28 rounded-xl border border-gray-200 bg-white p-1 dark:border-gray-700" />
-                  )}
-                </div>
+                // Point de sécurité central : le code n'est jamais affiché nu sur
+                // cette page. Un geste explicite ("Afficher mon code") ouvre
+                // l'écran dédié ; il se re-masque seul (changement de code ou
+                // délai écoulé, ou simplement en quittant l'écran — démontage).
+                <button
+                  type="button"
+                  onClick={() => setPickupCodeRevealed(true)}
+                  className="mt-4 flex w-full items-center justify-between gap-3 rounded-2xl border border-primary/20 bg-[#fff8f0] px-4 py-4 text-left dark:border-primary/30 dark:bg-primary/5"
+                >
+                  <span>
+                    <span className="block text-xs font-black uppercase tracking-[0.16em] text-primary">{t("cl2_order_detail.pickup_code_label")}</span>
+                    <span className="mt-1 block text-sm font-semibold text-gray-700 dark:text-gray-200">
+                      Afficher mon code
+                    </span>
+                  </span>
+                  <Eye size={22} className="shrink-0 text-primary" />
+                </button>
+              )}
+
+              {pickupCodeRevealed && tracking?.relay_parcel?.pickup_code && (
+                <PickupCodeScreen
+                  orderLabel={t('order.detail.order_title', { id: order.id })}
+                  code={tracking.relay_parcel.pickup_code}
+                  relayPointName={tracking.relay_parcel.relay_point_name}
+                  qrDataUrl={pickupQrDataUrl}
+                  amountDueXaf={tracking.relay_parcel.garde_fee_due_xaf}
+                  onClose={() => setPickupCodeRevealed(false)}
+                />
               )}
 
               {tracking?.relay_parcel?.pickup_code && tracking.relay_parcel.garde_deadline && (() => {
@@ -936,14 +1051,16 @@ export default function OrderDetailPage() {
               })()}
 
               <div className="mt-6 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={() => setShowCourierChat((current) => !current)}
-                  className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  <Truck size={18} />
-                  {t('order.detail.contact_courier')}
-                </button>
+                {courierFirstName && (
+                  <button
+                    type="button"
+                    onClick={() => setShowCourierChat((current) => !current)}
+                    className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    <Truck size={18} />
+                    {t('order.detail.contact_courier')}
+                  </button>
+                )}
                 {canSeeDisputeArea && (
                   <button
                     onClick={handleOpenDispute}
@@ -1020,9 +1137,9 @@ export default function OrderDetailPage() {
                         {t("cl2_order_detail.courier_chat_subtitle")}
                       </p>
                     </div>
-                    {tracking?.courier_name && (
+                    {courierFirstName && (
                       <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-gray-600 shadow-sm dark:bg-gray-900 dark:text-gray-300">
-                        {tracking.courier_name}
+                        {courierFirstName}
                       </span>
                     )}
                   </div>
@@ -1187,6 +1304,29 @@ export default function OrderDetailPage() {
                   );
                 })}
               </div>
+
+              {["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"].includes(order.fulfillment_status) && (
+                <button
+                  type="button"
+                  onClick={() => void handleRebuyOrder()}
+                  disabled={rebuying}
+                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3.5 text-sm font-bold text-white transition-all hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  <ShoppingCart size={18} />
+                  {rebuying ? "Ajout en cours..." : "Racheter"}
+                </button>
+              )}
+            </section>
+
+            <section className="pf-card pf-anim">
+              <PaymentLifecycleCard
+                variant={order.fulfillment_status === "DISPUTED" ? "dispute" : "default"}
+                isPaid={order.payment_status === "PAID"}
+                paidAmountLabel={`${order.total_xaf.toLocaleString("fr-FR")} FCFA`}
+                paidDateLabel={paidDateIso ? formatChronoDateTime(paidDateIso) : null}
+                isReleased={order.fulfillment_status === "RELEASED_TO_VENDOR"}
+                releasedDateLabel={order.fulfillment_status === "RELEASED_TO_VENDOR" ? formatChronoDateTime(order.updated_at) : null}
+              />
             </section>
 
             {canSeeDisputeArea && (
@@ -1513,6 +1653,13 @@ export default function OrderDetailPage() {
                 </div>
               )}
 
+              {order.fulfillment_status === "DISPUTED" && activeDispute && (
+                <div className="mt-5 space-y-4">
+                  <OrderTimeline entries={chronologyEntries} />
+                  <DisputeProofCard evidences={activeDispute.evidences ?? []} disputeDescription={activeDispute.description} />
+                </div>
+              )}
+
               {disputes.length > 0 ? (
                 <div className="mt-5 grid gap-4 2xl:grid-cols-[290px_minmax(0,1fr)]">
                   <div className="space-y-3">
@@ -1738,7 +1885,7 @@ export default function OrderDetailPage() {
                   <Phone size={18} className="mt-0.5 text-primary" />
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_phone_label')}</p>
-                    <p>{order.customer_phone}</p>
+                    <p>{maskPhone(order.customer_phone)}</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -1746,8 +1893,9 @@ export default function OrderDetailPage() {
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-white">{t('order.detail.shipping_courier_label')}</p>
                     <p>
-                      {tracking?.courier_name || t('order.detail.shipping_courier_pending')}
-                      {tracking?.courier_phone ? ` · ${tracking.courier_phone}` : ""}
+                      {/* Anonymat strict (CL-09) : prénom uniquement, jamais le numéro
+                          du livreur — courier_phone n'est volontairement pas affiché ici. */}
+                      {courierFirstName || t('order.detail.shipping_courier_pending')}
                     </p>
                   </div>
                 </div>

@@ -66,13 +66,9 @@ export const CLIENT_TUTORIAL_STEPS: TutorialStep[] = [
     helperKey: "misc1_tutorial.cart_summary_helper",
     routeLabelKey: "misc1_tutorial.route_cart",
   },
-  {
-    id: "chatbot",
-    route: "/",
-    selector: "#chatbot-fab, .chatbot-fab, [data-tutorial='chatbot']",
-    titleKey: "misc1_tutorial.chatbot_title",
-    descriptionKey: "misc1_tutorial.chatbot_description",
-    helperKey: "misc1_tutorial.chatbot_helper",
-    routeLabelKey: "misc1_tutorial.route_home",
-  },
+  // L'étape "chatbot" a été retirée avec le bouton flottant robot (voir
+  // GlobalAssistant.tsx) : aucune maquette ne le montre et la spec
+  // CCH-38/CAC-26 demande sa suppression. Sans cible DOM, cette étape de la
+  // visite guidée restait bloquée indéfiniment (GuidedTour n'a pas de
+  // fallback pour un sélecteur qui ne matche jamais).
 ];

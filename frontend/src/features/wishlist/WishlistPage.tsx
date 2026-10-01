@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Link2, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
+import { Heart, House, Link2, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { productsApi, type Product } from "@/services/api/products";
@@ -133,26 +133,27 @@ export default function WishlistPage() {
             </span>
           </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2.5">
-            <button
-              type="button"
-              onClick={shareWishlist}
-              className="inline-flex items-center gap-2 rounded-xl bg-[#1a2438] px-4 py-2.5 text-[12.5px] font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#26324a]"
-            >
-              <Link2 size={14} />
-              {t("cl4_wishlist.share_button")}
-            </button>
+          {products.length > 0 && (
+            <div className="mt-3 flex flex-wrap items-center gap-2.5">
+              <button
+                type="button"
+                onClick={shareWishlist}
+                className="inline-flex items-center gap-2 rounded-xl bg-[#1a2438] px-4 py-2.5 text-[12.5px] font-bold text-white transition-all duration-200 hover:-translate-y-0.5 hover:bg-[#26324a]"
+              >
+                <Link2 size={14} />
+                {t("cl4_wishlist.share_button")}
+              </button>
 
-            <button
-              type="button"
-              onClick={removeAll}
-              disabled={products.length === 0}
-              className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[12.5px] font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:text-red-500 disabled:translate-y-0 disabled:opacity-45 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
-            >
-              <Trash2 size={14} />
-              {t("cl4_wishlist.remove_all")}
-            </button>
-          </div>
+              <button
+                type="button"
+                onClick={removeAll}
+                className="inline-flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-[12.5px] font-bold text-gray-600 transition-all duration-200 hover:-translate-y-0.5 hover:border-red-200 hover:text-red-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+              >
+                <Trash2 size={14} />
+                {t("cl4_wishlist.remove_all")}
+              </button>
+            </div>
+          )}
         </div>
 
         {!isAuthenticated ? (
@@ -183,20 +184,13 @@ export default function WishlistPage() {
             <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-gray-500 dark:text-gray-400">
               {t("wishlist.empty_description")}
             </p>
-            <div className="mt-7 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="mt-7 flex justify-center">
               <Link
-                to="/catalog"
-                className="inline-flex items-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark"
+                to="/"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-primary px-5 py-3 text-sm font-semibold text-white transition-all hover:bg-primary-dark sm:w-auto"
               >
-                <ShoppingBag size={18} />
+                <House size={18} />
                 {t("wishlist.empty_button")}
-              </Link>
-              <Link
-                to="/search"
-                className="inline-flex items-center gap-2 rounded-2xl border border-gray-200 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition-all hover:border-primary hover:text-primary dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
-              >
-                <Sparkles size={18} />
-                {t("cl4_wishlist.explore_search")}
               </Link>
             </div>
           </div>

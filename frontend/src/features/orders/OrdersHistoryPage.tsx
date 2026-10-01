@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { lazy, Suspense, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { AlertCircle, ArrowLeft, Lock, MapPin, Package, ShieldCheck, Store, Truck, X, XCircle } from "lucide-react";
+import { AlertCircle, ArrowLeft, KeyRound, Lock, MapPin, Package, Scale, ShieldCheck, Store, Truck, X, XCircle } from "lucide-react";
 import { ordersApi } from "@/services/api/orders";
 import { getResilientOrders } from "@/data/mockOrders";
 import type { Order, PaymentStatus, FulfillmentStatus } from "@/types/order";
@@ -24,22 +24,37 @@ const TrackingMap = lazy(() =>
   }))
 );
 
-type TabKey = "all" | "to_pay" | "in_delivery" | "preparing" | "delivered" | "cancelled";
+// Restructuration en 2 niveaux (maquette Commandes_encours.jpg /
+// Commandes_terminees.jpg) : un toggle principal basé sur le statut ouvert/
+// clos de la commande, puis des sous-filtres contextuels au toggle actif.
+// Les regroupements de FulfillmentStatus (PREPARING/DELIVERED/SHIPPING/
+// CLOSED) restent ceux déjà utilisés ailleurs dans ce fichier (ex. canCancel,
+// activeDeliveries) — on les recompose plutôt que d'inventer de nouveaux
+// statuts que l'API n'expose pas.
+type MainTab = "ongoing" | "completed";
+type OngoingSubTab = "all" | "to_pickup" | "in_route" | "disputed";
+type CompletedSubTab = "all" | "withdrawn" | "cancelled";
 
 const PREPARING: FulfillmentStatus[] = ["CREATED", "PAID_IN_ESCROW", "VENDOR_ACKNOWLEDGED", "PREPARING", "READY_FOR_PICKUP", "DRIVER_ASSIGNED", "PICKED_UP", "PENDING", "PROCESSING"];
 const DELIVERED: FulfillmentStatus[] = ["DELIVERED", "BUYER_CONFIRMED", "AUTO_CONFIRMED", "RELEASED_TO_VENDOR"];
 const SHIPPING: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED"];
 const CLOSED: FulfillmentStatus[] = ["CANCELLED", "REFUNDED"];
 const LIVE: FulfillmentStatus[] = ["OUT_FOR_DELIVERY", "SHIPPED", "PICKED_UP", "DRIVER_ASSIGNED"];
-
-const TABS: { key: TabKey; labelKey: string }[] = [
-  { key: "all", labelKey: "cl2_orders_history.tab_all" },
-  { key: "to_pay", labelKey: "cl2_orders_history.tab_to_pay" },
-  { key: "in_delivery", labelKey: "cl2_orders_history.tab_in_delivery" },
-  { key: "preparing", labelKey: "cl2_orders_history.tab_preparing" },
-  { key: "delivered", labelKey: "cl2_orders_history.tab_delivered" },
-  { key: "cancelled", labelKey: "cl2_orders_history.tab_cancelled" },
-];
+/** Sous-ensemble "arrivée au relais, prête à retirer" de PREPARING. */
+const TO_PICKUP: FulfillmentStatus[] = ["READY_FOR_PICKUP"];
+/** "En litige" — absent des regroupements ci-dessus avant cette page, bien
+ * qu'exposé par l'API (FulfillmentStatus.DISPUTED) et déjà doté d'un libellé
+ * (FULFILLMENT_LABEL_KEYS.DISPUTED) : une commande disputée n'entrait dans
+ * aucun des anciens onglets à un seul niveau. */
+const DISPUTED_STATUSES: FulfillmentStatus[] = ["DISPUTED"];
+/** "En cours" = tout ce qui n'est ni livré/retiré ni clos. */
+const ONGOING: FulfillmentStatus[] = [...PREPARING, ...SHIPPING, ...DISPUTED_STATUSES];
+/** "En route" = en cours, hors "prête au retrait" et "en litige". */
+const IN_ROUTE: FulfillmentStatus[] = ONGOING.filter(
+  (status) => !TO_PICKUP.includes(status) && !DISPUTED_STATUSES.includes(status),
+);
+/** "Terminées" = livrée/retirée ou close (annulée/remboursée). */
+const COMPLETED: FulfillmentStatus[] = [...DELIVERED, ...CLOSED];
 
 const FULFILLMENT_LABEL_KEYS: Record<string, string> = {
   OUT_FOR_DELIVERY: "cl2_orders_history.fulfillment_in_delivery", SHIPPED: "cl2_orders_history.fulfillment_in_delivery",
@@ -100,7 +115,9 @@ export default function OrdersHistoryPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<TabKey>("all");
+  const [mainTab, setMainTab] = useState<MainTab>("ongoing");
+  const [ongoingSubTab, setOngoingSubTab] = useState<OngoingSubTab>("all");
+  const [completedSubTab, setCompletedSubTab] = useState<CompletedSubTab>("all");
   const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [cancelCandidate, setCancelCandidate] = useState<Order | null>(null);
   const [cancelStep, setCancelStep] = useState<CancelStep>("reason");
@@ -129,27 +146,43 @@ export default function OrdersHistoryPage() {
     (o.payment_status === "PENDING" || o.payment_status === "FAILED") && !CLOSED.includes(o.fulfillment_status);
 
   const counts = useMemo(() => {
-    const c: Record<TabKey, number> = { all: orders.length, to_pay: 0, in_delivery: 0, preparing: 0, delivered: 0, cancelled: 0 };
+    const c = { to_pay: 0, ongoing: 0, to_pickup: 0, in_route: 0, disputed: 0, completed: 0, withdrawn: 0, cancelled: 0 };
     for (const o of orders) {
       if (isUnpaid(o)) c.to_pay++;
-      if (SHIPPING.includes(o.fulfillment_status)) c.in_delivery++;
-      else if (PREPARING.includes(o.fulfillment_status)) c.preparing++;
-      else if (DELIVERED.includes(o.fulfillment_status)) c.delivered++;
-      else if (CLOSED.includes(o.fulfillment_status)) c.cancelled++;
+      if (ONGOING.includes(o.fulfillment_status)) {
+        c.ongoing++;
+        if (TO_PICKUP.includes(o.fulfillment_status)) c.to_pickup++;
+        else if (DISPUTED_STATUSES.includes(o.fulfillment_status)) c.disputed++;
+        else c.in_route++;
+      } else if (COMPLETED.includes(o.fulfillment_status)) {
+        c.completed++;
+        if (DELIVERED.includes(o.fulfillment_status)) c.withdrawn++;
+        else c.cancelled++;
+      }
     }
     return c;
   }, [orders]);
 
+  const mainFiltered = useMemo(
+    () => orders.filter((o) => (mainTab === "ongoing" ? ONGOING : COMPLETED).includes(o.fulfillment_status)),
+    [orders, mainTab],
+  );
+
   const filtered = useMemo(() => {
-    switch (activeTab) {
-      case "to_pay": return orders.filter(isUnpaid);
-      case "in_delivery": return orders.filter((o) => SHIPPING.includes(o.fulfillment_status));
-      case "preparing": return orders.filter((o) => PREPARING.includes(o.fulfillment_status));
-      case "delivered": return orders.filter((o) => DELIVERED.includes(o.fulfillment_status));
-      case "cancelled": return orders.filter((o) => CLOSED.includes(o.fulfillment_status));
-      default: return orders;
+    if (mainTab === "ongoing") {
+      switch (ongoingSubTab) {
+        case "to_pickup": return mainFiltered.filter((o) => TO_PICKUP.includes(o.fulfillment_status));
+        case "in_route": return mainFiltered.filter((o) => IN_ROUTE.includes(o.fulfillment_status));
+        case "disputed": return mainFiltered.filter((o) => DISPUTED_STATUSES.includes(o.fulfillment_status));
+        default: return mainFiltered;
+      }
     }
-  }, [orders, activeTab]);
+    switch (completedSubTab) {
+      case "withdrawn": return mainFiltered.filter((o) => DELIVERED.includes(o.fulfillment_status));
+      case "cancelled": return mainFiltered.filter((o) => CLOSED.includes(o.fulfillment_status));
+      default: return mainFiltered;
+    }
+  }, [mainFiltered, mainTab, ongoingSubTab, completedSubTab]);
 
   const activeDeliveries = useMemo(() => orders.filter((o) => SHIPPING.includes(o.fulfillment_status)), [orders]);
   const escrowTotal = orders.filter((o) => o.payment_status === "PAID" && !DELIVERED.includes(o.fulfillment_status))
@@ -247,21 +280,32 @@ export default function OrdersHistoryPage() {
             </div>
           ) : (
             <>
-              {/* Bandeau de reprise de paiement */}
+              {/* Bandeau de reprise de paiement — un panier non payé n'est pas
+                  encore une commande (rien n'a été débité, la réservation
+                  expire) : le libellé évite donc le mot "commande" ici, au
+                  profit de "réservation". Les clés i18n cl2_orders_history.
+                  pay_banner_count(_plural)/pay_banner_cta portent encore
+                  "commande(s)" (fichiers i18n hors périmètre de cette
+                  modification) — on les contourne par un libellé en dur
+                  bilingue plutôt que de les réutiliser telles quelles. */}
               {counts.to_pay > 0 && (
                 <div className="pf-hero pf-anim" style={{ marginTop: 16 }}>
                   <i />
                   <div className="pf-hero-k">{t("cl2_orders_history.pay_banner_title")}</div>
                   <div className="pf-hero-v" style={{ fontSize: 28 }}>
-                    {t(counts.to_pay > 1 ? "cl2_orders_history.pay_banner_count_plural" : "cl2_orders_history.pay_banner_count", { count: counts.to_pay })}<span>{t("cl2_orders_history.pay_banner_due")}</span>
+                    {counts.to_pay} {i18n.language === "fr"
+                      ? (counts.to_pay > 1 ? "réservations" : "réservation")
+                      : (counts.to_pay > 1 ? "reservations" : "reservation")}
+                    <span>{t("cl2_orders_history.pay_banner_due")}</span>
                   </div>
                   <div style={{ position: "relative", marginTop: 12, fontSize: 12, lineHeight: 1.6, opacity: .9 }}>
                     {t("cl2_orders_history.pay_banner_note")}
                   </div>
                   <button
-                    onClick={() => setActiveTab("to_pay")}
+                    onClick={() => { setMainTab("ongoing"); setOngoingSubTab("all"); }}
                     style={{ position: "relative", marginTop: 16, display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(255,255,255,.22)", border: "1px solid rgba(255,255,255,.35)", color: "#fff", padding: "9px 16px", borderRadius: 999, fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                    <Lock size={14} />{t("cl2_orders_history.pay_banner_cta")}
+                    <Lock size={14} />
+                    {i18n.language === "fr" ? "Voir mes réservations à payer" : "View my reservations to pay"}
                   </button>
                 </div>
               )}
@@ -317,16 +361,60 @@ export default function OrdersHistoryPage() {
                 </section>
               )}
 
-              {/* Onglets */}
-              <div className="pf-type-toggle" style={{ marginTop: 18, flexWrap: "wrap" }}>
-                {TABS.map((tab) => (
-                  <button key={tab.key} type="button"
-                    className={`pf-type-btn${activeTab === tab.key ? " on" : ""}`}
-                    onClick={() => setActiveTab(tab.key)}>
-                    {t(tab.labelKey)}
-                    <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts[tab.key]}</span>
-                  </button>
-                ))}
+              {/* Toggle principal "En cours" / "Terminées" (maquette
+                  Commandes_encours.jpg / Commandes_terminees.jpg), puis
+                  sous-filtres contextuels au toggle actif. */}
+              <div className="pf-type-toggle" style={{ marginTop: 18 }}>
+                <button type="button"
+                  className={`pf-type-btn${mainTab === "ongoing" ? " on" : ""}`}
+                  onClick={() => setMainTab("ongoing")}>
+                  {i18n.language === "fr" ? "En cours" : "Ongoing"}
+                  <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.ongoing}</span>
+                </button>
+                <button type="button"
+                  className={`pf-type-btn${mainTab === "completed" ? " on" : ""}`}
+                  onClick={() => setMainTab("completed")}>
+                  {i18n.language === "fr" ? "Terminées" : "Completed"}
+                  <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.completed}</span>
+                </button>
+              </div>
+
+              <div className="pf-type-toggle" style={{ marginTop: 10, flexWrap: "nowrap", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}>
+                {mainTab === "ongoing" ? (
+                  <>
+                    <button type="button" className={`pf-type-btn${ongoingSubTab === "all" ? " on" : ""}`} onClick={() => setOngoingSubTab("all")}>
+                      {t("cl2_orders_history.tab_all")}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.ongoing}</span>
+                    </button>
+                    <button type="button" className={`pf-type-btn${ongoingSubTab === "to_pickup" ? " on" : ""}`} onClick={() => setOngoingSubTab("to_pickup")}>
+                      {i18n.language === "fr" ? "À retirer" : "To pick up"}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.to_pickup}</span>
+                    </button>
+                    <button type="button" className={`pf-type-btn${ongoingSubTab === "in_route" ? " on" : ""}`} onClick={() => setOngoingSubTab("in_route")}>
+                      {i18n.language === "fr" ? "En route" : "On the way"}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.in_route}</span>
+                    </button>
+                    <button type="button" className={`pf-type-btn${ongoingSubTab === "disputed" ? " on" : ""}`} onClick={() => setOngoingSubTab("disputed")}>
+                      {i18n.language === "fr" ? "En litige" : "Disputed"}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.disputed}</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" className={`pf-type-btn${completedSubTab === "all" ? " on" : ""}`} onClick={() => setCompletedSubTab("all")}>
+                      {t("cl2_orders_history.tab_all")}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.completed}</span>
+                    </button>
+                    <button type="button" className={`pf-type-btn${completedSubTab === "withdrawn" ? " on" : ""}`} onClick={() => setCompletedSubTab("withdrawn")}>
+                      {i18n.language === "fr" ? "Retirées" : "Withdrawn"}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.withdrawn}</span>
+                    </button>
+                    <button type="button" className={`pf-type-btn${completedSubTab === "cancelled" ? " on" : ""}`} onClick={() => setCompletedSubTab("cancelled")}>
+                      {t("cl2_orders_history.tab_cancelled")}
+                      <span style={{ marginLeft: 7, opacity: .7, fontVariantNumeric: "tabular-nums" }}>{counts.cancelled}</span>
+                    </button>
+                  </>
+                )}
               </div>
 
               {/* Liste */}
@@ -342,6 +430,13 @@ export default function OrdersHistoryPage() {
                     const unpaid = isUnpaid(order);
                     const extra = order.items.length - 2;
                     const live = LIVE.includes(order.fulfillment_status);
+                    // CTA contextuel au statut réel — remplace le bouton générique
+                    // "Détails" quand c'est pertinent (commande prête au retrait,
+                    // en litige, ou impayée). "Détails" redevient alors un lien
+                    // secondaire plus petit à côté, plutôt que de disparaître.
+                    const isReadyForPickup = !unpaid && order.fulfillment_status === "READY_FOR_PICKUP";
+                    const isDisputed = order.fulfillment_status === "DISPUTED";
+                    const hasContextualCta = unpaid || isReadyForPickup || isDisputed;
                     return (
                       <article key={order.id} className="pf-card pf-anim">
                         <div className="pf-row-between" style={{ flexWrap: "wrap", gap: 10 }}>
@@ -391,18 +486,35 @@ export default function OrdersHistoryPage() {
                             <div className="pf-k">{unpaid ? t("cl2_orders_history.remaining_due") : t("cl2_orders_history.total")}</div>
                             <div className="pf-total-row"><b style={{ fontSize: 20 }}>{fmt(order.total_xaf)}</b></div>
                           </div>
-                          <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 9, flexWrap: "wrap" }}>
                             {canCancel(order) && (
                               <button className="pf-btn-danger" onClick={() => { setCancelStep("reason"); setCancelReason("OTHER"); setCancelCandidate(order); }}>{t("cl2_orders_history.cancel_btn")}</button>
                             )}
-                            {unpaid && (
+                            {unpaid ? (
                               <button className="pf-btn-accent" onClick={() => setPayTarget(order)}>
                                 <Lock size={14} />{t("cl2_orders_history.resume_payment")}
                               </button>
+                            ) : isReadyForPickup ? (
+                              <Link to={`/orders/${order.id}`}>
+                                <button className="pf-btn-accent"><KeyRound size={14} />{i18n.language === "fr" ? "Mon code" : "My code"}</button>
+                              </Link>
+                            ) : isDisputed ? (
+                              <Link to={`/orders/${order.id}`}>
+                                <button className="pf-btn-accent"><Scale size={14} />{i18n.language === "fr" ? "Suivre mon litige" : "Track my dispute"}</button>
+                              </Link>
+                            ) : (
+                              <Link to={`/orders/${order.id}`}>
+                                <button className="pf-btn-accent">{t("cl2_orders_history.details_btn")}</button>
+                              </Link>
                             )}
-                            <Link to={`/orders/${order.id}`}>
-                              <button className={unpaid ? "pf-btn-ghost" : "pf-btn-accent"}>{t("cl2_orders_history.details_btn")}</button>
-                            </Link>
+                            {hasContextualCta && (
+                              <Link
+                                to={`/orders/${order.id}`}
+                                style={{ fontSize: 11.5, fontWeight: 700, color: "var(--pf-muted)", textDecoration: "underline" }}
+                              >
+                                {t("cl2_orders_history.details_btn")}
+                              </Link>
+                            )}
                           </div>
                         </div>
                       </article>

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { ArrowRight, ChevronDown, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowLeft, ArrowRight, ChevronDown, Globe } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import PortalLoginCard from './PortalLoginCard';
 import { usePortalLogin } from './usePortalLogin';
@@ -66,15 +67,18 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
   const a = (value: number) => Math.min(value * veilScale, 0.99).toFixed(2);
 
   // ───────────────────────────────────────────────────────────────────────────
-  // L'ESPACE CLIENT N'A PAS SON PROPRE EN-TETE
+  // L'ESPACE CLIENT N'A PAS SON PROPRE EN-TETE COMPLET
   //
-  // /login est une route enfant d'AppLayout (voir router.tsx) : l'en-tete du
-  // site — logo, selecteur de langue, bouton S'inscrire — est deja affiche
-  // au-dessus. Le repeter ici faisait doublon, et poussait le bas de la
-  // colonne de titre sous le pied de page du site.
+  // AppLayout masque desormais tout son chrome (header, footer, bottom nav,
+  // bouton flottant) sur /login, y compris hors portail dedie : ils
+  // chevauchaient la carte de connexion (champ mot de passe et bouton
+  // illisibles sous la bottom nav). A la place, l'espace client affiche ici
+  // une fleche retour minimale vers l'accueil — pas le header marketplace
+  // complet (logo, recherche, panier...), qui ferait doublon avec la carte
+  // de connexion elle-meme.
   //
-  // Les portails dedies servent la meme route mais sans ce chrome autour :
-  // eux gardent leur en-tete.
+  // Les portails dedies servent la meme route avec leur propre en-tete
+  // complet (logo, selecteur de langue, CTA d'inscription) : eux le gardent.
   // ───────────────────────────────────────────────────────────────────────────
   const chrome = content.role !== 'client';
 
@@ -128,6 +132,16 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
               </button>
             )}
           </header>
+        )}
+
+        {!chrome && (
+          <Link
+            to="/"
+            aria-label={ctl.t('checkout.back_home')}
+            className="absolute left-6 top-6 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25"
+          >
+            <ArrowLeft size={18} />
+          </Link>
         )}
 
         <div className={`absolute left-14 w-[34rem] max-w-[46%] text-white ${chrome ? 'top-[19vh]' : 'top-[6vh]'}`}>
@@ -233,7 +247,19 @@ export default function PortalLoginShell({ content }: { content: PortalLoginCont
           </header>
         )}
 
-        <h2 className={`px-5 text-[1.85rem] font-bold leading-[1.26] tracking-tight text-gray-900 dark:text-white ${chrome ? 'mt-6' : 'safe-pt mt-4'}`}>
+        {!chrome && (
+          <div className="safe-pt px-5 pt-5">
+            <Link
+              to="/"
+              aria-label={ctl.t('checkout.back_home')}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-gray-900 transition hover:bg-gray-200 dark:bg-white/10 dark:text-white dark:hover:bg-white/15"
+            >
+              <ArrowLeft size={18} />
+            </Link>
+          </div>
+        )}
+
+        <h2 className={`px-5 text-[1.85rem] font-bold leading-[1.26] tracking-tight text-gray-900 dark:text-white ${chrome ? 'mt-6' : 'mt-4'}`}>
           {titleLines.map(({ key, line, accented }) => (
             <span key={key} className="block" style={accented ? { color: accent } : undefined}>
               {line}

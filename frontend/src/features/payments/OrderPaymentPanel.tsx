@@ -71,34 +71,6 @@ export function OrderPaymentPanel({ order, onPaid }: { order: Order; onPaid?: ()
 
   const echeance = protection?.auto_confirm_at ?? null;
 
-  const steps = [
-    { title: t("pm2_order_panel.step_initiated_title"), time: fmtDate(last?.created_at ?? order.created_at),
-      desc: last
-        ? t("pm2_order_panel.step_initiated_desc_sent", { provider: PROVIDER_LABELS[last.provider], phone: last.payer_phone })
-        : t("pm2_order_panel.step_initiated_desc_created"),
-      state: last ? "done" : "cur" },
-    { title: paid ? t("pm2_order_panel.step_confirmed_title") : t("pm2_order_panel.step_awaiting_title"),
-      time: paid ? fmtDate(order.updated_at) : "—",
-      desc: paid
-        ? t("pm2_order_panel.step_confirmed_desc", { amount: order.total_xaf.toLocaleString("fr-FR") })
-        : t("pm2_order_panel.step_awaiting_desc"),
-      state: paid ? "done" : "cur" },
-    { title: t("pm2_order_panel.step_escrow_title"),
-      time: released ? fmtDate(order.updated_at) : paid ? t("pm2_order_panel.time_in_progress") : t("pm2_order_panel.time_upcoming"),
-      desc: t("pm2_order_panel.step_escrow_desc"),
-      state: released ? "done" : paid ? "cur" : "todo" },
-    { title: t("pm2_order_panel.step_release_title"),
-      time: released ? fmtDate(order.updated_at) : echeance ? fmtDate(echeance) : t("pm2_order_panel.time_upcoming"),
-      desc: echeance && !released
-        ? t("pm2_order_panel.step_release_confirm_on", { date: fmtDate(echeance) })
-          + (joursRestants !== null && joursRestants > 0
-            ? ` — ${t(joursRestants > 1 ? "pm2_order_panel.countdown_days_plural" : "pm2_order_panel.countdown_days", { days: joursRestants })}`
-            : "")
-          + t("pm2_order_panel.step_release_confirm_suffix")
-        : t("pm2_order_panel.step_release_desc_default"),
-      state: released ? "done" : "todo" },
-  ] as const;
-
   const progress = DELIVERED.includes(order.fulfillment_status) ? 78 : paid ? 38 : 12;
 
   return (
@@ -141,29 +113,6 @@ export function OrderPaymentPanel({ order, onPaid }: { order: Order; onPaid?: ()
           <button className="pf-btn-accent pf-btn-block" onClick={() => setPaying(true)}><Lock size={16} />{t("pm2_order_panel.resume_payment")}</button>
         </div>
       )}
-
-      <div className="pf-card pf-anim">
-        <div className="pf-card-title" style={{ marginBottom: 20 }}>{t("pm2_order_panel.lifecycle_title")}</div>
-        {steps.map((s, i) => (
-          <div key={s.title} style={{ display: "flex", gap: 16 }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: 26, flexShrink: 0 }}>
-              <span className={`pf-d ${s.state === "todo" ? "todo" : s.state === "cur" ? "cur" : "done"}`}>
-                {s.state !== "todo" && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 6 9 17l-5-5" /></svg>}
-              </span>
-              {i < steps.length - 1 && (
-                <span style={{ flex: 1, width: 2, minHeight: 32, margin: "5px 0", background: s.state === "todo" ? "var(--pf-border)" : "var(--pf-aring)" }} />
-              )}
-            </div>
-            <div style={{ paddingBottom: 20, flex: 1 }}>
-              <div style={{ display: "flex", alignItems: "baseline", gap: 10, flexWrap: "wrap" }}>
-                <span className="pf-support-t" style={{ color: s.state === "todo" ? "var(--pf-muted)" : "var(--pf-text)" }}>{s.title}</span>
-                <span className="pf-muted-sm">{s.time}</span>
-              </div>
-              <div className="pf-muted-sm" style={{ marginTop: 4, lineHeight: 1.55 }}>{s.desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
 
       {txs.length > 0 && (
         <div className="pf-card pf-anim">

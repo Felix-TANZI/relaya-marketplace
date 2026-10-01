@@ -20,6 +20,115 @@ export default function PortalLoginCard({
   const field =
     'h-12 w-full rounded border border-gray-200 bg-white pl-10 pr-3 text-sm text-gray-900 outline-none transition placeholder:text-gray-400 focus:border-transparent focus:ring-4 dark:border-white/10 dark:bg-white/5 dark:text-white dark:placeholder:text-white/40';
   const ring = { '--tw-ring-color': soft } as React.CSSProperties;
+  // Maquette Connexion.jpg (espace client) : Google/Apple en gros boutons
+  // d'abord, le formulaire e-mail/mot de passe en repli en dessous. Les
+  // portails dedies (socialFirst absent) gardent l'ordre historique :
+  // identifiants d'abord, methodes sociales ensuite.
+  const socialFirst = Boolean(content.card.socialFirst);
+
+  const credentialsFields = (
+    <div className={socialFirst ? 'space-y-3' : 'mt-6 space-y-3'}>
+      <label className="relative block">
+        <span className="sr-only">{ctl.t('auth.email')}</span>
+        <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
+        <input
+          type="text"
+          name="username"
+          autoComplete="username"
+          value={ctl.credentials.username}
+          onChange={ctl.handleChange}
+          placeholder={ctl.t('cl6_portal_card.email_placeholder')}
+          disabled={ctl.loading}
+          required
+          className={field}
+          style={ring}
+        />
+      </label>
+
+      <label className="relative block">
+        <span className="sr-only">{ctl.t('auth.password')}</span>
+        <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
+        <input
+          type={ctl.showPassword ? 'text' : 'password'}
+          name="password"
+          autoComplete="current-password"
+          value={ctl.credentials.password}
+          onChange={ctl.handleChange}
+          placeholder={ctl.t('cl6_portal_card.password_placeholder')}
+          disabled={ctl.loading}
+          required
+          className={`${field} pr-12`}
+          style={ring}
+        />
+        <button
+          type="button"
+          onClick={() => ctl.setShowPassword(!ctl.showPassword)}
+          disabled={ctl.loading}
+          className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center text-gray-400 transition hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
+          aria-label={ctl.showPassword ? ctl.t('cl6_portal_card.hide_password') : ctl.t('cl6_portal_card.show_password')}
+        >
+          {ctl.showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+        </button>
+      </label>
+    </div>
+  );
+
+  const credentialsSubmit = (
+    <>
+      <div className="mt-3.5 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => ctl.setRemember(!ctl.remember)}
+          className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/80"
+          aria-pressed={ctl.remember}
+        >
+          <span
+            className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition"
+            style={{
+              background: ctl.remember ? accent : 'transparent',
+              borderColor: ctl.remember ? accent : undefined,
+            }}
+          >
+            {ctl.remember && <Check size={11} strokeWidth={3.6} className="text-white" />}
+          </span>
+          <span className="whitespace-nowrap">{ctl.t('cl6_portal_card.remember_me')}</span>
+        </button>
+        <Link
+          to="/forgot-password"
+          className="shrink-0 whitespace-nowrap text-xs font-medium underline"
+          style={{ color: accent }}
+        >
+          {ctl.t('auth.forgot_password') || 'Mot de passe oublié ?'}
+        </Link>
+      </div>
+
+      <button
+        type="submit"
+        disabled={ctl.loading}
+        className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded text-sm font-semibold text-white shadow-lg transition hover:brightness-95 disabled:opacity-50"
+        style={{ background: `linear-gradient(180deg, ${accent}, ${accentDark})` }}
+      >
+        {ctl.loading ? (
+          <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
+        ) : (
+          <>
+            {ctl.t('auth.login_button') || 'Se connecter'}
+            <ArrowRight size={16} />
+          </>
+        )}
+      </button>
+    </>
+  );
+
+  const divider = (
+    <div className="mt-4 flex items-center gap-3">
+      <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+      <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-white/50">
+        {ctl.t(socialFirst ? 'cl6_portal_card.or_with_email' : 'cl6_portal_card.or_continue_with')}
+      </span>
+      <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
+    </div>
+  );
 
   return (
     <div className="rounded border border-black/5 bg-white p-6 shadow-[0_26px_60px_-22px_rgba(0,0,0,.45)] dark:border-white/10 dark:bg-[#131A22] sm:p-7">
@@ -30,103 +139,23 @@ export default function PortalLoginCard({
           </h1>
           <p className="mt-1.5 text-sm text-gray-500 dark:text-white/60">{ctl.t(content.card.subtitleKey)}</p>
 
-          <div className="mt-6 space-y-3">
-            <label className="relative block">
-              <span className="sr-only">{ctl.t('auth.email')}</span>
-              <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
-              <input
-                type="text"
-                name="username"
-                autoComplete="username"
-                value={ctl.credentials.username}
-                onChange={ctl.handleChange}
-                placeholder={ctl.t('cl6_portal_card.email_placeholder')}
-                disabled={ctl.loading}
-                required
-                className={field}
-                style={ring}
-              />
-            </label>
-
-            <label className="relative block">
-              <span className="sr-only">{ctl.t('auth.password')}</span>
-              <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-white/40" />
-              <input
-                type={ctl.showPassword ? 'text' : 'password'}
-                name="password"
-                autoComplete="current-password"
-                value={ctl.credentials.password}
-                onChange={ctl.handleChange}
-                placeholder={ctl.t('cl6_portal_card.password_placeholder')}
-                disabled={ctl.loading}
-                required
-                className={`${field} pr-12`}
-                style={ring}
-              />
-              <button
-                type="button"
-                onClick={() => ctl.setShowPassword(!ctl.showPassword)}
-                disabled={ctl.loading}
-                className="absolute right-0 top-0 flex h-12 w-11 items-center justify-center text-gray-400 transition hover:text-gray-600 dark:text-white/40 dark:hover:text-white/70"
-                aria-label={ctl.showPassword ? ctl.t('cl6_portal_card.hide_password') : ctl.t('cl6_portal_card.show_password')}
-              >
-                {ctl.showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
-              </button>
-            </label>
-          </div>
-
-          <div className="mt-3.5 flex items-center justify-between gap-3">
-            <button
-              type="button"
-              onClick={() => ctl.setRemember(!ctl.remember)}
-              className="flex items-center gap-2 text-xs text-gray-600 dark:text-white/80"
-              aria-pressed={ctl.remember}
-            >
-              <span
-                className="flex h-4 w-4 shrink-0 items-center justify-center rounded-[3px] border transition"
-                style={{
-                  background: ctl.remember ? accent : 'transparent',
-                  borderColor: ctl.remember ? accent : undefined,
-                }}
-              >
-                {ctl.remember && <Check size={11} strokeWidth={3.6} className="text-white" />}
-              </span>
-              <span className="whitespace-nowrap">{ctl.t('cl6_portal_card.remember_me')}</span>
-            </button>
-            <Link
-              to="/forgot-password"
-              className="shrink-0 whitespace-nowrap text-xs font-medium underline"
-              style={{ color: accent }}
-            >
-              {ctl.t('auth.forgot_password') || 'Mot de passe oublié ?'}
-            </Link>
-          </div>
-
-          <button
-            type="submit"
-            disabled={ctl.loading}
-            className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded text-sm font-semibold text-white shadow-lg transition hover:brightness-95 disabled:opacity-50"
-            style={{ background: `linear-gradient(180deg, ${accent}, ${accentDark})` }}
-          >
-            {ctl.loading ? (
-              <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
-            ) : (
-              <>
-                {ctl.t('auth.login_button') || 'Se connecter'}
-                <ArrowRight size={16} />
-              </>
-            )}
-          </button>
-
-          <div className="mt-4 flex items-center gap-3">
-            <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
-            <span className="shrink-0 whitespace-nowrap text-[11px] text-gray-400 dark:text-white/50">
-              {ctl.t('cl6_portal_card.or_continue_with')}
-            </span>
-            <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
-          </div>
-
-          <SocialAuthRow ctl={ctl} accent={accent} />
+          {socialFirst ? (
+            <>
+              <div className="mt-6">
+                <SocialAuthRow ctl={ctl} accent={accent} />
+              </div>
+              {divider}
+              {credentialsFields}
+              {credentialsSubmit}
+            </>
+          ) : (
+            <>
+              {credentialsFields}
+              {credentialsSubmit}
+              {divider}
+              <SocialAuthRow ctl={ctl} accent={accent} />
+            </>
+          )}
 
           {content.card.registerPath ? (
             <p className="mt-5 text-center text-xs text-gray-500 dark:text-white/60">

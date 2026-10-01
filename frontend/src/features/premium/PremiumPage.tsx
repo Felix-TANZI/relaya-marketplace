@@ -310,6 +310,10 @@ export default function PremiumPage() {
           {/* PLAN — verre, orange en accent */}
           <div className="pf-anim" style={{ position: "relative", overflow: "hidden", borderRadius: 20, padding: 20, background: "var(--pf-glass)", backdropFilter: "blur(22px) saturate(1.6)", WebkitBackdropFilter: "blur(22px) saturate(1.6)", border: "1px solid var(--pf-glass-border)", boxShadow: "0 10px 40px rgba(244,97,15,.08),0 2px 10px rgba(20,10,5,.04)" }}>
             <span aria-hidden style={{ position: "absolute", top: -40, right: -30, width: 150, height: 150, borderRadius: "50%", background: "radial-gradient(circle,rgba(244,97,15,.10),transparent 70%)", pointerEvents: "none" }} />
+            {/* anim_08 — reflet diagonal en boucle, purement visuel (CSS pur,
+                voir index.css `.belivay-premium-sheen`) : ne touche à aucune
+                logique de la carte (plan, bascule mensuel/annuel, CTA...). */}
+            <div className="belivay-premium-sheen" aria-hidden="true" />
             <div style={{ position: "relative", zIndex: 1 }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
                 <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 11px", borderRadius: 999, fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".06em", color: "var(--pf-accent)", background: "var(--pf-asoft)", border: "1px solid var(--pf-aring)" }}>

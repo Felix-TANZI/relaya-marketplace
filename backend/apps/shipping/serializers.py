@@ -386,6 +386,15 @@ class ShipmentCreateSerializer(serializers.Serializer):
 
 
 class RelayParcelSerializer(serializers.ModelSerializer):
+    # ECART CONNU (spec CL-09) : `pickup_code` ci-dessous est embarque dans
+    # cette reponse de suivi (utilisee par le client via OrderTrackingView),
+    # recupere d'un coup avec le reste du statut de livraison plutot que via
+    # un endpoint separe "a la demande". Le masquage cote client (CL-09,
+    # OrderDetailPage.tsx) est donc purement visuel (geste "toucher pour
+    # afficher"), pas un controle d'acces reseau : le code transite deja vers
+    # le navigateur au premier chargement du suivi. Passer a un vrai
+    # fetch-on-demand demanderait un endpoint dedie + une revue de securite,
+    # non fait ici (hors perimetre d'un changement frontend CL-09).
     shipment_id = serializers.IntegerField(source="shipment.id", read_only=True)
     order_id = serializers.IntegerField(source="shipment.order_id", read_only=True)
     relay_point_name = serializers.CharField(source="relay_point.name", read_only=True)
@@ -555,7 +564,10 @@ class RelayParcelReceiveSerializer(serializers.Serializer):
                 UserNotification.objects.create(
                     user=shipment.order.user,
                     title=f"Colis prêt au retrait · commande #{shipment.order_id}",
-                    message=f"Votre commande est arrivée au point relais {relay_point.name}. Code de retrait : {code}.",
+                    # CL-10 : jamais de code en clair dans une notification (meme regle que
+                    # pour un OTP). Le vrai code de retrait reste expose uniquement via le
+                    # champ dedie RelayParcel.pickup_code, affiche dans le detail commande.
+                    message=f"Votre commande est arrivée au point relais {relay_point.name}. Consultez le détail de votre commande pour votre code de retrait.",
                     notification_type=UserNotification.NotificationType.ORDER,
                     action_url=f"/orders/{shipment.order_id}",
                 )
@@ -579,6 +591,15 @@ class RelayParcelPickupSerializer(serializers.Serializer):
     Remise au guichet. §8.3 : sur une commande a plusieurs colis, un seul
     code de retrait est partage — le saisir remet TOUS les colis de ce
     compte encore en stock a ce relais en une seule action, jamais un par un.
+
+    ECART CONNU (spec CL-09) : aucun verrou n'existe ici apres plusieurs
+    codes faux consecutifs (la spec demande un blocage de 24h au bout de 3
+    essais, avec generation d'un nouveau code et refus de l'ancien). Chaque
+    appel invalide se contente de lever une ValidationError, sans compteur
+    de tentatives. Non corrige ici : ajouter ce compteur touche a la fois au
+    modele RelayParcel (ou une table dediee) et a la logique de generation
+    de code dans RelayParcelReceiveSerializer.save() plus haut — a faire
+    avec un ticket backend dedie, pas en marge d'un ticket frontend CL-09.
     """
 
     parcel_id = serializers.IntegerField(required=False)

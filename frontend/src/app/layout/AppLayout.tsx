@@ -1,5 +1,6 @@
 ﻿import { Suspense, useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
+import { LayoutGroup } from 'framer-motion';
 import PageLoader from '@/components/PageLoader';
 import { listMyPayments } from '@/services/api/payments';
 import { useToast } from '@/context/ToastContext';
@@ -58,7 +59,13 @@ export default function AppLayout() {
   // s'y resoudre. Sans ce cas, le chrome marketplace (header, bandeau pub)
   // apparaissait une frame avant le login, le temps que la redirection se
   // termine.
-  const hideChrome = isDedicatedPortal && (isAuthPage || pathname === '/');
+  //
+  // isAuthPage seul suffit desormais a masquer le chrome, meme hors portail
+  // dedie : sur le site web (isDedicatedPortal=false), /login et /register
+  // gardaient header, footer, bottom nav et bouton flottant affiches par
+  // dessus leur propre carte de connexion, la rendant partiellement illisible
+  // (champ mot de passe et bouton "Se connecter" caches sous la bottom nav).
+  const hideChrome = isAuthPage || (isDedicatedPortal && pathname === '/');
   const isCheckout = pathname.startsWith('/checkout');
   const [online, setOnline] = useState(() => navigator.onLine);
   const [usingOfflineCache, setUsingOfflineCache] = useState(false);
@@ -168,9 +175,14 @@ export default function AppLayout() {
         tabIndex={-1}
         className={`flex-1 overflow-x-hidden ${hideChrome || isCheckout ? '' : 'pt-[var(--belivay-header-h,164px)] pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}`}
       >
-        <Suspense fallback={<PageLoader />}>
-          <Outlet />
-        </Suspense>
+        {/* anim_07 — LayoutGroup partagé : permet à framer-motion de relier la
+            même layoutId (photo produit) entre la carte qui vient de
+            démonter et la fiche produit qui monte juste après la navigation. */}
+        <LayoutGroup>
+          <Suspense fallback={<PageLoader />}>
+            <Outlet />
+          </Suspense>
+        </LayoutGroup>
       </main>
       {!hideChrome && !isCheckout && <Footer />}
       {!hideChrome && !isCheckout && <GlobalAssistant />}

@@ -17,7 +17,6 @@ import {
   Heart,
   Package,
   LogOut,
-  Filter,
   Mic,
   House,
   Tag,
@@ -63,17 +62,6 @@ const CLOSED_ORDER_STATUSES = [
   "RELEASED_TO_VENDOR",
   "CANCELLED",
   "REFUNDED",
-];
-
-/* Valeurs métier envoyées telles quelles en `category_label` — pas de traduction
-   ici, ce sont des filtres comparés côté recherche, pas de la copie d'interface. */
-const SEARCH_FILTER_CATEGORIES = [
-  "Accessoires",
-  "Alimentation",
-  "Chaussures",
-  "Sport",
-  "Vêtements",
-  "Électronique",
 ];
 
 const LAST_SEARCH_STORAGE_KEY = "belivay_last_search";
@@ -139,17 +127,14 @@ export default function Header() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [notifCount, setNotifCount] = useState(() => {
     const stored = localStorage.getItem("belivay_notif_count");
-    return stored ? parseInt(stored, 10) : 1;
+    return stored ? parseInt(stored, 10) : 0;
   });
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [walletBalance, setWalletBalance] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [lastSyncedSearch, setLastSyncedSearch] = useState<string | null>(null);
-  const [searchFilterOpen, setSearchFilterOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
-  const desktopSearchRef = useRef<HTMLDivElement>(null);
-  const mobileSearchRef = useRef<HTMLDivElement>(null);
 
   const totalItems = items.reduce(
     (sum: number, item: { quantity: number }) => sum + item.quantity,
@@ -255,34 +240,35 @@ export default function Header() {
     setSearchQuery(composeSearchValue(category, details));
   }
 
+  // Nombre de notifications non lues : lu depuis la vraie liste du compte au
+  // lieu d'un compteur local incrémenté à l'aveugle, qui pouvait rester
+  // bloqué à sa valeur par défaut (pastille "1" sur la cloche) alors que la
+  // page /notifications affichait "aucune notification".
   useEffect(() => {
-    const handleOutsideSearch = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const clickedDesktop = desktopSearchRef.current?.contains(target);
-      const clickedMobile = mobileSearchRef.current?.contains(target);
-      if (!clickedDesktop && !clickedMobile) {
-        setSearchFilterOpen(false);
+    let cancelled = false;
+
+    const syncNotifCount = async () => {
+      if (!hasValidAccessToken()) {
+        setNotifCount(0);
+        return;
+      }
+      try {
+        const data = await customerApi.getNotifications();
+        if (cancelled) return;
+        const unread = data.filter((notification) => !notification.is_read).length;
+        setNotifCount(unread);
+        localStorage.setItem("belivay_notif_count", String(unread));
+      } catch {
+        // la pastille garde sa dernière valeur connue si l'API ne répond pas
       }
     };
 
-    document.addEventListener("mousedown", handleOutsideSearch);
-    return () => document.removeEventListener("mousedown", handleOutsideSearch);
-  }, []);
-
-  // Notification count
-  useEffect(() => {
-    const handleNewNotif = () => {
-      setNotifCount((prev) => {
-        const next = prev + 1;
-        localStorage.setItem("belivay_notif_count", String(next));
-        return next;
-      });
-    };
-
-    window.addEventListener("belivay-new-notification", handleNewNotif);
+    void syncNotifCount();
+    window.addEventListener("belivay-new-notification", syncNotifCount);
 
     return () => {
-      window.removeEventListener("belivay-new-notification", handleNewNotif);
+      cancelled = true;
+      window.removeEventListener("belivay-new-notification", syncNotifCount);
     };
   }, []);
 
@@ -330,12 +316,6 @@ export default function Header() {
       setSearchQuery(composeSearchValue(category, transcript));
     };
     rec.start();
-  };
-
-  const handleCategorySelect = (category: string) => {
-    const { details } = parseSearchValue(searchQuery);
-    setSearchQuery(composeSearchValue(category, details));
-    setSearchFilterOpen(false);
   };
 
   // Palette de la barre de recherche — suit le thème clair/sombre
@@ -475,13 +455,20 @@ export default function Header() {
             <Menu size={24} />
           </button>
 
-          {/* Logo */}
-          <Link to="/" className="flex items-center flex-shrink-0" aria-label={t("header.home_aria")}>
+          {/* Logo + sous-titre de marque */}
+          <Link
+            to="/"
+            className="flex flex-shrink-0 flex-col items-start justify-center leading-none"
+            aria-label={t("header.home_aria")}
+          >
             <img
               src="/belivay-logo.png"
               alt="BelivaY"
               className="h-8 w-auto object-contain max-[380px]:h-7 sm:h-10"
             />
+            <span className="mt-0.5 whitespace-nowrap text-[9px] font-bold uppercase tracking-wide text-gray-400 dark:text-gray-500 max-[380px]:hidden sm:text-[10.5px]">
+              {t("header.tagline")}
+            </span>
           </Link>
 
           {/* Search Bar - Desktop — style v29 */}
@@ -489,7 +476,6 @@ export default function Header() {
             id="search"
             data-tutorial="header-search"
             className="hidden lg:flex flex-1 ml-5 mr-auto items-center"
-            ref={desktopSearchRef}
             style={{ maxWidth: "620px", position: "relative" }}
           >
             <div
@@ -515,34 +501,6 @@ export default function Header() {
                 }
               }}
             >
-              {/* Filter funnel button */}
-              <button
-                type="button"
-                onClick={() => setSearchFilterOpen((open) => !open)}
-                title={t("header.filters")}
-                aria-label={t("header.open_filters")}
-                style={{
-                  padding: "0 12px",
-                  background: searchBarStyles.sideButtonBg,
-                  borderRight: `1.5px solid ${searchBarStyles.border}`,
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  transition: "background 150ms",
-                  color: searchBarStyles.icon,
-                }}
-                onMouseEnter={(e) =>
-                  (e.currentTarget.style.background = searchBarStyles.sideButtonBgHover)
-                }
-                onMouseLeave={(e) =>
-                  (e.currentTarget.style.background = searchBarStyles.sideButtonBg)
-                }
-              >
-                <Filter size={15} strokeWidth={2.5} />
-              </button>
-
               {/* Text input */}
               <input
                 type="text"
@@ -608,33 +566,6 @@ export default function Header() {
                 <Search size={16} color="#fff" strokeWidth={2.5} />
               </button>
             </div>
-
-            {searchFilterOpen && (
-              <div className="absolute left-0 right-0 top-[calc(100%+7px)] z-50 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
-                <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                  {t("header_nav.categories")}
-                </div>
-                <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                  {SEARCH_FILTER_CATEGORIES.map((category) => {
-                    const isActive = parseSearchValue(searchQuery).category === category;
-                    return (
-                      <button
-                        key={category}
-                        type="button"
-                        onClick={() => handleCategorySelect(category)}
-                        className={`rounded-xl px-3 py-3 text-left text-[12px] font-bold transition-all ${
-                          isActive
-                            ? "bg-orange-50 text-primary"
-                            : "text-gray-700 hover:bg-gray-50 hover:text-primary"
-                        }`}
-                      >
-                        {category}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Actions */}
@@ -910,7 +841,7 @@ export default function Header() {
         </div>
 
         {/* Search Bar - Mobile — style v29 */}
-        <div id="search-mobile" className="lg:hidden pb-3 w-full" ref={mobileSearchRef}>
+        <div id="search-mobile" className="lg:hidden pb-3 w-full">
           <div
             className="flex w-full"
             style={{
@@ -921,23 +852,6 @@ export default function Header() {
               background: searchBarStyles.background,
             }}
           >
-            <button
-              type="button"
-              onClick={() => setSearchFilterOpen((open) => !open)}
-              style={{
-                width: "42px",
-                background: searchBarStyles.sideButtonBg,
-                borderRight: `1.5px solid ${searchBarStyles.border}`,
-                flexShrink: 0,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: searchBarStyles.icon,
-                cursor: "pointer",
-              }}
-            >
-              <Filter size={15} strokeWidth={2.5} />
-            </button>
             <input
               type="text"
               value={searchQuery}
@@ -971,32 +885,6 @@ export default function Header() {
               <Search size={15} color="#fff" strokeWidth={2.5} />
             </button>
           </div>
-          {searchFilterOpen && (
-            <div className="mt-2 overflow-hidden rounded-[14px] border border-gray-200 bg-white shadow-[0_16px_48px_rgba(9,14,26,.12)]">
-              <div className="px-4 py-3 text-[10px] font-extrabold uppercase tracking-[0.14em] text-gray-400">
-                {t("header_nav.categories")}
-              </div>
-              <div className="grid grid-cols-2 gap-1 px-2 pb-2">
-                {SEARCH_FILTER_CATEGORIES.map((category) => {
-                  const isActive = parseSearchValue(searchQuery).category === category;
-                  return (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => handleCategorySelect(category)}
-                      className={`rounded-xl px-3 py-3 text-left text-[12px] font-bold transition-all ${
-                        isActive
-                          ? "bg-orange-50 text-primary"
-                          : "text-gray-700 hover:bg-gray-50 hover:text-primary"
-                      }`}
-                    >
-                      {category}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
         </div>
 
         <nav className="scrollbar-hide hidden items-center gap-0.5 overflow-x-auto border-t border-gray-100 py-3 md:flex lg:gap-1 dark:border-gray-800">

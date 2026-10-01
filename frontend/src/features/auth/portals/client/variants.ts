@@ -22,6 +22,8 @@ const base = {
     subtitleKey: 'cl6_login_client.base_card_subtitle',
     registerPath: '/register',
     registerLabelKey: 'cl6_login_client.base_card_register_label',
+    // Maquette Connexion.jpg : Google en avant, e-mail/mot de passe en repli.
+    socialFirst: true,
   },
 } as const;
 

@@ -10,6 +10,7 @@ export default {
     hide_password: 'Masquer le mot de passe',
     remember_me: 'Se souvenir de moi',
     or_continue_with: 'ou continuer avec',
+    or_with_email: 'ou avec e-mail et mot de passe',
     no_account_yet: "Vous n'avez pas de compte ?",
     two_factor_title: 'Vérification en deux étapes',
     two_factor_subtitle: 'Ce compte a la double authentification activée',

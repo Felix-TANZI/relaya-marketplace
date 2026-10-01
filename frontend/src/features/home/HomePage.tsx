@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import PromoCarousel from "@/components/PromoCarousel";
@@ -32,6 +32,7 @@ import {
 import useSidebarTrack from "@/hooks/useSidebarTrack";
 import FeaturedProductsRotation from "@/components/home/FeaturedProductsRotation";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
+import PullToRefresh from "@/components/common/PullToRefresh";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
 
@@ -55,30 +56,26 @@ export default function HomePage() {
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [usingMockProducts, setUsingMockProducts] = useState(true);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    productsApi
-      .list({ page_size: 100, is_active: true })
-      .then((response) => {
-        if (cancelled) return;
-        const results = response.results ?? [];
-        if (results.length > 0) {
-          setApiProducts(results);
-          setUsingMockProducts(results.length < 20);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setApiProducts([]);
-          setUsingMockProducts(true);
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
+  // Extrait en fonction réutilisable : anim_05 (tirer pour actualiser) rejoue
+  // exactement ce même chargement au relâchement du geste, au lieu d'un
+  // rechargement complet de la page.
+  const fetchProducts = useCallback(async () => {
+    try {
+      const response = await productsApi.list({ page_size: 100, is_active: true });
+      const results = response.results ?? [];
+      if (results.length > 0) {
+        setApiProducts(results);
+        setUsingMockProducts(results.length < 20);
+      }
+    } catch {
+      setApiProducts([]);
+      setUsingMockProducts(true);
+    }
   }, []);
+
+  useEffect(() => {
+    void fetchProducts();
+  }, [fetchProducts]);
 
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
 
@@ -258,6 +255,7 @@ export default function HomePage() {
   }, [sourceProducts, usingMockProducts]);
 
   return (
+    <PullToRefresh onRefresh={fetchProducts}>
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
       <div className="mx-auto max-w-[1760px] px-1 pb-12 pt-0 sm:px-2 sm:pt-3 lg:px-3">
         <div className="flex items-stretch gap-1.5 xl:gap-2">
@@ -325,10 +323,9 @@ export default function HomePage() {
               </div>
 
               {/* Stats — icône puis information, sur une seule ligne à toutes les tailles. */}
-              <div className="hidden grid-cols-2 gap-2 bg-white px-3 py-2 sm:px-4 md:grid md:grid-cols-4 dark:bg-gray-900">
+              <div className="hidden grid-cols-2 gap-2 bg-white px-3 py-2 sm:px-4 md:grid md:grid-cols-3 dark:bg-gray-900">
                 {[
                   { icon: ShoppingCart, num: "15 240", labelKey: "home.stat_products", tint: "#fff1e5", color: "#F47920" },
-                  { icon: ShieldCheck, num: "3 200", labelKey: "home.stat_certified_vendors", tint: "#e7f8ee", color: "#059669" },
                   { icon: Star, num: "4.8 / 5", labelKey: "home.stat_avg_rating", tint: "#fff4d9", color: "#F59E0B" },
                   { icon: Truck, num: "24–72h", labelKey: "home.stat_delivery", tint: "#fff1e5", color: "#F47920" },
                 ].map((item) => {
@@ -618,5 +615,6 @@ export default function HomePage() {
         </div>
       </div>
     </div>
+    </PullToRefresh>
   );
 }

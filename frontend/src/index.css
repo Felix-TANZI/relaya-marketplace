@@ -357,3 +357,125 @@
   .animate-sheet-up,
   .animate-fade-in { animation-duration: .01ms; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ANIMATIONS SIGNATURE — voir 05_Propositions_animations/Ile_BelivaY_propositions_animees.html
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* anim_01 — Produit qui vole vers le panier : clone flottant créé en JS
+   (voir src/lib/flyToCart.ts), animé via la Web Animations API. Ces classes
+   ne gèrent que l'apparence du clone et le rebond du badge panier à l'arrivée. */
+.belivay-fly-clone {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  border-radius: 14px;
+  object-fit: cover;
+  box-shadow: 0 10px 30px rgba(244, 97, 15, .35);
+  will-change: transform, opacity;
+}
+
+@keyframes belivay-cart-bump {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.45); }
+  60% { transform: scale(.88); }
+  100% { transform: scale(1); }
+}
+.belivay-cart-bump {
+  display: inline-flex;
+  animation: belivay-cart-bump .5s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .belivay-fly-clone { display: none; }
+  .belivay-cart-bump { animation-duration: .01ms; }
+}
+
+/* anim_04 — Paiement accepté : éclats orange/or autour de la coche. Les
+   positions (--tx/--ty) sont calculées en JS par ConfettiBurst.tsx. */
+.belivay-confetti-burst {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  overflow: visible;
+}
+.belivay-confetti-particle {
+  position: absolute;
+  border-radius: 2px;
+  animation: belivay-confetti-fly .9s cubic-bezier(.22, .61, .36, 1) both;
+}
+@keyframes belivay-confetti-fly {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) rotate(220deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .belivay-confetti-particle { display: none; }
+}
+
+/* anim_05 — Tirer pour actualiser (accueil) : chariot BelivaY qui roule
+   pendant le tiré, voir src/components/common/PullToRefresh.tsx. */
+@keyframes belivay-pull-wheel {
+  to { transform: rotate(360deg); }
+}
+.belivay-pull-icon {
+  display: inline-flex;
+  transition: transform .15s ease-out;
+}
+.belivay-pull-icon.is-refreshing {
+  animation: belivay-pull-wheel .7s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .belivay-pull-icon.is-refreshing { animation-duration: 1.4s; }
+}
+
+/* anim_06 — Écran de lancement : logo BelivaY en fade + léger scale au lieu
+   d'un spinner générique (voir src/components/PageLoader.tsx). */
+@keyframes belivay-splash-in {
+  0% { opacity: 0; transform: scale(.82); }
+  60% { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.belivay-splash-logo {
+  animation: belivay-splash-in .55s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+@keyframes belivay-splash-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+.belivay-splash-bar-fill {
+  animation: belivay-splash-bar 1.1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .belivay-splash-logo { animation-duration: .01ms; }
+  .belivay-splash-bar-fill { animation-duration: .01ms; }
+}
+
+/* anim_08 — Carte Premium qui brille : reflet diagonal en boucle, CSS pur,
+   purement visuel (voir src/features/premium/PremiumPage.tsx). */
+@keyframes belivay-premium-sheen {
+  0% { transform: translateX(-130%) skewX(-18deg); }
+  100% { transform: translateX(230%) skewX(-18deg); }
+}
+.belivay-premium-sheen {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.belivay-premium-sheen::after {
+  content: "";
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: 0;
+  width: 38%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55) 45%, rgba(255, 255, 255, .15) 60%, transparent);
+  animation: belivay-premium-sheen 3.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .belivay-premium-sheen::after { animation: none; display: none; }
+}

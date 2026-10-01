@@ -226,6 +226,86 @@ class ShipmentTrackingTests(APITestCase):
         self.assertEqual(parcel.picked_up_by_name, "Jean Kamga")
         self.assertEqual(parcel.picked_up_by_id_reference, "CNI 1234567890")
 
+    def test_pickup_without_inspection_keeps_the_return_window_open(self):
+        """Une remise simple ne doit rien liberer : le client garde ses 7 jours."""
+        RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.STORED,
+            pickup_code="NOINSP",
+        )
+
+        serializer = RelayParcelPickupSerializer(
+            data={"pickup_code": "NOINSP"},
+            context={"relay_point": self.relay_point, "user": self.relay_user},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        self.order.refresh_from_db()
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.DELIVERED)
+        self.assertIsNone(self.shipment.buyer_confirmed_at)
+
+    def test_accepted_inspection_at_the_counter_confirms_receipt_for_the_buyer(self):
+        """
+        Le client a ouvert son colis devant le gerant et l'accepte : sa fenetre
+        de retour se ferme et l'escrow passe en attente de liberation, sans
+        qu'il ait a confirmer une seconde fois depuis son telephone.
+        """
+        RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.STORED,
+            pickup_code="INSP01",
+        )
+
+        serializer = RelayParcelPickupSerializer(
+            data={"pickup_code": "INSP01", "buyer_inspection": "ACCEPTED"},
+            context={"relay_point": self.relay_point, "user": self.relay_user},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        self.order.refresh_from_db()
+        self.shipment.refresh_from_db()
+        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.BUYER_CONFIRMED)
+        self.assertEqual(self.order.escrow_status, Order.EscrowStatus.RELEASE_PENDING)
+        self.assertIsNotNone(self.shipment.buyer_confirmed_at)
+
+        # Tracabilite : un litige ulterieur doit pouvoir dire qui a valide.
+        trace = self.order.history.filter(action__icontains="comptoir").first()
+        self.assertIsNotNone(trace)
+        self.assertEqual(trace.user, self.relay_user)
+
+    def test_counter_acceptance_does_not_release_a_multi_parcel_order_too_early(self):
+        """
+        Commande a deux vendeurs : accepter le colis present au comptoir ne doit
+        pas liberer l'argent du vendeur dont le colis n'est pas encore arrive.
+        """
+        second_shipment = Shipment.objects.create(
+            order=self.order,
+            status=Shipment.Status.OUT_FOR_DELIVERY,
+        )
+        RelayParcel.objects.create(
+            shipment=self.shipment,
+            relay_point=self.relay_point,
+            status=RelayParcel.Status.STORED,
+            pickup_code="MULTI1",
+        )
+
+        serializer = RelayParcelPickupSerializer(
+            data={"pickup_code": "MULTI1", "buyer_inspection": "ACCEPTED"},
+            context={"relay_point": self.relay_point, "user": self.relay_user},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        self.order.refresh_from_db()
+        self.assertEqual(self.order.fulfillment_status, Order.FulfillmentStatus.DELIVERED)
+        self.assertNotEqual(self.order.escrow_status, Order.EscrowStatus.RELEASE_PENDING)
+        self.assertIsNone(second_shipment.buyer_confirmed_at)
+
     def test_relay_refuses_parcel_with_broken_seal_and_logs_evidence(self):
         self.client.force_authenticate(self.relay_user)
 
@@ -831,3 +911,427 @@ class SanctionThrottlingDispatchTests(APITestCase):
         free.save(update_fields=["is_online"])
         courier, issue_code, _ = choose_courier_for_order(order)
         self.assertEqual(courier.id, sanctioned.id)
+
+class RelayPointCollectionScheduleTests(APITestCase):
+    """
+    Les passages annonces au comptoir.
+
+    Ce que ces tests protegent, c'est surtout ce que l'ecran NE doit PAS
+    dire : une tournee qui sert un autre relais, une tournee deja terminee,
+    ou un nombre de colis gonfle par des arrets qui ne concernent pas le
+    gerant. Un chiffre trop haut lui fait liberer de la place pour rien ;
+    un passage fantome lui fait attendre un vehicule qui ne viendra pas.
+    """
+
+    def setUp(self):
+        self.url = reverse("shipping-relay-collections")
+        self.zone = Zone.objects.create(name="Zone Collecte", city="Yaounde", tier=Zone.Tier.STANDARD)
+
+        self.org_user = User.objects.create_user("collecte_org", password="Org2026")
+        self.organization = DeliveryOrganizationProfile.objects.create(
+            user=self.org_user,
+            company_name="Wink Express",
+            phone="+237690200001",
+            city="Yaounde",
+            zones=["Zone Collecte"],
+            status=DeliveryOrganizationProfile.Status.APPROVED,
+        )
+
+        self.relay_user = User.objects.create_user("collecte_relay", password="Relay2026")
+        self.relay_point = RelayPointProfile.objects.create(
+            user=self.relay_user,
+            name="Relais Collecte Mvan",
+            phone="+237690200002",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+
+        self.client_user = User.objects.create_user("collecte_client", password="Client2026")
+
+    def _order(self):
+        return Order.objects.create(
+            user=self.client_user,
+            customer_email="collecte.client@example.com",
+            customer_phone="+237690200003",
+            city="YAOUNDE",
+            address="Mvan, Yaounde",
+            subtotal_xaf=10000,
+            delivery_fee_xaf=1000,
+            total_xaf=11000,
+        )
+
+    def _parcel(self, tournee, relay_point=None, status_=RelayParcel.Status.EXPECTED):
+        shipment = Shipment.objects.create(
+            order=self._order(),
+            status=Shipment.Status.IN_TRANSIT,
+            tournee=tournee,
+        )
+        return RelayParcel.objects.create(
+            shipment=shipment,
+            relay_point=relay_point or self.relay_point,
+            status=status_,
+        )
+
+    # Sentinelle : `None` est une valeur SIGNIFIANTE ici (tournee pas encore
+    # revendiquee), elle ne peut pas servir aussi de « non precise ».
+    _DEFAUT = object()
+
+    def _tournee(self, status_=Tournee.Status.PUBLISHED, organization=_DEFAUT, day_offset=0):
+        return Tournee.objects.create(
+            zone=self.zone,
+            slot_date=timezone.localdate() + timedelta(days=day_offset),
+            period=Tournee.Period.AFTERNOON,
+            status=status_,
+            claimed_by_organization=self.organization if organization is self._DEFAUT else organization,
+        )
+
+    def test_passage_annonce_avec_entreprise_et_creneau(self):
+        tournee = self._tournee()
+        self._parcel(tournee)
+        self._parcel(tournee)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data["passages"]), 1)
+        passage = response.data["passages"][0]
+        self.assertEqual(passage["company"], "Wink Express")
+        self.assertEqual(passage["drop_count"], 2)
+        # Les bornes du creneau, jamais une heure de passage inventee.
+        self.assertEqual(passage["slot_start"], self.zone.afternoon_slot()[0])
+        self.assertEqual(passage["slot_end"], self.zone.afternoon_slot()[1])
+
+    def test_tournee_d_un_autre_relais_invisible(self):
+        autre_user = User.objects.create_user("collecte_autre", password="Relay2026")
+        autre_relais = RelayPointProfile.objects.create(
+            user=autre_user,
+            name="Relais Voisin",
+            phone="+237690200004",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        tournee = self._tournee()
+        self._parcel(tournee, relay_point=autre_relais)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["passages"], [])
+
+    def test_colis_destines_ailleurs_non_comptes(self):
+        """Une tournee desservant deux relais ne gonfle pas le compteur du notre."""
+        autre_user = User.objects.create_user("collecte_autre2", password="Relay2026")
+        autre_relais = RelayPointProfile.objects.create(
+            user=autre_user,
+            name="Relais Voisin 2",
+            phone="+237690200005",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        tournee = self._tournee()
+        self._parcel(tournee)
+        self._parcel(tournee, relay_point=autre_relais)
+        self._parcel(tournee, relay_point=autre_relais)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["passages"][0]["drop_count"], 1)
+
+    def test_tournee_terminee_absente(self):
+        tournee = self._tournee(status_=Tournee.Status.COMPLETED)
+        self._parcel(tournee)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["passages"], [])
+
+    def test_tournee_non_revendiquee_sans_entreprise(self):
+        """Composee mais pas encore prise sur la bourse : on n'invente pas de nom."""
+        tournee = self._tournee(status_=Tournee.Status.COMPOSED, organization=None)
+        self._parcel(tournee)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["passages"][0]["company"], "")
+
+    def test_colis_a_reprendre_comptes_une_seule_fois(self):
+        tournee = self._tournee()
+        self._parcel(tournee)
+        self._parcel(tournee, status_=RelayParcel.Status.RETURN_REQUESTED)
+        self._parcel(tournee, status_=RelayParcel.Status.REFUSED)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["pending_pickup_count"], 2)
+
+    def test_colis_deja_reparti_non_compte(self):
+        tournee = self._tournee()
+        parcel = self._parcel(tournee, status_=RelayParcel.Status.RETURN_REQUESTED)
+        parcel.returned_at = timezone.now()
+        parcel.save(update_fields=["returned_at"])
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.data["pending_pickup_count"], 0)
+
+    def test_passages_ordonnes_du_plus_proche_au_plus_lointain(self):
+        tard = self._tournee(day_offset=3)
+        tot = self._tournee(day_offset=0)
+        self._parcel(tard)
+        self._parcel(tot)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        dates = [p["slot_date"] for p in response.data["passages"]]
+        self.assertEqual(dates, sorted(dates))
+
+    def test_matin_avant_apres_midi_le_meme_jour(self):
+        """
+        Le tri par `period` serait alphabetique : AFTERNOON avant MORNING.
+
+        Le gerant lirait l'apres-midi en premier et preparerait le mauvais
+        passage. Ce test fige l'ordre horaire.
+        """
+        apres_midi = Tournee.objects.create(
+            zone=self.zone,
+            slot_date=timezone.localdate(),
+            period=Tournee.Period.AFTERNOON,
+            status=Tournee.Status.PUBLISHED,
+            claimed_by_organization=self.organization,
+        )
+        matin = Tournee.objects.create(
+            zone=self.zone,
+            slot_date=timezone.localdate(),
+            period=Tournee.Period.MORNING,
+            status=Tournee.Status.PUBLISHED,
+            claimed_by_organization=self.organization,
+        )
+        self._parcel(apres_midi)
+        self._parcel(matin)
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.url)
+
+        periodes = [p["period"] for p in response.data["passages"]]
+        self.assertEqual(periodes, ["MORNING", "AFTERNOON"])
+
+    def test_compte_non_relais_refuse(self):
+        self.client.force_authenticate(self.client_user)
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+class RelayPointReturnDepositTests(APITestCase):
+    """
+    Le depot d'un retour au comptoir.
+
+    Ce que ces tests tiennent, c'est le droit du gerant a REFUSER en
+    connaissance de cause : il doit lire le motif et l'etat du retour avant
+    que le client lache le paquet, et ne jamais pouvoir enregistrer un depot
+    sans les deux photos qui le protegeront a l'inspection.
+    """
+
+    def setUp(self):
+        self.lookup_url = reverse("shipping-relay-return-lookup")
+        self.receive_url = reverse("shipping-relay-return-receive")
+
+        self.relay_user = User.objects.create_user("depot_relay", password="Relay2026")
+        self.relay_point = RelayPointProfile.objects.create(
+            user=self.relay_user,
+            name="Relais Depot Mvan",
+            phone="+237690300001",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        self.client_user = User.objects.create_user("depot_client", password="Client2026")
+        self.vendor_user = User.objects.create_user("depot_vendeur", password="Vendor2026")
+
+        self.order = Order.objects.create(
+            user=self.client_user,
+            customer_email="depot.client@example.com",
+            customer_phone="+237690300002",
+            city="YAOUNDE",
+            address="Mvan, Yaounde",
+            subtotal_xaf=9000,
+            delivery_fee_xaf=1000,
+            total_xaf=10000,
+        )
+        self.shipment = Shipment.objects.create(
+            order=self.order,
+            vendor=self.vendor_user,
+            status=Shipment.Status.DELIVERED,
+            parcel_size="SMALL",
+        )
+
+    def _retour(self, statut=None, mode=None):
+        from apps.catalog.models import Category, Product
+        from apps.orders.models import OrderItem, Return
+        categorie, _ = Category.objects.get_or_create(name="Depot retour", slug="depot-retour")
+        produit, _ = Product.objects.get_or_create(
+            slug="chemise-lin-ecru",
+            defaults={
+                "title": "Chemise lin ecru",
+                "price_xaf": 9000,
+                "category": categorie,
+                "vendor": self.vendor_user,
+            },
+        )
+        item = OrderItem.objects.create(
+            order=self.order,
+            product=produit,
+            title_snapshot=produit.title,
+            price_xaf_snapshot=9000,
+            qty=1,
+            line_total_xaf=9000,
+        )
+        return Return.objects.create(
+            order=self.order,
+            order_item=item,
+            requested_by=self.client_user,
+            vendor=self.vendor_user,
+            reason=Return.Reason.NOT_AS_DESCRIBED,
+            status=statut or Return.Status.APPROVED,
+            transport_mode=mode or Return.TransportMode.RELAY_DROPOFF,
+        )
+
+    def _photo(self, nom):
+        # PNG 1x1 minimal : le validateur de preuve verifie le type reel.
+        contenu = (
+            b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01"
+            b"\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\nIDATx\x9cc\x00\x01"
+            b"\x00\x00\x05\x00\x01\r\n-\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+        )
+        return SimpleUploadedFile(nom, contenu, content_type="image/png")
+
+    # ── Consultation ────────────────────────────────────────────────────────
+
+    def test_lecture_affiche_motif_taille_et_deposabilite(self):
+        retour = self._retour()
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.get(self.lookup_url, {"ref": f"RT-{retour.id}"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["reference"], f"RT-{retour.id}")
+        self.assertEqual(response.data["reason_label"], "Non conforme à la description")
+        self.assertEqual(response.data["parcel_size_label"], "Petit colis")
+        self.assertEqual(response.data["item_name"], "Chemise lin ecru")
+        self.assertTrue(response.data["depositable"])
+
+    def test_reference_lue_sous_toutes_ses_formes(self):
+        retour = self._retour()
+        self.client.force_authenticate(self.relay_user)
+        for saisie in (f"RT-{retour.id}", f"rt {retour.id}", str(retour.id)):
+            response = self.client.get(self.lookup_url, {"ref": saisie})
+            self.assertEqual(response.status_code, status.HTTP_200_OK, saisie)
+
+    def test_retour_rejete_lisible_mais_non_deposable(self):
+        """
+        Le gerant doit pouvoir EXPLIQUER le refus, pas seulement le subir.
+
+        Renvoyer 404 sur un retour rejete laisserait le client croire a une
+        erreur de scan ; on rend donc la fiche, avec `depositable` a faux.
+        """
+        from apps.orders.models import Return
+        retour = self._retour(statut=Return.Status.REJECTED)
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.get(self.lookup_url, {"ref": f"RT-{retour.id}"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertFalse(response.data["depositable"])
+
+    def test_retour_a_ramasser_a_domicile_invisible(self):
+        from apps.orders.models import Return
+        retour = self._retour(mode=Return.TransportMode.COURIER_PICKUP)
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.get(self.lookup_url, {"ref": f"RT-{retour.id}"})
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_retour_oriente_vers_un_autre_relais_signale(self):
+        autre_user = User.objects.create_user("depot_autre", password="Relay2026")
+        autre = RelayPointProfile.objects.create(
+            user=autre_user,
+            name="Relais Nkolbisson",
+            phone="+237690300003",
+            city="Yaounde",
+            status=RelayPointProfile.Status.APPROVED,
+            is_active=True,
+        )
+        retour = self._retour()
+        retour.dropoff_relay_point = autre
+        retour.save(update_fields=["dropoff_relay_point"])
+
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.lookup_url, {"ref": f"RT-{retour.id}"})
+
+        self.assertEqual(response.data["assigned_elsewhere"], "Relais Nkolbisson")
+
+    def test_reference_vide_refusee(self):
+        self.client.force_authenticate(self.relay_user)
+        response = self.client.get(self.lookup_url, {"ref": ""})
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    # ── Depot ───────────────────────────────────────────────────────────────
+
+    def test_depot_sans_photos_refuse(self):
+        from apps.orders.models import Return
+        retour = self._retour()
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(self.receive_url, {"return_id": retour.id}, format="multipart")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        retour.refresh_from_db()
+        self.assertEqual(retour.status, Return.Status.APPROVED)
+
+    def test_depot_avec_une_seule_photo_refuse(self):
+        retour = self._retour()
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(
+            self.receive_url,
+            {"return_id": retour.id, "photos": [self._photo("scelle.png")]},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_depot_complet_enregistre_les_deux_preuves(self):
+        from apps.orders.models import Return
+        retour = self._retour()
+        self.client.force_authenticate(self.relay_user)
+
+        response = self.client.post(
+            self.receive_url,
+            {
+                "return_id": retour.id,
+                "photos": [self._photo("scelle.png"), self._photo("etiquette.png")],
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        retour.refresh_from_db()
+        self.assertEqual(retour.status, Return.Status.RECEIVED)
+        self.assertEqual(retour.dropoff_relay_point_id, self.relay_point.id)
+
+        preuves = ShipmentEvidence.objects.filter(
+            shipment=self.shipment, stage=ShipmentEvidence.Stage.RETURN_DEPOSIT,
+        )
+        self.assertEqual(preuves.count(), 2)
+        # La preuve pointe l'article retourne : sans cela, le dossier de retour
+        # ne sait pas laquelle des photos de la commande le concerne.
+        self.assertTrue(all(p.order_item_id == retour.order_item_id for p in preuves))

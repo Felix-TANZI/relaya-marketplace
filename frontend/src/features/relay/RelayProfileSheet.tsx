@@ -594,7 +594,7 @@ export default function RelayProfileSheet({
       >
         {/* En-tete collant : le titre et la sortie restent atteignables meme au
             bas d'une feuille de quatre cartes. */}
-        <header className="safe-pt sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/90 px-4 py-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
+        <header className="safe-pt-header sticky top-0 z-10 flex items-start justify-between gap-3 border-b border-slate-200 bg-white/90 px-4 pb-3 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/90">
           <div className="min-w-0">
             <h2 className="flex items-center gap-2 text-xl font-black tracking-tight text-slate-950 dark:text-white">
               <Settings2 size={20} strokeWidth={2.4} className="flex-shrink-0 text-blue-700 dark:text-blue-300" />

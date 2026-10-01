@@ -77,6 +77,8 @@ INSTALLED_APPS = [
     "apps.shipping",
     'apps.vendors',
     "apps.contact",
+    # Module détachable : voir apps/whatsapp_assistant/README.md (activation, retrait).
+    "apps.whatsapp_assistant",
 ]
 
 MIDDLEWARE = [

@@ -44,6 +44,8 @@ export type RelayTab =
   | "messagerie"
   | "aide"
   | "parametres"
+  | "etats"
+  | "sortie"
   | "tokens";
 
 export type RelayNavGroup = "pilotage" | "operations" | "qualite" | "gestion" | "risque" | "compte";
@@ -93,5 +95,9 @@ export const RELAY_NAV_ITEMS: RelayNavItem[] = [
   { id: "parametres", icon: Settings2, accent: "from-slate-300 to-slate-500", group: "compte" },
 ];
 
-/** "tokens" reste atteignable par ?tab=tokens mais ne figure plus au menu. */
-export const RELAY_TABS: RelayTab[] = [...RELAY_NAV_ITEMS.map((item) => item.id), "tokens"];
+/**
+ * "tokens" et "etats" restent atteignables par ?tab= mais ne figurent pas au
+ * menu lateral : le premier n'est pas active, le second s'ouvre depuis le
+ * menu telephone.
+ */
+export const RELAY_TABS: RelayTab[] = [...RELAY_NAV_ITEMS.map((item) => item.id), "tokens", "etats", "sortie"];

@@ -22,7 +22,7 @@ import { AdminBadgesContext, useAdminAttentionBadges } from '@/hooks/useAdminAtt
 import {
   LayoutDashboard, Users, Radio, Store, MapPin, FileCheck,
   ArrowDownToLine, CreditCard, Award, FilePenLine, Truck,
-  ShoppingCart, Map, Scale, Package, Tag, Star, BarChart3, RotateCcw,
+  ShoppingCart, Map, Scale, Package, Star, BarChart3, RotateCcw,
   TrendingUp, Zap, Megaphone, Bot, Shield, Bell, HeadphonesIcon,
   ScrollText, Terminal, Settings, Sun, Moon, Menu, X, LogOut,
   ChevronDown, ChevronRight, ExternalLink, DollarSign, Landmark,
@@ -97,11 +97,12 @@ const SECTIONS: NavSection[] = [
   {
     key: 'section_catalog',
     items: [
+     // En tête : les catégories structurent la boutique client et le formulaire vendeur.
+     { key: 'catalog_categories', path: '/admin/catalog/categories', icon: FolderTree },
      { key: 'catalog_variants', path: '/admin/catalog/variants', icon: Layers },
      { key: 'catalog_brands',   path: '/admin/catalog/brands',   icon: Award },
      { key: 'catalog_attributes', path: '/admin/catalog/attributes', icon: Zap },
      { key: 'catalog_colors',     path: '/admin/catalog/colors',     icon: Palette },
-     { key: 'catalog_categories', path: '/admin/catalog/categories', icon: FolderTree },
     ],
  },
   {
@@ -124,7 +125,6 @@ const SECTIONS: NavSection[] = [
       { key: 'returns',    path: '/admin/returns',              icon: RotateCcw, end: true },
       { key: 'supervision', path: '/admin/supervision',         icon: Gauge, end: true },
       { key: 'catalogue',  path: '/admin/catalogue',            icon: Package, end: true },
-      { key: 'categories', path: '/admin/catalogue/categories', icon: Tag },
       { key: 'reviews',    path: '/admin/catalogue/reviews',    icon: Star },
       { key: 'masters', path: '/admin/catalogue/masters', icon: Layers, end: true },
     ],
@@ -187,7 +187,7 @@ const SECTIONS: NavSection[] = [
 ];
 
 const DEFAULT_OPEN = new Set([
-  'section_overview', 'section_clients', 'section_vendors',
+  'section_overview', 'section_clients', 'section_vendors', 'section_catalog',
   'section_operations', 'section_finances', 'section_system',
 ]);
 const LS_KEY = 'belivay_admin_sidebar_open';

@@ -17,9 +17,12 @@ class ProductFilter(django_filters.FilterSet):
     - Filtrage par statut (actif/inactif)
     """
     
-    # Filtre par catégorie (exact match ou slug)
-    category = django_filters.ModelChoiceFilter(queryset=Category.objects.all())
-    category_slug = django_filters.CharFilter(field_name='category__slug', lookup_expr='iexact')
+    # Filtre par catégorie (id ou slug) : une catégorie englobe ses
+    # sous-catégories, à toutes les profondeurs.
+    category = django_filters.ModelChoiceFilter(
+        queryset=Category.objects.all(), method='filter_category_subtree',
+    )
+    category_slug = django_filters.CharFilter(method='filter_category_slug_subtree')
     
     # Filtre par prix (range)
     price_min = django_filters.NumberFilter(field_name='price_xaf', lookup_expr='gte')
@@ -41,6 +44,15 @@ class ProductFilter(django_filters.FilterSet):
             'is_active': ['exact'],
         }
     
+    def filter_category_subtree(self, queryset, name, value):
+        return queryset.filter(category_id__in=value.get_subtree_ids())
+
+    def filter_category_slug_subtree(self, queryset, name, value):
+        category = Category.objects.filter(slug__iexact=value).first()
+        if category is None:
+            return queryset.none()
+        return queryset.filter(category_id__in=category.get_subtree_ids())
+
     def filter_in_stock(self, queryset, name, value):
         """
         Filtre personnalisé pour vérifier si un produit est en stock

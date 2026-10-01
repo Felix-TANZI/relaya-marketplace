@@ -10,6 +10,7 @@ import { ToastProvider }   from './context/ToastContext';
 import { AuthProvider }    from './context/AuthContext';
 import { ConfirmProvider } from './context/ConfirmContext';
 import { requestGeolocation } from './services/geolocation';
+import { Capacitor } from '@capacitor/core';
 import { portalRole } from './config/portals';
 
 requestGeolocation();
@@ -23,6 +24,18 @@ if (portalRole === 'relay_point') {
   document
     .querySelector('meta[name="viewport"]')
     ?.setAttribute('content', 'width=device-width, initial-scale=1.0, viewport-fit=cover');
+}
+
+// Depuis Android 15 (targetSdk >= 35) le plein ecran est IMPOSE : la WebView
+// dessine sous la barre d'etat, qu'on le demande ou non. Les
+// env(safe-area-inset-*) devraient alors valoir la hauteur de cette barre —
+// mais certaines WebView renvoient 0, et l'en-tete vient se coller sous
+// l'heure et la batterie, qui disparaissent sur fond clair.
+//
+// Ce marqueur permet au CSS de reserver une hauteur de barre d'etat par
+// defaut dans ce cas precis, sans toucher au navigateur ou l'inset est juste.
+if (Capacitor.isNativePlatform()) {
+  document.documentElement.dataset.native = '1';
 }
 
 createRoot(document.getElementById('root')!).render(

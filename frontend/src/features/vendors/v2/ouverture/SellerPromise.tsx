@@ -121,10 +121,13 @@ function LanguageButton({ p }: { p: VendorPalette }) {
 export default function SellerPromise({ p }: { p: VendorPalette }) {
   const { t } = useTranslation();
 
+  // Cles i18n (domaine.cle), pas des secrets — Gitleaks (generic-api-key) les
+  // confond avec une cle API a cause de leur entropie ; voir gitleaks:allow
+  // sur chaque ligne ci-dessous.
   const gestures = [
-    { icon: Box, labelKey: 'sl9_ouverture.promise_gesture_prepare' },
-    { icon: PackageCheck, labelKey: 'sl9_ouverture.promise_gesture_deliver' },
-    { icon: Wallet, labelKey: 'sl9_ouverture.promise_gesture_payout' },
+    { icon: Box, labelKey: 'sl9_ouverture.promise_gesture_prepare' }, // gitleaks:allow
+    { icon: PackageCheck, labelKey: 'sl9_ouverture.promise_gesture_deliver' }, // gitleaks:allow
+    { icon: Wallet, labelKey: 'sl9_ouverture.promise_gesture_payout' }, // gitleaks:allow
   ];
 
   return (

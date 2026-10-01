@@ -66,6 +66,7 @@ import { useCart } from "@/context/CartContext";
 import PhoneInput from './PhoneInput';
 import { useTranslation } from "react-i18next";
 import SessionsCard from './SessionsCard';
+import DeleteAccountCard from './DeleteAccountCard';
 import AvatarCropDialog from '@/components/profile/AvatarCropDialog';
 import {
   addSupportMessage,
@@ -1522,6 +1523,7 @@ export default function ProfilePage() {
         <TwoFactorCard />
         <PasswordCard />
         <SessionsCard />
+        <DeleteAccountCard />
       </div>
     </section>
   );

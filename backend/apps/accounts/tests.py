@@ -841,3 +841,96 @@ class AppReleaseEndpointTests(APITestCase):
         response = self.client.get(reverse("app-release-latest"), {"portal": "vendor"})
 
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+
+class AccountDeletionTests(APITestCase):
+    endpoint = "/api/auth/me/"
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            username="client_delete", email="client.delete@example.com",
+            password="Secret-pass-123", first_name="Awa", last_name="Client",
+        )
+        UserProfile.objects.create(user=self.user, phone="+237650000099", bio="bio")
+        self.client.force_authenticate(self.user)
+
+    def test_wrong_password_is_rejected(self):
+        response = self.client.delete(self.endpoint, {"password": "wrong"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_deletion_anonymizes_and_deactivates_but_keeps_orders(self):
+        order = Order.objects.create(
+            user=self.user, customer_email="client.delete@example.com", customer_phone="+237650000099",
+            city="Yaoundé", address="Mvan", fulfillment_status=Order.FulfillmentStatus.BUYER_CONFIRMED,
+            total_xaf=5000,
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+        self.assertEqual(self.user.email, "")
+        self.assertEqual(self.user.first_name, "")
+        self.assertTrue(self.user.username.startswith("deleted_"))
+        self.assertFalse(self.user.has_usable_password())
+        self.assertIsNone(self.user.profile.phone)
+        order.refresh_from_db()
+        self.assertEqual(order.user_id, self.user.id)
+        self.assertIsNone(order.customer_email)
+        self.assertEqual(order.customer_phone, "")
+        self.assertEqual(order.address, "")
+        self.assertEqual(order.total_xaf, 5000)
+
+    def test_deletion_is_blocked_while_an_order_is_in_progress(self):
+        Order.objects.create(
+            user=self.user, customer_phone="+237650000099", city="Yaoundé", address="Mvan",
+            fulfillment_status=Order.FulfillmentStatus.OUT_FOR_DELIVERY, total_xaf=5000,
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.is_active)
+
+    def test_social_account_confirms_without_password(self):
+        self.user.set_unusable_password()
+        self.user.save()
+
+        self.assertEqual(self.client.delete(self.endpoint, {}, format="json").status_code, status.HTTP_400_BAD_REQUEST)
+        response = self.client.delete(self.endpoint, {"confirm": "SUPPRIMER"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.user.refresh_from_db()
+        self.assertFalse(self.user.is_active)
+
+    @override_settings(APPLE_TEAM_ID="TEAM", APPLE_KEY_ID="KEY", APPLE_PRIVATE_KEY="dummy")
+    @patch("apps.accounts.apple.revoke_token")
+    def test_apple_authorization_is_revoked(self, revoke):
+        from . import apple
+        from .models import AppleIdentity
+
+        AppleIdentity.objects.create(
+            user=self.user, subject="apple-sub", client_id="com.belivay.client",
+            refresh_token_encrypted=apple.encrypt_token("apple-refresh"),
+        )
+
+        response = self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        revoke.assert_called_once_with("apple-refresh", "com.belivay.client")
+        self.assertFalse(AppleIdentity.objects.filter(user=self.user).exists())
+
+    def test_deleted_account_can_no_longer_log_in(self):
+        self.client.delete(self.endpoint, {"password": "Secret-pass-123"}, format="json")
+        self.client.force_authenticate(None)
+
+        response = self.client.post(
+            "/api/auth/login/", {"username": "client_delete", "password": "Secret-pass-123"}, format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)

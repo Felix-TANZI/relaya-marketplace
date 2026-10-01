@@ -18,6 +18,15 @@ DEBUG = False
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "*").split(",") if h.strip()]
 
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "").strip()
+# Identifiants OAuth Google supplementaires acceptes (apps natives iOS), separes par des virgules.
+GOOGLE_EXTRA_CLIENT_IDS = [
+    v.strip()
+    for v in os.getenv(
+        "GOOGLE_EXTRA_CLIENT_IDS",
+        "582094155516-m8somr2pbk9292ulebgo6338s8a0to0c.apps.googleusercontent.com",
+    ).split(",")
+    if v.strip()
+]
 
 # Traduction automatique de contenu utilisateur (fiches produit, messages,
 # notifications) — voir apps/common/translation.py. Distinct du i18n
@@ -30,6 +39,16 @@ GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
 APPLE_CLIENT_IDS = [
     v.strip() for v in os.getenv("APPLE_CLIENT_IDS", "com.belivay.client").split(",") if v.strip()
 ]
+
+# Clé serveur "Sign in with Apple" (.p8, Apple Developer > Keys) : sert à
+# signer le client_secret pour échanger le code d'autorisation et révoquer
+# l'autorisation Apple à la suppression d'un compte (Guideline 5.1.1(v)).
+# APPLE_PRIVATE_KEY = contenu du .p8 (les "\n" échappés sont acceptés), ou
+# APPLE_PRIVATE_KEY_PATH = chemin vers le fichier.
+APPLE_TEAM_ID = os.getenv("APPLE_TEAM_ID", "").strip()
+APPLE_KEY_ID = os.getenv("APPLE_KEY_ID", "").strip()
+APPLE_PRIVATE_KEY = os.getenv("APPLE_PRIVATE_KEY", "")
+APPLE_PRIVATE_KEY_PATH = os.getenv("APPLE_PRIVATE_KEY_PATH", "").strip()
 
 INSTALLED_APPS = [
     # Django

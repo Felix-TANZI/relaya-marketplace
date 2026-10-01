@@ -20,8 +20,18 @@ echo "🧹 Nettoyage..."
 docker system prune -f
 
 # Rebuild et redémarrer
-echo "🔨 Build des images..."
-$COMPOSE build --no-cache
+# Construites UNE PAR UNE, volontairement — pas toutes en parallèle.
+# `docker compose build` (sans nom de service) lance les 8 images en même
+# temps via buildx bake ; les 6 frontends (tsc + vite build) consomment
+# chacun ~1 Go de RAM simultanément, soit ~6 Go d'un coup sur un serveur
+# qui n'en a que 7,6 au total. C'est ce qui a provoqué les OOM kills du
+# noyau observés le 1er octobre (confirmé dans les logs noyau). Construire
+# en séquence plafonne le pic à une seule image à la fois.
+echo "🔨 Build des images (une par une)..."
+for svc in backend celery-worker frontend-client frontend-seller frontend-courier frontend-admin frontend-relay-point frontend-delivery-org; do
+  echo "  → $svc"
+  $COMPOSE build --no-cache "$svc"
+done
 
 echo "🚀 Démarrage des services..."
 $COMPOSE up -d

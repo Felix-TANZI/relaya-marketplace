@@ -1,0 +1,59 @@
+name: Maintenance Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Action à exécuter"
+        type: choice
+        options:
+          - diagnostic
+          - restart
+        default: diagnostic
+
+jobs:
+  maintenance:
+    name: Maintenance serveur
+    runs-on: ubuntu-latest
+    # Nécessaire pour accéder aux secrets SSH_* (secrets d'environnement,
+    # pas des secrets de dépôt) et pour passer par la même validation
+    # manuelle ("Required reviewers") que le déploiement.
+    environment: "Belivay Prod"
+
+    steps:
+      - name: Exécuter l'action
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ vars.SSH_PORT || 22 }}
+          command_timeout: 10m
+          script: |
+            cd "${{ vars.TARGET_PATH }}"
+            COMPOSE="docker compose -f docker-compose.prod.yml --env-file .env.prod"
+
+            if [ "${{ inputs.action }}" = "restart" ]; then
+              echo "=== Images disponibles ==="
+              docker images | grep belivay || echo "Aucune image belivay"
+              echo "=== Redémarrage sans rebuild ==="
+              $COMPOSE up -d --no-build
+              $COMPOSE ps
+            else
+              echo "=== Mémoire ==="
+              free -h
+              echo "=== Disque ==="
+              df -h /
+              echo "=== Swap ==="
+              swapon --show || echo "Aucun swap"
+              echo "=== CPU ==="
+              nproc
+              echo "=== Containers ==="
+              $COMPOSE ps
+              echo "=== Dernières sauvegardes ==="
+              ls -lh /var/backups/belivay/*.sql.gz 2>/dev/null | tail -3 || echo "Aucune sauvegarde trouvée"
+              echo "=== Traces OOM (dmesg) ==="
+              (sudo -n dmesg -T 2>/dev/null || dmesg -T 2>/dev/null) \
+                | grep -iE "out of memory|killed process" \
+                || echo "Aucune trace trouvée (ou accès refusé)"
+            fi

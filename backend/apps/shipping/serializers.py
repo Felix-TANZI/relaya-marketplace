@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404
 from django.http import Http404
 from apps.orders.models import Dispute, Order
 from apps.accounts.models import CourierProfile, UserNotification
+from apps.common.translation import request_language, translate_text
 from .models import (
     CourierSOSAlert,
     RelayParcel,
@@ -897,6 +898,17 @@ class CourierDisputeSerializer(serializers.ModelSerializer):
 class ShipmentMessageSerializer(serializers.ModelSerializer):
     sender_name = serializers.SerializerMethodField()
 
+    # Traduction a la lecture (demande Felix : acheteur anglophone <->
+    # livreur francophone sur le canal CLIENT). CHOIX DE NOMMAGE : champ
+    # SEPARE `message_translated` plutot que de reecrire `message` en place,
+    # pour ne casser aucun appelant existant du champ original (events,
+    # notifications, autres serializers qui lisent `.message`). Le champ
+    # vaut None si rien n'a ete traduit (lecteur anonyme, langue cible
+    # inconnue, langue cible = langue source, ou echec de l'API — voir
+    # translate_text) : le frontend n'affiche l'etat "(traduit)" que si ce
+    # champ est non vide, et retombe sur `message` sinon.
+    message_translated = serializers.SerializerMethodField()
+
     class Meta:
         model = ShipmentMessage
         fields = [
@@ -906,6 +918,7 @@ class ShipmentMessageSerializer(serializers.ModelSerializer):
             "sender_role",
             "sender_name",
             "message",
+            "message_translated",
             "created_at",
         ]
         read_only_fields = fields
@@ -913,6 +926,47 @@ class ShipmentMessageSerializer(serializers.ModelSerializer):
     def get_sender_name(self, obj):
         full_name = obj.sender.get_full_name().strip()
         return full_name or obj.sender.username
+
+    def _reader_target_language(self, obj):
+        """
+        Langue cible = celle du LECTEUR (destinataire du fil), pas de
+        l'expediteur. Le fil CLIENT n'a que deux parties possibles (voir
+        ClientOrderMessagesView._resolve) : le livreur assigne au colis, ou
+        l'acheteur (toute autre personne authentifiee autorisee a lire ce
+        fil, ex. via CourierShipmentMessageListCreateView qui n'est en
+        pratique accessible qu'au livreur).
+        """
+        request = self.context.get("request")
+        user = getattr(request, "user", None) if request is not None else None
+        if user is None or not getattr(user, "is_authenticated", False):
+            return ""
+
+        shipment = obj.shipment
+        courier = shipment.courier
+        if courier and courier.user_id == user.id:
+            return (courier.preferred_language or "").strip().lower()
+
+        return request_language(request)
+
+    def get_message_translated(self, obj):
+        cible = self._reader_target_language(obj)
+        if not cible:
+            return None
+
+        # Heuristique de langue source : un message ecrit par le livreur est
+        # presume ecrit dans sa langue preferee (persistee) ; un message
+        # ecrit par l'acheteur n'a pas de langue source connue (pas de champ
+        # persiste cote acheteur), on laisse Google Translate la detecter.
+        source = ""
+        if obj.sender_role == ShipmentMessage.SenderRole.COURIER:
+            courier = obj.shipment.courier
+            if courier and courier.preferred_language:
+                source = courier.preferred_language
+
+        traduit = translate_text(obj.message, target_lang=cible, source_lang=source)
+        if not traduit or traduit == obj.message:
+            return None
+        return traduit
 
 
 class ShipmentMessageCreateSerializer(serializers.ModelSerializer):

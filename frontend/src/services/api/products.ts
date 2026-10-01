@@ -231,8 +231,14 @@ export const productsApi = {
     return api.get<MasterListResponse>('/catalog/master-products/', { params: clean });
   },
 
-  getMaster: async (slugOrId: string | number): Promise<MasterFicheDetail> =>
-    api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`),
+  /**
+   * `lang` (optionnel) : langue courante de l'app (i18n.language, ex. "fr"/"en").
+   * Transmise en `?lang=` pour que le backend traduise title/description à la
+   * lecture si elle diffère de la langue d'origine de la fiche. Omise = le
+   * backend retombe sur Accept-Language puis "fr" (voir request_language()).
+   */
+  getMaster: async (slugOrId: string | number, lang?: string): Promise<MasterFicheDetail> =>
+    api.get<MasterFicheDetail>(`/catalog/master-products/${slugOrId}/`, lang ? { params: { lang } } : undefined),
 
   getReviews: async (productId: number): Promise<ProductReview[]> =>
     api.get<ProductReview[]>(`/catalog/products/${productId}/reviews/`),

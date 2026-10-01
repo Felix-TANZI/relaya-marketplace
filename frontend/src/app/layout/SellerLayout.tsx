@@ -6,7 +6,7 @@ import { Suspense, useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, useLocation, Link } from 'react-router-dom';
 import PageLoader from '@/components/PageLoader';
 import {
-  LayoutDashboard, Package, ShoppingBag, DollarSign, Scale,
+  LayoutDashboard, Package, ShoppingBag, Scale,
   FileText, Lock, CircleCheckBig, RotateCcw,
   Plus, TrendingUp, Zap, Store, Award, CreditCard, Wallet,
   Settings, Sun, Moon, Bell, X, Menu,
@@ -16,7 +16,9 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
+import { vendorsV2Api } from '@/services/api/vendorsV2';
 import SellerProfileSheet from '@/features/vendors/SellerProfileSheet';
+import DockNav from '@/features/vendors/v2/DockNav';
 
 // ─── TOKENS ─────────────────────────────────
 const T = {
@@ -237,10 +239,10 @@ export default function SellerLayout() {
   const location               = useLocation();
   const { i18n, t }            = useTranslation();
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [sheetFeedback,    setSheetFeedback]    = useState('');
   const [profile,     setProfile]     = useState<VendorProfile | null>(null);
+  const [dockBadges,  setDockBadges]  = useState<{ toPrepare?: number; frozen?: boolean }>({});
   const prevPath = useRef(location.pathname);
 
   useEffect(() => {
@@ -250,10 +252,31 @@ export default function SellerLayout() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Badges réels du Dock (VD-01 NAV-02) : nombre de commandes à préparer sur
+  // l'onglet Commandes, point rouge sur Argent s'il y a un montant gelé.
+  // Best-effort — une erreur (boutique pas encore approuvée, etc.) laisse
+  // simplement les badges vides plutôt que de casser la mise en page.
+  useEffect(() => {
+    vendorsApi.getOrders()
+      .then((orders) => {
+        const toPrepare = orders.filter((o) =>
+          o.fulfillment_status === 'PAID_IN_ESCROW' ||
+          o.fulfillment_status === 'VENDOR_ACKNOWLEDGED' ||
+          o.fulfillment_status === 'PREPARING'
+        ).length;
+        setDockBadges((prev) => ({ ...prev, toPrepare }));
+      })
+      .catch(() => {});
+    vendorsV2Api.getMoneySummary()
+      .then((summary) => {
+        setDockBadges((prev) => ({ ...prev, frozen: summary.frozen.amount_xaf > 0 }));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (prevPath.current !== location.pathname) {
       prevPath.current = location.pathname;
-      setSidebarOpen(false);
       setProfileSheetOpen(false);
     }
   }, [location.pathname]);
@@ -262,12 +285,22 @@ export default function SellerLayout() {
 
   const nav = buildNav(t);
 
-  const MOBILE_TABS = [
-    { label: t('seller_layout.nav_home'),     path: '/seller/dashboard', icon: LayoutDashboard },
-    { label: t('seller_layout.nav_products'), path: '/seller/products',  icon: Package },
-    { label: t('seller_layout.nav_orders'),   path: '/seller/orders',    icon: ShoppingBag },
-    { label: t('seller_layout.nav_payments'), path: '/seller/payments',  icon: DollarSign },
-  ];
+  // Écrans v2 « racine » (rejoints directement par le Dock ou le burger) :
+  // ils gardent l'en-tête v1 le temps qu'un vrai en-tête NAV-03 existe. Tout
+  // autre écran v2 est un écran « enfant » (VD-01 NAV-04 : flèche retour +
+  // titre, JAMAIS l'en-tête racine en plus) — il fournit déjà sa propre
+  // en-tête ; lui superposer celle de SellerLayout produisait deux barres
+  // empilées (repéré en vérifiant les captures du rapport visuel).
+  const V2_ROOT_PATHS = ['/seller/v2/accueil', '/seller/v2/commandes', '/seller/v2/produits', '/seller/menu'];
+  const isV2 = location.pathname.startsWith('/seller/v2/') || location.pathname === '/seller/menu';
+  const isV2Root = V2_ROOT_PATHS.includes(location.pathname);
+  const showTopbar = !isV2 || isV2Root;
+  const showSidebar = !isV2;
+  const mainClasses = !isV2
+    ? 'lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0'
+    : isV2Root
+      ? 'pt-[62px] pb-[100px]'
+      : 'pt-3 pb-[100px]';
 
   return (
     /* `belivay-portal` : scope typographique des espaces metier.
@@ -275,7 +308,8 @@ export default function SellerLayout() {
        texte au lieu du Syne de `font-display`. */
     <div className="belivay-portal min-h-screen" style={{ background: T.cream }}>
 
-      {/* ═══ TOPBAR ═══ */}
+      {/* ═══ TOPBAR ═══ (masquée sur les écrans v2 « enfants » — voir isV2Root plus haut) */}
+      {showTopbar && (
       <header
         className="fixed top-0 left-0 right-0 z-[900] h-[62px] flex items-center gap-3 px-4"
         style={{
@@ -284,9 +318,14 @@ export default function SellerLayout() {
           boxShadow: '0 1px 0 rgba(0,0,0,0.05)',
         }}
       >
-        {/* Burger mobile */}
-        <button onClick={() => setSidebarOpen(true)}
-          className="lg:hidden w-9 h-9 rounded-xl flex items-center justify-center transition-all"
+        {/* Menu (VD-11 MEN-01) : remplace le tiroir mobile par l'écran Menu
+            en sept groupes — action VD-D12.A01. */}
+        {/* Sur v1, la sidebar bureau couvre déjà l'accès au menu (lg:hidden).
+            Sur v2, il n'y a plus de sidebar du tout : ce bouton reste le seul
+            chemin vers l'écran Menu, y compris sur bureau. */}
+        <button onClick={() => navigate('/seller/menu')}
+          aria-label={t('sl5_fondations.dock_label')}
+          className={`${isV2 ? '' : 'lg:hidden'} w-9 h-9 rounded-xl flex items-center justify-center transition-all`}
           style={{ color: T.muted }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -364,24 +403,18 @@ export default function SellerLayout() {
           </button>
         </div>
       </header>
+      )}
 
-      {/* ═══ SIDEBAR DESKTOP ═══ */}
+      {/* ═══ SIDEBAR DESKTOP ═══ (aucun écran v2 n'en a besoin, le Dock couvre déjà mobile et bureau pour eux) */}
+      {showSidebar && (
       <aside className="hidden lg:flex flex-col fixed top-[62px] left-0 bottom-0 w-[232px] z-[800]"
         style={{ background: T.sidebar }}>
         <SidebarContent shopName={shopName} nav={nav} t={t} />
       </aside>
-
-      {/* ═══ SIDEBAR MOBILE OVERLAY ═══ */}
-      <div onClick={() => setSidebarOpen(false)}
-        className={`lg:hidden fixed inset-0 z-[790] transition-all duration-300 ${sidebarOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
-        style={{ background: 'rgba(28,18,9,0.6)', backdropFilter: 'blur(4px)' }} />
-      <aside className={`lg:hidden fixed top-0 left-0 bottom-0 z-[800] w-[78vw] max-w-[270px] flex flex-col transition-transform duration-300 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
-        style={{ background: T.sidebar }}>
-        <SidebarContent shopName={shopName} nav={nav} t={t} onClose={() => setSidebarOpen(false)} />
-      </aside>
+      )}
 
       {/* ═══ MAIN ═══ */}
-      <main className="lg:ml-[232px] pt-[62px] pb-[64px] lg:pb-0 min-h-screen">
+      <main className={`${mainClasses} min-h-screen`}>
         {/* Gouttiere resserree sur telephone : a 16px de chaque cote plus 20px
             de padding interne, chaque carte perdait un cinquieme de la
             largeur utile en fond creme. */}
@@ -392,40 +425,16 @@ export default function SellerLayout() {
         </div>
       </main>
 
-      {/* ═══ MOBILE BOTTOM NAV ═══
-          Quatre raccourcis du quotidien, sans bouton « Plus » : le reste du
-          menu s'ouvre par l'icone du bandeau, du meme cote que le tiroir. Un
-          second point d'entree en bas dupliquait le geste et volait un
-          cinquieme de la barre aux destinations du quotidien.
-          Fond OPAQUE et `fixed` seul, sans classe CSS maison : une regle
-          personnelle declarant `position` ecraserait l'utilitaire `fixed` de
-          Tailwind (meme specificite, declaree plus loin dans la feuille) et la
-          barre se remettrait a defiler avec la page. */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-[700]"
-        style={{
-          background: T.topbar,
-          borderTop: `1px solid ${T.border}`,
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.06)',
-        }}>
-        <div className="flex items-center h-[56px] px-2">
-          {MOBILE_TABS.map((tab) => {
-            const Icon = tab.icon;
-            const active = location.pathname === tab.path || location.pathname.startsWith(tab.path + '/');
-            return (
-              <NavLink key={tab.path} to={tab.path} className="flex-1 flex flex-col items-center justify-center gap-[3px] py-1 transition active:scale-[.93]">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
-                  style={active ? { background: T.orange, boxShadow: `0 4px 14px rgba(244,121,32,0.45)` } : {}}>
-                  <Icon size={17} style={{ color: active ? '#fff' : T.muted }} />
-                </div>
-                <span className="text-[8.5px] font-semibold" style={{ color: active ? T.orange : T.muted }}>
-                  {tab.label}
-                </span>
-              </NavLink>
-            );
-          })}
+      {/* ═══ DOCK (VD-01 NAV-01) ═══
+          Sur les écrans v2 (racine ou enfant), c'est l'unique navigation —
+          affichée sur toutes les tailles d'écran puisqu'il n'y a plus de
+          sidebar bureau pour eux. Sur les écrans v1, elle reste réservée au
+          mobile (le sidebar bureau existant couvre déjà la navigation). */}
+      {isV2 ? <DockNav badges={dockBadges} /> : (
+        <div className="lg:hidden">
+          <DockNav badges={dockBadges} />
         </div>
-      </nav>
+      )}
 
       {/* Feuille compte : ouverte par l'avatar, elle glisse depuis la droite —
           le tiroir de navigation vient de gauche, les deux gestes restent donc

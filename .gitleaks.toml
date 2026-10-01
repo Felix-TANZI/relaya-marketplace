@@ -1,21 +1,33 @@
 # Configuration Gitleaks du projet.
 #
 # On conserve la totalité des règles par défaut de Gitleaks et on n'ajoute
-# qu'une seule exception : les fichiers de tests du backend.
+# que deux exceptions ciblées : les fichiers de tests du backend, et les
+# clés i18n du frontend.
 #
-# Pourquoi : la règle par défaut « generic-api-key » signale toute affectation
-# du type password="..." dont l'entropie dépasse 3.5. Les suites de tests Django
-# créent leurs utilisateurs avec des mots de passe factices écrits en dur
-# (password="Secret-pass-123", "Courier2026", "Client2026"...). Ce ne sont pas
-# des secrets : ils n'existent que dans une base de test jetable. Sans cette
-# exception, chaque PR touchant un fichier de tests fait échouer le scan et
-# l'alerte devient du bruit que l'on finit par ignorer.
+# Pourquoi (tests) : la règle par défaut « generic-api-key » signale toute
+# affectation du type password="..." dont l'entropie dépasse 3.5. Les suites
+# de tests Django créent leurs utilisateurs avec des mots de passe factices
+# écrits en dur (password="Secret-pass-123", "Courier2026", "Client2026"...).
+# Ce ne sont pas des secrets : ils n'existent que dans une base de test
+# jetable. Sans cette exception, chaque PR touchant un fichier de tests fait
+# échouer le scan et l'alerte devient du bruit que l'on finit par ignorer.
+#
+# Pourquoi (clés i18n) : le frontend associe des libellés à des clés de
+# traduction au format `domaine.sous_cle` (ex. "sl9_ouverture.promise_
+# gesture_prepare", voir frontend/src/i18n/domains/). Cette même règle
+# generic-api-key confond parfois ces chaînes (labelKey: '...', titleKey: '...')
+# avec une clé API à cause de leur entropie (mélange de minuscules, points,
+# underscores). Repéré pour la première fois sur la PR #51 (3 faux positifs
+# dans SellerPromise.tsx, aucun secret réel). L'exception est volontairement
+# étroite : seules des chaînes entièrement en minuscules, de la forme
+# "mot_mot.mot_mot", sont ignorées — un vrai secret (aléatoire, souvent avec
+# majuscules/chiffres mêlés) ne prend pas cette forme.
 
 [extend]
 useDefault = true
 
 [allowlist]
-description = "Identifiants factices des suites de tests backend"
+description = "Identifiants factices des suites de tests backend + clés i18n frontend"
 paths = [
   # backend/apps/<app>/tests.py
   '''(^|/)tests\.py$''',
@@ -23,4 +35,11 @@ paths = [
   '''(^|/)test_[^/]+\.py$''',
   # tout le contenu du répertoire backend/tests/ (fixtures, helpers)
   '''(^|/)tests/.*\.py$''',
+]
+regexes = [
+  # Cle i18n "domaine_optionnellement_numerote.sous_cle" — entierement en
+  # minuscules/chiffres/underscores, un seul point. Ex. "sl9_ouverture.
+  # promise_gesture_prepare". Ne matche jamais un secret reel (majuscules,
+  # base64/hex, pas de point separateur de mots).
+  '''^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$''',
 ]

@@ -254,7 +254,7 @@ function PromoCountdown() {
 }
 
 export default function FicheDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { addItem } = useCart();
@@ -284,7 +284,7 @@ export default function FicheDetailPage() {
     const run = async () => {
       setLoading(true);
       try {
-        const m = await productsApi.getMaster(slug);
+        const m = await productsApi.getMaster(slug, i18n.language);
         if (!cancelled) { setMaster(m); setImgIndex(0); setQty(1); setCondFilter('all'); setImgError(false); }
       } catch {
         if (!cancelled) setMaster(null);
@@ -294,7 +294,7 @@ export default function FicheDetailPage() {
     };
     run();
     return () => { cancelled = true; };
-  }, [slug]);
+  }, [slug, i18n.language]);
 
   /* Historique local : alimente la frame « Recemment consultes » de l'accueil. */
   useEffect(() => {

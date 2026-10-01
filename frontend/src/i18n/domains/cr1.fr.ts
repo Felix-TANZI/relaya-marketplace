@@ -210,6 +210,7 @@ export default {
       message_count: '{{count}} message',
       message_count_plural: '{{count}} messages',
       no_client_message: 'Aucun message client pour cette course.',
+      message_translated_badge: 'traduit',
       reply_client_placeholder: 'Répondre au client...',
       reply_client_aria: 'Répondre au client',
       add_note_title: 'Ajouter une note ou une position',

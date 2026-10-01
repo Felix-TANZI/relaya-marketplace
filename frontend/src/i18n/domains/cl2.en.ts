@@ -138,6 +138,7 @@ export default {
     courier_chat_title: 'Chat with the courier',
     courier_chat_subtitle: 'The courier can reply directly to these messages.',
     courier_chat_empty: 'No messages. Start the conversation with the courier.',
+    courier_chat_translated_badge: 'translated',
     courier_chat_placeholder: 'Your message to the courier...',
     send_to_courier_aria: 'Send to courier',
     item_ref: 'Item #{{id}} · {{qty}} × {{price}} FCFA',

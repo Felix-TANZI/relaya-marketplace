@@ -26,6 +26,20 @@ import sl3Fr from "./domains/sl3.fr";
 import sl3En from "./domains/sl3.en";
 import sl4Fr from "./domains/sl4.fr";
 import sl4En from "./domains/sl4.en";
+import sl5Fr from "./domains/sl5.fr";
+import sl5En from "./domains/sl5.en";
+import sl6Fr from "./domains/sl6.fr";
+import sl6En from "./domains/sl6.en";
+import sl7Fr from "./domains/sl7.fr";
+import sl7En from "./domains/sl7.en";
+import sl8Fr from "./domains/sl8.fr";
+import sl8En from "./domains/sl8.en";
+import sl9Fr from "./domains/sl9.fr";
+import sl9En from "./domains/sl9.en";
+import sl10Fr from "./domains/sl10.fr";
+import sl10En from "./domains/sl10.en";
+import sl11Fr from "./domains/sl11.fr";
+import sl11En from "./domains/sl11.en";
 
 import cr1Fr from "./domains/cr1.fr";
 import cr1En from "./domains/cr1.en";
@@ -74,7 +88,7 @@ const savedLang =
 const mergedFr = {
   ...fr,
   ...cl1Fr, ...cl2Fr, ...cl3Fr, ...cl4Fr, ...cl5Fr, ...cl6Fr, ...cl7Fr,
-  ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr,
+  ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr, ...sl5Fr, ...sl6Fr, ...sl7Fr, ...sl8Fr, ...sl9Fr, ...sl10Fr, ...sl11Fr,
   ...cr1Fr, ...do1Fr,
   ...rl1Fr, ...rl2Fr,
   ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr,
@@ -85,7 +99,7 @@ const mergedFr = {
 const mergedEn = {
   ...en,
   ...cl1En, ...cl2En, ...cl3En, ...cl4En, ...cl5En, ...cl6En, ...cl7En,
-  ...sl1En, ...sl2En, ...sl3En, ...sl4En,
+  ...sl1En, ...sl2En, ...sl3En, ...sl4En, ...sl5En, ...sl6En, ...sl7En, ...sl8En, ...sl9En, ...sl10En, ...sl11En,
   ...cr1En, ...do1En,
   ...rl1En, ...rl2En,
   ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En,

@@ -28,6 +28,11 @@ GOOGLE_EXTRA_CLIENT_IDS = [
     if v.strip()
 ]
 
+# Traduction automatique de contenu utilisateur (fiches produit, messages,
+# notifications) — voir apps/common/translation.py. Distinct du i18n
+# statique frontend, qui ne lit jamais cette cle.
+GOOGLE_TRANSLATE_API_KEY = os.getenv("GOOGLE_TRANSLATE_API_KEY", "").strip()
+
 # Identifiants Apple acceptés dans l'audience ("aud") du jeton "Sign in with
 # Apple" : le Bundle ID de l'app native (flux natif iOS) et/ou le Services ID
 # (flux web), séparés par des virgules si plusieurs.

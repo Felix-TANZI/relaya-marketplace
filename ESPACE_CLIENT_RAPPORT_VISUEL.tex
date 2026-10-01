@@ -1,0 +1,260 @@
+
+\documentclass[11pt]{article}
+\usepackage[french]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{parskip}
+
+\definecolor{belivayorange}{HTML}{F47920}
+\titleformat{\section}{\Large\bfseries\color{belivayorange}}{\thesection}{1em}{}
+\titleformat{\subsection}{\large\bfseries}{}{0em}{}
+\hypersetup{colorlinks=true, linkcolor=belivayorange, urlcolor=belivayorange}
+
+\title{\textbf{\color{belivayorange} BelivaY — Espace client} \\[4pt] \large Rapport final — reconstruction visuelle, corrections et animations}
+\author{Vérification automatisée en 2 rondes — projet lancé en local, captures réelles de l'application}
+\date{1er octobre 2026}
+
+\begin{document}
+\maketitle
+
+\section*{Résumé}
+Cette ronde a aligné l'espace client (acheteur) existant sur la nouvelle spécification développeur, en 2 temps : une vague de construction contre les maquettes de référence, suivie d'un audit indépendant \og impitoyable\fg{} qui a vérifié chaque correction annoncée plutôt que de la croire sur parole — et a trouvé que plusieurs ne l'étaient pas, ou seulement à moitié.
+
+\textbf{Sur les 15 écrans audités, 13 sont aujourd'hui réellement conformes}, 1 n'est que partiellement vérifiable (données de test manquantes, pas un défaut de code), et une poignée d'écarts mineurs restent documentés plutôt que corrigés en douce (voir \og Ce qui reste ouvert\fg{}).
+
+\textbf{L'écart le plus sérieux trouvé par l'audit} : l'écran \og Mon compte\fg{} affichait encore un badge de niveau de confiance (\og Bronze\fg{}) au client, une donnée réservée aux vendeurs par une règle verrouillée du projet — trouvé à 2 endroits, retiré des deux. Le même audit a aussi débusqué un ancien tableau de bord jamais réellement retiré (seulement complété par la nouvelle structure), un doublon de texte fautif sur le bandeau de paiement, et une structure de catégories faussement déclarée \og déjà conforme\fg{} par un agent de construction.
+
+\textbf{3 verdicts \og non corrigé\fg{} de l'audit se sont révélés être des faux négatifs} dus à l'environnement de test (panier de démonstration non vidé, session sans historique de recherche, une seule catégorie en base) plutôt qu'à de vrais défauts — chacun re-testé après correction de l'environnement, pas simplement réfuté sur parole.
+
+\textbf{Animations} : 7 des 9 animations proposées sont maintenant réellement implémentées (contre 1 partielle avant cette ronde), 2 explicitement exclues et justifiées (Wallet verrouillé, île dynamique iPhone hors de portée du frontend web).
+
+
+\section*{Méthodologie}
+\begin{itemize}
+  \item \textbf{Environnement} : backend et frontend client sur des ports alternatifs (8001/5174) isolés du reste de la machine, compte de démonstration \texttt{acheteur\_demo}, 6 commandes réelles couvrant les états utiles.
+  \item \textbf{Déroulé en 2 rondes} : (1) une première vague de 5 agents de construction a reconstruit les écrans pour coller aux maquettes de référence (\texttt{03\_Captures/Fond\_clair}) ; (2) un audit indépendant, mené par 3 agents n'ayant jamais participé à la construction, a comparé des captures fraîches aux maquettes de façon \og impitoyable\fg{} pour vérifier si les corrections annoncées étaient réelles. Cet audit a trouvé plusieurs affirmations fausses ou incomplètes (voir ci-dessous) ; une seconde vague de corrections ciblées a suivi, puis une vérification finale.
+  \item \textbf{Faux négatifs identifiés et corrigés pendant l'audit lui-même} : 3 \og non corrigé\fg{} se sont révélés être des artefacts de l'environnement de test plutôt que de vrais défauts — un article de test oublié dans le panier serveur (empêchant de voir le header minimal du panier vide), une session de navigateur neuve sans historique de recherche préalable (empêchant de voir la section \og Tes recherches\fg{} pourtant fonctionnelle), et une seule catégorie de test en base (rendant une structure maître-détail déjà construite invisible à l'œil). Chaque cas a été re-testé après correction de l'environnement, pas seulement supposé correct.
+  \item \textbf{Vrais écarts confirmés et corrigés} : écran \og Mon compte\fg{} non réellement restructuré (ancien tableau de bord laissé à côté du nouveau), badge de niveau de confiance visible au client à 2 endroits, doublon de texte sur le bandeau de paiement, bouton de contact livreur affiché sans livreur assigné, chiffre de vendeurs non réellement retiré, sous-titre de suivi obsolète sur une commande livrée.
+  \item \textbf{Un point vérifié et écarté} : une \og deuxième barre de navigation\fg{} visible au milieu du défilement sur les captures a été formellement prouvée être un artefact de capture \og pleine page\fg{} (un seul élément trouvé dans le DOM à toute position de défilement), pas un doublon réel — documenté avec preuve plutôt que supposé dans un sens ou l'autre.
+  \item \textbf{Capture} : Chrome headless piloté par Puppeteer, viewport 400$\times$900 à $\times$2, jeton JWT réel injecté avant chargement de page.
+\end{itemize}
+\newpage
+\section{Fondations et accueil (CL-01, CL-04)}
+\clearpage
+\subsection*{Accueil}
+\noindent\textit{CL-01 / CL-04} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/01-accueil.png}
+\end{center}
+
+Structure globale conforme à la maquette : en-tête avec sous-titre \og Tout près de toi\fg{}, badges réels, carrousel, grille régulière à 3 colonnes sans rupture de rythme. \textbf{Corrigés dans cette ronde} : bouton robot flottant supprimé (CCH-38), filtre entonnoir déplacé après recherche (CRE-37), bandeau \og Programme Fidélité\fg{} retiré, compte à rebours artificiel du bloc Flash Deals retiré, et le chiffre \og 3\,200 vendeurs\fg{} supprimé à ses 2 emplacements (y compris une occurrence desktop invisible en mobile, trouvée en cours de correction) — c'était une donnée statique de configuration, jamais un comptage réel (CCH-41).
+\bigskip\bigskip
+
+\newpage
+\section{Catégories (CL-04)}
+\clearpage
+\subsection*{Catégories}
+\noindent\textit{CL-04} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/02-categories.png}
+\end{center}
+
+\textbf{Correction en 2 temps} : un premier agent avait affirmé à tort que la structure maître-détail (rail de catégories + panneau de détail) existait déjà et était conforme — un audit indépendant a prouvé le contraire par capture d'écran. Un second passage a révélé que le mécanisme existait réellement dans le code, mais qu'avec une seule catégorie de test (\og Divers\fg{}) en base, il produisait visuellement l'apparence d'un simple écran plat sans hiérarchie. Correctifs réels : sous-catégories affichées en grille de tuiles (au lieu d'une liste de lignes) et jeu de données de test enrichi (Électronique, Mode \& Vêtements, Maison \& Bureau, Sport \& Loisirs, en plus de Divers) dans l'environnement de test uniquement, pour permettre une vérification visuelle honnête. Vérifié aux deux largeurs (mobile et desktop) : changer de catégorie change bien la bannière et la grille de sous-catégories. Bloc \og À découvrir\fg{} (Flash Deals/Promotions/Sélection Premium/Premium) conforme.
+\bigskip\bigskip
+
+\newpage
+\section{Recherche (CL-05)}
+\clearpage
+\subsection*{Recherche — avant saisie}
+\noindent\textit{CL-05} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/03-recherche-avant-saisie.png}
+\end{center}
+
+Mode plein écran dédié (sans en-tête ni barre de recherche du site), filtre entonnoir absent avant toute recherche. \textbf{Faux négatif corrigé} : un audit avait jugé l'historique de recherche \og non implémenté, écran sous-construit\fg{} — en réalité le code est complet (persistance réelle en \texttt{localStorage}, suppression individuelle, \og Effacer\fg{}) mais ne s'affiche, à juste titre, que si l'utilisateur a déjà cherché quelque chose. La capture précédente venait d'une session de test fraîche sans historique. Vérifié en effectuant deux recherches réelles puis en revenant sur cet écran : la section \og Tes recherches\fg{} apparaît bien avec les deux entrées.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Recherche — résultats}
+\noindent\textit{CL-05} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/04-recherche-resultats.png}
+\end{center}
+
+Liste à 1 colonne conforme à la maquette, bouton robot disparu, promotion réelle affichée. Note \og 0.0 (0)\fg{} honnête faute d'avis réels.
+\bigskip\bigskip
+
+\newpage
+\section{Panier (CL-07)}
+\clearpage
+\subsection*{Panier — état vide}
+\noindent\textit{CL-07} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/05-panier.png}
+\end{center}
+
+\textbf{Faux négatif corrigé} : un audit avait jugé le header \og non corrigé\fg{} (header complet du site toujours visible) — en réalité la capture testée contenait un article resté dans le panier serveur de démonstration depuis un test antérieur (fonctionnalité \og Racheter\fg{}), ce qui empêchait d'atteindre le vrai état vide. Une fois le panier réellement vidé, le header minimal dédié (flèche retour + \og Mon panier\fg{} + bandeau \og Paiement sécurisé\fg{}) s'affiche correctement, sans le header complet du site. Montant du paiement recalculé côté serveur (\texttt{order.total\_xaf}), fausse \og Économie estimée\fg{} retirée.
+\bigskip\bigskip
+
+\newpage
+\section{Commandes et suivi (CL-09)}
+\clearpage
+\subsection*{Mes commandes}
+\noindent\textit{CL-09} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/06-mes-commandes.png}
+\end{center}
+
+Toggle à 2 niveaux \og En cours\fg{}/\og Terminées\fg{} avec sous-filtres contextuels (Toutes/À retirer/En route/En litige), remplaçant l'ancienne rangée de 6 pastilles explicitement dépréciée par la spec. CTA contextuels (\og Mon code\fg{}, \og Suivre mon litige\fg{}, \og Reprendre le paiement\fg{}) ajoutés pour la plupart des statuts. Bandeau de réservation non payée reformulé sans le mot \og commande\fg{}. Référence de règle corrigée : \og CPY-21\fg{}, qui n'existe dans aucun document source, remplacée par la vraie référence CMC-10/13. \textbf{Écart mineur restant} : pour le statut \og Payé / en préparation\fg{}, le bouton reste \og Détails\fg{} générique plutôt qu'un CTA de suivi dédié — non bloquant.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Détail commande — paiement sous séquestre}
+\noindent\textit{CL-09} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/07-commande-en-escrow.png}
+\end{center}
+
+Carte GPS interactive remplacée par un stepper horizontal à 4 icônes (Boutique/Emballé scellé/En route/Livré), conforme à CMC-49 (plus de position livreur en direct). Chronologie datée avec événement réel (\og Commande payée\fg{}). Libellés du cycle de paiement corrigés (\og Commande payée\fg{} / \og Argent bloqué chez BelivaY\fg{} / \og Vendeur payé\fg{}). \textbf{2 vrais doublons de texte trouvés et nettoyés en 2 temps} : la liste d'étapes fautive de l'ancien composant (\og Paiement initié\fg{}/\og Fonds sous séquestre\fg{}/\og Libération au vendeur\fg{}) retirée, puis une phrase résiduelle du bandeau héros (\og Libération au vendeur dès que vous confirmez la réception\fg{}) repérée séparément et reformulée. Numéro de téléphone désormais masqué (\texttt{+237 6 •• •• XX XX}, CDA-04).
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Détail commande — prête au retrait}
+\noindent\textit{CL-09} — \textbf{Partiellement vérifiable}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/08-commande-prete-retrait.png}
+\end{center}
+
+Le composant d'écran de code de retrait avec QR code existe dans le code (gating sur \texttt{relay\_parcel.pickup\_code}), mais \textbf{aucune des 5 commandes de démonstration n'a de vrai enregistrement de colis-relais en base de test} — impossible à ce stade de vérifier visuellement son rendu avec de vraies données. Ce n'est pas un défaut de l'implémentation mais un trou dans les données de test, à combler avant la prochaine vérification visuelle. Code de retrait masqué par défaut (corrigé lors d'une ronde précédente) ; téléphone masqué.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Détail commande — confirmée, en livraison}
+\noindent\textit{CL-09} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/09-commande-confirmee.png}
+\end{center}
+
+Carte livreur nommée (prénom seul, \og en attente d'assignation\fg{} si aucun livreur réel) sans numéro affiché. \textbf{Corrigé} : le bouton \og Contacter le livreur\fg{} s'affichait même sans livreur assigné — rendu conditionnel. \textbf{Corrigé} : le sous-titre affichait encore \og en cours de livraison\fg{} même une fois la commande livrée — condition ajoutée. Horaires fabriqués toujours absents (corrigé lors d'une ronde précédente). Téléphone masqué.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Détail commande — litige en cours}
+\noindent\textit{CL-09 / CL-11} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/10-commande-litige.png}
+\end{center}
+
+Chronologie datée et carte de preuve ajoutées au-dessus du fil de médiation existant (conservé). Libellés spécifiques au litige corrects (\og Argent bloqué pendant le litige\fg{} / \og Décision\fg{}). Règles CLT-38/CLT-55 (décision humaine, jamais d'arbitrage automatique) vérifiées exactes. Carte GPS également retirée ici (une commande en litige a son colis immobile, elle ne devrait de toute façon jamais afficher un suivi \og en cours de livraison\fg{}). Téléphone masqué.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Détail commande — livrée}
+\noindent\textit{CL-09} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/11-commande-livree.png}
+\end{center}
+
+Bouton \og Racheter\fg{} ajouté et fonctionnel (vérifié de bout en bout par un agent : ajout panier réel, vérification de stock, toast de confirmation). Sous-titre de suivi corrigé pour refléter l'état livré. Chronologie entièrement verte.
+\bigskip\bigskip
+
+\newpage
+\section{Notifications (CL-10)}
+\clearpage
+\subsection*{Centre de notifications}
+\noindent\textit{CL-10} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/12-notifications.png}
+\end{center}
+
+État vide avec icône cloche illustrée, bouton \og Découvrir les produits\fg{}, lien \og Régler mes notifications\fg{}. \textbf{2 vrais bogues corrigés lors d'une ronde précédente} : fuite du code de retrait dans une notification, notification envoyée avant confirmation de paiement. \textbf{Corrigé dans cette ronde} : le badge de la cloche affichait \og 1\fg{} alors que la liste était vide (valeur \og 1\fg{} codée en dur au lieu d'un vrai comptage) — remplacé par un calcul réel des non-lus. Barème de frais de garde (forfait plat 200\,F/jour) toujours différent du barème par paliers de la nouvelle spec CL-09/CL-10 — écart documenté, non tranché (l'Addendum Décisions v1.0, plus récent, pourrait déjà anticiper ce forfait plat ; à clarifier avec le CEO plutôt qu'à corriger unilatéralement).
+\bigskip\bigskip
+
+\newpage
+\section{Compte (CL-13)}
+\clearpage
+\subsection*{Mon compte}
+\noindent\textit{CL-13} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/13-profil.png}
+\end{center}
+
+\textbf{Corrigé en 2 temps, c'était l'écart le plus sérieux de tout l'audit} : un premier passage avait ajouté la liste de réglages par sections (MES ACHATS, MES SERVICES BELIVAY, MON COMPTE ET SÉCURITÉ, PRÉFÉRENCES, AIDE) sans retirer l'ancien tableau de bord (bannière, 4 tuiles stats, stepper, commandes récentes) — les deux coexistaient. Un audit indépendant l'a détecté ; la correction a retiré l'ancien bloc en entier, ne laissant qu'un bandeau d'identité discret suivi de la liste de réglages, conforme à la maquette. \textbf{Violation de règle métier corrigée, 2 emplacements} : un badge \og Bronze\fg{} / barre de progression \og vers Argent\fg{} était visible au client (les paliers de confiance sont réservés aux vendeurs, jamais au client) — trouvé et retiré sur le tableau de bord ET dans le sous-panneau \og Profil\fg{} (second emplacement non détecté par l'audit initial). Wallet/Fidélité/Parrainage traités en tuiles verrouillées \og Bientôt disponible\fg{} plutôt que supprimés ou pleinement actifs (choix à valider par le CEO). \textbf{Artefact de capture clarifié, pas un bug} : la \og deuxième barre\fg{} visible au milieu du défilement sur les captures est confirmée, preuve DOM à l'appui (requête \texttt{querySelectorAll} répétée à 10-15 positions de défilement, un seul élément trouvé à chaque fois), être un artefact connu des outils de capture \og pleine page\fg{} figeant les éléments \texttt{position: fixed} à leur décalage d'écran du moment — pas un doublon réel dans l'application. \textbf{Point non résolu, signalé pour une décision produit séparée} : un panneau dédié \og Programme de fidélité\fg{}, verrouillé \og Bientôt disponible\fg{} et donc non accessible en usage normal, réutilise encore en interne le même modèle de palier Bronze/Argent/Or/Platine que le vendeur — à traiter si ce panneau est un jour déverrouillé.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Favoris / Sauvegardés}
+\noindent\textit{CL-01 / CL-07 / CL-14} — \textbf{Conforme}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/14-sauvegardes.png}
+\end{center}
+
+Un seul bouton CTA (au lieu de deux), contrôles d'en-tête masqués à l'état vide, onglet de la barre du bas renommé \og Sauvegardés\fg{}. \textbf{Corrigé} : le titre de la page disait encore \og Mes favoris\fg{}, non harmonisé avec le reste de l'interface — renommé \og Sauvegardés\fg{} (FR et EN). Fonctionnalité laissée active sur consigne du CEO malgré son statut \og post-lancement\fg{} dans la nouvelle spec (FF-LISTE-ENVIES) — décision toujours en attente, non changée.
+\bigskip\bigskip
+
+\clearpage
+\subsection*{Connexion}
+\noindent\textit{CL-03} — \textbf{Conforme, écart mineur}\bigskip
+
+\begin{center}
+\includegraphics[width=0.42\textwidth]{/home/jacquy-ngonga4/Bureau/relaya-marketplace/scripts/assets/captures-par-date/01-10-2026/espace-client-final/15-connexion.png}
+\end{center}
+
+Chrome global (header, footer, barre du bas, bouton flottant) désormais masqué sur les pages d'authentification pour tous les portails, pas seulement les portails dédiés — corrige le vrai bogue de chevauchement trouvé précédemment (bouton flottant et barre du bas qui recouvraient le formulaire), vérifié sur toute la hauteur de l'écran. \og Continuer avec Google\fg{} mis en avant avant le formulaire e-mail/mot de passe, en-tête réduit à une simple flèche retour. \textbf{Écart mineur non corrigé} : le bouton Facebook s'affiche comme un petit carré icône seule, mal dimensionné par rapport au bouton Google pleine largeur juste au-dessus — rendu à finir.
+\bigskip\bigskip
+
+\newpage
+
+\section*{Audit et implémentation des animations proposées}
+Le CEO a demandé une vérification puis une implémentation réelle des animations du document séparé \og Propositions d'animations\fg{} (9 animations \og signature\fg{} + une couche \og île dynamique iPhone / Live Activities\fg{}).
+
+\textbf{Constat initial (avant cette ronde)} : une seule animation était partiellement implémentée, les 8 autres totalement absentes, et aucune librairie d'animation n'était installée.
+
+\textbf{7 animations construites réellement dans cette ronde} (\texttt{framer-motion} installé) :
+\begin{itemize}
+  \item \textbf{Produit qui vole vers le panier} : trajectoire en arc animée (Web Animations API) depuis la carte produit jusqu'à l'icône panier, avec rebond à l'arrivée. Respecte \og mouvement réduit\fg{} (accessibilité).
+  \item \textbf{Prix qui défile} : nouveau composant \texttt{AnimatedPrice}, utilisé pour le total du panier et les sous-totaux de ligne.
+  \item \textbf{Paiement accepté} : le tracé de coche déjà existant est conservé, des éclats de particules orange/or ont été ajoutés au moment du succès, plus un retour vibratoire sur Android/Chrome (le haptique iOS natif nécessiterait une app Capacitor compilée, non disponible dans ce test web).
+  \item \textbf{Tirer pour actualiser personnalisé} : implémenté sur l'accueil (icône panier BelivaY qui tourne pendant le geste) ; déploiement sur les autres pages documenté comme travail futur.
+  \item \textbf{Écran de lancement animé} : logo en fondu/zoom au lieu d'un spinner générique.
+  \item \textbf{Transition photo vers fiche produit} : élément partagé \texttt{framer-motion} entre la carte produit et la fiche détail — câblage vérifié correct par le code et par \texttt{tsc}, mais non vérifiable visuellement de bout en bout dans cet environnement (images produit de test externes injoignables hors ligne) ; à confirmer visuellement avec de vraies images.
+  \item \textbf{Reflet sur la carte Premium} : dégradé animé en diagonale, effet purement visuel, aucune logique de la page Premium modifiée.
+\end{itemize}
+
+\textbf{2 animations volontairement exclues, avec justification} :
+\begin{itemize}
+  \item \textbf{Solde Wallet qui monte} : n'a plus de sens, le Wallet vient d'être verrouillé \og Bientôt disponible\fg{} sur l'écran Compte — animer un solde qui n'existe pas serait absurde.
+  \item \textbf{Vol du colis vers l'île dynamique iPhone / Live Activities} : nécessite du code natif iOS (Swift, ActivityKit) et Android (Live Updates) ; le projet n'a aucun dossier \texttt{ios/} ni module natif de ce type — chantier mobile natif séparé, hors de portée de ce frontend React/Capacitor web.
+\end{itemize}
+\newpage
+
+\section*{Ce qui reste ouvert après cette ronde}
+\begin{itemize}
+  \item \textbf{Écran de code de retrait (QR)} : le composant existe dans le code mais ne peut pas être vérifié visuellement faute de données de test réalistes (aucune des 5 commandes de démonstration n'a de colis-relais enregistré) — à combler avant la prochaine vérification.
+  \item \textbf{Bouton Facebook mal dimensionné} sur l'écran de connexion — correctif cosmétique mineur, non fait.
+  \item \textbf{Panneau \og Programme de fidélité\fg{}} (verrouillé, non accessible en usage normal) réutilise en interne le modèle de palier vendeur — à traiter si ce panneau est un jour déverrouillé pour les clients.
+  \item \textbf{Barème de frais de garde} (forfait plat 200\,F/jour) toujours différent du barème par paliers que décrit CL-09/CL-10 — l'Addendum Décisions v1.0, plus récent et verrouillé, pourrait en fait déjà demander ce forfait plat : à clarifier avec le CEO plutôt qu'à trancher unilatéralement.
+  \item \textbf{Wallet / Fidélité / Parrainage verrouillés \og Bientôt disponible\fg{}} sur l'écran Compte — choix de traitement à valider formellement par le CEO (alternatives : suppression complète, ou activation pleine si la stratégie business change).
+\end{itemize}
+
+\end{document}

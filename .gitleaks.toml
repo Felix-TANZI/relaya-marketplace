@@ -13,15 +13,19 @@
 # échouer le scan et l'alerte devient du bruit que l'on finit par ignorer.
 #
 # Pourquoi (clés i18n) : le frontend associe des libellés à des clés de
-# traduction au format `domaine.sous_cle` (ex. "sl9_ouverture.promise_
-# gesture_prepare", voir frontend/src/i18n/domains/). Cette même règle
-# generic-api-key confond parfois ces chaînes (labelKey: '...', titleKey: '...')
-# avec une clé API à cause de leur entropie (mélange de minuscules, points,
-# underscores). Repéré pour la première fois sur la PR #51 (3 faux positifs
-# dans SellerPromise.tsx, aucun secret réel). L'exception est volontairement
-# étroite : seules des chaînes entièrement en minuscules, de la forme
-# "mot_mot.mot_mot", sont ignorées — un vrai secret (aléatoire, souvent avec
-# majuscules/chiffres mêlés) ne prend pas cette forme.
+# traduction au format `domaine.sous_cle` ou `domaine.groupe.sous_cle` (ex.
+# "sl9_ouverture.promise_gesture_prepare", "ad4_certifications.tier.bronze",
+# voir frontend/src/i18n/domains/). Cette même règle generic-api-key confond
+# parfois ces chaînes (labelKey: '...', titleKey: '...') avec une clé API à
+# cause de leur entropie (mélange de minuscules, points, underscores).
+# Repéré une première fois sur la PR #51 (3 faux positifs dans
+# SellerPromise.tsx, clés à 2 segments), puis une seconde fois sur la PR #53
+# (CertificationsPage.tsx, clés à 3 segments : "ad4_certifications.tier.
+# bronze"/"...tier.silver"). L'exception couvre maintenant un nombre
+# quelconque de segments séparés par un point. Elle reste volontairement
+# étroite : seules des chaînes entièrement en minuscules/chiffres/underscores
+# sont ignorées — un vrai secret (aléatoire, souvent avec majuscules/chiffres
+# mêlés) ne prend pas cette forme.
 
 [extend]
 useDefault = true
@@ -37,9 +41,10 @@ paths = [
   '''(^|/)tests/.*\.py$''',
 ]
 regexes = [
-  # Cle i18n "domaine_optionnellement_numerote.sous_cle" — entierement en
-  # minuscules/chiffres/underscores, un seul point. Ex. "sl9_ouverture.
-  # promise_gesture_prepare". Ne matche jamais un secret reel (majuscules,
-  # base64/hex, pas de point separateur de mots).
-  '''^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$''',
+  # Cle i18n "domaine_optionnellement_numerote.sous_cle[.sous_cle...]" —
+  # entierement en minuscules/chiffres/underscores, un ou plusieurs points.
+  # Ex. "sl9_ouverture.promise_gesture_prepare" (2 segments),
+  # "ad4_certifications.tier.bronze" (3 segments). Ne matche jamais un
+  # secret reel (majuscules, base64/hex, pas de point separateur de mots).
+  '''^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$''',
 ]

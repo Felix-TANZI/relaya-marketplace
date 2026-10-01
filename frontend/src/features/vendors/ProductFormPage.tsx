@@ -24,7 +24,6 @@ import {
   CheckCircle,
   Clock,
   Info,
-  ChevronRight,
   Plus,
   Zap,
   Percent,
@@ -40,7 +39,6 @@ import {
   type MasterFiche,
   type ProductCondition,
 } from "@/services/api/vendors";
-import { productsApi, type Category } from "@/services/api/products";
 import { useToast } from "@/context/ToastContext";
 import { CategoryTreePicker } from "@/features/catalog/CategoryTreePicker";
 import { isElectronicsCategory } from "@/services/api/categories";
@@ -299,8 +297,8 @@ export default function ProductFormPage() {
   const [description, setDesc] = useState("");
   const [shortDesc, setShortDesc] = useState("");
   const [faq, setFaq] = useState<{ question: string; answer: string }[]>([]);
-  const [parentCatId, setParentCatId] = useState(""); // catégorie parent
-  const [subCatId, setSubCatId] = useState(""); // sous-catégorie (optionnel)
+  // Sous-catégorie finale choisie dans le sélecteur (catégories gérées par l'admin).
+  const [selectedCategoryId, setSelectedCategoryId] = useState<number | null>(null);
   const [priceXaf, setPriceXaf] = useState("");
   const [compareAt, setCompareAt] = useState("");
   const [promoEnd, setPromoEnd] = useState("");
@@ -344,7 +342,6 @@ export default function ProductFormPage() {
   >(null);
 
   // ── UI ──
-  const [allCats, setAllCats] = useState<Category[]>([]);
   const [attributes] = useState<ProductAttribute[]>([]);
   const [images, setImages] = useState<ProductImage[]>([]);
   const [tempImgs, setTempImgs] = useState<{ file: File; preview: string }[]>(
@@ -356,15 +353,6 @@ export default function ProductFormPage() {
   const commission = 12;
   const photoRef = useRef<HTMLInputElement>(null);
 
-  // Catégories parent et sous-catégories
-  const parentCats = allCats.filter((c) => !c.parent);
-  const subCats = parentCatId
-    ? allCats.filter((c) => c.parent === parseInt(parentCatId, 10))
-    : [];
-
-  // ID catégorie effectif pour l'API (sous-cat si choisie, sinon parent)
-  const effectiveCatId = subCatId || parentCatId;
-
   // Afficher les champs FICHE ? (nouveau produit, ou édition d'une offre existante)
   const showFicheFields = isEdit || masterMode === "new";
 
@@ -373,8 +361,6 @@ export default function ProductFormPage() {
     const init = async () => {
       try {
         setLoading(true);
-        const catsResp = await productsApi.listCategories({ page_size: 200 });
-        setAllCats(catsResp.results || []);
 
         if (isEdit && id) {
           const prods = await vendorsApi.getProducts();
@@ -387,17 +373,11 @@ export default function ProductFormPage() {
 
           const product = p as ProductFormItem;
           const pCatId = categoryId(product.category);
-          const pCat = (catsResp.results || []).find((c) => c.id === pCatId);
+          // Le sélecteur rouvre lui-même la branche de cette catégorie.
+          setSelectedCategoryId(pCatId || null);
 
-          if (pCat?.parent) {
-            setParentCatId(String(pCat.parent));
-            setSubCatId(String(pCat.id));
-          } else {
-            setParentCatId(String(pCatId || ""));
-          }
-
-          // Charger la CategoryTreeNode pour le picker
-          if (pCat) {
+          // Nœud complet : sert à reconnaître une catégorie Electronics.
+          if (pCatId) {
             try {
               const { categoriesApi } =
                 await import("@/services/api/categories");
@@ -467,11 +447,6 @@ export default function ProductFormPage() {
       .then(setAttributes)
       .catch(() => setAttributes([]));
   }, [effectiveCatId]);*/
-
-  // Reset sous-cat si parent change
-  useEffect(() => {
-    setSubCatId("");
-  }, [parentCatId]);
 
   // Charger axes master quand master change
   useEffect(() => {
@@ -644,7 +619,7 @@ export default function ProductFormPage() {
     // Champs FICHE — uniquement quand on les affiche
     if (showFicheFields) {
       if (!title.trim()) e.title = t("sl3_product_form.err_title_required");
-      if (!parentCatId) e.parentCatId = t("sl3_product_form.err_category_required");
+      if (!selectedCategoryId) e.category = t("sl3_product_form.err_category_required");
       if (!shortDesc.trim())
         e.shortDesc = t("sl3_product_form.err_short_desc_required");
       else if (!isEdit && shortDesc.trim().length < 10)
@@ -783,7 +758,7 @@ export default function ProductFormPage() {
         !isEdit && masterMode === "existing" && !!selectedMaster;
       const categoryForOffer = attachMode
         ? selectedMaster!.category
-        : parseInt(effectiveCatId, 10);
+        : (selectedCategoryId as number); // garanti par la validation ci-dessus
 
       const payload: ProductPayload = {
         title: attachMode ? selectedMaster!.title : title.trim(),
@@ -988,14 +963,35 @@ export default function ProductFormPage() {
                       }}
                     >
                       <CheckCircle size={14} style={{ color: T.green }} />
-                      <p
-                        className="text-[11.5px] font-semibold"
-                        style={{ color: T.green }}
-                      >
-                        {t("sl3_product_form.product_chosen", { title: selectedMaster.title })}
-                      </p>
+                      <div>
+                        <p
+                          className="text-[11.5px] font-semibold"
+                          style={{ color: T.green }}
+                        >
+                          {t("sl3_product_form.product_chosen", { title: selectedMaster.title })}
+                        </p>
+                        {selectedMaster.category_name && (
+                          <p className="text-[11px]" style={{ color: T.muted }}>
+                            Catégorie : {selectedMaster.category_name} — celle de la fiche,
+                            où les acheteurs trouveront votre offre.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   )}
+
+                  {/* Toujours une porte vers la création : c'est là que le vendeur choisit sa catégorie. */}
+                  {!selectedMaster &&
+                    !(!masterLoading && masterQuery.trim().length >= 2 && masterResults.length === 0) && (
+                      <button
+                        type="button"
+                        onClick={() => setMasterMode("new")}
+                        className="flex items-center gap-1.5 pt-1 text-[12px] font-semibold"
+                        style={{ color: T.orange }}
+                      >
+                        <Plus size={13} /> Mon produit n'est pas dans la liste — créer un nouveau produit
+                      </button>
+                    )}
 
                   {!masterLoading &&
                     !selectedMaster &&
@@ -1213,21 +1209,18 @@ export default function ProductFormPage() {
 
               {/* CATÉGORIE + SOUS-CATÉGORIE + ATTRIBUTS */}
               <Section title={t("sl3_product_form.section_category_attrs")} icon={<Tag size={15} />}>
-                <Field label={t("sl3_product_form.label_category")} required error={errors.category}>
+                <Field
+                  label={t("sl3_product_form.label_category")}
+                  required
+                  error={errors.category}
+                  hint="Choisissez la sous-catégorie la plus précise : c'est là que les acheteurs trouveront votre produit."
+                >
                   <CategoryTreePicker
-                    value={selectedCategoryNode?.id ?? null}
+                    value={selectedCategoryId}
                     onChange={(id, node) => {
+                      setSelectedCategoryId(id);
                       setSelectedCategoryNode(node);
-                      // Sync avec les states legacy pour ne pas casser le submit
-                      if (node) {
-                        setParentCatId(
-                          node.parent ? String(node.parent) : String(node.id),
-                        );
-                        setSubCatId(node.parent ? String(node.id) : "");
-                      } else {
-                        setParentCatId("");
-                        setSubCatId("");
-                      }
+                      if (errors.category) setErrors((cur) => ({ ...cur, category: "" }));
                     }}
                     leavesOnly
                   />
@@ -1241,62 +1234,6 @@ export default function ProductFormPage() {
                       </p>
                     )}
                 </Field>
-
-                {/* Sous-catégorie — visible seulement si le parent a des enfants */}
-                {parentCatId && subCats.length > 0 && (
-                  <Field
-                    label={t("sl3_product_form.label_subcategory")}
-                    hint={t("sl3_product_form.hint_subcategory")}
-                  >
-                    <div
-                      className="flex items-center gap-2 mb-1.5"
-                      style={{ color: T.muted }}
-                    >
-                      <ChevronRight size={12} />
-                      <span className="text-[11.5px] font-semibold">
-                        {t("sl3_product_form.subcategories_of", {
-                          name: parentCats.find((c) => c.id === parseInt(parentCatId))?.name,
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {/* Bouton "Aucune" */}
-                      <button
-                        type="button"
-                        onClick={() => setSubCatId("")}
-                        className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border-2 transition-all"
-                        style={{
-                          background: !subCatId ? T.creamAlt : T.cream,
-                          borderColor: !subCatId ? T.border : T.border,
-                          color: !subCatId ? T.text : T.muted,
-                        }}
-                      >
-                        {t("sl3_product_form.main_category")}
-                      </button>
-                      {subCats.map((c) => (
-                        <button
-                          key={c.id}
-                          type="button"
-                          onClick={() => setSubCatId(String(c.id))}
-                          className="px-3 py-1.5 rounded-xl text-[12px] font-semibold border-2 transition-all"
-                          style={{
-                            background:
-                              subCatId === String(c.id) ? T.orangeL : T.cream,
-                            borderColor:
-                              subCatId === String(c.id) ? T.orange : T.border,
-                            color:
-                              subCatId === String(c.id) ? T.orange : T.muted,
-                          }}
-                        >
-                          {c.name}
-                          {subCatId === String(c.id) && (
-                            <CheckCircle size={10} className="inline ml-1" />
-                          )}
-                        </button>
-                      ))}
-                    </div>
-                  </Field>
-                )}
 
                 {/* Attributs dynamiques */}
                 {attributes.length > 0 && (
@@ -1345,7 +1282,7 @@ export default function ProductFormPage() {
                   </div>
                 )}
 
-                {parentCatId && attributes.length === 0 && (
+                {selectedCategoryId && attributes.length === 0 && (
                   <div
                     className="flex items-center gap-2 py-3 px-4 rounded-xl"
                     style={{ background: T.creamAlt }}

@@ -364,6 +364,19 @@ class Category(SoftDeleteModel):
         verbose_name="Description courte",
         help_text="Une phrase affichée en dessous du titre catégorie.",
     )
+    # Une seule image par nœud : côté acheteur, une racine l'affiche dans sa
+    # grande bannière, une sous-catégorie dans sa pastille ronde. Le vendeur
+    # retrouve la même image dans son sélecteur de catégorie.
+    image = models.ImageField(
+        upload_to="categories/%Y/%m/",
+        blank=True,
+        null=True,
+        verbose_name="Image",
+        help_text=(
+            "Bannière pour une catégorie racine, pastille ronde pour une "
+            "sous-catégorie. Convertie en WebP à l'enregistrement."
+        ),
+    )
     requires_admin_approval = models.BooleanField(
         default=False,
         db_index=True,
@@ -474,7 +487,46 @@ class Category(SoftDeleteModel):
             ids.add(node.id)
             stack.extend(node.children.filter(deleted_at__isnull=True))
         return ids
- 
+
+    @classmethod
+    def hidden_subtree_ids(cls) -> set:
+        """
+        Catégories désactivées par l'admin ET toute leur descendance, en une
+        requête. La boutique n'affiche ni ces catégories ni leurs produits.
+        (« Deprecated » ne masque rien : les fiches existantes restent en vente.)
+        """
+        rows = list(cls.objects.values_list("id", "parent_id", "is_active"))
+        children = {}
+        for cat_id, parent_id, _ in rows:
+            children.setdefault(parent_id, []).append(cat_id)
+        hidden = set()
+        stack = [cat_id for cat_id, _, is_active in rows if not is_active]
+        while stack:
+            cat_id = stack.pop()
+            if cat_id in hidden:
+                continue
+            hidden.add(cat_id)
+            stack.extend(children.get(cat_id, ()))
+        return hidden
+
+    def get_subtree_ids(self) -> set:
+        """
+        Cette catégorie ET toutes ses descendantes, en une seule requête.
+        Sert au filtre produits : « Téléphonie » montre aussi les smartphones.
+        """
+        children = {}
+        for cat_id, parent_id in Category.objects.values_list("id", "parent_id"):
+            children.setdefault(parent_id, []).append(cat_id)
+        ids = set()
+        stack = [self.id]
+        while stack:
+            cat_id = stack.pop()
+            if cat_id in ids:
+                continue
+            ids.add(cat_id)
+            stack.extend(children.get(cat_id, ()))
+        return ids
+
     # ─── Save : calcul auto du level + garde-fous ──────────────────────
  
     def save(self, *args, **kwargs):

@@ -1364,8 +1364,8 @@
     catalog_brands:   'Marques', 
     catalog_attributes: 'Attributs',
     catalog_colors:     'Couleurs', 
-    catalog_categories: 'Catégories',
- 
+    catalog_categories: 'Gestion des catégories',
+
     // Security
     section_security:     'Sécurité',
     security:             'Sécurité & Fraude',

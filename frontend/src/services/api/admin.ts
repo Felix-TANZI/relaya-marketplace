@@ -1179,6 +1179,8 @@ export interface AdminCategory {
   parent: number | null;
   parent_name: string | null;
   icon_name: string;
+  /** Bannière (racine) ou pastille (sous-catégorie), vue à l'identique par l'acheteur et le vendeur. */
+  image_url: string | null;
   description: string;
   display_order: number;
   is_active: boolean;
@@ -1251,6 +1253,27 @@ export interface CategoryUpdatePayload {
   is_active?: boolean;
   is_deprecated?: boolean;
   requires_admin_approval?: boolean;
+  /** Nouvelle image : part en multipart avec le reste du formulaire. */
+  image?: File;
+  /** Retire l'image actuelle sans en fournir une autre. */
+  remove_image?: boolean;
+}
+
+/** JSON sans fichier ; multipart dès qu'une image accompagne le formulaire. */
+function categoryRequestBody(payload: CategoryUpdatePayload): { body: BodyInit; headers?: Record<string, string> } {
+  if (!(payload.image instanceof File)) {
+    const rest = { ...payload };
+    delete rest.image;
+    return { body: JSON.stringify(rest), headers: { "Content-Type": "application/json" } };
+  }
+  const fd = new FormData();
+  Object.entries(payload).forEach(([key, value]) => {
+    if (value === undefined) return;
+    if (value === null) fd.append(key, "");
+    else if (value instanceof File) fd.append(key, value);
+    else fd.append(key, String(value));
+  });
+  return { body: fd };
 }
  
 export type CategoryFlag = "is_active" | "is_deprecated" | "requires_admin_approval";
@@ -2431,24 +2454,18 @@ export const adminApi = {
   },
  
   createCategory: async (payload: CategoryUpdatePayload): Promise<AdminCategoryDetail> => {
+    const { body, headers } = categoryRequestBody(payload);
     return http<AdminCategoryDetail>(
       `/api/catalog/admin/categories/create/`,
-      {
-        method: "POST",
-        headers: { ...authHeader(), "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
+      { method: "POST", headers, body },
     );
   },
- 
+
   updateCategory: async (id: number, payload: CategoryUpdatePayload): Promise<AdminCategoryDetail> => {
+    const { body, headers } = categoryRequestBody(payload);
     return http<AdminCategoryDetail>(
       `/api/catalog/admin/categories/${id}/update/`,
-      {
-        method: "PATCH",
-        headers: { ...authHeader(), "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      },
+      { method: "PATCH", headers, body },
     );
   },
  

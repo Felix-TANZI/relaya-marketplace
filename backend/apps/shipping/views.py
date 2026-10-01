@@ -6,11 +6,12 @@ from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.db.models import Count, Sum
+from django.db.models import Case, Count, IntegerField, Sum, When
 from datetime import timedelta
 import unicodedata
 
 from .serializers import (
+    PARCEL_SIZE_LABELS,
     CourierDisputeSerializer,
     CourierDashboardSerializer,
     CourierNetworkSerializer,
@@ -439,7 +440,12 @@ class RelayPointParcelPickupView(APIView):
 
     def post(self, request):
         relay_point = _get_active_relay_point(request.user)
-        serializer = RelayParcelPickupSerializer(data=request.data, context={"relay_point": relay_point})
+        # `user` sert uniquement a tracer QUI a valide la remise dans
+        # l'historique de commande : en cas de litige, on doit pouvoir
+        # remonter au gerant qui tenait le comptoir.
+        serializer = RelayParcelPickupSerializer(
+            data=request.data, context={"relay_point": relay_point, "user": request.user},
+        )
         serializer.is_valid(raise_exception=True)
         parcel = serializer.save()
         return Response(RelayParcelSerializer(parcel).data, status=status.HTTP_200_OK)
@@ -508,6 +514,97 @@ class RelayPointParcelReturnView(APIView):
 
 
 @extend_schema(
+    tags=["Relay Point"],
+    summary="Consulter un retour avant de le deposer",
+    parameters=[OpenApiParameter("ref", str, description="« RT-2240 » ou le numero de commande.")],
+)
+class RelayPointReturnLookupView(APIView):
+    """
+    Ce que le gerant doit voir AVANT d'accepter un retour.
+
+    ---------------------------------------------------------------------
+    POURQUOI UNE LECTURE SEPAREE DU DEPOT
+
+    Le depot etait aveugle : le gerant tapait un numero et apprenait au
+    refus que le retour n'etait pas valide. Le client etait deja reparti,
+    ou pire, le colis restait au comptoir sans statut.
+
+    Le comptoir a besoin de l'ordre inverse : on lit l'etiquette, l'ecran
+    dit si le motif est accepte, ce qu'il y a dans le colis et sa taille,
+    PUIS le gerant enregistre. Un refus se constate avant que le client
+    lache le paquet.
+
+    ---------------------------------------------------------------------
+    CE QUI EST EXPOSE, ET POURQUOI
+
+    Seuls les retours en mode « depot en point relais » et dans un etat
+    deposable. Un retour ramasse a domicile, deja recu, ou rejete n'a rien
+    a faire au comptoir, et le gerant n'a aucune raison d'en lire le motif.
+
+    `dropoff_relay_point_name` accompagne la reponse quand le retour a deja
+    ete oriente ailleurs : le gerant renvoie alors le client au bon relais
+    au lieu d'encaisser un colis qui n'est pas attendu chez lui.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    DEPOSABLE = [Return.Status.APPROVED, Return.Status.AWAITING_DROPOFF]
+
+    @staticmethod
+    def _identifiant(brut):
+        """« RT-2240 », « rt 2240 » ou « 2240 » designent le meme retour."""
+        chiffres = "".join(c for c in (brut or "") if c.isdigit())
+        return int(chiffres) if chiffres else None
+
+    def get(self, request):
+        relay_point = _get_active_relay_point(request.user)
+        identifiant = self._identifiant(request.query_params.get("ref"))
+        if identifiant is None:
+            return Response({"ref": "Indiquez la reference du retour."}, status=status.HTTP_400_BAD_REQUEST)
+
+        retour = (
+            Return.objects
+            .filter(id=identifiant, transport_mode=Return.TransportMode.RELAY_DROPOFF)
+            .select_related("order", "order_item", "dropoff_relay_point")
+            .first()
+        )
+        if retour is None:
+            return Response(
+                {"detail": "Aucun retour valide ne porte cette reference."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        # Le colis d'origine porte la taille. Sur une commande multi-vendeurs,
+        # on prend l'expedition du vendeur concerne par CE retour, sinon on ne
+        # devine pas : « taille non renseignee » est plus utile qu'un chiffre
+        # pris sur le colis d'un autre vendeur.
+        expedition = retour.order.shipments.filter(vendor_id=retour.vendor_id).first()
+        taille = getattr(expedition, "parcel_size", "") or ""
+
+        autre_relais = (
+            retour.dropoff_relay_point.name
+            if retour.dropoff_relay_point_id and retour.dropoff_relay_point_id != relay_point.id
+            else ""
+        )
+
+        return Response({
+            "return_id": retour.id,
+            "reference": f"RT-{retour.id}",
+            "order_id": retour.order_id,
+            "reason": retour.reason,
+            "reason_label": retour.get_reason_display(),
+            "status": retour.status,
+            "status_label": retour.get_status_display(),
+            # Le seul booleen qui compte au comptoir : accepte-t-on le colis ?
+            "depositable": retour.status in self.DEPOSABLE,
+            "parcel_size": taille,
+            "parcel_size_label": PARCEL_SIZE_LABELS.get(taille, "Taille non renseignee"),
+            "item_name": getattr(retour.order_item, "title_snapshot", "") or "",
+            "assigned_elsewhere": autre_relais,
+        })
+
+
+@extend_schema(
     tags=["Shipping"],
     summary="Constater le depot d'un retour acheteur au point relais",
     description=(
@@ -535,6 +632,41 @@ class RelayPointReturnReceiveView(APIView):
             return Response(
                 {"detail": "Ce retour n'est pas configure pour un depot en point relais."},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # Les deux cliches de scelle, exiges au comptoir.
+        #
+        # Un retour depose ne cree PAS de RelayParcel : il ne passe donc par
+        # aucune des preuves de `RelayPointParcelEvidenceUploadView`, qui
+        # exigent un colis du relais. Sans ces deux photos, le gerant remet un
+        # paquet scelle dont rien n'atteste l'etat au moment du depot — et
+        # c'est lui qu'on interrogera si le vendeur conteste a l'inspection.
+        photos = request.FILES.getlist("photos")
+        if len(photos) != 2:
+            return Response(
+                {"photos": "Deux photos sont requises : le colis scelle, et l'etiquette du retour."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        # L'expedition du vendeur concerne porte la preuve. Sur une commande
+        # multi-vendeurs, l'attacher a n'importe laquelle la rendrait
+        # introuvable depuis le dossier de retour.
+        expedition = return_obj.order.shipments.filter(vendor_id=return_obj.vendor_id).first()
+        if expedition is None:
+            return Response(
+                {"detail": "Aucune expedition ne correspond a ce retour : prevenez le support."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        for photo in photos:
+            create_shipment_evidence(
+                shipment=expedition,
+                user=request.user,
+                actor_role="RELAY_POINT",
+                stage=ShipmentEvidence.Stage.RETURN_DEPOSIT,
+                upload=photo,
+                description=f"Depot retour RT-{return_obj.id} au comptoir",
+                order_item=return_obj.order_item,
             )
 
         return_obj.dropoff_relay_point = return_obj.dropoff_relay_point or relay_point
@@ -1468,6 +1600,115 @@ class CourierClaimShipmentView(generics.GenericAPIView):
         )
 
         return Response(ShipmentSerializer(shipment, context={"request": request}).data, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Passages de collecte et de livraison prevus au point relais",
+)
+class RelayPointCollectionScheduleView(APIView):
+    """
+    Les passages a venir au comptoir, vus du point relais.
+
+    ---------------------------------------------------------------------
+    POURQUOI UN SEUL PASSAGE SERT AUX DEUX SENS
+
+    BelivaY ne commande pas de vehicule pour vider un relais : il greffe les
+    sorties sur les tournees que les entreprises de livraison ont deja
+    acceptees (regle n.5, bourse aux courses). Un meme passage depose donc
+    des colis ET reprend ce qui doit partir. C'est ce qui dit au gerant quand
+    se liberer -- et pourquoi il ne peut pas commander un enlevement.
+
+    ---------------------------------------------------------------------
+    CE QU'ON ANNONCE, ET CE QU'ON TAIT
+
+    Une tournee est datee par un CRENEAU (`slot_date` + `period`), jamais par
+    une heure de passage : la regle n.5.1 fixe deux creneaux par zone, et
+    personne ne promet un instant precis a l'interieur. On renvoie donc les
+    deux bornes du creneau. Le gerant lit une fenetre vraie et organise sa
+    journee dessus, au lieu d'attendre a 14 h une heure qu'aucune donnee ne
+    soutient.
+
+    L'ENTREPRISE est nommee : elle signe le transfert de responsabilite, le
+    gerant doit savoir a qui il remet. Le LIVREUR, lui, reste anonyme -- meme
+    regle que `RelayParcelSerializer.get_courier_ref`.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    # Une tournee terminee n'annonce plus rien. Une tournee deja partie, si :
+    # elle peut etre en route vers le comptoir au moment ou le gerant regarde.
+    OPEN_STATUSES = [
+        Tournee.Status.COMPOSED,
+        Tournee.Status.PUBLISHED,
+        Tournee.Status.DEPARTED,
+    ]
+
+    def get(self, request):
+        relay_point = _get_active_relay_point(request.user)
+
+        tournees = (
+            Tournee.objects.filter(
+                shipments__relay_parcel__relay_point=relay_point,
+                status__in=self.OPEN_STATUSES,
+                slot_date__gte=timezone.localdate(),
+            )
+            .select_related("zone", "claimed_by_organization")
+            # Le tri par `period` serait ALPHABETIQUE : « AFTERNOON » passerait
+            # avant « MORNING », et le gerant lirait l'apres-midi avant le matin
+            # du meme jour. On impose donc l'ordre horaire.
+            .annotate(_rang_creneau=Case(
+                When(period=Tournee.Period.MORNING, then=0),
+                default=1,
+                output_field=IntegerField(),
+            ))
+            .distinct()
+            .order_by("slot_date", "_rang_creneau")
+        )
+
+        passages = []
+        for tournee in tournees:
+            zone = tournee.zone
+            debut, fin = (
+                zone.morning_slot()
+                if tournee.period == Tournee.Period.MORNING
+                else zone.afternoon_slot()
+            )
+            # « Depose N colis » ne compte que les colis de CE relais encore
+            # attendus : ceux que la meme tournee livre ailleurs ne concernent
+            # pas le gerant, et les gonfler lui ferait preparer trop de place.
+            drop_count = RelayParcel.objects.filter(
+                relay_point=relay_point,
+                shipment__tournee=tournee,
+                status=RelayParcel.Status.EXPECTED,
+            ).count()
+
+            passages.append({
+                "tournee_id": tournee.id,
+                "slot_date": tournee.slot_date,
+                "period": tournee.period,
+                "slot_start": debut,
+                "slot_end": fin,
+                # Une tournee composee mais pas encore revendiquee n'a pas
+                # d'entreprise : on renvoie vide plutot que d'en inventer une.
+                "company": getattr(tournee.claimed_by_organization, "company_name", "") or "",
+                "drop_count": drop_count,
+                "status": tournee.status,
+            })
+
+        # Ce qui attend de sortir ne depend d'aucune tournee en particulier :
+        # n'importe quel passage peut l'emporter. On le compte donc une fois,
+        # et le portail l'accroche au premier passage annonce.
+        pending_pickup_count = RelayParcel.objects.filter(
+            relay_point=relay_point,
+            status__in=[RelayParcel.Status.RETURN_REQUESTED, RelayParcel.Status.REFUSED],
+            returned_at__isnull=True,
+        ).count()
+
+        return Response({
+            "passages": passages,
+            "pending_pickup_count": pending_pickup_count,
+        })
 
 
 @extend_schema(tags=["Relay Point"], summary="Avis acheteurs du point relais")

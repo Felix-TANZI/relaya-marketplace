@@ -7,16 +7,56 @@
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+
+        <!--
+            Filet de securite. C'est ce theme que le manifeste pose sur
+            <application>, et `BridgeActivity.onCreate` bascule ensuite sur
+            `AppTheme.NoActionBar`. Si cette bascule n'avait pas lieu, les
+            icones de la barre d'etat resteraient claires sur l'en-tete blanc
+            du portail. On repete donc le reglage ici.
+        -->
+        <item name="android:windowLightStatusBar">true</item>
     </style>
 
     <style name="AppTheme.NoActionBar" parent="Theme.AppCompat.DayNight.NoActionBar">
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+
+        <!--
+            BARRE D'ETAT — l'heure, le reseau et la batterie.
+
+            Depuis Android 15 (targetSdk 36 ici) le plein ecran est impose :
+            la WebView dessine SOUS la barre d'etat et `statusBarColor` est
+            ignore. Seul `windowLightStatusBar` compte encore, et c'est lui
+            qui decide de la couleur des icones.
+
+            L'en-tete du portail est blanc. Sans ce reglage les icones
+            restent blanches, donc invisibles : l'heure et la batterie
+            disparaissent. `true` les passe en sombre.
+
+            `statusBarColor` reste utile aux appareils sous Android 14 et
+            anterieurs, ou le plein ecran n'est pas impose : la barre y est
+            alors blanche, dans la continuite de l'en-tete.
+        -->
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@android:color/white</item>
+        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
     </style>
 
 
     <style name="AppTheme.NoActionBarLaunch" parent="Theme.SplashScreen">
         <item name="android:background">@drawable/splash</item>
+
+        <!--
+            L'ecran de lancement est violet fonce. Pendant la seconde qu'il
+            dure, les icones de la barre d'etat doivent donc rester CLAIRES —
+            l'inverse de l'en-tete blanc qui suit. Sur un telephone en mode
+            clair, sans ce reglage, elles seraient sombres sur violet, donc
+            illisibles. La barre est laissee transparente pour que le visuel
+            du splash passe dessous, y compris sur Android 14 et anterieurs.
+        -->
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
     </style>
 </resources>

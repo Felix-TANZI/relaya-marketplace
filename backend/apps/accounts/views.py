@@ -47,7 +47,7 @@ from django.db.models import Q
 from .serializers import UserSerializer, RegisterSerializer, user_with_email_exists
 from .models import AppleIdentity, AppRelease, ComplianceDocument, CourierProfile, DeliveryOrganizationProfile, DeliveryVehicle, PartnerBlacklist, RelayPointProfile, RelayTrainingCompletion, PayoutAccount, RewardAccount, TrustScoreProfile, UserCart, UserProfile, UserFavorite, UserNotification
 from apps.common.phone import normalize_cameroon_phone
-from apps.orders.models import Dispute, DisputeMessage
+from apps.orders.models import Dispute, DisputeEvidenceRequest, DisputeMessage
 from apps.shipping.models import Shipment, ShipmentEvent
 
 
@@ -1774,17 +1774,72 @@ def relay_point_open_disputes(request):
     if not relay_point:
         return Response({"detail": "Point relais approuvé requis."}, status=status.HTTP_403_FORBIDDEN)
 
+    # Les dossiers clos recemment comptent aussi.
+    #
+    # Un gerant mis en cause veut surtout savoir QUAND il ne l'est plus. Ne
+    # lister que l'ouvert laisse chaque affaire disparaitre sans verdict, et
+    # c'est l'absence de nouvelle qui inquiete. Trente jours : au-dela, le
+    # dossier n'appartient plus au quotidien du comptoir.
+    recemment = timezone.now() - timedelta(days=30)
     disputes = (
         Dispute.objects.filter(
+            Q(status__in=["OPEN", "IN_PROGRESS"])
+            | Q(status__in=["RESOLVED", "CLOSED"], updated_at__gte=recemment),
             order__shipments__relay_parcel__relay_point=relay_point,
-            status__in=["OPEN", "IN_PROGRESS"],
         )
-        .select_related("order", "opened_by")
-        .prefetch_related("messages", "evidences", "order__shipments")
+        .select_related("order", "opened_by", "assigned_admin")
+        .prefetch_related("messages", "evidences", "order__shipments", "evidence_requests")
         .order_by("-updated_at")
         .distinct()
     )
-    return Response([_dispute_payload(dispute) for dispute in disputes])
+
+    def _avancement(dispute):
+        """
+        Ce que le portail ajoute pour le comptoir.
+
+        -----------------------------------------------------------------
+        QUATRE ETAPES SUR CINQ SONT REELLES
+
+        `Dispute.status` ne connait que OPEN / IN_PROGRESS / RESOLVED /
+        CLOSED. L'avancement fin se lit ailleurs, sur des champs qui, eux,
+        existent : `vendor_contacted` et `vendor_reply_deadline` pour le
+        delai vendeur, `assigned_admin` pour la mediation, `resolution`
+        pour la decision.
+
+        Le RECOURS, lui, n'a aucun champ. Aucune valeur n'est donc
+        inventee pour lui : l'ecran l'affiche eteint.
+        """
+        demandes = [
+            {
+                "instructions": demande.instructions,
+                "due_at": demande.due_at.isoformat() if demande.due_at else None,
+                "recipient_role": demande.recipient_role,
+            }
+            # Seules les demandes ADRESSEES AU RELAIS. Celles qui visent le
+            # vendeur ou l'acheteur ne le regardent pas, et lui feraient
+            # croire qu'on attend quelque chose de lui.
+            for demande in dispute.evidence_requests.all()
+            if demande.status == DisputeEvidenceRequest.Status.PENDING
+            and demande.recipient_role == DisputeEvidenceRequest.RecipientRole.RELAY_POINT
+        ]
+        return {
+            "vendor_contacted": dispute.vendor_contacted,
+            "vendor_replied": dispute.vendor_replied,
+            "vendor_reply_deadline": (
+                dispute.vendor_reply_deadline.isoformat() if dispute.vendor_reply_deadline else None
+            ),
+            # On expose QU'UN mediateur est saisi, jamais lequel : le gerant
+            # n'a pas a connaitre l'agent qui arbitre son dossier.
+            "has_mediator": dispute.assigned_admin_id is not None,
+            "resolution_display": dispute.get_resolution_display() if dispute.resolution else "",
+            "resolved_at": dispute.resolved_at.isoformat() if dispute.resolved_at else None,
+            "is_closed": dispute.status in ("RESOLVED", "CLOSED"),
+            "evidence_requests": demandes,
+        }
+
+    return Response([
+        {**_dispute_payload(dispute), **_avancement(dispute)} for dispute in disputes
+    ])
 
 
 class ComplianceDocumentListCreateView(APIView):

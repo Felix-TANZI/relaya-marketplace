@@ -4,9 +4,10 @@
 // — photo et couleur d'une catégorie encore sans image — et de repli complet
 // quand l'API est injoignable.
 
+import type { TFunction } from "i18next";
 import {
-  CATEGORY_THEMES,
   findThemeForCategory,
+  getAllCategoryThemes,
   getCategoryTheme,
   matchesCategory,
   type CategoryTheme,
@@ -26,15 +27,19 @@ export interface StorefrontCategory extends CategoryTheme {
 /* Couleurs des catégories qu'aucun thème ne rapproche, attribuées par position. */
 const ACCENTS = ["#F47920", "#2563EB", "#DB2777", "#059669", "#7C3AED", "#0891B2", "#D97706", "#E11D48"];
 
-const ALL_THEME = getCategoryTheme("all") as CategoryTheme;
-
-function subcategoryLabel(count: number): string {
-  if (count === 0) return "Catégorie principale";
-  return count > 1 ? `${count} sous-catégories` : "1 sous-catégorie";
+function allTheme(t: TFunction): CategoryTheme {
+  return getCategoryTheme("all", t) as CategoryTheme;
 }
 
-export function toStorefrontCategory(node: CategoryTreeNode, index = 0): StorefrontCategory {
-  const theme = findThemeForCategory(node);
+function subcategoryLabel(count: number, t: TFunction): string {
+  if (count === 0) return t("categories.main_category");
+  return count > 1
+    ? t("categories.subcategory_count_plural", { count })
+    : t("categories.subcategory_count", { count });
+}
+
+export function toStorefrontCategory(node: CategoryTreeNode, index: number, t: TFunction): StorefrontCategory {
+  const theme = findThemeForCategory(node, t);
   const children = node.children ?? [];
   const image = node.image_url || theme?.image || "";
   const thumb = node.image_url || theme?.thumb || "";
@@ -48,7 +53,7 @@ export function toStorefrontCategory(node: CategoryTreeNode, index = 0): Storefr
     accent: theme?.accent ?? ACCENTS[index % ACCENTS.length],
     label: node.name,
     title: node.name,
-    subtitle: subcategoryLabel(children.length),
+    subtitle: subcategoryLabel(children.length, t),
     description: node.description || theme?.description || "",
     image,
     thumb,
@@ -70,13 +75,16 @@ function fromTheme(theme: CategoryTheme): StorefrontCategory {
  * « Tout voir » puis les catégories racines de la base, dans l'ordre choisi par
  * l'admin. Sans catégorie en base (API injoignable), les thèmes statiques.
  */
-export function buildStorefrontCategories(tree: CategoryTreeNode[]): StorefrontCategory[] {
-  if (tree.length === 0) return CATEGORY_THEMES.map(fromTheme);
+export function buildStorefrontCategories(tree: CategoryTreeNode[], t: TFunction): StorefrontCategory[] {
+  if (tree.length === 0) return getAllCategoryThemes(t).map(fromTheme);
   const roots = [...tree].sort(
     (a, b) => a.display_order - b.display_order || a.name.localeCompare(b.name, "fr"),
   );
   // Le compteur statique de « Tout voir » est indicatif : on ne le mêle pas aux vraies données.
-  return [{ ...fromTheme(ALL_THEME), count: "" }, ...roots.map(toStorefrontCategory)];
+  return [
+    { ...fromTheme(allTheme(t)), count: "" },
+    ...roots.map((node, index) => toStorefrontCategory(node, index, t)),
+  ];
 }
 
 interface ProductLike {

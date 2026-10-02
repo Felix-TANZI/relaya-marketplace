@@ -123,8 +123,8 @@ export default function CategoryThemePage() {
     : undefined;
 
   const theme = useMemo(() => {
-    if (!context) return getCategoryTheme(slug);
-    const base = toStorefrontCategory(context.page);
+    if (!context) return getCategoryTheme(slug, t);
+    const base = toStorefrontCategory(context.page, 0, t);
     // Bannière : l'image de la page, sinon celle de l'ancêtre le plus proche,
     // sinon la photo de secours de l'univers.
     const inherited = [context.page, ...[...context.ancestors].reverse()].find((n) => n.image_url)?.image_url;
@@ -133,10 +133,10 @@ export default function CategoryThemePage() {
       accent: rootStorefront?.accent ?? base.accent,
       image: inherited || rootStorefront?.image || base.image,
       icon: rootStorefront?.icon ?? base.icon,
-      label: context.page.id === context.root.id ? "Catégorie" : context.root.name,
+      label: context.page.id === context.root.id ? t("cl4_category_theme.category_heading") : context.root.name,
       description: base.description || rootStorefront?.description || "",
     };
-  }, [context, rootStorefront, slug]);
+  }, [context, rootStorefront, slug, t]);
 
   const pageKey = context?.page.slug ?? slug;
   const selectedNode = context?.selected ?? null;

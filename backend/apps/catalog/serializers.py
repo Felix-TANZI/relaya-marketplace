@@ -49,18 +49,32 @@ class CategoryImageUrlMixin(serializers.Serializer):
         return request.build_absolute_uri(url) if request else url
 
 
-class CategorySerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryTranslationMixin:
+    """
+    Traduit `name`/`description` vers la langue de la requête courante —
+    même mécanisme que les fiches produit (voir `translate_for_buyer`).
+    Sans ce mixin, les noms de catégories restaient figés en français
+    quel que soit le sélecteur de langue du front, puisqu'aucune
+    traduction n'était câblée dessus.
+    """
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["name", "description"], self.context)
+
+
+class CategorySerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer de base — utilisé partout où on affiche UNE catégorie
     (fiche produit, listing, filtres, etc.).
- 
+
     Version étendue : expose les nouveaux champs pour permettre au frontend
     de rendre l'icône, la description, et de détecter les catégories
     à modération renforcée.
     """
     full_path = serializers.CharField(read_only=True)
     effective_requires_approval = serializers.BooleanField(read_only=True)
- 
+
     class Meta:
         model = Category
         fields = [
@@ -84,7 +98,7 @@ class CategorySerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
         ]
 
 
-class CategoryTreeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryTreeSerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Serializer arborescent — sérialise une catégorie AVEC ses enfants
     récursivement. Utilisé par l'endpoint /api/catalog/categories/tree/.
@@ -126,7 +140,7 @@ class CategoryTreeSerializer(CategoryImageUrlMixin, serializers.ModelSerializer)
         ).data
     
 
-class CategoryFlatSerializer(CategoryImageUrlMixin, serializers.ModelSerializer):
+class CategoryFlatSerializer(CategoryTranslationMixin, CategoryImageUrlMixin, serializers.ModelSerializer):
     """
     Version plate (pas d'enfants imbriqués) — utilisée pour les selects
     et les listes admin où on n'a pas besoin de l'arbre complet.
@@ -302,6 +316,10 @@ class PromotionCampaignSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["title", "product_title"], self.context)
 
     def validate_product(self, product):
         request = self.context.get("request")
@@ -805,7 +823,11 @@ class BrandSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at", "logo_url", "master_products_count"]
- 
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return translate_for_buyer(data, ["description"], self.context)
+
     def get_logo_url(self, obj):
         if obj.logo:
             request = self.context.get("request")

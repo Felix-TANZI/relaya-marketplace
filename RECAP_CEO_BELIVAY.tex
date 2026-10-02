@@ -1,0 +1,189 @@
+
+\documentclass[11pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{amssymb}
+
+\definecolor{belivayorange}{HTML}{F47920}
+\definecolor{okgreen}{HTML}{1B8A3A}
+\definecolor{warnred}{HTML}{C0392B}
+\definecolor{graytext}{HTML}{555555}
+\definecolor{lightbg}{HTML}{FFF4EC}
+
+\titleformat{\section}{\Large\bfseries\color{belivayorange}}{\thesection}{0.5em}{}
+\titleformat{\subsection}{\large\bfseries\color{black}}{\thesubsection}{0.5em}{}
+
+\setlist[itemize]{leftmargin=1.4em, itemsep=2pt, topsep=2pt}
+
+\newcommand{\fait}[1]{\item[\textcolor{okgreen}{\textbf{\checkmark}}] #1}
+\newcommand{\reste}[1]{\item[\textcolor{warnred}{\textbf{!}}] #1}
+\newcommand{\info}[1]{\item[\textcolor{graytext}{\textbf{i}}] #1}
+
+\hypersetup{colorlinks=true, linkcolor=belivayorange, urlcolor=belivayorange}
+
+\title{\textcolor{belivayorange}{\Huge BelivaY} \\[6pt] \Large Récapitulatif de présentation — Travaux réalisés}
+\author{}
+\date{2 octobre 2026}
+
+\begin{document}
+\maketitle
+\vspace{-1.2cm}
+\begin{center}\color{graytext}Document de synthèse pour présentation — un coup d'œil par chantier\end{center}
+\vspace{0.6cm}
+
+%============================================================
+\section*{Comment lire ce document}
+Chaque chantier est résumé en une page (ou moins) : ce qui a été fait, les points forts à montrer, et ce qui reste ouvert. Le détail complet existe ailleurs (rapports séparés) — ici, uniquement l'essentiel pour présenter sans se perdre.
+
+\vspace{0.3cm}
+\noindent\textcolor{okgreen}{\textbf{\checkmark}} \, Fait et vérifié \hspace{1.2cm} \textcolor{warnred}{\textbf{!}} \, Reste à faire / point de vigilance \hspace{1.2cm} \textcolor{graytext}{\textbf{i}} \, Information
+
+\newpage
+
+%============================================================
+\section*{1. Traduction automatique (FR/EN)}
+
+\subsection*{Le problème signalé}
+En testant la traduction automatique de l'application (basée sur l'API Google Translate), une partie du contenu ne se traduisait pas en basculant la langue dans l'app — alors que la traduction \emph{native} de Chrome, elle, traduisait tout. Diagnostic confirmé~: l'application elle-même ne transmettait jamais la langue active au serveur sur la plupart des appels (seule la fiche produit le faisait), et les noms de catégories n'avaient tout simplement aucune logique de traduction câblée.
+
+\subsection*{Corrections apportées aujourd'hui}
+\begin{itemize}
+\fait{La langue de l'interface est maintenant transmise automatiquement à chaque appel au serveur (plus besoin de le faire manuellement écran par écran).}
+\fait{Les noms et descriptions de catégories sont désormais traduits (ne l'étaient jamais auparavant).}
+\fait{Le cache des catégories, qui gardait l'ancienne langue jusqu'à 5 minutes, est corrigé pour suivre la langue active.}
+\fait{Vérifié en conditions réelles (navigateur automatisé) : bascule FR→EN, les catégories et titres produits changent correctement ; aucune régression détectée (compilation propre, vérifications serveur propres).}
+\end{itemize}
+
+\subsection*{Couverture actuelle de la traduction automatique}
+\begin{itemize}
+\fait{Fiches produit (titre, description, description courte) — vendeur, catalogue, page d'accueil.}
+\fait{Catégories (nom, description) — nouveau.}
+\fait{Notifications (titre, message).}
+\fait{Messagerie des commandes/livraisons (badge « traduit » affiché, message original conservé).}
+\info{Un vendeur consultant ses propres fiches voit toujours son texte brut, jamais une traduction — comportement volontaire.}
+\end{itemize}
+
+\subsection*{Ce qui reste à traduire (contenu statique, non branché)}
+\begin{itemize}
+\reste{Le grand bandeau d'accueil (carrousel de thèmes, « Tout voir ») — contenu entièrement écrit en dur en français.}
+\reste{Les bannières de confiance (« Garantie BelivaY », « Escrow sécurisé », etc.) et les offres flash de la page d'accueil.}
+\reste{Titre des campagnes promotionnelles et description des marques.}
+\end{itemize}
+Ce sont des blocs de contenu statique/marketing, pas des données utilisateur — correction possible rapidement si priorisée, mais non critique pour la démonstration du mécanisme de traduction.
+
+\newpage
+%============================================================
+\section*{2. Espace vendeur (refonte v2)}
+
+\subsection*{Quoi}
+Portail vendeur entièrement reconstruit à partir d'un vrai paquet de maquettes (66 écrans, 99 états). 40 écrans livrés et vérifiés à deux reprises, pixel par pixel, contre les maquettes de référence.
+
+\subsection*{Points forts à montrer}
+\begin{itemize}
+\fait{Nouveau login vendeur : vrai logo BelivaY, accroche de marque, connexion Google en un clic.}
+\fait{Code de vérification à la connexion (2FA par e-mail) avant l'accès au compte.}
+\fait{Ouverture de boutique en 3 étapes avec KYC intégré (pièce d'identité, selfie, numéro de versement).}
+\fait{Règle « Vous gardez X F » affichée partout, au lieu d'une commission brute.}
+\fait{Anonymat strict vendeur/client — aucune identité croisée visible.}
+\fait{Module Litiges et retours avec décision humaine motivée.}
+\fait{Trust Score vendeur (paliers Bronze/Argent/Or/Platine) avec simulateur de plans.}
+\fait{Documents de commande (bon de préparation, reçu) à l'identité visuelle BelivaY.}
+\end{itemize}
+
+\subsection*{Corrigé en cours de route}
+Deux audits visuels complets ont trouvé et corrigé~: texte dupliqué (réponse litige, inspection retour), redirection cassant l'accès public anonyme, documents de commande sans habillage de marque, double en-tête, logo générique au lieu du vrai logo.
+
+\subsection*{Reste ouvert}
+\begin{itemize}
+\reste{Onglet « Mon argent » (versements, gains) — pas encore de nouvel écran, pointe vers l'ancienne page.}
+\reste{Écrans « Ma boutique » (horaires, emplacement, équipe) non construits.}
+\reste{2FA par SMS prévu par la spec — actuellement par e-mail uniquement.}
+\reste{Barème de commission définitif à trancher (deux versions concurrentes dans la spec source).}
+\end{itemize}
+
+\newpage
+%============================================================
+\section*{3. Espace livreur}
+
+\subsection*{Quoi}
+Portail livreur mobile avec 13 onglets fonctionnels~: tableau de bord, tournée, courses, scanner, carte, réseau de points relais, preuves, incidents, litiges, formation, profil, notifications, paramètres.
+
+\subsection*{Points forts à montrer}
+\begin{itemize}
+\fait{Génération de QR code pour la remise de colis.}
+\fait{Géolocalisation en continu (web et application mobile).}
+\fait{File de preuves hors-ligne — fonctionne même sans réseau, se synchronise ensuite.}
+\fait{Boîte de demandes de preuves intégrée pour les litiges.}
+\fait{Toutes les fonctionnalités sont branchées sur de vrais endpoints serveur, vérifiés — pas de maquette ni de simulation.}
+\end{itemize}
+
+\subsection*{État}
+\begin{itemize}
+\info{Aucun TODO ni code inachevé détecté dans les écrans livreur eux-mêmes.}
+\reste{Point distinct à ne pas confondre : le tableau de bord \emph{admin} de suivi des livreurs (vue d'ensemble admin, pas le portail livreur) affiche encore un message « bientôt disponible ».}
+\end{itemize}
+
+\newpage
+%============================================================
+\section*{4. Espace client — travaux antérieurs au dossier visuel}
+
+\subsection*{Précision}
+Le rebuild visuel complet de l'espace client fait l'objet d'un dossier séparé. Cette section couvre uniquement ce qui a été construit \emph{avant}, sur le panier, le paiement et les recommandations.
+
+\subsection*{Panier / Checkout}
+\begin{itemize}
+\fait{Suppression d'article avec annulation (undo), précision d'adresse à la commande.}
+\fait{Géolocalisation GPS au checkout (bouton « Utiliser ma position »), transmise à la commande.}
+\reste{Champ « code promo » présent visuellement mais sans logique de validation serveur branchée.}
+\end{itemize}
+
+\subsection*{Paiement / Escrow}
+\begin{itemize}
+\fait{Code de confirmation de réception à 6 chiffres, à la livraison.}
+\info{Le moteur de paiement/escrow lui-même (Campay, intents, ledger) est majoritairement le travail de Félix — contribution conjointe.}
+\end{itemize}
+
+\subsection*{Recommandations produits}
+\begin{itemize}
+\fait{Deux bugs critiques corrigés en production (erreur de tri qui plantait l'affichage, recommandations panier toujours vides) — vérifiés par tests automatisés et par un vrai scénario de bout en bout.}
+\fait{Proximité boutique désormais prise en compte, y compris sur la fiche produit.}
+\end{itemize}
+
+\subsection*{Logistique acheteur / Trust Score}
+\begin{itemize}
+\fait{Trust Score V5.5 côté acheteur~: indice interne de confiance, sanctions progressives, détection anti-collusion, blocage à l'inscription sur numéro/pièce bannis — 108 tests automatisés vérifiés.}
+\end{itemize}
+
+\newpage
+%============================================================
+\section*{5. État de fonctionnement — vérifié aujourd'hui}
+
+Test réel sur les 3 portails (client, vendeur, admin) avant la présentation.
+
+\subsection*{Client}
+\begin{itemize}
+\fait{Accueil, catalogue, catégories~: aucune erreur, aucun écran blanc.}
+\reste{Quelques visuels produits externes (images de démo) ne se chargent pas selon le navigateur — icône de remplacement affichée à la place.}
+\reste{Les pages « Catalogue » et « Catégories » affichent un contenu très proche de la page d'accueil (mêmes produits mis en avant) — à vérifier si c'est le comportement voulu avant de cliquer dessus en démo.}
+\end{itemize}
+
+\subsection*{Vendeur}
+\begin{itemize}
+\reste{\textbf{Corrigé pendant la préparation} : le compte de démonstration était bloqué en « compte en attente d'approbation », masquant le vrai tableau de bord. Approuvé manuellement — le dashboard complet (ventes, graphiques) s'affiche maintenant normalement.}
+\end{itemize}
+
+\subsection*{Admin}
+\begin{itemize}
+\fait{Tableau de bord et gestion des catégories~: aucune erreur, chiffres et arborescence s'affichent correctement.}
+\info{Les catégories de démonstration n'ont pas encore d'image associée — purement visuel, sans impact fonctionnel.}
+\end{itemize}
+
+\vspace{0.5cm}
+\noindent\textbf{Verdict global~:} les 3 portails sont prêts pour une démonstration en direct.
+
+\end{document}

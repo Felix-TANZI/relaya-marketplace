@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import {
   ArrowRight,
   ChevronLeft,
@@ -70,11 +71,16 @@ function productToFlashDeal(product: Product): FlashDealView {
   };
 }
 
-function fallbackToFlashDeal(deal: (typeof FLASH_DEALS)[number]): FlashDealView {
+/**
+ * Le nom affiché vient d'i18next (`home.flash_deal_names`, même ordre que
+ * `FLASH_DEALS`) ; `deal.name` original (FR) reste la clé de rapprochement avec
+ * le catalogue de démonstration, lui aussi non traduit — seul l'affichage change.
+ */
+function fallbackToFlashDeal(deal: (typeof FLASH_DEALS)[number], index: number, t: TFunction): FlashDealView {
   const linkedProduct = resolveFallbackProduct(deal.name);
   return {
     id: linkedProduct?.id ?? 0,
-    name: deal.name,
+    name: t(`home.flash_deal_names.${index}`, { defaultValue: deal.name }),
     img: deal.img,
     price: parseXaf(deal.price),
     old: parseXaf(deal.old),
@@ -125,13 +131,18 @@ export default function FlashPanel({
   trackHeight,
   topOffset,
 }: FlashPanelProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const panelRef = useRef<HTMLElement | null>(null);
   const [current, setCurrent] = useState(0);
-  const [deals, setDeals] = useState<FlashDealView[]>(() => FLASH_DEALS.map(fallbackToFlashDeal));
+  const [deals, setDeals] = useState<FlashDealView[]>(() =>
+    FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)),
+  );
   const [mode, setMode] = useState<"start" | "fixed" | "end">("start");
   const [endTop, setEndTop] = useState(0);
+  /* Les offres scénarisées (repli) se retraduisent au changement de langue ;
+     celles de l'API gardent leur texte, déjà traduit côté backend. */
+  const usingFallbackRef = useRef(true);
   const deal = deals[current] ?? deals[0];
   const cd = useDeadlineCountdown(deal?.endsAt);
 
@@ -149,12 +160,14 @@ export default function FlashPanel({
           .filter((item) => item.img && item.price > 0 && item.old > item.price);
 
         if (apiDeals.length) {
+          usingFallbackRef.current = false;
           setDeals(apiDeals);
           setCurrent(0);
         }
       } catch {
         if (mounted) {
-          setDeals(FLASH_DEALS.map(fallbackToFlashDeal));
+          usingFallbackRef.current = true;
+          setDeals(FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)));
           setCurrent(0);
         }
       }
@@ -164,7 +177,14 @@ export default function FlashPanel({
     return () => {
       mounted = false;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (usingFallbackRef.current) {
+      setDeals(FLASH_DEALS.map((item, index) => fallbackToFlashDeal(item, index, t)));
+    }
+  }, [i18n.language, t]);
 
   useEffect(() => {
     const timer = window.setInterval(() => {

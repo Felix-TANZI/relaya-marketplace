@@ -162,9 +162,9 @@ export default function HomePage() {
      marque mène à « Tout voir ». Dès que l'admin a donné une image à des catégories,
      ce sont elles qui composent le carrousel ; sinon, les frames éditoriales ci-dessous. */
   const brandSlide = {
-    label: "CEMAC · CMR · Gabon · RCA · Tchad",
-    title: "Achetez en toute confiance au Cameroun & Afrique centrale",
-    subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
+    label: t("home.brand_slide.label"),
+    title: t("home.brand_slide.title"),
+    subtitle: t("home.brand_slide.subtitle"),
     bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
     labelBg: "rgba(244,121,32,0.9)",
     action: () => navigate("/categorie/all"),
@@ -181,13 +181,13 @@ export default function HomePage() {
     }));
   const slides = categorySlides.length > 0 ? [brandSlide, ...categorySlides] : [
     brandSlide,
-    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
-    { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
-    { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
-    { label: "Made in Cameroon", title: "Produits artisanaux locaux", subtitle: "Soutenez les PME camerounaises · Certifié BelivaY", bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
-    { label: "Maison & Déco", title: "Aménagez votre intérieur", subtitle: "1 720 produits · Meubles · Déco · Électroménager", bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
-    { label: "Mode Homme", title: "Bazin · Costume · Chemise Brodée", subtitle: "2 100 produits · Tenues de cérémonie et casual", bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
-    { label: "Chaussures", title: "Sneakers · Escarpins · Sandales", subtitle: "1 100 produits · Toutes pointures disponibles", bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
+    { label: t("home.category_fallback_slides.femme.label"), title: t("home.category_fallback_slides.femme.title"), subtitle: t("home.category_fallback_slides.femme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
+    { label: t("home.category_fallback_slides.tech.label"), title: t("home.category_fallback_slides.tech.title"), subtitle: t("home.category_fallback_slides.tech.subtitle"), bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
+    { label: t("home.category_fallback_slides.beaute.label"), title: t("home.category_fallback_slides.beaute.title"), subtitle: t("home.category_fallback_slides.beaute.subtitle"), bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
+    { label: t("home.category_fallback_slides.super.label"), title: t("home.category_fallback_slides.super.title"), subtitle: t("home.category_fallback_slides.super.subtitle"), bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
+    { label: t("home.category_fallback_slides.maison.label"), title: t("home.category_fallback_slides.maison.title"), subtitle: t("home.category_fallback_slides.maison.subtitle"), bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
+    { label: t("home.category_fallback_slides.homme.label"), title: t("home.category_fallback_slides.homme.title"), subtitle: t("home.category_fallback_slides.homme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
+    { label: t("home.category_fallback_slides.shoes.label"), title: t("home.category_fallback_slides.shoes.title"), subtitle: t("home.category_fallback_slides.shoes.subtitle"), bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
   ];
 
   /* ── Featured sections (horizontal scroll, top of page) ── */

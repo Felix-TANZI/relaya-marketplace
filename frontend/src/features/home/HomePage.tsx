@@ -27,7 +27,6 @@ import { HERO_MIN_HEIGHT } from "@/data/categoryThemes";
 import { productInStorefrontCategory } from "@/data/storefrontCategories";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
-import FeaturedProductsRotation from "@/components/home/FeaturedProductsRotation";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
@@ -411,9 +410,6 @@ export default function HomePage() {
               maxDiscount={promoStats.maxDiscount}
               endDates={promoStats.endDates}
             />
-
-            {/* ═══ Featured Products Rotation ═══ */}
-            <FeaturedProductsRotation page={1} pageSize={20} />
 
             {/* ═══ Nearby Products by Location ═══ */}
             <NearbyProductsSection limit={10} maxDistanceKm={50} />

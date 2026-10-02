@@ -269,7 +269,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             user_lon=float(user_lon) if user_lon else None,
         )
         
-        serializer = ProductSerializer(products, many=True)
+        serializer = ProductSerializer(products, many=True, context={'request': request})
         return Response(serializer.data)
 
     @extend_schema(
@@ -310,7 +310,7 @@ class ProductViewSet(viewsets.ModelViewSet):
             limit=limit
         )
         
-        serializer = ProductSerializer(products, many=True)
+        serializer = ProductSerializer(products, many=True, context={'request': request})
         return Response(serializer.data)
 
     @extend_schema(
@@ -335,7 +335,7 @@ class ProductViewSet(viewsets.ModelViewSet):
         total_count = queryset.count()
         products = get_homepage_featured_rotation(queryset, page=page, page_size=page_size)
 
-        serializer = ProductSerializer(products, many=True)
+        serializer = ProductSerializer(products, many=True, context={'request': request})
         # Format aligne sur ProductListResponse (front) : results/count/next/
         # previous, pas un tableau brut — cet endpoint alimente un pager
         # avec compteur, contrairement a related_products/cart_recommendations.

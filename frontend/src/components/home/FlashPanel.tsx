@@ -178,7 +178,7 @@ export default function FlashPanel({
       mounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     if (usingFallbackRef.current) {

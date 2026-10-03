@@ -97,7 +97,7 @@ export default function SearchPage() {
         }
         setCategories(mockCats);
       });
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     const stored = localStorage.getItem(LAST_SEARCH_STORAGE_KEY);
@@ -146,7 +146,7 @@ export default function SearchPage() {
     }
     setProducts([]);
     setSearched(false);
-  }, [searchParams, runSearch]);
+  }, [searchParams, runSearch, i18n.language]);
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 

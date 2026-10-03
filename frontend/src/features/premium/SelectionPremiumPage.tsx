@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
-import { V29_PRODUCTS } from "@/data/v29Products";
+import { getV29Products } from "@/data/v29Products";
 import { productsApi, type Product } from "@/services/api/products";
 import { PfShellStyles } from "@/styles/pfShell";
 
@@ -121,7 +121,7 @@ export default function SelectionPremiumPage() {
     return () => { cancelled = true; };
   }, [i18n.language]);
 
-  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
 
   const pool = useMemo(
     () => sourceProducts.filter(

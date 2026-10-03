@@ -17,7 +17,7 @@ import {
   Flame, Sparkles, Globe, Gem,
 } from "lucide-react";
 import {
-  V29_PRODUCTS,
+  getV29Products,
   getByCat,
   getTopProducts,
   getNewProducts,
@@ -85,7 +85,7 @@ export default function HomePage() {
     };
   }, [i18n.language]);
 
-  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
   /* La grille de l'accueil montre-t-elle des produits de démonstration ? */
   const filteredAreMock = usingMockProducts && !realCategoryActive;
 
@@ -97,11 +97,11 @@ export default function HomePage() {
         return apiProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
       }
 
-      if (usingMockProducts) return getByCat(mockSlug);
+      if (usingMockProducts) return getByCat(mockSlug, t);
 
       return sourceProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
     },
-    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts]
+    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts, t]
   );
 
   const sortedProducts = useMemo(() => {
@@ -192,13 +192,13 @@ export default function HomePage() {
   /* ── Featured sections (horizontal scroll, top of page) ── */
   const popular = useMemo(() => {
     if (filteredAreMock) {
-      return activeCat === "all" ? getTopProducts() : getByCat(mockSlug);
+      return activeCat === "all" ? getTopProducts(t) : getByCat(mockSlug, t);
     }
 
     return [...allFiltered]
       .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
-  }, [activeCat, allFiltered, filteredAreMock, mockSlug]);
+  }, [activeCat, allFiltered, filteredAreMock, mockSlug, t]);
 
   /* « À la une » — les mieux notés d'abord, c'est la vitrine de la page mobile. */
   const featured = useMemo(
@@ -244,12 +244,12 @@ export default function HomePage() {
           products: theme.node
             ? apiProducts.filter((product) => productInStorefrontCategory(product, theme))
             : usingMockProducts
-              ? (theme.themeSlug ? getByCat(theme.themeSlug) : [])
+              ? (theme.themeSlug ? getByCat(theme.themeSlug, t) : [])
               : sourceProducts.filter((product) => productInStorefrontCategory(product, theme)),
         }))
         .filter((entry) => entry.products.length >= 4)
         .slice(0, 6),
-    [apiProducts, sourceProducts, storefront, usingMockProducts],
+    [apiProducts, sourceProducts, storefront, usingMockProducts, t],
   );
 
   /* Chiffres du bandeau promotions, calculés sur le catalogue réellement affiché. */
@@ -275,12 +275,12 @@ export default function HomePage() {
   }, [sourceProducts]);
 
   const newProds = useMemo(() => {
-    if (usingMockProducts) return getNewProducts();
+    if (usingMockProducts) return getNewProducts(t);
 
     return [...sourceProducts]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 12);
-  }, [sourceProducts, usingMockProducts]);
+  }, [sourceProducts, usingMockProducts, t]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">

@@ -119,7 +119,7 @@ export default function PromotionsPage() {
           || product.is_on_promotion
           || (product.discount_percent ?? product.discount ?? 0) > 0
         );
-        const fallbackPromos = getPromoProducts();
+        const fallbackPromos = getPromoProducts(t);
 
         if (promos.length) {
           setAllPromo(promos);
@@ -142,7 +142,7 @@ export default function PromotionsPage() {
       } catch {
         if (!mounted) return;
 
-        const fallbackPromos = getPromoProducts();
+        const fallbackPromos = getPromoProducts(t);
         const fallbackCategories = Array.from(
           new Map(
             fallbackPromos.map((product) => [
@@ -164,7 +164,8 @@ export default function PromotionsPage() {
     return () => {
       mounted = false;
     };
-  }, [i18n.language]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language, t]);
 
   const displayed = useMemo(() => {
     const filtered =

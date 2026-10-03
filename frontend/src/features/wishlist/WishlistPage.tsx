@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Heart, Link2, ShoppingBag, Sparkles, Trash2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -6,7 +6,7 @@ import { productsApi, type Product } from "@/services/api/products";
 import { getFavoriteProductIds, toggleFavoriteProduct } from "@/lib/favorites";
 import { hasValidAccessToken } from "@/lib/authTokens";
 import { customerApi } from "@/services/api/customer";
-import { V29_PRODUCTS } from "@/data/v29Products";
+import { getV29Products } from "@/data/v29Products";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import CatalogProductCard from "@/components/product/CatalogProductCard";
@@ -19,6 +19,7 @@ export default function WishlistPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const removedIdsRef = useRef<Set<number>>(new Set());
+  const mockProducts = useMemo(() => getV29Products(t), [t]);
 
   const fetchProducts = async (silent = false) => {
     try {
@@ -28,7 +29,7 @@ export default function WishlistPage() {
         try {
           const favorites = await customerApi.getFavorites();
           const apiProducts = favorites.map((favorite) => favorite.product);
-          const fallbackProducts = V29_PRODUCTS.filter((product) =>
+          const fallbackProducts = mockProducts.filter((product) =>
             getFavoriteProductIds().includes(product.id),
           );
           const knownIds = new Set(apiProducts.map((product) => product.id));
@@ -49,7 +50,7 @@ export default function WishlistPage() {
         return;
       }
 
-      const fallbackProducts = V29_PRODUCTS.filter((product) => ids.includes(product.id));
+      const fallbackProducts = mockProducts.filter((product) => ids.includes(product.id));
 
       try {
         const response = await productsApi.list({ page_size: 100 });
@@ -208,7 +209,7 @@ export default function WishlistPage() {
                 key={product.id}
                 product={product}
                 showPromo
-                isMock={V29_PRODUCTS.some((item) => item.id === product.id)}
+                isMock={mockProducts.some((item) => item.id === product.id)}
               />
             ))}
           </div>

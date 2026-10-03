@@ -29,7 +29,7 @@ import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import { HERO_MIN_HEIGHT, getCategoryTheme, matchesCategory } from "@/data/categoryThemes";
 import { categoryIcon } from "@/data/categoryIcon";
 import { toStorefrontCategory } from "@/data/storefrontCategories";
-import { V29_PRODUCTS } from "@/data/v29Products";
+import { getV29Products } from "@/data/v29Products";
 import { productsApi, type Product, type ProductListParams } from "@/services/api/products";
 import {
   categorySubtreeIds,
@@ -251,7 +251,7 @@ export default function CategoryThemePage() {
     };
   }, [pageCategoryId, productsKey, treeLoading, i18n.language]);
 
-  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
 
   const categoryProducts = useMemo(
     () => (context ? sourceProducts : sourceProducts.filter((product) => matchesCategory(product, slug))),

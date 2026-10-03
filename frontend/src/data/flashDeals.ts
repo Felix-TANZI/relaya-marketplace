@@ -76,7 +76,7 @@ export function buildFallbackDeals(t?: TFunction): FlashDeal[] {
     };
   });
 
-  const extras = getPromoProducts()
+  const extras = getPromoProducts(t)
     .filter((product) => !named.some((deal) => deal.id === product.id))
     .map((product) => ({
       id: product.id,

@@ -92,7 +92,7 @@ function buildScoredList(list: Product[]) {
 }
 
 export default function PromotionsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [allPromo, setAllPromo] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeCat, setActiveCat] = useState("all");
@@ -164,7 +164,7 @@ export default function PromotionsPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [i18n.language]);
 
   const displayed = useMemo(() => {
     const filtered =

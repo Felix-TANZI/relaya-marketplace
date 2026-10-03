@@ -12,7 +12,7 @@ import { useToast } from "@/context/ToastContext";
 import CatalogProductCard from "@/components/product/CatalogProductCard";
 
 export default function WishlistPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
@@ -70,7 +70,7 @@ export default function WishlistPage() {
 
   useEffect(() => {
     void fetchProducts();
-  }, []);
+  }, [i18n.language]);
 
   useEffect(() => {
     const onFavoritesUpdated = () => void fetchProducts(true);

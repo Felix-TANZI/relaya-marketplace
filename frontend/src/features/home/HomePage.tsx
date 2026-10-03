@@ -40,7 +40,7 @@ const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
 ];
 
 export default function HomePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { mainRef, trackTop: mainTop, trackHeight: mainHeight, topOffset } = useSidebarTrack();
   const [activeCat, setActiveCat] = useState("all");
@@ -83,7 +83,7 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [i18n.language]);
 
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
   /* La grille de l'accueil montre-t-elle des produits de démonstration ? */

@@ -97,7 +97,7 @@ function productCategoryIn(product: Product, ids: Set<number>) {
 }
 
 export default function CategoryThemePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { tree, categories: storefront, loading: treeLoading } = useStorefrontCategories();
@@ -249,7 +249,7 @@ export default function CategoryThemePage() {
     return () => {
       cancelled = true;
     };
-  }, [pageCategoryId, productsKey, treeLoading]);
+  }, [pageCategoryId, productsKey, treeLoading, i18n.language]);
 
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
 

@@ -91,7 +91,7 @@ function priceOf(product: Product): number {
 /* ────────────────────────────────── Page ────────────────────────────────── */
 
 export default function SelectionPremiumPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [apiProducts, setApiProducts] = useState<Product[]>([]);
   const [usingMockProducts, setUsingMockProducts] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -119,7 +119,7 @@ export default function SelectionPremiumPage() {
         if (!cancelled) setLoading(false);
       });
     return () => { cancelled = true; };
-  }, []);
+  }, [i18n.language]);
 
   const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
 

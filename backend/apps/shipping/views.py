@@ -51,17 +51,43 @@ from apps.accounts.models import TrustScoreProfile
 from apps.accounts.models import RelayPointProfile
 from apps.accounts.trust_score import calculate_trust_score, get_trust_score_profile, trust_score_payload
 from apps.vendors.models import VendorLocation, VendorProfile
-from apps.orders.models import Dispute, DisputeMessage, Order, Return
+from apps.orders.models import Dispute, DisputeMessage, Order, PlatformSettings, Return
 from apps.orders.serializers import ReturnSerializer
 from .evidence import create_shipment_evidence
 from .models import ShipmentEvidence
 
 
 def _get_active_relay_point(user):
+    """
+    Le point relais d'un compte — gerant OU employe.
+
+    Un employe n'a pas de `relay_point_profile` : son compte est le sien,
+    pas celui du relais. Sans cette resolution, il se connecterait avec son
+    PIN et ne verrait aucun colis.
+    """
     relay_point = getattr(user, "relay_point_profile", None)
+    if relay_point is None:
+        lien = getattr(user, "relay_employee_link", None)
+        # Un acces retire ferme la porte tout de suite : on ne laisse pas
+        # courir une session ouverte avant le depart de la personne.
+        relay_point = lien.relay_point if (lien and lien.is_active) else None
     if not relay_point or not relay_point.is_active or relay_point.status != relay_point.Status.APPROVED:
         raise PermissionDenied("Relay point account is not active or approved")
     return relay_point
+
+
+def _exiger_permission(user, permission: str) -> None:
+    """
+    Le gerant peut tout ; un employe, seulement ce qu'on lui a ouvert.
+
+    Un bouton grise dans l'ecran ne protege de rien — il suffit d'appeler
+    l'API. Le controle vit donc ici.
+    """
+    if getattr(user, "relay_point_profile", None) is not None:
+        return
+    lien = getattr(user, "relay_employee_link", None)
+    if not lien or not lien.is_active or not getattr(lien, permission, False):
+        raise PermissionDenied("Cette action est reservee au gerant du relais.")
 
 
 def _haversine_km(lat1, lng1, lat2, lng2):
@@ -1699,6 +1725,177 @@ class RelayPointCollectionScheduleView(APIView):
         return Response({
             "passages": passages,
             "pending_pickup_count": pending_pickup_count,
+        })
+
+
+@extend_schema(
+    tags=["Relay Point"],
+    summary="Historique operationnel du point relais",
+    parameters=[
+        OpenApiParameter("days", int, description="Fenetre en jours : 1, 7 ou 30."),
+        OpenApiParameter("q", str, description="Numero de commande, de colis ou de retour."),
+    ],
+)
+class RelayPointHistoryView(APIView):
+    """
+    Ce que le comptoir a fait, dans l'ordre ou il l'a fait.
+
+    ---------------------------------------------------------------------
+    POURQUOI LE SERVEUR COMPOSE LA LIGNE DE TEMPS
+
+    Une journee de relais melange cinq natures d'evenements qui vivent dans
+    cinq tables : receptions et remises sur `RelayParcel`, depots de retour
+    sur `Return`, constats sur `Dispute`. Les recoudre dans le navigateur
+    obligerait a charger quatre listes completes pour n'en afficher qu'une
+    tranche, et chaque ecran les recoudrait a sa maniere.
+
+    Ici, un seul ordre chronologique, calcule la ou les dates sont ecrites.
+
+    ---------------------------------------------------------------------
+    CE QUE LA RETENTION PERMET DE PROMETTRE
+
+    La reponse porte les durees REELLES de conservation, lues de
+    `PlatformSettings`. Elles ne sont pas decoratives : le portail annonce
+    au gerant combien de temps il pourra reconsulter ses preuves, et cette
+    phrase l'engage. Une valeur ecrite en dur dans l'interface deviendrait
+    un mensonge le jour ou l'administration change le reglage.
+    """
+
+    permission_classes = [IsAuthenticated]
+
+    FENETRES = {1, 7, 30}
+
+    def get(self, request):
+        relay_point = _get_active_relay_point(request.user)
+
+        try:
+            jours = int(request.query_params.get("days", 7))
+        except (TypeError, ValueError):
+            jours = 7
+        if jours not in self.FENETRES:
+            jours = 7
+
+        # Fenetre en jours CALENDAIRES : « 7 jours » doit contenir sept dates,
+        # pas sept fois vingt-quatre heures. Un gerant qui regarde a 9 h ne
+        # comprendrait pas que le debut de la journee d'il y a une semaine ait
+        # disparu.
+        debut = timezone.localtime(timezone.now()).replace(
+            hour=0, minute=0, second=0, microsecond=0,
+        ) - timedelta(days=jours - 1)
+
+        recherche = (request.query_params.get("q") or "").strip().upper()
+        entrees = []
+
+        colis = (
+            RelayParcel.objects
+            .filter(relay_point=relay_point)
+            .select_related("shipment")
+        )
+        for parcel in colis:
+            # `RelayParcel` n'a pas de commande : il la tient de son colis.
+            commande_id = parcel.shipment.order_id
+            commun = {
+                "ref": f"BV-{commande_id}",
+                "slot": parcel.slot_code or "",
+                "order_id": commande_id,
+            }
+            if parcel.received_at and parcel.received_at >= debut:
+                entrees.append({
+                    **commun,
+                    "at": parcel.received_at,
+                    "kind": "reception",
+                    "title": f"BV-{commande_id} recu",
+                    "detail": " · ".join(filter(None, [
+                        parcel.slot_code,
+                        PARCEL_SIZE_LABELS.get(getattr(parcel.shipment, "parcel_size", ""), ""),
+                        f"BV-L-{parcel.shipment.courier_id:03d}" if parcel.shipment.courier_id else "",
+                    ])),
+                })
+            if parcel.picked_up_at and parcel.picked_up_at >= debut:
+                entrees.append({
+                    **commun,
+                    "at": parcel.picked_up_at,
+                    "kind": "remise",
+                    "title": f"BV-{commande_id} remis",
+                    "detail": " · ".join(filter(None, [
+                        parcel.slot_code,
+                        # Le tiers autorise est nomme : c'est LUI qui a emporte
+                        # le colis, et c'est la premiere question en cas de
+                        # contestation.
+                        f"retire par {parcel.picked_up_by_name}" if parcel.picked_up_by_name else "",
+                        parcel.proof_note or "",
+                    ])),
+                })
+            if parcel.returned_at and parcel.returned_at >= debut:
+                entrees.append({
+                    **commun,
+                    "at": parcel.returned_at,
+                    "kind": "depart",
+                    "title": f"BV-{commande_id} reparti",
+                    "detail": parcel.get_status_display(),
+                })
+
+        for retour in Return.objects.filter(
+            dropoff_relay_point=relay_point, received_at__isnull=False, received_at__gte=debut,
+        ).select_related("order_item"):
+            entrees.append({
+                "ref": f"RT-{retour.id}",
+                "slot": "",
+                "order_id": retour.order_id,
+                "at": retour.received_at,
+                "kind": "retour",
+                "title": f"RT-{retour.id} retour depose",
+                "detail": " · ".join(filter(None, [
+                    "etiquette scannee",
+                    retour.get_reason_display(),
+                    "scelle pose, 2 photos",
+                ])),
+            })
+
+        for litige in Dispute.objects.filter(
+            order__shipments__relay_parcel__relay_point=relay_point, created_at__gte=debut,
+        ).distinct():
+            entrees.append({
+                "ref": f"LIT-{litige.id:05d}",
+                "slot": "",
+                "order_id": litige.order_id,
+                "at": litige.created_at,
+                "kind": "constat",
+                "title": f"LIT-{litige.id:05d} constat envoye",
+                "detail": f"{litige.get_reason_display()} · garde sans frais",
+            })
+
+        # Les compteurs portent sur TOUTE la fenetre, pas sur la recherche :
+        # ce sont les chiffres de la periode, pas ceux du filtre. Les faire
+        # bouger a la saisie ferait croire a une activite qui change.
+        compteurs = {
+            "recus": sum(1 for e in entrees if e["kind"] == "reception"),
+            "remis": sum(1 for e in entrees if e["kind"] == "remise"),
+            "retours": sum(1 for e in entrees if e["kind"] == "retour"),
+            "constats": sum(1 for e in entrees if e["kind"] == "constat"),
+            "departs": sum(1 for e in entrees if e["kind"] == "depart"),
+        }
+
+        if recherche:
+            chiffres = "".join(c for c in recherche if c.isdigit())
+            entrees = [
+                e for e in entrees
+                if recherche in e["ref"].upper()
+                or (chiffres and chiffres == str(e["order_id"]))
+            ]
+
+        entrees.sort(key=lambda e: e["at"], reverse=True)
+
+        reglages = PlatformSettings.get_settings()
+        return Response({
+            "days": jours,
+            "counts": compteurs,
+            "entries": [{**e, "at": e["at"].isoformat()} for e in entrees],
+            # Les durees reelles. Le portail les affiche telles quelles.
+            "retention": {
+                "evidence_days": reglages.evidence_retention_days,
+                "dispute_days": reglages.dispute_evidence_retention_days,
+            },
         })
 
 

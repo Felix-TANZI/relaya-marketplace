@@ -145,7 +145,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
           gap: 14, marginBottom: 18,
         }}>
           <Tuile
-            icone={<Banknote size={21} color="#1D4ED8" />}
+            icone={<Banknote size={21} color="#2456D6" />}
             label="BelivaY vous doit"
             valeur={nf(due.due_xaf)}
             note="FCFA · après retenue"
@@ -158,7 +158,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
           />
           {bloque ? (
             <Tuile
-              icone={<AlertTriangle size={21} color="#C2410C" />}
+              icone={<AlertTriangle size={21} color="#B84A00" />}
               label="Prochain versement"
               valeur="suspendu"
               note="voir ci-dessous"
@@ -166,7 +166,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
             />
           ) : (
             <Tuile
-              icone={<CalendarCheck size={21} color="#1D4ED8" />}
+              icone={<CalendarCheck size={21} color="#2456D6" />}
               label="Prochain versement"
               valeur={formatLong(due.next_settlement_at) || "au seuil"}
               note={compteARebours(due.next_settlement_at)
@@ -228,7 +228,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
           borderRadius: 18, padding: "18px 22px", marginBottom: 16,
         }}>
           <div style={{ display: "flex", alignItems: "flex-start", gap: 13 }}>
-            <AlertTriangle size={20} color="#C2410C" style={{ flexShrink: 0, marginTop: 2 }} />
+            <AlertTriangle size={20} color="#B84A00" style={{ flexShrink: 0, marginTop: 2 }} />
             <div style={{ flex: 1 }}>
               <p style={{
                 fontSize: 15, color: "#7C2D12", margin: "0 0 5px", fontWeight: 800,
@@ -406,7 +406,7 @@ export default function RelayFinancePanel({ onOpenKyc }: Props) {
             display: "flex", alignItems: "flex-start", gap: 10, marginTop: 16,
             padding: "13px 15px", background: "#EFF6FF", borderRadius: 12,
           }}>
-            <Info size={17} color="#1D4ED8" style={{ flexShrink: 0, marginTop: 1 }} />
+            <Info size={17} color="#2456D6" style={{ flexShrink: 0, marginTop: 1 }} />
             <p style={{ fontSize: 12.5, color: "#1E40AF", margin: 0, lineHeight: 1.6 }}>
               Un tarif <b>négocié</b> vient d’un accord propre à votre point
               relais et prime sur le tarif général. Pour modifier votre grille,
@@ -565,7 +565,7 @@ function Tuile({ icone, label, valeur, note, petit, accentNote }: {
       </p>
       <p style={{
         fontSize: accentNote ? 12.5 : 12, margin: "7px 0 0", lineHeight: 1.5,
-        color: accentNote ? "#1D4ED8" : "#64748B",
+        color: accentNote ? "#2456D6" : "#64748B",
         fontWeight: accentNote ? 700 : 400,
       }}>
         {note}
@@ -636,7 +636,7 @@ const carte: React.CSSProperties = {
 };
 
 const kicker: React.CSSProperties = {
-  fontSize: 11, color: "#1D4ED8", margin: "0 0 4px",
+  fontSize: 11, color: "#2456D6", margin: "0 0 4px",
   letterSpacing: "0.1em", fontWeight: 700,
 };
 

@@ -157,7 +157,7 @@ function ModuleDialog({
       }}
     >
       {/* Feuille ancree en bas sur telephone, modale centree des `sm`. */}
-      <div className="animate-sheet-up overscroll-none-y safe-pb max-h-[92vh] w-full overflow-y-auto rounded-t-3xl bg-white p-5 shadow-[0_-8px_40px_rgba(2,6,23,.32)] dark:bg-slate-900 sm:animate-page-in sm:max-w-xl sm:rounded-3xl sm:p-6 sm:shadow-[0_30px_80px_rgba(15,23,42,.35)]">
+      <div className="animate-sheet-up overscroll-none-y safe-pb max-h-[92vh] w-full overflow-y-auto rounded-t-[18px] bg-white p-5 shadow-[0_-8px_40px_rgba(14,27,56,.32)] dark:bg-slate-900 sm:animate-page-in sm:max-w-xl sm:rounded-3xl sm:p-6 sm:shadow-[0_30px_80px_rgba(60,35,15,.35)]">
         <div className="mx-auto mb-3 h-1.5 w-11 flex-shrink-0 rounded-full bg-slate-300 dark:bg-slate-700 sm:hidden" aria-hidden />
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -283,7 +283,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
   return (
     <div className="space-y-5">
       <section className="flex items-start gap-3">
-        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300 to-emerald-500 text-white shadow-[0_8px_18px_rgba(2,6,23,.2)] ring-1 ring-white/25">
+        <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-300 to-emerald-500 text-white shadow-[0_8px_18px_rgba(14,27,56,.2)] ring-1 ring-white/25">
           <GraduationCap size={21} strokeWidth={2.4} />
         </div>
         <div>
@@ -295,7 +295,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
       </section>
 
       {justValidated ? (
-        <div className="flex items-start justify-between gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
+        <div className="flex items-start justify-between gap-3 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 dark:border-emerald-900 dark:bg-emerald-950/40">
           <p className="flex items-center gap-2 text-sm font-bold text-emerald-900 dark:text-emerald-100">
             <CheckCircle2 size={17} className="flex-shrink-0" />
             Module « {justValidated} » validé · +{state?.points_per_module ?? 30} Avantages crédités.
@@ -312,7 +312,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
       ) : null}
 
       <section className="grid gap-4 md:grid-cols-3">
-        <article className="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white shadow-[0_14px_30px_rgba(30,64,175,.25)]">
+        <article className="rounded-2xl bg-gradient-to-br from-blue-600 to-blue-800 p-5 text-white shadow-[0_14px_30px_rgba(23,60,158,.25)]">
           <div className="flex items-start justify-between gap-3">
             <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">Modules complétés</span>
             <span aria-hidden className="text-lg">🎓</span>
@@ -324,7 +324,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
           <div className="mt-1 text-xs font-semibold text-blue-100/80">{progressPct} % du parcours</div>
         </article>
 
-        <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+        <article className="rounded-[14px] border border-slate-200 bg-white p-5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
           <span className="text-[11px] font-black uppercase tracking-[0.14em] text-slate-500">Tronc obligatoire</span>
           <div className="mt-2 text-4xl font-black text-slate-950 dark:text-white">
             {state?.core_completed ?? 0}/{state?.core_total ?? 3}
@@ -332,7 +332,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
           <div className="mt-1 text-xs font-semibold text-slate-500 dark:text-slate-400">requis pour l'activation</div>
         </article>
 
-        <article className="rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-900 p-5 text-white shadow-[0_14px_30px_rgba(30,64,175,.25)]">
+        <article className="rounded-2xl bg-gradient-to-br from-blue-700 to-indigo-900 p-5 text-white shadow-[0_14px_30px_rgba(23,60,158,.25)]">
           <div className="flex items-start justify-between gap-3">
             <span className="text-[11px] font-black uppercase tracking-[0.14em] text-blue-100/85">Avantages gagnés</span>
             <span aria-hidden className="text-lg">🪙</span>
@@ -368,7 +368,7 @@ export default function RelayTraining({ onError }: { onError: (error: unknown) =
           return (
             <article
               key={module.key}
-              className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900"
+              className="rounded-[14px] border border-slate-200 bg-white p-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition hover:border-blue-200 dark:border-slate-800 dark:bg-slate-900"
             >
               <div className="flex items-start gap-3">
                 <div

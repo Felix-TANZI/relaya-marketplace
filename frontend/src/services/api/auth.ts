@@ -80,6 +80,8 @@ export interface RelayPointProfile {
   relay_code: string;
   opening_hours: string;
   storage_capacity: number;
+  /** Le relais prend-il les encombrants ? Question de place, pas de tarif. */
+  accepts_bulky: boolean;
   status: "PENDING" | "APPROVED" | "SUSPENDED";
   is_active: boolean;
   created_at: string;

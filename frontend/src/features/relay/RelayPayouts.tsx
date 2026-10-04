@@ -25,7 +25,7 @@
  * contrat — ce qui sera payé, plutôt qu'un tableau vide.
  */
 import { useEffect, useState } from "react";
-import { Check, CircleHelp, ShoppingCart, Smartphone, TriangleAlert } from "lucide-react";
+import { Check, CircleHelp, Smartphone, TriangleAlert } from "lucide-react";
 import { http } from "@/services/api/http";
 import {
   compteARebours,
@@ -53,8 +53,8 @@ const COMPOSANTS: Record<string, string> = {
 
 /** Couleurs des opérateurs Mobile Money du Cameroun. */
 const OPERATEUR: Record<string, string> = {
-  MTN: "bg-[#FFCC00] text-[#1B2540]",
-  ORANGE: "bg-white text-[#E8590C]",
+  MTN: "bg-[#FFCC00] text-[#1A2A52]",
+  ORANGE: "bg-white text-[#EF6A00]",
 };
 
 /**
@@ -76,14 +76,14 @@ const SOUCIS: Array<{ id: string; icon: typeof Check; tone: string; title: strin
   {
     id: "non-recu",
     icon: CircleHelp,
-    tone: "bg-[#EAF1FE] text-[#4F7DF3] dark:bg-blue-950 dark:text-blue-300",
+    tone: "bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300",
     title: "Versement non reçu",
     body: "Signalez-le avec la référence : réponse avant lundi midi",
   },
   {
     id: "refuse",
     icon: TriangleAlert,
-    tone: "bg-[#FDECEC] text-[#E05B5B] dark:bg-red-950 dark:text-red-300",
+    tone: "bg-[#FDECEA] text-[#B42318] dark:bg-red-950 dark:text-red-300",
     title: "Versement refusé",
     body:
       "Numéro au nom d'un tiers, compte plein ou préfixe qui ne correspond pas : 3 nouveaux essais "
@@ -236,12 +236,22 @@ export default function RelayPayouts({
       ) : null}
 
       {/* ── Le prochain versement ────────────────────────────────────────── */}
-      <section className="overflow-hidden rounded-[18px] bg-gradient-to-br from-[#F79020] via-[#F07E16] to-[#E85D04] px-5 pb-5 pt-4 text-white shadow-[0_8px_22px_rgba(232,93,4,.3)]">
+      <section className="pr-sunrise overflow-hidden rounded-[18px] px-5 pb-5 pt-4 text-white shadow-[0_8px_22px_rgba(217,80,0,.3)]">
         <div className="flex items-start justify-between gap-3">
           <p className="text-[12px] font-black uppercase leading-[1.3] tracking-[0.09em] text-white">
             {quand}
           </p>
-          <ShoppingCart size={26} strokeWidth={2} className="flex-shrink-0 text-white/90" />
+          {/* La marque, et non son approximation : le chariot de lucide n'a
+              pas la barre dans le panier, et cote a cote avec le logo du
+              bandeau l'ecart se voit. Le symbole officiel est orange sur
+              fond transparent ; `brightness(0) invert(1)` le passe en blanc
+              sans qu'il faille en stocker une seconde version. */}
+          <img
+            src="/belivay-logo-symbol.png"
+            alt=""
+            aria-hidden
+            className="h-[26px] w-[26px] flex-shrink-0 object-contain opacity-90 [filter:brightness(0)_invert(1)]"
+          />
         </div>
 
         <div className="mt-3 flex items-baseline gap-1.5">
@@ -269,7 +279,7 @@ export default function RelayPayouts({
           {operateur ? (
             <span
               className={`flex-shrink-0 rounded-[8px] px-3 py-1.5 text-[13px] font-black ${
-                OPERATEUR[operateur] || "bg-white text-[#E8590C]"
+                OPERATEUR[operateur] || "bg-white text-[#EF6A00]"
               }`}
             >
               {operateur}
@@ -279,8 +289,8 @@ export default function RelayPayouts({
       </section>
 
       {/* ── Le détail ────────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Le détail de la semaine
         </h3>
         {releve ? (
@@ -345,7 +355,7 @@ export default function RelayPayouts({
 
         <div className="mt-3 flex items-baseline justify-between gap-3">
           <span className="text-[19px] font-black text-slate-900 dark:text-white">Total</span>
-          <span className="text-[19px] font-black text-[#E8590C] dark:text-orange-400">{nf(montant)} F</span>
+          <span className="text-[19px] font-black text-[#EF6A00] dark:text-orange-400">{nf(montant)} F</span>
         </div>
 
         <p className="mt-2 text-[13px] font-medium leading-[1.5] text-slate-400 dark:text-slate-500">
@@ -361,7 +371,7 @@ export default function RelayPayouts({
         {TERMES.map(([titre, valeur]) => (
           <div
             key={titre}
-            className="rounded-[14px] border border-slate-200/70 bg-white px-2 py-3 text-center shadow-[0_2px_6px_rgba(15,23,42,.05)] dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-[14px] border border-slate-200 bg-white px-2 py-3 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900"
           >
             <div className="text-[11px] font-black uppercase leading-none tracking-[0.08em] text-slate-400 dark:text-slate-500">
               {titre}
@@ -374,12 +384,12 @@ export default function RelayPayouts({
       </div>
 
       {/* ── Ce qui est arrivé ────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-center justify-between gap-3">
-          <h3 className="text-[19px] font-black capitalize tracking-[-0.015em] text-slate-900 dark:text-white">
+          <h3 className="text-[17px] font-black capitalize tracking-[-0.02em] text-slate-900 dark:text-white">
             Reçus en {MOIS.format(maintenant)}
           </h3>
-          <span className="flex-shrink-0 rounded-full border border-[#B7E0C4] bg-[#F1FAF3] px-3 py-[5px] text-[12.5px] font-bold text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+          <span className="flex-shrink-0 rounded-full border border-[#BFE3CF] bg-[#E6F4EC] px-3 py-[5px] text-[12.5px] font-bold text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
             {nf(totalMois)} F
           </span>
         </div>
@@ -392,7 +402,7 @@ export default function RelayPayouts({
           <ul className="mt-3 divide-y divide-slate-100 dark:divide-slate-800">
             {duMois.map((versement) => (
               <li key={versement.reference} className="flex items-center gap-3 py-3.5">
-                <Check size={19} strokeWidth={3} className="flex-shrink-0 text-[#2E7D4F] dark:text-emerald-400" />
+                <Check size={19} strokeWidth={3} className="flex-shrink-0 text-[#1F7A4D] dark:text-emerald-400" />
                 <span className="min-w-0 flex-1">
                   <span className="block text-[15px] font-black capitalize leading-tight text-slate-900 dark:text-white">
                     {JOUR_COURT.format(new Date(versement.settled_at as string))} · {versement.status_label.toLowerCase()}
@@ -416,8 +426,8 @@ export default function RelayPayouts({
       </section>
 
       {/* ── Quand ça coince ──────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Un souci de versement ?
         </h3>
         <ul className="mt-2 divide-y divide-slate-100 dark:divide-slate-800">
@@ -465,9 +475,9 @@ export default function RelayPayouts({
           changer de numéro, on vient voir son argent. Mais quand un versement
           est refusé, c'est la première chose à vérifier — d'où sa présence
           sur la même page plutôt que dans les réglages. */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="flex items-start gap-3">
-          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#E8F6EC] text-[#2E7D4F] dark:bg-emerald-950 dark:text-emerald-300">
+          <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[10px] bg-[#E6F4EC] text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300">
             <Smartphone size={19} strokeWidth={2.2} />
           </span>
           <div className="min-w-0 flex-1">
@@ -491,8 +501,8 @@ export default function RelayPayouts({
             <span
               className={`flex-shrink-0 rounded-full border px-3 py-[5px] text-[12.5px] font-bold ${
                 compte.status === "VERIFIED"
-                  ? "border-[#B7E0C4] bg-[#F1FAF3] text-[#2E7D4F] dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                  : "border-[#F2D79B] bg-[#FDF6E3] text-[#B4791A] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                  ? "border-[#BFE3CF] bg-[#E6F4EC] text-[#1F7A4D] dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                  : "border-[#F0DA9C] bg-[#FFF4D6] text-[#8A5A00] dark:border-amber-800 dark:bg-amber-950 dark:text-amber-300"
               }`}
             >
               {compte.status === "VERIFIED" ? "Vérifié" : compte.status === "DISABLED" ? "Désactivé" : "À vérifier"}

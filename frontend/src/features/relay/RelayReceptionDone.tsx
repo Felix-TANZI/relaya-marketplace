@@ -52,11 +52,11 @@ export default function RelayReceptionDone({
   return (
     <div className="space-y-4">
       {/* ── C'est enregistré ─────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-6 pt-7 text-center shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <span className="mx-auto flex h-[68px] w-[68px] items-center justify-center rounded-full bg-[#E8F6EC] text-[#2E7D4F] dark:bg-emerald-950 dark:text-emerald-300">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-6 pt-7 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <span className="mx-auto flex h-[68px] w-[68px] items-center justify-center rounded-full bg-[#E6F4EC] text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300">
           <Check size={32} strokeWidth={3} />
         </span>
-        <h2 className="mt-4 text-[22px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+        <h2 className="mt-4 text-[23px] font-black tracking-[-0.03em] text-slate-900 dark:text-white">
           Lot reçu · {count} colis
         </h2>
         <p className="mt-2 text-[14px] font-medium leading-[1.55] text-slate-500 dark:text-slate-400">
@@ -66,14 +66,14 @@ export default function RelayReceptionDone({
       </section>
 
       {/* ── Les trois conséquences ───────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-2 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-2 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Ce qui part maintenant
         </h3>
 
         <ul className="mt-1 divide-y divide-slate-100 dark:divide-slate-800">
           <li className="flex items-start gap-3 py-3.5">
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#EAF1FE] text-[#4F7DF3] dark:bg-blue-950 dark:text-blue-300">
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#EAF0FF] text-[#3A6BEA] dark:bg-blue-950 dark:text-blue-300">
               <Bell size={19} strokeWidth={2.2} />
             </span>
             <span className="min-w-0 flex-1">
@@ -90,7 +90,7 @@ export default function RelayReceptionDone({
           </li>
 
           <li className="flex items-start gap-3 py-3.5">
-            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FDF3DC] text-[#E0A020] dark:bg-amber-950 dark:text-amber-300">
+            <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FFF4D6] text-[#E8A10E] dark:bg-amber-950 dark:text-amber-300">
               <Layers size={19} strokeWidth={2.2} />
             </span>
             <span className="min-w-0 flex-1">
@@ -114,7 +114,7 @@ export default function RelayReceptionDone({
               disabled={outbound === 0}
               className="flex w-full items-start gap-3 py-3.5 text-left transition active:scale-[.99] disabled:cursor-default"
             >
-              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FDEADC] text-[#E07B3C] dark:bg-orange-950 dark:text-orange-300">
+              <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-[12px] bg-[#FFF1E2] text-[#EF6A00] dark:bg-orange-950 dark:text-orange-300">
                 <Truck size={19} strokeWidth={2.2} />
               </span>
               <span className="min-w-0 flex-1">
@@ -149,14 +149,14 @@ export default function RelayReceptionDone({
       <button
         type="button"
         onClick={onNew}
-        className="flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#3B7BF0] to-[#1E3FBF] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(30,63,191,.32)] transition active:scale-[.97]"
+        className="flex w-full items-center justify-center gap-2.5 rounded-[12px] bg-gradient-to-r from-[#3A6BEA] to-[#173C9E] px-4 py-4 text-[17px] font-black text-white shadow-[0_4px_14px_rgba(23,60,158,.32)] transition active:scale-[.97]"
       >
         <LayoutGrid size={19} strokeWidth={2.4} /> Nouvelle réception
       </button>
 
-      <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
-        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+      <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
+        <Lock size={18} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           Vous ne voyez jamais le vendeur ni le client : uniquement la référence BelivaY, la taille et
           l'emplacement.
         </p>

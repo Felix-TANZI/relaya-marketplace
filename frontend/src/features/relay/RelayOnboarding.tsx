@@ -332,8 +332,8 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
         subtitle="Le parcours pour devenir Point Relais partenaire BelivaY"
       />
 
-      <div className="flex items-start gap-4 rounded-2xl border border-blue-200 bg-white p-5 dark:border-blue-900 dark:bg-slate-900">
-        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-[0_8px_18px_-8px_rgba(29,78,216,.9)]">
+      <div className="flex items-start gap-4 rounded-[14px] border border-blue-200 bg-white p-5 dark:border-blue-900 dark:bg-slate-900">
+        <span className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-indigo-700 text-white shadow-[0_8px_18px_-8px_rgba(36,86,214,.9)]">
           <Store size={20} strokeWidth={2.4} />
         </span>
         <div className="min-w-0">
@@ -345,7 +345,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
       </div>
 
       {alreadyApproved ? (
-        <div className="flex items-start gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
+        <div className="flex items-start gap-2 rounded-[14px] border border-emerald-200 bg-emerald-50 p-4 text-sm font-bold leading-6 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100">
           <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0" />
           Votre point relais est déjà validé et activé par BelivaY. Ce parcours reste consultable comme référence du cycle de vie
           partenaire.
@@ -390,9 +390,9 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                     aria-label={`${definition.label}${done ? " (validée)" : ""}`}
                     className={`flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-full transition duration-300 ${
                       done
-                        ? "bg-emerald-500 text-white shadow-[0_8px_16px_-8px_rgba(16,185,129,.9)]"
+                        ? "bg-emerald-500 text-white shadow-[0_8px_16px_-8px_rgba(31,122,77,.9)]"
                         : active
-                          ? "bg-blue-600 text-white shadow-[0_8px_16px_-8px_rgba(37,99,235,.9)]"
+                          ? "bg-blue-600 text-white shadow-[0_8px_16px_-8px_rgba(36,86,214,.9)]"
                           : `bg-slate-100 dark:bg-slate-800 ${definition.tone}`
                     }`}
                   >
@@ -464,7 +464,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
               );
             })}
             <div
-              className={`mt-5 rounded-2xl border p-4 text-sm font-bold leading-6 ${
+              className={`mt-5 rounded-[14px] border p-4 text-sm font-bold leading-6 ${
                 kycComplete
                   ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-100"
                   : "border-blue-200 bg-blue-50 text-blue-900 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-100"
@@ -489,7 +489,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
                 <span className="text-sm font-black text-slate-950 dark:text-white">{caution}</span>
               </div>
             ))}
-            <div className="mt-5 flex items-start gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+            <div className="mt-5 flex items-start gap-2.5 rounded-[14px] border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
               <CheckCircle2 size={17} className="mt-0.5 flex-shrink-0 text-emerald-600 dark:text-emerald-400" />
               <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
                 Aucune caution n'est demandée. La sécurité repose sur la vérification{" "}
@@ -501,7 +501,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
 
         {step === 2 ? (
           <div>
-            <div className="flex items-start gap-2.5 rounded-2xl border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
+            <div className="flex items-start gap-2.5 rounded-[14px] border border-blue-200 bg-blue-50/70 p-4 dark:border-blue-800 dark:bg-blue-950/30">
               <PenLine size={17} strokeWidth={2.4} className="mt-0.5 flex-shrink-0 text-amber-600 dark:text-amber-300" />
               <p className="text-sm font-semibold leading-6 text-slate-700 dark:text-slate-200">
                 Vous signez électroniquement le <strong className="font-black">Règlement Point Relais</strong> et la{" "}
@@ -546,7 +546,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
 
         {notice ? (
           <div
-            className={`mt-5 rounded-2xl border p-4 text-sm font-bold leading-6 ${
+            className={`mt-5 rounded-[14px] border p-4 text-sm font-bold leading-6 ${
               notice.tone === "success"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-100"
                 : "border-red-200 bg-red-50 text-red-900 dark:border-red-800 dark:bg-red-950/40 dark:text-red-100"
@@ -570,7 +570,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
             <button
               type="button"
               onClick={next}
-              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(37,99,235,.9)] transition hover:bg-blue-700"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(36,86,214,.9)] transition hover:bg-blue-700"
             >
               Étape suivante →
             </button>
@@ -579,7 +579,7 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
               type="button"
               onClick={finalize}
               disabled={busy || submitted}
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(5,150,105,.9)] transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-black text-white shadow-[0_10px_20px_-12px_rgba(31,122,77,.9)] transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
             >
               <Check size={15} strokeWidth={3} />
               {submitted ? "Inscription finalisée" : busy ? "Transmission…" : "Finaliser l'inscription"}
@@ -592,14 +592,14 @@ export default function RelayOnboarding({ onError, relay }: RelayOnboardingProps
         icon={Medal}
         title="Pacte de proximité — 50 premiers PR"
         action={
-          <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-xs font-black text-white shadow-sm">
+          <span className="rounded-full bg-gradient-to-r from-amber-400 to-orange-500 px-3 py-1 text-xs font-black text-white shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)]">
             Partenaire Fondateur
           </span>
         }
       >
         <div className="grid gap-4 md:grid-cols-2">
           {PACT_BENEFITS.map(([Icon, title, body, tone]) => (
-            <div key={title} className="rounded-2xl border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
+            <div key={title} className="rounded-[14px] border border-slate-100 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-800">
               <h3 className="flex items-center gap-2 font-black text-slate-950 dark:text-white">
                 <Icon size={17} strokeWidth={2.4} className={`flex-shrink-0 ${tone}`} />
                 {title}

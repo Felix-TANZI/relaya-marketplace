@@ -100,14 +100,14 @@ export default function RelayTrust({
       {/* ── La note ──────────────────────────────────────────────────────
           Une jauge plutôt qu'un chiffre seul : le score se lit d'abord comme
           une position — ce qui reste à gagner, et de quel côté on penche. */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-6 text-center shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-6 text-center shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
         <div className="relative mx-auto w-full max-w-[260px]">
           <svg viewBox="0 0 200 118" className="w-full" aria-hidden>
             <defs>
               <linearGradient id="trust-arc" x1="0" y1="0" x2="1" y2="0">
-                <stop offset="0%" stopColor="#2F5FD8" />
+                <stop offset="0%" stopColor="#2456D6" />
                 <stop offset="55%" stopColor="#8A8AA8" />
-                <stop offset="100%" stopColor="#E8590C" />
+                <stop offset="100%" stopColor="#EF6A00" />
               </linearGradient>
             </defs>
             <path
@@ -137,14 +137,14 @@ export default function RelayTrust({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
-          <span className="rounded-full bg-[#E8EEFC] px-3.5 py-[6px] text-[13px] font-bold text-[#2A5BD7] dark:bg-blue-950 dark:text-blue-200">
+          <span className="rounded-full bg-[#EAF0FF] px-3.5 py-[6px] text-[13px] font-bold text-[#2456D6] dark:bg-blue-950 dark:text-blue-200">
             {trust?.tier_display || "Palier en attente"}
           </span>
           {/* Le palier candidat est la seule projection que le serveur donne.
               On ne fabrique pas de « +2 cette semaine » : l'historique du
               score n'est pas conservé. */}
           {trust?.candidate_tier && trust.candidate_tier !== trust.tier ? (
-            <span className="rounded-full bg-[#E8F6EC] px-3.5 py-[6px] text-[13px] font-bold text-[#2E7D4F] dark:bg-emerald-950 dark:text-emerald-300">
+            <span className="rounded-full bg-[#E6F4EC] px-3.5 py-[6px] text-[13px] font-bold text-[#1F7A4D] dark:bg-emerald-950 dark:text-emerald-300">
               En passe de devenir {trust.candidate_tier}
             </span>
           ) : null}
@@ -166,8 +166,8 @@ export default function RelayTrust({
       </section>
 
       {/* ── Le détail ────────────────────────────────────────────────────── */}
-      <section className="rounded-[18px] border border-slate-200/70 bg-white px-5 pb-5 pt-4 shadow-[0_2px_8px_rgba(15,23,42,.06)] dark:border-slate-800 dark:bg-slate-900">
-        <h3 className="text-[19px] font-black tracking-[-0.015em] text-slate-900 dark:text-white">
+      <section className="rounded-[14px] border border-slate-200 bg-white px-5 pb-5 pt-4 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900">
+        <h3 className="text-[17px] font-black tracking-[-0.02em] text-slate-900 dark:text-white">
           Les 5 critères
         </h3>
 
@@ -193,7 +193,7 @@ export default function RelayTrust({
                 </div>
                 <div className="mt-1.5 h-[7px] overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[#E9A93A] to-[#2F5FD8] transition-[width] duration-700"
+                    className="h-full rounded-full bg-gradient-to-r from-[#E8A10E] to-[#2456D6] transition-[width] duration-700"
                     style={{ width: `${valeur}%` }}
                   />
                 </div>
@@ -218,9 +218,9 @@ export default function RelayTrust({
         {LEVIERS.map(({ icon: Icon, label }) => (
           <div
             key={label}
-            className="rounded-[14px] border border-slate-200/70 bg-white px-3.5 py-3.5 shadow-[0_2px_6px_rgba(15,23,42,.05)] dark:border-slate-800 dark:bg-slate-900"
+            className="rounded-[14px] border border-slate-200 bg-white px-3.5 py-3.5 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] dark:border-slate-800 dark:bg-slate-900"
           >
-            <Icon size={20} strokeWidth={2.2} className="text-[#E8590C] dark:text-orange-400" />
+            <Icon size={20} strokeWidth={2.2} className="text-[#EF6A00] dark:text-orange-400" />
             <div className="mt-3 text-[14px] font-black leading-tight text-slate-900 dark:text-white">
               {label}
             </div>
@@ -229,9 +229,9 @@ export default function RelayTrust({
       </div>
 
       {/* ── Ce qui ne se décide pas tout seul ────────────────────────────── */}
-      <div className="flex items-start gap-3 rounded-[14px] border border-[#F2C4C4] bg-[#FDECEC] px-4 py-3.5 dark:border-red-900 dark:bg-red-950/40">
-        <TriangleAlert size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#D84B4B] dark:text-red-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#8A3B3B] dark:text-red-100/85">
+      <div className="flex items-start gap-3 rounded-[14px] border border-[#F4C3BE] bg-[#FDECEA] px-4 py-3.5 dark:border-red-900 dark:bg-red-950/40">
+        <TriangleAlert size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#B42318] dark:text-red-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#8E1B12] dark:text-red-100/85">
           {trust?.veto_active && trust.veto_reason
             ? trust.veto_reason
             : "Un colis perdu ou ouvert au relais ouvre une enquête. Une sanction n'est jamais automatique : proposée par le système, elle est validée par une personne, avec un motif écrit, et vous pouvez la contester une fois."}
@@ -239,27 +239,27 @@ export default function RelayTrust({
       </div>
 
       {/* ── Les deux détours ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="pr-span grid grid-cols-2 gap-3">
         <button
           type="button"
           onClick={() => onNavigate?.("avis")}
-          className="flex items-center justify-center gap-2.5 rounded-[14px] border border-slate-200/70 bg-white px-3 py-3.5 text-[15px] font-bold text-slate-800 shadow-[0_2px_6px_rgba(15,23,42,.05)] transition active:scale-[.97] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+          className="flex items-center justify-center gap-2.5 rounded-[14px] border border-slate-200 bg-white px-3 py-3.5 text-[15px] font-bold text-slate-800 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition active:scale-[.97] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
         >
           <Star size={18} strokeWidth={2.2} /> Avis clients
         </button>
         <button
           type="button"
           onClick={() => onNavigate?.("niveaux")}
-          className="flex items-center justify-center gap-2.5 rounded-[14px] border border-slate-200/70 bg-white px-3 py-3.5 text-[15px] font-bold text-slate-800 shadow-[0_2px_6px_rgba(15,23,42,.05)] transition active:scale-[.97] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
+          className="flex items-center justify-center gap-2.5 rounded-[14px] border border-slate-200 bg-white px-3 py-3.5 text-[15px] font-bold text-slate-800 shadow-[0_1px_2px_rgba(60,35,15,.05),0_8px_24px_-12px_rgba(60,35,15,.16)] transition active:scale-[.97] dark:border-slate-800 dark:bg-slate-900 dark:text-slate-100"
         >
           <Layers size={18} strokeWidth={2.2} /> Paliers
         </button>
       </div>
 
       {/* ── Le plafond ───────────────────────────────────────────────────── */}
-      <div className="flex items-start gap-3 rounded-[14px] bg-[#EEF3FE] px-4 py-3.5 dark:bg-blue-950/40">
-        <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#5B7FC7] dark:text-blue-300" />
-        <p className="text-[13.5px] font-medium leading-[1.55] text-[#4A5E8A] dark:text-blue-100/80">
+      <div className="flex items-start gap-3 rounded-[14px] bg-[#EAF0FF] px-4 py-3.5 dark:bg-blue-950/40">
+        <ShieldCheck size={19} strokeWidth={2.2} className="mt-0.5 flex-shrink-0 text-[#8FB0FF] dark:text-blue-300" />
+        <p className="text-[13.5px] font-medium leading-[1.55] text-[#9FAACB] dark:text-blue-100/80">
           {trust?.parcel_value_cap_xaf
             ? `Votre palier plafonne la valeur d'un colis à ${trust.parcel_value_cap_xaf.toLocaleString("fr-FR")} F. Au-delà, le colis est orienté vers un relais d'un palier supérieur.`
             : "Pas de plafond de valeur par colis pour les relais : la protection vient des preuves photo, du PIN de remise et, dès 100 000 F, du porteur nommé par le client avec pièce vérifiée."}

@@ -74,6 +74,11 @@ import pm2En from "./domains/pm2.en";
 import misc1Fr from "./domains/misc1.fr";
 import misc1En from "./domains/misc1.en";
 
+import hm1Fr from "./domains/hm1.fr";
+import hm1En from "./domains/hm1.en";
+import hm2Fr from "./domains/hm2.fr";
+import hm2En from "./domains/hm2.en";
+
 const savedLang =
   typeof window !== "undefined"
     ? window.localStorage.getItem("relaya.lang")
@@ -94,6 +99,8 @@ const mergedFr = {
   ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr,
   ...pm1Fr, ...pm2Fr,
   ...misc1Fr,
+  ...hm1Fr,
+  ...hm2Fr,
 };
 
 const mergedEn = {
@@ -105,6 +112,8 @@ const mergedEn = {
   ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En,
   ...pm1En, ...pm2En,
   ...misc1En,
+  ...hm1En,
+  ...hm2En,
 };
 
 i18n.use(initReactI18next).init({

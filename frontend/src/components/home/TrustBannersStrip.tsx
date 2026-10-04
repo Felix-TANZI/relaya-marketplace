@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   BadgeCheck,
   ChevronLeft,
@@ -18,8 +19,16 @@ const TRUST_BANNER_ICONS = [
   MessageCircle,
 ];
 
+interface TrustBannerText {
+  title: string;
+  subtitle: string;
+}
+
 export default function TrustBannersStrip() {
+  const { t } = useTranslation();
   const [current, setCurrent] = useState(0);
+  /* Le texte vient d'i18next (traduit) ; `TRUST_BANNERS` ne fournit plus que la photo. */
+  const bannerText = t("home.trust_banners.banner", { returnObjects: true }) as TrustBannerText[];
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -38,10 +47,10 @@ export default function TrustBannersStrip() {
           </div>
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary sm:text-[11px] sm:tracking-[0.26em]">
-              Protection acheteur
+              {t("home.trust_banners.eyebrow")}
             </p>
             <h3 className="text-[15px] font-extrabold text-gray-900 sm:text-[18px] dark:text-white">
-              Achetez en toute sécurité
+              {t("home.trust_banners.heading")}
             </h3>
           </div>
         </div>
@@ -50,7 +59,7 @@ export default function TrustBannersStrip() {
             type="button"
             onClick={() => setCurrent((value) => (value - 1 + TRUST_BANNERS.length) % TRUST_BANNERS.length)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary sm:h-10 sm:w-10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            aria-label="Carte précédente"
+            aria-label={t("home.trust_banners.prev_aria")}
           >
             <ChevronLeft size={16} />
           </button>
@@ -58,7 +67,7 @@ export default function TrustBannersStrip() {
             type="button"
             onClick={() => setCurrent((value) => (value + 1) % TRUST_BANNERS.length)}
             className="flex h-8 w-8 items-center justify-center rounded-full border border-[#f0d8c5] bg-white text-[#b86428] transition hover:border-primary hover:text-primary sm:h-10 sm:w-10 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200"
-            aria-label="Carte suivante"
+            aria-label={t("home.trust_banners.next_aria")}
           >
             <ChevronRight size={16} />
           </button>
@@ -72,6 +81,7 @@ export default function TrustBannersStrip() {
         >
           {TRUST_BANNERS.map((banner, index) => {
             const BannerIcon = TRUST_BANNER_ICONS[index] ?? ShieldCheck;
+            const text = bannerText[index] ?? { title: "", subtitle: "" };
 
             return (
               <article key={index} className="relative min-w-full overflow-hidden rounded-[18px] sm:rounded-[24px]">
@@ -79,7 +89,7 @@ export default function TrustBannersStrip() {
                   <div className="relative min-h-[132px] md:min-h-[220px]">
                     <img
                       src={banner.img}
-                      alt={banner.title}
+                      alt={text.title}
                       loading="lazy"
                       className="h-full w-full object-cover"
                     />
@@ -89,13 +99,13 @@ export default function TrustBannersStrip() {
                     <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1 p-3 md:hidden">
                       <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-white/15 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-white backdrop-blur-sm">
                         <BannerIcon size={11} />
-                        Garantie BelivaY
+                        {t("home.trust_banners.guarantee_badge")}
                       </span>
                       <h4 className="text-[15px] font-extrabold leading-tight text-white">
-                        {banner.title}
+                        {text.title}
                       </h4>
                       <p className="text-[11px] leading-snug text-white/85">
-                        {banner.subtitle}
+                        {text.subtitle}
                       </p>
                     </div>
                   </div>
@@ -103,24 +113,24 @@ export default function TrustBannersStrip() {
                   {/* Panneau texte — desktop / tablette (≥ md) */}
                   <div className="hidden bg-[#fffaf5] px-5 py-6 md:flex md:flex-col md:justify-center md:gap-3 dark:bg-gray-900">
                     <span className="inline-flex w-fit rounded-full bg-[#fff1e5] px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-primary dark:bg-primary/10">
-                      Garantie BelivaY
+                      {t("home.trust_banners.guarantee_badge")}
                     </span>
                     <div className="flex items-center gap-3">
                       <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#fff1e5] text-primary dark:bg-primary/10">
                         <BannerIcon size={20} />
                       </div>
                       <h4 className="text-[24px] font-extrabold leading-tight text-gray-900 dark:text-white">
-                        {banner.title}
+                        {text.title}
                       </h4>
                     </div>
                     <p className="text-[14px] leading-7 text-gray-600 dark:text-gray-300">
-                      {banner.subtitle}
+                      {text.subtitle}
                     </p>
                     <div className="flex flex-wrap gap-2 pt-2">
                       {[
-                        { icon: ShieldCheck, label: "Escrow sécurisé" },
-                        { icon: Truck, label: "Suivi 24-72h" },
-                        { icon: RotateCcw, label: "Retour simplifié" },
+                        { icon: ShieldCheck, label: t("home.trust_banners.escrow_badge") },
+                        { icon: Truck, label: t("home.trust_banners.tracking_badge") },
+                        { icon: RotateCcw, label: t("home.trust_banners.return_badge") },
                       ].map((item) => (
                         <span
                           key={item.label}
@@ -148,7 +158,7 @@ export default function TrustBannersStrip() {
             className={`h-2 rounded-full transition-all sm:h-2.5 ${
               current === index ? "w-7 bg-primary sm:w-8" : "w-2 bg-[#f0d8c5] sm:w-2.5 dark:bg-gray-700"
             }`}
-            aria-label={`Aller à la carte ${index + 1}`}
+            aria-label={t("home.trust_banners.go_to_card_aria", { number: index + 1 })}
           />
         ))}
       </div>

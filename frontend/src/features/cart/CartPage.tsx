@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, Minus, Package, Plus, ShieldCheck, ShoppingCart, Store, Trash2, Truck, Undo2 } from "lucide-react";
 import { useCart } from "@/context/CartContext";
-import { V29_PRODUCTS as mockProducts } from "@/data/v29Products";
+import { getV29Products } from "@/data/v29Products";
 import { PfShellStyles } from "@/styles/pfShell";
 import { OperatorLogo } from "@/features/payments/OperatorLogo";
 import CartRecommendationsSection from "@/components/cart/CartRecommendationsSection";
@@ -13,6 +13,7 @@ const CHECKOUT_SELECTED_CART_IDS_KEY = "belivay_checkout_selected_cart_ids";
 export default function CartPage() {
   const { t, i18n } = useTranslation();
   const { items, removeItem, updateQuantity, itemCount, addItem } = useCart();
+  const mockProducts = useMemo(() => getV29Products(t), [t]);
   const [selectedIds, setSelectedIds] = useState<number[]>(() => items.map((i) => i.id));
   const itemIdsKey = items.map((i) => i.id).join(",");
   const [lastItemIdsKey, setLastItemIdsKey] = useState(itemIdsKey);

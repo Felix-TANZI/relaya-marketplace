@@ -4,7 +4,9 @@
 // l'accueil lisent exactement les mêmes données : campagnes FLASH de l'API quand
 // elles existent, jeu de démonstration sinon.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import type { TFunction } from "i18next";
 import { productsApi, type Product } from "@/services/api/products";
 import { FLASH_DEALS, V29_PRODUCTS, getPromoProducts } from "@/data/v29Products";
 
@@ -54,15 +56,18 @@ export function productToDeal(product: Product): FlashDeal {
 /**
  * Repli hors connexion : les offres flash scénarisées, complétées par les produits
  * du catalogue de démonstration les plus remisés pour garnir la grille.
+ *
+ * `t` est optionnel pour ne pas casser un appel existant sans contexte i18next :
+ * sans lui, le nom original (FR) de `FLASH_DEALS` reste affiché.
  */
-export function buildFallbackDeals(): FlashDeal[] {
-  const named = FLASH_DEALS.map((deal) => {
+export function buildFallbackDeals(t?: TFunction): FlashDeal[] {
+  const named = FLASH_DEALS.map((deal, index) => {
     const linked = V29_PRODUCTS.find((product) =>
       product.title.toLowerCase().includes(deal.name.toLowerCase().slice(0, 12)),
     );
     return {
       id: linked?.id ?? 0,
-      name: deal.name,
+      name: t ? t(`home.flash_deal_names.${index}`, { defaultValue: deal.name }) : deal.name,
       img: deal.img,
       price: parseXaf(deal.price),
       old: parseXaf(deal.old),
@@ -71,7 +76,7 @@ export function buildFallbackDeals(): FlashDeal[] {
     };
   });
 
-  const extras = getPromoProducts()
+  const extras = getPromoProducts(t)
     .filter((product) => !named.some((deal) => deal.id === product.id))
     .map((product) => ({
       id: product.id,
@@ -88,7 +93,11 @@ export function buildFallbackDeals(): FlashDeal[] {
 
 /** Charge les offres flash de l'API, avec repli automatique sur la démonstration. */
 export function useFlashDeals() {
-  const [deals, setDeals] = useState<FlashDeal[]>(buildFallbackDeals);
+  const { t, i18n } = useTranslation();
+  const [deals, setDeals] = useState<FlashDeal[]>(() => buildFallbackDeals(t));
+  /* Les offres scénarisées (repli) se retraduisent au changement de langue ;
+     celles de l'API gardent leur texte, déjà traduit côté backend. */
+  const usingFallbackRef = useRef(true);
 
   useEffect(() => {
     let mounted = true;
@@ -103,9 +112,15 @@ export function useFlashDeals() {
           .map(productToDeal)
           .filter((deal) => deal.img && deal.price > 0 && deal.old > deal.price);
 
-        if (apiDeals.length) setDeals(apiDeals);
+        if (apiDeals.length) {
+          usingFallbackRef.current = false;
+          setDeals(apiDeals);
+        }
       } catch {
-        if (mounted) setDeals(buildFallbackDeals());
+        if (mounted) {
+          usingFallbackRef.current = true;
+          setDeals(buildFallbackDeals(t));
+        }
       }
     };
 
@@ -113,7 +128,12 @@ export function useFlashDeals() {
     return () => {
       mounted = false;
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [i18n.language]);
+
+  useEffect(() => {
+    if (usingFallbackRef.current) setDeals(buildFallbackDeals(t));
+  }, [i18n.language, t]);
 
   return deals;
 }

@@ -17,7 +17,7 @@ import {
   Flame, Sparkles, Globe, Gem,
 } from "lucide-react";
 import {
-  V29_PRODUCTS,
+  getV29Products,
   getByCat,
   getTopProducts,
   getNewProducts,
@@ -27,7 +27,6 @@ import { HERO_MIN_HEIGHT } from "@/data/categoryThemes";
 import { productInStorefrontCategory } from "@/data/storefrontCategories";
 import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import useSidebarTrack from "@/hooks/useSidebarTrack";
-import FeaturedProductsRotation from "@/components/home/FeaturedProductsRotation";
 import NearbyProductsSection from "@/components/home/NearbyProductsSection";
 
 type SortKey = "relevance" | "price-asc" | "price-desc" | "rating" | "newest";
@@ -41,7 +40,7 @@ const SORT_OPTIONS: { key: SortKey; labelKey: string }[] = [
 ];
 
 export default function HomePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { mainRef, trackTop: mainTop, trackHeight: mainHeight, topOffset } = useSidebarTrack();
   const [activeCat, setActiveCat] = useState("all");
@@ -84,9 +83,9 @@ export default function HomePage() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [i18n.language]);
 
-  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
   /* La grille de l'accueil montre-t-elle des produits de démonstration ? */
   const filteredAreMock = usingMockProducts && !realCategoryActive;
 
@@ -98,11 +97,11 @@ export default function HomePage() {
         return apiProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
       }
 
-      if (usingMockProducts) return getByCat(mockSlug);
+      if (usingMockProducts) return getByCat(mockSlug, t);
 
       return sourceProducts.filter((product) => productInStorefrontCategory(product, activeStorefront));
     },
-    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts]
+    [activeCat, activeStorefront, apiProducts, mockSlug, realCategoryActive, sourceProducts, usingMockProducts, t]
   );
 
   const sortedProducts = useMemo(() => {
@@ -162,9 +161,9 @@ export default function HomePage() {
      marque mène à « Tout voir ». Dès que l'admin a donné une image à des catégories,
      ce sont elles qui composent le carrousel ; sinon, les frames éditoriales ci-dessous. */
   const brandSlide = {
-    label: "CEMAC · CMR · Gabon · RCA · Tchad",
-    title: "Achetez en toute confiance au Cameroun & Afrique centrale",
-    subtitle: "MoMo sécurisé · Vendeurs certifiés · Escrow BelivaY · Remboursement 7j",
+    label: t("home.brand_slide.label"),
+    title: t("home.brand_slide.title"),
+    subtitle: t("home.brand_slide.subtitle"),
     bg: "url(https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1400&h=500&fit=crop&q=85) center/cover",
     labelBg: "rgba(244,121,32,0.9)",
     action: () => navigate("/categorie/all"),
@@ -181,25 +180,25 @@ export default function HomePage() {
     }));
   const slides = categorySlides.length > 0 ? [brandSlide, ...categorySlides] : [
     brandSlide,
-    { label: "Mode Femme", title: "Robes · Pagnes · Wax Premium", subtitle: "3 400 produits · Vendeurs certifiés BelivaY", bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
-    { label: "Électronique", title: "Smartphones & Accessoires", subtitle: "Livraison gratuite dès 30 000 FCFA · Vendeurs certifiés Or", bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
-    { label: "Beauté & Soins", title: "Cosmétiques & Soins Authentiques", subtitle: "2 600 produits vérifiés · Livraison express", bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
-    { label: "Made in Cameroon", title: "Produits artisanaux locaux", subtitle: "Soutenez les PME camerounaises · Certifié BelivaY", bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
-    { label: "Maison & Déco", title: "Aménagez votre intérieur", subtitle: "1 720 produits · Meubles · Déco · Électroménager", bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
-    { label: "Mode Homme", title: "Bazin · Costume · Chemise Brodée", subtitle: "2 100 produits · Tenues de cérémonie et casual", bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
-    { label: "Chaussures", title: "Sneakers · Escarpins · Sandales", subtitle: "1 100 produits · Toutes pointures disponibles", bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
+    { label: t("home.category_fallback_slides.femme.label"), title: t("home.category_fallback_slides.femme.title"), subtitle: t("home.category_fallback_slides.femme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617019114583-affb34d1b3cd?w=1400&h=500&fit=crop&q=85) center/cover", action: () => navigate("/categorie/femme") },
+    { label: t("home.category_fallback_slides.tech.label"), title: t("home.category_fallback_slides.tech.title"), subtitle: t("home.category_fallback_slides.tech.subtitle"), bg: "url(https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#2563EB", action: () => navigate("/categorie/tech") },
+    { label: t("home.category_fallback_slides.beaute.label"), title: t("home.category_fallback_slides.beaute.title"), subtitle: t("home.category_fallback_slides.beaute.subtitle"), bg: "url(https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#e11d48", action: () => navigate("/categorie/beaute") },
+    { label: t("home.category_fallback_slides.super.label"), title: t("home.category_fallback_slides.super.title"), subtitle: t("home.category_fallback_slides.super.subtitle"), bg: "url(https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#059669", action: () => navigate("/categorie/super") },
+    { label: t("home.category_fallback_slides.maison.label"), title: t("home.category_fallback_slides.maison.title"), subtitle: t("home.category_fallback_slides.maison.subtitle"), bg: "url(https://images.unsplash.com/photo-1616046229478-9901c5536a45?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#78716c", action: () => navigate("/categorie/maison") },
+    { label: t("home.category_fallback_slides.homme.label"), title: t("home.category_fallback_slides.homme.title"), subtitle: t("home.category_fallback_slides.homme.subtitle"), bg: "url(https://images.unsplash.com/photo-1617137968427-85924c800a22?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#1D4ED8", action: () => navigate("/categorie/homme") },
+    { label: t("home.category_fallback_slides.shoes.label"), title: t("home.category_fallback_slides.shoes.title"), subtitle: t("home.category_fallback_slides.shoes.subtitle"), bg: "url(https://images.unsplash.com/photo-1549298916-b41d501d3772?w=1400&h=500&fit=crop&q=85) center/cover", labelBg: "#7C3AED", action: () => navigate("/categorie/shoes") },
   ];
 
   /* ── Featured sections (horizontal scroll, top of page) ── */
   const popular = useMemo(() => {
     if (filteredAreMock) {
-      return activeCat === "all" ? getTopProducts() : getByCat(mockSlug);
+      return activeCat === "all" ? getTopProducts(t) : getByCat(mockSlug, t);
     }
 
     return [...allFiltered]
       .sort((a, b) => (((b.discount_percent ?? b.discount ?? 0) * 1000) + (b.reviews_count ?? 0)) - (((a.discount_percent ?? a.discount ?? 0) * 1000) + (a.reviews_count ?? 0)))
       .slice(0, 24);
-  }, [activeCat, allFiltered, filteredAreMock, mockSlug]);
+  }, [activeCat, allFiltered, filteredAreMock, mockSlug, t]);
 
   /* « À la une » — les mieux notés d'abord, c'est la vitrine de la page mobile. */
   const featured = useMemo(
@@ -245,12 +244,12 @@ export default function HomePage() {
           products: theme.node
             ? apiProducts.filter((product) => productInStorefrontCategory(product, theme))
             : usingMockProducts
-              ? (theme.themeSlug ? getByCat(theme.themeSlug) : [])
+              ? (theme.themeSlug ? getByCat(theme.themeSlug, t) : [])
               : sourceProducts.filter((product) => productInStorefrontCategory(product, theme)),
         }))
         .filter((entry) => entry.products.length >= 4)
         .slice(0, 6),
-    [apiProducts, sourceProducts, storefront, usingMockProducts],
+    [apiProducts, sourceProducts, storefront, usingMockProducts, t],
   );
 
   /* Chiffres du bandeau promotions, calculés sur le catalogue réellement affiché. */
@@ -276,12 +275,12 @@ export default function HomePage() {
   }, [sourceProducts]);
 
   const newProds = useMemo(() => {
-    if (usingMockProducts) return getNewProducts();
+    if (usingMockProducts) return getNewProducts(t);
 
     return [...sourceProducts]
       .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .slice(0, 12);
-  }, [sourceProducts, usingMockProducts]);
+  }, [sourceProducts, usingMockProducts, t]);
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#fff7ef_0%,#fff 14%,#f8fafc 100%)] dark:bg-gray-950">
@@ -411,9 +410,6 @@ export default function HomePage() {
               maxDiscount={promoStats.maxDiscount}
               endDates={promoStats.endDates}
             />
-
-            {/* ═══ Featured Products Rotation ═══ */}
-            <FeaturedProductsRotation page={1} pageSize={20} />
 
             {/* ═══ Nearby Products by Location ═══ */}
             <NearbyProductsSection limit={10} maxDistanceKm={50} />

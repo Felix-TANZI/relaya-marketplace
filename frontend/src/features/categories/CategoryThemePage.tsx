@@ -29,7 +29,7 @@ import useStorefrontCategories from "@/hooks/useStorefrontCategories";
 import { HERO_MIN_HEIGHT, getCategoryTheme, matchesCategory } from "@/data/categoryThemes";
 import { categoryIcon } from "@/data/categoryIcon";
 import { toStorefrontCategory } from "@/data/storefrontCategories";
-import { V29_PRODUCTS } from "@/data/v29Products";
+import { getV29Products } from "@/data/v29Products";
 import { productsApi, type Product, type ProductListParams } from "@/services/api/products";
 import {
   categorySubtreeIds,
@@ -97,7 +97,7 @@ function productCategoryIn(product: Product, ids: Set<number>) {
 }
 
 export default function CategoryThemePage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { slug = "" } = useParams<{ slug: string }>();
   const navigate = useNavigate();
   const { tree, categories: storefront, loading: treeLoading } = useStorefrontCategories();
@@ -123,8 +123,8 @@ export default function CategoryThemePage() {
     : undefined;
 
   const theme = useMemo(() => {
-    if (!context) return getCategoryTheme(slug);
-    const base = toStorefrontCategory(context.page);
+    if (!context) return getCategoryTheme(slug, t);
+    const base = toStorefrontCategory(context.page, 0, t);
     // Bannière : l'image de la page, sinon celle de l'ancêtre le plus proche,
     // sinon la photo de secours de l'univers.
     const inherited = [context.page, ...[...context.ancestors].reverse()].find((n) => n.image_url)?.image_url;
@@ -133,10 +133,10 @@ export default function CategoryThemePage() {
       accent: rootStorefront?.accent ?? base.accent,
       image: inherited || rootStorefront?.image || base.image,
       icon: rootStorefront?.icon ?? base.icon,
-      label: context.page.id === context.root.id ? "Catégorie" : context.root.name,
+      label: context.page.id === context.root.id ? t("cl4_category_theme.category_heading") : context.root.name,
       description: base.description || rootStorefront?.description || "",
     };
-  }, [context, rootStorefront, slug]);
+  }, [context, rootStorefront, slug, t]);
 
   const pageKey = context?.page.slug ?? slug;
   const selectedNode = context?.selected ?? null;
@@ -249,9 +249,9 @@ export default function CategoryThemePage() {
     return () => {
       cancelled = true;
     };
-  }, [pageCategoryId, productsKey, treeLoading]);
+  }, [pageCategoryId, productsKey, treeLoading, i18n.language]);
 
-  const sourceProducts = usingMockProducts ? V29_PRODUCTS : apiProducts;
+  const sourceProducts = usingMockProducts ? getV29Products(t) : apiProducts;
 
   const categoryProducts = useMemo(
     () => (context ? sourceProducts : sourceProducts.filter((product) => matchesCategory(product, slug))),

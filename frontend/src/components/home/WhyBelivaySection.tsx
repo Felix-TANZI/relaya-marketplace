@@ -66,7 +66,7 @@ const MARKETPLACE_LINKS: { icon: LucideIcon; labelKey: string; to: string }[] = 
 export default function WhyBelivaySection() {
   const { t } = useTranslation();
   /* Les volumes viennent du thème « Tout voir » : une seule source à maintenir. */
-  const catalogue = getCategoryTheme("all");
+  const catalogue = getCategoryTheme("all", t);
 
   const marketplaceStats = [
     { value: catalogue?.count ?? "15 240", labelKey: "why_belivay.stat_products" },

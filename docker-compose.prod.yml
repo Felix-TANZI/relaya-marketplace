@@ -125,6 +125,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: client
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -137,6 +139,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: seller
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -149,6 +153,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: courier
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -161,6 +167,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: admin
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -173,6 +181,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: relay_point
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network
@@ -185,6 +195,8 @@ services:
         VITE_API_URL: /api
         VITE_PORTAL_ROLE: delivery_organization
         VITE_GOOGLE_CLIENT_ID: ${VITE_GOOGLE_CLIENT_ID}
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+        VITE_MAP_PROVIDER: ${VITE_MAP_PROVIDER:-openstreetmap}
     restart: unless-stopped
     networks:
       - relaya-network

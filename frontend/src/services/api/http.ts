@@ -2,6 +2,7 @@
 // Helper HTTP avec refresh token automatique
 import { clearStoredAuthTokens, getStoredAccessToken, getStoredRefreshToken } from "@/lib/authTokens";
 import { notifyOfflineFallback, readOfflineCache, writeOfflineCache } from "@/lib/offlineCache";
+import i18n from "@/i18n";
 
 // En production, on utilise une URL relative (chaîne vide) car tout passe par le même nginx
 // En développement, on utilise l'URL complète du backend
@@ -133,6 +134,15 @@ export async function http<T>(
     delete headers['Content-Type'];
   } else if (!headers['Content-Type']) {
     headers['Content-Type'] = 'application/json';
+  }
+
+  // Langue courante de l'interface (i18next) : propagée à CHAQUE appel pour
+  // que le backend puisse traduire les champs issus de la base (titres
+  // produit, categories, notifications...) sans que chaque appel d'API ait
+  // besoin de forcer explicitement un `?lang=` — seule une bascule manuelle
+  // du selecteur de langue fait foi (voir request_language() cote backend).
+  if (!headers['Accept-Language']) {
+    headers['Accept-Language'] = i18n.language || 'fr';
   }
 
   // Ajouter le token si présent

@@ -7,8 +7,17 @@
 // vendeur (voir compte/plans/LesPlansPage.tsx, encore sur l'ancien système).
 // Composant autonome (récupère son propre profil) pour s'intégrer d'un seul
 // import dans les trois écrans racine sans toucher à leurs hooks de données.
+//
+// Accès Préparation (ACC-26, état "Accueil_prep") : quand isPrepAccess est
+// vrai, les pastilles statut/palier (qui n'ont de sens que pour le
+// propriétaire) sont remplacées par l'identité + le rôle de la personne
+// connectée ("Aïcha N. · accès Préparation"). staffFirstName est fourni par
+// l'appelant (AccueilPage → useAccueilData, toujours null aujourd'hui faute
+// de session de rôle distincte côté backend) ; sans nom on retombe sur un
+// libellé générique "Accès Préparation" plutôt que d'inventer un prénom.
 
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { vendorsApi, type VendorProfile } from '@/services/api/vendors';
 import { useTheme } from '@/context/ThemeContext';
 import { palette } from './theme';
@@ -21,7 +30,13 @@ const TIER_LABEL: Record<string, string> = {
   PLATINUM: 'Platine',
 };
 
-export default function ShopIdentityBar() {
+interface Props {
+  isPrepAccess?: boolean;
+  staffFirstName?: string | null;
+}
+
+export default function ShopIdentityBar({ isPrepAccess = false, staffFirstName = null }: Props) {
+  const { t } = useTranslation();
   const { theme } = useTheme();
   const p = palette(theme);
   const [profile, setProfile] = useState<VendorProfile | null>(null);
@@ -57,8 +72,19 @@ export default function ShopIdentityBar() {
         ESPACE VENDEUR · {profile.business_name.toUpperCase()}
       </p>
       <div className="flex flex-wrap gap-2">
-        {pill(<><span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />{statusLabel}</>, statusColor)}
-        {pill(`${TIER_LABEL[tier]} · ${profile.total_points}`, p.orange)}
+        {isPrepAccess ? (
+          pill(
+            staffFirstName
+              ? t('sl6_accueil.prep_role_label_named', { name: staffFirstName })
+              : t('sl6_accueil.prep_role_label'),
+            p.textMuted,
+          )
+        ) : (
+          <>
+            {pill(<><span className="w-1.5 h-1.5 rounded-full" style={{ background: statusColor }} />{statusLabel}</>, statusColor)}
+            {pill(`${TIER_LABEL[tier]} · ${profile.total_points}`, p.orange)}
+          </>
+        )}
       </div>
     </div>
   );

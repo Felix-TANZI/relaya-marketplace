@@ -186,7 +186,7 @@ export default {
     // ── Inspection on receipt ────────────────────────────────────────────
     inspection_title: 'Inspection on receipt',
     inspection_received_label: 'Received',
-    inspection_deadline_prefix: 'Answer within',
+    inspection_deadline_prefix: 'Inspect within',
     inspection_deadline_expired: 'Deadline passed — presumption favors the customer, BelivaY decides',
     inspection_step1_title: '1. Check',
     inspection_check_seal: 'The seal is intact',

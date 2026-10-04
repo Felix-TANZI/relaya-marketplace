@@ -27,8 +27,9 @@ import LaunchTierCard from './LaunchTierCard';
 import GesturesCard from './GesturesCard';
 import EarningsCard from './EarningsCard';
 import DiscoveryOfferCard from './DiscoveryOfferCard';
+import ScoreApproachingCard from './ScoreApproachingCard';
 import SuspendedCard from './SuspendedCard';
-import OfflineBanner from './OfflineBanner';
+import OfflineBanner, { HandoverSyncCard, OfflineSyncInfoBanner } from './OfflineBanner';
 import ShopIdentityBar from '../ShopIdentityBar';
 
 const SUPPORT_WHATSAPP_URL = 'https://wa.me/237689002812';
@@ -131,7 +132,12 @@ export default function AccueilPage() {
     if (!item.returnId) return;
     navigate(`/seller/v2/retours/${item.returnId}`);
   }, [navigate]);
-  const goToTier = useCallback(() => navigate('/seller/certifications'), [navigate]);
+  const goToTier = useCallback(() => navigate('/seller/v2/palier'), [navigate]);
+  // "Code de remise" (mode hors connexion, mockup HorsLigne.html) : ouvre le
+  // vrai écran de remise (commandes/HandoverPage.tsx), qui lit
+  // shipment.pickup_confirmation_code déjà en cache local (REM-05) — aucun
+  // réseau requis pour l'afficher, contrairement à "C'est prêt".
+  const goToHandover = useCallback((orderId: number) => navigate(`/seller/v2/commandes/${orderId}/remise`), [navigate]);
 
   // ── États de chargement / erreur ──────────────────────────────────────────
 
@@ -177,28 +183,30 @@ export default function AccueilPage() {
   const disputeCount = state.todos.filter((it) => it.kind === 'dispute').length;
   const returnCount = state.todos.filter((it) => it.kind === 'return').length;
   const showCategoryPills = [prepareCount, disputeCount, returnCount].filter((c) => c > 0).length > 1;
+  const isOffline = state.variant === 'offline';
 
   return (
     <div className="pb-24 pt-2">
-      {state.variant === 'offline' ? (
-        <OfflineBanner lastLoadedAt={state.lastLoadedAt} onRetry={() => state.reload()} />
+      {isOffline ? (
+        <>
+          <OfflineBanner lastLoadedAt={state.lastLoadedAt} onRetry={() => state.reload()} />
+          <OfflineSyncInfoBanner />
+        </>
       ) : null}
 
-      <ShopIdentityBar />
+      <ShopIdentityBar isPrepAccess={state.isPrepAccess} staffFirstName={state.staffFirstName} />
 
       {state.variant === 'todo' || state.variant === 'empty' ? (
         <p className="font-black uppercase mb-3" style={{ fontSize: 11, letterSpacing: '.06em', color: p.textMuted }}>
-          {t('sl6_accueil.greeting', { name: state.firstName, date: formatTodayLabel(locale) })}
+          {state.isPrepAccess
+            ? (state.staffFirstName
+                ? t('sl6_accueil.greeting_prep', { name: state.staffFirstName })
+                : t('sl6_accueil.prep_role_label'))
+            : t('sl6_accueil.greeting', { name: state.firstName, date: formatTodayLabel(locale) })}
         </p>
       ) : null}
 
-      <ShopStatusBar />
-
-      {state.isPrepAccess ? (
-        <p className="mb-4" style={{ fontSize: 11.5, color: p.textMuted }}>
-          {t('sl6_accueil.prep_access_note')}
-        </p>
-      ) : null}
+      <ShopStatusBar prepareCount={prepareCount} />
 
       {actionError ? (
         <div className="rounded-xl px-3.5 py-2.5 mb-4" style={{ background: theme === 'dark' ? 'rgba(255,138,128,0.1)' : '#FEF2F2', border: `1px solid ${p.red}` }}>
@@ -234,15 +242,15 @@ export default function AccueilPage() {
           </p>
           <button
             type="button"
-            onClick={() => navigate('/seller/products/new')}
+            onClick={() => navigate('/seller/v2/produits/nouveau')}
             className="w-full rounded-2xl font-bold text-white"
             style={{ minHeight: 44, background: p.orange, fontSize: 14.5 }}
           >
             {t('sl6_accueil.empty_cta_action')}
           </button>
         </>
-      ) : restItems.length === 0 && heroItem === null && state.variant === 'offline' ? (
-        <p className="text-center mt-6" style={{ fontSize: 12.5, color: p.textMuted }}>
+      ) : restItems.length === 0 && heroItem === null && isOffline ? (
+        <p className="text-center mt-6 mb-4" style={{ fontSize: 12.5, color: p.textMuted }}>
           {t('sl6_accueil.offline_empty')}
         </p>
       ) : (
@@ -261,7 +269,8 @@ export default function AccueilPage() {
               onExtend={goToOrder}
               onDetail={goToOrder}
               busy={busyOrderId === heroItem.orderId}
-              hideAmount={state.isPrepAccess}
+              hideAmount={state.isPrepAccess || isOffline}
+              onHandoverCode={isOffline ? goToHandover : undefined}
             />
           ) : null}
           {restItems.map((item) => (
@@ -272,13 +281,35 @@ export default function AccueilPage() {
               onRespondDispute={goToDispute}
               onViewReturn={goToReturn}
               busy={busyOrderId === item.orderId}
-              hideAmount={state.isPrepAccess}
+              hideAmount={state.isPrepAccess || isOffline}
+              onHandoverCode={isOffline ? goToHandover : undefined}
             />
           ))}
         </>
       )}
 
+      {isOffline ? <HandoverSyncCard onRetry={() => state.reload()} /> : null}
+
+      {/* État "Accueil_alerte" : insérée entre la file "à faire" et le stock bas (pas un
+         AccueilVariant séparé — la carte se montre d'elle-même selon le score, ACC-écart). */}
+      {state.variant === 'todo' ? (
+        <ScoreApproachingCard
+          vendorId={state.vendorId}
+          prepareCount={prepareCount}
+          disputeCount={disputeCount}
+          onSeeTier={goToTier}
+        />
+      ) : null}
+
       <LowStockRow item={state.lowStockItem} />
+
+      {/* Note "Accès Préparation" — en bas de page, juste avant le bandeau réseau (ACC-26,
+         état "Accueil_prep"), pas en haut : tous les montants sont déjà masqués plus haut. */}
+      {state.isPrepAccess ? (
+        <p className="text-center mb-3" style={{ fontSize: 11.5, color: p.textMuted }}>
+          {t('sl6_accueil.prep_access_note')}
+        </p>
+      ) : null}
 
       {state.variant !== 'offline' ? (
         <div className="flex items-center gap-2 justify-center mt-3" style={{ minHeight: 44 }}>

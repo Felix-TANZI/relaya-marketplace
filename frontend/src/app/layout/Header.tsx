@@ -887,7 +887,7 @@ export default function Header() {
                 </Link>
 
                 <div className="hidden lg:flex items-center gap-2">
-                  <Link to="/become-seller">
+                  <Link to="/vendeur/ouvrir-boutique">
                     <button className="px-4 py-2 text-text-light dark:text-text-dark font-medium hover:bg-bg-light dark:hover:bg-bg-dark-alt rounded-lg transition-all">
                       {t("header.sell_on_belivay")}
                     </button>
@@ -1047,7 +1047,7 @@ export default function Header() {
           { label: t("header_nav.selection_premium"), to: "/selection-premium" },
           { label: t("header_nav.belivay_subscriptions"), to: "/premium" },
           { label: t("header_nav.my_orders"), to: "/orders" },
-          { label: t("header_nav.become_seller"), to: "/become-seller" },
+          { label: t("header_nav.become_seller"), to: "/vendeur/ouvrir-boutique" },
           { label: t("header_nav.about"), to: "/about" },
           { label: t("header_nav.help"), to: "/help" },
         ]}

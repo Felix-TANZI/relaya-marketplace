@@ -157,5 +157,23 @@ export default {
     duplicate_cta_create_draft: 'Créer le brouillon',
     duplicate_what_is_kept: 'Ce qui est repris',
     duplicate_what_is_kept_detail: 'La fiche, les photos de référence, la catégorie, le gabarit, le poids, les dimensions, le délai et le paiement au retrait sont repris automatiquement. À saisir : la variante, le prix, le stock et des photos réelles.',
+
+    // Modifier une offre (pas de maquette dédiée dans le lot VD-08 — écran
+    // ajouté pour que les 3 boutons de "Une offre" restent dans l'espace v2)
+    modify_offer_title: 'Modifier l’offre',
+    modify_offer_subtitle: 'Prix, stock, état, couleur et photos. Le titre, la description et les photos de référence appartiennent à la fiche produit.',
+    modify_offer_promo_banner: 'Vous êtes ici pour changer votre prix avant une promotion.',
+    modify_offer_current_note: 'Note actuelle : {{note}}',
+    modify_offer_current_photos: 'Photos actuelles',
+    modify_offer_photos_room: '{{existing}} déjà en ligne · encore {{room}} possible(s)',
+    modify_offer_photos_full: 'Vous avez atteint le maximum de {{max}} photos. Supprimez-en une pour en ajouter d’autres.',
+    modify_offer_photo_limit: 'Maximum {{max}} photos au total pour cette offre.',
+    image_primary_label: 'Principale',
+    cta_set_primary: 'Définir comme photo principale',
+    cta_delete_photo: 'Supprimer cette photo',
+    cta_save_changes: 'Enregistrer les modifications',
+    toast_offer_updated: 'Offre mise à jour',
+    toast_image_delete_error: 'Impossible de supprimer cette photo',
+    toast_primary_image_error: 'Impossible de définir cette photo comme principale',
   },
 };

@@ -355,7 +355,7 @@ export default function SellerDashboardPage() {
         setHeatD(hm.days);
       }
     } catch (e: unknown) {
-      if (e instanceof Error && e.message?.includes('404')) navigate('/become-seller');
+      if (e instanceof Error && e.message?.includes('404')) navigate('/vendeur/ouvrir-boutique');
       else if (!silent) showToast(t('sl1_dashboard.toast_load_error'), 'error');
     } finally { setLoading(false); setRefresh(false); }
   }, [navigate, showToast, t]);

@@ -10,7 +10,15 @@ export default {
     error_title: 'Could not load your home screen',
     error_retry: 'Retry',
     action_error: "This action couldn't go through in time: try again.",
+    // "Prep access" note (ACC-26) — shown at the bottom of the page ("Accueil_prep" state),
+    // right before the network footer, never at the top: amounts are already hidden above.
     prep_access_note: 'Amounts and payouts are reserved for the shop owner.',
+    // Identity bar + greeting in prep access mode — staffFirstName comes from the role
+    // session (not modelled server-side yet, ACC-26): with no known first name we fall back
+    // to the generic label below instead of inventing a name.
+    prep_role_label: 'Prep access',
+    prep_role_label_named: '{{name}} · prep access',
+    greeting_prep: 'Hello {{name}} · prep access',
 
     // ── Personalised greeting, above "Shop open" (ACC-gap) ───────────────
     greeting: 'Hello {{name}} · {{date}}',
@@ -74,6 +82,14 @@ export default {
     shop_open: 'Shop open',
     shop_close_today: 'Close for today',
     shop_close_not_yet: 'Coming soon',
+    // ── "Shop closed today" card (FermeAujourdhui.html mockup gap) ────────
+    shop_closed_today: 'Closed today',
+    shop_reopen_now: 'Reopen now',
+    shop_closed_banner_title: 'Shop closed today',
+    shop_closed_banner_body: 'New orders are going to other sellers until tomorrow 8 AM. {{count}} order(s) already received still need to be prepared.',
+    shop_closed_banner_body_zero: 'New orders are going to other sellers until tomorrow 8 AM.',
+    shop_close_toast: "Closing isn't connected to the server yet: this is a visual preview only, nothing is saved.",
+    shop_reopen_toast: "Reopening isn't connected to the server yet: this is a visual preview only, nothing is saved.",
 
     // ── Discreet low-stock line at the bottom (ACC-06) ───────────────────
     low_stock: '{{count}} product(s) low on stock',
@@ -140,6 +156,25 @@ export default {
     offline_banner_no_data: 'No connection.',
     offline_retry: 'Retry',
     offline_empty: 'No cached tasks right now. Reconnect to reload.',
+    // ── Second explanatory banner (HorsLigne.html mockup gap) ──────────────
+    offline_sync_info: 'Offline — preparation and the handover code work without network.',
+    // "Handover code" button on "to prepare" cards while offline: opens the
+    // real handover screen (commandes/HandoverPage.tsx), already able to read
+    // shipment.pickup_confirmation_code from local cache (REM-05).
+    row_handover_action: 'Handover code',
+    // Dedicated "Handover code" card (sync queue): no seller action queue
+    // exists yet (see OfflineBanner.tsx comment) — count and log stay
+    // honestly empty until it's wired up.
+    offline_sync_card_title: 'Handover code',
+    offline_sync_card_count: '{{count}} action(s) pending',
+    offline_sync_card_count_zero: 'No action pending',
+    offline_sync_card_details: 'Details',
+    offline_sync_card_retry: 'Retry',
+    offline_sync_card_log_empty: 'No action logged yet.',
+    offline_sync_card_expiry_warning: 'Past 72 h offline, pending actions are automatically cancelled.',
+    offline_how_rule_1: 'Already-loaded orders stay visible offline, without amounts until they are re-verified.',
+    offline_how_rule_2: 'The handover code for the courier stays available: it is already on your phone, no network needed to read it.',
+    offline_how_rule_3: "Other actions (e.g. \"It's ready\") still need a connection: they will fail until automatic sync is built.",
 
     // ── Suspended account (SUS-01 to 03) ─────────────────────────────────
     suspended_title: 'Account suspended',
@@ -153,5 +188,20 @@ export default {
     suspended_blocked_2: 'Publish or edit products',
     suspended_contest_action: 'Contest this decision',
     suspended_contest_hint: 'Only one contest allowed. Our team replies within 72 business hours.',
+
+    // ── "Your score is close to a tier" — "Accueil_alerte" state (ACC-gap) ──
+    // Real tier and points (vendorsApi.getCertifications(), same bridge as
+    // MonPalierPage.tsx). Not all 3 figures from the mockup (today's orders,
+    // disputes, remaining delivered orders) are available: only the first two
+    // are (accueil's real queues) — the 3rd is left out rather than invented.
+    score_approaching_title: 'Your score is close to {{tier}}',
+    score_approaching_points: '{{count}} point(s) left to reach {{tier}}.',
+    score_approaching_points_one: '{{count}} point left to reach {{tier}}.',
+    score_approaching_points_other: '{{count}} points left to reach {{tier}}.',
+    score_approaching_bonus: "You'll keep up to {{pct}}% more commission.",
+    score_approaching_action_prepare: 'Prepare {{count}} order(s) on time today',
+    score_approaching_action_dispute: 'Respond to {{count}} dispute(s) before the deadline',
+    score_approaching_cta_tier: 'See my tier',
+    score_approaching_dismiss: 'Dismiss',
   },
 };

@@ -19,9 +19,9 @@ import ContractCard from './ContractCard';
 import { DarkCard, DARK_HERO_TEXT, DARK_HERO_TEXT_MUTED } from './DarkCard';
 import { finalizeShopApplication, readShopDraft, signContractLocally } from './api';
 
-const SELLER_HOME_PATH = '/seller/dashboard';
+const SELLER_HOME_PATH = '/seller/v2/accueil';
 const OPEN_SHOP_PATH = '/vendeur/ouvrir-boutique';
-const ADD_PRODUCTS_PATH = '/seller/products/new';
+const ADD_PRODUCTS_PATH = '/seller/v2/produits/nouveau';
 
 type Phase = 'kyc' | 'pending' | 'contract';
 

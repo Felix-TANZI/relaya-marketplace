@@ -434,7 +434,7 @@ export default function GlobalAssistant() {
 
     // ── Devenir vendeur ──
     if (prompt.includes("vendre") || prompt.includes("devenir vendeur") || prompt.includes("ouvrir boutique")) {
-      navigate("/become-seller");
+      navigate("/vendeur/ouvrir-boutique");
       pushAssistantMessage({
         id: `assistant-${Date.now()}`,
         role: "assistant",

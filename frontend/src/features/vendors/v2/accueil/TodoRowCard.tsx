@@ -20,6 +20,11 @@ interface Props {
   busy?: boolean;
   /** Accès Préparation (ACC-26) : mêmes cartes, aucun montant affiché. */
   hideAmount?: boolean;
+  /** Mode hors connexion (mockup HorsLigne.html) : ajoute un bouton "Code de
+   * remise" à côté de "C'est prêt" sur les cartes "à préparer" — ouvre le
+   * vrai écran de remise (commandes/HandoverPage.tsx), lit des données déjà
+   * en cache, aucun réseau requis. */
+  onHandoverCode?: (orderId: number) => void;
 }
 
 /** Motif de retour (OrderReturn.reason) — mêmes codes que litiges/ReturnsListPage.tsx, libellés dupliqués ici pour rester dans accueil/. */
@@ -30,7 +35,7 @@ const RETURN_REASON_KEYS: Record<string, string> = {
   HIDDEN_DEFECT: 'sl6_accueil.return_reason_hidden_defect',
 };
 
-export default function TodoRowCard({ item, onReady, onRespondDispute, onViewReturn, busy, hideAmount }: Props) {
+export default function TodoRowCard({ item, onReady, onRespondDispute, onViewReturn, busy, hideAmount, onHandoverCode }: Props) {
   const { t, i18n } = useTranslation();
   const { theme } = useTheme();
   const p = palette(theme);
@@ -176,6 +181,26 @@ export default function TodoRowCard({ item, onReady, onRespondDispute, onViewRet
         >
           {t('sl6_accueil.row_return_action')}
         </button>
+      ) : !isDispute && onHandoverCode ? (
+        <div className="flex gap-2 mt-2.5">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onReady(item.orderId)}
+            className="flex-1 rounded-xl font-bold disabled:opacity-60"
+            style={{ minHeight: 44, fontSize: 13, color: p.text, background: p.cardAlt }}
+          >
+            {t('sl6_accueil.row_prepare_action')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onHandoverCode(item.orderId)}
+            className="flex-1 rounded-xl font-bold"
+            style={{ minHeight: 44, fontSize: 13, color: p.text, border: `1px solid ${p.border}` }}
+          >
+            {t('sl6_accueil.row_handover_action')}
+          </button>
+        </div>
       ) : (
         <button
           type="button"

@@ -82,7 +82,15 @@ export interface AccueilState {
   shopName: string;
   /** Prénom dérivé pour la salutation ("Bonjour Franck") — voir format.ts:deriveFirstName. */
   firstName: string;
+  /** VendorProfile.id — sert de clé de persistance locale (ex. "Masquer" de ScoreApproachingCard). */
+  vendorId: number | null;
   isPrepAccess: boolean; // rôle "Préparation" — pas encore de rôle distinct en session (ACC-26, gap noté)
+  /** Prénom du compte "Préparation" connecté (identité bar + salutation, ACC-26) — toujours
+   * null aujourd'hui : aucune session de rôle distincte n'existe encore côté backend pour le
+   * renseigner. Le rendu qui en dépend (ShopIdentityBar, salutation) est déjà câblé pour le
+   * jour où ce champ sera rempli ; en attendant il retombe sur un libellé générique "Accès
+   * Préparation" sans nom (voir sl6_accueil.prep_role_label). */
+  staffFirstName: string | null;
   todos: TodoItem[];
   /** Nombre total de produits sous leur seuil (tous, pas seulement lowStockItem). */
   lowStockCount: number;

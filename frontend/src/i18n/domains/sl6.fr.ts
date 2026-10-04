@@ -10,7 +10,15 @@ export default {
     error_title: "Impossible de charger l'accueil",
     error_retry: 'Réessayer',
     action_error: "Cette action n'a pas pu partir à temps : refaites-la.",
+    // Note "Accès Préparation" (ACC-26) — affichée en bas de page (état "Accueil_prep"),
+    // juste avant le bandeau réseau, jamais en haut : tous les montants sont déjà masqués.
     prep_access_note: 'Les montants et les versements sont réservés au propriétaire de la boutique.',
+    // Identité bar + salutation en accès Préparation — staffFirstName vient de la session de
+    // rôle (pas encore modélisée côté backend, ACC-26) : sans prénom connu on retombe sur le
+    // libellé générique ci-dessous plutôt que d'inventer un nom.
+    prep_role_label: 'Accès Préparation',
+    prep_role_label_named: '{{name}} · accès Préparation',
+    greeting_prep: 'Bonjour {{name}} · accès Préparation',
 
     // ── Salutation personnalisée, au-dessus de "Boutique ouverte" (ACC-écart) ─
     greeting: 'Bonjour {{name}} · {{date}}',
@@ -74,6 +82,14 @@ export default {
     shop_open: 'Boutique ouverte',
     shop_close_today: "Fermer aujourd'hui",
     shop_close_not_yet: 'Bientôt disponible',
+    // ── Carte "Boutique fermée aujourd'hui" (écart mockup FermeAujourdhui.html) ─
+    shop_closed_today: "Fermée aujourd'hui",
+    shop_reopen_now: 'Rouvrir maintenant',
+    shop_closed_banner_title: "Boutique fermée aujourd'hui",
+    shop_closed_banner_body: "Les nouvelles commandes vont à d'autres vendeurs jusqu'à demain 08h. Les {{count}} commande(s) déjà reçue(s) restent à préparer.",
+    shop_closed_banner_body_zero: "Les nouvelles commandes vont à d'autres vendeurs jusqu'à demain 08h.",
+    shop_close_toast: "Fermeture pas encore reliée au serveur : aperçu d'écran seulement, rien n'est enregistré.",
+    shop_reopen_toast: "Réouverture pas encore reliée au serveur : aperçu d'écran seulement, rien n'est enregistré.",
 
     // ── Ligne stock bas, discrète, en bas (ACC-06) ───────────────────────
     low_stock: '{{count}} produit(s) en stock bas',
@@ -140,6 +156,25 @@ export default {
     offline_banner_no_data: 'Pas de connexion.',
     offline_retry: 'Réessayer',
     offline_empty: 'Aucune tâche en mémoire pour le moment. Reconnectez-vous pour recharger.',
+    // ── Second bandeau explicatif (écart mockup HorsLigne.html) ────────────
+    offline_sync_info: 'Hors connexion — La préparation et le code de remise marchent sans réseau.',
+    // Bouton "Code de remise" sur les cartes "à préparer" en mode hors connexion :
+    // ouvre le vrai écran de remise (commandes/HandoverPage.tsx), déjà capable
+    // de lire shipment.pickup_confirmation_code en cache local (REM-05).
+    row_handover_action: 'Code de remise',
+    // Carte dédiée "Code de remise" (file de synchronisation) : aucune file
+    // d'actions vendeur n'existe encore (voir commentaire OfflineBanner.tsx) —
+    // compteur et journal honnêtement vides tant qu'elle n'est pas branchée.
+    offline_sync_card_title: 'Code de remise',
+    offline_sync_card_count: '{{count}} action(s) en attente',
+    offline_sync_card_count_zero: 'Aucune action en attente',
+    offline_sync_card_details: 'Détails',
+    offline_sync_card_retry: 'Réessayer',
+    offline_sync_card_log_empty: 'Aucune action enregistrée pour l’instant.',
+    offline_sync_card_expiry_warning: 'Au-delà de 72 h hors connexion, les actions en attente sont annulées automatiquement.',
+    offline_how_rule_1: 'Les commandes déjà chargées restent visibles hors connexion, sans montant tant qu’elles ne sont pas revérifiées.',
+    offline_how_rule_2: 'Le code de remise à donner au livreur reste disponible : il est déjà sur votre téléphone, pas besoin de réseau pour le lire.',
+    offline_how_rule_3: 'Les autres actions (par ex. « C’est prêt ») nécessitent encore une connexion : elles échoueront tant que la synchronisation automatique n’est pas construite.',
 
     // ── Compte suspendu (SUS-01 à 03) ────────────────────────────────────
     suspended_title: 'Compte suspendu',
@@ -153,5 +188,21 @@ export default {
     suspended_blocked_2: 'Publier ou modifier des produits',
     suspended_contest_action: 'Contester cette décision',
     suspended_contest_hint: 'Une seule contestation possible. Réponse de notre équipe sous 72 heures ouvrées.',
+
+    // ── "Votre score approche d'un seuil" — état "Accueil_alerte" (ACC-écart) ─
+    // Palier et points réels (vendorsApi.getCertifications(), même pont que
+    // MonPalierPage.tsx). Les 3 conditions chiffrées du mockup (commandes du
+    // jour, litiges, commandes livrées restantes) ne sont PAS toutes
+    // disponibles : seules les deux premières le sont (files réelles de
+    // l'accueil) — la 3e est omise plutôt qu'inventée.
+    score_approaching_title: 'Votre score approche du palier {{tier}}',
+    score_approaching_points: 'Plus que {{count}} point(s) pour passer {{tier}}.',
+    score_approaching_points_one: 'Plus qu’{{count}} point pour passer {{tier}}.',
+    score_approaching_points_other: 'Plus que {{count}} points pour passer {{tier}}.',
+    score_approaching_bonus: 'Vous garderez jusqu’à {{pct}} % de commission en plus.',
+    score_approaching_action_prepare: 'Préparez à l’heure {{count}} commande(s) du jour',
+    score_approaching_action_dispute: 'Répondez à {{count}} litige(s) avant l’échéance',
+    score_approaching_cta_tier: 'Voir mon palier',
+    score_approaching_dismiss: 'Masquer',
   },
 };

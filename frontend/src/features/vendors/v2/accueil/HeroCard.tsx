@@ -18,9 +18,13 @@ interface Props {
   busy?: boolean;
   /** Accès Préparation (ACC-26) : mêmes cartes, aucun montant affiché. */
   hideAmount?: boolean;
+  /** Mode hors connexion (mockup HorsLigne.html) : ajoute un bouton "Code de
+   * remise" à côté de "C'est prêt" — ouvre le vrai écran de remise
+   * (commandes/HandoverPage.tsx), lit des données déjà en cache. */
+  onHandoverCode?: (orderId: number) => void;
 }
 
-export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail, busy, hideAmount }: Props) {
+export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail, busy, hideAmount, onHandoverCode }: Props) {
   const { t } = useTranslation();
   const { theme } = useTheme();
   const p = palette(theme);
@@ -88,15 +92,37 @@ export default function HeroCard({ item, onReady, onStockout, onExtend, onDetail
         </div>
       ) : null}
 
-      <button
-        type="button"
-        disabled={busy}
-        onClick={() => onReady(item.orderId)}
-        className="w-full rounded-2xl font-bold mb-2 disabled:opacity-60"
-        style={{ background: '#fff', color: p.orangeGradientTo, fontSize: 14.5, minHeight: 44 }}
-      >
-        {t('sl6_accueil.hero_action_ready')}
-      </button>
+      {onHandoverCode ? (
+        <div className="flex gap-2 mb-2">
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => onReady(item.orderId)}
+            className="flex-1 rounded-2xl font-bold disabled:opacity-60"
+            style={{ background: '#fff', color: p.orangeGradientTo, fontSize: 14.5, minHeight: 44 }}
+          >
+            {t('sl6_accueil.hero_action_ready')}
+          </button>
+          <button
+            type="button"
+            onClick={() => onHandoverCode(item.orderId)}
+            className="flex-1 rounded-2xl font-bold"
+            style={{ border: '1px solid rgba(255,255,255,0.5)', color: '#fff', fontSize: 13.5, minHeight: 44 }}
+          >
+            {t('sl6_accueil.row_handover_action')}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => onReady(item.orderId)}
+          className="w-full rounded-2xl font-bold mb-2 disabled:opacity-60"
+          style={{ background: '#fff', color: p.orangeGradientTo, fontSize: 14.5, minHeight: 44 }}
+        >
+          {t('sl6_accueil.hero_action_ready')}
+        </button>
+      )}
 
       <div className="flex items-center justify-around" style={{ minHeight: 44 }}>
         <button type="button" onClick={() => onStockout(item.orderId)} className="font-semibold" style={{ fontSize: 12.5, opacity: 0.9 }}>

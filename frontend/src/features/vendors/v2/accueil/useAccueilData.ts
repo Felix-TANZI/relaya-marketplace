@@ -55,7 +55,11 @@ const initialState: AccueilState = {
   error: null,
   shopName: '',
   firstName: '',
+  vendorId: null,
+  // ACC-26 : pas encore de rôle distinct en session — voir le commentaire détaillé
+  // à l'endroit où ces deux champs sont réellement renseignés, plus bas dans ce fichier.
   isPrepAccess: false,
+  staffFirstName: null,
   todos: [],
   lowStockCount: 0,
   lowStockItem: null,
@@ -277,7 +281,16 @@ export function useAccueilData() {
         variant,
         shopName: profile.business_name,
         firstName: deriveFirstName(profile),
+        vendorId: profile.id,
+        // ACC-26 : rôle "Préparation" pas encore modélisé côté session (pas de
+        // VendorProfile.active_role ni d'endpoint "qui est connecté" aujourd'hui).
+        // Codé en dur à false/null tant que ce champ n'existe pas — NE PAS
+        // inventer une valeur ici. Le rendu (ShopIdentityBar, salutation,
+        // montants masqués de HeroCard/TodoRowCard) est déjà entièrement câblé
+        // pour basculer correctement le jour où ces deux champs seront
+        // réellement renseignés par le backend.
         isPrepAccess: false,
+        staffFirstName: null,
         todos,
         lowStockCount: lowStockProducts.length,
         lowStockItem,

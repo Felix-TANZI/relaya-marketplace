@@ -156,5 +156,23 @@ export default {
     duplicate_cta_create_draft: 'Create the draft',
     duplicate_what_is_kept: 'What is kept',
     duplicate_what_is_kept_detail: 'The sheet, reference photos, category, template, weight, dimensions, lead time and pickup payment are carried over automatically. To fill in: the variant, price, stock and real photos.',
+
+    // Modify an offer (no dedicated mockup in the VD-08 batch — screen added
+    // so the 3 buttons on "An offer" stay inside the v2 space)
+    modify_offer_title: 'Edit the offer',
+    modify_offer_subtitle: 'Price, stock, condition, color and photos. Title, description and reference photos belong to the product sheet.',
+    modify_offer_promo_banner: 'You are here to change your price before a promotion.',
+    modify_offer_current_note: 'Current note: {{note}}',
+    modify_offer_current_photos: 'Current photos',
+    modify_offer_photos_room: '{{existing}} already online · {{room}} more possible',
+    modify_offer_photos_full: 'You have reached the maximum of {{max}} photos. Remove one to add others.',
+    modify_offer_photo_limit: 'Maximum {{max}} photos in total for this offer.',
+    image_primary_label: 'Primary',
+    cta_set_primary: 'Set as primary photo',
+    cta_delete_photo: 'Delete this photo',
+    cta_save_changes: 'Save changes',
+    toast_offer_updated: 'Offer updated',
+    toast_image_delete_error: 'Could not delete this photo',
+    toast_primary_image_error: 'Could not set this photo as primary',
   },
 };

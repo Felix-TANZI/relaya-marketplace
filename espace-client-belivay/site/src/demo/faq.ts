@@ -1,0 +1,370 @@
+// DONNÉES DE DÉMONSTRATION — les questions fréquentes (CL-13, 15.2), reprises du prototype du 1er octobre
+// (CL13_FAQ) : les thèmes de la spécification, en langage simple, complétés des questions qu'un client pose
+// vraiment (DP-54) : livraison et relais, diaspora. Les réponses suivent les décisions du porteur : garde (DP-08),
+// frais (DP-07, DP-18, DP-19, DP-25, DP-37), relais (DP-20, DP-42), litiges (DP-27, DP-35), retours (DP-10, DP-15),
+// remboursements (DP-06, DP-16, DP-17, DP-50 : au portefeuille quand FF-WALLET est ouvert, sinon au moyen
+// d'origine ; carte : la même carte), carte (DP-23), support (DP-12), codes (DP-04, DP-05, DP-26), diaspora
+// (PLAFONDS_DIASPORA). L'API servira ces textes (éditables par l'équipe support).
+import { chemin } from '../config/pages'
+import type { ThemeFaq } from '../donnees/source'
+
+// Page d'information sur la diaspora (qui peut ouvrir un compte, ce qu'il faut, ce que voit le proche).
+const INFOS_DIASPORA = chemin('diaspora-infos')
+
+export const FAQ: ThemeFaq[] = [
+ {
+  cle: "paiement",
+  titre: "Paiement",
+  icone: "wallet",
+  questions: [
+   {
+    q: "Comment je paie ?",
+    r: "Avec MTN MoMo ou Orange Money : tu valides la demande sur ton téléphone avec ton code secret, que BelivaY ne voit jamais. Ou par carte Visa ou Mastercard, avec 3-D Secure : 2 % de frais de service affichés avant de payer, 150 000 F au plus par paiement. Jamais d’espèces, ni au relais ni au livreur.",
+    lien: {
+     texte: "Mes moyens de paiement",
+     vers: "/moyens-paiement"
+    }
+   },
+   {
+    q: "Où va mon argent quand je paie ?",
+    r: "Il reste bloqué chez BelivaY jusqu’à ton retrait, puis pendant ta fenêtre de retour : 7 jours, ou moins si tu dis « Tout est en ordre ». Le vendeur est payé 3 jours après (1 jour s’il est Or ou Platine).",
+    lien: null
+   },
+   {
+    q: "Je peux payer au retrait ?",
+    r: "Oui, si ton panier y a droit : tu paies la livraison d’avance, puis le reste en Mobile Money sur ton téléphone, au comptoir. Jusqu’à 15 000 F pour un nouveau compte, puis 50 000 F, et 100 000 F après 5 commandes sans incident. Si tu refuses le colis, la livraison n’est pas remboursée.",
+    lien: {
+     texte: "Mes avantages",
+     vers: "/compte"
+    }
+   },
+   {
+    q: "Un proche à l’étranger peut payer pour moi ?",
+    r: "Oui, par carte Visa ou Mastercard, depuis ton panier : « Quelqu’un paie pour toi ? ». Frais de service de 2 % affichés avant de payer, 150 000 F au plus par paiement. Un remboursement revient sur sa carte ; il ne reçoit jamais ton code.",
+    lien: null
+   },
+   {
+    q: "Mon paiement n’a pas abouti",
+    r: "Aucun montant n’a été débité. Tes articles restent réservés le temps indiqué sur la carte « Paiement interrompu » : reprends le paiement depuis Mes commandes.",
+    lien: {
+     texte: "Mes commandes",
+     vers: "/commandes"
+    }
+   },
+   {
+    q: "J’ai été débité mais je ne vois pas ma commande",
+    r: "Ne paie pas une deuxième fois. La confirmation de l’opérateur peut prendre quelques minutes. Si elle n’apparaît toujours pas, écris au support avec une capture du SMS de ton opérateur : le paiement est vérifié et l’argent rendu s’il n’a servi à rien.",
+    lien: {
+     texte: "Écrire au support",
+     vers: "/fil?id=support&st=nouveau&sujet=Paiement"
+    }
+   }
+  ]
+ },
+ {
+  cle: "retrait",
+  titre: "Retrait et code",
+  icone: "qr-code",
+  questions: [
+   {
+    q: "Où trouver mon code de retrait ?",
+    r: "Dans Mes commandes : « Afficher mon code ». 6 chiffres et un QR, visibles au toucher et masqués quand tu quittes l’écran. Jamais dans une notification. Au-delà de 50 000 F, ton téléphone demande ton empreinte, ton visage ou son code.",
+    lien: {
+     texte: "Mes commandes",
+     vers: "/commandes"
+    }
+   },
+   {
+    q: "Je n’ai pas l’application sous la main",
+    r: "Ton code arrive aussi par SMS quand tes colis sont prêts, avec un lien vers le QR. Tu peux le redemander 3 fois par 24 h.",
+    lien: null
+   },
+   {
+    q: "Quelqu’un peut retirer à ma place ?",
+    r: "Oui : envoie-lui le code depuis ton téléphone. Celui qui a le code retire le colis. On te prévient au moment du retrait, avec le nom qu’il a donné au gérant.",
+    lien: null
+   },
+   {
+    q: "Mon code ne marche plus",
+    r: "Après 3 codes faux au comptoir, il est bloqué 24 h et on te prévient : demande un nouveau code depuis la commande. Si tu changes de relais ou de numéro, tu reçois aussi un nouveau code, et l’ancien est refusé.",
+    lien: null
+   },
+   {
+    q: "Que faire au comptoir ?",
+    r: "Ouvre tes colis devant le gérant. Tout va bien : « Tout est en ordre ». Un souci : « Un problème ». Le gérant prend les photos et garde le colis, et ton argent reste bloqué.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "garde",
+  titre: "Frais de garde",
+  icone: "clock",
+  questions: [
+   {
+    q: "Combien coûte la garde au relais ?",
+    r: "Le jour d’arrivée est gratuit. Ensuite, 100 F par jour les 2e, 3e et 4e jours, 200 F le 5e, 500 F le 6e, 1 000 F le 7e. Au plus 2 000 F. Un gros colis (carton C1 ou C2) coûte 300 F de plus chaque jour, dès le premier : au plus 4 100 F.",
+    lien: null
+   },
+   {
+    q: "Quand le décompte commence-t-il ?",
+    r: "Le jour où l’on te prévient que tout est arrivé : quand tu ouvres l’application ou quand le SMS t’est délivré. La garde se compte par jour entier. Un jour de fermeture du relais n’est jamais facturé.",
+    lien: null
+   },
+   {
+    q: "Combien je dois aujourd’hui ?",
+    r: "Pour BLV-52018 : 300 F dus aujourd’hui, 500 F demain, puis 500 F de plus samedi. Retire tes colis avant samedi 26 au soir.",
+    lien: {
+     texte: "Voir la commande",
+     vers: "/commande?ref=BLV-52018"
+    }
+   },
+   {
+    q: "Et si je ne retire pas mon colis ?",
+    r: "Après le 7e jour, il repart chez le vendeur le premier jour d’ouverture du relais. Frais : la garde plus 500 F de renvoi, retenus sur ton remboursement, jamais plus que ce que tu as payé. Le reste t’est remboursé.",
+    lien: null
+   },
+   {
+    q: "Comment je paie la garde ?",
+    r: "Au retrait, en Mobile Money, sur ton téléphone. Le gérant ne touche jamais d’argent.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "livraison",
+  titre: "Livraison et relais",
+  icone: "truck",
+  questions: [
+   {
+    q: "Combien coûte la livraison ?",
+    r: "Au relais : 900 F pour un colis (500 F de ramassage chez la boutique et 400 F de remise au relais), 600 F de remise pour un colis L. Une autre boutique de la même zone : 380 F de ramassage en plus de sa remise. À domicile : 500 F de ramassage et 1 000 F de remise par colis. Le total s’affiche dans le panier, avant de payer.",
+    lien: {
+     texte: "Mon panier",
+     vers: "/panier"
+    }
+   },
+   {
+    q: "Quand la livraison est-elle offerte ?",
+    r: "Dès 30 000 F d’articles au relais, ou 50 000 F à domicile : un ramassage et la remise d’un colis sont offerts. Les colis des autres boutiques restent dus. Le panier montre ce qu’il te manque.",
+    lien: null
+   },
+   {
+    q: "Mon article est très grand (XL)",
+    r: "Les colis XL et hors gabarit vont à domicile seulement : 1 500 F à moins de 5 km de la boutique, 2 000 F de 5 à 10 km, 3 000 F au-delà. Un relais ne refuse jamais un colis S, M ou L.",
+    lien: null
+   },
+   {
+    q: "Je peux changer de relais ?",
+    r: "Oui, depuis la commande. Gratuit tant que rien n’est collecté ; impossible pendant la tournée. Colis déjà arrivés : transfert à 400 F par colis S ou M, 600 F pour un colis L. Tu reçois un nouveau code, et le premier jour au nouveau relais est gratuit.",
+    lien: {
+     texte: "Mes commandes",
+     vers: "/commandes"
+    }
+   },
+   {
+    q: "Mon relais est fermé",
+    r: "On te prévient et tu choisis un autre relais, gratuitement. Sans réponse sous 24 h, tes colis vont au relais ouvert le plus proche : nouveau code, et la garde repart du premier jour. Un jour de fermeture n’est jamais facturé.",
+    lien: null
+   },
+   {
+    q: "Le livreur peut-il me demander de l’argent ?",
+    r: "Jamais. Tout se paie dans l’application, en Mobile Money ou par carte. À domicile, le livreur t’appelle par un appel masqué et voit seulement ton prénom et tes repères.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "litige",
+  titre: "Litige",
+  icone: "scale",
+  questions: [
+   {
+    q: "Comment signaler un problème ?",
+    r: "Depuis la commande : « Signaler un problème ». Quatre étapes : quel colis, ce qui s’est passé, une photo, ce que tu veux. Au comptoir, touche « Un problème » : c’est encore plus rapide.",
+    lien: {
+     texte: "Mes commandes",
+     vers: "/commandes"
+    }
+   },
+   {
+    q: "Jusqu’à quand je peux signaler un problème ?",
+    r: "Pendant 7 jours après le retrait, tant que tu n’as pas dit « Tout est en ordre ». Un défaut caché reste couvert 100 jours après le retrait, même après « Tout est en ordre ». Un brouillon de signalement est gardé 24 h.",
+    lien: null
+   },
+   {
+    q: "Que devient mon argent ?",
+    r: "Il reste bloqué : rien n’est versé au vendeur. Pour un petit montant, le remboursement part tout de suite, sans enquête : pour toi, jusqu’à 3 000 F.",
+    lien: null
+   },
+   {
+    q: "Combien de temps ça prend ?",
+    r: "Le vendeur a 48 h pour répondre. BelivaY décide au plus 24 h après. S’il se tait, une personne de BelivaY décide en partant de ta version. Une décision contre toi a toujours un motif écrit.",
+    lien: {
+     texte: "Mes litiges",
+     vers: "/litiges"
+    }
+   },
+   {
+    q: "Le vendeur me propose un arrangement",
+    r: "Tu as 5 jours pour l’accepter ou le refuser, depuis ton dossier. Sans réponse, le dossier revient en examen. Ton argent reste bloqué pendant ce temps.",
+    lien: {
+     texte: "Mes litiges",
+     vers: "/litiges"
+    }
+   },
+   {
+    q: "Je ne suis pas d’accord avec la décision",
+    r: "Tu peux faire un recours, une seule fois, dans les 48 h, depuis ton dossier. Une autre personne de BelivaY le réexamine, et ton argent reste bloqué jusqu’à sa décision.",
+    lien: null
+   },
+   {
+    q: "J’envoie mes photos sur WhatsApp ?",
+    r: "Non. Les photos se prennent dans l’application : elles sont datées et gardées dans ton dossier. WhatsApp sert seulement à poser une question.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "retour",
+  titre: "Retours",
+  icone: "rotate-ccw",
+  questions: [
+   {
+    q: "Puis-je retourner un article ?",
+    r: "Oui, s’il y a un problème : non conforme, abîmé, contrefait, ou un défaut caché signalé dans les 48 h après le retrait. Dans les 7 jours après le retrait. Pas de retour pour un changement d’avis.",
+    lien: null
+   },
+   {
+    q: "Comment se passe un retour ?",
+    r: "Tu n’as rien à organiser : rapporte le colis à ton relais, le livreur le reprend. Retour gratuit si le problème est validé ; sinon, le trajet retour (500 F) reste à ta charge. Aucune garde sur un colis en retour.",
+    lien: null
+   },
+   {
+    q: "Quand arrive mon remboursement ?",
+    r: "Dès que BelivaY a décidé, en général quand le vendeur a reçu et vérifié l’article, sous 48 h. L’argent arrive sur ton Portefeuille BelivaY : paie une commande avec, ou retire-le vers ton Mobile Money, sans frais pour un remboursement. Payé par carte : remboursé sur la même carte.",
+    lien: {
+     texte: "Mon portefeuille",
+     vers: "/wallet"
+    },
+    module: { ff: "FF-WALLET", ouvert: true }
+   },
+   {
+    q: "Quand arrive mon remboursement ?",
+    r: "Dès que BelivaY a décidé, en général quand le vendeur a reçu et vérifié l’article, sous 48 h. Sur le numéro Mobile Money qui a payé, dans l’heure ; par carte, sur la même carte.",
+    lien: null,
+    module: { ff: "FF-WALLET", ouvert: false }
+   },
+   {
+    q: "Je préfère un remplacement",
+    r: "Choisis « Un remplacement » en signalant le problème. Le vendeur renvoie l’article sous 72 h ouvrées, dimanche non compté, au même relais, sans frais pour toi.",
+    lien: null
+   },
+   {
+    q: "Un défaut apparaît plus tard ?",
+    r: "Un vice caché reste couvert 100 jours après le retrait : signale-le depuis la commande, il est traité comme un litige.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "compte",
+  titre: "Compte",
+  icone: "user-round",
+  questions: [
+   {
+    q: "Qui voit mes coordonnées ?",
+    r: "Le vendeur ne voit jamais ton nom, ton numéro ni ton relais. Le gérant voit le nom donné au retrait. À domicile, le livreur voit ton prénom et tes repères, et t’appelle par un appel masqué.",
+    lien: null
+   },
+   {
+    q: "Je ne reçois pas le code par SMS",
+    r: "Vérifie le numéro et ton réseau. Le code vaut 10 minutes ; tu peux en redemander un après 60 secondes, 3 fois par heure. Après 5 codes faux, attends 15 minutes.",
+    lien: null
+   },
+   {
+    q: "Comment changer de numéro ?",
+    r: "Mon compte, puis « Changer de numéro » : un code sur l’ancien numéro, puis sur le nouveau. Tes codes de retrait en cours sont renouvelés.",
+    lien: {
+     texte: "Mon compte",
+     vers: "/compte"
+    }
+   },
+   {
+    q: "Où sont mes factures ?",
+    r: "Mon compte, puis « Factures » : une facture PDF par commande retirée, émise par BelivaY, à partager ou à enregistrer. Une commande annulée n’a pas de facture.",
+    lien: {
+     texte: "Mes factures",
+     vers: "/factures"
+    }
+   },
+   {
+    q: "Comment donner mon avis ?",
+    r: "Depuis la commande retirée : une note pour chaque vendeur et une pour le relais, pendant 7 jours après le retrait. Le vendeur et le gérant ne voient jamais ton nom.",
+    lien: {
+     texte: "Mes commandes",
+     vers: "/commandes"
+    }
+   },
+   {
+    q: "Comment supprimer mon compte ?",
+    r: "Mon compte, puis « Supprimer mon compte ». C’est possible quand aucune commande ni aucun litige n’est en cours.",
+    lien: {
+     texte: "Supprimer mon compte",
+     vers: "/supprimer"
+    }
+   },
+   {
+    q: "BelivaY peut me demander mon code secret ?",
+    r: "Jamais : ni par SMS, ni par appel, ni sur WhatsApp. Ne donne ton code secret Mobile Money à personne.",
+    lien: null
+   }
+  ]
+ },
+ {
+  cle: "diaspora",
+  titre: "Diaspora",
+  icone: "globe",
+  questions: [
+   {
+    q: "Qui peut ouvrir un compte diaspora ?",
+    r: "Toute personne qui vit hors du Cameroun et veut acheter pour ses proches au Cameroun. Il faut une adresse e-mail et un numéro de téléphone du pays où tu vis, vérifié par SMS. Des achats pour tes proches seulement : jamais de revente ni d’argent liquide.",
+    lien: {
+     texte: "S’inscrire depuis l’étranger",
+     vers: chemin('inscription-diaspora')
+    }
+   },
+   {
+    q: "Comment commander pour un proche ?",
+    r: "Relie d’abord ton proche, puis « Commander pour un proche » : tu choisis les articles, ils partent au relais qu’il a choisi, et c’est lui qui reçoit le code de retrait. Toi, tu reçois la preuve du paiement et le suivi.",
+    lien: {
+     texte: "Mes proches",
+     vers: chemin('proches')
+    }
+   },
+   {
+    q: "Mon proche doit-il être d’accord ?",
+    r: "Oui, toujours. Il te donne son code famille (valable 24 h, une seule fois) ou accepte ton invitation dans son application. Chacun de vous peut retirer le lien quand il veut. 5 proches au plus par compte.",
+    lien: null
+   },
+   {
+    q: "Avec quoi je paie depuis l’étranger ?",
+    r: "Une carte Visa ou Mastercard à ton nom, avec 3-D Secure (la confirmation de ta banque). 150 000 F au plus par paiement et 500 000 F par mois. Frais de service de 2 % affichés avant de payer ; total montré en francs et en euros ou en dollars.",
+    lien: null
+   },
+   {
+    q: "Je vois l’adresse de mon proche ?",
+    r: "Jamais. Tu vois son prénom et le quartier du relais qu’il a choisi ; jamais son numéro, son adresse ni ses autres commandes. Lui voit ton prénom et ton pays.",
+    lien: null
+   },
+   {
+    q: "Et en cas de problème ou de remboursement ?",
+    r: "Ton proche signale le problème depuis son application, au comptoir ou dans les 7 jours après le retrait. Un remboursement revient toujours sur la carte qui a payé.",
+    lien: {
+     texte: "Tout savoir sur la diaspora",
+     vers: INFOS_DIASPORA
+    }
+   }
+  ]
+ }
+]

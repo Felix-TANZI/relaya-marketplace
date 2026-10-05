@@ -1,0 +1,156 @@
+{
+  "carrousel": [
+    {
+      "lien": "/liste?cat=femme&from=accueil",
+      "titre": "Mode femme",
+      "sous": [
+        "Robes",
+        "Pagnes & wax"
+      ],
+      "produits": "283",
+      "dessin": "30a65dd8f0c3"
+    },
+    {
+      "lien": "/liste?cat=tel&from=accueil",
+      "titre": "Téléphones & tablettes",
+      "sous": [
+        "Smartphones",
+        "Téléphones simples"
+      ],
+      "produits": "132",
+      "dessin": "6cb441816096"
+    },
+    {
+      "lien": "/liste?cat=maison&from=accueil",
+      "titre": "Maison & cuisine",
+      "sous": [
+        "Cuisine",
+        "Petit électroménager"
+      ],
+      "produits": "138",
+      "dessin": "a00d64f30e5f"
+    },
+    {
+      "lien": "/liste?cat=beaute&from=accueil",
+      "titre": "Beauté & santé",
+      "sous": [
+        "Soins visage",
+        "Cheveux"
+      ],
+      "produits": "168",
+      "dessin": "aae8368e5385"
+    },
+    {
+      "lien": "/liste?cat=elec&from=accueil",
+      "titre": "Électronique",
+      "sous": [
+        "Audio",
+        "TV & vidéo"
+      ],
+      "produits": "98",
+      "dessin": "dba0f8ad24f9"
+    },
+    {
+      "lien": "/liste?cat=marche&from=accueil",
+      "titre": "Supermarché",
+      "sous": [
+        "Épicerie",
+        "Boissons"
+      ],
+      "produits": "129",
+      "dessin": "6051650401c1"
+    }
+  ],
+  "categories": [
+    {
+      "lien": "/liste?from=accueil",
+      "titre": "Tout voir",
+      "dessin": "bf4e892644c3"
+    },
+    {
+      "lien": "/liste?cat=tel&from=accueil",
+      "titre": "Téléphones & tablettes",
+      "dessin": "c8ed74acd931"
+    },
+    {
+      "lien": "/liste?cat=elec&from=accueil",
+      "titre": "Électronique",
+      "dessin": "2b5bcef070f6"
+    },
+    {
+      "lien": "/liste?cat=femme&from=accueil",
+      "titre": "Mode femme",
+      "dessin": "bf4e892644c3"
+    },
+    {
+      "lien": "/liste?cat=homme&from=accueil",
+      "titre": "Mode homme",
+      "dessin": "d526d9d3fe62"
+    },
+    {
+      "lien": "/liste?cat=chauss&from=accueil",
+      "titre": "Chaussures",
+      "dessin": "d904fc29309b"
+    },
+    {
+      "lien": "/liste?cat=beaute&from=accueil",
+      "titre": "Beauté & santé",
+      "dessin": "603cb36e1d48"
+    },
+    {
+      "lien": "/liste?cat=maison&from=accueil",
+      "titre": "Maison & cuisine",
+      "dessin": "6aeead69d8da"
+    },
+    {
+      "lien": "/liste?cat=marche&from=accueil",
+      "titre": "Supermarché",
+      "dessin": "3499c5c0a9f4"
+    },
+    {
+      "lien": "/liste?cat=bebe&from=accueil",
+      "titre": "Bébé & enfant",
+      "dessin": "ada19db4961b"
+    },
+    {
+      "lien": "/liste?cat=sport&from=accueil",
+      "titre": "Sport & loisirs",
+      "dessin": "c84f1e9045b6"
+    }
+  ],
+  "flash": {
+    "titre": "Flash Deals",
+    "sousTitre": "Vraie fin · vrai stock"
+  },
+  "confiance": {
+    "question": "Pourquoi choisir",
+    "marque": "BelivaY",
+    "cartes": [
+      {
+        "lien": "/faq?t=paiement&a=1",
+        "icone": "shield-check",
+        "ton": "",
+        "titre": "Paiement sécurisé",
+        "texte": "Ton argent reste bloqué chez BelivaY jusqu’à ton retrait. MTN MoMo et Orange Money.",
+        "action": "En savoir plus"
+      },
+      {
+        "lien": "/faq?t=retrait&a=1",
+        "icone": "map-pin",
+        "ton": "o",
+        "titre": "Retrait au relais",
+        "texte": "Un relais près de chez toi dans 12 quartiers de Yaoundé. Le tien : Relais Mvog-Ada, à 350 m.",
+        "action": "Découvrir"
+      },
+      {
+        "lien": "/legal-doc?d=retours",
+        "icone": "rotate-ccw",
+        "ton": "",
+        "titre": "Retour gratuit si problème validé",
+        "texte": "Article abîmé, faux ou incomplet : tu signales au comptoir ou depuis ta commande, BelivaY tranche.",
+        "action": "Notre engagement"
+      }
+    ]
+  },
+  "fondArrivee": null
+}

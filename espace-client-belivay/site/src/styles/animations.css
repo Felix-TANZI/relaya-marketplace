@@ -1,0 +1,272 @@
+/* Animations du site (demande du porteur, 4 oct. 2026) : logique dans src/composants/Animations.tsx et
+   BarreBas.tsx. Au repos, rien ne change : tout ce qui bouge vaut sous html[data-mouv], posé seulement quand
+   les animations sont permises (ni « Animations réduites », ni prefers-reduced-motion, ni navigateur piloté). */
+
+/* Jetons uniques : mêmes durées et mêmes courbes partout (150 à 350 ms, ressorts doux). */
+:root{--blv-court:.13s;--blv-moyen:.22s;--blv-long:.29s;
+  --blv-doux:cubic-bezier(.2,.8,.2,1);--blv-ressort:cubic-bezier(.3,1.3,.5,1);--blv-sortie:cubic-bezier(.4,0,1,1)}
+
+/* ---------- Barre du bas : capsule ovale de verre (consigne du porteur, 5 oct. 2026, vidéo WhatsApp iOS 26) ----------
+   Une pilule qui flotte au-dessus de la page (rayon = moitié de la hauteur), à 12 px des bords et au-dessus de la
+   barre d'accueil de l'iPhone ; verre clair (flou, saturation), reflet en haut, liseré lumineux fin à peine irisé,
+   ombre portée douce. L'onglet actif est marqué par une capsule ovale aux couleurs de la marque, discrète.
+   Tablette portrait : même capsule, centrée, 520 px au plus (larges.css). */
+:root{
+  --dock-bg:rgba(255,255,255,.72);
+  --dock-filtre:blur(20px) saturate(190%) brightness(1.1);
+  --dock-ombre:0 14px 34px -14px rgba(64,34,14,.38),0 4px 12px -6px rgba(64,34,14,.16),0 0 0 .5px rgba(64,34,14,.12),
+    inset 0 1px 0 rgba(255,255,255,.95),inset 0 -1px 0 rgba(255,255,255,.4);
+  --dock-reflet:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,.12) 42%,rgba(255,255,255,0) 60%,rgba(255,255,255,.18));
+  --dock-lisere:linear-gradient(100deg,rgba(255,255,255,.95),rgba(255,226,196,.6) 22%,rgba(255,255,255,.25) 46%,rgba(196,222,255,.5) 74%,rgba(255,255,255,.95));
+  --dock-cap:linear-gradient(180deg,rgba(255,238,226,.96),rgba(255,224,204,.9));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(232,104,36,.22),inset 0 1px 0 rgba(255,255,255,.95),0 3px 10px -4px rgba(232,104,36,.38)}
+html[data-theme=dark]{
+  --dock-bg:rgba(32,30,36,.74);
+  --dock-filtre:blur(20px) saturate(170%) brightness(.78);
+  --dock-ombre:0 16px 36px -12px rgba(0,0,0,.75),0 0 0 .5px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.12),inset 0 -1px 0 rgba(255,255,255,.04);
+  --dock-reflet:linear-gradient(180deg,rgba(255,255,255,.1),rgba(255,255,255,.02) 45%,rgba(255,255,255,0) 60%,rgba(255,255,255,.03));
+  --dock-lisere:linear-gradient(100deg,rgba(255,255,255,.34),rgba(255,190,140,.16) 24%,rgba(255,255,255,.06) 48%,rgba(160,200,255,.14) 74%,rgba(255,255,255,.3));
+  --dock-cap:linear-gradient(180deg,rgba(255,154,85,.22),rgba(255,154,85,.14));
+  --dock-cap-ombre:inset 0 0 0 .5px rgba(255,170,110,.38),inset 0 1px 0 rgba(255,255,255,.1)}
+nav.dock{left:12px;right:12px;bottom:max(12px,calc(env(safe-area-inset-bottom,0px) - 8px));height:64px;padding:0 5px;border-radius:999px;
+  background:var(--dock-bg);-webkit-backdrop-filter:var(--dock-filtre);backdrop-filter:var(--dock-filtre);box-shadow:var(--dock-ombre)}
+nav.dock::before,nav.dock::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none}
+nav.dock::before{background:var(--dock-reflet)}
+nav.dock::after{padding:1px;background:var(--dock-lisere);
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+nav.dock .tab{height:54px;border-radius:999px}
+nav.dock .tab.on{background:var(--dock-cap);box-shadow:var(--dock-cap-ombre)}
+@media (prefers-reduced-transparency: reduce){nav.dock::before,nav.dock::after{display:none}}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){nav.dock{background:rgba(255,255,255,.96)}html[data-theme=dark] nav.dock{background:rgba(28,26,32,.97)}}
+
+/* ---------- Barre du bas : bulle de verre ---------- */
+nav.dock a{-webkit-user-drag:none}
+nav.dock{touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+nav.dock .tab:focus-visible{outline:2px solid var(--or-txt);outline-offset:-3px}
+nav.dock .tab{-webkit-tap-highlight-color:transparent}
+/* Pendant le mouvement, la capsule de l'onglet actif laisse la place à la bulle. */
+nav.dock.bouge .tab.on{background:transparent;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;color:var(--ink-2)}
+/* Bulle : capsule ovale (largeur, hauteur et rayon posés par BarreBas.tsx) ; posée, elle a la couleur de la capsule
+   active ; saisie, cette couleur s'efface et il ne reste que le verre (transparent, reflet, liseré irisé, loupe). */
+.dock-bulle{--e:0;--a:0deg;position:absolute;left:0;z-index:2;pointer-events:none;overflow:hidden;will-change:transform,width,height;
+  background:var(--dock-cap-uni);
+  background:color-mix(in srgb,var(--dock-cap-uni) calc((1 - var(--e))*100%),transparent);
+  box-shadow:var(--dock-cap-ombre),0 0 0 calc(var(--e)*.5px) var(--bulle-anneau),0 calc(var(--e)*10px) calc(var(--e)*26px) calc(var(--e)*-8px) var(--bulle-ombre),
+    inset 0 calc(var(--e)*1.5px) 0 rgba(255,255,255,calc(var(--e)*.9)),inset 0 calc(var(--e)*-2px) calc(var(--e)*6px) rgba(255,255,255,calc(var(--e)*.3)),
+    inset calc(var(--e)*4px) 0 calc(var(--e)*10px) rgba(255,255,255,calc(var(--e)*.22)),inset calc(var(--e)*-4px) 0 calc(var(--e)*10px) rgba(255,255,255,calc(var(--e)*.22));
+  -webkit-backdrop-filter:blur(calc(var(--e)*8px)) saturate(calc(1 + var(--e)*.8)) brightness(calc(1 + var(--e)*.05));
+  backdrop-filter:blur(calc(var(--e)*8px)) saturate(calc(1 + var(--e)*.8)) brightness(calc(1 + var(--e)*.05))}
+/* Verre : voile léger qui estompe les onglets vus dessous (la loupe, nette, les remplace), reflet en haut, liseré
+   lumineux irisé qui tourne avec la glisse. */
+.dock-bulle::before{content:"";position:absolute;inset:0;border-radius:inherit;z-index:0;opacity:calc(var(--e)*.72);background:var(--bulle-voile)}
+.dock-bulle::after{content:"";position:absolute;inset:0;border-radius:inherit;z-index:2;padding:1.25px;opacity:calc(var(--e)*.9);
+  background:conic-gradient(from var(--a),rgba(255,255,255,.95),#FFC48A 12%,rgba(255,255,255,.85) 24%,#9FDCFF 38%,rgba(255,255,255,.9) 50%,#D9B6FF 62%,rgba(255,255,255,.85) 76%,#FF9EC4 88%,rgba(255,255,255,.95));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+:root{--dock-cap-uni:rgba(255,230,213,.94);--bulle-ombre:rgba(64,30,10,.4);--bulle-anneau:rgba(64,34,14,.22);
+  --bulle-voile:radial-gradient(120% 80% at 50% -10%,rgba(255,255,255,.95),rgba(255,255,255,.5) 50%,rgba(255,255,255,.3) 75%),linear-gradient(180deg,rgba(255,255,255,.3),rgba(255,255,255,.1) 60%,rgba(255,255,255,.35))}
+html[data-theme=dark]{--dock-cap-uni:rgba(255,154,85,.18);--bulle-ombre:rgba(0,0,0,.6);--bulle-anneau:rgba(255,255,255,.14);
+  --bulle-voile:radial-gradient(120% 80% at 50% -10%,rgba(255,255,255,.2),rgba(255,255,255,.06) 50%,rgba(26,24,30,.4) 80%),linear-gradient(180deg,rgba(40,36,46,.55),rgba(40,36,46,.7))}
+.dock-bulle.simple::before,.dock-bulle.simple::after{display:none}
+/* Bulle simple (animations réduites) : sans loupe, elle passe sous les onglets pour ne pas cacher leur libellé. */
+nav.dock .tab{z-index:1}
+.dock-bulle.simple{z-index:0}
+.dock-loupe{position:absolute;left:0;top:0;z-index:1;display:flex;align-items:center;box-sizing:border-box;transform-origin:0 0;will-change:transform}
+.dock-bulle .tab-copie{flex:1;height:54px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:12px;font-weight:800;color:var(--or-txt);position:relative}
+.dock-bulle .tab-copie span{white-space:nowrap}
+.dock-bulle .tab-copie svg{width:22px;height:22px}
+.dock-bulle .tab-copie .bdg{position:absolute;top:2px;left:calc(50% + 6px);min-width:19px;height:19px;border-radius:10px;background:var(--braise-1);color:#fff;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 5px;box-shadow:0 0 0 2px var(--card)}
+
+/* ---------- Calque des vols, étincelles, ondes, indicateurs ---------- */
+#blv-calque{position:fixed;inset:0;pointer-events:none;z-index:2147483000;overflow:hidden}
+.blv-vol{position:fixed;overflow:hidden;will-change:transform,opacity;box-shadow:0 14px 30px -10px rgba(40,20,10,.45),0 0 0 1px rgba(255,255,255,.35)}
+.blv-vol>*{pointer-events:none}
+.blv-etincelle{position:fixed;width:7px;height:7px;border-radius:50%;will-change:transform,opacity}
+.blv-confetti{position:fixed;width:7px;height:11px;border-radius:2px;margin:-5px 0 0 -3px;will-change:transform,opacity}
+.blv-onde{position:fixed;overflow:hidden}
+.blv-onde i{position:absolute;border-radius:50%;opacity:0}
+.blv-actualise{position:fixed;width:38px;height:38px;margin-top:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--card);color:var(--ink-3);box-shadow:0 6px 18px -6px rgba(0,0,0,.35),0 0 0 1px var(--line-2);opacity:0}
+.blv-actualise.pret{color:var(--or-txt)}
+.blv-actualise.tourne svg{animation:blv-tourne .8s linear infinite}
+@keyframes blv-tourne{to{transform:rotate(360deg)}}
+
+/* ---------- Panier (signature) : la vignette se soulève, le panier rebondit, le badge « poppe » ---------- */
+html[data-mouv] .blv-attente .bdg{transform:scale(0);opacity:0}
+html[data-mouv] .blv-souleve{animation:blv-souleve var(--blv-moyen) var(--blv-ressort)}
+@keyframes blv-souleve{45%{transform:scale(.95)}}
+html[data-mouv] .blv-rebond{animation:blv-rebond var(--blv-long) var(--blv-ressort)}
+@keyframes blv-rebond{0%{transform:scale(1)}35%{transform:scale(1.14,.92)}70%{transform:scale(.97,1.04)}100%{transform:none}}
+html[data-mouv] .blv-pop{animation:blv-pop var(--blv-moyen) var(--blv-ressort)}
+@keyframes blv-pop{0%{transform:scale(.4);opacity:.3}60%{transform:scale(1.18);opacity:1}100%{transform:none}}
+
+/* ---------- Favori : cœur qui bat (une fois) ---------- */
+html[data-mouv] .blv-bat svg{animation:blv-bat var(--blv-long) var(--blv-ressort)}
+@keyframes blv-bat{0%{transform:scale(1)}30%{transform:scale(.78)}70%{transform:scale(1.18)}100%{transform:scale(1)}}
+html[data-mouv] .blv-retrait svg{animation:blv-retrait var(--blv-moyen) var(--blv-doux)}
+@keyframes blv-retrait{45%{transform:scale(.8)}}
+
+/* ---------- Chiffres qui défilent (quantités, totaux, solde, codes, comptes à rebours) ---------- */
+.blv-ib{display:inline-block}
+html[data-mouv] .blv-roule-h{animation:blv-roule-h var(--blv-moyen) var(--blv-doux)}
+html[data-mouv] .blv-roule-b{animation:blv-roule-b var(--blv-moyen) var(--blv-doux)}
+@keyframes blv-roule-h{from{transform:translateY(45%);opacity:0}}
+@keyframes blv-roule-b{from{transform:translateY(-45%);opacity:0}}
+/* État qui change (pastille d'une commande, « Copié », statut) : léger fondu agrandi. */
+html[data-mouv] .blv-maj{animation:blv-maj var(--blv-moyen) var(--blv-ressort)}
+@keyframes blv-maj{from{transform:scale(.9);opacity:.4}}
+
+/* ---------- Boutons et puces : léger enfoncement ---------- */
+html[data-mouv] .btn{transition:transform var(--blv-court) var(--blv-ressort),filter var(--blv-court) ease}
+html[data-mouv] .btn.primary:active{transform:scale(.97) translateY(1px);filter:brightness(.95)}
+html[data-mouv] .btn:not(.primary):active{transform:scale(.98)}
+html[data-mouv] .chip{transition:background-color var(--blv-moyen) ease,color var(--blv-moyen) ease,border-color var(--blv-moyen) ease,transform var(--blv-court) ease}
+html[data-mouv] .chip:active{transform:scale(.96)}
+
+/* ---------- Interrupteurs : pastille qui glisse avec un ressort, s'étire au toucher ---------- */
+html[data-mouv] .tg{transition:background-color var(--blv-moyen) ease}
+html[data-mouv] .tg::after{transition:left var(--blv-long) var(--blv-ressort),width var(--blv-court) ease}
+html[data-mouv] .tg:active::after{width:30px}
+html[data-mouv] .tg.on:active::after{left:17px}
+
+/* ---------- Feuilles : montent avec un ressort ; voile en fondu ; dépliants ---------- */
+html[data-mouv] .sheet{animation:blv-feuille var(--blv-long) var(--blv-ressort) both}
+html[data-mouv] .veil{animation:blv-voile var(--blv-moyen) ease both}
+@keyframes blv-feuille{from{transform:translate3d(0,60%,0);opacity:.6}}
+@keyframes blv-voile{from{opacity:0}}
+html[data-mouv] details[open]>:not(summary){animation:blv-deplie var(--blv-moyen) var(--blv-doux)}
+@keyframes blv-deplie{from{opacity:0;transform:translate3d(0,-4px,0)}}
+/* Poignée : zone de saisie plus large (invisible) pour tirer la feuille vers le bas. */
+.sheet .grab{position:relative;touch-action:none}
+.sheet .grab::before{content:"";position:absolute;left:-80px;right:-80px;top:-12px;bottom:-14px}
+html[data-mouv] .sheet .grab{cursor:grab}
+
+/* ---------- Messages de confirmation et d'erreur qui glissent ---------- */
+html[data-mouv] .cl10-toast,html[data-mouv] #proto-toast{animation:blv-toast var(--blv-long) var(--blv-ressort) both}
+@keyframes blv-toast{from{opacity:0;transform:translate3d(0,16px,0)}}
+html[data-mouv] :is(.note[role=status],.note[role=alert],[role=status]>.note,[role=alert]>.note){animation:blv-note var(--blv-moyen) var(--blv-doux) both}
+@keyframes blv-note{from{opacity:0;transform:translate3d(0,-6px,0)}}
+
+/* ---------- Succès : coche qui se dessine (commande confirmée, paiement accepté) ---------- */
+html[data-mouv] .cl08-sq:not(.or),html[data-mouv] .xp-fid>svg,html[data-mouv] .blv-succes>svg{animation:blv-ok var(--blv-long) var(--blv-ressort) both}
+html[data-mouv] .cl08-sq:not(.or) svg>*,html[data-mouv] .xp-fid>svg>*,html[data-mouv] .blv-succes>svg>*{stroke-dasharray:80;stroke-dashoffset:80;animation:blv-trace .42s .12s var(--blv-doux) forwards}
+@keyframes blv-ok{from{transform:scale(.6);opacity:0}}
+@keyframes blv-trace{to{stroke-dashoffset:0}}
+
+/* ---------- Erreurs de formulaire : petite secousse ---------- */
+html[data-mouv] :is(.inp.err,.otp.err,[aria-invalid=true]){animation:blv-secousse var(--blv-long) ease}
+@keyframes blv-secousse{20%,80%{transform:translateX(-2px)}40%{transform:translateX(4px)}60%{transform:translateX(-4px)}}
+
+/* ---------- Jauges et barres de progression : se remplissent ---------- */
+html[data-mouv] main :is(i,b)[style^="width:"]{transform-origin:left center;transition:width var(--blv-long) var(--blv-doux);animation:blv-jauge var(--blv-long) var(--blv-doux) .1s both}
+@keyframes blv-jauge{from{transform:scaleX(0)}}
+/* Étapes (suivi de commande, parcours) : la pastille de l'étape change en douceur. */
+html[data-mouv] :is(.cl09-step .k,.cl07-stp a,.steps i,.step i){transition:background-color var(--blv-moyen) ease,color var(--blv-moyen) ease,transform var(--blv-court) ease}
+
+/* ---------- Recherche : le champ s'éclaire au focus ---------- */
+html[data-mouv] :is(.srch,.inp){transition:border-color var(--blv-moyen) ease,box-shadow var(--blv-moyen) ease}
+
+/* ---------- Entrée des pages : glissé avant / arrière, fondu entre onglets ; premiers blocs en cascade ---------- */
+html[data-mouv] main.blv-avant>:not(style){animation:blv-avant var(--blv-long) var(--blv-doux) both}
+html[data-mouv] main.blv-arriere>:not(style){animation:blv-arriere var(--blv-long) var(--blv-doux) both}
+html[data-mouv] main.blv-fondu>:not(style){animation:blv-fondu var(--blv-moyen) var(--blv-doux) both}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(2){animation-delay:.02s}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(3){animation-delay:.04s}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(4){animation-delay:.06s}
+html[data-mouv] main:is(.blv-avant,.blv-arriere,.blv-fondu)>:nth-child(n+5){animation-delay:.08s}
+@keyframes blv-avant{from{opacity:0;transform:translate3d(18px,0,0)}}
+@keyframes blv-arriere{from{opacity:0;transform:translate3d(-18px,0,0)}}
+@keyframes blv-fondu{from{opacity:0}}
+/* Cartes et lignes qui arrivent (liste chargée, filtre changé, message envoyé). */
+html[data-mouv] .blv-cascade{animation:blv-cascade var(--blv-moyen) var(--blv-doux) both;animation-delay:calc(var(--blv-i,0)*30ms)}
+@keyframes blv-cascade{from{opacity:0;transform:translate3d(0,8px,0)}}
+/* Images qui arrivent en fondu. */
+html[data-mouv] .blv-img{animation:blv-img var(--blv-long) ease both}
+@keyframes blv-img{from{opacity:0}}
+/* Squelettes de chargement qui scintillent (doucement). */
+html[data-mouv] :is(.cl05-skel i,.cl13-skel){background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.4) 50%,transparent 70%);background-size:220% 100%;background-repeat:no-repeat;animation:blv-scintille 1.4s linear infinite}
+html[data-mouv][data-theme=dark] :is(.cl05-skel i,.cl13-skel){background-image:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.07) 50%,transparent 70%)}
+@keyframes blv-scintille{from{background-position:120% 0}to{background-position:-120% 0}}
+/* Carrousel tiré à la souris. */
+.blv-tire{cursor:grabbing;scroll-behavior:auto!important;-webkit-user-select:none;user-select:none}
+.blv-tire *{pointer-events:none}
+
+/* Sécurité : « Animations réduites » coupe aussi ce qui est posé à la main. */
+html[data-anim=reduites] #blv-calque{display:none}
+@media (prefers-reduced-motion:reduce){#blv-calque{display:none}}
+.blv-plus{position:fixed;display:flex;align-items:center;gap:4px;height:24px;padding:0 9px;border-radius:999px;background:linear-gradient(180deg,var(--braise-1),var(--braise-2));color:#fff;font-size:12.5px;font-weight:800;box-shadow:0 8px 18px -8px rgba(176,67,10,.7);white-space:nowrap}
+
+/* ---------- Compte à rebours des ventes flash (composants/Chrono.tsx) ----------
+   Classe sans être criard : le chiffre qui change roule, les deux-points respirent, un reflet traverse de temps
+   en temps ; moins d'une heure : couleur braise et halo doux ; moins de dix minutes : halo qui bat lentement. */
+html[data-mouv] .blv-chrono{display:inline-flex;align-items:baseline;white-space:nowrap}
+html[data-mouv] .blv-chrono-c,html[data-mouv] .blv-chrono-p{display:inline-block}
+html[data-mouv] .blv-chrono{position:relative;overflow:hidden;border-radius:6px;font-variant-numeric:tabular-nums}
+html[data-mouv] .blv-chrono-c{animation:blv-chrono-roule var(--blv-moyen) var(--blv-doux)}
+@keyframes blv-chrono-roule{from{transform:translateY(-55%);opacity:0;filter:blur(1.5px)}to{transform:none;opacity:1;filter:none}}
+html[data-mouv] .blv-chrono-p{animation:blv-chrono-respire 1s ease-in-out infinite}
+@keyframes blv-chrono-respire{0%,100%{opacity:1}50%{opacity:.35}}
+html[data-mouv] .blv-chrono::after{content:"";position:absolute;inset:-2px 0;pointer-events:none;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.55) 50%,transparent 65%);transform:translateX(-120%);
+  animation:blv-chrono-reflet 6s cubic-bezier(.4,0,.2,1) infinite 1.2s;mix-blend-mode:overlay}
+@keyframes blv-chrono-reflet{0%,82%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+html[data-mouv] .blv-chrono[data-urgence=proche],html[data-mouv] .blv-chrono[data-urgence=imminent]{color:var(--braise-1);transition:color var(--blv-long) var(--blv-doux)}
+html[data-mouv] .blv-chrono[data-urgence=proche]{text-shadow:0 0 10px rgba(232,93,36,.25)}
+html[data-mouv] .blv-chrono[data-urgence=imminent]{animation:blv-chrono-halo 2s ease-in-out infinite}
+@keyframes blv-chrono-halo{0%,100%{text-shadow:0 0 6px rgba(232,93,36,.2)}50%{text-shadow:0 0 14px rgba(232,93,36,.55)}}
+/* Tuiles « HEURES / MIN / SEC » de la page Ventes flash : même langage que le chrono. */
+html[data-mouv] .blv-tuiles .b b{display:inline-flex;overflow:hidden}
+html[data-mouv] .blv-tuiles .sep{animation:blv-chrono-respire 1s ease-in-out infinite}
+html[data-mouv] .blv-tuiles .b{position:relative;overflow:hidden}
+html[data-mouv] .blv-tuiles .b::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:inherit;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);transform:translateX(-130%);
+  animation:blv-chrono-reflet 6s cubic-bezier(.4,0,.2,1) infinite}
+html[data-mouv] .blv-tuiles .b:nth-of-type(2)::after{animation-delay:.12s}
+html[data-mouv] .blv-tuiles .b:nth-of-type(3)::after{animation-delay:.24s}
+html[data-mouv] .blv-tuiles[data-urgence=proche] .b{box-shadow:0 0 0 1px rgba(255,140,80,.35),0 0 16px rgba(232,93,36,.25)}
+html[data-mouv] .blv-tuiles[data-urgence=imminent] .b{animation:blv-tuile-halo 2s ease-in-out infinite}
+@keyframes blv-tuile-halo{0%,100%{box-shadow:0 0 0 1px rgba(255,140,80,.3),0 0 10px rgba(232,93,36,.2)}50%{box-shadow:0 0 0 1px rgba(255,140,80,.6),0 0 22px rgba(232,93,36,.5)}}
+/* Verre liquide, détails : ce qui est vu à travers la bulle se décompose très légèrement sur ses bords (franges
+   rouge et bleue, comme une lentille), reflet net en haut et caustique douce en bas ; ombre portée qui grandit
+   quand la bulle se soulève. */
+.dock-bulle .tab-copie{text-shadow:calc(var(--e)*.9px) 0 rgba(255,40,90,calc(var(--e)*.28)),calc(var(--e)*-.9px) 0 rgba(30,140,255,calc(var(--e)*.28))}
+.dock-bulle .tab-copie svg{filter:drop-shadow(calc(var(--e)*.8px) 0 rgba(255,40,90,calc(var(--e)*.3))) drop-shadow(calc(var(--e)*-.8px) 0 rgba(30,140,255,calc(var(--e)*.3)))}
+.dock-loupe{z-index:1}
+.dock-bulle .dock-reflet{position:absolute;inset:0;border-radius:inherit;z-index:3;pointer-events:none;opacity:var(--e);
+  background:radial-gradient(60% 34% at 32% 12%,rgba(255,255,255,.85),rgba(255,255,255,0) 70%),radial-gradient(70% 30% at 60% 100%,rgba(255,255,255,.35),rgba(255,255,255,0) 70%)}
+html[data-theme=dark] .dock-bulle .dock-reflet{background:radial-gradient(60% 34% at 32% 12%,rgba(255,255,255,.4),rgba(255,255,255,0) 70%),radial-gradient(70% 30% at 60% 100%,rgba(255,255,255,.14),rgba(255,255,255,0) 70%)}
+/* Choix en liste (moyen de paiement, relais, adresse…) : la ligne choisie s'allume sur place — halo doux qui
+   s'estompe, rond de sélection qui se remplit avec un petit ressort, coche ou icône qui apparaît. Rien ne glisse
+   d'une ligne à l'autre. */
+html[data-mouv] .blv-choisi{animation:blv-choisi .42s var(--blv-doux)}
+@keyframes blv-choisi{0%{box-shadow:0 0 0 0 rgba(232,93,36,.32)}45%{box-shadow:0 0 0 5px rgba(232,93,36,.14)}100%{box-shadow:0 0 0 9px rgba(232,93,36,0)}}
+html[data-mouv] .blv-choisi :is(.rd,.radio-dot,.ck,.chk){animation:blv-choisi-rd .3s var(--blv-ressort)}
+@keyframes blv-choisi-rd{0%{transform:scale(.55);opacity:.4}100%{transform:scale(1);opacity:1}}
+html[data-mouv] :is(.cl08-row,.radio,.cl03-rr,.cl12-rc,.li[role=radio]){transition:background-color var(--blv-moyen) var(--blv-doux),border-color var(--blv-moyen) var(--blv-doux),box-shadow var(--blv-moyen) var(--blv-doux)}
+/* Sélecteurs à 2 ou 3 choix (.seg) : une vraie pastille glisse sous le choix actif ; le texte ne bouge pas, seule
+   sa couleur change. Remplace l'ancien indicateur flottant. */
+html[data-mouv] .seg{position:relative;isolation:isolate}
+html[data-mouv] .seg.blv-pill::before{content:"";position:absolute;left:0;top:0;z-index:0;pointer-events:none;
+  width:var(--pw);height:var(--ph);transform:translate3d(var(--px),var(--py),0);border-radius:var(--prad,10px);
+  background-color:var(--pbg,var(--card));background-image:var(--pbgi,none);box-shadow:var(--psh,none);
+  transition:transform .28s cubic-bezier(.25,1,.35,1),width .28s cubic-bezier(.25,1,.35,1),height .28s cubic-bezier(.25,1,.35,1)}
+html[data-mouv] .seg.blv-pill-fixe::before{transition:none}
+html[data-mouv] .seg.blv-pill > a{position:relative;z-index:1;transition:color var(--blv-moyen) var(--blv-doux)}
+html[data-mouv] .seg.blv-pill > a.on{background:transparent;background-image:none;box-shadow:none}
+html[data-mouv] .seg.blv-pill > a:active{transform:scale(.97)}
+/* Puces, filtres, onglets : fondu de couleur et petit retour au toucher. */
+html[data-mouv] :is(.chip,.c9-chips a,.c9-tabs a,.cl05-chip,.pill-tab){transition:background-color var(--blv-moyen) var(--blv-doux),color var(--blv-moyen) var(--blv-doux),border-color var(--blv-moyen) var(--blv-doux),box-shadow var(--blv-moyen) var(--blv-doux)}
+html[data-mouv] .blv-doux{animation:blv-doux .24s var(--blv-ressort)}
+@keyframes blv-doux{0%{transform:scale(.96)}100%{transform:scale(1)}}
+/* Rangée de catégories de l'accueil : allure panoramique (bords fondus) et défilement doux, sur téléphone comme sur
+   ordinateur (défilement automatique : composants/Animations.tsx, defilementAuto). */
+html[data-mouv] .h0-pills{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 28px),transparent);mask-image:linear-gradient(90deg,transparent 0,#000 14px,#000 calc(100% - 28px),transparent)}
+/* Barre flottante « colis au relais » (accueil, téléphone) : cachée / montrée / chassée (composants/Animations.tsx, barreColis). */
+#app .h0-float.blv-colis{touch-action:pan-x;transition:transform .32s cubic-bezier(.22,1,.36,1),opacity .24s ease}
+#app .h0-float.blv-colis-cache{opacity:0;pointer-events:none;transform:translateY(calc(100% + 24px))}
+#app .h0-float.blv-colis-part-cote{transform:translateX(110%)}
+#app .h0-float .blv-colis-x{position:absolute;top:-8px;right:-6px;width:26px;height:26px;border-radius:50%;border:0;display:flex;align-items:center;justify-content:center;color:var(--ink-2);background:var(--card);box-shadow:0 2px 8px rgba(0,0,0,.18)}
+html[data-anim=reduites] #app .h0-float.blv-colis{transition:none}
+@media (prefers-reduced-motion:reduce){#app .h0-float.blv-colis{transition:none}}
+#app .h0-float.blv-colis-replie{display:none}
+#app .h0-float[class*=blv-colis]:not(.blv-colis-replie)>.blv-colis-x{z-index:2}
+#app .h0-float.blv-colis-ligne{position:relative!important}
+#app .h0-float.blv-colis-ligne>.blv-colis-x{top:6px;right:6px}

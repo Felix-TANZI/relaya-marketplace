@@ -1,0 +1,123 @@
+{
+ "description": "Extrait de CL-02 : Le modèle de données client.",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "sections": [
+  {
+   "section": "Le modèle de données client",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Objet",
+      "Champs",
+      "Contraintes et index"
+     ],
+     "lignes": [
+      {
+       "objet": "Client",
+       "champs": "id (uuid) · prénom · nom · telephone (E.164, chiffré) · telephone_verifie_le · email (unique, lower(email)) · mot_de_passe_hash (si e-mail) · google_sub · langue (fr, en, pcm) · relais_habituel_id · theme (auto, clair, sombre) · ifa (interne : palier, compteurs 12 mois, rétrogradations) · inscrit_le · cgu_version, cgu_acceptees_le · supprime_le",
+       "contraintes_et_index": "Unique : email, telephone vérifié. ifa jamais sérialisé vers le client. Suppression : pseudonymisation des données exigées par la loi."
+      },
+      {
+       "objet": "Appareil · Session",
+       "champs": "id · client · jeton FCM · plateforme · derniere_connexion ; session : jeton long sur mobile, révocable",
+       "contraintes_et_index": "Changer de numéro ou de mot de passe ferme les sessions des autres appareils ; la déconnexion révoque le jeton FCM."
+      },
+      {
+       "objet": "CodeOTP",
+       "champs": "téléphone · but (verify, change_old, change_new) · code_hash · expire_a · essais · envoye_a",
+       "contraintes_et_index": "OTP-DUREE, OTP-ESSAIS, OTP-RENVOI (proposés)."
+      },
+      {
+       "objet": "Adresse",
+       "champs": "id · client · nom (« Maison ») · quartier_id (zone) · reperes (texte) · position (point PostGIS)",
+       "contraintes_et_index": "Quartier hors zone exploitée refusé (422 zone_non_servie)."
+      },
+      {
+       "objet": "Panier · LignePanier",
+       "champs": "panier : client ou appareil (visiteur) · mode (relais, domicile) · relais_id · adresse_id ; ligne : variante_id · offre_attribuee_id · quantite · sauvegardee",
+       "contraintes_et_index": "Aucune réservation ; fusion du panier visiteur à la connexion (quantités additionnées, prix recalculés)."
+      },
+      {
+       "objet": "Favori / Liste / Alerte",
+       "champs": "variante_id · prix_vu · alerte_prix · alerte_stock · cree_le ; liste nommée (après le lancement) ; alerte de recherche : requête normalisée · zone",
+       "contraintes_et_index": "Favori et « Sauvegarder » créent le même objet (liste par défaut)."
+      },
+      {
+       "objet": "Reservation",
+       "champs": "variante_id · quantite · tentative_id · expire_a",
+       "contraintes_et_index": "Verrou de ligne sur la variante ; tâche de fond chaque minute pour les réservations expirées."
+      },
+      {
+       "objet": "Commande",
+       "champs": "id · ref (BLV-nnnnn, unique, opaque) · client · mode_remise · relais_id · adresse_id · etat · montants (S, Ram, Rem, suppl, Off, total, figés) · version_parametres · moyen_paiement · payeur (prénom, pays, si payée depuis l’étranger) · cree_le · payee_le",
+       "contraintes_et_index": "Index (client, etat), (ref). Montants en F entiers."
+      },
+      {
+       "objet": "SousCommande",
+       "champs": "id · commande · lettre (A, B, C) · vendeur_id (masqué au client) · zone · sous_total · etat · classe · delai_preparation · pret_estime_a · confirme_le · annulee_par, motif",
+       "contraintes_et_index": "Une par boutique ; cancellable = état < collectée."
+      },
+      {
+       "objet": "Colis · GroupeRemise",
+       "champs": "colis : sous_commande · numero (Colis 1) · etiquette · etagere · classe · etat · arrive_le · remis_le ; groupe : commande · relais_id · code_retrait (chiffré + empreinte HMAC) · j0 · accuse_fort (type, heure) · garde_due · bloque_jusqu_a · essais_faux · renvois_24h · porteur_tiers",
+       "contraintes_et_index": "Un code par groupe ; un changement de relais partiel crée un second groupe."
+      },
+      {
+       "objet": "Paiement · Tentative",
+       "champs": "commande · numero_tentative · cle (commande + n°) · montant · operateur · msisdn_masque · etat (pending, verifying, succeeded, failed, cancelled, replaced) · expire_a · reponses brutes · webhook (id de transaction, signature)",
+       "contraintes_et_index": "Unique : cle ; id de transaction (dédoublonnage des webhooks). Journal inaltérable."
+      },
+      {
+       "objet": "Escrow · Mouvement",
+       "champs": "commande · sous_commande · montant_bloque · date_fermeture_retour · date_liberation · etat (bloque, suspendu, liberable, verse, rembourse) ; mouvements : type, montant, moyen, horodatage",
+       "contraintes_et_index": "Double validation de toute règle ; remboursement toujours vers le moyen d’origine."
+      },
+      {
+       "objet": "Litige · Preuve",
+       "champs": "ref (LIT-nnnn) · colis · origine (app, comptoir) · motif (5 valeurs client) · photos (heure serveur) · souhait (rembourse, remplace, signal) · ouvert_le · echeance_vendeur · reponse_vendeur (accord, contestation, arrangement ≥ 40 car.) · decision · motif_ecrit · montant_retenu",
+       "contraintes_et_index": "Un seul dossier ouvert par colis ; motif écrit obligatoire pour un débouté."
+      },
+      {
+       "objet": "Retour · Remplacement",
+       "champs": "retour : litige · accepte_le · depose_le · collecte_le · recu_le · echeance_inspection · payeur_trajet · remboursement ; remplacement : litige · echeance · colis_remplacement · vendeur_secours · bascule_remboursement",
+       "contraintes_et_index": "Retour : aucune garde, hors capacité du relais."
+      },
+      {
+       "objet": "Avis",
+       "champs": "commande · colis · cible (vendeur, relais) · note (1-5) · commentaire · photo · moderation (motif, agent) · cree_le, modifie_le",
+       "contraintes_et_index": "Unique : (commande, cible) ; modifiable dans AVIS-FENETRE."
+      },
+      {
+       "objet": "Notification · Envoi",
+       "champs": "code message · canal (push, sms, email) · cle d’idempotence · statut (sent, delivered, opened, failed) · accusé · coût · langue · lien profond · lue",
+       "contraintes_et_index": "Journal inaltérable ; budget SMS par commande (6)."
+      },
+      {
+       "objet": "ReglageNotification · Consentement",
+       "champs": "canal de repli (sms) · catégories (critiques verrouillées) ; consentements horodatés (WhatsApp, conditions)",
+       "contraintes_et_index": "Stocké sur le compte, jamais seulement sur le téléphone."
+      },
+      {
+       "objet": "JourDeGarde",
+       "champs": "groupe · date · rang · tarif · fermé · gelé (litige, groupage) · cumul",
+       "contraintes_et_index": "Écrit à chaque storage.day (00:00, Africa/Douala)."
+      },
+      {
+       "objet": "LienCourt",
+       "champs": "jeton (8 caractères base32) · cible · valide_jusqu_a",
+       "contraintes_et_index": "Désactivé au retrait, au renvoi ou à la régénération du code."
+      }
+     ]
+    }
+   ],
+   "regles": [
+    "CDA-24",
+    "CDA-25",
+    "CDA-26",
+    "CDA-27",
+    "CDA-28"
+   ]
+  }
+ ]
+}

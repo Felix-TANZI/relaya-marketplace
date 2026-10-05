@@ -1,0 +1,2787 @@
+{
+ "document": "CL-07",
+ "source": "04_Pages_HTML/CL-07_Panier_Frais.html",
+ "sections": [
+  {
+   "section": "Écran « Panier » — structure",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Panier · référence 272 579 F (3 boutiques, 4 articles)",
+        "L’exemple de référence de la spec (7.3), panier actuel de Carine, écran entier, aux positions de la maquette IMG_1950, dans la palette « Mandarine & Nuit ». En-tête : bandeau « Paiement sécurisé via MoMo · Escrow BelivaY » (cadenas vert), retour carré, « Mon panier · 4 articles » (le nombre en gris), bouton carré de partage à icône orange ; encadré neutre « Quelqu’un paie pour toi ? Envoie-lui ce panier, il le règle depuis l’étranger. » avec chevron. Boutique A (barre mandarine, coche verte, « Colis 1 » à droite, « Mvog-Ada · prêt sous 4 h », « Vendeur certifié Or · Trust Score 91 ») : Tecno Camon 30 · Gris titane · 256 Go, icônes signet et corbeille, sélecteur − 1 +, 150 699 F en orange ; « AJOUTER DE CETTE BOUTIQUE — SANS RAMASSAGE EN PLUS » : deux mini-cartes Tablette 8″ 64 000 F et Galaxy A15 89 900 F, « + Ajouter » ; « Sous-total boutique · livraison calculée ci-dessous » 150 699 F. Boutique B (barre or, Argent · 78) : Ensemble wax 3 pièces · Taille M 32 000 F, Sac cuir artisanal · Marron 52 000 F ; sous-total 84 000 F (pas de second bloc de suggestions : un seul par panier, sous la première boutique qui en a). Boutique C (barre graphite, sous-titre ambre « Mvan · zone différente · prêt sous 6 h », Bronze · 64) : Mixeur-blender 37 000 F ; encadré orange « Ce produit vient d’une autre zone : son ramassage est au plein tarif. Le même produit existe à Mvog-Ada — tu économiserais 500 F. » et « Changer d’offre ». « Tes articles arrivent en 3 colis, retirables ensemble avec un seul code. » (icône de colis). Carte bordée d’orange, ampoule : « Livraison de base offerte — tu dépasses 30 000 F. », « Il te reste 880 F de ramassages. Regrouper la boutique C à Mvog-Ada les ferait tomber à 380 F. », barre verte pleine, « 271 699 F d’articles » et « seuil 30 000 F atteint » en vert. Carte « RÉCAPITULATIF » : 271 699 F ; carré mandarine A 500 F barré « offert » ; carré or B 380 F, « même zone · trajet partagé −24 % » en vert ; carré graphite C 500 F, « zone différente · plein tarif » en ambre ; remise au Relais Mvog-Ada 400 F barré « offert » ; filet pointillé ; total 272 579 F en grand, en orange ; « tu économises 900 F de livraison » ; « MOYENS ACCEPTÉS » : pastilles MTN, Orange, VISA, Mastercard et « Carte : 2 % de frais de service, affichés avant de payer. » « Sauvegardés » et « glisse un article vers la gauche pour l’y mettre » ; carte en pointillés : Montre 27 500 F, 29 900 F barré · « prix baissé de 2 400 F » ; Baskets · Pointure 42 29 900 F · « de retour en stock » ; « Remettre » ; « Tout voir · 2 ». Carte verte « Escrow BelivaY ». Lien « Conditions de vente et de paiement ». Barre collante : « Passer commande · 272 579 F » (camion), dessous « Ton argent reste bloqué jusqu’à ton retrait. Colis prêts sous 6 h, retrait dès aujourd’hui 17 h. », puis « Paiement au comptoir non proposé : panier au-delà de 50 000 F. »"
+       ],
+       "gras": [
+        "",
+        "",
+        "Boutique A"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Apparence d’origine : liste cochée, carrousel, récapitulatif en bloc",
+        "Style : maquette S’inspirer IMG_1950 (exact) : positions et ordre des blocs de la maquette, palette et graphisme « Mandarine & Nuit »",
+        "Jetons CSS du socle uniquement, aucune couleur de maquette ; clair par défaut, sombre « Nuit » ; barre de paiement collante."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Case à cocher orange sur chaque article",
+        "Aucune case : chaque ligne compte dans le total, « Sauvegarder » la met de côté",
+        "Retirer la sélection ; le total vient de GET /cart (CPN-19)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Une seule carte, toutes boutiques mêlées",
+        "Une section par boutique : « Boutique A », « Colis 1 », zone et délai, palier et Trust Score, barre de couleur",
+        "Rendre sections[] telles que le serveur les renvoie, dans son ordre (CPN-05 à CPN-08)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de titre ni de partage",
+        "« Mon panier · 4 articles » et bouton carré de partage",
+        "N = somme des quantités renvoyée par le serveur (CPN-03)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Encart diaspora « Quelqu’un paie pour toi ? … »",
+        "Ouvre la feuille de partage (CPN-04, CPN-46)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Variante absente",
+        "Variante en clair sous le nom (« Gris titane · 256 Go »)",
+        "line.variant_label (CPN-10)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Photos fausses ou cassées (visages, escarpin bleu, sac à monogramme, « ? »)",
+        "Vignettes C1–C3 sur fond uniforme sombre ; illustrations provisoires dans le prototype",
+        "Photos réelles de l’offre attribuée (19.5) ; aucune image de marque."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« IPhone 15 pro Max » (casse fautive, produit sans rapport)",
+        "Nom du produit maître du catalogue (« Tecno Camon 30 »)",
+        "Libellés du catalogue, jamais saisis dans le panier."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau tournant (« Livraison 24–72h · Cameroun & CEMAC », « Remboursement sous 7 jours · Sans question », « 3 200+ vendeurs »)",
+        "Bandeau fixe « Paiement sécurisé via MoMo · Escrow BelivaY »",
+        "Composant .reass ; aucun autre bandeau dans le panier (CPN-02)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Robot flottant (assistant IA) et bouton « remonter » qui couvrent la quantité et le total",
+        "Rien ne flotte au-dessus du contenu",
+        "Assistant IA fermé au lancement (FF-IA) ; marge basse pour la barre de paiement collante."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Phrase « Tes articles arrivent en 3 colis, retirables ensemble avec un seul code. »",
+        "parcels_count du serveur (CPN-17)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Balayage « Sauvegarder » puis « Supprimer », et icônes signet et corbeille sur chaque ligne",
+        "CPN-42, CPN-43."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Carrousel « Complétez votre commande » hors sections, coupé à droite",
+        "Suggestions seulement dans la section de leur boutique, « sans ramassage en plus »",
+        "CPN-11, CPN-12 ; interdit 7.4."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Économie estimée – 10 896 FCFA » (4 % inventés, non déduits)",
+        "« tu économises 900 F de livraison » = Off",
+        "CPN-25, CFR-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Livraison 2 000 FCFA » en une ligne",
+        "Une ligne de ramassage par boutique, remise au relais, montants barrés « offert »",
+        "Récapitulatif du serveur, dans l’ordre imposé (CPN-23)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Ajouter un code promotionnel »",
+        "—",
+        "Aucun code promotionnel dans la spec ni le registre."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Encart dynamique et barre de progression",
+        "CPN-20 à CPN-22."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Section « Sauvegardés » (2 articles)",
+        "CPN-27 ; même liste que les favoris."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Mode de remise et relais invisibles",
+        "« Remise au Relais Mvog-Ada » (ou « Remise à domicile · Maison ») dans le récapitulatif",
+        "Mode et relais viennent de GET /cart?mode=&relais=."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Total 274 399 F faux",
+        "Total 272 579 F, recalculé par le serveur à chaque changement",
+        "CFR-01 à CFR-08."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Payer au retrait (centre BelivaY) » pour 274 399 F",
+        "Bouton « Payer au comptoir du relais » seulement si éligible ; sinon « Paiement au comptoir non proposé : panier au-delà de 50 000 F. »",
+        "GET /cart/eligibility/counter (CPN-34, CPN-35)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Passer commande » sans montant",
+        "« Passer commande · 272 579 F »",
+        "CPN-29."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Phrase de protection absente",
+        "Sous le bouton : argent bloqué jusqu’au retrait et vrais délais",
+        "CPN-30 à CPN-32."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Escrow « Livraison suivie 24-72h Cameroun & CEMAC »",
+        "« Le vendeur n’est payé qu’après ton retrait au Relais Mvog-Ada. »",
+        "CPN-28."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Frais de 2 % de la carte non signalés",
+        "« Carte : 2 % de frais de service, affichés avant de payer. »",
+        "CPN-26."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Continuer mes achats » en texte",
+        "Le retour et les suggestions de boutique suffisent",
+        "Aucune action secondaire concurrente du bouton payer."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pages légales introuvables au paiement",
+        "« Conditions de vente et de paiement » au pied du paiement",
+        "CPN-41 (15.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Lignes lisibles : photo, nom, prix en gras, quantité, suppression",
+        "Conservé, avec la variante et le prix de la ligne",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Récapitulatif en deux colonnes, total en grand, logos MTN / Orange / Visa / Mastercard, carte Escrow BelivaY",
+        "Conservé, contenu corrigé",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPN-01",
+        "Ordre imposé de haut en bas : bandeau de réassurance ; titre et bouton de partage ; encart diaspora ; une section par boutique ; phrase sur les colis ; puis encart dynamique, barre, récapitulatif, moyens acceptés, sauvegardés, carte Escrow BelivaY, bouton payer (barre collante en bas d’écran).",
+        "§7.1 p. 39–40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-02",
+        "Bandeau fixe, texte exact : « Paiement sécurisé via MoMo · Escrow BelivaY ». Aucun autre bandeau dans le panier, ni tournant ni promotionnel.",
+        "§7.1 p. 39 ; §7.4 p. 43",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-03",
+        "Titre « Mon panier · N articles » (N = somme des quantités ; « 1 article ») ; à droite, le bouton carré de partage (« Partager le panier » pour les lecteurs d’écran) ouvre l’envoi du panier au payeur (CPN-46). Panier vide : « Mon panier », sans bouton.",
+        "§7.1 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-04",
+        "Encart diaspora, texte exact : « Quelqu’un paie pour toi ? Envoie-lui ce panier, il le règle depuis l’étranger. » Il ouvre la même feuille que le bouton de partage.",
+        "§7.1 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-05",
+        "Une section par boutique, générée automatiquement par le serveur : une carte distincte, une couleur, un colis. Trois vendeurs donnent trois sections, trois couleurs, trois colis.",
+        "§7.1 p. 39–40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-06",
+        "En-tête de section : libellé neutre « Boutique A », pastille « Colis 1 », zone et délai « Mvog-Ada · prêt sous 4 h », puis « Vendeur certifié Or · Trust Score 91 » en sous-titre. La barre de couleur de la carte est reprise sur la ligne de ramassage de la boutique dans le récapitulatif.",
+        "§7.1 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-07",
+        "Lettres, couleurs et numéros de colis suivent l’ordre des collectes fixé par le serveur et sont réattribués à chaque recalcul : A mandarine (--or), B or (--or-m), C graphite (--ink-2), comme D.cart, puis le cycle recommence ; les couleurs de la maquette IMG_1950 (bleu, violet) ne sont pas reprises. Jamais de bleu ; le vert, l’ambre et le rouge restent réservés aux états.",
+        "§7.1 p. 40 (muet)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-08",
+        "Boutique d’une autre zone que le relais : sous-titre ambre « Mvan · zone différente · prêt sous 6 h » à la place du sous-titre gris.",
+        "§7.1 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-09",
+        "Le client ne voit jamais le nom, la page, l’adresse ni le numéro d’une boutique, ni à l’écran ni dans une réponse d’API ; aucun choix explicite de vendeur.",
+        "§7.1 p. 40 ; §19.1 p. 104 ; §19.4 p. 107",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-10",
+        "Ligne d’article : image, nom, variante en clair (« Gris titane · 256 Go »), prix de la ligne (P × q), quantité modifiable (sélecteur − 1 + ; « − » inactif à q = 1), icônes signet (« Sauvegarder ») et corbeille (« Retirer l’article ») en haut à droite. L’image et le nom ouvrent la fiche, d’où l’article se partage (CPN-49).",
+        "§7.1 p. 40 ; §6.4 p. 35",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-11",
+        "Sous les lignes : « Ajouter de cette boutique — sans ramassage en plus », deux produits au plus de la même boutique, qui ouvrent leur fiche. C’est le seul endroit du panier où une suggestion est permise.",
+        "§7.1 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-12",
+        "Une suggestion n’est jamais un produit déjà au panier ni un colis M, L, XL ou hors gabarit : elle ajouterait un supplément ou changerait de mode, et ne serait plus « sans ramassage en plus ». Un seul bloc de suggestions dans tout le panier, sous la première boutique qui a des articles à proposer (maquette IMG_1950) : le panier reste court.",
+        "§7.1 p. 40 ; refonte du 26 sept.",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-13",
+        "Conseil d’offre dans la section de la boutique hors zone, texte exact : « Ce produit vient d’une autre zone : son ramassage est au plein tarif. Le même produit existe à Mvog-Ada — tu économiserais 500 F. », puis « Changer d’offre ». Il n’apparaît que si une offre du même produit existe réellement dans une zone du trajet et que le gain recalculé est positif (CFR-12).",
+        "§7.1 p. 40 ; §7.0 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-14",
+        "« Changer d’offre » remplace l’offre sans changer le produit (même variante, même quantité), puis recalcule tout. Le client ne choisit jamais un vendeur.",
+        "§7.1 p. 40 ; §7.0 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-15",
+        "Après « Changer d’offre », un encadré vert confirme avec le gain recalculé : « Offre changée : même Mixeur-blender 2 L · 600 W, livré depuis Mvog-Ada par la boutique A. Tu économises 500 F. »",
+        "§7.1 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-16",
+        "Pied de section : « Sous-total boutique » et « livraison calculée ci-dessous ». Aucun frais dans la section.",
+        "§7.1 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-17",
+        "Sous les sections : « Tes articles arrivent en 3 colis, retirables ensemble avec un seul code. »",
+        "§7.1 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-18",
+        "Variantes de la phrase : un colis, « … en 1 colis, retirable avec un seul code. » (« Ton article arrive » pour un seul article) ; à domicile, « … livré chez toi : » suivi de l’adresse par repères et de « Changer d’adresse ».",
+        "§7.1 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-19",
+        "Pas de case à cocher par article.",
+        "§7.4 p. 42",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Où vit chaque écran de CL-07 (refonte du 26 sept.)",
+     "colonnes": [
+      "Écran",
+      "Emplacement",
+      "Geste d’entrée",
+      "Retour"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Panier",
+        "Onglet Panier (écran racine)",
+        "Onglet Panier ; icône panier de l’en-tête ; « + Panier » et « Ajouter au panier » (CL-04, CL-06)",
+        "Retour carré : accueil"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer un article (feuille)",
+        "Au-dessus du panier",
+        "Corbeille ou « Supprimer » d’un article dont le retrait casse un trajet partagé",
+        "« Garder l’article »"
+       ]
+      },
+      {
+       "cellules": [
+        "Envoyer au payeur (feuille)",
+        "Au-dessus du panier",
+        "Bouton carré de partage ou encart « Quelqu’un paie pour toi ? »",
+        "« Voir ce que reçoit le payeur » (CL-12) ou fermeture"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion pour payer (feuille)",
+        "Au-dessus du panier du visiteur",
+        "« Passer commande » sans compte",
+        "« Continuer mes achats »"
+       ]
+      },
+      {
+       "cellules": [
+        "Contrôle des prix (CL-08)",
+        "Onglet Panier",
+        "« Passer commande » quand un prix a changé entre l’affichage et le toucher : états panier?prix=hausse|retire|pris ; prix=baisse|bascule ouvre directement l’attente",
+        "« Panier »"
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement en attente (CL-08)",
+        "Onglet Panier",
+        "« Passer commande · 272 579 F », « Payer au comptoir du relais »",
+        "« Annuler » : panier intact"
+       ]
+      },
+      {
+       "cellules": [
+        "Sauvegardés",
+        "Onglet Sauvegardés (écran racine)",
+        "Onglet ; « Tout voir · 2 » ; Compte",
+        "— (onglet)"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Bas du panier — conseil, récapitulatif, paiement",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 2",
+        "Panier · seuil de livraison offerte non atteint",
+        "Seuil non atteint (#panier?st=seuil) : Pagne wax 6 yards · motif soleil orange seul (Boutique A, Argent · 78, Mvog-Ada), 18 500 F. Carte bordée d’orange « Ajoute 11 500 F et débloque la livraison offerte. », barre orange à 62 %, « 18 500 F d’articles » et « seuil 30 000 F ». Récapitulatif : 18 500 F ; ramassage A 500 F ; remise 400 F « livraison de base offerte dès 30 000 F » ; total 19 400 F, sans ligne d’économie. Le panier est éligible au comptoir (compte de 4 commandes sans incident, 18 500 ≤ 50 000 F) : dans la barre collante, sous « Passer commande · 19 400 F » et la phrase « … Colis prêt sous 4 h, retrait dès aujourd’hui 15 h. », bouton clair « Payer au comptoir du relais » et « 900 F de livraison maintenant, 18 500 F au retrait en Mobile Money. » ; dans la page, le bloc replié « Payer au comptoir : comment ça marche »."
+       ],
+       "gras": [
+        "",
+        "",
+        "total 19 400 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 3",
+        "Panier · paiement au comptoir proposé",
+        "Paiement au comptoir (#panier?st=comptoir) : Robe wax longue · Taille M, 24 000 F ; « Ajoute 6 000 F… » ; total 24 900 F ; en bas, « Payer au comptoir du relais » et « 900 F de livraison maintenant, 24 000 F au retrait en Mobile Money. ». Le bloc « Payer au comptoir : comment ça marche » est ouvert : 900 F de livraison maintenant, commande « Validée » ; 24 000 F réglés au retrait en Mobile Money sur le téléphone, jamais d’espèces, Mme Ngo Bassong n’encaisse rien ; code débloqué dès ce paiement ; livraison non remboursée en cas de refus, deux refus = paiement d’avance obligatoire ; jusqu’à 50 000 F d’articles, 100 000 F après 5 commandes sans incident."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPN-20",
+        "En haut du bas de panier, un encart calcule le geste le plus rentable à cet instant. Seuil atteint : « Livraison de base offerte — tu dépasses 30 000 F. Il te reste 880 F de ramassages. Regrouper la boutique C à Mvog-Ada les ferait tomber à 380 F. » (dernière phrase seulement si un conseil d’offre existe). Seuil non atteint : « Ajoute 11 500 F et débloque la livraison offerte. »",
+        "§7.2 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-21",
+        "Quand il ne reste aucun ramassage à payer : « Aucun ramassage en plus à payer. » À domicile : « Livraison de base offerte à domicile — tu dépasses 50 000 F. »",
+        "§7.2 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-22",
+        "Barre de progression min(S / Seuil, 1), légende « 271 699 F d’articles · seuil 30 000 F atteint » (« · seuil 30 000 F » tant qu’il n’est pas atteint ; « seuil domicile 50 000 F » à domicile). L’encart et la barre suivent chaque recalcul, en temps réel.",
+        "§7.2 p. 40 ; §7.5 p. 44",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-23",
+        "Récapitulatif, dans cet ordre : 1. « Sous-total articles (4) » ; 2. une ligne de ramassage par boutique, avec sa barre de couleur : A « 500 F barré · offert », B « 380 F · même zone · trajet partagé −24 % », C « 500 F · zone différente · plein tarif » ; 3. « Remise au Relais Mvog-Ada » « 400 F barré · offert », avec « livraison de base offerte dès 30 000 F » ; 4. « Total à payer » en grand et « tu économises 900 F de livraison ».",
+        "§7.2 p. 40",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-24",
+        "Libellé d’une ligne de ramassage : barré et « offert » pour le ramassage plein tarif couvert par la livraison offerte ; « même zone · trajet partagé −24 % » pour R′ ; « zone différente · plein tarif » pour une boutique d’une autre zone que le relais ; aucun sous-titre pour un ramassage plein tarif de la zone du relais non offert (panier sous le seuil).",
+        "§7.2 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-25",
+        "« tu économises X F de livraison » n’apparaît que si Off > 0 et vaut exactement Off. Jamais « économie estimée ».",
+        "§7.3 p. 41 ; §7.4 p. 43",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-26",
+        "Moyens acceptés, dans la carte du récapitulatif : pastilles MTN, Orange, VISA, Mastercard ; une ligne : « Carte : 2 % de frais de service, affichés avant de payer. » Le paiement depuis l’étranger passe par l’encart diaspora et la feuille de partage (CPN-04, CPN-46).",
+        "§7.2 p. 40 ; §13.4 p. 79",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-27",
+        "Section « Sauvegardés » sous le récapitulatif : même liste que les favoris (CSG-01), prix à jour, baisse ou retour en stock affichés, « Remettre » (un tap), « Tout voir » ; une ligne rappelle le balayage.",
+        "§7.2 p. 40 ; §7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-28",
+        "Carte « Escrow BelivaY » : « Le vendeur n’est payé qu’après ton retrait au Relais Mvog-Ada. » (« … après la livraison chez toi » à domicile). L’heure de retrait (« retrait dès demain au relais » dans la spec) n’y est pas répétée : elle figure sous le bouton, avec son vrai délai.",
+        "§7.2 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-29",
+        "Un seul bouton plein sur l’écran, avec le total exact : « Passer commande · 272 579 F ».",
+        "§7.2 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-30",
+        "Juste sous le bouton, obligatoire : « Ton argent reste bloqué jusqu’à ton retrait. Colis prêts sous 6 h, retrait dès aujourd’hui 17 h. » Il remplace « Tu ne paies rien tant que les vendeurs n’ont pas confirmé. Colis prêts sous 4 h, retrait dès demain. », faux deux fois : le débit Mobile Money a lieu au paiement, avant la confirmation des vendeurs (8.1, cycle 2.2), et « demain » contredit la décision du 25 sept. (moins de 5 h par zone).",
+        "§7.2 p. 41 ; §2.2 p. 11 ; §1.3 p. 8",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-31",
+        "Les délais affichés sont les vrais délais calculés par le serveur, jamais une fourchette.",
+        "§7.2 p. 41 ; §16.4 p. 92",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-32",
+        "Calcul : « prêts sous N h » = préparation la plus longue du panier (les colis se retirent ensemble) ; l’heure de retrait = fin de préparation + course et réception, estimée par le serveur. Il tient compte des horaires et de la place du relais (fermé ou saturé : jour suivant) et du plafond de valeur des entreprises de livraison ; un colis XL part par la tournée du lendemain matin (« livré chez toi demain ven. 25 sept. avant 12 h », comme la fiche, CL-06). Exemple : 6 h (boutique C, Mvan) ⇒ « dès aujourd’hui 17 h » ; après « Changer d’offre », 4 h ⇒ « dès aujourd’hui 15 h ».",
+        "§7.2 p. 41 ; §6.4 p. 36 ; §16.3 p. 91",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-33",
+        "Destination de « Passer commande » : visiteur → connexion (CL-03 ; la connexion n’est demandée qu’au paiement) ; première commande → #premiere-commande (CL-03 : relais, adresse, moyen de paiement) ; hausse de prix détectée au clic → #prix-change (CL-08) ; sinon #paiement-attente (CL-08), qui demande exactement le total affiché (272 579 F ; 19 400 F ; 190 500 F…). « Payer au comptoir du relais » → #paiement-attente?comptoir=1 : la demande porte sur la livraison seule (900 F). Deux clics rapides ne créent qu’une demande.",
+        "§3.1 p. 17 ; §3.4 p. 18 ; §8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-34",
+        "« Payer au comptoir du relais » (bouton clair, sous la phrase de protection) n’apparaît que si le serveur déclare le panier éligible : IFA neutre ou positif ; nouveau compte : paiement d’avance ou 15 000 F au plus ; 50 000 F, puis 100 000 F après 5 commandes sans incident (plafond sur S) ; jamais depuis l’étranger (carte), pour un colis XL ou hors gabarit, en express ni à domicile ; le vendeur peut le refuser produit par produit ; deux refus au comptoir imposent le paiement d’avance, définitivement.",
+        "§7.0 p. 39 ; §7.2 p. 41 ; §8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-35",
+        "Sinon, bouton absent et une ligne discrète l’explique : « Paiement au comptoir non proposé : panier au-delà de 50 000 F. »",
+        "§7.2 p. 41 ; §7.5 p. 44",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-36",
+        "Autres motifs, dans cet ordre de priorité : « … gros colis livré à domicile. » ; « … panier au-delà de 15 000 F pour un nouveau compte. » ; « … panier au-delà de 100 000 F. » (visiteur, ou compte à 100 000 F) ; « … un vendeur de ce panier ne le propose pas. » ; « … pas disponible pour ton compte. » (IFA négatif ou deux refus : jamais la note ni le palier).",
+        "§7.2 p. 41 ; §8.5 p. 49",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-37",
+        "Sous le bouton comptoir : « 900 F de livraison maintenant, 18 500 F au retrait en Mobile Money. » ; dans la page, bloc replié « Payer au comptoir : comment ça marche » : commande « Validée », reste réglé en MoMo sur le téléphone du client, jamais d’espèces, code débloqué au paiement sur place, livraison non remboursée en cas de refus, deux refus, plafonds. Le mot « payé » n’est jamais employé pour le reste dû.",
+        "§8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-38",
+        "Panier éligible dont la livraison due est de 0 F (au-delà de 30 000 F avec un seul ramassage) : rien n’est payé d’avance ; la commande passe « Validée » sans demande Mobile Money, et l’écran dit « livraison offerte » au lieu de « 900 F payés ».",
+        "§8.5 p. 49 (muet)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-39",
+        "Tout encart d’abonnement (« Avec Prime… ») est masqué au lancement (FF-ABONNEMENT fermé), comme la proposition « Mettre de côté » (chapitre 27).",
+        "§7.2 p. 41 ; §21.0 p. 115",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-40",
+        "Le panier ne produit pas de facture : le reçu se partage sur la confirmation.",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-41",
+        "Au pied du paiement, lien « Conditions de vente et de paiement » vers les pages légales (CL-13, dont le paiement au comptoir et la carte) ; aucune case à cocher dans le parcours d’achat.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PAY-CPT-NOUV",
+        "Comptoir : plafond nouveau compte",
+        "15 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-STD",
+        "Comptoir : plafond de panier",
+        "50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-FID",
+        "Comptoir : plafond après 5 commandes sans incident",
+        "100 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-REFUS",
+        "Refus au comptoir avant paiement d’avance obligatoire",
+        "2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CARTE-FRAIS",
+        "Carte : frais de service",
+        "2 %",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SLA-ZONE-H",
+        "Délai de livraison par zone",
+        "moins de 5 h",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SLA-PREP",
+        "Préparation vendeur",
+        "selon l’offre, « prêt sous X h »",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-ABONNEMENT",
+        "Module d’abonnement et tous ses encarts",
+        "fermé",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Le moteur de calcul des frais",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 4",
+        "Panier · offre changée (même produit, zone du trajet)",
+        "« Changer d’offre » appliqué (#panier?st=conseil) : encadré vert « Offre changée : même Mixeur-blender 2 L · 600 W, livré depuis Mvog-Ada par la boutique A. Tu économises 500 F. » La Boutique A porte le Camon 30 et le mixeur (sous-total 187 699 F), la Boutique B est inchangée ; « 2 colis » ; encart « … Il te reste 380 F de ramassages. » sans nouveau conseil ; récapitulatif A 500 F offert, B 380 F, remise 400 F offerte, total 272 079 F (gain 500 F recalculé), économie 900 F ; « Colis prêts sous 4 h, retrait dès aujourd’hui 15 h. »"
+       ],
+       "gras": [
+        "",
+        "",
+        "total 272 079 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 5",
+        "Panier · article retiré, trajet partagé perdu",
+        "Boutique A retirée (#panier?suppr=camon30), l’issue de l’avertissement de la fig. 7 : l’ex-boutique B devient A (Mvog-Ada, 500 F offert), l’ex-C devient B (Mvan, 500 F plein tarif) : deux boutiques de zones différentes paient chacune R. Conseil « … tu économiserais 120 F. » (l’offre de Mvog-Ada vient d’une boutique absente du panier : elle paierait R′) ; encart « Il te reste 500 F de ramassages. Regrouper la boutique B à Mvog-Ada les ferait tomber à 380 F. » ; total 121 500 F."
+       ],
+       "gras": [
+        "",
+        "",
+        "total 121 500 F"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "S = Σ P(v) × q",
+        "Sous-total produits, prix actuel de l’offre attribuée. Base de tous les seuils, jamais frais inclus."
+       ]
+      },
+      {
+       "cellules": [
+        "Ram = Σ_zones [ R + (n_z − 1) × R′ ]",
+        "Une boutique au plein tarif par zone, les suivantes au tarif réduit. Ordre des collectes fixé par le système."
+       ]
+      },
+      {
+       "cellules": [
+        "Rem = Rem_relais ou Rem_dom",
+        "Selon le mode de remise."
+       ]
+      },
+      {
+       "cellules": [
+        "S ≥ Seuil(mode) ⇒ Off = R + Rem, sinon 0",
+        "Livraison de base offerte = un ramassage plein tarif + la remise, au tarif d’un colis S. Les autres ramassages et les suppléments de classe restent facturés."
+       ]
+      },
+      {
+       "cellules": [
+        "Total = S + Ram + Rem + Σ suppl_classe − Off",
+        "Montant affiché et envoyé à l’agrégateur (M, 8.6)."
+       ]
+      },
+      {
+       "cellules": [
+        "Économie = Off",
+        "Somme des montants barrés « offert ». Jamais une estimation."
+       ]
+      },
+      {
+       "cellules": [
+        "Reste_ramassages = Ram − (Off > 0 ? R : 0)",
+        "« Il te reste 880 F de ramassages »."
+       ]
+      },
+      {
+       "cellules": [
+        "Progression = min(S / Seuil, 1)",
+        "Si S < Seuil : « Ajoute X F », X = Seuil − S."
+       ]
+      },
+      {
+       "cellules": [
+        "Gain_conseil = Total − Total_simulé",
+        "Recalcul complet du panier modifié ; conseil affiché seulement si Gain > 0."
+       ]
+      },
+      {
+       "cellules": [
+        "Remboursement partiel : Off inchangé",
+        "Repasser sous le seuil ne refacture jamais la livraison."
+       ]
+      },
+      {
+       "cellules": [
+        "Comptoir : maintenant = Total − S ; au retrait = S",
+        "La livraison se paie d’avance, les articles au retrait (8.5). Exemple : 900 F + 18 500 F."
+       ]
+      },
+      {
+       "cellules": [
+        "prêt_panier = max(prêt_boutique) ; retrait = t_now + prêt_panier + course",
+        "6 h ⇒ dès 17 h ; 4 h ⇒ dès 15 h (CPN-32)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres du moteur",
+     "colonnes": [
+      "Paramètre",
+      "Symbole",
+      "Valeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Ramassage plein tarif",
+        "R",
+        "500 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Dégressivité intra-zone",
+        "δ",
+        "24 %"
+       ]
+      },
+      {
+       "cellules": [
+        "Ramassage réduit, même zone",
+        "R′ = R × (1 − δ)",
+        "380 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Remise au point relais",
+        "Rem_relais",
+        "400 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Remise à domicile",
+        "Rem_dom",
+        "1 000 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Livraison de base relais",
+        "R + Rem_relais",
+        "900 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Livraison de base domicile",
+        "R + Rem_dom",
+        "1 500 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Seuil livraison offerte — relais",
+        "Seuil_relais",
+        "30 000 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Seuil livraison offerte — domicile",
+        "Seuil_dom",
+        "50 000 F"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Vérification sur l’exemple (au franc près)",
+     "colonnes": [
+      "Étape",
+      "Calcul",
+      "Résultat"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Sous-total",
+        "150 699 + 84 000 + 37 000 (Boutique B : 32 000 + 52 000)",
+        "S = 271 699 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "S = 271 699 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Ramassages",
+        "Mvog-Ada (A, B) : 500 + 380 · Mvan (C) : 500",
+        "Ram = 1 380 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "Ram = 1 380 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Remise relais",
+        "Rem_relais",
+        "Rem = 400 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "Rem = 400 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Livraison offerte",
+        "271 699 ≥ 30 000 ⇒ R + Rem = 500 + 400",
+        "Off = 900 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "Off = 900 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Total",
+        "271 699 + 1 380 + 400 − 900 (quatre colis S : aucun supplément de classe, CFR-18)",
+        "272 579 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "272 579 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Économie",
+        "Off",
+        "900 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "900 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Reste de ramassages",
+        "1 380 − 500",
+        "880 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "880 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Conseil boutique C",
+        "Même mixeur chez la boutique A (Mvog-Ada, déjà sur le trajet) : Ram = 500 + 380 = 880 ; total simulé 272 079 ; reste 880 − 500 = 380",
+        "Gain = 500 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "Gain = 500 F"
+       ]
+      },
+      {
+       "cellules": [
+        "Variante de la p. 42",
+        "Offre de remplacement chez une boutique de Mvog-Ada absente du panier : Ram = 500 + 380 + 380 = 1 260",
+        "Gain = 120 F"
+       ],
+       "gras": [
+        "",
+        "",
+        "Gain = 120 F"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Vérification sur l’exemple (au franc près)",
+     "colonnes": [
+      "État",
+      "S",
+      "Ram",
+      "Rem",
+      "Off",
+      "Total",
+      "Reste",
+      "Comptoir"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Référence panier\nA Mvog-Ada 500 offert · B Mvog-Ada 380 · C Mvan 500",
+        "271 699",
+        "1 380",
+        "400",
+        "900",
+        "272 579",
+        "880",
+        "non (> 50 000)"
+       ],
+       "gras": [
+        "Référence",
+        "",
+        "",
+        "",
+        "",
+        "272 579",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Conseil appliqué ?st=conseil\nA Mvog-Ada 500 offert (Camon + mixeur) · B 380",
+        "271 699",
+        "880",
+        "400",
+        "900",
+        "272 079",
+        "380",
+        "non"
+       ],
+       "gras": [
+        "Conseil appliqué",
+        "",
+        "",
+        "",
+        "",
+        "272 079",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Boutique A retirée ?suppr=camon30\nA (ex-B) Mvog-Ada 500 offert · B (ex-C) Mvan 500 ; conseil 120 F",
+        "121 000",
+        "1 000",
+        "400",
+        "900",
+        "121 500",
+        "500",
+        "non"
+       ],
+       "gras": [
+        "Boutique A retirée",
+        "",
+        "",
+        "",
+        "",
+        "121 500",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Puis conseil appliqué ?suppr=camon30&offre=mixeur\nA Mvog-Ada 500 offert (mixeur) · B 380",
+        "121 000",
+        "880",
+        "400",
+        "900",
+        "121 380",
+        "380",
+        "non"
+       ],
+       "gras": [
+        "Puis conseil appliqué",
+        "",
+        "",
+        "",
+        "",
+        "121 380",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Sac retiré par le serveur ?st=retire\nA 500 offert · B 380 (Ensemble seul) · C 500",
+        "219 699",
+        "1 380",
+        "400",
+        "900",
+        "220 579",
+        "880",
+        "non"
+       ],
+       "gras": [
+        "Sac retiré par le serveur",
+        "",
+        "",
+        "",
+        "",
+        "220 579",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Ensemble sauvegardé ?sauve=ensemblewax\nA 500 offert · B 380 (Sac seul) · C 500",
+        "239 699",
+        "1 380",
+        "400",
+        "900",
+        "240 579",
+        "880",
+        "non"
+       ],
+       "gras": [
+        "Ensemble sauvegardé",
+        "",
+        "",
+        "",
+        "",
+        "240 579",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Une boutique ?st=une\nA Mvog-Ada 500 offert",
+        "84 000",
+        "500",
+        "400",
+        "900",
+        "84 000",
+        "0",
+        "non (> 50 000)"
+       ],
+       "gras": [
+        "Une boutique",
+        "",
+        "",
+        "",
+        "",
+        "84 000",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Seuil non atteint ?st=seuil\nA Mvog-Ada 500",
+        "18 500",
+        "500",
+        "400",
+        "0",
+        "19 400",
+        "—",
+        "oui : 900 + 18 500"
+       ],
+       "gras": [
+        "Seuil non atteint",
+        "",
+        "",
+        "",
+        "",
+        "19 400",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement au comptoir ?st=comptoir\nA Mvog-Ada 500",
+        "24 000",
+        "500",
+        "400",
+        "0",
+        "24 900",
+        "—",
+        "oui : 900 + 24 000"
+       ],
+       "gras": [
+        "Paiement au comptoir",
+        "",
+        "",
+        "",
+        "",
+        "24 900",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Colis XL à domicile ?st=xl\nA Mvog-Ada 500 offert · remise à domicile · supplément colis XL 1 500 (proposé, CFR-19)",
+        "189 000",
+        "500",
+        "1 000",
+        "1 500",
+        "190 500",
+        "0",
+        "non (gros colis)"
+       ],
+       "gras": [
+        "Colis XL à domicile",
+        "",
+        "",
+        "",
+        "",
+        "190 500",
+        "",
+        ""
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CFR-01",
+        "Un seul service serveur (tarification) recalcule le panier depuis zéro à chaque changement : quantité, variante, offre, retrait, sauvegarde, remise, mode, relais. Jamais une soustraction de ligne ; aucun montant n’est calculé dans l’application ; les valeurs sont des paramètres.",
+        "§7.3 p. 41 ; §19.2 p. 105",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-02",
+        "S = Σ P(v) × q, au prix actuel de l’offre attribuée ; base de tous les seuils, jamais frais inclus.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-03",
+        "Ram = Σ_zones [ R + (n_z − 1) × R′ ] : une boutique au plein tarif par zone, les suivantes au tarif réduit ; l’ordre des collectes est fixé par le système.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-04",
+        "R = 500 F ; δ = 24 % ; R′ = R × (1 − δ) = 380 F.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-05",
+        "Rem = Rem_relais (400 F) ou Rem_dom (1 000 F) selon le mode de remise.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-06",
+        "S ≥ Seuil(mode) ⇒ Off = R + Rem, sinon 0 : la livraison offerte couvre un ramassage plein tarif et la remise, au tarif d’un colis S ; les autres ramassages et les suppléments de classe restent facturés.",
+        "§7.3 p. 41 ; §7.0 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-07",
+        "Total = S + Ram + Rem + Σ suppl_classe − Off : le montant affiché est celui envoyé à l’agrégateur.",
+        "§7.3 p. 41 ; §8.6 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-08",
+        "Le ramassage « offert » est le premier ramassage plein tarif dans l’ordre des collectes (A dans l’exemple) ; il est affiché barré.",
+        "§7.2 p. 40",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-09",
+        "Économie = Off = somme des montants barrés « offert » ; jamais une estimation.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-10",
+        "Reste_ramassages = Ram − (Off > 0 ? R : 0).",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-11",
+        "Progression = min(S / Seuil, 1) ; sous le seuil, X = Seuil − S.",
+        "§7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-12",
+        "Gain_conseil = Total − Total_simulé, par recalcul complet du panier modifié ; conseil affiché seulement si Gain > 0 ; toujours le gain réellement calculé : 500 F si l’offre vient d’une boutique déjà sur le trajet, 120 F si elle vient d’une nouvelle boutique de la zone (elle paie R′).",
+        "§7.3 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-13",
+        "Livraison de base relais = 900 F = ramassage 500 F + remise 400 F (décision du 22 sept.) ; l’ancienne remise de 900 F (1 400 F) est corrigée. La fiche, le panier, la notification et l’écran du gérant affichent le même montant, produit par le même service.",
+        "§7.0 p. 39 ; §7.3 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-14",
+        "Seuils : offert dès 30 000 F en relais, 50 000 F à domicile, sur le sous-total produits (le seuil unique de 45 000 F est abandonné).",
+        "§7.0 p. 39",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-15",
+        "Remboursement partiel : Off inchangé ; repasser sous le seuil ne refacture jamais la livraison.",
+        "§7.3 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-16",
+        "Deux boutiques de zones différentes paient chacune R ; deux de la même zone paient R + R′.",
+        "§7.4 p. 43",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-17",
+        "À S = 29 999 F rien n’est offert ; à S = 30 000 F, R + Rem_relais sont offerts.",
+        "§7.4 p. 43",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-18",
+        "Suppléments de classe M et L : ajoutés au total, jamais offerts, affichés dès la fiche sous le prix livré (« + 200 F colis M », « + 300 F colis L », CL-06) et jamais découverts au panier : une ligne « Supplément colis M » par article concerné, après la remise. Valeurs proposées, à trancher (LIV-SUPPL-M / L). Les quatre articles de l’exemple de référence sont des colis S (mixeur et marmite classés S à l’assemblage, voir CL-02) : 272 579 F et 196 780 F ne comptent aucun supplément.",
+        "§6.2 p. 34 ; §7.3 p. 41 ; §7.5 p. 44",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-19",
+        "XL et hors gabarit ne vont jamais en relais : leur présence bascule le mode en domicile ; la classe suit le poids facturé = max(réel, volume ÷ 5 000). Aucun tarif XL n’existe au registre : supplément colis XL proposé 1 500 F, jamais offert, la même valeur que sur la fiche (CL-06) ; le téléviseur de 189 000 F revient donc à 190 500 F livré chez soi. Le gros colis part par la tournée du lendemain matin : « livré chez toi demain ven. 25 sept. avant 12 h ».",
+        "§7.4 p. 43 ; §7.5 p. 44",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-20",
+        "Domicile : livraison individuelle au lancement (LIV-GROUPE-DOM). Pour un panier de plusieurs boutiques livré à domicile, la spec ne dit pas si Rem_dom est dû une fois ou par colis : le prototype ne montre le domicile que pour un colis.",
+        "§7.5 p. 44 ; §1.3 p. 8",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-21",
+        "Chaque ligne porte l’offre attribuée (coût total livré le plus bas pour ce client, panier en cours compris, Trust Score en départage) ; une boutique « Fermé aujourd’hui » est exclue ; offre en rupture : bascule silencieuse sur la suivante.",
+        "§2.5 p. 13 ; §6.5 p. 37 ; §16.2 p. 91",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-22",
+        "Le prix payé est celui du moment du paiement : au clic, Δ = M_serveur − M_affiché ; Δ < 0 appliqué et signalé comme un gain ; Δ > 0 : arrêt et confirmation explicite (#prix-change).",
+        "§8.1 p. 46 ; §8.6 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-23",
+        "Tout montant renvoyé vient du service de tarification ; aucune réponse ne contient ce que la matrice de visibilité interdit (nom de boutique, ce que garde le vendeur).",
+        "§7.5 p. 44 ; §2.4 p. 13",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-24",
+        "BelivaY ne vend jamais à perte : la remise de 400 F couvre le relais (200 F par petit colis remis) et l’achat de la course ; toute commande garde une contribution positive.",
+        "§7.4 p. 43 ; §19.2 p. 105",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-25",
+        "Les formules retrouvent l’exemple au franc près : 272 579 F, 900 F d’économie, 880 F de ramassages restants (tableau ci-dessus, tests automatiques sur chaque ligne du tableau des états).",
+        "§7.4 p. 43 ; §7.5 p. 44",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CFR-26",
+        "Aucune réservation de stock à l’ajout au panier : le stock se réserve au clic sur « Passer commande », sur la variante précise, pour la fenêtre de validation Mobile Money (PAY-RESA).",
+        "§2.2 p. 11 ; §8.1 p. 46",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIV-R",
+        "Ramassage plein tarif (R)",
+        "500 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-DELTA",
+        "Dégressivité même zone (δ)",
+        "24 % (R′ = 380 F)",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-REM-RELAIS",
+        "Remise au relais",
+        "400 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-REM-DOM",
+        "Remise à domicile",
+        "1 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-RELAIS-BASE",
+        "Livraison de base relais (R + remise)",
+        "900 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-DOM-BASE",
+        "Livraison de base domicile",
+        "1 500 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SEUIL-RELAIS",
+        "Livraison offerte en relais",
+        "dès 30 000 F de sous-total produits",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SEUIL-DOM",
+        "Livraison offerte à domicile",
+        "dès 50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-OFFERT-CLASSE",
+        "Ce que couvre la livraison offerte",
+        "tarif d’un colis S",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SUPPL-M / L",
+        "Supplément de classe M et L",
+        "à fixer (proposé : 200 F et 300 F, fiche et panier)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SUPPL-XL",
+        "Supplément de classe XL (absent du registre)",
+        "à fixer (proposé : 1 500 F, comme CL-06)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-XL-RELAIS",
+        "XL et hors gabarit en relais",
+        "interdit",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-POIDS-VOL",
+        "Poids volumétrique",
+        "volume ÷ 5 000",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-GROUPE-DOM",
+        "Regroupement à domicile au lancement",
+        "non : livraison individuelle",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Gestes utiles et actions",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 6",
+        "Panier · balayage d’un article",
+        "Balayage (#panier?st=glisser) : la ligne du Tecno Camon 30 a glissé vers la gauche et révèle « Sauvegarder » (fond orange doux) puis « Supprimer » (fond rouge doux) ; une bulle explique le geste : « Glisse un article vers la gauche : « Sauvegarder » d’abord, « Supprimer » ensuite. » Les mêmes actions restent visibles sur chaque ligne (icônes signet et corbeille) ; la barre « Passer commande » reste en bas."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 7",
+        "Panier · retrait qui casse un trajet (avertissement)",
+        "Avertissement (#panier-retrait?p=camon30), feuille sur le panier : vignette, « Retirer le Tecno Camon 30 ? » et « Gris titane · 256 Go · Boutique A » ; encadré rouge « En retirant cet article, tu perds le trajet partagé avec la boutique A — le ramassage restant passe de 380 à 500 F. », « Total actuel » 272 579 F barré, filet pointillé, « Nouveau total » 121 500 F en grand, en orange ; « Garder l’article » (bouton plein), « Sauvegarder pour plus tard », « Retirer quand même » (rouge doux, mène à la fig. 5)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 8",
+        "Panier · envoyer au payeur à l’étranger",
+        "Partage (#panier?st=partage) : « Envoyer ce panier à qui paie pour toi », « Il le règle depuis l’étranger, par carte. Les colis arrivent au Relais Mvog-Ada, et c’est toi qui les retires. » ; aperçu du message « Carine te demande de régler son panier BelivaY : 4 articles, 272 579 F, retrait au Relais Mvog-Ada. » et « Lien de paiement sécurisé » ; trois faits : carte avec 3-D Secure et 2 % affichés avant qu’il paie ; ni adresse ni numéro, jamais le code ; « Une carte paie 150 000 F au plus par paiement : au-delà, il règle en plusieurs commandes. Le Tecno Camon 30 dépasse seul cette limite : il reste dans ton panier. » ; « Partager le lien », « Voir ce que reçoit le payeur » (vers #payeur?st=plafond, la page du payeur de CL-12 : 278 031 F avec les frais, commande 1 à 123 930 F, Camon 30 hors limite) ; « Le partage de ton téléphone s’ouvre, WhatsApp souvent en premier : c’est toi qui envoies le lien. BelivaY n’envoie rien à ta place. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPN-42",
+        "Balayage vers la gauche sur une ligne : « Sauvegarder » d’abord, « Supprimer » ensuite. Sauvegarder sort l’article du total et le range dans « Sauvegardés », d’où il revient en un tap (« Remettre »).",
+        "§7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-43",
+        "Le geste a toujours un équivalent visible : les icônes signet (« Sauvegarder ») et corbeille de chaque ligne (cibles de 44 px, libellés pour les lecteurs d’écran). Une bulle explique le geste au premier panier, une seule fois.",
+        "§7.4 p. 42",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-44",
+        "Retrait (« Supprimer », corbeille) qui vide une section et casse un trajet partagé : avertissement avant, avec les valeurs recalculées par le serveur : « En retirant cet article, tu perds le trajet partagé avec la boutique A — le ramassage restant passe de 380 à 500 F. », puis « Total actuel » (barré) et « Nouveau total » (en grand). Actions : « Garder l’article » (bouton plein), « Sauvegarder pour plus tard », « Retirer quand même ».",
+        "§7.4 p. 42 ; §7.5 p. 44",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-45",
+        "Un retrait qui ne casse aucun trajet (autre article dans la même section, boutique seule dans sa zone) se fait sans feuille ; un encadré confirme « … retiré du panier. Total recalculé : … ». « Sauvegarder » n’ouvre jamais la feuille, car il se défait en un tap : l’encadré « … sauvegardé : il sort du total, recalculé à … F » donne le nouveau total.",
+        "§7.4 p. 42",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-46",
+        "Partager le panier : un lien vers la page du payeur (CL-12) part par la feuille de partage native du téléphone du client, où WhatsApp peut apparaître en premier ; c’est le client qui envoie ; coût nul pour BelivaY ; événement cart.shared, consommé par personne.",
+        "§7.4 p. 42 ; §7.5 p. 43 ; §8.4 p. 48",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-47",
+        "10.6 interdit « commande, panier … transmis par WhatsApp » alors que 7.4 prévoit l’envoi du panier par WhatsApp : l’interdit vise les envois de BelivaY : BelivaY n’envoie jamais rien par WhatsApp (pas d’API au lancement) et n’y transmet jamais code, preuve ni litige ; le client qui partage un simple lien depuis son téléphone reste permis (même règle que la confirmation, 8.4). Le lien ne transporte ni le détail de la commande, ni le code, ni l’adresse, ni le numéro.",
+        "§7.4 p. 42 ; §10.6 p. 63–64",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-48",
+        "La feuille dit ce que vivra le payeur : carte Visa ou Mastercard avec 3-D Secure ; 2 % de frais de service affichés avant qu’il paie ; ni adresse ni numéro nécessaires ; jamais le code de retrait ; au-delà de 150 000 F par paiement, règlement en plusieurs commandes, et un article qui dépasse seul la limite reste au panier du client (page du payeur, CL-12) ; jamais de paiement au comptoir sur ce parcours ; lien « Voir ce que reçoit le payeur ».",
+        "§13.4 p. 79 ; §13.6 p. 80",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-49",
+        "Partager un article, pour demander un avis avant d’acheter : lien de la fiche par le partage natif, depuis la fiche (CL-06) et la liste Sauvegardés ; la ligne du panier ne porte que le signet et la corbeille (maquette IMG_1950).",
+        "§7.4 p. 42",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Le serveur refuse le retrait (panier changé entre-temps)",
+        "La feuille se ferme, le panier est rechargé et recalculé ; encadré « Ton panier a changé : total recalculé »."
+       ]
+      },
+      {
+       "cellules": [
+        "Le serveur refuse « Changer d’offre » (gain plus positif, offre disparue)",
+        "Le conseil disparaît au recalcul ; aucune modification ; encadré neutre « Cette offre n’est plus avantageuse »."
+       ]
+      },
+      {
+       "cellules": [
+        "Partage natif indisponible",
+        "Copier le lien, avec « Lien copié »."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "États du panier",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 9",
+        "Panier · une seule boutique",
+        "Une seule boutique (#panier?st=une) : Boutique A (Argent · 78) avec l’Ensemble wax et le Sac cuir, « Colis 1 », suggestions Chemise bazin et Robe wax ; « Tes articles arrivent en 1 colis, retirable avec un seul code. » ; « Livraison de base offerte — tu dépasses 30 000 F. Aucun ramassage en plus à payer. » ; ramassage 500 F et remise 400 F offerts ; total 84 000 F ; comptoir non proposé (84 000 > 50 000 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 10",
+        "Panier · colis XL livré à domicile",
+        "Colis XL (#panier?st=xl) : Téléviseur LED 43″ 189 000 F ; encadré ambre « Trop volumineux pour un relais : livraison à domicile obligatoire pour ce colis. » ; « Ton article arrive en 1 colis, livré chez toi : Maison, Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage. » et « Changer d’adresse » ; « Livraison de base offerte à domicile — tu dépasses 50 000 F. Aucun ramassage en plus à payer. Le supplément colis XL reste dû. » ; ramassage 500 F et « Remise à domicile · Maison » 1 000 F offerts ; « Supplément colis XL » 1 500 F (« jamais offert : la livraison offerte couvre un colis S ») ; total 190 500 F, comme la fiche (CL-06), « tu économises 1 500 F de livraison » ; « Ton argent reste bloqué jusqu’à la livraison. Gros colis livré chez toi demain ven. 25 sept. avant 12 h. » ; « Paiement au comptoir non proposé : gros colis livré à domicile. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 11",
+        "Panier · article retiré par le serveur",
+        "Article retiré par le serveur (#panier?st=retire) : encadré ambre « Sac cuir artisanal · Marron n’est plus en vente : on l’a retiré de ton panier. Total recalculé : 220 579 F. » ; « Mon panier · 3 articles » ; B garde l’Ensemble wax (380 F) ; S = 219 699 F."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 12",
+        "Panier · hors ligne",
+        "Hors ligne (#panier?st=horsligne) : bannière nuit « Hors ligne : voici ton panier tel qu’il a été calculé. Reconnecte-toi pour le modifier ou payer. » ; bouton de partage, encart diaspora, sélecteurs, signets et corbeilles, « Changer d’offre », « Remettre » et « Passer commande · 272 579 F » grisés, suggestions masquées ; « Montants du dernier calcul : ils sont recalculés avant de payer. » ; « Hors ligne : le paiement reprend dès ton retour en ligne, avec le total recalculé. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 13",
+        "Panier · visiteur, connexion pour payer",
+        "Visiteur (#panier?st=invite&feuille=1) : encadré « Tu découvres sans compte : ton panier est gardé. La connexion n’est demandée qu’au moment de payer. » ; « Passer commande » ouvre la feuille « Connecte-toi pour payer » : « Ton panier est gardé : 4 articles, 272 579 F. Tu le retrouves tel quel après la connexion. », « Se connecter pour payer » (vers #connexion), « Continuer mes achats », « Ton numéro sera vérifié par un code avant ta première commande. » Pas de cloche à badge ni de Sauvegardés pour un visiteur ; motif du comptoir : « panier au-delà de 100 000 F »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Panier · vide",
+        "Panier vide (#panier?st=vide) : « Mon panier », « Ton panier est vide », « Ajoute des articles depuis l’accueil ou la recherche : ici, tu vois le vrai prix, livraison comprise. », « Découvrir les produits » (vers l’accueil) ; les Sauvegardés restent visibles avec « Remettre » ; pas de badge sur l’onglet Panier."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPN-50",
+        "Panier vide : « Ton panier est vide », ce qu’on y trouve et « Découvrir les produits » ; les Sauvegardés restent visibles avec « Remettre ».",
+        "v3 muette (screens.json)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-51",
+        "Visiteur : on remplit son panier sans compte ; la connexion n’est demandée qu’au paiement ; le panier est conservé à la connexion ; le numéro est vérifié par code avant toute commande.",
+        "§3.1 p. 17–18 ; §3.3 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-52",
+        "Colis XL ou hors gabarit en mode relais : bascule obligatoire à domicile (Rem_dom, seuil 50 000 F) ; encadré « Trop volumineux pour un relais » dans la section ; adresse dans la phrase sur les colis ; pas de paiement au comptoir.",
+        "§7.4 p. 43 ; §7.5 p. 44 ; §8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-53",
+        "Produit désactivé ou supprimé : retiré du panier par le serveur avec un message visible (« … n’est plus en vente : on l’a retiré de ton panier. Total recalculé : … »), jamais en silence.",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-54",
+        "Variante épuisée chez tous les vendeurs : la ligne reste visible, grisée, avec l’alerte de retour en stock ; « Passer commande » la signale au serveur, qui répond « cet article vient d’être pris » sans toucher au reste du panier.",
+        "§6.1 p. 34 ; §8.1 p. 46",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-55",
+        "Hors ligne : bannière « Hors ligne », panier du dernier calcul, modifications, partage, changement d’offre et paiement grisés avec l’explication ; jamais un écran blanc.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-56",
+        "Le badge de l’onglet Panier compte les articles (somme des quantités) ; il disparaît quand le panier est vide.",
+        "CNV-01 (dock)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPN-57",
+        "Après un paiement non abouti ou abandonné, « Retour au panier » retrouve le panier strictement identique ; les réservations de la tentative sont libérées.",
+        "§8.2 p. 46–47 ; §8.3 p. 47",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Panier vide",
+        "Fig. 14 : message, « Découvrir les produits », Sauvegardés visibles."
+       ]
+      },
+      {
+       "cellules": [
+        "Visiteur au paiement",
+        "Fig. 13 : feuille « Connecte-toi pour payer » → #connexion ; le panier est rattaché au compte après la connexion."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro non vérifié",
+        "#numero (code à 6 chiffres) avant #premiere-commande."
+       ]
+      },
+      {
+       "cellules": [
+        "Article XL en mode relais",
+        "Fig. 10 : bascule obligatoire à domicile, encadré dans la section."
+       ]
+      },
+      {
+       "cellules": [
+        "Produit désactivé",
+        "Fig. 11 : retiré avec message, total recalculé."
+       ]
+      },
+      {
+       "cellules": [
+        "Offre attribuée en rupture",
+        "Bascule silencieuse sur l’offre suivante ; le recalcul peut changer le prix et la boutique."
+       ]
+      },
+      {
+       "cellules": [
+        "Hausse de prix au clic",
+        "#prix-change (CL-08) : écart affiché, confirmation explicite."
+       ]
+      },
+      {
+       "cellules": [
+        "Baisse de prix au clic",
+        "Appliquée, signalée comme un gain sur #prix-change (« tu gagnes |Δ| F »)."
+       ]
+      },
+      {
+       "cellules": [
+        "Panier non éligible au comptoir",
+        "Bouton absent, une ligne l’explique (fig. 1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Fig. 12 : paiement grisé avec l’explication."
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion lente (> 3 s)",
+        "Bannière « Connexion lente » ; montants du dernier calcul jusqu’à la réponse."
+       ]
+      },
+      {
+       "cellules": [
+        "Service de tarification indisponible",
+        "Aucun montant affiché de l’application ; « Calcul impossible pour l’instant, réessaie » ; paiement grisé."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Sauvegardés et favoris »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 15",
+        "Sauvegardés · onglet, 2 articles avec alertes",
+        "En-tête racine (bandeau nuit tournant, menu, logo, cloche 3, panier 4, avatar), onglet Sauvegardés actif. Titre « Sauvegardés », « 2 articles · prix et stock vérifiés à 10 h 15 ». Carte Montre acier bracelet cuir : 27 500 F en orange, 29 900 F barré · « prix baissé de 2 400 F » en vert, « + 900 F de retrait », cœur plein orange (retirer), « Alertes gratuites » : Baisse de prix ✓, Retour en stock ✓ (pastilles vertes), « Remettre au panier » (orange doux) et bouton carré de partage. Carte Baskets running · Pointure 42 : 29 900 F · « de retour en stock », « Alertes gratuites, pointure 42 ». Bloc replié « Comment marchent les alertes ». Carte « Listes d’envies · Partager une liste, se faire offrir » avec la pastille cadenas « Après le lancement » (module CL-14, fermé : visible dans le prototype pour montrer où il vivra)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 16",
+        "Sauvegardés · variante épuisée partout",
+        "Variante épuisée (#sauvegardes?st=rupture, la veille) : Baskets running, vignette grisée, « Pointure 42 » barrée, « épuisé partout en pointure 42 » en ambre, alertes actives, bouton grisé « Épuisé : on te prévient »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 17",
+        "Sauvegardés · vide",
+        "Liste vide (#sauvegardes?st=vide) : titre « Sauvegardés » ; « Rien de sauvegardé pour l’instant », « Touche le cœur d’un produit, ou glisse un article du panier vers la gauche : il t’attend ici, avec son prix à jour. », bouton « Découvrir les produits » ; l’entrée « Listes d’envies · Après le lancement » reste en bas."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Grille de cartes de site web, prix figés",
+        "Style : fortement inspiré de la liste Sauvegardés de la maquette S’inspirer IMG_1950 (positions ; palette « Mandarine & Nuit »)",
+        "Socle REFONTE ; une carte par article, prix en orange, état en vert, alertes en pastilles vertes."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« 4 articles » ici, badge 3 et « 3 Favoris » ailleurs",
+        "Un seul compteur, celui de la liste unique (2 articles, comme la section du panier)",
+        "GET /me/favorites donne le nombre ; aucun compteur écrit en dur (CSG-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Cœur vide sur un article favori",
+        "Cœur plein = dans la liste ; le toucher retire l’article",
+        "CSG-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "iPhone à 350 000 F ici, 150 699 F au panier",
+        "Prix livré à jour, vérifié à chaque visite, identique au panier",
+        "Même service de tarification ; heure de vérification affichée (CSG-03)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Catégorie « Produits demo »",
+        "—",
+        "Aucune catégorie de démonstration visible."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« ★ 0.0 (0) » et notes à 5.0",
+        "Pas de note sur la liste : photo, variante, prix livré, disponibilité",
+        "22.1 ; la note reste sur la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« 24–72 h » à la place du prix livré",
+        "« + 900 F de retrait » ou « Retrait offert » (composant de prix livré)",
+        "CSG-03."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Partager ma wishlist »",
+        "Absent au lancement (listes partageables fermées)",
+        "FF-LISTE-ENVIES (CSG-11) ; l’article seul se partage."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Tout retirer » au niveau d’une action principale",
+        "Retrait article par article (cœur)",
+        "CSG-11."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Photo d’un visage pour un ensemble wax",
+        "Vraies photos de la variante (illustrations provisoires dans le prototype)",
+        "19.5."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Robot flottant et bouton « remonter » qui masquent les cartes",
+        "—",
+        "Assistant IA fermé au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Alertes baisse de prix et retour en stock, sur la variante précise, push gratuit",
+        "CSG-05, CSG-06."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Variante et disponibilité réelle (« en stock », « de retour en stock », « épuisé partout en pointure 42 »)",
+        "CSG-03, CSG-07, CSG-08."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Même liste que les Sauvegardés du panier",
+        "CSG-01."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Prix barrés (16 800 → 12 500, 27 000 → 19 500)",
+        "Prix vu à la sauvegarde barré seulement s’il a vraiment baissé (Montre 29 900 → 27 500 F)",
+        "CSG-04."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Pied de page de site web (réseaux sociaux, « Liens Rapides », « À Propos »), bandeau « 3 200+ vendeurs »",
+        "—",
+        "Les pages légales sont dans le Menu et au pied du paiement."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Grille de cartes à deux colonnes",
+        "Une carte par article, en liste",
+        "Chaque article porte sa variante, sa disponibilité et ses alertes."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Ajout rapide au panier, nombre d’articles près du titre, cartes homogènes",
+        "« Remettre au panier » sur chaque carte ; « 2 articles » sous le titre",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CSG-01",
+        "Favoris = une seule liste (décision du 21 sept.) : la section « Sauvegardés » du panier, le cœur des cartes et de la fiche et l’écran « Sauvegardés » pointent vers le même objet. Pas de « boutiques suivies ».",
+        "§1.3 p. 8 ; §22.0–22.1 p. 120 ; §4.4 p. 24",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-02",
+        "Sauvegarder depuis le panier sort l’article du total (recalcul complet) ; « Remettre » le ramène en un tap.",
+        "§7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-03",
+        "Contenu d’un article : photo, variante, prix livré à jour, disponibilité réelle. Jamais un prix figé : prix et stock rafraîchis à chaque consultation ; l’heure de vérification est écrite (« Prix et stock vérifiés à 10 h 15 »).",
+        "§22.1 p. 120 ; §7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-04",
+        "Baisse de prix affichée : prix actuel, prix vu à la sauvegarde barré, « prix baissé de 2 400 F » en vert (maquette IMG_1950), dans la liste comme dans le panier.",
+        "§7.2 p. 40 ; §7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-05",
+        "Alertes baisse de prix et retour en stock sur chaque article sauvegardé : push gratuit, sur la variante précise, jamais le produit entier.",
+        "§7.4 p. 42 ; §6.4 p. 35 ; §22.1 p. 120",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-06",
+        "Ces pushs sont non critiques : 5 au plus par 24 h (PUSH-MAX-24H), jamais de 21 h à 7 h (PUSH-NUIT), jamais par SMS.",
+        "§10.7 p. 65 ; §19.4 p. 105",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-07",
+        "Variante épuisée partout : carte visible, vignette grisée, variante barrée, « Épuisé partout en pointure 42 », alerte de retour en stock active, bouton grisé « Épuisé : on te prévient ».",
+        "§6.1 p. 34 ; §6.5 p. 37",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-08",
+        "Retour en stock : « de retour en stock » en vert, « Remettre au panier » actif ; la mention reste tant que l’article n’a pas été vu.",
+        "§7.4 p. 42",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-09",
+        "Cœur plein = dans la liste ; toucher le cœur retire l’article, sans confirmation ni action groupée.",
+        "Inventaire IMG 2381",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-10",
+        "« Remettre au panier » ajoute la variante sauvegardée ; l’offre est ré-attribuée côté serveur et le panier recalculé (le prix peut différer du prix vu).",
+        "§6.5 p. 37 ; §7.4 p. 42",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-11",
+        "Au lancement, pas de listes nommées, de partage de liste ni de « Tout retirer » (FF-LISTE-ENVIES fermé) ; la liste unique deviendra la liste par défaut du module « Liste d’envies ».",
+        "§22.0 p. 120 ; §32.1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-12",
+        "Liste vide : « Rien de sauvegardé pour l’instant », comment la remplir (cœur, balayage) et « Découvrir les produits ».",
+        "screens.json (saved.empty)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-13",
+        "Accès : onglet Sauvegardés de la barre du bas (écran racine, sans retour), « Tout voir » de la section du panier, Compte › « Sauvegardés et listes ». L’entrée du module « Listes d’envies » (CL-14) vit au bas de cet écran ; dans le prototype elle porte la pastille « Après le lancement », au lancement elle n’est pas affichée.",
+        "§9.5 p. 56 ; refonte du 26 sept.",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-14",
+        "favorite.added nourrit le rayon « favoris de retour en stock » de l’accueil et les alertes prix.",
+        "§6.5 p. 37 ; §4.1 p. 22 ; §22.0 p. 120",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CSG-15",
+        "Chaque article sauvegardé se partage (lien de la fiche), pour demander un avis avant d’acheter.",
+        "§7.4 p. 42",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "PUSH-MAX-24H",
+        "Pushs non critiques",
+        "5 par 24 h",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "PUSH-NUIT",
+        "Heures de nuit",
+        "21 h – 7 h, sauf criticité 1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-LISTE-ENVIES",
+        "Listes partageables",
+        "fermé",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pour le développeur — API, événements, erreurs, paramètres",
+   "tableaux": [
+    {
+     "sous_titre": "Endpoints indicatifs",
+     "colonnes": [
+      "Méthode",
+      "Route",
+      "Rôle"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "GET",
+        "/cart?mode=&relais=",
+        "Panier recalculé depuis zéro par le service de tarification (sections, lignes, suggestions, conseil, encart, récapitulatif, éligibilité au comptoir, délais)."
+       ]
+      },
+      {
+       "cellules": [
+        "PATCH",
+        "/cart/lines/{id}",
+        "Quantité, variante. Réponse : le panier entier recalculé."
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/cart/lines/{id}/save",
+        "Mettre de côté (Sauvegardés). L’article sort du total."
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/cart/lines/{id}/swap-offer",
+        "« Changer d’offre » vers une zone déjà sur le trajet. Refusé si le gain recalculé n’est plus positif."
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/cart/eligibility/counter",
+        "Éligibilité au paiement au comptoir : {eligible, reason, due_now, due_at_pickup}."
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/cart/lines",
+        "Ajout (suggestion, « Remettre », « Racheter ») : variante et quantité ; l’offre est ré-attribuée côté serveur (6.5)."
+       ]
+      },
+      {
+       "cellules": [
+        "DELETE",
+        "/cart/lines/{id}",
+        "Retrait. ?dry_run=1 renvoie l’avertissement et le panier simulé sans rien changer (proposé pour CPN-44)."
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/me/favorites",
+        "Favori sur la variante précise (cœur de la fiche et des cartes, 6.5)."
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/me/favorites",
+        "Liste unique, prix livré et stock rafraîchis à chaque appel (proposé)."
+       ]
+      },
+      {
+       "cellules": [
+        "PATCH",
+        "/me/favorites/{id}",
+        "Alertes {price_drop, back_in_stock} (proposé)."
+       ]
+      },
+      {
+       "cellules": [
+        "DELETE",
+        "/me/favorites/{id}",
+        "Retirer de la liste (cœur plein touché) (proposé)."
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/checkout · /checkout/counter",
+        "Au clic sur « Passer commande » ou « Payer au comptoir du relais » (8.1, 8.5 ; écrans CL-08) : l’application n’envoie que le contenu du panier."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Événements émis et qui les consomme",
+     "colonnes": [
+      "Événement",
+      "Émis par",
+      "Consommé par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "cart.updated",
+        "panier (toute modification)",
+        "tarification : recalcul complet"
+       ]
+      },
+      {
+       "cellules": [
+        "cart.shared",
+        "panier (partage natif)",
+        "aucun (le partage part du téléphone du client ; journal seulement)"
+       ]
+      },
+      {
+       "cellules": [
+        "favorite.added",
+        "cœur, « Sauvegarder »",
+        "rayon « favoris de retour en stock », alertes prix"
+       ]
+      },
+      {
+       "cellules": [
+        "order.paid / order.validated",
+        "paiement (chapitre 8)",
+        "vendeur, escrow, messages C1 / relais (montant dû au retrait)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retrait qui casse un trajet partagé",
+        "Avertissement avec les montants recalculés (fig. 7)."
+       ]
+      },
+      {
+       "cellules": [
+        "Article XL en mode relais",
+        "Bascule obligatoire à domicile (fig. 10)."
+       ]
+      },
+      {
+       "cellules": [
+        "Panier non éligible au comptoir",
+        "Bouton absent, une ligne l’explique (fig. 1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Produit désactivé ou supprimé",
+        "Retiré avec un message, jamais en silence (fig. 11)."
+       ]
+      },
+      {
+       "cellules": [
+        "Hausse ou baisse de prix entre l’affichage et le clic",
+        "#prix-change (CL-08)."
+       ]
+      },
+      {
+       "cellules": [
+        "Réseau absent",
+        "Paiement et modifications grisés avec l’explication (fig. 12)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Valeurs ajoutées au jeu d’essai pour ce document",
+     "colonnes": [
+      "Valeur ajoutée (DX_cl07)",
+      "Contenu",
+      "Pourquoi"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Trois boutiques",
+        "« or91 » Or · 91, Mvog-Ada, prêt sous 4 h (Camon 30, Galaxy A15, Tablette 8″, Téléviseur 43″) · « ar78 » Argent · 78, Mvog-Ada, prêt sous 4 h (Ensemble wax, Sac cuir, Chemise bazin, Pagne wax, Robe wax) · « br64 » Bronze · 64, Mvan, prêt sous 6 h (Mixeur, Marmite)",
+        "Ce sont les boutiques A, B, C de D.cart et de BLV-52107 (mêmes zones, paliers, scores). Le rattachement des autres produits est un choix du prototype."
+       ]
+      },
+      {
+       "cellules": [
+        "Offre de remplacement",
+        "Mixeur-blender 2 L · 600 W chez or91 (Mvog-Ada), 37 000 F",
+        "Le conseil de D.cart (« tu économiserais 500 F ») suppose une boutique déjà sur le trajet."
+       ]
+      },
+      {
+       "cellules": [
+        "Colis XL",
+        "Supplément colis XL 1 500 F (proposé) ; livraison « demain ven. 25 sept. avant 12 h »",
+        "Mêmes valeurs que la fiche (DX_cl06 : supplXL, delay.xl), pour que le téléviseur coûte 190 500 F partout."
+       ]
+      },
+      {
+       "cellules": [
+        "Heures de retrait",
+        "prêt sous 4 h ⇒ « dès aujourd’hui 15 h » ; sous 6 h ⇒ « dès aujourd’hui 17 h »",
+        "10 h 15 + préparation + 45 min, comme la phrase du jeu d’essai (4 h ⇒ 15 h)."
+       ]
+      },
+      {
+       "cellules": [
+        "Baskets running · 42",
+        "Pointure épuisée partout, revenue en stock ce matin (alerte de Carine)",
+        "Montre l’alerte « retour en stock » sans ajouter d’article aux Sauvegardés."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spec",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "7.0 Pourquoi, livrables, décisions intégrées, à savoir",
+        "39",
+        "Sections 1 à 3 ; CFR-13 (900 F = 500 + 400), CFR-14 (seuils 30 000 / 50 000 F), CPN-13 et CPN-14 (conseil de zone, gain recalculé), CPN-34 (comptoir v2.0), CFR-06 et CFR-19 (tarif d’un colis S, gros colis), exemple de référence (fig. 1, tableau de vérification)"
+       ]
+      },
+      {
+       "cellules": [
+        "7.1 Structure, section boutique, nom tranché, critères",
+        "39–40",
+        "Fig. 1 ; CPN-01 à CPN-19 ; critères d’acceptation de la section 1"
+       ]
+      },
+      {
+       "cellules": [
+        "7.2 Encart, barre, récapitulatif, sous le récapitulatif, bouton payer",
+        "40–41",
+        "Fig. 1 à 3 ; CPN-20 à CPN-41"
+       ]
+      },
+      {
+       "cellules": [
+        "7.3 Moteur : paramètres, conditions et calculs, vérification, incohérence 900 / 1 400 F",
+        "41–42",
+        "Section 3 : tableau de vérification, calculs, CFR-01 à CFR-25 ; fig. 4 et 5 (gains 500 F et 120 F)"
+       ]
+      },
+      {
+       "cellules": [
+        "7.4 Gestes utiles et actions",
+        "42",
+        "Fig. 6 à 8 ; CPN-42 à CPN-49 ; CSG-02 à CSG-07"
+       ]
+      },
+      {
+       "cellules": [
+        "7.4 Liaisons relais, vendeur, livraison",
+        "43",
+        "Encadré « Liaisons » de la section 3"
+       ]
+      },
+      {
+       "cellules": [
+        "7.4 Critères d’acceptation (272 579 F, R / R + R′, 29 999 / 30 000 F, aucun calcul dans l’app)",
+        "43",
+        "Critères de la section 3 ; CFR-01, CFR-16, CFR-17, CFR-25"
+       ]
+      },
+      {
+       "cellules": [
+        "7.4 Interdits",
+        "43",
+        "Encadrés « Interdits » des sections 2 et 3"
+       ]
+      },
+      {
+       "cellules": [
+        "7.5 Endpoints, événements, erreurs, paramètres, définition de terminé",
+        "43–44",
+        "Section 7 ; paramètres de la section 3 ; états de la section 5 (fig. 9 à 14)"
+       ]
+      },
+      {
+       "cellules": [
+        "2.2 à 2.6 (cycle : ajout au panier sans réservation ; visibilité ; services ; données)",
+        "11–14",
+        "CFR-26, CFR-21, CFR-23, CPN-09 ; section 7 (modèle Panier / Ligne, Favori / Liste / Alerte)"
+       ]
+      },
+      {
+       "cellules": [
+        "8.1 et 8.6 (clic sur Payer, prix payé, produit désactivé)",
+        "46, 49",
+        "CPN-33, CPN-53, CFR-22, CFR-26"
+       ]
+      },
+      {
+       "cellules": [
+        "8.2 et 8.3 (retour au panier intact)",
+        "46–47",
+        "CPN-57"
+       ]
+      },
+      {
+       "cellules": [
+        "16.2 à 16.4 (attribution, plafonds de valeur, délais de service)",
+        "91–92",
+        "CFR-21, CPN-31, CPN-32"
+       ]
+      },
+      {
+       "cellules": [
+        "8.5 Paiement au comptoir",
+        "49",
+        "Fig. 2 et 3 ; CPN-34 à CPN-38"
+       ]
+      },
+      {
+       "cellules": [
+        "3.1, 3.3, 3.4 Visiteur, numéro, première commande",
+        "17–19",
+        "Fig. 13 ; CPN-33, CPN-51"
+       ]
+      },
+      {
+       "cellules": [
+        "6.1, 6.2, 6.4, 6.5 Variantes, classes, favoris de la fiche",
+        "33–38",
+        "CPN-10, CPN-54, CFR-18, CFR-19, CFR-21, CSG-01, CSG-07, CSG-10"
+       ]
+      },
+      {
+       "cellules": [
+        "13.4 et 13.6 Payer depuis l’étranger",
+        "79–81",
+        "Fig. 8 ; CPN-46 à CPN-48"
+       ]
+      },
+      {
+       "cellules": [
+        "15.3 et 15.4 Pages légales, mode dégradé",
+        "87–88",
+        "Fig. 12 ; CPN-41, CPN-55"
+       ]
+      },
+      {
+       "cellules": [
+        "1.3 (21 sept. : favoris = une liste) · 22.0 et 22.1 · 9.5 · 4.4",
+        "8, 120, 56, 24",
+        "Section 6, fig. 15 à 17 ; CSG-01 à CSG-15"
+       ]
+      },
+      {
+       "cellules": [
+        "19.1 à 19.4 Anonymat, montants, interdits, arbitrages",
+        "104–107",
+        "CPN-09, CFR-01, CFR-23, CFR-24, interdits des sections 2 et 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Registre 20.1, 20.2, 20.6, 32.1",
+        "109–112, 146",
+        "Paramètres des sections 2, 3 et 6"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

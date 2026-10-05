@@ -1,0 +1,1579 @@
+{
+ "document": "CL-15",
+ "date": "2026-10-03",
+ "methode": "Chaque règle lue en entier dans regles.json. Six nouveautés d'après le lancement (EX-01 rentrée, EX-02 cotisation, EX-03 mise de côté, EX-04 troc, EX-05 panier famille, EX-06 WhatsApp IA), fermées par interrupteur : interrupteurs et registre classés un à un (étape 4-5) ; règles des modules classées par groupe avec une note sur chaque règle qui porte un paramètre, une formule ou une valeur à trancher, à reprendre une à une à la construction (étape « après »). Réserve et idées écartées : hors code.",
+ "regles": [
+  {
+   "id": "CRS-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-01 fermé au lancement (FF-EX01)."
+  },
+  {
+   "id": "CRS-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-04",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-05",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-01",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-06",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-07",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-01. RNT-OUVERTURE (1er juillet, Proposé)."
+  },
+  {
+   "id": "RNT-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-08",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01. Délai en heure ferme : envoi + RNT-SAISIE-H (24 h, Proposé)."
+  },
+  {
+   "id": "CRS-09",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-10",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-04",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-11",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-11",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-12",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-13",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-06",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01. LIV-SEUIL-RELAIS, LIV-DELTA (380 F) ; remise par colis (DP-18)."
+  },
+  {
+   "id": "RNT-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-08",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-14",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-15",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-16",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01. Éligibilité de la mise de côté sur le total de la liste (MDC-PRIX-MIN) : Recommandé, appliqué tel quel."
+  },
+  {
+   "id": "RNT-09",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-17",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01. RNT-GROUPAGE-J (21 jours) ; la garde suit la grille de DP-08 à partir du message unique.",
+   "demo": [
+    "jour 1 gratuit, puis 100 F (grille de DP-08)"
+   ]
+  },
+  {
+   "id": "CRS-18",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-19",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-20",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-21",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "RNT-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CRS-22",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-01."
+  },
+  {
+   "id": "CCZ-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-02 fermé au lancement (FF-EX02)."
+  },
+  {
+   "id": "CCZ-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-04",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. COT-FRAIS à trancher avant l'ouverture d'EX-02."
+  },
+  {
+   "id": "COT-01",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. Objectif = prix livré + COT-FRAIS."
+  },
+  {
+   "id": "COT-02",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. COT-DUREE-MAX (30 jours)."
+  },
+  {
+   "id": "COT-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-05",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-06",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "COT-04",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. COT-PART-MIN (1 000 F) ; carte : CinetPay (DP-03)."
+  },
+  {
+   "id": "COT-05",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "COT-06",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-07",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-08",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-09",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. Frais carte 2 % ajoutés à la participation, en plus de COT-FRAIS compris dans l'objectif : double frais à trancher avec COT-FRAIS (CL-D16.A16)."
+  },
+  {
+   "id": "COT-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-10",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-11",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "COT-08",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-12",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-13",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. BelivaY prend en charge une hausse de 5 % au plus : paramètre à créer à l'ouverture d'EX-02."
+  },
+  {
+   "id": "COT-09",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-02."
+  },
+  {
+   "id": "CCZ-14",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-02. Remboursement le lendemain de l'échéance vers le moyen d'origine, frais de carte compris."
+  },
+  {
+   "id": "CMD-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-03 fermé au lancement (FF-EX03)."
+  },
+  {
+   "id": "CMD-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-04",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-01",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-02",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03. MDC-ACOMPTE (20 %, Proposé)."
+  },
+  {
+   "id": "MDC-03",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03. MDC-DUREE (60 jours, Proposé)."
+  },
+  {
+   "id": "CMD-06",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03. Prix livré figé à la réservation ; éligibilité sur MDC-PRIX-MIN (20 000 F)."
+  },
+  {
+   "id": "CMD-07",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-04",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-08",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-09",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03. Rappel 2 jours avant chaque échéance : paramètre à créer à l'ouverture d'EX-03."
+  },
+  {
+   "id": "MDC-08",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03. MDC-GRACE (7 jours, Proposé)."
+  },
+  {
+   "id": "CMD-10",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-06",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-11",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-12",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "MDC-09",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03. MDC-FORFAIT (5 %, 5 000 F au plus) : à valider par le juriste avant l'ouverture d'EX-03."
+  },
+  {
+   "id": "CMD-13",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03. Nature d'arrhes du forfait : juriste."
+  },
+  {
+   "id": "CMD-14",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CMD-15",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-03."
+  },
+  {
+   "id": "CTR-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-04 fermé au lancement (FF-EX04)."
+  },
+  {
+   "id": "CTR-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-03",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-04",
+   "cote": "serveur",
+   "nature": "texte et format",
+   "etape": "après",
+   "note": "Module EX-04. Mot interdit « Reste à payer » (CCH-46)."
+  },
+  {
+   "id": "TRC-01",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04. TRC-PARTENAIRE à contractualiser avant l'ouverture d'EX-04."
+  },
+  {
+   "id": "TRC-02",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-05",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-09",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-05",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04. TRC-IMEI-SOURCE (source de la liste des téléphones volés) à identifier avant l'ouverture d'EX-04."
+  },
+  {
+   "id": "TRC-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-07",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-08",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-07",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-04. TRC-INSPECT-H (48 h)."
+  },
+  {
+   "id": "CTR-09",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-08",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-11",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "TRC-04",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-12",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-13",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CTR-14",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-04."
+  },
+  {
+   "id": "CFM-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-05 fermé au lancement (FF-EX05)."
+  },
+  {
+   "id": "CFM-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-03",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05. Nuit du payeur 22 h – 7 h : paramètre à créer (même point que CET-20)."
+  },
+  {
+   "id": "CFM-04",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-05. LIB-CARTE ; provision de rétrofacturation de 1,5 % : paramètre à créer à l'ouverture d'EX-05."
+  },
+  {
+   "id": "FAM-01",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05. FAM-POIDS-MAX (5 kg) ; jamais de XL."
+  },
+  {
+   "id": "CFM-05",
+   "cote": "écran",
+   "nature": "design",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "FAM-03",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "FAM-02",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-05. FAM-MAX-TX (150 000 F) ; carte : CinetPay (DP-03)."
+  },
+  {
+   "id": "FAM-04",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-08",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "FAM-06",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05. FAM-RENOUV-PREAVIS (3 jours)."
+  },
+  {
+   "id": "FAM-07",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-09",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "FAM-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05."
+  },
+  {
+   "id": "CFM-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-05. PUSH-REPLI-MIN (10 min)."
+  },
+  {
+   "id": "CWA-01",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Module EX-06 fermé au lancement (FF-EX06). WAP-API non au lancement ; WAP-COUT à mesurer."
+  },
+  {
+   "id": "CWA-02",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-03",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-04",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "WAP-06",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06. WAP-VOCAL-CONSERV à fixer avant l'ouverture d'EX-06."
+  },
+  {
+   "id": "CWA-05",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "WAP-04",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "WAP-05",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-06",
+   "cote": "serveur",
+   "nature": "calcul",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-07",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Module EX-06. IA-HUMAIN."
+  },
+  {
+   "id": "WAP-01",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-08",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "WAP-02",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-09",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "WAP-03",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CWA-10",
+   "cote": "serveur",
+   "nature": "donnée et sécurité",
+   "etape": "après",
+   "note": "Module EX-06."
+  },
+  {
+   "id": "CRV-01",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Idée gardée pour plus tard (réserve)."
+  },
+  {
+   "id": "CRV-02",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Idée gardée pour plus tard (réserve)."
+  },
+  {
+   "id": "CRV-03",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Idée gardée pour plus tard (réserve)."
+  },
+  {
+   "id": "CRV-04",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Idée gardée pour plus tard (réserve)."
+  },
+  {
+   "id": "CRV-05",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Valeur à trancher avant l'ouverture du module."
+  },
+  {
+   "id": "CRV-06",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Valeur à trancher avant l'ouverture du module."
+  },
+  {
+   "id": "CRV-07",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Valeur à trancher avant l'ouverture du module."
+  },
+  {
+   "id": "CRV-08",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Valeur à trancher avant l'ouverture du module."
+  },
+  {
+   "id": "CRV-09",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Valeur à trancher avant l'ouverture du module."
+  },
+  {
+   "id": "CRV-10",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Idée écartée : aucun champ ni route ne doit la permettre (CL-D16.A55)."
+  },
+  {
+   "id": "CRV-11",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Idée écartée : aucun champ ni route ne doit la permettre (CL-D16.A55)."
+  },
+  {
+   "id": "CRV-12",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Idée écartée : aucun champ ni route ne doit la permettre (CL-D16.A55)."
+  },
+  {
+   "id": "CRV-13",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Idée écartée : aucun champ ni route ne doit la permettre (CL-D16.A55)."
+  },
+  {
+   "id": "CRV-14",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "après",
+   "note": "Idée écartée : aucun champ ni route ne doit la permettre (CL-D16.A55)."
+  },
+  {
+   "id": "CRV-15",
+   "cote": "serveur",
+   "nature": "architecture",
+   "etape": "5",
+   "note": "Codes des nouveautés dans la même table, inactifs (CCH-15)."
+  },
+  {
+   "id": "CRV-16",
+   "cote": "serveur",
+   "nature": "comportement",
+   "etape": "5",
+   "note": "La console refuse d'ouvrir un module avec une valeur à trancher."
+  },
+  {
+   "id": "CRV-17",
+   "cote": "hors code",
+   "nature": "organisation",
+   "etape": "—",
+   "note": "Les cinq codes sont déjà au registre de CL-16 ; à reporter au tableau 32.5 de la v3."
+  },
+  {
+   "id": "CRV-18",
+   "cote": "serveur et écran",
+   "nature": "comportement",
+   "etape": "4",
+   "note": "Interrupteur fermé : rien du module n'apparaît, l'API refuse (CCH-18)."
+  }
+ ],
+ "actions": [
+  {
+   "id": "CL-D16.A01",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Six modules derrière FF-EX01 à FF-EX06, sans lien sur les écrans de lancement.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A02",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Pas de mention « IMEI vérifiable avant expédition » sur les pages Téléphones du lancement.",
+   "etape": "6"
+  },
+  {
+   "id": "CL-D16.A03",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "RNT-GROUPAGE-J est au registre de CL-16 (21 jours) ; à reporter au §32.5."
+  },
+  {
+   "id": "CL-D16.A04",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Liens d'entrée des nouveautés, invisibles tant que leur interrupteur est fermé.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A05",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Domaine des liens."
+  },
+  {
+   "id": "CL-D16.A06",
+   "type": "jeu d’essai",
+   "fait": false,
+   "resultat": "Valeurs de démonstration de CL-15."
+  },
+  {
+   "id": "CL-D16.A07",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Console : vérification des écoles, saisie des listes papier.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A08",
+   "type": "construction",
+   "fait": false,
+   "resultat": "POST /paper-lists, délai en heure ferme, liste privée.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A09",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Total de la liste recalculé à chaque case, ramassages compris.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A10",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Historique des listes modifiées, push aux parents concernés.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A11",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§27.5 : éligibilité de la mise de côté sur le total de la liste (CRS-16)."
+  },
+  {
+   "id": "CL-D16.A12",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§25 : pas de paiement au comptoir pour une liste groupée (CRS-15)."
+  },
+  {
+   "id": "CL-D16.A13",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Capacité du relais vérifiée avant une liste groupée.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A14",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Phrase de garde et grille."
+  },
+  {
+   "id": "CL-D16.A15",
+   "type": "décision",
+   "fait": false,
+   "resultat": "COT-FRAIS avant l'ouverture d'EX-02."
+  },
+  {
+   "id": "CL-D16.A16",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Carte : 2 % de frais carte en plus des 2 % de COT-FRAIS compris dans l'objectif ; à trancher avec COT-FRAIS."
+  },
+  {
+   "id": "CL-D16.A17",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Escrow « cotisation » : jauge au webhook, plafond au manque, remboursement à l'échéance.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A18",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Espace école.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A19",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Domaine des liens."
+  },
+  {
+   "id": "CL-D16.A20",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§25.5 : rupture du groupage au 21e jour (CRS-18)."
+  },
+  {
+   "id": "CL-D16.A21",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Commande créée à l'objectif, gestion d'une hausse.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A22",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Remboursement de chaque participant le lendemain de l'échéance.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A23",
+   "type": "contenu",
+   "fait": false,
+   "resultat": "MDC-FORFAIT : juriste avant l'ouverture d'EX-03."
+  },
+  {
+   "id": "CL-D16.A24",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "MDC-PRIX-MIN est au registre de CL-16 (20 000 F) ; à reporter au §32.5."
+  },
+  {
+   "id": "CL-D16.A25",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Mise de côté : réservation longue, plan, rappels, carte à part, commande au dernier versement.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A26",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Supplément colis L."
+  },
+  {
+   "id": "CL-D16.A27",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Paquet Espace vendeur : « réservé · mise de côté ».",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A28",
+   "type": "contenu",
+   "fait": false,
+   "resultat": "Même point que A23."
+  },
+  {
+   "id": "CL-D16.A29",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Annulation automatique en fin de grâce, avec ses messages.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A30",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "§28.0 et §28.4 : « Montant à payer », jamais « Reste à payer » (CTR-04)."
+  },
+  {
+   "id": "CL-D16.A31",
+   "type": "décision",
+   "fait": false,
+   "resultat": "TRC-PARTENAIRE et TRC-IMEI-SOURCE avant l'ouverture d'EX-04."
+  },
+  {
+   "id": "CL-D16.A32",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Dépôt au relais avec IMEI, pièce, photo, refus sur place (paquet Point relais).",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A33",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Même point que A02.",
+   "etape": "6"
+  },
+  {
+   "id": "CL-D16.A34",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Dépôt de troc côté relais.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A35",
+   "type": "construction",
+   "fait": false,
+   "resultat": "IMEI masqué au client (4 derniers chiffres).",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A36",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Contre-offre, retour gratuit, alerte d'inspection en retard.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A37",
+   "type": "correction de la spécification",
+   "fait": false,
+   "resultat": "FAM-MAX-TX est au registre de CL-16 (150 000 F) ; à reporter au §32.5."
+  },
+  {
+   "id": "CL-D16.A38",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Panier famille.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A39",
+   "type": "décision",
+   "fait": false,
+   "resultat": "Commission « k = 1/2 » des familles C : paquets Administrateur et Espace vendeur."
+  },
+  {
+   "id": "CL-D16.A40",
+   "type": "décision",
+   "fait": false,
+   "resultat": "PAY-CARTE-PSP et LIV-SUPPL-L."
+  },
+  {
+   "id": "CL-D16.A41",
+   "type": "construction",
+   "fait": false,
+   "resultat": "« Lien famille » sans adresse ni numéro.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A42",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Débit au montant du préavis, nouvelle confirmation en cas de hausse.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A43",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Preuve de retrait au payeur.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A44",
+   "type": "décision",
+   "fait": false,
+   "resultat": "WAP-API au §32.5 ; WAP-COUT et WAP-VOCAL-CONSERV avant l'ouverture d'EX-06."
+  },
+  {
+   "id": "CL-D16.A45",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Module WhatsApp IA sur l'API payante, jamais sur le numéro du support humain.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A46",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Fil WhatsApp rattaché à la commande en console.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A47",
+   "type": "décision",
+   "fait": false,
+   "resultat": "WAP-VOCAL-CONSERV et texte de consentement."
+  },
+  {
+   "id": "CL-D16.A48",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Consentement vocal enregistré ; vocal supprimé sans « OK ».",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A49",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Proposition calculée par le service de tarification.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A50",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "Le retrait de 900 F = LIV-R (500 F) + LIV-REM-RELAIS (400 F) ; avec DP-18, la remise est par colis."
+  },
+  {
+   "id": "CL-D16.A51",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Passage à un humain dans le même fil.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A52",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Seul « OUI » ou « YES » crée la commande en attente.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A53",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Lien court signé vers « Paiement en attente ».",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A54",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Confirmation sur WhatsApp depuis le webhook seulement ; jamais de code ni de preuve.",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A55",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Aucun champ ni route pour les idées écartées (CRV-10 à CRV-14).",
+   "etape": "après"
+  },
+  {
+   "id": "CL-D16.A56",
+   "type": "contenu",
+   "fait": false,
+   "resultat": "Réserve consignée avec son moment de reprise (CRV-01 à CRV-04)."
+  },
+  {
+   "id": "CL-D16.A57",
+   "type": "décision",
+   "fait": false,
+   "resultat": "COT-FRAIS, MDC-FORFAIT, TRC-PARTENAIRE, TRC-IMEI-SOURCE, WAP-COUT, WAP-VOCAL-CONSERV avant d'ouvrir EX-02, EX-03, EX-04, EX-06."
+  },
+  {
+   "id": "CL-D16.A58",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Console : activation bloquée tant qu'une valeur est à trancher (CRV-16).",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D16.A59",
+   "type": "vérification",
+   "fait": true,
+   "resultat": "RNT-GROUPAGE-J, MDC-PRIX-MIN, TRC-IMEI-SOURCE, FAM-MAX-TX et WAP-API sont déjà au registre de CL-16 ; seul le tableau 32.5 de la v3 les omet."
+  },
+  {
+   "id": "CL-D16.A60",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Codes des nouveautés versionnés, inactifs derrière FF-EX01 à FF-EX06.",
+   "etape": "5"
+  },
+  {
+   "id": "CL-D16.A61",
+   "type": "construction",
+   "fait": false,
+   "resultat": "Interrupteur fermé : rien du module, API refusée (CRV-18).",
+   "etape": "4"
+  }
+ ],
+ "questions": [
+  {
+   "id": "CL-D16.Q01",
+   "reponse_donnees": "belivay.com (DP-38).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q02",
+   "reponse_donnees": "Au registre de CL-16 (21 jours).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q03",
+   "reponse_donnees": "Aucun supplément M ou L (DP-07).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q04",
+   "reponse_donnees": "CRS-16 (Recommandé, appliqué tel quel).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q05",
+   "reponse_donnees": "COT-FRAIS À trancher ; la carte ajoute 2 %.",
+   "decision_porteur": "COT-FRAIS et frais carte d'une participation : à fixer avant d'ouvrir la cotisation."
+  },
+  {
+   "id": "CL-D16.Q06",
+   "reponse_donnees": "MDC-PRIX-MIN au registre ; MDC-FORFAIT au juriste ; aucun supplément L (DP-07).",
+   "decision_porteur": "Faire valider MDC-FORFAIT par le juriste avant d'ouvrir la mise de côté."
+  },
+  {
+   "id": "CL-D16.Q07",
+   "reponse_donnees": "TRC-PARTENAIRE et TRC-IMEI-SOURCE À trancher.",
+   "decision_porteur": "Reconditionneur et source des téléphones volés avant d'ouvrir le troc."
+  },
+  {
+   "id": "CL-D16.Q08",
+   "reponse_donnees": "Correction CL-D16.A30.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q09",
+   "reponse_donnees": "Au registre de CL-16 (A59).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q10",
+   "reponse_donnees": "Paquets Administrateur et Espace vendeur.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q11",
+   "reponse_donnees": "WAP-API au registre ; WAP-COUT et WAP-VOCAL-CONSERV À trancher.",
+   "decision_porteur": "Coût et conservation des vocaux avant d'ouvrir WhatsApp IA."
+  },
+  {
+   "id": "CL-D16.Q12",
+   "reponse_donnees": "900 F = 500 + 400 (A50).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q13",
+   "reponse_donnees": "Statuts du registre de CL-16 : WAP-01, WAP-05 Proposé ; CWA-08 Recommandé, CWA-07 Proposé : cohérents (CWA précise WAP).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q14",
+   "reponse_donnees": "belivay.com (DP-38).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q15",
+   "reponse_donnees": "Voir Q05, Q06, Q07, Q11.",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q16",
+   "reponse_donnees": "Au registre de CL-16 (A59).",
+   "decision_porteur": ""
+  },
+  {
+   "id": "CL-D16.Q17",
+   "reponse_donnees": "Correction CL-D16.A30.",
+   "decision_porteur": ""
+  }
+ ]
+}

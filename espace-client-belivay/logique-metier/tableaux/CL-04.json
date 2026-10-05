@@ -1,0 +1,2578 @@
+{
+ "document": "CL-04",
+ "source": "04_Pages_HTML/CL-04_Accueil_Categories_Listing.html",
+ "sections": [
+  {
+   "section": "Écran « Accueil » — l’accueil d’origine, avec un contenu vrai",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Accueil · version d’origine, acheteuse fidèle, 3 colis au relais",
+        "Profil acheteuse fidèle (accueil) : Carine, jeudi 24 sept., 10 h 15, dans l’ordre d’IMG_2339 → 2355. Bandeau noir « Paiement sécurisé via MoMo · Escrow BelivaY » (1er des 5 messages, figé). En-tête : menu, logo « Tout près de toi », cloche 3, panier 4, avatar ; recherche avec micro et bouton orange. Bande « MODE FEMME · Robes · Pagnes & wax · 283 produits · retrait au Relais Mvog-Ada », 6 points. Pastilles Explorer, Tout voir (active), Téléphones & tablettes… « Prix en baisse » : Baskets −14 % 29 900 F, Galaxy A15 −10 % 89 900 F, Montre −8 % 27 500 F. « À la une · Près de ton relais » : cartes sans bouton, du Pagne wax (0,5 km) à l’Ensemble wax (0,7 km)… « Récemment consultés » : Sandales 14 900 F, Robe wax 24 000 F, Ensemble wax 32 000 F « Retrait offert », avec « + Panier ». « Trier : Pertinence ». « Produits populaires » (3 colonnes) : karité 3 500 F (4,8 (301)), chargeur, écouteurs, pagne, huile de coco, Camon 30 « dès 139 000 F ». Bannière orange « Retrait offert · RELAIS ». « Nouveaux arrivages » (sans pastille) : Tapis de yoga, Tablette 8″, Porte-bébé… Rangée Mode femme (« Pagnes & wax ») ; bannière nuit « Un proche paie pour toi · DIASPORA » ; rangées Électronique (« Audio », Téléviseur 43″ « À domicile »), Téléphones & tablettes (titre long : pas de pastille de sous-catégorie ; Tablette 8″ en 3e place), Beauté & santé (« Cheveux »), Maison & cuisine (« Cuisine », Ventilateur « + 1 200 F retrait »), Supermarché (« Épicerie », Huile d’arachide « + 1 100 F retrait »). « Pourquoi choisir BelivaY ? » : Paiement sécurisé (« Ton argent reste bloqué chez BelivaY jusqu’à ton retrait. MTN MoMo et Orange Money. »), Retrait au relais (« Le tien : Relais Mvog-Ada, à 350 m. »), Retour gratuit si problème validé. Carte « BelivaY · Tout près de toi » : 1 387 produits, 10 univers, 12 quartiers, 7 j/7 aide, 4 boutons. Pied de page sombre sans numéro. Barre orange « 3 colis t’attendent au relais · Mvog-Ada · Ouvert jusqu’à 19 h » et « Mon code » ; bouton ↑ au-dessus de la barre, sous « Mentions légales » ; dock Panier 4, Compte 2."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 2",
+        "Accueil · relais fermé ce jour-là",
+        "Même accueil le jour où le Relais Mvog-Ada a déclaré une fermeture (accueil?st=ferme). Seule la barre flottante change : « 2 colis t’attendent au relais · Rouvre demain à 8 h » (la seconde ligne finit en « rouvre dema… » sur cette largeur), « Mon code » gardé. BLV-51940 n’a pas pu être déposé ce jour-là : seuls les 2 colis de BLV-52018 attendent (CAC-04). Le reste de la page est identique à la figure 1."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Bandeau noir rotatif à 5 messages, dont 4 faux : « Remboursement sous 7 jours · Sans question », « Gagnez des points à chaque achat · Programme Fidélité », « 3 200+ Vendeurs certifiés sur BelivaY », « Livraison 24–72h · Cameroun & CEMAC »",
+        "Même bandeau rotatif, 5 messages vrais : « Paiement sécurisé via MoMo · Escrow BelivaY », « Le vendeur est payé après ton retrait », « Retrait au relais dans 12 quartiers de Yaoundé », « Retrait offert dès 30 000 F d’achat », « Retour gratuit si problème validé ». Présent sur tous les en-têtes racine",
+        "Composant TICKER de l’en-tête racine (CL-01). Textes tirés de 7.1, 12.2, 18.2 et 6.1 ; montant lu dans LIV-SEUIL-RELAIS. Retour sans motif interdit (12.2), programme de points inexistant, compteur inventé interdit (19.3), ni fourchette de délai (décision du 25 sept.) ni CEMAC (18.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "En-tête (menu, logo, cloche, panier, avatar) et barre de recherche avec bouton filtre et loupe orange",
+        "Mêmes positions : menu, logo « Tout près de toi », cloche 3, panier 4, avatar ; « Rechercher un produit, une marque… » avec micro et bouton orange ; plus de bouton filtre",
+        "En-tête du socle (CL-01). Le champ ouvre recherche, le micro recherche?st=voix ; les filtres viennent après une recherche (CRE-37, CL-05)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Carrousel de 8 bandes ; « Smartphones & Accessoires » illustrée par un ordinateur qui affiche la météo de Paris ; étiquette bleue « ÉLECTRONIQUE » tronquée",
+        "6 bandes d’univers : Mode femme, Téléphones & tablettes, Maison & cuisine, Beauté & santé, Électronique, Supermarché. Chaque bande : étiquette de l’univers, 2 sous-catégories, nombre réel de produits, « retrait au Relais Mvog-Ada ». Points sous le carrousel",
+        "Chaque bande ouvre liste?cat=<univers>&from=accueil. Compteur de l’agrégat (CCR-10) ; illustrations propres, fond uniforme (19.5)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Puces Explorer / Tout voir / Mode Femme",
+        "Même rangée : Explorer (index), Tout voir (catalogue, active), puis les 10 univers avec leur vignette",
+        "Explorer ouvre categories ; Tout voir liste?from=accueil ; chaque univers son listing. La grille de tuiles de 4.1-4 n’est pas ajoutée (CAC-08)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Flash Deals avec compte à rebours 05:57:08",
+        "« Prix en baisse · Remises réelles, prix barré vérifié » : ronds avec la remise réelle (Baskets −14 %, Galaxy A15 −10 %, Montre −8 %), sans minuterie",
+        "FF-FLASH fermé (23) ; rareté simulée interdite (4.4). Liste = produits dont le prix barré est réellement pratiqué, par remise décroissante (CAC-31)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Rangée « À la une » sur deux lignes, 4e colonne coupée (« Sérum V… », « 11 200 F… »)",
+        "« À la une » avec la pastille « Près de ton relais » : les 8 produits les plus proches du relais, en cartes compactes sans bouton ; « Tout voir » ouvre le listing « Au plus proche »",
+        "« À la une » n’avait pas de règle : la case reçoit le générateur « Près de ton relais » (4.1-6, CAC-10), vers liste?tri=proche&from=accueil."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "« Récemment consultés »",
+        "Même rangée, avec « + Panier » : fidèle (sandales, robe wax, ensemble wax, montre, sac cuir), navigateur (téléphones et beauté) ; absente pour le nouveau et le visiteur",
+        "Rangée personnelle sur product.viewed (CAC-14, CAC-15, CAC-20)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Trier : Pertinence » posé sur l’accueil, puis « Produits populaires · 102 produits » en 3 colonnes",
+        "« Trier : Pertinence » garde sa place et ouvre le listing du catalogue ; « Produits populaires » : grille de 3 colonnes, les 6 meilleures ventes réelles, « Voir plus » ; aucun compteur dans le titre",
+        "Générateur Top ventes (4.1-8) sur les vraies commandes (CAC-12). Le tri s’applique dans le listing (4.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Encart « BelivaY Premium · SPONSO · Cashback 5 % + livraison prioritaire 24h »",
+        "Bannière orange « Retrait offert · RELAIS : dès 30 000 F d’achat. En dessous, 900 F pour tout le panier. » ; elle ouvre la question fréquente sur le retrait",
+        "FF-ABONNEMENT fermé (21) ; la cagnotte serait de 2 %, pas 5 % ; « livraison prioritaire » n’existe pas. Montants lus dans LIV-SEUIL-RELAIS et LIV-RELAIS-BASE (6.1) ; lien faq?t=retrait&a=1 (CAC-32)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Nouveaux Arrivages » avec 41 à 73 avis et −25 à −29 %",
+        "« Nouveaux arrivages » : les 5 derniers produits publiés",
+        "Calculé sur product.published (4.1-7, CAC-11)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Rangées par univers titrées d’une sous-catégorie qui ne correspond pas au contenu (« Robes » avec sac et pyjama, « Ordinateurs » avec écouteurs, « Meubles » avec sac à dos) ; encart « Sélection Premium · CURATED »",
+        "Rangées Mode femme, bannière nuit « Un proche paie pour toi · DIASPORA », puis Électronique, Téléphones & tablettes, Beauté & santé, Maison & cuisine, Supermarché. Pastille = sous-catégorie la plus fournie ; « Tout voir ». Une rangée de moins de 3 produits n’est pas montrée",
+        "4.1-5 et ACC-RANGEE-MIN (CAC-09, CAC-19). La bannière Diaspora ouvre payeur (CL-12), à la place d’un module fermé (FF-ABONNEMENT)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bloc « Pourquoi choisir BelivaY ? » : « Satisfait ou Remboursé · 7 jours pour changer d’avis · Sans question », « Livraison 24–72h partout au Cameroun & en zone CEMAC », « MoMo, Orange & Visa protégés »",
+        "Même bloc, trois promesses vraies : Paiement sécurisé (« Ton argent reste bloqué chez BelivaY jusqu’à ton retrait. MTN MoMo et Orange Money. »), Retrait au relais (12 quartiers, le tien à 350 m), Retour gratuit si problème validé ; liens vers la FAQ et les conditions de retour",
+        "Décision du porteur (CAC-01, CAC-33). Textes de 3.1 et 12.2 ; aucune carte bancaire au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Carte « BelivaY · Marketplace CEMAC » : « Made in Cameroon », 6 pays, 15 240 produits, 3 200 vendeurs, 50K+ clients, 4.8★, boutons À propos, Explorer BelivaY, Aide, Premium",
+        "Carte « BelivaY · Tout près de toi » : 1 387 produits, 10 univers, 12 quartiers, aide 7 j/7 ; boutons Comment ça marche, Explorer, Aide, Mes commandes",
+        "Compteurs réels de l’agrégat (CCR-10) ; zones exploitées (18.2) ; ni vendeurs, ni clients, ni note de vitrine (19.3, CAC-34)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Pied de page de site web : réseaux sociaux, « +237 689 002 812 » et « contact@belivay.com » en clair, « Contacter sur WhatsApp », « © 2026 Belivay », liens légaux pâles sous le robot",
+        "Pied de page sombre : Liens rapides, Aide, Nous joindre (Yaoundé ; « Être rappelé · appel masqué » ; « Écrire au support » ; « Parler sur WhatsApp »), « © 2026 BelivaY », Confidentialité, Conditions, Mentions légales. Aucun numéro en clair",
+        "Rappel masqué et support écrit (15.2) ; pages légales (15.3) ; marque « BelivaY » (CDS-04) ; CAC-35."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Barre flottante « 91 promos jusqu’à −34 % · Fin dans 20:32:49 »",
+        "Barre flottante orange « 3 colis t’attendent au relais · Mvog-Ada · Ouvert jusqu’à 19 h », bouton « Mon code » (le code en un geste)",
+        "Reprise de parcours 4.1-2 dans la case de la barre promo (CAC-04, CAC-05) ; code code?ref=BLV-52018 (9.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Robot de l’assistant IA flottant, posé sur les prix, « + Panier » et le filtre",
+        "Absent ; le bouton ↑ reste seul",
+        "FF-IA fermé au lancement (24, 32.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Carte produit : remise sans prix barré (91 produits « en promo » sur 102), coche verte sans légende, « • Belivay » (place du nom de boutique), prix en « FCFA », notes 4.0 et 5.0, camion « 24h » sur chaque carte, cœur sur une partie des cartes",
+        "Carte compacte de 3 colonnes : remise réelle et prix barré, cœur sur toutes, nom, distance (à la place de « • Belivay »), prix en F, note et nombre d’avis (« 4,8 (301) »), ligne livrée, « + Panier »",
+        "Tableau « La ligne livrée de la carte » ci-dessous ; nom de boutique interdit (4.4, 19.1) : l’API ne le renvoie pas ; pas de délai fixe (16.4) ; CAC-18."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Photos fausses ou réutilisées (sac à main pour un savon, verre de lait pour l’huile de coco, iMac, iPad, iPhone pour des Samsung), marques visibles (Gucci, Chanel N°5), vignettes vides",
+        "Illustrations propres, fond uniforme sombre ; vraies photos du catalogue avant le lancement",
+        "19.5."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Doublon de produit maître : « Huile d’Argan Pure 100ml » 6 800 F sur l’accueil, 8 500 F dans le listing",
+        "Un produit maître = une carte et un prix (offre attribuée) partout",
+        "5.3 ; attribution au coût total livré."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bleu et violet (étiquettes, badges, Premium) ; anglicismes Flash Deals, CURATED, SPONSO, Made in Cameroon, 50K+",
+        "Palette « Mandarine & Nuit », aucun bleu ; français simple",
+        "CDS-01."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Barre d’onglets Accueil, Catégories, Panier (6), Favoris (3), Compte",
+        "Accueil, Catégories, Panier 4, Sauvegardés, Compte",
+        "Dock du socle (CNV-01, CL-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Aucun ordre selon le profil ; pas de grille de catégories en tuiles ; pas de reprise de parcours",
+        "Ordre fixe de l’accueil d’origine pour tous ; seules les cases personnelles suivent le profil (section suivante) ; catégories en pastilles ; reprise dans la barre flottante ; le paiement interrompu est repris dans Mes commandes",
+        "Écarts assumés à 4.1 sur décision du porteur du 26 sept. (CAC-02, CAC-06, CAC-08, CAC-16)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Style : panneaux blancs, pictogramme orange devant le titre, pastille « Tout voir → », cartes blanches avec « + Panier », densité qui donne l’effet d’abondance",
+        "Même style, dans la palette « Mandarine & Nuit » de l’espace client (variables du socle) ; le thème sombre garde les mêmes positions",
+        "Classes h0-… de cl04_decouvrir.js (fonction h0home, CSS H0CSS)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "colis_en_attente = Σ colis (arrivee_relais ∨ validee_comptoir) non remis",
+        "3 = 2 (BLV-52018) + 1 (BLV-51940). Barre « 3 colis t’attendent au relais » ; pas de barre si 0."
+       ]
+      },
+      {
+       "cellules": [
+        "Prix en baisse = produits où P_barré > P, par remise décroissante",
+        "Baskets arrondi((34 900 − 29 900) / 34 900 × 100) = 14 % ; Galaxy A15 10 % ; Montre 8 %."
+       ]
+      },
+      {
+       "cellules": [
+        "À la une = 8 produits hors XL, par distance croissante au relais",
+        "Du Pagne wax (0,5 km) au Beurre de karité (1,0 km) ; le Téléviseur 43″ (XL) n’y entre pas."
+       ]
+      },
+      {
+       "cellules": [
+        "Produits populaires = 6 produits les plus commandés",
+        "Karité 1 120 ventes, chargeur 902, écouteurs 640, pagne 518, huile de coco 430, Camon 30 412."
+       ]
+      },
+      {
+       "cellules": [
+        "Pastille d’une rangée = sous-catégorie au plus grand compteur",
+        "Pagnes & wax 112 ; Audio 41 ; Accessoires 64 ; Cheveux 61 ; Cuisine 52 ; Épicerie 72."
+       ]
+      },
+      {
+       "cellules": [
+        "Carte BelivaY : produits = Σ univers ; univers = univers actifs",
+        "1 387 produits ; 10 univers ; 12 quartiers = zones exploitées au lancement."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Où mène chaque élément de l’accueil",
+     "colonnes": [
+      "Élément",
+      "Destination"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Menu ☰ · cloche · panier · avatar",
+        "menu · notifications · panier · compte (visiteur : « Se connecter »)"
+       ]
+      },
+      {
+       "cellules": [
+        "Champ de recherche · micro",
+        "recherche · recherche?st=voix (CL-05)"
+       ]
+      },
+      {
+       "cellules": [
+        "Bande du carrousel · pastille d’univers",
+        "liste?cat=<univers>&from=accueil"
+       ]
+      },
+      {
+       "cellules": [
+        "Pastilles Explorer · Tout voir",
+        "categories · liste?from=accueil"
+       ]
+      },
+      {
+       "cellules": [
+        "Rond de « Prix en baisse » · toute carte produit",
+        "fiche?p=<id> (CL-06)"
+       ]
+      },
+      {
+       "cellules": [
+        "« Tout voir » de « À la une »",
+        "liste?tri=proche&from=accueil (catalogue « Au plus proche »)"
+       ]
+      },
+      {
+       "cellules": [
+        "« Trier : Pertinence » · « Voir plus » (Produits populaires) · « Tout voir » (Nouveaux arrivages)",
+        "liste?from=accueil (catalogue)"
+       ]
+      },
+      {
+       "cellules": [
+        "Pastille de sous-catégorie · « Tout voir » d’une rangée d’univers",
+        "liste?cat=<univers>&sub=<sous-catégorie>&from=accueil · liste?cat=<univers>&from=accueil"
+       ]
+      },
+      {
+       "cellules": [
+        "Bannière « Retrait offert · RELAIS »",
+        "faq?t=retrait&a=1 (CL-13)"
+       ]
+      },
+      {
+       "cellules": [
+        "Bannière « Un proche paie pour toi · DIASPORA »",
+        "payeur (CL-12)"
+       ]
+      },
+      {
+       "cellules": [
+        "« Pourquoi choisir BelivaY ? » : En savoir plus · Découvrir · Notre engagement",
+        "faq?t=paiement&a=1 · faq?t=retrait&a=1 · legal-doc?d=retours"
+       ]
+      },
+      {
+       "cellules": [
+        "Carte BelivaY : Comment ça marche · Explorer · Aide · Mes commandes",
+        "faq?t=retrait · categories · aide · commandes"
+       ]
+      },
+      {
+       "cellules": [
+        "Pied de page · Liens rapides : Catalogue · Comment ça marche · Mes sauvegardés · Mes commandes",
+        "categories · faq?t=retrait · sauvegardes · commandes"
+       ]
+      },
+      {
+       "cellules": [
+        "Pied de page · Aide : Centre d’aide · Retrait et code · Retours · Messagerie",
+        "aide · faq?t=retrait · faq?t=retour · messagerie"
+       ]
+      },
+      {
+       "cellules": [
+        "Pied de page · Nous joindre : Yaoundé · Être rappelé · Écrire au support · Parler sur WhatsApp",
+        "aide · rappel · fil?id=support&st=nouveau · aide?st=wa"
+       ]
+      },
+      {
+       "cellules": [
+        "Pied de page : Confidentialité · Conditions · Mentions légales",
+        "legal-doc?d=confidentialite · legal-doc?d=cgu · legal-doc?d=mentions"
+       ]
+      },
+      {
+       "cellules": [
+        "Barre flottante : texte · « Mon code » · bouton ↑",
+        "commandes · code?ref=BLV-52018 (CL-09) · haut de la page"
+       ]
+      },
+      {
+       "cellules": [
+        "Ligne visiteur · bande « Connexion lente » · bandeau hors ligne",
+        "connexion (CL-03) · reseau?st=eco · reseau?st=cache (CL-13)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CAC-01",
+        "L’accueil reprend l’accueil de l’application d’origine (IMG_2339 → 2355) : mêmes blocs, même ordre, mêmes emplacements, même style. Seul le contenu interdit change, dans la même case. Il garde donc « Pourquoi choisir BelivaY ? », la carte « BelivaY · Tout près de toi » et le pied de page, avec des faits vrais. La règle 4.1 « l’accueil ne présente pas BelivaY » cède devant cette décision.",
+        "Porteur 26 sept. · écart §4.1 p. 21",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-02",
+        "Ordre, identique pour tous les profils : bandeau rotatif · en-tête et recherche · carrousel · pastilles · Prix en baisse · À la une (Près de ton relais) · Récemment consultés · Trier · Produits populaires · bannière Retrait offert · Nouveaux arrivages · rangées d’univers et bannière Diaspora · Pourquoi choisir BelivaY ? · carte BelivaY · pied de page ; barre de reprise et bouton ↑ flottants. Les générateurs de la spec (reprise, Près de ton relais, Nouveautés, Top ventes) sont conservés dans ces cases.",
+        "Porteur 26 sept. · écart §4.1 p. 21–22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-03",
+        "La barre de recherche est toujours visible dans l’en-tête racine : le champ ouvre recherche, le micro recherche?st=voix (CL-05). Les distances et les lignes livrées partent du relais habituel, nommé dans les bandes (« retrait au Relais Mvog-Ada »).",
+        "§4.1 p. 21 ; §5.2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-04",
+        "Reprise de parcours dans la barre flottante, à la place de la barre promo d’origine : « N colis t’attendent au relais » (N = colis arrivés et non retirés, toutes commandes), le relais et ses horaires déclarés du jour (« Mvog-Ada · Ouvert jusqu’à 19 h »). « Mon code » ouvre le code de la première commande retirable (code?ref=) : le code est à un geste de l’accueil. Le reste de la barre ouvre Mes commandes. Aucun colis : pas de barre.",
+        "§4.1 p. 22 ; §9.2 p. 53 ; porteur 26 sept.",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-05",
+        "La barre reprend les horaires déclarés par le relais ; un relais fermé ce jour-là le dit (« Rouvre demain à 8 h ») ; ce jour-là, N ne compte que les colis réellement déposés. Le jour fermé n’est pas facturé (montant dû dans Mes commandes, CL-09).",
+        "§4.4 liaisons p. 24 ; §10.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-06",
+        "Le paiement interrompu n’a pas de case sur l’accueil d’origine : il n’y figure plus. Il est repris en tête de Mes commandes (encart « Paiement en attente », « Reprendre le paiement », CL-09) et n’apparaît jamais comme une commande.",
+        "Porteur 26 sept. · écart §4.1 ; §9.1 p. 52",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-07",
+        "Carrousel de 6 bandes d’univers (Mode femme, Téléphones & tablettes, Maison & cuisine, Beauté & santé, Électronique, Supermarché) avec points. Chaque bande : étiquette de l’univers, 2 sous-catégories, nombre réel de produits, « retrait au Relais … » ; elle ouvre le listing de l’univers. Le texte n’affirme que des faits.",
+        "§4.1 p. 22 ; §19.5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-08",
+        "Les catégories de l’accueil sont la rangée de pastilles d’origine : Explorer (index categories), Tout voir (catalogue, active), puis les 10 univers avec une vignette ; toutes ouvrent le listing unique. La grille de tuiles de 4.1-4 n’est pas ajoutée : l’onglet Catégories la porte.",
+        "Porteur 26 sept. · écart §4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-09",
+        "Rangées par univers (l’élément central), dans l’ordre d’origine : Mode femme, bannière Diaspora, Électronique, Téléphones & tablettes, Beauté & santé, Maison & cuisine, Supermarché. Chaque rangée : pictogramme, nom, pastille de la sous-catégorie la plus fournie (omise si le nom de l’univers dépasse 16 caractères) (ouvre ce sous-rayon ; elle s’efface la première pour que le titre ne soit jamais coupé), « Tout voir » (listing de l’univers), cartes classées par ventes réelles.",
+        "§4.1 p. 22 ; ordre : porteur 26 sept.",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-10",
+        "« Près de ton relais » dans la case « À la une » : pastille « Près de ton relais », les 8 produits les plus proches du relais du client (hors XL), en cartes compactes sans bouton ; « Tout voir » ouvre le catalogue trié « Au plus proche » (liste?tri=proche&from=accueil).",
+        "§4.1 p. 22 ; §4.4 liaisons p. 24",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-11",
+        "Nouveautés dans la case « Nouveaux arrivages » (sans pastille) : les 5 derniers produits publiés, calculés sur les vraies publications ; « Tout voir » ouvre le catalogue.",
+        "§4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-12",
+        "Top ventes dans la case « Produits populaires » : grille de 3 colonnes, les 6 produits les plus commandés (vraies commandes), « Voir plus » vers le catalogue ; aucun compteur dans le titre. Au-dessus, « Trier : Pertinence » garde sa place et ouvre le listing du catalogue, où le tri s’applique.",
+        "§4.1 p. 22 ; §4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-31",
+        "« Prix en baisse » à la place des Flash Deals : seulement les produits dont le prix barré est réellement pratiqué, par remise décroissante ; chaque rond montre la photo, la remise, le nom et le prix, et ouvre la fiche. Aucune minuterie, aucun compte à rebours.",
+        "§4.4 p. 24–25 ; §23 ; porteur 26 sept.",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-32",
+        "Les deux encarts d’origine gardent leur place avec un contenu BelivaY vrai : « Retrait offert · RELAIS » (montants lus dans LIV-SEUIL-RELAIS et LIV-RELAIS-BASE ; ouvre faq?t=retrait&a=1) à la place de BelivaY Premium ; « Un proche paie pour toi · DIASPORA » (ouvre payeur, CL-12) à la place de Sélection Premium. Jamais de publicité tierce ni de bande « Sponsorisé ».",
+        "§6.1 ; §4.4 p. 25 ; §21 ; porteur 26 sept.",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-33",
+        "« Pourquoi choisir BelivaY ? » ne porte que trois promesses vraies : Paiement sécurisé (« Ton argent reste bloqué chez BelivaY jusqu’à ton retrait », MTN MoMo et Orange Money ; faq?t=paiement&a=1), Retrait au relais (12 quartiers, le relais du client et sa distance ; faq?t=retrait&a=1), Retour gratuit si problème validé (legal-doc?d=retours). Jamais de retour sans motif, de fourchette de délai ni de zone CEMAC.",
+        "Porteur 26 sept. ; §3.1 ; §12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-34",
+        "Carte « BelivaY · Tout près de toi » : quatre compteurs vrais, lus dans l’agrégat et les paramètres (produits publiés, univers actifs, quartiers exploités, aide 7 j/7) ; boutons Comment ça marche (faq?t=retrait), Explorer (categories), Aide (aide), Mes commandes (commandes). Ni vendeurs, ni clients, ni note de vitrine.",
+        "Porteur 26 sept. ; §19.3 ; §18.2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-35",
+        "Pied de page : Liens rapides, Aide, Nous joindre (Yaoundé ; « Être rappelé · appel masqué » vers rappel ; « Écrire au support » ; « Parler sur WhatsApp », support humain seulement), « © 2026 BelivaY », Confidentialité, Conditions, Mentions légales. Aucun numéro ni adresse électronique en clair.",
+        "Porteur 26 sept. ; §15.2 ; §15.3",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "La ligne livrée de la carte",
+     "colonnes": [
+      "Classe et prix du produit",
+      "Carte de l’accueil (une ligne)",
+      "Carte du listing",
+      "Exemple du jeu d’essai"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "S, prix < 30 000 F",
+        "« + 900 F retrait »",
+        "« + 900 F de retrait »",
+        "Pagne wax 18 500 F ; Café arabica 5 500 F"
+       ]
+      },
+      {
+       "cellules": [
+        "S, prix ≥ 30 000 F (ou « dès » ≥ 30 000 F)",
+        "« Retrait offert » (vert)",
+        "« Retrait offert »",
+        "Ensemble wax 32 000 F ; Mixeur-blender 37 000 F ; Tecno Camon 30 dès 139 000 F"
+       ]
+      },
+      {
+       "cellules": [
+        "M, prix < 30 000 F",
+        "« + 1 100 F retrait » (900 + 200)",
+        "« + 900 F de retrait » puis « + 200 F colis M »",
+        "Huile d’arachide 5 L 9 800 F"
+       ]
+      },
+      {
+       "cellules": [
+        "L, prix < 30 000 F",
+        "« + 1 200 F retrait » (900 + 300)",
+        "« + 900 F de retrait » puis « + 300 F colis L »",
+        "Riz parfumé 25 kg 18 500 F ; Ventilateur sur pied 16″ 24 500 F"
+       ]
+      },
+      {
+       "cellules": [
+        "M ou L, prix ≥ 30 000 F",
+        "« + 200 F retrait » ou « + 300 F retrait » : l’offre ne couvre que le tarif d’un colis S",
+        "« Retrait offert » puis « + 200 F colis M » (ou « + 300 F colis L »)",
+        "Aucun sur l’accueil ; exemple de CL-05 : Téléviseur LED 24″ (M) 64 900 F"
+       ]
+      },
+      {
+       "cellules": [
+        "XL ou hors gabarit",
+        "« À domicile » (pictogramme camion)",
+        "« Livraison à domicile » ; état « Trop volumineux pour un relais »",
+        "Téléviseur LED 43″ 189 000 F"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Accueil — ce qui change selon le profil",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 3",
+        "Accueil · profil nouveau",
+        "Profil nouveau (accueil?profil=nouveau) : mêmes cases que la figure 1. Cloche et panier de l’en-tête sans badge, avatar gardé ; Panier du dock sans badge. Pas de « Récemment consultés » : après « À la une · Près de ton relais » (Pagne wax 0,5 km 18 500 F, Chargeur 0,6 km 6 500 F, Ensemble wax 0,7 km 32 000 F…) viennent « Trier : Pertinence » et « Produits populaires » (Beurre de karité 3 500 F, Chargeur 6 500 F, Écouteurs 16 500 F, puis Pagne wax, Huile de coco, Tecno Camon 30). Pas de barre flottante : le bouton ↑ se pose au-dessus du dock, dont aucun onglet n’a de badge."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 4",
+        "Accueil · profil navigateur sans achat",
+        "Profil navigateur sans achat (accueil?profil=navigateur) : cloche, panier et onglets du dock sans badge, pas de barre flottante. « Récemment consultés » montre ses fiches vues, téléphones puis beauté : Chargeur rapide 33 W 6 500 F (« + 900 F retrait »), Tecno Camon 30 « dès 139 000 F » (« Retrait offert »), Samsung Galaxy A15 89 900 F au lieu de 99 900 F (−10 %, « Retrait offert »), puis itel AC52, Tablette 8″ et Beurre de karité, chacun avec « + Panier ». Le Ventilateur 16″ de la rangée Maison & cuisine a le cœur plein (son favori). Le reste de la page est celui de la figure 1."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 5",
+        "Accueil · visiteur sans compte",
+        "Visiteur sans compte (accueil?profil=visiteur) : l’avatar devient un rond avec un pictogramme de personne (Se connecter) ; cloche et panier sans badge. Sous les pastilles, la ligne « Tu navigues sans compte · Ton panier est gardé ; la connexion n’est demandée qu’au paiement. » avec un chevron (ouvre connexion). Puis l’accueil du profil nouveau : Prix en baisse (Baskets −14 %, Galaxy A15 −10 %, Montre −8 %), À la une, sans « Récemment consultés » ni barre flottante ; aucun badge dans le dock."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "rangée visible ⇔ n ≥ N",
+        "N = ACC-RANGEE-MIN (3 à l’écran). Récemment consultés de Carine : 5 ≥ 3 ⇒ affichée ; profil nouveau : 0 ⇒ absente."
+       ]
+      },
+      {
+       "cellules": [
+        "part_nouveaux = ⌊0,2 × longueur⌋ emplacements, à partir de la 3e place",
+        "Téléphones & tablettes : 5 cartes ⇒ 1 emplacement : Tablette 8″ (55 ventes) passe 3e, devant le Galaxy A15 (301). Maison & cuisine : 4 cartes ⇒ 0."
+       ]
+      },
+      {
+       "cellules": [
+        "Récemment consultés (navigateur) = univers vus, par ventes",
+        "Téléphones & tablettes (Chargeur 902, Camon 30 412, Galaxy A15 301, itel AC52 188, Tablette 8″ 55) puis Beauté & santé (karité 1 120) : 6 cartes."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Ce que chaque profil change",
+     "colonnes": [
+      "Profil (état de la route)",
+      "Qui",
+      "Ce qui change sur l’accueil",
+      "En-tête et dock"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Acheteur fidèle\naccueil",
+        "Au moins une commande retirée. Carine : 4 commandes terminées, 3 colis au relais.",
+        "« Récemment consultés » : Sandales cuir femme, Robe wax longue, Ensemble wax 3 pièces, Montre acier bracelet cuir, Sac cuir artisanal · barre flottante « 3 colis t’attendent au relais » et « Mon code »",
+        "Cloche 3, panier 4, avatar ; dock Panier 4, Compte 2"
+       ],
+       "gras": [
+        "Acheteur fidèle",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Navigateur sans achat\naccueil?profil=navigateur",
+        "Aucune commande payée, mais des fiches ou des catégories consultées, ou des favoris.",
+        "« Récemment consultés » : téléphones puis beauté (Chargeur 33 W, Tecno Camon 30, Galaxy A15 −10 %, itel AC52, Tablette 8″, Beurre de karité) · cœur plein sur son favori (Ventilateur 16″) · pas de barre flottante",
+        "Cloche et panier sans badge"
+       ],
+       "gras": [
+        "Navigateur sans achat",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Nouveau\naccueil?profil=nouveau",
+        "Aucune commande, aucun historique.",
+        "Ni « Récemment consultés » ni barre flottante",
+        "Cloche et panier sans badge ; badges à zéro"
+       ],
+       "gras": [
+        "Nouveau",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Visiteur sans compte\naccueil?profil=visiteur",
+        "Pas de compte (3.1 « Découvrir sans compte »).",
+        "Ligne « Tu navigues sans compte · Ton panier est gardé ; la connexion n’est demandée qu’au paiement. » sous les pastilles (ouvre connexion), puis l’accueil du profil nouveau",
+        "« Se connecter » (pictogramme de personne) à la place de l’avatar ; cloche et panier sans badge"
+       ],
+       "gras": [
+        "Visiteur sans compte",
+        "",
+        "",
+        ""
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CAC-13",
+        "Profil nouveau (aucune commande, aucun historique) : pas de « Récemment consultés », pas de barre de reprise, badges à zéro ; le reste de l’accueil est identique. La promesse de 4.1 (« ton argent reste bloqué jusqu’à ton retrait ») est portée par le bandeau rotatif et « Pourquoi choisir BelivaY ? » ; Top ventes est dans « Produits populaires ».",
+        "Porteur 26 sept. · écart §4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-14",
+        "Profil navigateur sans achat : « Récemment consultés » montre les produits des univers qu’il a consultés (téléphones, puis beauté), avec « + Panier » ; les baisses de prix réelles sont dans « Prix en baisse » ; un favori garde son cœur plein sur toutes les cartes. Pas de barre de reprise.",
+        "Porteur 26 sept. ; §4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-15",
+        "Profil acheteur fidèle : « Récemment consultés » (ses fiches vues) et barre de reprise quand un colis attend. Racheter vit dans Mes commandes (CL-09) et les favoris dans l’onglet Sauvegardés (22.1).",
+        "Porteur 26 sept. · écart §4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-16",
+        "L’ordre des cases est celui de l’accueil d’origine pour tous les profils. Le profil ne change que le contenu des cases personnelles. Il est calculé par le serveur (GET /home) : fidèle dès une commande retirée ; navigateur sans commande mais avec un historique (fiche ou catégorie vue, favori) ; nouveau sinon ; visiteur sans compte.",
+        "Porteur 26 sept. · écart §4.0, §4.1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-17",
+        "Rangées : défilement horizontal, trois cartes compactes par largeur d’écran ; « Produits populaires » en grille de 3 colonnes ; « Tout voir » ou « Voir plus » vers le listing.",
+        "§4.1 p. 22 ; porteur 26 sept.",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-18",
+        "Chaque carte : photo, remise réelle et prix barré, cœur, nom, distance jusqu’au relais du client (à la place de « • Belivay »), prix de l’offre attribuée en F, note et nombre d’avis, ligne livrée, « + Panier ». Un produit maître par carte, jamais de nom ni de choix de vendeur. Les cartes de « À la une » et du cache hors ligne se réduisent à photo, cœur, nom, distance et prix.",
+        "§4.0 ; §4.1 ; §4.4 p. 24 ; §6.1–6.2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-19",
+        "Une rangée sous N produits n’est pas affichée : mieux vaut sept rangées pleines que huit dont une vide. N = ACC-RANGEE-MIN, à trancher ; le prototype montre 3. S’applique à Récemment consultés, Nouveaux arrivages et aux rangées d’univers.",
+        "§4.1 p. 22 ; §4.5 p. 25",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-20",
+        "Rangée personnelle (« Récemment consultés ») : montrée seulement avec au moins N produits dans l’historique, sinon absente (profil nouveau, visiteur). Les favoris n’ont pas de rangée sur l’accueil : ils vivent dans l’onglet Sauvegardés.",
+        "§4.1 p. 22 ; §22.1",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-21",
+        "10 à 20 % des emplacements d’une rangée d’univers tournent sur les nouveaux produits, avec un score neutre, jamais zéro : un nouveau vendeur n’est jamais invisible. Emplacements = partie entière de 20 % de la longueur de la rangée, à partir de la 3e place (1 sur 5 à 9 cartes, 2 sur 10).",
+        "§4.0 p. 21 ; §4.1 p. 22 ; ACC-NOUVEAUX",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "ACC-RANGEE-MIN",
+        "Produits minimaux d’une rangée d’accueil (N)",
+        "à fixer (3 montré à l’écran)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "ACC-NOUVEAUX",
+        "Emplacements réservés aux nouveaux produits",
+        "10 à 20 %",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-ABONNEMENT",
+        "Module d’abonnement et tous ses encarts (dont « Retrait offert dès 10 000 F · Prime »)",
+        "fermé",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Accueil — réseau lent et hors ligne",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 6",
+        "Accueil · connexion lente",
+        "Connexion lente (accueil?st=lent, plus de 3 s par requête, NET-LENT) : sous l’en-tête (cloche 3, panier 4), bande ambre « Connexion lente : les rangées se chargent au fil du défilement, avec des images réduites. Réglages » (ouvre reseau?st=eco). Carrousel, pastilles et « Prix en baisse » (Baskets −14 %, Galaxy A15 −10 %, Montre −8 %) sont là. « À la une · près de ton relais » et « Récemment consultés » affichent « Chargement… » et des cartes grises, sans chiffre inventé. Rien d’autre dessous : les rangées suivantes viennent au défilement. La barre de reprise « 3 colis t’attendent au relais · Mvog-Ada · Ouvert jusqu’à 19 h » et « Mon code » restent, bouton ↑ au-dessus ; dock Panier 4, Compte 2."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 7",
+        "Accueil · hors ligne",
+        "Hors ligne (accueil?st=horsligne) : bandeau nuit « Hors ligne · accueil enregistré à 10 h 12. Ton code de retrait reste lisible. En savoir plus » (ouvre reseau?st=cache). Carrousel et pastilles, puis « Récemment consultés » venu du cache, en cartes réduites sans note ni bouton (Sandales cuir femme 14 900 F, Robe wax longue 24 000 F, Ensemble wax 3 pièces 32 000 F…). Puis la carte « Le reste de l’accueil revient avec le réseau · Tes commandes, ton code et le reçu restent lisibles hors ligne. » et le bouton secondaire « Réessayer ». La barre « 3 colis t’attendent au relais · Mvog-Ada · Ouvert jusqu’à 19 h » et « Mon code » restent (code déjà affiché, CACHE-CODE)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CAC-22",
+        "Chaque case de produits (À la une, Récemment consultés, Produits populaires, Nouveaux arrivages, chaque rangée d’univers) charge ses produits indépendamment : une requête et une pagination par case. Vérifier d’abord pourquoi les rangées ne s’affichaient pas : requête par catégorie, pagination, chargement différé.",
+        "§4.1 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-23",
+        "Les rangées se chargent progressivement au défilement (coût des données). En réseau lent : bande ambre (réglages reseau?st=eco), images réduites, rangées en attente sous forme de cartes grises « Chargement… » ; la barre de reprise et « Mon code » restent. Une rangée qui échoue disparaît, elle ne reste jamais vide.",
+        "§4.1 p. 22 ; §4.5 p. 25 ; §15.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-24",
+        "Le seuil N, les quotas de rotation, le seuil de connexion lente et les montants des bannières sont lus dans les paramètres, jamais écrits dans le code.",
+        "§4.1 p. 22 ; §1.2",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-25",
+        "Hors ligne : bandeau avec l’heure d’enregistrement (reseau?st=cache) ; « Récemment consultés » servi depuis le cache, sans bouton ; « Le reste de l’accueil revient avec le réseau » et « Réessayer ». La barre de reprise et le code déjà affiché restent lisibles ; toute action d’argent est absente ou grisée avec l’explication.",
+        "§15.4 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-26",
+        "Aucun module après le lancement sur l’accueil : Flash Deals remplacés par « Prix en baisse » (CAC-31), Premium et Sélection Premium par des bannières BelivaY (CAC-32), robot de l’assistant retiré (FF-IA) ; l’encart « Retrait offert dès 10 000 F · Prime » reste masqué (FF-ABONNEMENT).",
+        "§4.0 p. 21 ; §32.1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-27",
+        "Une boutique « Fermé aujourd’hui » voit ses offres retirées des rangées aussitôt (shop.closed_today) ; les compteurs suivent.",
+        "§4.5 p. 25 ; §4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-28",
+        "La cloche de l’en-tête porte le nombre de non-lus (3 ; 99+ au plus) ; sans non-lu, pas de badge.",
+        "§15.1 p. 86",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-29",
+        "Visiteur sans compte : navigation complète, panier gardé ; ligne « Tu navigues sans compte » sous les pastilles (ouvre connexion) ; « Se connecter » à la place de l’avatar ; la connexion n’est demandée qu’au paiement.",
+        "§3.1 p. 17",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CAC-30",
+        "Client sans relais habituel (nouveau, visiteur) : distances et lignes livrées partent du relais le plus proche de sa position, nommé dans les bandes, jusqu’au choix à la première commande.",
+        "§3.4 ; §5.2",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "NET-LENT",
+        "Seuil de connexion lente",
+        "> 3 s par requête",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "CACHE-CODE",
+        "Code de retrait disponible hors ligne",
+        "oui, après un premier affichage",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "NOT-BADGE-MAX",
+        "Badge maximal affiché",
+        "99+",
+        "Proposé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-FLASH",
+        "Ventes flash",
+        "fermé",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-IA",
+        "Assistant IA",
+        "fermé",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Rangée sous le seuil N",
+        "Non affichée, jamais vide."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucun historique (nouveau, visiteur)",
+        "Pas de « Récemment consultés »."
+       ]
+      },
+      {
+       "cellules": [
+        "Réseau lent (> 3 s)",
+        "Bande ambre ; rangées chargées au défilement ; images réduites ; cartes grises « Chargement… »."
+       ]
+      },
+      {
+       "cellules": [
+        "Échec d’une rangée",
+        "La rangée est retirée ; les autres restent ; nouvel essai au prochain affichage."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Cache de l’accueil avec l’heure ; « Récemment consultés » en cache ; barre et code lisibles ; « Réessayer »."
+       ]
+      },
+      {
+       "cellules": [
+        "Relais fermé ce jour-là",
+        "La barre dit « 2 colis t’attendent au relais · Rouvre demain à 8 h » (seuls les colis déposés comptent) ; « Mon code » reste."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucun colis au relais",
+        "Pas de barre flottante ; le bouton ↑ se pose au-dessus du dock."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Index des catégories »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 8",
+        "Catégories · Téléphones & tablettes",
+        "Onglet Catégories (categories) : même style que la maquette IMG_1947 : en-tête racine avec recherche ; titre « Toutes les catégories » et « 10 univers » à droite. Rail des 10 univers dans une carte (icône orange et nom côte à côte, 68 px de haut) ; Téléphones & tablettes actif (fond mandarine clair, nom en gras et barre braise à gauche). Palette « Mandarine & Nuit » du socle, pas les couleurs de la maquette. Bannière orange : « Téléphones & tablettes », « 4 sous-catégories · 132 produits », pastille orange « Tout voir › », illustration de l’univers à droite. Vignettes en 3 colonnes : Smartphones 38, Téléphones simples 21, Tablettes 9, Accessoires 64, chacune avec un vrai produit du catalogue. En bas, l’emplacement promotionnel BelivaY : « Retrait offert au relais dès 30 000 F d’achat · En dessous, la livraison au relais coûte 900 F. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 9",
+        "Catégories · Sport & loisirs, vignette vide masquée",
+        "Changement d’univers (categories?u=sport), sans appel réseau : Sport & loisirs actif en bas du rail, « 3 sous-catégories · 39 produits » ; vignettes Fitness 14, Football 19, Vélos 6 (pictogramme : pas encore de photo). La sous-catégorie Natation, à 0 produit publié aujourd’hui, n’a ni vignette ni place dans le compteur."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Compteurs en dur : Tout voir 15 240, Mode Femme 3 400 (12 articles réels), Mode Homme 2 100… ; la somme des univers fait 15 800 ≠ 15 240",
+        "Compteurs réels : « 10 univers · 1 387 produits » ; Téléphones & tablettes 132 = 38 + 21 + 9 + 64",
+        "GET /categories ; aucune valeur dans le code (CCR-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Liens Promotions, Sélection Premium, Abonnements BelivaY",
+        "Absents",
+        "FF-FLASH et FF-ABONNEMENT fermés."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Tiroir plat intitulé « Catégories » qui mélange univers, Mes Commandes, Devenir Vendeur, À propos, Aide ; casse incohérente (« Mes Commandes », « À Propos »)",
+        "Onglet « Catégories » du dock pour les univers ; compte, commandes, aide, « Devenir vendeur » et pages légales dans le Menu",
+        "Menu du socle (CL-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Titre orange sur noir en police display ; compteurs gris sur pastille grise",
+        "Contraste ≥ 4,5:1 en clair et en sombre",
+        "CDS-06."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Boutons « Mode clair / Mode sombre » (qui montrent l’action et non l’état) et « English » au pied du tiroir",
+        "Thème et langue en tête du Menu (socle, CNV-04)",
+        "Socle (CNV-04)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Rail des univers, bannière de l’univers actif, vignettes des sous-catégories, accroche « Tout près de toi », emplacement BelivaY",
+        "Voir la composition."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Thème sombre complet ; icônes au trait doublées de mots ; lignes hautes",
+        "Repris dans le rail (68 px)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Style",
+        "Style : maquette S’inspirer IMG_1947 (exact : positions et composants), dans la palette « Mandarine & Nuit » du socle (variables CSS, jamais les couleurs de la maquette), mêmes positions en clair et en sombre. Écarts tranchés pour la spec : vignettes illustrées par un vrai produit plutôt que des pictogrammes (CCT-10), pictogramme seulement sans photo ; pas de robot flottant ni de bandeau « 24-72h · CEMAC »",
+        "BRIEF_STYLE."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "vignette visible ⇔ compteur(sous_cat) > 0",
+        "Natation = 0 ⇒ masquée ; Sport & loisirs affiche 3 sous-catégories."
+       ]
+      },
+      {
+       "cellules": [
+        "bannière = « Σ sous-catégories non vides · Σ produits »",
+        "Téléphones & tablettes : 4 · 38 + 21 + 9 + 64 = 132."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCT-01",
+        "Écran « hub » : rail vertical des univers à gauche ; bannière de l’univers actif et grille de ses sous-catégories à droite.",
+        "§4.3 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-02",
+        "Pas de rechargement au changement d’univers : la liste légère des univers, sous-catégories et compteurs est chargée une fois, puis l’affichage change localement, sans appel réseau (l’adresse garde ?u= pour le lien direct).",
+        "§4.3 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-03",
+        "L’indicateur du rail reste visible pendant le défilement : rail collant, univers actif marqué par un fond et une barre mandarine.",
+        "§4.3 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-04",
+        "Bannière : nom, nombre réel de sous-catégories et de produits (« 4 sous-catégories · 132 produits »), « Tout voir ».",
+        "§4.3 p. 23 ; §4.2 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-05",
+        "Vignettes avec le nombre de produits ; une sous-catégorie à 0 produit n’est pas affichée ; un univers à 0 produit sort du rail.",
+        "§4.3 p. 23 ; §4.2 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-06",
+        "Toutes les cibles tactiles mesurent au moins 44 px (rail 68 px, vignettes, bouton de 40 px agrandi à 44 px).",
+        "§4.3 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-07",
+        "Destination unique : bannière, « Tout voir » et vignettes ouvrent le même listing (liste), comme les bandes et tuiles de l’accueil.",
+        "§4.3 p. 23 ; §4.0 p. 21",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-08",
+        "Emplacements promotionnels : contenu BelivaY uniquement, jamais de publicité tierce ni de bande « Sponsorisé ».",
+        "§4.3 p. 23 ; §4.4 p. 25",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-09",
+        "Accroche « Tout près de toi » (la spec écrit « Tout près de vous » ; adaptée au tutoiement, comme au premier lancement).",
+        "§4.3 p. 23 ; §3.1 p. 16",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-10",
+        "Visuels : photos de vrais produits du catalogue avant le lancement ; taxonomie sans doublons : un seul nom par catégorie partout (rail, bannière, bandes, listing, recherche), ni catégorie bilingue en double, ni « produits démo ». Une sous-catégorie sans photo garde un pictogramme, jamais une photo d’un autre produit.",
+        "§4.3 p. 23 ; §19.5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-11",
+        "Ordre du rail : celui de la taxonomie réglée en console ; l’index s’ouvre sur le premier univers.",
+        "§4.3 p. 23",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCT-12",
+        "Le rail garde la place de chaque univers ; en très grande taille de texte, il passe au-dessus de la bannière, en trois colonnes.",
+        "§4.3 p. 23 ; CDS-06",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Compteurs réels — partout",
+   "tableaux": [
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "compteur(c) = COUNT(maître ∧ ∃ offre active)",
+        "Recalculé à chaque publication ou désactivation ; cache court."
+       ]
+      },
+      {
+       "cellules": [
+        "offre active ⇔ publiée ∧ active ∧ boutique ouverte aujourd’hui",
+        "« Fermé aujourd’hui » retire l’offre ; un maître sans autre offre sort du compteur."
+       ]
+      },
+      {
+       "cellules": [
+        "compteur(univers) = Σ compteur(sous-catégories)",
+        "10 univers ; Σ = 1 387."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Où s’affiche chaque compteur",
+     "colonnes": [
+      "Endroit",
+      "Compteur",
+      "Règle (4.2)",
+      "Dans le prototype (jeu d’essai)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Index des catégories",
+        "Nombre d’univers",
+        "Univers actifs réels",
+        "« 10 univers · 1 387 produits »"
+       ]
+      },
+      {
+       "cellules": [
+        "Bannière d’univers",
+        "« N sous-catégories · N produits »",
+        "Sous-catégories non vides, produits maîtres publiés",
+        "« 4 sous-catégories · 132 produits » ; Sport & loisirs « 3 sous-catégories · 39 produits » (Natation, 0 produit, n’est pas comptée)"
+       ]
+      },
+      {
+       "cellules": [
+        "Vignette de sous-catégorie",
+        "Nombre de produits",
+        "0 produit : la vignette ne s’affiche pas",
+        "Smartphones 38 · Téléphones simples 21 · Tablettes 9 · Accessoires 64 (= 132)"
+       ]
+      },
+      {
+       "cellules": [
+        "Listing",
+        "« Smartphones · 38 produits »",
+        "Nombre réel, filtres compris",
+        "« 132 produits » ; « 91 produits avec ton filtre · 98 en tout » ; « 1 produit avec ton filtre · 9 en tout »"
+       ]
+      },
+      {
+       "cellules": [
+        "Recherche (CL-05)",
+        "« 18 produits »",
+        "Nombre réel de produits maîtres",
+        "Même agrégat que le listing"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche produit (CL-06) et cartes",
+        "Avis, note, ventes",
+        "Valeurs réelles cumulées sur le produit maître",
+        "Carte « 4,8 (301) » ; « Produits populaires » classés sur les ventes réelles (karité 1 120)"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil (ce document)",
+        "Bande d’univers ; carte « BelivaY · Tout près de toi »",
+        "Même compteur que l’index",
+        "Bandes : Mode femme 283 produits, Téléphones & tablettes 132… ; carte : 1 387 produits · 10 univers"
+       ]
+      },
+      {
+       "cellules": [
+        "Feuille « Marque »",
+        "Nombre par marque",
+        "Nombre réel, filtres compris",
+        "Tecno 12 · Samsung 9 · itel 7 · Infinix 6 · Xiaomi 4 (= 38)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Les compteurs du jeu d’essai",
+     "colonnes": [
+      "Univers",
+      "Sous-catégories (produits)",
+      "Total"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Téléphones & tablettes",
+        "Smartphones 38 · Téléphones simples 21 · Tablettes 9 · Accessoires 64",
+        "132"
+       ]
+      },
+      {
+       "cellules": [
+        "Électronique",
+        "Audio 41 · TV & vidéo 12 · Informatique 27 · Énergie & batteries 18",
+        "98"
+       ]
+      },
+      {
+       "cellules": [
+        "Mode femme",
+        "Robes 86 · Pagnes & wax 112 · Sacs 47 · Bijoux 38",
+        "283"
+       ]
+      },
+      {
+       "cellules": [
+        "Mode homme",
+        "Chemises 64 · Tenues & boubous 41 · Pantalons 38 · Montres 22",
+        "165"
+       ]
+      },
+      {
+       "cellules": [
+        "Chaussures",
+        "Femme 58 · Homme 49 · Enfant 21 · Sport 17",
+        "145"
+       ]
+      },
+      {
+       "cellules": [
+        "Beauté & santé",
+        "Soins visage 44 · Cheveux 61 · Parfums 28 · Hygiène 35",
+        "168"
+       ]
+      },
+      {
+       "cellules": [
+        "Maison & cuisine",
+        "Cuisine 52 · Petit électroménager 33 · Linge de maison 29 · Déco 24",
+        "138"
+       ]
+      },
+      {
+       "cellules": [
+        "Supermarché",
+        "Épicerie 72 · Boissons 31 · Produits du terroir 26",
+        "129"
+       ]
+      },
+      {
+       "cellules": [
+        "Bébé & enfant",
+        "Puériculture 23 · Jouets 31 · Vêtements 36",
+        "90"
+       ]
+      },
+      {
+       "cellules": [
+        "Sport & loisirs",
+        "Fitness 14 · Football 19 · Vélos 6 (Natation 0 : masquée)",
+        "39"
+       ]
+      },
+      {
+       "cellules": [
+        "Total",
+        "10 univers",
+        "1 387"
+       ],
+       "gras": [
+        "Total",
+        "",
+        "1 387"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCR-01",
+        "Aucun chiffre écrit en dur : rechercher dans tout le code les chiffres en dur (15 240, 3 400, 3 200, 50K+, 4.8, 102…) et les supprimer ; tous les compteurs sont branchés sur la base.",
+        "§4.0 p. 21 ; §4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-02",
+        "Index des catégories : nombre d’univers actifs réels.",
+        "§4.2 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-03",
+        "Bannière d’univers : « N sous-catégories · N produits » = sous-catégories non vides, produits maîtres publiés.",
+        "§4.2 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-04",
+        "Vignette de sous-catégorie : nombre de produits ; 0 produit : la vignette ne s’affiche pas.",
+        "§4.2 p. 22",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-05",
+        "Listing : nombre réel, filtres compris ; avec un filtre, le total sans filtre est rappelé (« 91 produits avec ton filtre · 98 en tout »).",
+        "§4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-06",
+        "Recherche : nombre réel de produits maîtres (CL-05), même agrégat.",
+        "§4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-07",
+        "Fiche produit et cartes : avis, note, ventes réels, cumulés sur le produit maître.",
+        "§4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-08",
+        "Un produit compte s’il a au moins une offre publiée, active, d’une boutique ouverte : « Fermé aujourd’hui » l’exclut.",
+        "§4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-09",
+        "Compteurs par agrégation, en cache quelques minutes au plus, recalculés à chaque publication ou désactivation.",
+        "§4.2 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-10",
+        "Un seul agrégat pour tous les écrans : sous-catégories → univers → catalogue ; l’accueil, l’index, le listing et la recherche affichent le même nombre au même instant.",
+        "§4.2 p. 22–23",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCR-11",
+        "Interdits : compteur artificiel de visiteurs ou de produits, nombre de vendeurs, de clients ou note moyenne de vitrine.",
+        "§4.4 p. 25 ; §19.3",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Listing » — la page catégorie unique",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 10",
+        "Listing · Téléphones & tablettes, Pertinence",
+        "Téléphones & tablettes (liste?cat=tel), même style que la maquette IMG_1944 : en-tête enfant « Téléphones & tablettes » avec « 132 produits » dessous ; « Chercher dans Téléphones & tablettes » ; une seule rangée de puces qui défile, Filtres | Pertinence (orange, tri par défaut) · Au plus proche · Prix · Marque ; sous-rayons en pastilles fines Tout 132 · Smartphones 38 · Téléphones simples 21 · Tablettes 9 · Accessoires 64 ; « Prix livrés et distances depuis le Relais Mvog-Ada · Changer ». Grille : Chargeur 33 W (étiquettes orange en capitales « LE PLUS PROCHE » et « POPULAIRE », distance 0,6 km en vert), Camon 30 (« 128 ou 256 Go · 2 coloris », « à partir de 139 000 F », « Retrait offert »), Galaxy A15 (« 89 900 F » au lieu de 99 900 F, −10 %), itel AC52 (« + 900 F de retrait »), Tablette 8″ ; chaque carte : note, distance, « En stock ». Puis deux cartes grises et « Chargement des produits suivants… » (curseur suivant)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 11",
+        "Listing · tout le catalogue, Au plus proche",
+        "Tout le catalogue trié « Au plus proche » (liste?tri=proche&from=accueil, ouvert par « Voir tout » de « Près de ton relais », onglet Accueil) : « 1 387 produits » ; première page de 12 cartes du pagne (0,5 km, « Le plus proche ») à la robe wax (1,4 km), caractéristiques clés « Tailles S à XL », « Marron, Noir », « Blanc, Noir »…"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 12",
+        "Listing · Smartphones, feuille Marque",
+        "Smartphones (liste?cat=tel&sub=Smartphones&sheet=marque&sel=Samsung) : titre « Smartphones », « 38 produits » ; feuille « Marque » : « Smartphones · 38 produits · Le nombre de chaque marque est réel. », puces Tecno 12, Samsung 9 (choisie), itel 7, Infinix 6, Xiaomi 4, « Tout effacer » ; bouton « Voir les 9 produits », mis à jour à chaque choix."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Bannière qui occupe 60 % de l’écran : « Tout le catalogue BelivaY · 15 240 produits · 3 200 vendeurs certifiés », tuiles 15 240 / 3 200 / 4.8 / 24–72h, puis « 102 articles disponibles » ; par univers : 3 400 produits pour 12 articles (Mode Femme), 980 « références » pour 8 (Téléphones)…",
+        "Un seul compteur réel, filtres compris, en tête : « 132 produits » ; les produits dès le premier écran",
+        "Compteur de GET /listing (CCR-05)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Tuiles « vendeurs certifiés », « note moyenne » et délai (24h, 24–48h, 48–72h selon l’univers)",
+        "Absentes",
+        "On ne compte pas les vendeurs ; un délai n’est jamais une fourchette (décision du 25 sept.)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Textes d’univers non vérifiables : « partout au Cameroun et en Afrique centrale », Douala, « livrés et montés à domicile par les équipes logistique BelivaY », « Garantie constructeur 12 mois », « IMEI vérifiable », « normes de sécurité européennes », « produits vérifiés », « certification d’origine », « dates de péremption contrôlées », « suivi temps réel », « entrepôts de Douala », « échange de taille gratuit sous 7 jours », « Toutes les tailles, du S au XXL », « revendeurs certifiés Or »",
+        "Aucun texte d’univers ; seulement des étiquettes vérifiables sur les cartes",
+        "CLS-12 ; 19.3 ; retour sans motif interdit (12.2) ; pas de carte en temps réel (9.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Accent de couleur par univers (magenta, bleu, violet, rouge, ambre, indigo, vert) ; texte blanc sur photos chargées",
+        "Même charte pour tous les univers ; aucun texte sur photo",
+        "CDS-01, CDS-06."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Libellés divergents : « BEAUTÉ & SOINS », « TÉLÉPHONIE », « Smartphones & Tablettes », « références », « Tout le thème » ; « 1720 » sans espace",
+        "Un nom par catégorie partout ; « produits » ; « 1 387 »",
+        "CCT-10."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Puces « Tout le thème / Nouveautés / Promotions / Made in… » (tronquée)",
+        "Sous-rayons réels avec leur nombre, puis puces Filtres, Pertinence, Au plus proche, Prix, Marque",
+        "CLS-04, CLS-05."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Tri affiché « Pertinence » mais liste rangée par remise décroissante (−34 %, −30 %, −29 %…)",
+        "Pertinence réelle : livrable au relais d’abord, puis popularité ; « Prix croissant » seulement si le client le choisit",
+        "CLS-06, CLS-07."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bouton « Voir plus d’articles »",
+        "Défilement infini par curseur ; cartes grises « Chargement des produits suivants… »",
+        "CLS-02."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« • Belivay » sur les cartes, pastilles de remise sans prix barré, « 24h », cœur sur certaines cartes, photos fausses (PC pour un câble, masque Act+Acre pour l’huile d’argan, homme aux haltères pour une brassière)",
+        "Carte unique du socle : un produit maître, prix livré, distance, état, cœur, ajout rapide",
+        "CLS-09 à CLS-13, CLS-17."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Gros colis (TV, meubles, poussettes, lits, sièges auto) sans repère",
+        "« Livraison à domicile » et « Trop volumineux pour un relais » ; exclus par « Retirable à mon relais »",
+        "CLS-14, CLS-15."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Recherche dans la catégorie ; « Aussi dans … » pour une catégorie peu fournie (6 à 14 articles aujourd’hui sans voisines) ; relais d’origine des distances",
+        "CLS-03, CLS-13, CLS-12."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Aucun onglet actif ; fil d’Ariane et titre répètent trois fois l’univers",
+        "Onglet Catégories actif (Accueil si l’on vient de l’accueil) ; le nom une fois, dans l’en-tête",
+        "CLS-19."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Guide des pointures du vendeur »",
+        "Pointures disponibles en caractéristique clé (« Pointures 37 à 41 ») ; aucun renvoi au vendeur",
+        "Anonymat (19.1) ; le guide éventuel vit sur la fiche (CL-06)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Robot flottant sur le bouton filtre ou le tri",
+        "Absent",
+        "FF-IA fermé."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Page « Coups de cœur » : tuiles 102 / 4.5+ / 100 % Escrow / 24–72h, « 50 articles » notés 4,5 et plus, tri par défaut « Mieux notés », bandeau « Programme Fidélité »",
+        "Plus de page séparée : le listing unique, tri par défaut « Pertinence »",
+        "CLS-01, CLS-04."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Coups de cœur : puces empilées une par ligne et tri flottant ; « TOP NOTÉ » + coche + icône + remise sur chaque carte ; deux dessins de carte ; « · » orphelin ; nom tronqué sous le bouton flottant ; 5,0 avec 144 à 203 avis ; nombres qui se contredisent (50, 102, 84)",
+        "Puces en ligne ; une seule carte ; deux étiquettes vérifiables au plus ; notes réelles ; un seul compteur",
+        "CLS-12 ; CCR-05, CCR-07."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Grille régulière 2 colonnes ; « Pertinence » par défaut ; compteur près des résultats ; sous-rayons en puces ; relance vers d’autres univers ; « + Panier » explicite",
+        "Repris : grille, tri, compteur, sous-rayons, « Aussi dans … », bouton « + » sur chaque carte",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Style",
+        "Style : maquette S’inspirer IMG_1944 (exact : positions et composants), dans la palette « Mandarine & Nuit » du socle (variables CSS, jamais les couleurs de la maquette), mêmes positions en clair et en sombre. Écarts tranchés pour la spec : grille régulière au lieu du quinconce de la maquette (CLS-02) ; recherche dans la catégorie gardée sous le titre plutôt qu’en loupe (CLS-03) ; bouton « + » et état sur chaque carte (CLS-10, CLS-11) ; pas de bandeau « 24-72h · CEMAC », ni d’iPhone, ni de « FCFA »",
+        "BRIEF_STYLE."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "prix_carte = min(P_livré(v)) sur les variantes actives",
+        "« à partir de » si les variantes n’ont pas toutes le même prix : Camon 30 128 Go 139 000 F, 256 Go 150 699 F."
+       ]
+      },
+      {
+       "cellules": [
+        "remise % = arrondi((P_barré − P) / P_barré × 100)",
+        "Seulement si P_barré > P et réellement pratiqué. 140 000 → 126 000 = −10 % (spec) ; 99 900 → 89 900 = −10 % ; 34 900 → 29 900 = −14 % ; 29 900 → 27 500 = −8 %."
+       ]
+      },
+      {
+       "cellules": [
+        "« Le plus proche » ⇔ distance = min(liste)",
+        "Une seule carte porte l’étiquette : Chargeur 33 W (0,6 km) dans Téléphones & tablettes, pagne (0,5 km) dans le catalogue."
+       ]
+      },
+      {
+       "cellules": [
+        "compteur(listing) = COUNT(maître ∧ ∃ offre active ∧ filtres)",
+        "132 ; 38 ; 9 marques Samsung."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLS-01",
+        "Une seule page, un seul comportement, quelle que soit l’entrée : bande, tuile, « Voir tout », vignette ou résultat filtré mènent au même écran et au même code (liste?cat=&sub=).",
+        "§4.4 p. 23 ; §4.0 p. 21",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-02",
+        "Grille régulière de cartes dans toutes les catégories (arbitrage du 17 sept., fin du quinconce), défilement infini par curseur ; jamais de bouton « Voir plus ». L’intelligence s’adapte au type de produit par les filtres et les sous-rayons, jamais par l’apparence.",
+        "§4.0 p. 21 ; §4.4 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-03",
+        "Recherche dans la catégorie sous le titre (ouvre la saisie de CL-05, limitée à la catégorie).",
+        "§4.4 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-04",
+        "Puces : Filtres (nombre actif), Pertinence, Au plus proche, Prix, Marque. Tri par défaut « Pertinence », jamais « prix croissant ».",
+        "§4.4 p. 23",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-05",
+        "Sous-rayons de l’univers en puces, avec leur nombre réel ; « Tout » revient à l’univers.",
+        "§4.0 p. 21",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-06",
+        "Pertinence dans une catégorie : disponible et livrable au relais d’abord, puis popularité réelle, puis coût total livré, Trust Score en départage ; aucun placement payant.",
+        "§5.5 p. 29",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-07",
+        "« Prix » trie par prix livré croissant au premier tap, décroissant au second ; la puce écrit l’ordre choisi. « Marque » ouvre la feuille des marques présentes avec leur nombre réel ; « Voir les N produits » se met à jour à chaque choix.",
+        "§4.4 p. 23 ; §5.4",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-08",
+        "Caractéristiques clés sous le titre de la carte : trois au maximum, propres à la catégorie, tirées des champs de la fiche (capacité et coloris d’un téléphone, tailles d’un vêtement, pointures d’une chaussure).",
+        "§4.4 p. 24",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-09",
+        "Prix livré de l’offre attribuée ; « à partir de » quand les variantes n’ont pas le même prix ; prix barré et pourcentage seulement si la remise est réelle.",
+        "§4.4 p. 24 ; §6.4 p. 34",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-10",
+        "Distance au relais et état : « En stock » ; « Garantie 6 mois » pour un reconditionné ; « Trop volumineux pour un relais » pour un XL. Un supplément de classe M ou L est écrit dès la carte (« + 200 F colis M », « + 300 F colis L » : valeurs proposées, LIV-SUPPL-M / L à trancher).",
+        "§4.4 p. 24 ; §6.2 p. 34",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-11",
+        "Ajout rapide : bouton panier (« + ») et cœur sur chaque carte ; les favoris sont une seule liste (les Sauvegardés).",
+        "§4.4 p. 24 ; §22.1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-12",
+        "La distance part du relais habituel du client (PostGIS), identique en recherche et sur la fiche ; « Changer » ouvre le sélecteur de relais et tout est recalculé (distances, prix livrés, tri).",
+        "§4.4 liaisons p. 24 ; §5.3",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Listing — gros colis, filtre de livrabilité, catégorie peu fournie",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 13",
+        "Listing · Électronique, carte XL",
+        "Électronique (liste?cat=elec) : « 98 produits » ; sous-rayons Audio 41, TV & vidéo 12, Informatique 27, Énergie & batteries 18. Le Téléviseur LED 43″ (colis XL, 189 000 F) passe après les produits retirables au relais ; sa carte dit « Livraison à domicile » et « Trop volumineux pour un relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Listing · filtre Retirable à mon relais",
+        "Même listing avec « Retirable à mon relais » (liste?cat=elec&f=relais) : « 91 produits avec ton filtre · 98 en tout », puce « Filtres (1) », puce retirable « Retirable à mon relais ✕ », ligne « 7 produits trop volumineux pour un relais sont masqués : ils se livrent à domicile. Les voir ». Le téléviseur a disparu."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 15",
+        "Listing · catégorie peu fournie, Aussi dans",
+        "Catégorie peu fournie (liste?cat=tel&sub=Tablettes&f=auj) : Tablettes avec « Retrait possible aujourd’hui » : « 1 produit avec ton filtre · 9 en tout » ; la Tablette 8″ (1,2 km, « Le plus proche »). 1 < seuil_écran = 6 : ligne « Tablettes compte peu de produits retirables aujourd’hui : voici les sous-catégories voisines, avec le même filtre. », puis « Aussi dans Smartphones » (Camon 30, Galaxy A15 ; « Voir les 38 produits »), « Aussi dans Téléphones simples » (itel AC52 ; 21), « Aussi dans Accessoires » (Chargeur 33 W ; 64)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "n(c) < seuil_écran ⇒ compléter « Aussi dans … »",
+        "seuil_écran = paramètre (6 recommandé). Tablettes avec le filtre : 1 < 6."
+       ]
+      },
+      {
+       "cellules": [
+        "count(f = relais) = count − Σ XL et hors gabarit",
+        "Électronique : 98 − 7 = 91."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLS-13",
+        "Catégorie peu fournie : quand n(c) < seuil_écran, compléter avec les sous-catégories voisines, chacune sous l’intertitre honnête « Aussi dans … » et un lien « Voir les N produits » ; les voisines respectent les filtres actifs.",
+        "§4.4 p. 24",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-14",
+        "Filtre de livrabilité « Retirable à mon relais » : exclut XL et hors gabarit ; le compteur baisse d’autant et une ligne dit combien sont masqués, avec « Les voir ».",
+        "§4.4 p. 24 ; LIV-XL-RELAIS",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-15",
+        "Carte d’un XL ou hors gabarit : « Livraison à domicile » à la place du retrait, état « Trop volumineux pour un relais » ; en pertinence, elle passe après les produits retirables.",
+        "§5.0 p. 27 ; §6.2 p. 34",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-16",
+        "Étiquettes : Officiel, Populaire, Reconditionné, Le plus proche, remise réelle — chacune un fait vérifiable en base, deux au plus par carte. « Garantie 12 mois » n’est pas une étiquette (elle vit sur la fiche).",
+        "§4.4 p. 24",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-17",
+        "Un produit maître par carte, prix livré de l’offre attribuée ; aucun nom de boutique, aucun choix de vendeur.",
+        "§4.0 p. 21 ; §4.4 p. 25",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-18",
+        "Réseau lent : produits chargés au défilement, images réduites, bande ambre (liste?cat=tel&st=lent, sans capture : même rendu que l’accueil lent).",
+        "§4.5 p. 25 ; §15.4",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLS-19",
+        "Un filtre actif se retire d’un geste (puce ✕) ; l’onglet actif est celui du parcours (Catégories, ou Accueil quand l’entrée vient de l’accueil).",
+        "§4.4 p. 23",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIV-XL-RELAIS",
+        "XL et hors gabarit en relais",
+        "interdit",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-OFFERT-CLASSE",
+        "Ce que couvre la livraison offerte",
+        "tarif d’un colis S",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SUPPL-M / L",
+        "Supplément de classe M et L",
+        "à fixer ; valeur proposée à l’écran : 200 F (M), 300 F (L)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-RELAIS-BASE",
+        "Livraison de base relais",
+        "900 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SEUIL-RELAIS",
+        "Livraison offerte en relais",
+        "dès 30 000 F de sous-total produits",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "seuil_écran (sans code)",
+        "Produits sous lesquels le listing ajoute les voisines",
+        "6 (un écran de cartes)",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Catégorie peu fournie",
+        "Compléter avec les voisines « Aussi dans … », jamais une page presque vide."
+       ]
+      },
+      {
+       "cellules": [
+        "0 produit avec les filtres",
+        "« 0 produit avec ton filtre · N en tout », puce ✕ pour retirer le filtre, puis les voisines."
+       ]
+      },
+      {
+       "cellules": [
+        "Produit XL",
+        "« Livraison à domicile », « Trop volumineux pour un relais » ; masqué par le filtre de livrabilité."
+       ]
+      },
+      {
+       "cellules": [
+        "Offre attribuée qui ferme (« Fermé aujourd’hui »)",
+        "Bascule sur l’offre suivante sans changer la carte ; sans autre offre, le produit sort du listing et du compteur."
+       ]
+      },
+      {
+       "cellules": [
+        "Relais changé",
+        "Distances, prix livrés, tri « Au plus proche » et étiquette « Le plus proche » recalculés."
+       ]
+      },
+      {
+       "cellules": [
+        "Fin du curseur",
+        "Plus de cartes grises ; si n < seuil_écran, les voisines."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pour le développeur : API, événements, erreurs, paramètres",
+   "tableaux": [
+    {
+     "sous_titre": "Endpoints",
+     "colonnes": [
+      "Méthode",
+      "Route (indicative)",
+      "Rôle",
+      "Réponse (champs principaux)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "GET",
+        "/home?profil=auto",
+        "Contenu des cases de l’accueil d’origine, dans leur ordre fixe ; chaque case de produits paginée à part",
+        "profil, reprise (colis en attente, relais, horaires du jour, fermeture, commande du code), bandes[], prix_en_baisse[], cases[] : type (proche, recents, populaires, nouveautes, univers), titre, pastille, cursor, cartes ; vitrine (compteurs de la carte BelivaY)"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/home/rows/{id}?cursor=",
+        "Page suivante d’une rangée (chargement au défilement)",
+        "Cartes, next_cursor"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/categories",
+        "Univers, sous-catégories et compteurs réels (cache court)",
+        "Liste légère : id, nom, icône, compteur ; sous-catégories non vides : nom, compteur, image d’un vrai produit"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/listing/{cat}?sub=&tri=&f=&marque=&cursor=",
+        "Listing en grille, pagination par curseur, prix livrés depuis le relais",
+        "count (filtres compris), count_total, xl_hidden, marques[] (nom, compteur), cartes, voisines[] si count < seuil_écran, next_cursor"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Événements émis et consommés",
+     "colonnes": [
+      "Événement",
+      "Émis par",
+      "Consommé par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "home.viewed",
+        "Accueil (profil, rangées montrées)",
+        "Recommandation (profil)"
+       ]
+      },
+      {
+       "cellules": [
+        "product.published",
+        "Catalogue (vendeur, console)",
+        "Compteurs (recalcul), rangée Nouveautés"
+       ]
+      },
+      {
+       "cellules": [
+        "shop.closed_today",
+        "Espace vendeur « Fermer aujourd’hui »",
+        "Exclusion des offres des rangées et des compteurs ; bascule de l’offre attribuée"
+       ]
+      },
+      {
+       "cellules": [
+        "product.viewed, favorite.added",
+        "Fiche (CL-06), cœur des cartes",
+        "Profil « navigateur », rangée « Récemment consultés », cœur plein des favoris"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Valeurs ajoutées au jeu d’essai (DX_cl04)",
+     "colonnes": [
+      "Valeur ajoutée (DX_cl04)",
+      "Valeur",
+      "Vérification"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "N = ACC-RANGEE-MIN montré à l’écran",
+        "3",
+        "À trancher dans la spec. 3 cartes compactes = une largeur d’écran : une rangée de 3 est pleine"
+       ]
+      },
+      {
+       "cellules": [
+        "seuil_écran (4.4, sans code)",
+        "6",
+        "Un écran de cartes (3 lignes de 2). 1 < 6 ⇒ voisines ; 3 < 6 (critère « trois produits ») ⇒ voisines"
+       ]
+      },
+      {
+       "cellules": [
+        "Ordre de publication (Nouveautés)",
+        "Tapis de yoga, Tablette 8″, Porte-bébé, Marmite 8 L, Montre",
+        "Produits aux plus petits historiques (18 à 29 avis) ; dates non affichées"
+       ]
+      },
+      {
+       "cellules": [
+        "Favoris de Carine",
+        "Montre acier bracelet cuir, Baskets running",
+        "= ses Sauvegardés (22.1 : même objet) ; cœur plein sur leurs cartes"
+       ]
+      },
+      {
+       "cellules": [
+        "Persona « navigateur »",
+        "Univers vus : Téléphones & tablettes, Beauté & santé ; favori : Ventilateur 16″",
+        "« Récemment consultés » = ces univers par ventes réelles (6 cartes) ; cœur plein sur le Ventilateur"
+       ]
+      },
+      {
+       "cellules": [
+        "Marques des 38 smartphones",
+        "Tecno 12 · Samsung 9 · itel 7 · Infinix 6 · Xiaomi 4",
+        "12 + 9 + 7 + 6 + 4 = 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Produits XL ou hors gabarit",
+        "TV & vidéo 7 · Vélos 6",
+        "Électronique 98 − 7 = 91 ; Sport 39 − 6 = 33 ; catalogue 1 387 − 13 = 1 374"
+       ]
+      },
+      {
+       "cellules": [
+        "« Retrait possible aujourd’hui » · Tablettes",
+        "1 (Tablette 8″ · 64 Go)",
+        "Boutique de Mvog-Ada, prête sous 4 h (même boutique que le Camon 30 du paiement interrompu)"
+       ]
+      },
+      {
+       "cellules": [
+        "Sous-catégorie vide",
+        "Sport & loisirs › Natation : 0",
+        "Jamais affichée ni comptée : Sport reste à 39, le total à 1 387"
+       ]
+      },
+      {
+       "cellules": [
+        "Scénario « relais fermé »",
+        "Fermeture déclarée le jeu. 24 ; rouvre ven. 25 à 8 h",
+        "Garde BLV-52018 : 100 + 100 + 0 (jour fermé, jamais facturé) = 200 F ; demain 5e jour + 200 F = 400 F. BLV-51940 n’a pas pu arriver ce jour-là : seuls 2 colis attendent (barre « 2 colis t’attendent au relais »)"
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Accueil enregistré à 10 h 12",
+        "3 minutes avant l’heure du jeu d’essai"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "ACC-RANGEE-MIN",
+        "Produits minimaux d’une rangée d’accueil",
+        "à fixer",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "ACC-NOUVEAUX",
+        "Emplacements réservés aux nouveaux produits",
+        "10 à 20 %",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Rangée sous le seuil",
+        "Non affichée, jamais vide."
+       ]
+      },
+      {
+       "cellules": [
+        "Catégorie peu fournie",
+        "Compléter avec les voisines « Aussi dans … »."
+       ]
+      },
+      {
+       "cellules": [
+        "Réseau lent",
+        "Rangées chargées au défilement, images réduites."
+       ]
+      },
+      {
+       "cellules": [
+        "Sous-catégorie ou univers à 0 produit",
+        "Absent de l’index, de l’accueil et des sous-rayons."
+       ]
+      },
+      {
+       "cellules": [
+        "Boutique « Fermé aujourd’hui »",
+        "Offres exclues des rangées et des compteurs ; bascule de l’offre attribuée."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spec",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "4.0 Pourquoi ce chapitre compte (rangées absentes, « 3 400 produits » pour 110 réels)",
+        "21",
+        "Mise à niveau de l’accueil et des compteurs ; CAC-09, CAC-22, CCR-01, CCR-11"
+       ]
+      },
+      {
+       "cellules": [
+        "4.0 Ce qu’il faut livrer (5 livrables)",
+        "21",
+        "1 accueil CAC-01 à CAC-35 · 2 compteurs CCR-01 à CCR-10 · 3 index CCT-01 à CCT-12 · 4 listing CLS-01 à CLS-19 · 5 navigation unifiée CLS-01, CCT-07, CAC-07, CAC-08"
+       ]
+      },
+      {
+       "cellules": [
+        "4.0 Décisions intégrées (grille, pile de rayons et 3 profils, 10 à 20 %, un produit maître par carte, Prime masqué)",
+        "21",
+        "CLS-02, CAC-13 à CAC-16 (profils : écart assumé, décision du porteur du 26 sept.), CAC-21, CLS-17, CAC-26"
+       ]
+      },
+      {
+       "cellules": [
+        "4.0 À savoir (quinconce abandonné ; l’intelligence passe par les filtres et les sous-rayons)",
+        "21",
+        "CLS-02, CLS-04, sous-rayons du listing (CLS-05)"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 Rôle de la page",
+        "21",
+        "CAC-01 : écart assumé, décision du porteur du 26 sept. (accueil d’origine gardé, avec « Pourquoi choisir BelivaY ? », carte BelivaY et pied de page vrais : CAC-33 à CAC-35)"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 Structure de haut en bas (8 blocs)",
+        "21–22",
+        "CAC-02 (ordre de l’accueil d’origine, écart assumé), CAC-03 recherche, CAC-04/05 reprise (barre flottante), CAC-07 bandes, CAC-08 pastilles (au lieu de la grille), CAC-09 rangées, CAC-10 Près de ton relais (« À la une »), CAC-11 Nouveautés (« Nouveaux arrivages »), CAC-12 Top ventes (« Produits populaires »), CAC-31 et CAC-32 cases d’origine"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 L’ordre s’adapte au profil (3 profils)",
+        "22",
+        "Tableau des profils ; CAC-13 à CAC-16 (ordre fixe, cases personnelles selon le profil : écart assumé) ; figures 3 à 5"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 Règles des rangées (défilement, carte, seuil N, 10 à 20 %)",
+        "22",
+        "CAC-17, CAC-18, CAC-19, CAC-20, CAC-21 ; paramètres ACC-RANGEE-MIN, ACC-NOUVEAUX"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 Comment le faire (requête par rangée, chargement au défilement, paramètres)",
+        "22",
+        "CAC-22, CAC-23, CAC-24 ; section développeur"
+       ]
+      },
+      {
+       "cellules": [
+        "4.1 Critères d’acceptation (5)",
+        "22",
+        "Critères de l’écran Accueil et du profil"
+       ]
+      },
+      {
+       "cellules": [
+        "4.2 Tableau des compteurs (6 endroits)",
+        "22–23",
+        "CCR-02 à CCR-07 ; tableau « Où s’affiche chaque compteur »"
+       ]
+      },
+      {
+       "cellules": [
+        "4.2 Règles (chiffres en dur, agrégation et cache, produit compté)",
+        "23",
+        "CCR-01, CCR-08, CCR-09"
+       ]
+      },
+      {
+       "cellules": [
+        "4.2 Critères d’acceptation (3)",
+        "23",
+        "Critères de la section Compteurs"
+       ]
+      },
+      {
+       "cellules": [
+        "4.3 Hub : rail, bannière, vignettes (10 règles) et « Comment le faire »",
+        "23",
+        "CCT-01 à CCT-12 ; figures 7 et 8"
+       ]
+      },
+      {
+       "cellules": [
+        "4.3 Critères d’acceptation (3)",
+        "23",
+        "Critères de l’écran Catégories"
+       ]
+      },
+      {
+       "cellules": [
+        "4.4 Listing : une page, grille, recherche, puces, tri, caractéristiques, prix, état, ajout rapide, étiquettes, voisines, livrabilité",
+        "23–24",
+        "CLS-01 à CLS-19 ; figures 9 à 14"
+       ]
+      },
+      {
+       "cellules": [
+        "4.4 Critères d’acceptation (4)",
+        "24",
+        "Critères de l’écran Listing"
+       ]
+      },
+      {
+       "cellules": [
+        "4.4 Liaisons (distance PostGIS, zones exploitées et 8 colis par tournée, horaires du relais)",
+        "24",
+        "CLS-12, CAC-10, CAC-05 ; encadrés « Liaisons »"
+       ]
+      },
+      {
+       "cellules": [
+        "4.4 Conditions et calculs (8 formules)",
+        "24",
+        "Tableaux « Calculs » de l’accueil (rangée visible, part des nouveaux) et du listing (compteur, vignette, prix de carte, remise, le plus proche, voisines)"
+       ]
+      },
+      {
+       "cellules": [
+        "4.4 Interdits (5)",
+        "25",
+        "Encadrés « Interdits » des sections Accueil, Catégories et Listing ; CCR-11, CCT-08, CLS-16, CLS-17"
+       ]
+      },
+      {
+       "cellules": [
+        "4.5 Endpoints (3), événements (3), erreurs (3)",
+        "25",
+        "Section développeur : tableaux API, événements, états et erreurs"
+       ]
+      },
+      {
+       "cellules": [
+        "4.5 Paramètres ACC-RANGEE-MIN (à trancher) et ACC-NOUVEAUX (10 à 20 %, fixé)",
+        "25",
+        "Tableaux des paramètres ; CAC-19, CAC-21, CAC-24"
+       ]
+      },
+      {
+       "cellules": [
+        "4.5 Note API (routes indicatives, montants du service de tarification, matrice de visibilité)",
+        "25",
+        "Section développeur, premier point"
+       ]
+      },
+      {
+       "cellules": [
+        "4.5 Définition de terminé (5)",
+        "26",
+        "Critères de la section développeur"
+       ]
+      },
+      {
+       "cellules": [
+        "Liaisons hors chapitre : 3.1 promesses et visiteur, 6.1, 6.2 et 6.4 carte et bannière, 9.2 code en un geste, 9.1 paiement interrompu, 12.2 retour, 15.1 cloche, 15.2 et 15.3 aide et pages légales, 15.4 mode dégradé, 18.2 zones, 19.3 et 19.5 interdits et photos, 21 Prime, 23 ventes flash",
+        "17, 33–35, 52–53, 73, 86–87, 100, 105–108, 115, 125",
+        "3.1 : CCT-09, CAC-29, CAC-33 · 6.1–6.4 : CLS-09, CLS-10, CLS-15, CAC-18, CAC-32 · 9.2 : CAC-04 · 9.1 : CAC-06 (repris dans Mes commandes) · 12.2 : CAC-33 · 15.1 : CAC-28 · 15.2 et 15.3 : CAC-35 · 15.4 : CAC-23, CAC-25 · 18.2 : CAC-34 · 19.3 et 19.5 : CCR-11, CCT-10, CAC-34 · 21 : CAC-26, CAC-32 · 23 : CAC-31"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

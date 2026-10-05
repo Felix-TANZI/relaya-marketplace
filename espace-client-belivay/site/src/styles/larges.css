@@ -1,0 +1,1743 @@
+/* Grands écrans : tablette et ordinateur (DISPOSITION-ECRANS.md). Importé après les autres feuilles (main.tsx).
+   AUCUNE règle ne s'applique sous 600 px : le téléphone ne change pas d'un pixel. Entre 600 et 767 px, seules jouent
+   la largeur de #app, celle du contenu et celle des grilles. Requêtes toujours en min-width, du plus petit au plus
+   grand. Seuls les jetons du thème (clair et sombre) sont employés : aucune couleur nouvelle.
+
+   Paliers (src/composants/ecran.ts, html[data-ecran]) : tel < 600 · tel-l 600 · tab 768 · tab-l 1024 · pc 1200 ·
+   pc-xl 1600.
+   Variables (posées sur #app) :
+   --marge    gouttière de page (16, 24, 28, 32, 48)
+   --gc       écart entre colonnes (20, 24, 24, 32)
+   --gg       écart entre cartes d'une grille (14, 16, 18, 20)
+   --esp-v    espacement vertical entre sections (24, 32)
+   --l-max    largeur du contenu de la page (conteneur .l-large / .l-moyen / .l-etroit / .l-lecture sur #app)
+   --lg       largeur du conteneur large (en-tête, navigation, pied de page alignés dessus)
+   --hd-h     hauteur de l'en-tête de site (64 en tablette portrait, 156 dès 1024), hors zone sûre
+   --colle    haut des colonnes et asides collants, mesuré depuis la boîte de contenu de main : 0, car la marge
+              haute de main compte déjà l'en-tête et les 16 px d'écart (avec 16, les colonnes collantes se posaient
+              16 px plus bas que le contenu voisin au repos ; revue du 5 octobre)
+   --pad      marge latérale effective de main (centre le conteneur) */
+
+/* ================================ Paliers et conteneurs ================================ */
+@media (min-width:600px){
+  #app{max-width:none;--marge:16px;--l-max:640px;--lg:100000px;--pad:max(var(--marge),calc((100vw - var(--l-max)) / 2))}
+  #app main{padding-left:var(--pad);padding-right:var(--pad-d,var(--pad));container-type:inline-size}
+  /* Grilles de produits : nombre de colonnes selon la largeur de la colonne qui les contient (§ 2.5). */
+  @container (min-width:560px){#app .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+}
+@media (min-width:768px){
+  #app{--marge:24px;--gc:20px;--gg:14px;--esp-v:24px;--hd-h:0px;--colle:0px}
+  #app.a-site{--hd-h:64px}
+  #app.l-large,#app.l-moyen{--l-max:100000px}
+  #app.l-etroit{--l-max:640px}
+  #app.l-lecture{--l-max:680px}
+  /* main reste l'unique zone qui défile ; sa barre de défilement devient visible et fine. */
+  #app main{scrollbar-width:thin;scrollbar-color:var(--sand-4) transparent}
+  #app main::-webkit-scrollbar{display:block;width:10px}
+  #app main::-webkit-scrollbar-thumb{background:var(--sand-4);border-radius:10px}
+  #app main:focus{outline:none}
+  /* Sous l'en-tête de site, le contenu commence à sa hauteur (+ un espace) : les marges hautes du téléphone
+     comptaient l'en-tête racine ou enfant, qui n'est plus là. */
+  #app.a-site main{padding-top:calc(var(--sb) + var(--hd-h) + 16px)!important;padding-bottom:96px!important}
+  #app .pgrid,#app .h0-g3{gap:var(--gg)}
+  @container (min-width:800px){#app :is(.pgrid,.h0-g3){grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @container (min-width:1040px){#app :is(.pgrid,.h0-g3){grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @container (min-width:1280px){#app :is(.pgrid,.h0-g3){grid-template-columns:repeat(6,minmax(0,1fr))}}
+}
+@media (min-width:1024px){
+  #app{--marge:28px;--gc:24px;--gg:16px;--esp-v:32px}
+  #app.a-site{--hd-h:156px}
+  #app.l-etroit{--l-max:680px}
+  #app.l-lecture{--l-max:720px}
+  #app.a-site main{padding-bottom:0!important}
+  /* Une barre d'action encore fixée en bas (écrans pas encore rangés en colonnes) ne cache pas la fin de page. */
+  #app.a-site:has(.fp-bar,.cl07-bar,.cl09-bar,.cl11-bar,.buybar) main{padding-bottom:120px!important}
+}
+@media (min-width:1200px){
+  #app{--marge:32px;--lg:1440px}
+  #app.l-large{--l-max:1440px}
+  #app.l-moyen{--l-max:1200px}
+  #app.l-etroit{--l-max:720px}
+  #app.l-lecture{--l-max:760px}
+}
+@media (min-width:1600px){
+  #app{--marge:48px;--gc:32px;--gg:20px;--lg:1760px}
+  #app.l-large{--l-max:1760px}
+  #app.l-moyen{--l-max:1280px}
+}
+
+/* ================================ Lien d'évitement ================================ */
+@media (min-width:768px){
+  #app .evitement{position:absolute;left:16px;top:8px;z-index:100;padding:10px 14px;border-radius:12px;background:var(--card);color:var(--or-txt);font-weight:800;box-shadow:var(--shadow-pop);transform:translateY(-200%)}
+  #app .evitement:focus{transform:none}
+}
+
+/* ================================ En-tête de site ================================ */
+@media (min-width:768px){
+  #app header.hd.hd-site{padding:var(--sb) 0 0;border-radius:0;box-shadow:var(--glass-edge),0 1px 0 var(--line)}
+  .hd-site .hs-row{display:flex;align-items:center;gap:2px;height:64px;max-width:calc(var(--lg) + 2 * var(--marge));margin:0 auto;padding:0 var(--marge)}
+  .hd-site .hd-brand{flex:0 0 auto;width:168px;margin-right:4px}
+  .hd-site .hd-sp{flex:1 1 0;min-width:0}
+  .hd-site .hs-rech{position:relative;flex:1 1 640px;max-width:640px;min-width:0;margin:0 8px}
+  .hd-site .srch{margin:0;height:44px;border-radius:14px}
+  .hd-site .srch-a{cursor:text}
+  .hd-site .srch-a input{flex:1;min-width:0;height:100%;border:0;padding:0;margin:0;background:transparent;font:inherit;color:var(--ink);outline:none}
+  .hd-site .srch-a input::placeholder{color:var(--ink-3)}
+  .hd-site .hs-srch:focus-within{box-shadow:inset 0 0 0 1.5px var(--braise-1),0 0 0 4px rgba(201,80,14,.12)}
+  html[data-theme=dark] .hd-site .hs-srch:focus-within{box-shadow:inset 0 0 0 1.5px var(--or),0 0 0 4px rgba(255,154,85,.16)}
+  .hd-site .srch :is(.hs-eff,.srch-mic,.srch-go){border:0;font:inherit;cursor:pointer}
+  .hd-site .hs-eff{width:36px;height:100%;display:flex;align-items:center;justify-content:center;background:transparent;color:var(--ink-3)}
+  .hd-site .srch-mic{background:transparent}
+  .hd-site .srch-go{gap:6px;font-size:14px;font-weight:800}
+  .hd-site .hs-go-t{display:none}
+  .hd-site .ibtn{width:44px;height:44px}
+  .hd-site .hs-txt{display:inline-flex;align-items:center;gap:6px;height:44px;padding:0 10px;border:0;border-radius:12px;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:800;flex-shrink:0}
+  .hd-site .hs-compte{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 6px 0 4px;margin-left:4px;border-radius:999px;color:var(--ink-2);flex-shrink:0}
+  .hd-site .hs-compte .hd-av{width:36px;height:36px;margin:0}
+  .hd-site .hs-nom{font-size:14px;font-weight:800;color:var(--ink);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .hd-site .hd-av.guest{width:40px;height:40px}
+  .hd-site .hs-lien{display:inline-flex;align-items:center;height:44px;padding:0 12px;font-size:14px;font-weight:800;color:var(--ink);white-space:nowrap}
+  .hd-site .hs-insc{width:auto;margin-left:4px;padding:0 16px;flex-shrink:0}
+  /* Panneau de la recherche (§ 5.3) : sous le champ, de sa largeur, 720 px au plus. */
+  .hd-site .hs-pan{position:absolute;left:0;top:calc(100% + 8px);width:100%;min-width:min(440px,calc(100vw - 48px));max-width:720px;max-height:70vh;overflow:auto;padding:4px 16px 16px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-pop),0 0 0 1px var(--line);z-index:40;color:var(--ink)}
+  .hd-site .hs-pan .actif{background:var(--sand-2);border-radius:12px;outline:2px solid var(--or-txt);outline-offset:-2px}
+  .hd-site .hs-pan .btns{margin-top:12px}
+}
+@media (min-width:1024px){
+  .hd-site .hs-row{height:68px}
+  .hd-site .hd-strip{height:32px}
+}
+@media (min-width:1200px){
+  .hd-site .hs-go-t{display:inline}
+  .hd-site .srch-go{width:auto;padding:0 16px}
+}
+/* Écran peu haut (portable 1 366 × 650, tablette paysage) : le bandeau de confiance se masque quand la page défile. */
+@media (min-width:1024px) and (max-height:699px){
+  .hd-site .hd-strip{transition:height var(--blv-moyen) ease,opacity var(--blv-moyen) ease}
+  #app.a-defile .hd-site .hd-strip{height:0;opacity:0}
+}
+
+/* ================================ Navigation principale (dès 1024) ================================ */
+@media (min-width:1024px){
+  /* Capsule ovale de verre liquide (consigne du porteur, 5 oct. 2026) : même langage que la barre du bas du
+     téléphone (jetons --dock-* d'animations.css) ; la bulle de verre (BarreBas.tsx, mode « survol ») y glisse au
+     survol et se saisit à la souris. Ligne de 56 : la bulle saisie (38 + 18) tient dans la ligne. */
+  .hd-nav .hn-row{position:relative;overflow:visible;display:flex;align-items:center;gap:8px;height:56px;max-width:calc(var(--lg) + 2 * var(--marge));margin:0 auto;padding:0 var(--marge)}
+  .hd-nav .hn-in{position:relative;isolation:isolate;display:flex;align-items:center;gap:2px;height:46px;padding:0 4px;margin-left:-4px;border-radius:999px;flex:0 0 auto;min-width:0;
+    background:var(--dock-bg);-webkit-backdrop-filter:var(--dock-filtre);backdrop-filter:var(--dock-filtre);box-shadow:var(--dock-ombre);
+    touch-action:pan-y;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  .hd-nav .hn-in::before,.hd-nav .hn-in::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:-1}
+  .hd-nav .hn-in::before{background:var(--dock-reflet)}
+  .hd-nav .hn-in::after{z-index:3;padding:1px;background:var(--dock-lisere);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask:linear-gradient(#000 0 0) content-box exclude,linear-gradient(#000 0 0)}
+  .hd-nav .hn-in a{-webkit-user-drag:none;-webkit-tap-highlight-color:transparent}
+  .hd-nav .hn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;font-weight:700;white-space:nowrap;cursor:pointer}
+  .hd-nav .hn svg{flex-shrink:0}
+  /* Onglet actif : pilule ovale pêche discrète, comme l'onglet actif de la barre du bas. */
+  .hd-nav .hn.on{background:var(--dock-cap);color:var(--or-txt);box-shadow:var(--dock-cap-ombre);font-weight:800}
+  /* Pendant le mouvement, la pilule de l'onglet actif laisse la place à la bulle (graisse inchangée : rien ne bouge). */
+  .hd-nav .hn-in.bouge .hn.on{background:transparent;box-shadow:none;color:var(--ink-2)}
+  /* Bulle au-dessus des liens (la loupe montre, nette et agrandie, ce qui est dessous). */
+  .hd-nav .hn-in .dock-bulle{z-index:2}
+  .hd-nav .dock-bulle .hn-copie{position:absolute;box-sizing:border-box;justify-content:center;color:var(--or-txt);font-weight:800;cursor:default;
+    text-shadow:calc(var(--e)*.9px) 0 rgba(255,40,90,calc(var(--e)*.28)),calc(var(--e)*-.9px) 0 rgba(30,140,255,calc(var(--e)*.28))}
+  .hd-nav .dock-bulle .hn-copie svg{filter:drop-shadow(calc(var(--e)*.8px) 0 rgba(255,40,90,calc(var(--e)*.3))) drop-shadow(calc(var(--e)*-.8px) 0 rgba(30,140,255,calc(var(--e)*.3)))}
+  /* Voile un peu plus dense que sur le téléphone : les liens larges vus dessous ne se dédoublent pas avec la loupe. */
+  .hd-nav .dock-bulle::before{opacity:calc(var(--e)*.9)}
+  .hd-nav .hn-in .dock-bulle.simple{z-index:0;background:var(--dock-cap);box-shadow:var(--dock-cap-ombre)}
+  html[data-mouv] .hd-nav .hn-in:not(.bouge) .hn.on{transition:background-color var(--blv-court) ease}
+  .hd-nav .hn:focus-visible{outline:2px solid var(--or-txt);outline-offset:-2px}
+  @media (prefers-reduced-transparency: reduce){.hd-nav .hn-in::before,.hd-nav .hn-in::after{display:none}}
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))){.hd-nav .hn-in{background:rgba(255,255,255,.96)}html[data-theme=dark] .hd-nav .hn-in{background:rgba(28,26,32,.97)}}
+  .hd-nav .hn-l{display:none}
+  .hd-nav .hn-c{display:inline}
+  .hd-nav .hn-pas{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:999px;background:var(--or-soft);color:var(--or-txt);font-size:12px;font-weight:800;box-shadow:inset 0 0 0 1px var(--or-line)}
+  .hd-nav .hn-pas .hn-cd{font-variant-numeric:tabular-nums}
+  .hd-nav .hn .bdg{min-width:18px;height:18px;border-radius:9px;background:var(--braise-1);color:#fff;font-size:12px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;padding:0 5px}
+  .hd-nav .hn-fl{position:relative;z-index:1;width:28px;height:38px;margin-left:-4px;border:0;border-radius:999px;background:transparent;color:var(--ink-3);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+  .hd-nav .hn-fl[aria-expanded=true] svg{transform:rotate(180deg)}
+  .hd-nav .hn-plus{position:relative;flex-shrink:0}
+  .hd-nav .hn-menu{position:absolute;left:0;top:calc(100% + 10px);z-index:40;min-width:230px;padding:6px;border-radius:16px;background:var(--card);box-shadow:var(--shadow-pop),0 0 0 1px var(--line)}
+  .hd-nav .hn-menu a{display:flex;align-items:center;gap:10px;height:42px;padding:0 12px;border-radius:12px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  .hd-nav .hn-menu a.on{background:var(--or-soft);color:var(--or-txt)}
+  .hd-nav .hn-menu .hn-c{display:none}
+  .hd-nav .hn-menu .hn-l{display:inline}
+  .hd-nav .hd-sp{flex:1 1 0;min-width:0}
+  .hd-nav .hn-dr{display:flex;align-items:center;gap:6px;flex-shrink:0}
+  .hd-nav .rly{margin:0;height:34px;max-width:none}
+  .hd-nav .hn-rl{display:none}
+  .hd-nav .hn-vendre{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 8px;border-radius:999px;font-size:14px;font-weight:700;color:var(--ink-2);white-space:nowrap}
+  /* Méga-menu Catégories (§ 6.4) : sous la barre de navigation, largeur du conteneur. */
+  .hd-nav .hn-mm-z{position:absolute;left:0;right:0;top:100%;z-index:35}
+  .mm{background:var(--card);border-top:1px solid var(--line);box-shadow:var(--shadow-pop)}
+  .mm .mm-in{display:grid;grid-template-columns:240px minmax(0,1fr) 280px;gap:24px;max-width:calc(var(--lg) + 2 * var(--marge));max-height:calc(100vh - var(--sb) - var(--hd-h) - 24px);overflow:auto;margin:0 auto;padding:18px var(--marge) 22px}
+  .mm ul{list-style:none;margin:0;padding:0}
+  .mm .mm-u{display:grid;gap:2px;align-content:start}
+  .mm .mm-u a{display:flex;align-items:center;gap:10px;height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  .mm .mm-u a>svg:last-child{color:var(--ink-4)}
+  .mm .mm-u a.on{background:var(--or-soft);color:var(--or-txt)}
+  .mm .grow{flex:1;min-width:0}
+  .mm .mm-n{font-size:12px;font-weight:800;color:var(--ink-3);background:var(--sand-2);padding:2px 7px;border-radius:999px}
+  .mm .mm-s .kick{margin:8px 0 10px}
+  .mm .mm-s ul{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 16px}
+  .mm .mm-s ul a{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink)}
+  .mm .mm-tout{display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:0 10px;font-size:14px;font-weight:800;color:var(--or-txt)}
+  .mm .mm-d{display:flex;flex-direction:column;gap:8px}
+  .mm .mm-ban{position:relative;display:block;height:140px;border-radius:18px;overflow:hidden;background:var(--sand-2)}
+  .mm .mm-vi,.mm .mm-vi svg,.mm .mm-vi img{display:block;width:100%;height:100%;object-fit:cover}
+  .mm .mm-bt{position:absolute;left:0;right:0;bottom:0;padding:24px 14px 12px;background:linear-gradient(180deg,rgba(16,14,20,0),rgba(16,14,20,.72));color:#fff}
+  .mm .mm-bt b{display:block;font-size:15px;font-weight:800}
+  .mm .mm-bt small{display:inline-flex;align-items:center;gap:4px;font-size:12.5px;font-weight:700;opacity:.95}
+  .mm .mm-k{margin-top:8px}
+  .mm .mm-p{display:flex;align-items:center;gap:10px;padding:6px;border-radius:12px;color:var(--ink)}
+  .mm .mm-ph{width:48px;height:48px;border-radius:10px;overflow:hidden;flex-shrink:0;background:var(--prod-bg)}
+  .mm .mm-ph svg{width:100%;height:100%;display:block}
+  .mm .mm-pt{display:block;font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .mm .mm-pp{display:flex;gap:6px;align-items:baseline;font-size:13px}
+  .mm .mm-pp b{color:var(--or-txt)}
+  .mm .mm-pp s{color:var(--ink-4);font-size:12px}
+}
+@media (min-width:1200px){
+  .hd-nav .hn-l{display:inline}
+  .hd-nav .hn-c{display:none}
+}
+/* La pastille du relais ne garde que l'icône et le quartier tant que la barre est serrée. */
+@media (min-width:1600px){
+  .hd-nav .hn-rl{display:inline}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  .hd-nav .hn:hover,.hd-nav .hn-vendre:hover,.hd-nav .hn-fl:hover{color:var(--or-txt)}
+  .hd-nav .hn-menu a:hover,.mm .mm-s ul a:hover,.mm .mm-p:hover{background:var(--sand-2)}
+}
+
+/* ================================ Barre de titre de page et fil d'Ariane ================================ */
+@media (min-width:768px){
+  #app .hd-page{margin:0 0 8px}
+  #app .hd-page .hd-sub{height:auto;min-height:56px;padding:0}
+  #app .hd-page .hd-sub h1{font-size:22px}
+  #app .hd-page .hd-ret{display:none}
+  #app .hd-page .cl07-strip{border-radius:14px;margin-bottom:8px}
+  #app .fil ol{display:flex;flex-wrap:wrap;align-items:center;gap:4px;list-style:none;margin:0 0 4px;padding:0;font-size:13px;color:var(--ink-3)}
+  #app .fil li{display:inline-flex;align-items:center}
+  #app .fil a{color:var(--ink-3)}
+  #app .fil [aria-current]{color:var(--ink-2);font-weight:700}
+}
+@media (min-width:1024px){
+  #app .hd-page .hd-sub>a.ibtn:first-child{width:auto;padding:0 14px 0 8px;gap:4px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  /* Action de l'écran à droite du titre (bouton principal : 200 à 360 px, § 6.9). */
+  #app .hd-page .hd-sub>.btn{width:auto;flex:0 0 auto;min-width:200px;max-width:360px;margin-left:auto}
+  #app .hd-page .hd-ret{display:inline;white-space:nowrap}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .fil a:hover{color:var(--or-txt)}
+}
+
+/* ================================ Barre du bas : capsule flottante (tablette portrait) ================================ */
+@media (min-width:768px){
+  #app nav.dock{left:0;right:0;margin:0 auto;width:min(520px,calc(100% - 48px));bottom:calc(20px + env(safe-area-inset-bottom));height:64px;padding:0 5px;border-radius:999px}
+  #app nav.dock .tab{height:54px;border-radius:999px}
+}
+
+/* ================================ Menu du profil et panneau des notifications ================================ */
+@media (min-width:768px){
+  #app{--pop-droite:calc(max(0px,(100vw - var(--lg) - 2 * var(--marge)) / 2) + var(--marge))}
+  #app #av-pop-veil,#app .pop-voile{position:absolute;inset:0;z-index:70;background:transparent}
+  #app #av-pop{top:calc(var(--sb) + var(--hd-h) - 6px);right:var(--pop-droite);width:340px;max-width:calc(100% - 32px);border-radius:20px;box-shadow:var(--shadow-pop),0 0 0 1px var(--line);display:flex;flex-direction:column;max-height:calc(100vh - var(--sb) - var(--hd-h) - 16px)}
+  #app #av-pop .ls{max-height:none;flex:1 1 auto;min-height:0;overflow:auto;padding-bottom:0}
+  #app #av-pop .it.out{position:sticky;bottom:0;background:var(--card);margin-top:4px}
+  #app #av-pop button.it{width:100%;border:0;background:transparent;font:inherit;text-align:left}
+  #app #av-pop .it:focus-visible{outline:2px solid var(--or-txt);outline-offset:-3px;border-radius:12px}
+  #app .pop-pan{position:absolute;z-index:71;top:calc(var(--sb) + var(--hd-h) - 6px);right:var(--pop-droite);width:380px;max-width:calc(100% - 32px);max-height:calc(100vh - var(--sb) - var(--hd-h) - 16px);display:flex;flex-direction:column;border-radius:20px;background:var(--card);box-shadow:var(--shadow-pop),0 0 0 1px var(--line);overflow:hidden;color:var(--ink)}
+  #app .pop-hd{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;padding:12px 12px 10px 16px;border-bottom:1px solid var(--line)}
+  #app .pop-hd b{font-size:16px;font-weight:800}
+  #app .pop-hd .grow{flex:1}
+  #app .pop-hd .btn{width:auto;height:34px;padding:0 8px;font-size:13px}
+  #app .pop-ls{flex:1 1 auto;min-height:0;overflow:auto;padding:0 12px 12px}
+  #app .pop-ls .cl10-nc{margin-top:10px}
+  #app .pop-vide{margin:16px 4px;color:var(--ink-3);font-size:14px}
+  #app .pop-bas{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-top:1px solid var(--line);font-size:14px;font-weight:800}
+  #app .pop-bas a{display:inline-flex;align-items:center;gap:6px;color:var(--or-txt)}
+  html[data-mouv] #app .pop-pan{animation:avp .18s ease}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app #av-pop .it:hover{background:var(--sand-2)}
+  .hd-site .hs-compte:hover,.hd-site .hs-txt:hover{background:var(--sand-2)}
+}
+
+/* ================================ Feuilles : modales et tiroirs (§ 3.9) ================================ */
+@media (min-width:768px){
+  #app .veil{position:absolute;inset:0}
+  #app .sheet{top:0;right:0;bottom:0;left:0;margin:auto;width:min(560px,calc(100% - 48px));height:fit-content;max-height:86vh;overflow-y:auto;overscroll-behavior:contain;border-radius:24px;padding:20px 24px 24px;box-shadow:var(--shadow-pop),0 0 0 1px var(--line)}
+  #app .sheet.long{max-height:86vh}
+  #app .sheet>.grab{display:none}
+  #app .sheet[data-forme=large]{width:min(720px,calc(100% - 48px))}
+  /* Bouton « Fermer » (×), en haut à droite, qui reste visible quand la feuille défile. */
+  #app .sheet .sheet-x{position:sticky;top:-8px;z-index:3;display:flex;align-items:center;justify-content:center;width:36px;height:36px;margin:-8px -12px -28px auto;border:0;border-radius:50%;background:var(--sand-2);color:var(--ink-2);cursor:pointer}
+  html[data-mouv] #app .sheet{animation:blv-modale var(--blv-long) var(--blv-ressort) both}
+  @keyframes blv-modale{from{opacity:0;transform:translate3d(0,14px,0) scale(.97)}}
+}
+@media (min-width:1024px){
+  #app .sheet[data-forme=large]{width:min(920px,calc(100% - 64px))}
+  #app .sheet[data-forme=tiroir]{left:auto;right:0;top:calc(var(--sb) + var(--hd-h,0px));bottom:0;margin:0;width:440px;max-width:100%;height:auto;max-height:none;border-radius:24px 0 0 24px}
+  html[data-mouv] #app .sheet[data-forme=tiroir]{animation:blv-tiroir var(--blv-long) var(--blv-doux) both}
+  @keyframes blv-tiroir{from{transform:translate3d(48px,0,0);opacity:.4}}
+}
+
+/* ================================ Toasts, bouton remonter, assistant, colis au relais ================================ */
+@media (min-width:768px){
+  #app :is(.cl05-toast,.cl09-toast,.cl10-toast){left:0;right:0;margin:0 auto;width:calc(100% - 48px);max-width:480px;bottom:104px}
+  #app .h0-up{right:24px;bottom:104px}
+  #app .h0-float{left:0;right:0;margin:0 auto;width:calc(100% - 48px);max-width:520px;bottom:96px}
+}
+@media (min-width:1024px){
+  #app :is(.cl05-toast,.cl09-toast,.cl10-toast){left:24px;right:auto;margin:0;width:calc(100% - 48px);max-width:420px;bottom:calc(24px + var(--demo-h,0px))}
+  #app .h0-up{right:24px;bottom:24px}
+  #app .h0-float{bottom:24px}
+  /* Bandeau de démonstration : carte en bas à gauche, au-dessus de la pile des toasts. */
+  .bandeau-demo{left:24px!important;right:auto!important;bottom:24px!important;margin:0!important;width:420px}
+}
+/* Les boutons ronds du bas à droite (« remonter », assistant) ne recouvrent pas le contenu : dès 1024 px, la marge
+   droite de main (--pad-d) leur est réservée quand la marge de la page est plus étroite que la pile (24 + bouton +
+   16). En tablette portrait, « remonter » se range à côté de la capsule de navigation, dans sa bande. */
+@media (min-width:768px) and (max-width:1023.98px){
+  #app .h0-up{bottom:calc(31px + env(safe-area-inset-bottom))}
+}
+@media (min-width:1024px){
+  #app.a-site:has(.h0-up){--pad-d:max(var(--pad),82px)}
+}
+@media (min-width:1200px){
+  #app.avec-ia{--pad-d:max(var(--pad),96px)}
+  #app .fab-ia{position:absolute;right:24px;bottom:24px;z-index:28;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(180deg,var(--braise-1),var(--braise-2));box-shadow:0 12px 26px -10px rgba(176,67,10,.8)}
+  #app.avec-ia .h0-up{bottom:92px}
+  #app.avec-ia .pied .pp-bas{padding-right:72px}
+}
+
+/* ================================ Barres d'action fixées en bas (téléphone) ================================ */
+@media (min-width:768px){
+  #app :is(.fp-bar,.cl07-bar,.cl11-bar){left:0;right:0;margin:0 auto;max-width:760px;border-radius:20px 20px 0 0}
+  #app .cl07-bar{max-width:640px}
+  #app :is(.cl09-bar,.buybar){left:0;right:0;margin:0 auto;width:calc(100% - 48px);max-width:640px}
+  /* La barre d'achat de la fiche cachait déjà la barre du bas : elle reste au-dessus de la capsule. */
+  #app:has(.fp-bar) nav.dock{display:none}
+}
+@media (min-width:1024px){
+  #app :is(.cl09-bar,.buybar){bottom:24px}
+}
+
+/* ================================ Pied de page (§ 3.14) ================================ */
+@media (min-width:768px){
+  #app main>.pied{zoom:1;margin:var(--esp-v) calc(-1 * var(--pad-d,var(--pad))) 0 calc(-1 * var(--pad));background:var(--card);border-top:1px solid var(--line);color:var(--ink-2)}
+  .pied .pp-in{max-width:calc(var(--lg) + 2 * var(--marge));margin:0 auto;padding:36px var(--marge) 24px}
+  .pied .pp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 24px}
+  .pied .kick{margin:0 0 12px}
+  .pied ul{list-style:none;margin:0;padding:0;display:grid;gap:10px;font-size:14px}
+  .pied .pp-col a{color:var(--ink-2)}
+  .pied .pp-marque p{margin:12px 0 0;max-width:300px;font-size:13.5px;line-height:1.5;color:var(--ink-3)}
+  .pied .pp-contact{margin-top:18px;font-size:13.5px}
+  .pied .pp-contact li{display:flex;align-items:center;gap:8px;color:var(--ink-3)}
+  .pied .pp-contact a{color:var(--or-txt);font-weight:700}
+  .pied .pp-confiance{display:flex;flex-wrap:wrap;gap:8px 20px;margin-top:24px;padding-top:16px;border-top:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+  .pied .pp-confiance li{display:flex;align-items:center;gap:6px}
+  .pied .pp-confiance svg{color:var(--green)}
+  .pied .pp-bas{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:20px;padding-top:16px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  .pied .pp-bas .grow{flex:1}
+  .pied .pp-bas a{color:var(--ink-3)}
+}
+@media (min-width:1024px){
+  .pied .pp-cols{grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr))}
+  .pied .pp-confiance{display:none}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  .pied a:hover,.pied .pp-bas a:hover{color:var(--or-txt)}
+}
+/* Sélecteurs à pastilles (pied de page, préférences rapides du compte). */
+@media (min-width:768px){
+  #app .pp-choix{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--line-2);border-radius:999px;background:var(--card)}
+  #app .pp-choix button{display:inline-flex;align-items:center;justify-content:center;height:30px;min-width:34px;padding:0 10px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font:inherit;font-size:12.5px;font-weight:800}
+  #app .pp-choix button.on{background:var(--or-soft);color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+  #app .pp-choix button:disabled{opacity:.4;cursor:default}
+}
+
+/* ================================ Gabarits (§ 4, composants/Gabarits.tsx) ================================ */
+@media (min-width:768px){
+  #app .gab{min-width:0}
+  #app .gab-contenu,#app .gab-detail{min-width:0;container-type:inline-size}
+  #app .gab-aside,#app .gab-liste,#app .gab-gauche,#app .gab-droite,#app .gab-menu{min-width:0}
+  #app .gab.aside-tete{display:flex;flex-direction:column}
+  #app .gab.aside-tete>.gab-aside{order:-1}
+  #app .gab-actions{display:flex;flex-direction:column;gap:10px;margin-top:var(--esp-v)}
+  /* Arrivée en tablette : carte centrée de 520 px sur le fond de page à halos. */
+  #app .g-arrivee{max-width:520px;margin:8px auto 0;padding:20px 24px 24px;border-radius:28px;background:var(--card);box-shadow:var(--shadow-card)}
+}
+@media (min-width:1024px){
+  #app .gab-haut{grid-area:haut;min-width:0}
+  #app .gab-bas{grid-area:bas;min-width:0}
+  #app .gab-contenu{grid-area:contenu}
+  #app .gab-aside{grid-area:aside;position:sticky;top:var(--colle);align-self:start}
+  #app :is(.gab-aside,.gab-liste,.gab-gauche,.gab-droite,.gab-menu).long{position:static}
+  #app .gab-actions{flex-direction:row;justify-content:flex-end;align-items:center}
+  #app .gab-actions>.btn{width:auto;min-width:200px;max-width:360px}
+  #app .gab-actions>.btn:not(.primary){margin-right:auto}
+  #app .gab-aside .btn{max-width:none}
+  #app .gab-aside>:first-child,#app .gab-aside>:first-child>.sec:first-child{margin-top:0}
+  /* Boutons hors aside (§ 6.9) : 360 px au plus. La rangée se range à droite (fin de formulaire, fin d'étape) ; dans
+     un état vide ou un bandeau centré, au centre. Dans un aside, une liste latérale, la colonne d'arrivée, une
+     bulle ou la visionneuse, ils gardent toute la largeur de leur colonne. */
+  #app main .btns:has(>.btn){justify-content:flex-end}
+  #app main .btns>.btn{max-width:360px}
+  #app main :is(.mt8,.mt10,.mt12,.mt14,.mt16)>.btn:only-child{max-width:360px;margin-left:auto}
+  #app main :is(.empty,.hero,.cl05-blk) .btns{justify-content:center}
+  #app main .empty>.btn{max-width:360px;margin-left:auto;margin-right:auto}
+  /* Exception décidée (§ 5.8) : au comptoir, « Le gérant m'a remis mes colis » prend toute la largeur de la colonne. */
+  #app main .card:has(>.cl09-step)+.btns>.btn:only-child{max-width:none}
+  #app main :is(.empty,.hero) :is(.mt8,.mt10,.mt12,.mt14,.mt16)>.btn:only-child,#app main .empty~:is(.mt8,.mt10,.mt12,.mt14,.mt16)>.btn:only-child{margin-right:auto}
+  #app main :is(.gab-aside,.gab-liste,.gab-menu,.gab-gauche,.gab-droite,.g-arrivee,.g5-d,.g5-md-l,.d13-aside,.d13-md-liste,.md13-l,.c13-joindre,.cf-aside,.cl06-vw,.cl14-b) .btns>.btn,
+  #app main :is(.gab-aside,.gab-liste,.gab-menu,.gab-gauche,.gab-droite,.g-arrivee,.g5-d,.g5-md-l,.d13-aside,.d13-md-liste,.md13-l,.c13-joindre,.cf-aside,.cl06-vw,.cl14-b) :is(.mt8,.mt10,.mt12,.mt14,.mt16)>.btn:only-child{max-width:none;margin-left:0;margin-right:0}
+  #app main :is(.gab-aside,.gab-liste,.gab-menu,.g5-d,.g5-md-l,.d13-aside,.d13-md-liste,.md13-l,.c13-joindre,.cf-aside) .btns{justify-content:normal}
+  /* colonnes : contenu 8/12, aside 4/12 (320 à 400 px). */
+  #app .g-colonnes{display:grid;grid-template-columns:minmax(0,1fr) clamp(320px,33.333%,400px);grid-template-areas:"haut haut" "contenu aside" "bas bas";column-gap:var(--gc);align-items:start}
+  #app .g-colonnes.inverse{grid-template-columns:clamp(320px,33.333%,400px) minmax(0,1fr);grid-template-areas:"haut haut" "aside contenu" "bas bas"}
+  #app .g-colonnes.aside-tete>.gab-aside{order:0}
+  /* web : ce qu'on offre ou paie 7/12, paiement 5/12 collant. */
+  #app .g-web{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-areas:"haut haut" "contenu aside" "bas bas";column-gap:var(--gc);align-items:start}
+  /* compte : carte d'identité en tête, menu du compte 264 px collant, contenu. */
+  #app .g-compte{display:grid;grid-template-columns:264px minmax(0,1fr);grid-template-areas:"identite identite" "menu contenu";column-gap:var(--gc);align-items:start}
+  #app .gab-identite{grid-area:identite;min-width:0}
+  #app .gab-menu{grid-area:menu;position:sticky;top:var(--colle);align-self:start;max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin}
+  /* maître-détail dès 1024 si demandé (messagerie, listes d'envies, paniers des proches). */
+  #app .g-maitre-detail[data-des=tab-l]{display:grid;grid-template-columns:clamp(340px,34%,420px) minmax(0,1fr);grid-template-areas:"haut haut" "liste detail";column-gap:var(--gc);align-items:start}
+  #app .gab-liste{grid-area:liste}
+  #app .gab-detail{grid-area:detail}
+  #app .g-maitre-detail[data-des=tab-l]>.gab-liste{position:sticky;top:var(--colle);max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin}
+  /* catalogue : colonne Catégories (rail 72, dépliée 264), contenu, colonne droite (accueil, dès 1200). */
+  #app .g-catalogue{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-areas:"gauche contenu";column-gap:var(--gc);align-items:start;transition:grid-template-columns .2s var(--blv-doux)}
+  #app .g-catalogue[data-cat=deplie]{grid-template-columns:264px minmax(0,1fr)}
+  #app .gab-gauche{grid-area:gauche;position:sticky;top:var(--colle);align-self:start;z-index:20}
+  #app .gab-droite{grid-area:droite;position:sticky;top:var(--colle);align-self:start}
+}
+@media (min-width:1200px){
+  #app .g-maitre-detail{display:grid;grid-template-columns:clamp(380px,34%,420px) minmax(0,1fr);grid-template-areas:"haut haut" "liste detail";column-gap:var(--gc);align-items:start}
+  #app .g-maitre-detail>.gab-liste{position:sticky;top:var(--colle);max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin}
+  #app .g-catalogue:has(>.gab-droite){grid-template-columns:72px minmax(0,1fr) 296px;grid-template-areas:"gauche contenu droite"}
+  #app .g-catalogue[data-cat=deplie]:has(>.gab-droite){grid-template-columns:264px minmax(0,1fr) 296px}
+  /* Arrivée : écran partagé, le visuel de l'écran à gauche (pleine hauteur), la colonne à droite. */
+  #app .g-arrivee{display:grid;grid-template-columns:minmax(0,1fr) clamp(480px,38%,560px);grid-template-areas:"visuel contenu";gap:var(--gc);max-width:none;margin:0;padding:0;background:none;box-shadow:none;border-radius:0;align-items:start}
+  #app .g-arrivee>.gab-visuel{grid-area:visuel;position:sticky;top:var(--colle);height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);border-radius:28px;overflow:hidden}
+  /* Seule une image posée directement dans le visuel le couvre (pas les icônes, ni le logo des photos). */
+  #app .g-arrivee>.gab-visuel>:is(img,svg){width:100%;height:100%;object-fit:cover}
+}
+@media (min-width:1600px){
+  #app .g-catalogue:has(>.gab-droite){grid-template-columns:72px minmax(0,1fr) 320px}
+  #app .g-catalogue[data-cat=deplie]:has(>.gab-droite){grid-template-columns:264px minmax(0,1fr) 320px}
+}
+/* Taille du texte à 140 % : les gabarits à trois colonnes passent à deux (la colonne droite se replie dessous). */
+@media (min-width:1200px){
+  html[data-echelle="140"] #app .g-catalogue:has(>.gab-droite),html[data-text=tres]:not([data-echelle]) #app .g-catalogue:has(>.gab-droite){grid-template-columns:72px minmax(0,1fr);grid-template-areas:"gauche contenu" ". droite"}
+  html[data-echelle="140"] #app .g-catalogue>.gab-droite,html[data-text=tres]:not([data-echelle]) #app .g-catalogue>.gab-droite{position:static}
+}
+
+/* ================================ Colonne Catégories (§ 3.5) ================================ */
+@media (min-width:1024px){
+  #app .cc{position:relative;display:flex;flex-direction:column;gap:2px;width:100%;padding:10px 8px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink-2)}
+  html[data-theme=dark] #app .cc{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .cc-hd{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:2px 2px 6px 8px;min-height:40px}
+  #app .cc-pli{width:36px;height:36px;border:0;border-radius:10px;background:var(--sand-2);color:var(--ink-2);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  #app .cc-ls{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:calc(100dvh - var(--sb) - var(--hd-h) - 290px);overflow:auto;scrollbar-width:thin}
+  #app .cc-u{position:relative;display:flex;align-items:center;gap:10px;height:42px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  #app .cc-u svg{flex-shrink:0}
+  #app .cc-u.on{background:var(--or-soft);color:var(--or-txt)}
+  #app .cc-t{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app .cc-n{margin-left:auto;font-size:12px;font-weight:800;background:var(--sand-2);color:var(--ink-3);padding:2px 7px;border-radius:999px}
+  #app .cc-tip{display:none}
+  #app .cc-relais,#app .cc-offert{display:flex;gap:10px;align-items:flex-start;margin-top:6px;padding:12px 8px 4px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  #app .cc-relais svg,#app .cc-offert svg{flex-shrink:0;color:var(--or-txt)}
+  #app .cc-relais .cc-t,#app .cc-offert .cc-t{white-space:normal;display:flex;flex-direction:column;gap:2px}
+  #app .cc-relais b,#app .cc-offert b{color:var(--ink);font-size:13.5px}
+  #app .cc-relais a{color:var(--or-txt);font-weight:800}
+  /* Rail : icônes seules, info-bulle au survol et au focus (après 400 ms). */
+  #app .cc:not(.ouvert){align-items:center}
+  #app .cc:not(.ouvert) .cc-hd{padding:2px 0 6px}
+  #app .cc:not(.ouvert) .cc-hd .kick,#app .cc:not(.ouvert) :is(.cc-t,.cc-n){display:none}
+  #app .cc:not(.ouvert) .cc-u{width:48px;justify-content:center;padding:0}
+  #app .cc:not(.ouvert) :is(.cc-relais,.cc-offert){justify-content:center;padding:12px 0 4px;width:48px}
+  #app .cc:not(.ouvert) .cc-u:is(:hover,:focus-visible) .cc-tip{display:block;position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%);z-index:30;padding:6px 10px;border-radius:10px;background:var(--esp-2);color:#fff;font-size:12.5px;font-weight:700;white-space:nowrap;box-shadow:var(--shadow-pop);pointer-events:none;animation:cc-tip .12s .4s both}
+  @keyframes cc-tip{from{opacity:0}}
+  /* Dépliée par-dessus le contenu (tablette paysage, ou contenu trop étroit). */
+  #app .g-catalogue[data-cat=survol] .cc{position:absolute;left:0;top:0;width:264px;z-index:25;box-shadow:var(--shadow-pop),0 0 0 1px var(--line)}
+  /* Sous-catégories de l'univers survolé, dans un panneau flottant à droite. */
+  #app .cc-sous{position:absolute;left:calc(100% + 8px);top:52px;z-index:31;width:240px;display:grid;gap:2px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--shadow-pop),0 0 0 1px var(--line)}
+  #app .cc-sous .kick{margin:0 6px 6px}
+  #app .cc-sous a{display:flex;align-items:center;gap:8px;min-height:38px;padding:0 8px;border-radius:10px;font-size:14px;font-weight:600;color:var(--ink)}
+  #app .cc-sous .grow{flex:1}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .cc-u:not(.on):hover,#app .cc-sous a:hover{background:var(--sand-2)}
+}
+
+/* ================================ Menu du compte et carte d'identité (§ 5.11) ================================ */
+@media (min-width:1024px){
+  /* nav.mc : la classe « mc » sert aussi aux cartes des livraisons en cours (CL-09) ; le menu seul est visé. */
+  #app nav.mc{display:block;padding:12px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  html[data-theme=dark] #app nav.mc{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .mc .fld{margin:0 0 6px}
+  #app .mc-g{padding:6px 0;border-top:1px solid var(--line)}
+  #app .mc .fld+.mc-g{border-top:0}
+  #app .mc-g .kick{padding:6px 10px 4px}
+  #app .mc ul{list-style:none;margin:0;padding:0}
+  #app .mc-g a{display:flex;align-items:center;gap:10px;min-height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink-2)}
+  #app .mc-g a svg{flex-shrink:0}
+  #app .mc-g a .grow{flex:1;min-width:0}
+  #app .mc-g a.on{background:var(--or-soft);color:var(--or-txt);font-weight:800}
+  #app .mc-n{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--or-soft);color:var(--or-txt)}
+  #app .mc-v{font-size:13px;font-weight:800;color:var(--or-txt)}
+  #app .mc-g a.mc-out{color:var(--red)}
+  #app .mc-pref{padding:10px 10px 4px;border-top:1px solid var(--line)}
+  #app .mc-l{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:6px 0;font-size:13px;font-weight:700;color:var(--ink-2)}
+  #app .gab-identite .ci{display:flex;align-items:center;gap:16px;margin:0 0 var(--gc);padding:16px 20px}
+  #app .ci .ci-p{width:64px;height:64px}
+  #app .ci .ci-p>*{width:100%;height:100%}
+  #app .ci-t{min-width:0}
+  #app .ci-t b{display:block;font-size:19px;font-weight:800;color:var(--ink)}
+  #app .ci-l{display:block;margin-top:3px;font-size:13px;color:var(--ink-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #app .ci .btn{width:auto;flex-shrink:0}
+  #app .ci.reduite{min-height:56px;padding:8px 16px}
+  #app .ci.reduite .ci-p{width:40px;height:40px}
+  #app .ci.reduite .ci-t b{font-size:15px}
+  #app .ci.reduite .ci-pal{display:none}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .mc-g a:not(.on):hover{background:var(--sand-2)}
+}
+
+/* ================================ Survol (souris seulement, § 6.1) ================================ */
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app .pcard{transition:transform .18s var(--blv-doux),box-shadow .18s var(--blv-doux)}
+  #app .pcard:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+  #app :is(.btn,.chip):hover{filter:brightness(1.05)}
+}
+
+/* ================================ Lot 14 : arrivée (CL-03, § 4.6 et 5.15) ================================ */
+@media (min-width:768px){
+  /* Le visuel est dans sa zone : le logo et la devise de la colonne restent masqués, comme sous la photo du téléphone. */
+  #app .g-arrivee:has(>.gab-visuel .cx-hero) .cl03-brand{display:none}
+  #app .g-arrivee>.gab-visuel:empty{display:none}
+  /* Ouverture : plein écran, la photo couvre ; le texte et les deux boutons restent dans une colonne centrée. */
+  #app .op-sc{align-items:center;padding-bottom:64px}
+  #app .op-sc>:is(p,.btns){width:min(420px,100%)}
+}
+@media (min-width:1024px){
+  /* Lancement : l'animation centrée, à l'échelle du téléphone × 1,25. */
+  #app .blv-spl .lu{scale:1.25}
+  #app .blv-spl .spl-tg{font-size:17px;bottom:80px}
+  /* Choisir mon relais : la carte des relais en tête de l'aside collant, plus haute que sur le téléphone. */
+  #app .gab-aside .rc-carte{margin-top:0}
+  #app .rc-carte>:is(iframe,div):first-child{height:min(48dvh,420px)!important}
+  /* Changer de numéro, dans le gabarit du compte (§ 5.11) : une colonne de 560, le stepper de 3 étapes en tête. */
+  #app .g-compte>.gab-contenu:has(.cl03-stepbar){max-width:560px}
+}
+@media (min-width:1200px){
+  /* Écran sans en-tête de site (connexion, bienvenue…) : un peu d'air en haut et en bas de l'écran partagé. */
+  #app:not(.a-site) .g-arrivee{padding:24px 0}
+  #app:not(.a-site) .g-arrivee>.gab-visuel{top:24px;height:calc(100dvh - var(--sb) - 48px)}
+  #app .g-arrivee>.gab-visuel{display:flex;flex-direction:column;gap:16px;overflow:visible;border-radius:0}
+  /* Sous l'en-tête de site, la barre de titre de la page précède l'écran partagé : la photo tient dans la fenêtre. */
+  #app.a-site .g-arrivee>.gab-visuel{height:calc(100dvh - var(--sb) - var(--hd-h) - 136px)}
+  #app .g-arrivee>.gab-visuel :is(.cx-hero,.arr-photo) .lg img{height:28px}
+  #app .g-arrivee>.gab-visuel>:is(.cx-hero,.ph-ban,.arr-photo){flex:1 1 auto;height:auto;min-height:320px;margin:0;border-radius:28px}
+  #app .g-arrivee>.gab-visuel>.cx-hero .tx{bottom:32px;padding:0 32px}
+  #app .g-arrivee>.gab-visuel>.cx-hero .tx b{font-size:34px}
+  #app .g-arrivee>.gab-visuel>.cx-hero .tx span{font-size:16px;max-width:520px}
+  #app .g-arrivee>.gab-visuel>.cx-hero .lg{left:24px;top:24px;padding:8px 12px}
+  #app .g-arrivee>.gab-visuel>.cx-hero .c1{right:24px;top:24px}
+  #app .g-arrivee>.gab-visuel>.ph-ban .tx{left:32px;right:32px;bottom:28px}
+  #app .g-arrivee>.gab-visuel>.ph-ban .tx b{font-size:30px}
+  #app .g-arrivee>.gab-visuel>.ph-ban .tx span{font-size:16px}
+  #app .g-arrivee>.gab-visuel>.ph-ban .tg3{top:24px;left:24px}
+  /* Photo de la connexion reprise par les écrans du parcours sans visuel (même dessin que .cx-hero.ph). */
+  #app .arr-photo{position:relative;overflow:hidden;background:#1C1917 center/cover no-repeat;box-shadow:0 18px 34px -22px rgba(201,78,14,.95);color:#fff}
+  #app .arr-photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(12,8,5,.05) 0%,rgba(12,8,5,.15) 40%,rgba(12,8,5,.88) 100%)}
+  #app .arr-photo>*{position:absolute;z-index:1}
+  #app .arr-photo .lg{left:24px;top:24px;display:flex;align-items:center;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.95)}
+  #app .arr-photo .tx{left:32px;right:32px;bottom:32px}
+  #app .arr-photo .tx b{display:block;font-size:34px;font-weight:800;letter-spacing:-.01em;text-shadow:0 2px 6px rgba(0,0,0,.25)}
+  /* La colonne de droite (480 à 560 px) sur le fond de page ; les tuiles d'univers passent à 3 colonnes. */
+  #app .g-arrivee>.gab-contenu{padding:8px 4px 24px}
+  #app .g-arrivee .cl03-tiles{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* Illustration de tête en bandeau dessiné (S'inscrire depuis l'étranger) : elle remplit le visuel, texte en bas. */
+  #app .g-arrivee>.gab-visuel>.hero{flex:1 1 auto;display:flex;flex-direction:column;justify-content:flex-end;margin:0;padding:40px;border-radius:28px}
+  #app .g-arrivee>.gab-visuel>.hero .cl11-ht{font-size:34px;line-height:1.15;max-width:560px}
+  #app .g-arrivee>.gab-visuel>.hero .hs{font-size:16px;max-width:520px}
+}
+
+/* ================================ Lots 11 et 12 : CL-14 (abonnements, listes, assistant) et CL-15 (modules) ================================ */
+/* Blocs regroupés par <Bloc> (pages/CL-14/Commun.tsx) : rien n'existe sous leur palier. */
+@media (min-width:1024px){
+  /* Deux colonnes internes (contenu, aside collant) : Mon abonnement, Parrainage, Mettre en statut, modules. */
+  #app .g5-duo{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,36%,380px);gap:var(--gc);align-items:start}
+  #app .g5-duo.g5-moitie{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app .g5-g,#app .g5-d{min-width:0}
+  #app .g5-g{container-type:inline-size}
+  #app :is(.hero,.note,.card,.pr-ban,.pg,.cl14-top)+.g5-duo{margin-top:16px}
+  #app .g5-d{position:sticky;top:var(--colle)}
+  #app :is(.g5-g,.g5-d)>:is(.card,.hero,.note,.sec,.more,.btns,.cl15-inf,.cl15-op):first-child{margin-top:0}
+  /* Listes d'envies : maître-détail (les listes à gauche, la liste ouverte à droite), articles selon la colonne. */
+  #app .g5-md{display:grid;grid-template-columns:clamp(220px,30%,300px) minmax(0,1fr);gap:var(--gc);align-items:start}
+  #app .g5-md-l{position:sticky;top:var(--colle);display:flex;flex-direction:column;gap:8px;padding:12px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card);max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin}
+  html[data-theme=dark] #app .g5-md-l{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .g5-md-l .kick{padding:4px 10px 0}
+  #app .g5-md-l ul{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  #app .g5-md-l li>a{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  #app .g5-md-l li>a svg{flex-shrink:0}
+  #app .g5-md-l li>a .grow{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #app .g5-md-l li>a.on{background:var(--or-soft);color:var(--or-txt);font-weight:800}
+  #app .g5-md-l .n{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--sand-2);color:var(--ink-3)}
+  #app .g5-md-l .btn{margin-top:4px}
+  #app .g5-md-d{min-width:0;container-type:inline-size}
+  #app .g5-md-d>:is(.card,.note,.empty,.sec):first-child{margin-top:0}
+  #app .g5-art{display:grid;grid-template-columns:minmax(0,1fr);gap:0 var(--gg);align-items:start}
+  #app .g5-art .btns{flex-wrap:wrap}
+  #app .g5-art .btns>.btn{flex:1 1 auto;min-width:0}
+  @container (min-width:640px){#app .g5-art{grid-template-columns:repeat(2,minmax(0,1fr))}}
+  @container (min-width:1000px){#app .g5-art{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  /* Mettre en statut : l'aperçu 9:16 (360 à 420 px) à gauche, le partage à droite. */
+  #app .g-colonnes:has(>.g5-apercu){grid-template-columns:clamp(340px,40%,420px) minmax(0,1fr)}
+  #app .g5-apercu .blv-statut canvas{max-width:360px;margin:0 auto;display:block}
+  #app .gab-aside .cl14-tiles{grid-template-columns:repeat(4,minmax(0,1fr))}
+  /* Assistant : la conversation dans une colonne de 760 centrée, la saisie collée en bas de la colonne. */
+  #app .g5-assist{display:grid;grid-template-columns:minmax(0,760px);justify-content:center;gap:var(--gc);align-items:start}
+  #app .g5-assist-c{min-width:0;display:flex;flex-direction:column}
+  #app .g5-assist-c>.card:first-child{margin-top:0}
+  #app .g5-assist-c .cl14-in{position:sticky;left:auto;right:auto;bottom:16px;margin-top:20px}
+  #app .g5-props{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:10px}
+  #app .g5-props>.cl14-mini{margin-top:0;flex-direction:column;align-items:flex-start}
+  #app .cl14-b.ai:has(.g5-props){max-width:100%}
+  /* Ventes flash (gabarit catalogue) : le rail des Flash Deals devient une grille de grandes cartes (3, puis 4),
+     « Tous les Flash Deals » suit la largeur de la colonne. */
+  #app .gab-contenu .fd-rail{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gg);overflow:visible;padding-right:14px;scroll-snap-type:none}
+  #app .gab-contenu .fd-c{flex:none;min-width:0}
+  #app .gab-contenu .fd-c .n{font-size:14px;height:36px}
+  @container (min-width:900px){#app .gab-contenu .fd-rail{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  #app .gab-contenu .fd-grid{gap:var(--gg)}
+  @container (min-width:560px){#app .gab-contenu .fd-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @container (min-width:800px){#app .gab-contenu .fd-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @container (min-width:1040px){#app .gab-contenu .fd-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @container (min-width:1280px){#app .gab-contenu .fd-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+  /* Offrir à plusieurs : centre élargi (880), le formulaire 7/12, l'objectif calculé 5/12 collant. */
+  #app .g-colonnes:has(>.g5-cotis){max-width:880px;margin:0 auto;grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+  #app .g-colonnes:has(>.g5-cotis):not(:has(>.gab-aside)){max-width:680px;grid-template-columns:minmax(0,1fr)}
+  /* Modale large « Mettre de côté » : le choix à gauche, le récapitulatif et le bouton à droite. */
+  #app .sheet[data-forme=large]:has(>.cl15-sum){display:grid;grid-template-columns:minmax(0,1fr) 320px;column-gap:24px;grid-auto-flow:row dense;align-content:start}
+  #app .sheet[data-forme=large]:has(>.cl15-sum)>*{grid-column:1}
+  #app .sheet[data-forme=large]:has(>.cl15-sum)>:is(.sheet-x,.cl15-sht){grid-column:1/-1}
+  #app .sheet[data-forme=large]:has(>.cl15-sum)>.cl15-sum{grid-column:2;grid-row:span 2;align-self:start}
+  #app .sheet[data-forme=large]:has(>.cl15-sum)>.btns{grid-column:2}
+  #app .sheet[data-forme=large]:has(>.cl15-sum)>.cl15-fine{grid-column:2}
+  /* Rentrée : écoles en grille de 3 ; sections côte à côte ; espace école en table (classe, état, action). */
+  #app .g5-ecoles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gg);margin-top:10px}
+  #app .g5-ecoles>.cl15-op{margin-top:0;min-width:0}
+  #app .g5-sections{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gc);align-items:start}
+  #app .g5-sections>section{min-width:0}
+  #app .g5-ecole .li{display:grid;grid-template-columns:44px minmax(80px,140px) minmax(0,1fr) auto;column-gap:14px;align-items:center}
+  #app .g5-ecole .li>.grow{display:contents}
+  #app .g5-ecole .li .lt{font-weight:800}
+  /* Commander par WhatsApp : le décor garde sa forme de téléphone, colonne de 480 centrée. */
+  #app .cl15-wa{max-width:480px;margin-left:auto;margin-right:auto}
+  #app .cl15-wa~.cl15-fine{max-width:480px;margin-left:auto;margin-right:auto}
+  /* Abonnements : paliers en 2 × 2, rentabilité 7/12 et autres formules 5/12, comparatif en vraie table. */
+  #app .g5-paliers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gg);align-items:stretch;margin-top:18px}
+  #app .g5-paliers>.cl14-tier{margin:0;display:flex;flex-direction:column}
+  #app .g5-paliers>.cl14-tier>.btns{margin-top:auto;padding-top:14px}
+  #app .g5-paliers>.cl14-tier .cl14-tc{flex-wrap:wrap}
+  #app .g5-paliers .btn{height:auto;min-height:48px;padding-top:10px;padding-bottom:10px;text-align:center}
+  #app .g5-paliers .btn span{white-space:normal}
+  #app .cl14-hl+.seg{max-width:520px;margin-left:auto;margin-right:auto}
+  #app .g5-ab-duo{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--gc);align-items:start;margin-top:var(--esp-v)}
+  #app .g5-ab-duo>.card{margin:0}
+  #app .g5-ab-formules>.sec:first-child{margin-top:0}
+  #app .g5-cmp{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+  #app .g5-cmp :is(th,td){padding:12px 10px;border-top:1px solid var(--line);text-align:left;vertical-align:top}
+  #app .g5-cmp thead :is(th,td){border-top:0;font-weight:800;color:var(--ink)}
+  #app .g5-cmp tbody th{font-weight:800;color:var(--ink);white-space:nowrap}
+  #app .g5-cmp td{color:var(--ink-2)}
+  #app .g5-cmp .on{background:var(--or-soft);color:var(--or-txt)}
+}
+@media (min-width:1200px){
+  /* WhatsApp : une colonne d'explication de 360 à gauche, la conversation à droite. */
+  #app .g5-wa{display:grid;grid-template-columns:360px 480px;justify-content:center;gap:var(--gc);align-items:start}
+  #app .g5-wa-g{position:sticky;top:var(--colle);min-width:0}
+  #app .g5-wa-g>.sec:first-child{margin-top:0}
+  #app .g5-wa-c{min-width:0}
+  #app .g5-wa-c>.cl15-wa{margin-top:0}
+  /* Assistant : les raccourcis dans un aside de 280 à droite. */
+  #app .g5-assist{grid-template-columns:minmax(0,760px) 280px}
+  #app .g5-assist-r{position:sticky;top:var(--colle);padding:14px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  html[data-theme=dark] #app .g5-assist-r{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .g5-assist-r .chips{flex-direction:column;align-items:stretch;margin-top:10px}
+  /* Cagnotte : les commandes en attente en grille de 2 quand la colonne le permet (720 px et plus). */
+  @container (min-width:720px){#app .g5-cmd{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 var(--gg);align-items:start}}
+  #app .g5-g>.g5-cmd:first-child>:first-child>.sec:first-child{margin-top:0}
+  #app .g5-paliers{grid-template-columns:repeat(4,minmax(0,1fr));align-items:end}
+  #app .g5-paliers>.cl14-tier{align-self:stretch}
+  #app .g5-paliers>.g5-avant{margin-top:-12px;border-color:var(--or-line)}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .g5-md-l li>a:not(.on):hover{background:var(--sand-2)}
+}
+/* Fin des lots 11 et 12 */
+
+/* ================================ Lots 10 et 15 : Mon compte et ses sous-pages (§ 5.11), menu, kit, erreurs (§ 5.16) ================================ */
+/* Grilles posées par <Bloc> (src/pages/CL-13/Larges.tsx), qui n'enveloppe rien sous 1024 px (ou son palier). */
+@media (min-width:1024px){
+  /* Mon compte : la carte d'identité du gabarit remplace la carte de profil orange (même nom, mêmes liens). */
+  #app.g-compte .gab-contenu>.cl13-pf{display:none}
+  #app.g-compte .gab-contenu>.cl13-tiles{margin-top:0}
+  #app .c13-ov{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-areas:"w a" "r k" "v v";gap:var(--gc);align-items:stretch;margin-top:var(--gc)}
+  #app .c13-ov>*{margin:0}
+  #app .c13-ov>:is(.wl-card,.card.tight){grid-area:w}
+  #app .c13-ov>.cl13-advc{grid-area:a}
+  #app .c13-ov>.cl13-relc{grid-area:r}
+  #app .c13-ov>.c13-achats{grid-area:k}
+  #app .c13-ov>.vd-ban{grid-area:v}
+  #app .c13-ov:not(:has(>.cl13-advc)){grid-template-areas:"w k"}
+  #app .c13-ov.c13-ov2{grid-template-columns:repeat(2,minmax(0,1fr));grid-template-areas:"a r"}
+  #app .c13-k>.kick:first-child,#app .c13-k>.sec:first-child{margin-top:0}
+  #app .c13-svc{margin-top:var(--esp-v)}
+  #app .c13-svc .dx-svc{grid-template-columns:repeat(auto-fill,minmax(132px,1fr))}
+  #app .c13-g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gc);align-items:start;margin-top:var(--esp-v)}
+  #app .c13-g2>*{min-width:0}
+  /* Colonnes de formulaire (changer d'e-mail 560, avis et suppression 640) ; actions en fin, principal à droite. */
+  #app .c13-col{max-width:var(--c13-col);width:100%}
+  #app .c13-col560{--c13-col:560px}
+  #app .c13-col640{--c13-col:640px}
+  #app .c13-act{display:flex;flex-direction:row-reverse;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:12px;margin-top:16px}
+  #app .c13-act>*{margin:0}
+  #app .c13-act .btn{width:auto;min-width:200px;max-width:360px}
+  /* Mon profil : photo à gauche (240), champs à droite (560 au plus). */
+  #app .c13-pf2{display:grid;grid-template-columns:240px minmax(0,560px);gap:var(--gc);align-items:start}
+  #app .c13-pfg{position:sticky;top:var(--colle)}
+  #app .c13-pfg .pf-photo{margin-top:0}
+  #app .c13-pfd>.fld:first-child{margin-top:0}
+  #app .c13-k>:first-child{margin-top:0}
+  /* Adresses : cartes en grille (2 en tablette paysage, 3 sur ordinateur), formulaire en 2 colonnes. */
+  #app .c13-adr{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--gg);align-items:start}
+  #app .c13-adr>.card{margin:0}
+  #app .c13-adf{margin-top:var(--gc)}
+  /* Boutons en fin de bloc (§ 6.9) : 200 à 360 px, alignés à droite, sans s'étirer sur toute la colonne. */
+  #app.g-compte :is(.gab-contenu,.c13-k,.c13-col,.c13-pfd,.md13-l,.md13-d)>.btns{justify-content:flex-end}
+  #app.g-compte :is(.gab-contenu,.c13-k,.c13-col,.c13-pfd,.md13-l,.md13-d)>.btns>*{flex:0 1 auto;width:auto;min-width:200px;max-width:360px}
+  #app.g-compte :is(.gab-contenu,.c13-k,.c13-col,.c13-pfd,.md13-l,.md13-d)>:is(.mt16,.mt10)>.btn{width:auto;min-width:200px;max-width:360px;margin-left:auto}
+  /* Wallet : solde et règles à gauche, historique à droite. */
+  #app .c13-wal{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:var(--gc);align-items:start}
+  #app .c13-wal .wl-card{margin-top:0}
+  #app .c13-hist>.dx-h:first-child{margin-top:0}
+  /* Maître-détail (messagerie dès 1024, factures et pages légales dès 1200) : la liste et le détail défilent
+     séparément, chacun collant sous l'en-tête ; la ligne ouverte est allumée. */
+  #app .md13{display:grid;grid-template-columns:clamp(280px,40%,380px) minmax(0,1fr);gap:var(--gc);align-items:start}
+  #app .md13-l{position:sticky;top:var(--colle);max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin;padding:2px 4px 8px;margin:-2px -4px 0}
+  #app .md13-l>:first-child,#app .md13-d>:first-child{margin-top:0}
+  #app .md13-d{min-width:0}
+  #app .md13 .li.on{background:var(--or-soft)}
+  #app .md13 .li.on .lt{color:var(--or-txt)}
+  #app .md13-vide{min-height:320px;display:flex;align-items:center;justify-content:center}
+  /* Fil : la zone d'écriture reste collée en bas du panneau. */
+  #app .md13-ecr{position:sticky;bottom:0;z-index:2;padding:8px 0 4px;background:linear-gradient(to bottom,transparent,var(--sand) 18px)}
+  #app.avec-ia .md13-ecr{padding-right:76px}
+  #app.g-compte .gab-contenu .md13-l>.btns>*{flex:1;max-width:none}
+  #app .md13-lec{max-width:760px}
+  /* Aide : contenu à gauche, « Nous joindre » à droite (collant). */
+  #app .c13-aide{display:grid;grid-template-columns:minmax(0,1fr) clamp(280px,36%,360px);gap:var(--gc);align-items:start}
+  #app .c13-joindre{position:sticky;top:var(--colle)}
+  #app .c13-joindre>.sec:first-child{margin-top:0}
+  /* Questions fréquentes : thèmes à gauche (240), recherche et réponses à droite (760 au plus). */
+  #app .c13-faq{display:grid;grid-template-columns:240px minmax(0,760px);gap:var(--gc);align-items:start}
+  #app .c13-rep>.inp:first-child{margin-top:0}
+  #app .c13-themes{position:sticky;top:var(--colle);padding:8px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  html[data-theme=dark] #app .c13-themes{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .c13-themes ul{list-style:none;margin:0;padding:0}
+  #app .c13-themes a{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:600;color:var(--ink-2)}
+  #app .c13-themes a.on{background:var(--or-soft);color:var(--or-txt);font-weight:800}
+  /* Devenir vendeur : formulaire à gauche, étapes et règles à droite (collantes si elles tiennent). */
+  #app .c13-vd{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--gc);align-items:start;margin-top:var(--gc)}
+  #app .c13-vda>.dx-h:first-child{margin-top:0}
+  /* Menu, page « Plan du site » (§ 5.16) : la tête (profil, relais) en ligne, puis les blocs en 3 colonnes. */
+  #app .mn-tete{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:var(--gc);align-items:stretch;margin-top:14px}
+  #app .mn-tete>.card{margin:0!important}
+  #app .mn-plan{columns:3;column-gap:var(--gc);margin-top:var(--esp-v)}
+  #app .mn-b{break-inside:avoid;display:flow-root;margin-bottom:var(--gc)}
+  #app .mn-b:empty{display:none}
+  #app .mn-b>:first-child{margin-top:0}
+  /* Kit des composants : grille de 2 ; la grille de produits sur toute la largeur. */
+  #app .kit-g{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gc) calc(var(--gc) * 1.5);align-items:start}
+  #app .kit-b{min-width:0}
+  #app .kit-b>.sec:first-child{margin-top:0}
+  #app .kit-b:has(.pgrid){grid-column:1/-1}
+  /* Page introuvable (gabarit centre) : le bouton garde sa largeur de bouton. */
+  #app .btns.i404>*{flex:0 1 auto;width:auto;min-width:200px;max-width:360px}
+  /* Colonnes étroites et très grand texte : les liens passent à la ligne plutôt que de déborder. */
+  #app :is(.c13-rep,.md13-l,.c13-k) .links{flex-wrap:wrap}
+  #app :is(.c13-rep,.md13-l,.c13-k) .links a{white-space:normal;min-width:0}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .c13-themes a:not(.on):hover,#app .md13 .li:not(.on):hover{background:var(--sand-2)}
+}
+/* Fin des lots 10 et 15 */
+/* ================================ Lots 7 et 8 : fiche produit, avis, question (CL-06), panier (CL-07), paiement (CL-08) ================================ */
+/* Fiche produit (§ 5.4). Tablette portrait : une colonne, galerie de 480 px, garanties en 4 colonnes. */
+@media (min-width:768px){
+  #app .fp-gal{height:480px}
+  #app .fp-gal .fp-th{overflow-y:auto;scrollbar-width:none}
+  #app .fp-gar{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+/* Dès 1024 : galerie collante | informations, puis bloc d'achat sous les informations (1024–1199) ou en aside
+   collant (dès 1200) ; dessous, pleine largeur : autres vendeurs, garanties, onglets. */
+@media (min-width:1024px){
+  #app .g-colonnes.fp-l{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"haut haut" "visuel contenu" "visuel aside";max-width:1280px;margin:0 auto}
+  #app .fp-l-bas{max-width:1280px;margin:var(--esp-v) auto 0}
+  #app:has(.fp-l) .hd-page>.fil{display:none}
+  #app .fp-l>.gab-haut .fil ol{margin-bottom:12px}
+  #app .fp-l>.gab-visuel{grid-area:visuel;position:sticky;top:var(--colle);align-self:start;min-width:0}
+  #app .fp-l .fp-gal{height:auto;margin:0;padding:12px;gap:12px}
+  #app .fp-l .fp-th{width:64px;max-height:min(560px,calc(100dvh - var(--sb) - var(--hd-h) - 80px))}
+  #app .fp-l .fp-th button{width:64px;height:64px}
+  #app .fp-l .fp-main{aspect-ratio:1/1;min-height:0;max-height:calc(100dvh - var(--sb) - var(--hd-h) - 80px)}
+  #app .fp-l .fp-main>svg{transition:transform .18s var(--blv-doux)}
+  #app .fp-l>.gab-contenu>.fp-bdg:first-child{margin-top:2px}
+  #app .fp-l .fp-t{font-size:26px;margin-top:12px}
+  #app .fp-l>.gab-aside{margin-top:4px}
+  #app .fp-l>.gab-aside>.card{margin-left:0;margin-right:0}
+  #app .fp-l .fp-chg{display:inline-block;margin-top:4px;color:var(--or-txt)}
+  #app .fp-l .fp-btns{display:flex;gap:10px;margin:12px 0 0}
+  #app .fp-l .fp-btns>.btn{flex:1;margin:0;min-width:0}
+  #app .fp-l .fp-btns>.fp-fav{order:-1}
+  #app .fp-l .fp-liens{display:flex;flex-wrap:wrap;gap:8px 20px;margin:14px 2px 0}
+  #app .fp-l .fp-liens a{display:inline-flex;align-items:center;gap:6px;min-height:32px;font-size:14px;font-weight:700;color:var(--or-txt)}
+  #app .fp-l-bas .defile{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gg);overflow:visible;padding:0;margin:0}
+  #app .fp-l-bas .defile>.fp-av{width:auto;min-width:0;margin:0}
+  #app .fp-l-bas .sec>.t12{display:none}
+  #app .fp-l-bas .fp-gar{margin:var(--esp-v) 0 0;gap:var(--gg)}
+  #app .fp-l-bas .fp-tabs{margin-top:var(--esp-v)}
+}
+@media (min-width:1024px) and (max-width:1199.98px){
+  #app .fp-l>.gab-aside{position:static}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .fp-l .fp-main{cursor:zoom-in}
+  #app .fp-l .fp-main:hover>svg{transform:scale(1.8);transform-origin:var(--zx,50%) var(--zy,50%)}
+  #app .fp-l .fp-liens a:hover{text-decoration:underline}
+}
+@media (min-width:1024px) and (prefers-reduced-motion:reduce){
+  #app .fp-l .fp-main>svg{transition:none}
+}
+@media (min-width:1200px){
+  #app .g-colonnes.fp-l{grid-template-columns:minmax(0,5fr) minmax(0,4fr) minmax(300px,3fr);grid-template-areas:"haut haut haut" "visuel contenu aside";max-width:1440px}
+  #app .fp-l-bas{max-width:1440px}
+  #app .fp-l .fp-rap{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 10px;margin-top:0}
+  #app .fp-l .fp-rap .fp-p{font-size:26px}
+  /* Ajouter au panier et le cœur sur une ligne, Acheter dessous, pleine largeur. */
+  #app .fp-l .fp-btns{flex-wrap:wrap}
+  #app .fp-l .fp-btns>.btn.primary{flex:1 1 100%}
+  #app .fp-l .fp-btns>.fp-fav{order:1;height:auto;align-self:stretch}
+  #app .fp-l .fp-btns>.btn.primary{order:2}
+  #app .fp-l .fp-liens{flex-direction:column;gap:4px}
+  #app .fp-l .fp-gl{list-style:none;margin:12px 0 0;padding:12px 2px 0;border-top:1px solid var(--line);display:grid;gap:6px}
+  #app .fp-l .fp-gl li{display:flex;gap:8px;align-items:center;color:var(--green);font-size:13.5px}
+  #app .fp-l .fp-gl li>b{color:var(--ink-2)}
+  #app .fp-l-bas .fp-det{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:var(--gc)}
+  #app .fp-l-bas .fp-tab>div:has(>.fp-avi){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--gg)}
+  #app .fp-l-bas .fp-tab>div:has(>.fp-avi)>:not(.fp-avi){grid-column:1/-1}
+  #app .fp-l-bas .fp-avi{margin:0}
+  #app .fp-l-bas .fp-avi p{margin:8px 0 0}
+}
+@media (min-width:1600px){
+  /* La fiche reste à 1 440 px (§ 5.4) : la barre de titre s'aligne sur elle. */
+  #app.l-large:has(.fp-l){--l-max:1440px}
+}
+/* Fin de la fiche produit (lots 7 et 8) */
+
+/* ================================ Lots 5 et 6 : accueil, catégories, listes, recherche (§ 5.1 à 5.3) ================================ */
+/* --- Accueil (§ 5.1) : gabarit catalogue ; carrousel, rails à cartes selon la largeur du centre, colonne droite. */
+@media (min-width:768px){
+  /* Colis au relais : carte en tête du centre (768–1199 : elle ne flotte plus sur les cartes), en tête de la colonne
+     droite dès 1200. */
+  #app :is(.acc-tete,.acc-droite) .h0-float{position:static;inset:auto;margin:0;width:auto;max-width:none;height:auto;min-height:58px;padding:10px;flex-wrap:wrap;row-gap:8px;border-radius:18px}
+  #app .acc-tete:not(:empty){margin:0 0 12px}
+  #app .gab-contenu:has(>.h0-hero),#app .h0-panel{position:relative}
+  #app .gab-contenu>.h0-hero{margin:0;padding:0;gap:0;border-radius:20px}
+  #app .h0-hero .h0-band{height:300px;border-radius:20px}
+  #app .h0-hero .h0-band .bt{left:24px;right:24px;bottom:22px;max-width:640px}
+  #app .h0-hero .h0-band b{font-size:26px}
+  #app .h0-hero .h0-band small{font-size:14px}
+  #app .gab-contenu>.h0-pills{margin:12px 0 0;padding:2px 2px 4px}
+  #app .gab-contenu .h0-panel{padding:14px 14px 14px}
+  #app .gab-contenu .h0-row{gap:12px;margin:12px -14px 0;padding:0 14px 4px}
+  #app .gab-contenu .h0-row>.h0-c{flex:0 0 calc((100% - 3 * 12px) / 3.25)}
+  /* Accueil, plus dense que les listes (§ 2.5) : cartes de 165 px au moins, comme sur téléphone ; 4 dès 700 px de
+     colonne, 5 dès 920, 6 dès 1 100 (rails : un quart de carte en plus). */
+  @container (min-width:700px){#app .gab-contenu .h0-row>.h0-c{flex-basis:calc((100% - 4 * 12px) / 4.25)}}
+  @container (min-width:920px){#app .gab-contenu .h0-row>.h0-c{flex-basis:calc((100% - 5 * 12px) / 5.25)}}
+  @container (min-width:1100px){#app .gab-contenu .h0-row>.h0-c{flex-basis:calc((100% - 6 * 12px) / 6.25)}}
+  /* Nouveaux arrivages : le rail partage sa rangée avec la bande ; il garde des cartes de la même largeur. */
+  #app .gab-contenu .h0-panel:has(>.h0-newb)>.h0-row>.h0-c{flex-basis:calc((100% - 2 * 12px) / 2.25)}
+  @container (min-width:700px){#app .gab-contenu .h0-panel:has(>.h0-newb)>.h0-row>.h0-c{flex-basis:calc((100% - 3 * 12px) / 3.25)}}
+  @container (min-width:1100px){#app .gab-contenu .h0-panel:has(>.h0-newb)>.h0-row>.h0-c{flex-basis:calc((100% - 4 * 12px) / 4.25)}}
+  #app .gab-contenu .h0-g3{gap:var(--gg)}
+  @container (min-width:700px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @container (min-width:920px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @container (min-width:1100px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(6,minmax(0,1fr))}}
+  /* Nouveaux arrivages : la bande à gauche, le rail à droite. */
+  #app .gab-contenu .h0-panel:has(>.h0-newb){display:grid;grid-template-columns:minmax(200px,26%) minmax(0,1fr);column-gap:12px;align-items:stretch}
+  #app .gab-contenu .h0-panel:has(>.h0-newb)>:not(.h0-newb,.h0-row){grid-column:1/-1}
+  #app .gab-contenu .h0-panel>.h0-newb{height:auto;min-height:118px;margin:12px 0 0}
+  #app .gab-contenu .h0-panel:has(>.h0-newb)>.h0-row{margin-left:0;padding-left:0}
+  #app .gab-contenu .h0-why{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:20px 16px 16px}
+  #app .gab-contenu .h0-why h2{grid-column:1/-1;margin:0 0 4px}
+  #app .gab-contenu .h0-why a{margin:0}
+  #app .gab-contenu .h0-mk .bt{grid-template-columns:repeat(4,minmax(0,1fr))}
+  /* Le pied de page du site remplace celui de l'accueil du téléphone (mêmes liens : aide, retours, légal, WhatsApp). */
+  #app .gab-contenu>.h0-ft{display:none}
+  /* Flèches des carrousels et des rails (posées par AccueilLarge) : aux bords, au milieu de la rangée. */
+  #app .rail-fl{position:absolute;z-index:4;transform:translateY(-50%);width:40px;height:40px;border:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--card);color:var(--ink);box-shadow:var(--shadow-pop),0 0 0 1px var(--line);cursor:pointer;transition:opacity .18s var(--blv-doux)}
+  #app .rail-fl.g{left:6px}
+  #app .rail-fl.d{right:6px}
+  #app .rail-fl:disabled{opacity:0;pointer-events:none}
+  #app .rail-fl:focus-visible{outline:2px solid var(--or-txt);outline-offset:2px}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app .h0-panel>.rail-fl:not(:focus-visible){opacity:0}
+  #app .h0-panel:hover>.rail-fl:not(:disabled){opacity:1}
+  #app .gab-contenu .h0-c{transition:transform .18s var(--blv-doux),box-shadow .18s var(--blv-doux)}
+  #app .gab-contenu .h0-c:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+  #app .gab-contenu .h0-c .im svg{transition:transform .18s var(--blv-doux)}
+  #app .gab-contenu .h0-c:hover .im svg{transform:scale(1.03)}
+  #app .acc-gar a:hover,#app .acc-droite .h0-flash .cir>a:not(.lbl):hover{background:var(--sand-2)}
+}
+@media (min-width:1024px){
+  #app .h0-hero .h0-band{height:340px}
+  #app .gab-contenu .h0-ban.promo{min-height:96px}
+  #app .acc-droite .h0-float .ft{flex:1 1 150px}
+  #app .acc-droite .h0-float .ft :is(b,small){white-space:normal}
+  #app .acc-droite .h0-float .fc{flex:1 1 100%;justify-content:center}
+}
+@media (min-width:1200px){
+  #app .h0-hero .h0-band{height:360px}
+  #app .acc-droite{display:flex;flex-direction:column;gap:12px;container-type:inline-size}
+  #app .acc-droite>div:empty{display:none}
+  /* Flash Deals dans la colonne droite : titre, compte à rebours, « Tout voir », puis les offres en liste. */
+  #app .acc-droite .h0-flash{margin:0;padding:12px;border-radius:20px;background:var(--card)}
+  #app .acc-droite .h0-flash .cir{display:flex;flex-direction:column;gap:2px;max-height:min(420px,calc(100dvh - var(--sb) - var(--hd-h) - 320px));min-height:220px;overflow:auto;padding:0;scroll-snap-type:none;scrollbar-width:thin}
+  #app .acc-droite .h0-flash .cir a.lbl{position:sticky;top:0;z-index:1;flex:none;display:grid;grid-template-columns:auto 1fr;align-items:center;gap:4px 10px;padding:2px 2px 10px;margin:0 0 4px;border:0;border-bottom:1px dashed var(--or-line);border-radius:0;background:var(--card)}
+  #app .acc-droite .h0-flash .cir a.lbl{grid-template-columns:minmax(0,1fr) auto}
+  #app .acc-droite .h0-flash .lbl b{font-size:16px}
+  #app .acc-droite .h0-flash .lbl .all{justify-self:end;margin:0}
+  #app .acc-droite .h0-flash .cir>a:not(.lbl){flex:none;display:grid;grid-template-columns:52px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;align-items:center;text-align:left;padding:6px 6px 10px;border-radius:12px}
+  #app .acc-droite .h0-flash .cir>a:not(.lbl) .ph{grid-row:1/3;width:52px;height:52px}
+  #app .acc-droite .h0-flash .cir>a:not(.lbl) .ph>span{width:52px;height:52px}
+  #app .acc-droite .h0-flash .cir>a:not(.lbl) b{margin:0;align-self:end;font-size:13px}
+  #app .acc-droite .h0-flash .cir>a:not(.lbl) em{align-self:start;font-size:13.5px}
+  /* Garanties en 2 × 2. */
+  #app .acc-gar{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  #app .acc-gar a{display:flex;flex-direction:column;gap:4px;min-height:96px;padding:12px;border-radius:16px;background:var(--card);box-shadow:var(--shadow-card);color:var(--ink)}
+  html[data-theme=dark] #app .acc-gar a{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .acc-gar svg{color:var(--or-txt)}
+  #app .acc-gar .k{margin-top:4px;font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3)}
+  #app .acc-gar b{font-size:13px;font-weight:700;line-height:1.3}
+}
+@media (min-width:1600px){
+  #app .h0-hero .h0-band{height:400px}
+}
+/* Fin de l'accueil (lot 5) */
+/* --- Catégories (§ 5.2). Tablette portrait : les univers en pastilles collantes, le contenu en pleine largeur ;
+   dès 1024 : la liste des univers est la colonne gauche (dépliée, 264 px), au centre la page de l'univers. */
+@media (min-width:768px){
+  #app .gab-contenu>.cl04-hub2{grid-template-columns:minmax(0,1fr);gap:12px}
+  #app .gab-contenu>.cl04-hub2>.cl04-rail2{position:sticky;top:8px;z-index:5;flex-direction:row;gap:8px;overflow-x:auto;scrollbar-width:none;padding:6px;border-radius:999px;background:var(--card)}
+  #app .gab-contenu>.cl04-hub2>.cl04-rail2::-webkit-scrollbar{display:none}
+  #app .gab-contenu>.cl04-hub2>.cl04-rail2 a{flex-shrink:0;min-height:40px;padding:0 14px;border:0;border-radius:999px;font-size:13.5px;white-space:nowrap;hyphens:none}
+  #app .gab-contenu>.cl04-hub2>.cl04-rail2 a.on::before{display:none}
+  #app .gab-contenu .cl04-ban2{min-height:200px;padding:24px;border-radius:20px}
+  #app .gab-contenu .cl04-ban2 .bt{max-width:640px}
+  #app .gab-contenu .cl04-ban2 h2{font-size:26px}
+  #app .gab-contenu .cl04-ban2 p{font-size:14px}
+  #app .gab-contenu .cl04-subs3{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gg)}
+  #app .gab-contenu .cl04-sub3{min-height:150px;padding:16px 8px 14px}
+  #app .gab-contenu .cl04-sub3 .im{width:72px;height:72px;border-radius:16px}
+  #app .gab-contenu .cl04-sub3 b{font-size:14px}
+  #app .gab-contenu .cl04-sub3 .n{font-size:12.5px}
+  #app .gab-contenu .dx-tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--gg)}
+  @container (min-width:900px){#app .gab-contenu .cl04-subs3{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @container (min-width:1300px){#app .gab-contenu .cl04-subs3{grid-template-columns:repeat(6,minmax(0,1fr))}}
+}
+@media (min-width:1024px){
+  #app .g-catalogue:has(>.gab-gauche>.cl04-rail2){grid-template-columns:264px minmax(0,1fr)}
+  #app .gab-gauche>.cl04-rail2{position:static;padding:8px;border:0;border-radius:20px;gap:2px}
+  html[data-theme=dark] #app .gab-gauche>.cl04-rail2{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .gab-gauche>.cl04-rail2 a{min-height:44px;padding:0 12px;border:0;border-radius:12px;font-size:14px;font-weight:700;hyphens:none}
+  #app .gab-gauche>.cl04-rail2 a.on::before{top:10px;bottom:10px;border-radius:2px}
+  #app .cl04-cat-l{display:flex;flex-direction:column;gap:14px}
+  #app .cl04-cat-l>*{margin-top:0!important}
+  #app .cl04-cat-l .cl04-cath{align-items:center}
+  #app .cl04-cat-l .cl04-ban2{min-height:260px}
+  #app .cl04-cat-l .cl04-srch{width:100%;max-width:560px}
+  #app .cl04-cat-l .dx-h{margin:6px 4px 10px}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .gab-gauche>.cl04-rail2 a:not(.on):hover,#app .gab-contenu .cl04-sub3:hover{background:var(--sand-2)}
+}
+/* Fin des catégories (lot 5) */
+/* --- Listes de produits et résultats (§ 5.3, 5.3.1, 6.8) : panneau des filtres en place, tri en menu, « Voir plus ». */
+@media (min-width:768px){
+  #app .gab-contenu :is(.cl04-lchips,.cl04-subpills){margin-left:0;margin-right:0;padding-left:0;padding-right:0}
+  #app .l-plus{display:flex;flex-direction:column;align-items:center;gap:10px;margin:var(--esp-v) 0 8px;text-align:center}
+  #app .l-plus p{margin:0;font-size:13.5px;font-weight:700;color:var(--ink-3)}
+  #app .l-plus .btn{width:auto;min-width:200px;padding:0 24px}
+}
+@media (min-width:1024px){
+  #app .g-catalogue:has(>.gab-gauche>.cl05-fp){grid-template-columns:280px minmax(0,1fr)}
+  #app .gab-gauche>.cl05-fp{max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;overscroll-behavior:contain;padding:2px 16px 16px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card);scrollbar-width:thin}
+  html[data-theme=dark] #app .gab-gauche>.cl05-fp{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app .cl05-fp.en-place .cl05-ft{position:sticky;top:-2px;z-index:2;margin:0 -16px;padding:8px 16px 4px;background:var(--card)}
+  #app .cl05-fp.en-place .cl05-ft h2{display:flex;align-items:center;gap:8px;font-size:18px}
+  #app .cl05-fn{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--or-soft);color:var(--or-txt);font-size:12.5px;font-weight:800}
+  #app .cl05-fp.en-place .chips{flex-wrap:wrap;overflow:visible}
+  #app .cl05-fp.en-place .cl05-pbox{height:44px;font-size:14px}
+  #app .cl05-fp.en-place .cl05-trow{min-height:44px;font-size:14px}
+  #app .cl05-toutes{display:inline-flex;align-items:center;gap:6px;min-height:40px;margin-top:6px;padding:0 4px;border:0;background:transparent;color:var(--or-txt);font:inherit;font-size:13.5px;font-weight:800;cursor:pointer}
+  /* Tri : menu déroulant natif, habillé comme une pastille. */
+  #app .l-tri{position:relative;display:inline-flex;align-items:center;gap:6px;flex-shrink:0;height:38px;padding:0 10px 0 12px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line-2);font-size:13.5px;font-weight:700;color:var(--ink-2)}
+  #app .l-tri select{appearance:none;-webkit-appearance:none;border:0;background:transparent;font:inherit;font-weight:800;color:var(--ink);padding:0 20px 0 0;margin-right:-20px;cursor:pointer;outline:none}
+  #app .l-tri>svg:last-child{pointer-events:none;color:var(--ink-3)}
+  #app .l-tri:focus-within{box-shadow:inset 0 0 0 2px var(--or-txt)}
+  #app .gab-contenu .cl04-lchips{flex-wrap:wrap;overflow:visible}
+}
+/* Fin des listes (lot 6) */
+/* --- Recherche (§ 5.3) : le champ de l'en-tête de site est la recherche ; barre des résultats, grille ou lignes,
+   accueil de la recherche en trois colonnes, « rien trouvé », carte des relais du tiroir. */
+@media (min-width:768px){
+  #app .cl05-chr{flex-wrap:wrap;align-items:center;overflow:visible!important;margin:14px 0 0;padding:0 0 14px}
+  #app .cl05-chr .l-rp{margin:0;height:40px;flex-shrink:1;min-width:0;max-width:100%}
+  #app .cl05-rs-carte{margin-top:12px}
+}
+@media (min-width:1024px){
+  #app .l-vue{display:inline-flex;gap:2px;margin-left:auto;padding:3px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line-2)}
+  #app .l-vue button{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:0;border-radius:999px;background:transparent;color:var(--ink-2);font:inherit;font-size:13.5px;font-weight:700;cursor:pointer}
+  #app .l-vue button.on{background:var(--or-soft);color:var(--or-txt);box-shadow:inset 0 0 0 1px var(--or-line)}
+  #app .l-vue button:focus-visible{outline:2px solid var(--or-txt);outline-offset:1px}
+  #app .pgrid.l-res{margin-top:12px}
+  #app .cl05-acc{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 var(--gc);align-items:start}
+  #app .cl05-col{min-width:0}
+  #app .cl05-col:empty{display:none}
+  #app .cl05-acc .cl05-u3g{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app .cl05-acc .chips{flex-wrap:wrap;overflow:visible}
+  #app .cl05-zero{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gc);align-items:start}
+  #app .cl05-zero>.cl05-blk{grid-column:1/-1;width:100%;max-width:760px;justify-self:center;text-align:center}
+  #app .cl05-zero>.cl05-blk>:is(.cl05-row,.note){text-align:left}
+  #app .cl05-zero>.cl05-blk .btns{max-width:420px;margin-left:auto;margin-right:auto}
+  #app .cl05-zero>:is(details,.cl05-col){margin-top:0}
+  #app .cl05-zero>.cl05-col>.cl05-lab:first-child{margin-top:0}
+  #app .cl05-zero .chips{flex-wrap:wrap;overflow:visible}
+}
+/* Fin de la recherche (lot 6) */
+/* --- Promotions et Sélection (§ 5.12) : bandeau pleine largeur, grille selon la largeur de la colonne. */
+@media (min-width:768px){
+  #app main>.pm-hero,#app .gab-contenu>.dx-hero.sel{padding:28px 32px;border-radius:24px}
+  #app main>.pm-hero h1,#app .gab-contenu>.dx-hero.sel h1{font-size:30px}
+  #app main>.pm-hero p,#app .gab-contenu>.dx-hero.sel p{font-size:14.5px;max-width:640px}
+  #app main>.pm-hero .wm,#app .gab-contenu>.dx-hero.sel .wm{font-size:96px}
+  #app main>:is(.pm-sort,.dx-filt){flex-wrap:wrap;overflow:visible}
+  #app .gab-contenu>.chips{flex-wrap:wrap;overflow:visible}
+  #app main>.fd-grid{gap:var(--gg)}
+  @container (min-width:560px){#app main>.fd-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @container (min-width:800px){#app main>.fd-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  @container (min-width:1040px){#app main>.fd-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+  @container (min-width:1280px){#app main>.fd-grid{grid-template-columns:repeat(6,minmax(0,1fr))}}
+}
+/* Fin des promotions et de la sélection (lot 6) */
+/* ================================ Lots 7 et 8 (suite) : galerie, avis, question (§ 5.5) ================================ */
+/* Galerie : visionneuse plein écran dès 768 (fond sombre en clair et en sombre), image contenue, flèches de 56 px,
+   vignettes en bande en bas, légende en bas à gauche, prix et retour à la fiche en haut à droite. */
+@media (min-width:768px){
+  #app .cl06-vw{position:fixed;inset:0;z-index:40;background:#0f0d12;display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto auto auto;column-gap:24px;padding:calc(var(--sb) + 12px) 24px 16px;overflow:hidden}
+  #app .cl06-vw>.cl06-vt{grid-column:1;grid-row:1;min-width:0}
+  #app .cl06-vw>.btns{grid-column:2;grid-row:1;margin:0;align-self:center}
+  #app .cl06-vw>.btns .btn{width:auto;min-width:200px}
+  #app .cl06-vw>.cl06-vi{grid-column:1/-1;grid-row:2;justify-self:center;align-self:center;width:min(100%,calc(100dvh - var(--sb) - 270px));height:auto;aspect-ratio:1/1;min-height:0;margin:12px 0;border:0;background:transparent}
+  /* Flèches aux bords de l'écran (rattachées à la visionneuse, hors du cadre de l'image). */
+  #app .cl06-vw>.cl06-vi{position:static!important}
+  #app .cl06-vw>.cl06-vi>.ibtn{width:56px;height:56px;top:calc(50% - 28px)!important;background:rgba(255,255,255,.14);color:#fff;border-radius:50%}
+  #app .cl06-vw>.cl06-vi>.ibtn:first-of-type{left:24px!important}
+  #app .cl06-vw>.cl06-vi>.ibtn:last-of-type{right:24px!important}
+  #app .cl06-vw>.cl06-vc{grid-column:1;grid-row:3;margin:0;align-self:end}
+  #app .cl06-vw>.hint-l{grid-column:2;grid-row:3;align-self:end;margin:0;color:rgba(255,255,255,.7)}
+  #app .cl06-vw>.cl06-th{grid-column:1/-1;grid-row:4;justify-content:center;margin-top:12px}
+  #app .cl06-vw>.cl06-th a{width:72px;height:72px}
+  #app .cl06-vw>.cl06-th~.hint-l{grid-column:1/-1;grid-row:5;justify-self:center;margin-top:8px}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .cl06-vw>.cl06-vi>.ibtn:hover{background:rgba(255,255,255,.26)}
+  #app .cl06-vw>.cl06-vi{cursor:zoom-in}
+}
+
+/* ================================ Lot 9 : commandes, notifications, litiges, modifications (§ 5.8 à 5.10) ================================ */
+/* Mes commandes : une colonne de 720 en tablette portrait ; livraisons en cours en deux colonnes (plan | liste). */
+@media (min-width:768px) and (max-width:1023px){
+  #app:has(.c9-page){--l-max:720px}
+}
+@media (min-width:768px){
+  #app .c9-live:has(>.c9-livl){grid-template-columns:minmax(0,7fr) minmax(0,5fr);align-items:stretch}
+  #app .c9-live:has(>.c9-livl)>.c9-map{height:240px!important}
+  #app .c9-livl{display:flex;flex-direction:column;gap:10px;min-width:0}
+}
+@media (min-width:1024px){
+  /* Paiement en attente pleine largeur : délai et montant à gauche, « Reprendre » et « Abandonner » à droite. */
+  #app .c9-page>.c9-pay{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:24px;align-items:center;padding:18px 22px}
+  #app .c9-page>.c9-pay>:not(.bt){grid-column:1}
+  #app .c9-page>.c9-pay>.k{grid-column:1/-1}
+  #app .c9-page>.c9-pay>.bt{grid-column:2;grid-row:2/span 2;margin-top:0}
+  #app .c9-page>.c9-pay>.bt .w{flex:0 0 auto}
+  /* Onglets et filtres sur une ligne ; cartes de commande en grille de 2, actions alignées en bas. */
+  #app .c9-filtres{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;margin-top:14px}
+  #app .c9-filtres>.c9-tabs{margin-top:0;flex:0 0 auto}
+  #app .c9-filtres>.c9-tabs a{flex:0 0 auto;padding:0 18px}
+  #app .c9-filtres>.c9-chips{flex:1 1 320px;min-width:0;margin:0;padding:2px}
+  #app .c9-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gg);margin-top:12px}
+  #app .c9-grille>.c9-oc{margin-top:0;display:flex;flex-direction:column;min-width:0}
+  #app .c9-grille>.c9-oc>.c9-acts{margin-top:auto;padding-top:10px}
+  /* Ma commande : titre pleine largeur, pastilles d'état et de mode à droite ; Preuves, Point relais et Litige
+     protégé côte à côte quand la colonne le permet ; le bandeau d'action en tête de l'aside. */
+  #app .c9-cols>.gab-haut .c9-dh{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:16px;padding:18px 20px}
+  #app .c9-cols>.gab-haut .c9-dh>:not(.pls){grid-column:1}
+  #app .c9-cols>.gab-haut .c9-dh>.pls{grid-column:2;grid-row:1/span 3;align-self:start;justify-content:flex-end;margin-top:0}
+  #app .c9-trio{display:grid;grid-template-columns:minmax(0,1fr);column-gap:12px}
+  #app .c9-trio>.c9-in{display:flex;flex-direction:column;align-items:flex-start}
+  #app .c9-trio>.c9-in>.k{align-self:stretch}
+  #app .c9-trio>.c9-in>.bt{margin-top:auto}
+  #app .c9-trio>.c9-in>p+.bt{margin-top:10px}
+  #app .gab-aside>.c9-code{flex-wrap:wrap}
+  #app .gab-aside>.c9-code>.grow{flex:1 1 160px;min-width:0}
+  #app .gab-aside .links{flex-wrap:wrap}
+}
+@container (min-width:640px){
+  #app .c9-trio{grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}
+}
+@media (min-width:1200px){
+  /* Mes commandes en maître-détail : liste compacte (bandeau du paiement, onglets, filtres repliés en lignes,
+     cartes réduites), détail de la commande choisie en deux colonnes internes 7/5. */
+  #app .c9-md>.gab-liste{padding:0 4px 16px 2px}
+  #app .c9-md>.gab-liste .c9-chips{flex-wrap:wrap;overflow:visible;margin:10px 0 0;padding:0}
+  #app .c9-md>.gab-liste .c9-pay .a{font-size:22px}
+  #app .c9-md>.gab-liste .c9-tabs a{padding:0 8px}
+  #app .c9-mini .du{margin-top:8px}
+  #app .c9-mini.on{background:linear-gradient(var(--or-soft),var(--or-soft)),var(--card);box-shadow:0 0 0 2px var(--or),var(--shadow-card)}
+  #app .c9-md>.gab-detail .g-colonnes{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+  #app .c9-md>.gab-detail>.c9-pan+.gab{margin-top:var(--gc)}
+}
+@media (min-width:1200px) and (hover:hover) and (pointer:fine){
+  #app .c9-mini:not(.on):hover{box-shadow:0 0 0 1.5px var(--or-line),var(--shadow-pop)}
+}
+/* Avis : dès 1024, aside à gauche (produit, note, répartition, filtres, tri), avis à droite. */
+@media (min-width:1024px){
+  #app .av-l>.card{margin-left:0;margin-right:0}
+  #app .av-l .cl06-fl{flex-wrap:wrap!important;overflow:visible!important}
+  #app .g-colonnes>.gab-contenu>.cl06-sc:first-child{margin-top:0}
+  #app .g-colonnes>.gab-contenu>.cl06-phs{grid-template-columns:repeat(auto-fill,minmax(112px,140px))}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .av-l .cl06-h5:hover{background:var(--sand-2);border-radius:8px}
+}
+/* Question au vendeur : formulaire à gauche, « Envoyer » en fin de formulaire aligné à droite ; produit et vendeur
+   dans l'aside. */
+@media (min-width:1024px){
+  #app .q-l>.btns{display:flex;justify-content:flex-end}
+  #app .q-l>.btns>.btn{width:auto;min-width:200px;max-width:360px}
+  #app .q-l>.pg:first-child{margin-top:0}
+  #app .g-colonnes>.gab-aside>.cl06-tw{margin:0}
+}
+@media (min-width:1024px){
+  /* Code de retrait : le code en grand à gauche (QR de 280, 6 chiffres agrandis) ; l'aide au comptoir, le support
+     et l'avertissement sous le code, dans la même colonne ; l'aside (montant dû, relais, actions) à droite. */
+  #app .c9-code-g{grid-template-areas:"haut haut" "contenu aside" "bas aside";grid-template-rows:auto auto 1fr}
+  #app .c9-code-g>.gab-bas{align-self:start}
+  #app .c9-code-g>.gab-contenu>.hero{padding-top:28px;padding-bottom:24px}
+  #app .c9-code-g .hero .cl09-qr{width:280px;height:280px;margin-left:auto;margin-right:auto}
+  #app .c9-code-g .hero .code6{gap:12px}
+  #app .c9-code-g .hero .code6 span{width:56px;height:76px;font-size:40px}
+  #app .c9-code-g .hero .btns{max-width:420px;margin-left:auto;margin-right:auto}
+  /* Suivi : plan indicatif en 16/9 (360 de haut au plus). */
+  #app .c9-suivi .c9-map{height:auto!important;aspect-ratio:16/9;max-height:360px}
+  /* Au comptoir : les 4 gestes en grille de 2 × 2. */
+  #app .cl09 .card:has(>.cl09-step:nth-child(4)){display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px}
+  #app .cl09 .card>.cl09-step:nth-child(2){border-top:0}
+}
+
+/* ================================ Lot 13 : diaspora et pages web publiques (§ 4.7, 5.14) ================================ */
+@media (min-width:1024px){
+  /* Enveloppes <Rangee> (pages/diaspora/Commun.tsx) : elles n'existent que dès 1024 px. */
+  #app .d13-duo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gc);align-items:start;margin-top:var(--esp-v)}
+  #app .d13-col{min-width:0}
+  #app .d13-col>:first-child{margin-top:0}
+  /* Espace diaspora : le compte en tête, ses plafonds et la devise en tuiles. */
+  #app .ed-compte{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+  #app .ed-compte>:is(.row,p){grid-column:1/-1;margin:0}
+  #app .ed-compte>.kv{flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:4px;margin:0;padding:12px 14px;border:0;border-radius:14px;background:var(--card)}
+  #app .ed-compte>.kv .v{max-width:none;text-align:left;font-size:16px;white-space:normal}
+  /* Tables (commandes envoyées) : en-têtes discrets, lignes séparées, montants à droite. */
+  #app .d13-table{padding:4px 16px;overflow-x:auto}
+  #app .d13-table table{width:100%;border-collapse:collapse;font-size:14px}
+  #app .d13-table th{padding:12px 8px;text-align:left;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3)}
+  #app .d13-table td{padding:12px 8px;border-top:1px solid var(--line);color:var(--ink-2)}
+  #app .d13-table td a{display:inline-flex;align-items:center;gap:8px;font-weight:800;color:var(--or-txt)}
+  #app .d13-table .num{text-align:right;white-space:nowrap;font-weight:800;color:var(--ink)}
+  /* Contenu et aside de 360 px collant (Mes proches : relier un proche ; code famille). */
+  #app .d13-avec-aside{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--gc);align-items:start}
+  #app .d13-aside{position:sticky;top:var(--colle);min-width:0}
+  #app .d13-aside>:first-child{margin-top:0}
+  /* Grille de cartes (proches) : 2 colonnes, 3 quand la colonne est assez large ; chaque carte garde sa forme. */
+  #app .d13-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:var(--gg);align-items:stretch}
+  #app .d13-grille>.card{margin:0;display:flex;flex-direction:column}
+  #app .d13-grille>.card>.btns:last-child{margin-top:auto;padding-top:12px}
+  /* Maître-détail interne (À payer pour mes proches) : la liste collante à gauche, le panier choisi à droite. */
+  #app .d13-md{display:grid;grid-template-columns:clamp(300px,40%,360px) minmax(0,1fr);gap:var(--gc);align-items:start}
+  #app .d13-md-liste{position:sticky;top:var(--colle);max-height:calc(100dvh - var(--sb) - var(--hd-h) - 48px);overflow:auto;scrollbar-width:thin;min-width:0;padding:0 4px 4px}
+  #app .d13-md-detail{min-width:0}
+  #app .d13-md-liste>:first-child,#app .d13-md-detail>:first-child{margin-top:0}
+  #app .d13-md-liste .li.on{background:var(--or-soft);border-radius:14px}
+  #app .d13-md-liste .li.on .lt{color:var(--or-txt)}
+}
+@media (min-width:1200px){
+  #app .d13-avec-aside{grid-template-columns:minmax(0,1fr) 360px}
+  /* Comptes diaspora : tout savoir. Sommaire collant de 220 px à gauche, texte en colonne de lecture (760). */
+  #app .d13-lecture{display:grid;grid-template-columns:220px minmax(0,760px);justify-content:center;gap:var(--gc);align-items:start}
+  #app .d13-texte{min-width:0}
+  #app .d13-texte>:first-child{margin-top:0}
+  #app .d13-sommaire{position:sticky;top:var(--colle);padding:14px 12px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  #app .d13-sommaire ol{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+  #app .d13-sommaire a{display:block;padding:8px 10px;border-radius:10px;font-size:13.5px;font-weight:700;line-height:1.35;color:var(--ink-2)}
+  #app .d13-texte [id^=di-]{scroll-margin-top:16px}
+}
+@media (min-width:1200px) and (hover:hover) and (pointer:fine){
+  #app .d13-sommaire a:hover{background:var(--sand-2);color:var(--or-txt)}
+}
+/* Pages web publiques (gabarit web, § 4.7) : leur propre en-tête web, étiré sur toute la largeur ; le contenu
+   commence sous lui avec la marge du téléphone (coque : écrans sans en-tête de site). */
+@media (min-width:768px){
+  #app:has(>header.cl14-web) .cl14-web{border-radius:0}
+  #app .cl12-safari{display:none}
+  #app .g-web>.gab-haut .blv-devises{max-width:760px;margin-left:auto;margin-right:auto}
+  /* Pied de page réduit (composants/PiedWeb.tsx) : le légal et le contact. */
+  #app .pied-web{display:flex;flex-wrap:wrap;align-items:center;gap:10px 18px;margin-top:var(--esp-v);padding:18px 0 24px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-3)}
+  #app .pied-web img{height:22px}
+  #app .pied-web .grow{flex:1}
+  #app .pied-web a{display:inline-flex;align-items:center;gap:6px;color:var(--ink-3)}
+}
+@media (min-width:1024px){
+  /* Liste publique : les articles en grille, « Offrir » en bas de chaque carte. */
+  #app .d13-articles{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:var(--gg);align-items:stretch;margin-top:10px}
+  #app .d13-articles>.card{margin:0;display:flex;flex-direction:column}
+  #app .d13-articles>.card>.btns{margin-top:auto;padding-top:12px}
+}
+@media (min-width:768px) and (hover:hover) and (pointer:fine){
+  #app .pied-web a:hover{color:var(--or-txt)}
+  #app .d13-articles>.card{transition:transform .18s var(--blv-doux),box-shadow .18s var(--blv-doux)}
+  #app .d13-articles>.card:hover{transform:translateY(-2px);box-shadow:var(--shadow-pop)}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .d13-table tbody tr:hover{background:var(--sand-2)}
+  #app .d13-md-liste .li:not(.on):hover{background:var(--sand-2);border-radius:14px}
+}
+/* ================================ Lots 7 et 8 (suite) : panier (§ 5.6) ================================ */
+@media (min-width:1024px){
+  #app .pa-l>.gab-contenu>:first-child{margin-top:0}
+  /* Récapitulatif plus haut que la fenêtre : il reste collant et défile en lui-même, « Passer commande » collé en
+     bas de sa zone visible (comme la barre du téléphone), rien n'est coupé. */
+  #app .pa-recap,#app .pa-recap.long{position:sticky;max-height:calc(100dvh - var(--sb) - var(--hd-h) - 40px);overflow-y:auto;scrollbar-width:thin;padding:2px 6px 0;margin:-2px -6px 0}
+  #app.avec-ia .pa-recap{max-height:calc(100dvh - var(--sb) - var(--hd-h) - 104px)}
+  #app .pa-recap .cl07-act{position:sticky;bottom:0;z-index:2;background:var(--sand);padding:12px 0 10px;box-shadow:0 -14px 14px -10px var(--sand)}
+  #app .pa-recap>.card{margin-left:0;margin-right:0}
+  #app .pa-recap>.card:first-child{margin-top:0}
+  /* Les boutons de la barre fixée du téléphone, rangés dans le récapitulatif. */
+  #app .cl07-act{margin-top:6px}
+  #app .cl07-act>.btn{width:100%;max-width:none}
+  #app .cl07-act .pr{font-size:12.5px;line-height:1.45;color:var(--ink-3);text-align:center;margin-top:9px}
+  #app .cl07-act .pr b{color:var(--ink-2);font-weight:700}
+  #app .pa-l-bas{margin-top:var(--esp-v)}
+  #app .pa-l-bas .cl07-svc{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--gg)}
+  #app .pa-l-bas .cl07-svc>.cl07-sv{margin:0}
+  /* « Ajouter de cette boutique » : 4 cartes, 5 dès 1200 (la colonne s'y prête). */
+  #app .pa-l .cl07-mc{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));overflow:visible}
+  #app .pa-l .cl07-mc>*{width:auto;min-width:0}
+}
+@media (min-width:1200px){
+  #app .pa-l .cl07-mc{grid-template-columns:repeat(5,minmax(0,1fr))}
+}
+@media (min-width:1024px){
+  /* Notifications : filtres comptés à gauche (240), liste à droite (760 au plus). */
+  #app .g-colonnes.cl10-g2{grid-template-columns:240px minmax(0,760px);justify-content:center}
+  #app .cl10-g2>.gab-aside{padding:12px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  #app .cl10-g2>.gab-aside>.cl10-top{flex-direction:column;align-items:stretch;gap:8px;margin:0 0 8px}
+  #app .cl10-g2>.gab-aside>.cl10-top .btn{width:100%!important;justify-content:center}
+  #app .cl10-filtres{display:grid;gap:2px;padding:8px 0;border-top:1px solid var(--line)}
+  #app .cl10-filtres a{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 10px;border-radius:12px;font-size:14px;font-weight:700;color:var(--ink-2)}
+  #app .cl10-filtres a.on{background:var(--or-soft);color:var(--or-txt)}
+  #app .cl10-filtres .n{font-size:12px;font-weight:800;padding:2px 8px;border-radius:999px;background:var(--sand-2);color:var(--ink-3)}
+  #app .cl10-filtres a.on .n{background:var(--card);color:var(--or-txt)}
+  #app .cl10-g2>.gab-aside>.links{flex-direction:column;align-items:flex-start;gap:8px;margin-top:4px;padding:10px 10px 4px;border-top:1px solid var(--line)}
+}
+@media (min-width:1024px) and (hover:hover) and (pointer:fine){
+  #app .cl10-filtres a:not(.on):hover{background:var(--sand-2)}
+}
+@media (min-width:1024px){
+  /* Réglage des notifications (gabarit du compte) : interrupteurs | canal de repli, numéro et message d'essai. */
+  #app .cl10-2c{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:var(--gc);align-items:start}
+  #app .cl10-2c>div{min-width:0}
+  #app .cl10-2c>div>.card:first-child,#app .cl10-2c>div>.note:first-child{margin-top:0}
+}
+/* Favoris (sauvegardés) : barre d'outils (filtres, tri, total et « Tout mettre au panier » à droite), favoris en
+   grille selon la largeur de la page. */
+@media (min-width:768px){
+  #app .sv-outils{display:flex;flex-wrap:wrap;align-items:center;gap:12px var(--gc);margin-top:12px}
+  #app .sv-outils>.chips{flex:1 1 320px;flex-wrap:wrap!important;overflow:visible!important;margin:0}
+  #app .sv-outils>.fld{flex:0 1 280px;margin:0!important}
+  #app .sv-outils>.vedette{flex:1 1 100%;margin:0}
+  #app .sv-grille{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:var(--gg);margin-top:var(--esp-v);align-items:start}
+  #app .sv-grille>.card{margin:0}
+  #app .sv-grille>p{grid-column:1/-1}
+}
+@media (min-width:1024px){
+  #app .sv-outils{flex-wrap:nowrap}
+  #app .sv-outils>.fld{flex:0 0 260px}
+  #app .sv-outils>.vedette{flex:0 1 auto;display:flex;align-items:center;gap:16px;padding:12px 16px}
+  #app .sv-outils>.vedette>.btns{margin:0;flex:none}
+  #app .sv-outils>.vedette>.btns>.btn{width:auto;min-width:200px}
+}
+@media (min-width:1200px){
+  #app .sv-outils{align-items:flex-end}
+  #app .sv-outils>.chips{flex:0 0 auto;flex-wrap:nowrap!important;padding-bottom:6px}
+  #app .sv-outils>.vedette{flex:1 1 auto;justify-content:space-between}
+}
+/* Fin des lots 7 et 8 : favoris */
+/* ================================ Lots 7 et 8 (suite) : paiement (§ 5.7) ================================ */
+/* Passer commande (feuille large) : dès 1024, deux colonnes, les choix à gauche, le récapitulatif et « Payer »
+   collants à droite (la feuille défile en elle-même). */
+@media (min-width:1024px){
+  #app .sheet[data-forme=large]:has(>.pm-choix){display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,360px);column-gap:28px;align-items:start}
+  #app .sheet[data-forme=large]:has(>.pm-choix)>:not(.pm-choix,.pm-recap){grid-column:1/-1}
+  #app .sheet>.pm-choix{min-width:0}
+  #app .sheet>.pm-recap{position:sticky;top:12px;min-width:0}
+  #app .sheet>.pm-recap>.cl07-rc:first-child{margin-top:14px}
+  #app .sheet>.pm-recap>.btns>.btn{width:100%}
+}
+/* Écran verrouillé et SMS : imitations du téléphone dans un cadre de 390 × 780, centré ; dès 1024, une colonne
+   d'explication à côté (« Ce que tu reçois et quand »). */
+@media (min-width:768px){
+  #app :is(.cl10-ph,.cl10-sa){width:390px;max-width:100%;min-height:780px;margin-left:auto;margin-right:auto;border-radius:44px;box-shadow:0 0 0 8px var(--sand-3),var(--shadow-pop)}
+  #app .cl10-sa{display:flex;flex-direction:column}
+  #app .cl10-sa>.cl10-sa-b{flex:1 1 auto}
+}
+@media (min-width:1024px){
+  #app .cl10-cadre{display:grid;grid-template-columns:390px minmax(0,420px);justify-content:center;column-gap:calc(var(--gc) * 2);align-items:start;padding:8px}
+  #app .cl10-cadre>:is(.cl10-ph,.cl10-sa){margin-top:0;position:sticky;top:var(--colle)}
+  #app .cl10-expl{min-width:0}
+  #app .cl10-expl-t{margin:0 0 8px;font-size:18px;font-weight:800}
+  #app .cl10-expl>.links{justify-content:flex-start}
+}
+@media (min-width:1024px){
+  /* Lien court du SMS (aperçu de la page web) : le code à gauche, le relais et les actions à droite. */
+  #app .cl10-web:has(>.cl10-web-g){display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);column-gap:calc(var(--gc) * 1.5);align-items:start}
+  #app .cl10-web-g,#app .cl10-web-d{min-width:0}
+  #app .cl10-web-d>.cl10-photo:first-child{margin-top:0}
+}
+/* États du paiement (attente, prix changé, échec) : gabarit centre. Dès 1024, le bouton principal à droite, le
+   secondaire à gauche (même ligne), les autres actions dessous ; le compte à rebours en grand. */
+@media (min-width:768px){
+  #app.g-centre .cl08-wait .s{display:block;margin-top:2px;font-size:20px;font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}
+}
+@media (min-width:1024px){
+  #app.g-centre .cl08-fill{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-auto-flow:row dense;column-gap:12px}
+  #app.g-centre .cl08-fill>*{grid-column:1/-1;min-width:0}
+  #app.g-centre .cl08-fill>.btns{grid-column:1;margin-top:16px}
+  #app.g-centre .cl08-fill>.btns:has(>.btn.primary){grid-column:2}
+  #app.g-centre .cl08-fill>.btns>.btn{width:100%;max-width:none}
+  /* Prix changé : ancien prix, nouveau prix et écart en colonnes de tableau ; les deux totaux côte à côte. */
+  #app.g-centre .cl08-todo{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:24px}
+  #app.g-centre .cl08-todo>*{grid-column:1/-1}
+  #app.g-centre .cl08-todo>.cl08-ln{grid-column:auto;flex-direction:column;align-items:flex-start;gap:2px}
+  #app.g-centre .cl08-todo>div:has(>.cl08-ln+.cl08-ln){display:grid;grid-template-columns:repeat(3,minmax(0,1fr));column-gap:16px}
+  #app.g-centre .cl08-todo>div:has(>.cl08-ln+.cl08-ln)>*{grid-column:1/-1}
+  #app.g-centre .cl08-todo>div:has(>.cl08-ln+.cl08-ln)>.cl08-ln{grid-column:auto;flex-direction:column;align-items:flex-start;gap:2px}
+}
+/* Commande confirmée et validée : dès 1024, le reçu à gauche, le relais et les actions dans l'aside. */
+@media (min-width:1024px){
+  #app .g-colonnes>.gab-contenu>.cl08-rc:first-child{margin-top:0}
+  #app .cf-aside>.card{margin:0;padding:14px}
+  #app .cf-aside>.card>.cl08-rel{margin:0;border:0;padding:0;box-shadow:none}
+  #app .cf-aside>.btns{margin-top:12px}
+  #app .cf-aside>.btns>.btn{width:100%;max-width:none}
+}
+/* Paiement express : la feuille du téléphone, centrée, 420 px. */
+@media (min-width:768px){
+  #app .sheet:has(>.xp-sheet){width:min(420px,calc(100% - 48px))}
+}
+@media (min-width:1024px){
+  /* Mes litiges : cartes de dossier en grille de 2. */
+  #app .cl11-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--gg);align-items:stretch}
+  #app .cl11-grille>.card{margin:0}
+}
+@media (min-width:1200px){
+  /* Maître-détail des litiges : liste à gauche, suivi du dossier choisi en 2 colonnes internes 7/5. */
+  #app .cl11-md>.gab-liste{padding:0 4px 16px 2px}
+  #app .cl11-md .card.cl11-on{box-shadow:0 0 0 2px var(--or),var(--shadow-card)}
+  #app .cl11-md>.gab-detail .g-colonnes{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+}
+/* Fin des lots 7 et 8 */
+@media (min-width:1024px){
+  /* Signaler un problème : étapes nommées sous la barre ; preuves en grille de 4 vignettes ; « Retour » à gauche,
+     « Continuer » à droite, en fin d'étape. */
+  #app .cl11-prog-l{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;list-style:none;margin:6px 0 0;padding:0;font-size:12.5px;font-weight:700;color:var(--ink-3)}
+  #app .cl11-prog-l .on{color:var(--ink-2)}
+  #app .cl11-prog-l .cur{color:var(--or-txt);font-weight:800}
+  #app .cl11-pics:has(>.cl11-pic){grid-template-columns:repeat(4,minmax(0,1fr))}
+  #app .cl11-pics.one{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app .cl11-fin{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:var(--esp-v)}
+  #app .cl11-fin>.btn{width:auto;min-width:200px;max-width:360px}
+  #app .cl11-fin-n{text-align:right}
+  #app .gab-liste .links,#app .gab-aside .links{flex-wrap:wrap}
+}
+/* Pages web publiques (paiement depuis l'étranger, suivi du cadeau) : la barre Safari imitée laisse la place au vrai
+   navigateur dès 768. */
+@media (min-width:768px){
+  #app .cl12-safari{display:none}
+}
+/* ================================ Revue r2 : compte, commandes, litiges, modifications (5 oct.) ================================ */
+@media (min-width:1024px){
+  /* Mon compte : « Mes achats » prend l'allure d'une carte, comme le relais et le portefeuille à côté : titres dans
+     la carte, bords hauts et bas alignés sur la même ligne. */
+  #app .c13-ov>.c13-achats{display:flex;flex-direction:column;background:var(--card);border-radius:var(--r-l);box-shadow:var(--shadow-card);padding:13px 15px 4px}
+  html[data-theme=dark] #app .c13-ov>.c13-achats{box-shadow:inset 0 0 0 1px var(--line)}
+  #app .c13-ov>.c13-achats>.cl13-gk{margin:0}
+  #app .c13-ov>.c13-achats>.cl13-list{flex:1;margin:4px 0 0;padding:0;background:none;box-shadow:none}
+  /* Mon compte : les listes du bas suivent la grille du haut (7/5) ; la petite liste de droite reçoit la suivante
+     en dessous, sans trou. Compte neuf : moitié-moitié comme ses cartes du haut, « Aide et réglages » sous
+     « Mes achats ». */
+  #app .c13-g2.c13-g2a{grid-template-columns:minmax(0,7fr) minmax(0,5fr);grid-template-areas:"a b" "a c";grid-template-rows:auto 1fr;row-gap:0}
+  #app .c13-g2.c13-g2b{grid-template-areas:"a b" "c b";grid-template-rows:auto 1fr;row-gap:0}
+  #app .c13-g2:is(.c13-g2a,.c13-g2b)>:nth-child(1){grid-area:a}
+  #app .c13-g2:is(.c13-g2a,.c13-g2b)>:nth-child(2){grid-area:b}
+  #app .c13-g2:is(.c13-g2a,.c13-g2b)>:nth-child(3){grid-area:c}
+  #app .c13-g2a>:nth-child(3)>.cl13-gk:first-child,#app .c13-g2b>:nth-child(3)>.cl13-gk:first-child{margin-top:var(--esp-v)}
+  /* Compte neuf : la vérification du numéro, à faire, en carte pleine largeur en tête (et non un bouton seul). */
+  #app .c13-afaire{display:flex;align-items:center;gap:14px;margin:0 0 var(--gc);padding:14px 16px;background:var(--or-soft);box-shadow:inset 0 0 0 1px var(--or-line)}
+  #app .c13-afaire .ic{width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--card);color:var(--or-txt)}
+  #app .c13-afaire .lt{font-size:15px;font-weight:800;color:var(--or-deep)}
+  #app .c13-afaire .btn{width:auto;min-width:200px;flex-shrink:0}
+  /* Bas de Mon compte : la suppression s'aligne à droite, sous « Se déconnecter ». */
+  #app.g-compte .gab-contenu>.cl13-del{text-align:right}
+  #app.g-compte .gab-contenu>.c13-g2+.btns{margin-top:var(--esp-v)}
+  /* Listes des maîtres-détails (factures…) : les filtres passent à la ligne au lieu d'être coupés au bord. */
+  #app .md13-l .chips{flex-wrap:wrap!important;overflow:visible!important}
+  /* La petite note sous un bouton aligné à droite le suit à droite (avis à donner, formulaires du compte). */
+  #app.g-compte :is(.gab-contenu,.c13-col,.c13-k)>.btns+.scrim-note{text-align:right}
+  /* Notifications : la grille part du bord gauche de la barre de titre (et non centrée en retrait) ; la liste et
+     les filtres commencent à la même hauteur. */
+  #app .g-colonnes.cl10-g2{justify-content:start}
+  #app .cl10-g2>.gab-contenu>:first-child{margin-top:0}
+  /* Document légal : « Partager, Imprimer, Par e-mail » sous le bouton de téléchargement, alignés à droite comme lui. */
+  #app .md13-lec>.btns+.links{justify-content:flex-end}
+}
+@media (min-width:1380px){
+  /* Fil : le bouton de l'assistant est hors du conteneur dès que la marge dépasse sa place ; la zone d'écriture
+     reprend toute la largeur du panneau. */
+  #app.avec-ia .md13-ecr{padding-right:0}
+}
+@media (min-width:768px){
+  /* Formulaire d'adresse : son titre est déjà celui de la barre de titre de page (dès 768) ; pas de second titre
+     identique. */
+  #app.a-site .c13-adf-t>.pg-t{display:none}
+  #app.a-site .c13-adf-t>.pg-s{margin-top:0}
+  /* Signaler un problème : la question de l'étape respire sous la petite note qui la précède. */
+  #app.a-site main .hint-l+.pg-t{margin-top:20px}
+}
+@media (min-width:768px){
+  /* Livraisons en cours : le plan garde ses proportions (170 × 160), sans être rogné ni grossi ; la liste prend le
+     reste de la largeur. */
+  #app .c9-live:has(>.c9-livl){grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:start}
+  #app .c9-live:has(>.c9-livl)>.c9-map{height:auto!important;aspect-ratio:170/160;min-height:0}
+  #app .c9-livl .mc>.c9-st{align-self:flex-start}
+}
+@media (min-width:1024px){
+  /* Ma commande : même écart sous la tête que entre les colonnes ; le contenu et l'aside démarrent à la même
+     hauteur. Le plan du suivi garde ses proportions (320 × 170) : rien de rogné (étiquettes « Maison », trajet). */
+  #app .c9-cols{row-gap:var(--gc)}
+  #app .c9-cols>:is(.gab-contenu,.gab-aside)>:first-child{margin-top:0}
+  #app .c9-cols .c9-box>.c9-map{height:auto!important;aspect-ratio:320/170}
+  /* Code de retrait, suivi, garde : contenu et aside alignés en haut. */
+  #app :is(.c9-code-g,.c9-suivi)>:is(.gab-contenu,.gab-aside)>:first-child{margin-top:0}
+  /* Suivi : le plan prend toute la largeur de sa carte (il restait 640 px à gauche, un vide à droite), dans ses
+     proportions. */
+  #app .c9-suivi .c9-map{max-height:none;aspect-ratio:320/170}
+}
+@media (min-width:768px) and (max-width:1023px){
+  /* Tablette portrait, pages du compte : le flux du téléphone s'étire sur 720 px ; les boutons d'une rangée gardent
+     une taille de bouton (360 px au plus), centrés, au lieu de traverser la page. */
+  #app.g-compte .gab-contenu>.btns{justify-content:center}
+  #app.g-compte .gab-contenu>.btns>.btn{max-width:360px}
+}
+/* Fin de la revue r2 */
+/* ================================ Revue r1 : accueil, catalogue, recherche, fiche, panier, paiement (5 oct.) ================================ */
+@media (min-width:768px){
+  /* Accueil : « Trier : Pertinence » à droite du titre « Produits populaires », avant « Voir plus » (§ 5.1). */
+  #app .h0-hd>.acc-tri{display:flex;flex-shrink:0}
+  #app .acc-tri>.h0-sort{margin:0;font-size:12.5px}
+  #app .acc-tri>.h0-sort a{height:30px;padding:0 10px;border-radius:999px;font-size:12.5px}
+  /* Accueil : Ventes flash dans le flux (768–1199) : les offres se partagent la largeur (pas de vide à droite,
+     noms moins coupés). */
+  #app .gab-contenu .h0-flash .cir>a:not(.lbl){flex:1 0 84px}
+  #app .gab-contenu .h0-flash .cir>a:not(.lbl) em{margin-top:auto}
+  /* Accueil, connexion lente et hors ligne : le bandeau en tête du centre, aligné sur le haut des colonnes, 12 px
+     au-dessus du carrousel (il le touchait). */
+  #app .gab-contenu>.cl04-slow,#app .gab-contenu>a:has(>.offline-banner){margin:0 0 12px}
+  #app .gab-contenu>a>.offline-banner{margin:0}
+  /* Accueil, connexion lente : les cartes d'attente occupent toute la rangée, comme les rails qu'elles annoncent. */
+  #app .gab-contenu .cl04-panel>.hrow>.cl04-sk{flex:1 1 0!important;min-width:0}
+  #app .gab-contenu .cl04-panel>.hrow>.cl04-sk>i.im{aspect-ratio:auto;height:160px}
+  /* Accueil : les 6 produits populaires en 3 colonnes (2 rangées pleines), puis en 6 dès 1 100 px : jamais de trou. */
+  @container (min-width:700px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @container (min-width:920px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+  @container (min-width:1100px){#app .gab-contenu .h0-g3{grid-template-columns:repeat(6,minmax(0,1fr))}}
+}
+@media (min-width:768px){
+  /* Feuilles (défaut général) : la première rangée du contenu (titre et action à droite, « Tout effacer »…) laisse
+     la place du bouton × collant ; il recouvrait l'action. */
+  #app .sheet>.sheet-x~div>.row:first-child{padding-right:40px}
+}
+@media (min-width:1200px){
+  /* Accueil, colonne droite : la liste des ventes flash défile ; un fondu en bas le dit, au lieu d'une offre coupée net. */
+  #app .acc-droite .h0-flash .cir{padding-bottom:24px;-webkit-mask-image:linear-gradient(to bottom,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(to bottom,#000 calc(100% - 36px),transparent)}
+}
+@media (min-width:1024px){
+  /* Catégories : 3 ou 4 sous-catégories remplissent la rangée (plus de case vide à droite en 5 ou 6 colonnes). */
+  #app .cl04-cat-l .cl04-subs3{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+  #app .cl04-cat-l .cl04-sub3 b{hyphens:none}
+  /* Dès 900 px de centre, tuiles larges : la vignette à gauche, le nom et les chiffres à droite (au lieu d'une
+     petite vignette perdue au milieu d'une tuile étirée). */
+  @container (min-width:900px){
+    #app .cl04-cat-l .cl04-subs3{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+    #app .cl04-cat-l .cl04-sub3{display:grid;grid-template-columns:72px minmax(0,1fr);grid-template-rows:auto auto;align-content:center;align-items:center;column-gap:14px;row-gap:4px;min-height:104px;padding:14px 16px;text-align:left}
+    #app .cl04-cat-l .cl04-sub3 .im{grid-row:1/3;width:72px;height:72px}
+    #app .cl04-cat-l .cl04-sub3 b{align-self:end;font-size:15px}
+    #app .cl04-cat-l .cl04-sub3 .n{align-self:start;font-size:13px}
+  }
+  /* Catégories : les produits de l'univers en rail (§ 5.2, point 5), cartes selon la largeur du centre, un quart de
+     carte en plus pour dire la suite. */
+  #app .cl04-cat-pr .dx-h{margin:6px 4px 10px}
+  #app .cl04-cat-rail{display:grid;grid-auto-flow:column;grid-auto-columns:calc((100% - 3 * var(--gg)) / 3.25);gap:var(--gg);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;margin:0 -4px;padding:4px 4px 12px}
+  #app .cl04-cat-rail>.pcard{min-width:0;scroll-snap-align:start}
+  @container (min-width:800px){#app .cl04-cat-rail{grid-auto-columns:calc((100% - 4 * var(--gg)) / 4.25)}}
+  @container (min-width:1040px){#app .cl04-cat-rail{grid-auto-columns:calc((100% - 5 * var(--gg)) / 5.25)}}
+  @container (min-width:1280px){#app .cl04-cat-rail{grid-auto-columns:calc((100% - 6 * var(--gg)) / 6.25)}}
+}
+@media (min-width:768px){
+  /* Cartes produit de la Sélection : « Panier » en bas de chaque carte, aligné d'une carte à l'autre de la rangée. */
+  #app .pcard>.pc-cta{margin-top:auto}
+  /* Cartes des promotions et des ventes flash : le lien prend la hauteur libre, « Ajouter » aligné en bas d'une
+     carte à l'autre de la rangée (une ligne « Plus que 3 à ce prix » ne le décale plus). */
+  #app .fd-g>a:first-child{flex:1;display:flex;flex-direction:column}
+  /* Étiquette de la carte (« Garantie 12 mois »…) : jamais sous le cœur des favoris, même en anglais sur une carte étroite. */
+  #app .pcard .cl04-tags{max-width:calc(100% - 58px)}
+  #app .pcard .cl04-tags .pc-tag{max-width:100%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;display:block;line-height:22px}
+}
+@media (min-width:1024px){
+  /* Ventes flash : moins de 4 offres en cours, elles remplissent la bande orange (pas de case vide à droite). */
+  @container (min-width:900px){
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4))){grid-template-columns:repeat(3,minmax(0,1fr))}
+    /* Cartes élargies : photo en 4:3, la bande garde une hauteur raisonnable. */
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im{aspect-ratio:4/3}
+  }
+  /* Dès 1 200 px de centre : photo de 260 de haut, le produit entier au milieu (pas rogné), sur le fond produit. */
+  @container (min-width:1200px){
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im{aspect-ratio:auto;height:260px;display:flex;justify-content:center}
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im>svg{width:260px;height:260px;flex:none}
+  }
+}
+@media (min-width:1200px){
+  /* Promotions (§ 5.12) : le tri à droite, sur la ligne des univers en pastilles ; la grille dessous. */
+  #app main>.pm-sort{float:right;height:40px;align-items:center;margin:12px 0 0 16px}
+  #app main>.pm-sort~.fd-grid{clear:both}
+}
+@media (min-width:1024px){
+  /* Recherche, avant saisie : sans historique, la colonne « Tes recherches » est vide ; les deux autres se partagent
+     la largeur (le tiers droit restait vide), les univers en 3 colonnes. */
+  #app .cl05-acc:has(>.cl05-col:empty){grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app .cl05-acc:has(>.cl05-col:empty) .cl05-u3g{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* Recherche, suggestions : une colonne de lecture de 760 centrée, en carte (des rangées de 1 200 px se lisaient
+     mal), le bouton des résultats à droite de cette colonne. */
+  #app main>div:has(>.cl05-s2),#app main>p.cl05-sub,#app main>.cl05-scope{width:100%;max-width:760px;margin-left:auto;margin-right:auto}
+  #app main>div:has(>.cl05-s2){padding:4px 16px;border-radius:20px;background:var(--card);box-shadow:var(--shadow-card)}
+  html[data-theme=dark] #app main>div:has(>.cl05-s2){box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+  #app main>div:has(>.cl05-s2)>.cl05-s2:last-child{border-bottom:0}
+  #app main>:is(div:has(>.cl05-s2),p.cl05-sub)~.btns{max-width:760px;margin-left:auto;margin-right:auto;justify-content:flex-end}
+  /* Résultats : « Tu cherchais autre chose ? » en deux colonnes alignées (le texte à gauche, la catégorie proposée à
+     droite) au lieu d'un mélange de textes à gauche et de boutons centrés. */
+  #app .gab-contenu>.cl05-blk{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,340px);grid-template-rows:auto auto 1fr;column-gap:24px;align-items:start;text-align:left}
+  #app .gab-contenu>.cl05-blk>h3{grid-column:1;grid-row:1;margin-top:0}
+  #app .gab-contenu>.cl05-blk>p:not(.cnt){grid-column:1;grid-row:2}
+  #app .gab-contenu>.cl05-blk>.btns:nth-of-type(1){grid-column:2;grid-row:1;margin:0}
+  #app .gab-contenu>.cl05-blk>.btns:nth-of-type(1) .btn{width:100%;max-width:none}
+  #app .gab-contenu>.cl05-blk>p.cnt{grid-column:2;grid-row:2;margin:6px 0 0;text-align:center}
+  #app .gab-contenu>.cl05-blk>.btns:nth-of-type(2){grid-column:1;grid-row:3;display:flex;justify-content:flex-start;margin:6px 0 0}
+  #app .gab-contenu>.cl05-blk>.btns:nth-of-type(2) .btn{flex:none;width:auto;min-width:0;height:auto;min-height:36px;padding:0;justify-content:flex-start}
+  /* Rien trouvé : une seule largeur (920) pour le message et les deux colonnes dessous, bords alignés. */
+  #app .cl05-zero{max-width:920px;margin-left:auto;margin-right:auto}
+  #app .cl05-zero>.cl05-blk{max-width:none}
+}
+@media (min-width:1024px){
+  /* Fiche : le fil d'Ariane de la fiche (univers › sous-catégorie › produit) au-dessus de la barre de titre, comme
+     sur toutes les autres pages (il était dessous) ; posé à l'endroit du fil de la barre, qu'il remplace. */
+  #app:has(.fp-l) .hd-page{padding-top:20px}
+  #app .fp-l>.gab-haut>.fil{position:absolute;top:calc(var(--sb) + var(--hd-h) + 16px);left:var(--pad);right:var(--pad-d,var(--pad))}
+  #app .fp-l>.gab-haut .fil ol{margin-bottom:0}
+}
+@media (min-width:1024px){
+  /* Panier (plein et vide) : les favoris en cartes qui se partagent toute la largeur (deux favoris : deux moitiés,
+     plus de tiers vide à droite ni de prix coupé) ; « Tout voir » en lien orange comme partout. */
+  #app .cl07-svh>a{font-size:14px;font-weight:700;color:var(--or-txt)}
+  #app .cl07-svc{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:var(--gg);padding:0;border:0;border-radius:0}
+  #app .pa-l-bas .cl07-svc{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+  #app .cl07-svc>.cl07-sv{margin:0;padding:12px 14px;border:0;border-radius:16px;background:var(--card);box-shadow:var(--shadow-card)}
+  html[data-theme=dark] #app .cl07-svc>.cl07-sv{box-shadow:var(--shadow-card),inset 0 0 0 1px var(--line)}
+}
+@media (min-width:1024px){
+  /* Favoris : les cartes d'une rangée ont la même hauteur, « Mettre au panier » aligné en bas de chacune. */
+  #app .sv-grille{align-items:stretch}
+  #app .sv-grille>.card{display:flex;flex-direction:column}
+  #app .sv-grille>.card>.cl07-al{margin-top:auto}
+  /* Favoris : « Trier » sur la ligne des pastilles (le libellé au-dessus décalait le menu de la ligne). */
+  #app .sv-outils>.fld{display:flex;align-items:center;gap:10px}
+  #app .sv-outils>.fld>label,#app .sv-outils>.fld>.lab{margin:0;flex:none}
+  #app .sv-outils>.fld>.inp{flex:1;min-width:0}
+}
+@media (min-width:1200px){
+  #app .sv-outils{align-items:center}
+  #app .sv-outils>.chips{padding-bottom:0}
+  #app .sv-outils>.fld{flex:0 0 300px}
+}
+@media (min-width:1024px){
+  /* Paiement en attente : « Mon solde est insuffisant » restait seul sous « Renvoyer la demande » ; c'est une sortie
+     secondaire : action discrète centrée sous les deux boutons, au-dessus des liens. */
+  #app.g-centre .cl08-fill>.btns:has(>.btn.mute){grid-column:1/-1;display:flex;justify-content:center;margin-top:6px}
+  #app.g-centre .cl08-fill>.btns>.btn.mute{width:auto;min-width:0;height:40px;padding:0 12px;background:transparent;border:0;box-shadow:none;color:var(--ink-2);text-decoration:underline;text-underline-offset:3px}
+  /* Un seul bouton (« Continuer vers le paiement ») : centré sous le message centré, et non seul à droite. */
+  #app.g-centre .cl08-fill:not(:has(>.btns>.btn:not(.primary)))>.btns:has(>.btn.primary){grid-column:1/-1;justify-self:center;width:min(100%,360px)}
+}
+@media (min-width:1024px){
+  /* Commande confirmée et validée (sans en-tête de site) : le reçu et l'aside collaient au bord haut de la fenêtre
+     (6 px) ; ils respirent comme les autres pages (32 px). */
+  #app:not(.a-site) main>.g-colonnes:has(>.cf-aside){margin-top:26px}
+}
+@media (min-width:768px){
+  /* Paiement express posé sur « Moyen de paiement » : la feuille du dessous s'assombrit (second voile), la feuille
+     de paiement se détache au lieu de se confondre avec elle. */
+  #app .veil:has(+.sheet>.xp-sheet){z-index:56}
+  #app .sheet:has(>.xp-sheet){z-index:57}
+}
+/* Fin de la revue r1 */
+
+/* ================================ Revue r3 : abonnements, listes d'envies, cagnotte, parrainage, assistant, modules CL-15, diaspora, arrivée, kit ================================ */
+@media (min-width:768px){
+  /* Nouvelle liste, Envoyer ma liste : la feuille a déjà son × dans son en-tête ; pas de second bouton. */
+  #app .sheet:has(.cl14-x)>.sheet-x{display:none}
+}
+@media (min-width:1024px){
+  /* Listes d'envies (maître-détail) : « Nouvelle liste » est dans la colonne des listes ; pas de second bouton sous
+     les cartes. Les boutons d'un article (voir, alerte) côte à côte, à droite. */
+  #app .g5-md-d>.btns:has(>a[href="/liste-creer"]:only-child){display:none}
+  #app .g5-art .btns.mt12{flex-wrap:nowrap}
+  #app .g5-art .btns.mt12>.btn{flex:0 1 220px;width:auto;min-width:0}
+  #app .g5-art .btns.mt12>.btn:only-child{flex-basis:360px}
+  /* Assistant : la conversation (760 au plus) part du bord gauche du titre, au lieu d'être centrée ; dès 1200, les
+     raccourcis s'alignent sur le bord droit de la page. */
+  #app .g5-assist{justify-content:start}
+  /* Offrir à plusieurs, Souscrire déjà abonné : le conteneur de la page suit la colonne (titre et contenu alignés). */
+  #app:has(.g-colonnes>.g5-cotis){--l-max:880px}
+  #app:has(.g-colonnes>.g5-cotis):not(:has(.g-colonnes>.gab-aside)){--l-max:680px}
+  #app:has(.g-colonnes>.g5-seul){--l-max:760px}
+  #app .g-colonnes:has(>.g5-seul){grid-template-columns:minmax(0,1fr)}
+  /* Rentrée : « Liste papier » et « Comment ça marche » décollés de la note des écoles ; « Class 1 » sur une ligne. */
+  #app .hint-l+.g5-duo.g5-moitie{margin-top:16px}
+  #app .g5-sections .cl15-cl{width:auto;min-width:44px;padding:0 10px;white-space:nowrap}
+  /* Diaspora (payer depuis l'étranger) : sous le bandeau, l'aside commence au niveau du contenu. */
+  #app .g-colonnes>.gab-haut~.gab-aside>.dx-h:first-child{margin-top:20px}
+  /* Mes proches : titres de groupe décollés du bloc précédent ; le réglage de livraison sur toute la ligne, puis
+     les boutons côte à côte. */
+  #app .d13-col>.cl11-k{margin-top:var(--esp-v)}
+  #app .d13-grille .btns:has(>div>.fld){flex-wrap:wrap;justify-content:flex-start}
+  #app .d13-grille .btns:has(>div>.fld)>div:first-child{flex:1 1 100%}
+  #app .d13-grille .btns:has(>div>.fld)>.btn{flex:1 1 200px;max-width:none}
+  /* Feuilles larges de CL-15 (Mettre de côté, Contre-offre) : le choix à gauche, l'argent et les décisions à droite. */
+  #app .sheet .g5-sh{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:24px;align-items:start}
+  #app .sheet .g5-sh-g,#app .sheet .g5-sh-d{min-width:0}
+  #app .sheet .g5-sh-d{padding-top:44px}
+  #app .sheet .g5-sh-g>.cl15-sht+.card{margin-top:14px}
+  #app .sheet .g5-sh-d>:first-child,#app .sheet .g5-sh-g>:first-child{margin-top:0}
+  #app .sheet .g5-sh-d .btns>.btn{width:100%;max-width:none}
+  /* Kit des composants : deux colonnes en flux (pas de trou sous un bloc court) ; les cartes produit en moitié. */
+  #app .kit-g{display:block;margin-top:var(--esp-v);columns:2;column-gap:calc(var(--gc) * 1.5)}
+  #app .kit-g>.kit-b{break-inside:avoid;margin-bottom:var(--gc)}
+  #app .kit-g>.kit-b:has(.pgrid){grid-column:auto}
+  #app .kit-g .pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (min-width:1200px){
+  #app .g5-assist{grid-template-columns:minmax(0,760px) 280px;justify-content:space-between}
+}
+/* Fin de la revue r3 */
+
+/* ================================ Revue r4 : fils d'Ariane, compteurs, compte, litige, états vides, en-têtes (5 oct.) ================================ */
+/* États vides d'un parcours pour un proche (composant VideProches, écrans propres au site) : aussi au téléphone. */
+#app .dx-vide-l{list-style:none;display:grid;gap:10px;max-width:520px;margin:14px auto 4px;padding:0;text-align:left}
+#app .dx-vide-l li{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.4;color:var(--ink-2)}
+#app .dx-vide-l li svg{flex-shrink:0;margin-top:1px;color:var(--or-txt)}
+#app .dx-vide .btns{flex-direction:column;align-items:stretch;gap:10px}
+#app .dx-vide .btns>.btn{width:100%;height:48px;min-height:48px}
+#app .dx-vide .links{flex-wrap:wrap;justify-content:center;row-gap:6px}
+@media (min-width:768px){
+  /* Paiement en cours et ses suites (CL-08) : en-tête minimal (logo vers l'accueil, paiement sécurisé, aide). */
+  #app .hd-min{display:flex;align-items:center;gap:16px;min-height:56px;margin:0 0 12px;padding:0 4px}
+  #app .hd-min .hd-brand img{height:30px}
+  #app .hd-min-s{display:flex;align-items:center;gap:6px;margin-left:auto;font-size:13px;font-weight:600;color:var(--ink-3)}
+  #app .hd-min-s svg{color:var(--green, #1f8a4c);flex-shrink:0}
+  #app .hd-min-a{display:inline-flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:999px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:14px;font-weight:700;color:var(--ink-2)}
+  /* États vides d'un parcours pour un proche : trois points alignés à gauche, boutons de même largeur. */
+  #app .dx-vide .empty>p{max-width:560px;margin-left:auto;margin-right:auto}
+  #app main .dx-vide .btns{flex-direction:row;justify-content:center;flex-wrap:wrap}
+  #app main .dx-vide .btns>.btn{flex:0 1 280px;width:280px;min-width:0;max-width:280px;height:48px;min-height:48px}
+}
+@media (min-width:1024px){
+  /* Menu du compte : le solde reste sur la ligne de « Portefeuille ». */
+  #app .mc-v{white-space:nowrap}
+  /* Pages du compte : deux boutons empilés (Supprimer mon compte…) de même largeur, alignés à droite. */
+  #app.g-compte :is(.gab-contenu,.c13-k,.c13-col,.c13-pfd)>.btns:has(+.btns)>*,
+  #app.g-compte :is(.gab-contenu,.c13-k,.c13-col,.c13-pfd)>.btns+.btns>*{flex:0 0 300px;width:300px;min-width:0;max-width:300px}
+  /* Suivi du litige : échéances et contacts dans la colonne de droite. */
+  #app .cl11-bref .kv{flex-direction:column;align-items:flex-start;gap:2px}
+  #app .cl11-bref .kv .v{text-align:left}
+  #app .cl11-bref .kv:last-child{padding-bottom:0}
+  #app .cl11-contacts ul{list-style:none;margin:4px 0 0;padding:0}
+  #app .cl11-contacts li+li{border-top:1px solid var(--line)}
+  #app .cl11-contacts a{display:flex;align-items:center;gap:12px;min-height:56px;color:var(--ink-2)}
+  #app .cl11-contacts a>svg:first-child{flex-shrink:0;color:var(--or-txt)}
+  #app .cl11-contacts a>svg:last-child{flex-shrink:0;color:var(--ink-4)}
+  #app .cl11-contacts b{display:block;font-size:14px;font-weight:800;color:var(--ink)}
+  #app .cl11-contacts small{display:block;font-size:12.5px;color:var(--ink-3)}
+  /* Rail « Produits de l'univers » : il s'arrête au bord droit du contenu (la marge de 4 px ne vaut qu'à gauche,
+     pour l'ombre de la première carte). */
+  #app .cl04-cat-rail{margin:0 0 0 -4px;padding:4px 0 12px 4px;scroll-padding-left:4px}
+  /* Inscription et arrivée : le visuel collant ne dépasse jamais la hauteur d'un écran ordinaire. */
+  #app.a-site .g-arrivee>.gab-visuel{max-height:760px}
+  /* Ventes flash, cartes larges (dès 1 200 px de centre, photo de 260 au milieu) : la photo se fond dans un fond du
+     même dégradé, sans carré de teinte différente. */
+  @container (min-width:1200px){
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im{background:radial-gradient(farthest-corner at 50% 38%,#fff,#eee7e0)}
+    html[data-theme=dark] #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im{background:radial-gradient(farthest-corner at 50% 38%,#2e2a34,#17151b)}
+    #app .gab-contenu .fd-rail:not(:has(>:nth-child(4)))>.fd-c .im>svg{-webkit-mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent);mask-image:linear-gradient(90deg,transparent,#000 14%,#000 86%,transparent)}
+  }
+}
+/* Fin de la revue r4 */

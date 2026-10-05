@@ -1,0 +1,5773 @@
+{
+ "document": "CL-11",
+ "source": "04_Pages_HTML/CL-11_Litige_Retour_Remplacement.html",
+ "sections": [
+  {
+   "section": "Le parcours du litige, du retour et du remplacement",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : assistant de litige, maquettes S’inspirer IMG_1955 (étape 1), IMG_1956 (étape 2), IMG_1958 (étape 3), IMG_1957 (étape 4), niveau exact ; « Retourner un article », IMG_1971, exact ; les autres écrans de CL-11, inspiré (cartes-listes, surtitres en capitales, encadrés teintés, frise à pastilles)",
+        "Positions, ordre des blocs et composants des maquettes ; palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette). Contenu : la spécification (textes, chiffres, règles)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Chat de litige pour cette commande » : conversation libre",
+        "Assistant guidé en quatre écrans, un seul choix par écran (CLT-04)",
+        "Supprimer le chat libre ; « Signaler un problème » ouvre #litige?ref=…. Le fil écrit existe seulement rattaché à un dossier ouvert (CLT-41)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Litige « article par article »",
+        "Litige par colis : étape 1 « Quel colis ? », sautée s’il n’y a qu’un colis (CLT-03, CLT-05, CLT-06)",
+        "POST /disputes porte parcel_id, jamais une ligne d’article."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Ouvrir un litige » gris sur blanc, sous « Contacter le livreur »",
+        "« Signaler un problème », un seul bouton toujours visible sur le suivi (CL-09) qui ouvre cet assistant",
+        "Bouton secondaire lisible (contraste ≥ 4,5:1), jamais une action cachée."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Montants « 32,000 FCFA » (virgule des milliers)",
+        "« 15 800 F » : espace insécable, « F » (convention 1.2)",
+        "Formatage F(n) partout ; le texte anglais seul prend la virgule."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Titre de la carte litige caché sous les boutons flottants (robot, retour en haut)",
+        "Aucun bouton flottant ; rien ne recouvre le contenu",
+        "Retirer le robot (assistant IA, fermé au lancement) et le bouton « haut de page »."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau tournant « Gagnez des points à chaque achat · Programme Fidélité »",
+        "Pas de bandeau tournant ; aucun programme de points",
+        "Retirer le composant ; aucun programme de points n’existe dans la spécification."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Une entrée « litige » existe sur la page de commande ; encart « Litige protégé : le litige est arbitré par BelivaY »",
+        "L’entrée reste, avec l’état de l’argent et le délai ferme dès la confirmation",
+        "Garder l’idée ; le texte devient « Ton paiement reste bloqué, rien n’est versé au vendeur. » (CLT-20)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Note sur un seul produit, 5 étoiles pré-remplies, « Titre de l’avis » (même capture)",
+        "Deux notes séparées, rien de pré-rempli, commentaire facultatif — traité dans CL-13",
+        "Voir CL-13. Ici : une note basse (≤ 2 ★ proposé) propose d’ouvrir un litige, sans condition (CLT-01)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de « Ajouter une photo » ni de « Un avis ne peut pas être retiré contre un remboursement » sous la notation",
+        "Les deux, sur l’écran d’avis — CL-13",
+        "Voir CL-13 ; la phrase protège aussi le litige (un avis n’est jamais la condition d’un remboursement)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "La notation n’est proposée que sur une commande remise",
+        "Gardé — CL-13",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Contacter le livreur » comme action principale après la remise ; contact du livreur après la livraison (IMG_2451)",
+        "« Signaler un problème » est la seule action de problème ; jamais le numéro du livreur (rappel masqué quand il est en route) — CL-09",
+        "Voir CL-09 (suivi) ; règle d’anonymat 19.1."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Encart « POINT RELAIS · Si un relais est choisi… » sur une commande livrée à domicile (IMG_2451)",
+        "Encarts propres à l’état réel de la commande — CL-09",
+        "Voir CL-09."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Ni « Tout est en ordre » / « Un problème », ni l’encart « Le vendeur n’est pas encore payé… », ni « Racheter » et « Facture » (IMG_2451)",
+        "Écran « Colis remis » et commande terminée — CL-09 ; « Un problème » ouvre #litige-comptoir",
+        "Voir CL-09 ; la fenêtre de retour de 7 jours et « Tout est en ordre » sont les règles CRO-15."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Les entrées et les écrans",
+     "colonnes": [
+      "Entrée",
+      "Écran de CL-11",
+      "Route du prototype"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "« Signaler un problème » du suivi (CL-09), toujours visible",
+        "Assistant, étape 1 ou 2",
+        "#litige?ref=BLV-51702"
+       ]
+      },
+      {
+       "cellules": [
+        "« Un problème » de l’écran « Colis remis » (CL-09)",
+        "Litige ouvert au comptoir (le gérant constate)",
+        "#litige-comptoir?ref=BLV-52018"
+       ]
+      },
+      {
+       "cellules": [
+        "Carte « En litige · réponse sous 31 h » dans Mes commandes (CL-09)",
+        "Suivi du litige",
+        "#litige-suivi?id=LIT-3042"
+       ]
+      },
+      {
+       "cellules": [
+        "Note basse sur un avis (CL-13, #avis-bas)",
+        "Assistant, sans condition",
+        "#litige?ref=…"
+       ]
+      },
+      {
+       "cellules": [
+        "Aide (CL-13) : « Problème sur une commande »",
+        "Assistant, jamais un chat libre",
+        "#litige?ref=…"
+       ]
+      },
+      {
+       "cellules": [
+        "Compte (CL-13) : « Mes litiges »",
+        "Liste des dossiers",
+        "#litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "Notification de litige (CL-10) ; garde suspendue par un litige (CL-10)",
+        "Suivi du litige ; liste des dossiers",
+        "#litige-suivi?id=LIT-3042, #litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "Onglet « Retourner un article » de l’écran « Au comptoir » (CL-09), décision de retour ou retour accepté",
+        "Retour (sans retour en cours : fenêtre et accès à l’assistant)",
+        "#retour?ref=BLV-52018|BLV-51702|BLV-51877"
+       ]
+      },
+      {
+       "cellules": [
+        "Décision de remplacement ou accord du vendeur",
+        "Remplacement",
+        "#remplacement"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "La machine à états (2.3, p. 13)",
+     "colonnes": [
+      "État",
+      "Ce qui se passe",
+      "Libellé client"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "ouvert",
+        "Escrow de la sous-commande retenu ; libération, avertissement C10 et garde suspendus",
+        "Reçu"
+       ]
+      },
+      {
+       "cellules": [
+        "attente_vendeur",
+        "48 h ; le vendeur accepte, conteste ou propose un arrangement",
+        "Le vendeur a 48 h pour répondre"
+       ]
+      },
+      {
+       "cellules": [
+        "en_examen",
+        "Console ; présomption en faveur du client si le vendeur est silencieux",
+        "En examen"
+       ]
+      },
+      {
+       "cellules": [
+        "decide",
+        "Motif écrit ; remboursement, remplacement ou débouté",
+        "Décision"
+       ]
+      },
+      {
+       "cellules": [
+        "retour_depose",
+        "Scan au relais ; aucune garde",
+        "Retour déposé"
+       ]
+      },
+      {
+       "cellules": [
+        "retour_inspecte",
+        "Sous 48 h ; remboursement à l’inspection",
+        "Le vendeur le reçoit et l’inspecte"
+       ]
+      },
+      {
+       "cellules": [
+        "Colis : en_litige → retour_en_cours",
+        "Libellés de la sous-commande (2.3)",
+        "En litige · Retour en cours"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Le modèle de données (2.6)",
+     "colonnes": [
+      "Objet",
+      "Champs"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Litige",
+        "n° LIT-…, colis (sous-commande), motif, photos (horodatage serveur), souhait, réponse du vendeur, décision, motif écrit ; + opened_at, seller_deadline, origin (app | comptoir), amount_held"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour",
+        "litige, dépôt, inspection, payeur du trajet, remboursement ; + accepted_at, deposited_at, collected_at, received_at, inspect_deadline"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement",
+        "litige, délai du vendeur, colis de remplacement, vendeur de secours éventuel, bascule en remboursement"
+       ]
+      },
+      {
+       "cellules": [
+        "Signal qualité",
+        "colis, motif, photos, texte : sans dossier ni argent retenu (CLT-18)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-01",
+        "Toutes les entrées mènent à l’assistant ou au même dossier : « Signaler un problème » du suivi (toujours visible), « Un problème » au comptoir, la carte « En litige », une note basse (sans condition), l’aide. Jamais un chat libre, jamais un e-mail ni WhatsApp pour traiter un litige.",
+        "§11.0 p. 66 · §9.3 p. 54 · §15.2 p. 87 · §14.3 p. 83",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-02",
+        "Le litige suit la machine à états ouvert → attente_vendeur → en_examen → decide, puis le retour retour_depose → retour_inspecte ; le colis passe à « En litige » puis « Retour en cours ».",
+        "§2.3 p. 12-13",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-03",
+        "Un litige porte sur un colis (une sous-commande, un vendeur), jamais sur une ligne d’article ni sur toute la commande. Le montant retenu est celui de la sous-commande (articles).",
+        "§11.1 p. 66 · §1.4 p. 9",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Assistant de litige · étapes 1 et 2",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Litige · assistant, étape 1 « Quel colis ? » (2 colis)",
+        "Positions de la maquette S’inspirer IMG_1955, en clair. BLV-52018 a deux colis, retirés aujourd’hui à 10 h 32 (CL-09) ; barre d’état à 10:40. En-tête : bouton retour carré, titre « Quel colis ? », sous-titre « Étape 1 sur 4 » ; barre en quatre segments, le premier orange. Une carte-liste par colis : vignette, « Colis N » en gras, « contenu · retiré aujourd’hui à 10 h 32 », chevron ; ni numéro de commande ni montant. Pas de barre d’onglets pendant l’assistant."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 2",
+        "Litige · assistant, étape 2 « Que s’est-il passé ? » (1 colis)",
+        "Positions de la maquette IMG_1956. BLV-51702 n’a qu’un colis : l’étape 1 est sautée, l’en-tête dit « Que s’est-il passé ? · Étape 2 sur 4 » (un segment vert, le deuxième orange). Sous la barre, rappel discret « Colis 1 · Écouteurs sans fil · blanc ». Quatre cartes-listes avec tuile d’icône teintée (Jamais reçu en rouge, Abîmé en ambre, Pas ce que j’ai commandé en neutre, Il manque quelque chose en violet) et chevron ; « Autre chose » centré dessous, en texte discret. Aucun bouton « Continuer » : un tap choisit et avance."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 3",
+        "Litige · étape 2, retrait de plus de 7 jours (défaut caché)",
+        "BLV-51388 (1 colis, 1 boutique : Beurre de karité pur 500 g × 2 + Huile de coco vierge 500 ml, retiré le ven. 28 août) : l’assistant démarre aussi à l’étape 2. Comme le retrait date de plus de 7 jours, un encadré ambre sous le rappel du colis dit « Retiré il y a plus de 7 jours : la fenêtre de retour est fermée. Jusqu’au dim. 6 déc., un défaut caché reste couvert. » (retrait + 100 jours). Revenir de l’étape 3 borde d’orange la carte déjà choisie."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-04",
+        "Quatre écrans, un seul choix par écran ; barre de progression en quatre segments, flèche de retour, « Étape N sur 4 ». Pas de formulaire long, pas de chat libre, pas de texte libre en premier, pas de conditions à cocher.",
+        "§11.1 p. 66 · §11.6 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-05",
+        "Étape 1 « Quel colis ? » : une carte par colis avec photo, « Colis 1 », contenu court et date de retrait ; jamais le numéro de commande.",
+        "§11.1 p. 66",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-06",
+        "Une commande à un seul colis démarre à l’étape 2 : l’étape 1 est sautée automatiquement et la barre indique « Étape 2 sur 4 ».",
+        "§11.1 p. 66 · §11.2 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-07",
+        "Étape 2 « Que s’est-il passé ? » : quatre cartes — Jamais reçu, Abîmé, Pas ce que j’ai commandé, Il manque quelque chose — et « Autre chose » en bas, en texte discret, jamais en premier.",
+        "§11.1 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-08",
+        "Un tap sélectionne et passe à l’étape suivante : l’étape 2 n’a pas de bouton « Continuer ».",
+        "§11.1 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-09",
+        "Au-delà de 7 jours après le retrait, le premier écran de l’assistant (étape 1, ou étape 2 pour un colis unique) dit que la fenêtre de retour est fermée et qu’un défaut caché reste couvert jusqu’à la date du retrait + 100 jours (hors escrow, CRO-16).",
+        "§12.2 p. 73",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Aucun colis retiré dans la commande (BLV-52107 en préparation, BLV-51940 au relais)",
+        "Pas d’étape 1 vide : « Aucun colis retiré pour l’instant », l’invitation à ouvrir le colis devant Mme Ngo Bassong et à toucher « Un problème », bouton « Voir le suivi » (CL-09) et « Écrire au support » pour un retard."
+       ]
+      },
+      {
+       "cellules": [
+        "Commande annulée (BLV-51533)",
+        "« Commande annulée · Il n’y a rien à signaler : 22 900 F t’ont été remboursés sur ton MTN MoMo 6 77 ·· ·· 41 le jour même. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande retirée depuis plus de 100 jours",
+        "Pas d’assistant : « Ce colis n’est plus couvert » et le lien vers l’aide (CL-13)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Assistant · étape 3 « Montre-moi »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 4",
+        "Litige · étape 3 « Montre-moi », sans photo",
+        "Positions de la maquette IMG_1958. En-tête « Montre-moi · Étape 3 sur 4 », deux segments verts, le troisième orange ; rappel du colis. Encadré neutre avec le texte exact de la spécification. Deux tuiles côte à côte : « Prendre une photo » (bord orange en tirets, fond orange doux, ouvre directement l’appareil photo) et une tuile vide en tirets « Article et emballage ». Ligne d’aide « La photo va directement dans ton dossier, datée par BelivaY ». Libellé en capitales « Décris ce qui s’est passé (facultatif) » et le champ, en dernier. En bas, sur verre, « Continuer » grisé et « Ajoute au moins une photo pour continuer. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 5",
+        "Litige · étape 3, photos prises",
+        "Deux photos prises (Article ; Emballage et chargeur), chacune « Reçue à 10 h 14 », l’heure du serveur, dans les deux tuiles ; dessous, une tuile large en tirets « Ajouter une photo ». La description est remplie (« Carton écrasé : le boîtier des écouteurs et le chargeur sont fendus. ») ; « Continuer » devient le seul bouton plein, en bas de l’écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 6",
+        "Litige · étape 3, « Jamais reçu » (photo facultative)",
+        "Motif « Jamais reçu » : l’encadré dit « Tu n’as rien reçu : pas besoin de photo. Ajoute-en une seulement si elle peut aider. » ; la tuile orange devient « Ajouter une photo » et « Continuer » est actif sans photo."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-10",
+        "Texte exact : « Prends une photo de l’article et de son emballage. C’est ce qui permet de trancher en ta faveur. » ; « Prendre une photo » ouvre directement l’appareil photo.",
+        "§11.2 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-11",
+        "Photo obligatoire, sauf pour « Jamais reçu » : sans photo, « Continuer » reste désactivé et l’écran dit « Ajoute au moins une photo pour continuer. »",
+        "§11.2 p. 67 · §11.7 p. 71",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-12",
+        "« Décris ce qui s’est passé » est facultatif et placé en dernier. On n’écrit jamais « Justifie ta réclamation ».",
+        "§11.2 p. 67 · §11.6 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-13",
+        "Photos prises par l’API caméra de l’application, envoyées au dossier (POST /disputes/{id}/photos), horodatées côté serveur à la réception et stockées avec le dossier. Jamais par WhatsApp.",
+        "§11.2 p. 67 · §19.3 p. 105",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-14",
+        "Aucun écran de l’assistant ne demande une preuve d’achat, la valeur du colis ou l’acceptation de conditions.",
+        "§11.2 p. 67 · §11.6 p. 70",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Photo manquante (motif autre que « Jamais reçu »)",
+        "« Continuer » désactivé et « Ajoute au moins une photo pour continuer. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Envoi de la photo impossible (réseau)",
+        "La photo reste affichée avec « Envoi dès le retour du réseau » ; « Continuer » attend l’envoi."
+       ]
+      },
+      {
+       "cellules": [
+        "Appareil photo refusé par le téléphone",
+        "« Autorise l’appareil photo pour prendre la photo » et le lien vers les réglages du téléphone ; pas d’import de galerie à la place."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Assistant · étape 4 « Que veux-tu ? »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 7",
+        "Litige · étape 4 « Que veux-tu ? »",
+        "Positions de la maquette IMG_1957. En-tête « Que veux-tu ? · Étape 4 sur 4 », trois segments verts et le dernier orange ; rappel du colis. Trois cartes-listes à chevron : « Être remboursé » (Sur ton MTN MoMo 6 77 ·· ·· 41, le moyen qui a payé.), « Être remplacé » (Le vendeur renvoie le même article. Livraison offerte.), « Je veux juste signaler » (Aucune demande. Ton signal nous aide à écarter les mauvais produits.). Un tap valide l’étape. Dessous : « Remboursé ou remplacé : le vendeur aura 48 h pour répondre et ton paiement reste bloqué pendant ce temps. Un simple signal ne change rien à ta commande. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 8",
+        "Litige · « Je veux juste signaler » envoyé",
+        "Après « Je veux juste signaler » : carte nuit « Merci, c’est noté. », « Ta commande ne change pas » (pas de dossier, pas d’argent bloqué) et « À quoi ça sert » (plusieurs signaux déclenchent une vérification du vendeur). Tant que la fenêtre de retour est ouverte, le client peut encore demander un remboursement ou un remplacement."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-15",
+        "Trois choix : « Être remboursé » (sur le moyen de paiement d’origine), « Être remplacé » (le vendeur renvoie le même article, chapitre 12), « Je veux juste signaler » (aucune demande, un signal qualité gratuit).",
+        "§11.2 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-16",
+        "Le dossier est créé à la validation de l’étape 4, avec le colis, le motif, les photos, la description et le souhait.",
+        "§11.2 p. 67 · §11.7 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-17",
+        "Dès la création, l’escrow de la sous-commande est retenu ; la libération automatique, l’avertissement C10 et le compteur de garde sont suspendus pour cette sous-commande.",
+        "§11.2 p. 67 · §11.4 p. 68 · §2.3 p. 13",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-18",
+        "« Je veux juste signaler » n’ouvre pas de dossier LIT-… : ni argent retenu, ni délai du vendeur. Le signal (motif, photos, texte) va à la qualité et compte pour le produit et le vendeur.",
+        "§11.2 p. 67",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-19",
+        "Le remboursement automatique sous le seuil ne s’applique qu’au souhait « Être remboursé » ; « Être remplacé » suit le litige normal, même sous le seuil.",
+        "§11.3 p. 67",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Un dossier est déjà ouvert sur ce colis",
+        "Le suivi du dossier s’ouvre à la place de l’assistant."
+       ]
+      },
+      {
+       "cellules": [
+        "Réseau coupé à l’envoi",
+        "Bandeau « Hors ligne » ; le brouillon est gardé ; « Envoyer » réessaie au retour du réseau, sans double dossier."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Litige ouvert » (confirmation)",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 9",
+        "Litige ouvert · LIT-3044, argent bloqué, délai ferme",
+        "Dossier ouvert aujourd’hui à 10 h 15 sur BLV-51702 (Colis 1, 23 000 F d’articles). Carte nuit « Ton numéro de dossier · LIT-3044 », « Une personne de BelivaY suit ton dossier jusqu’à la décision ». Encadré neutre au cadenas : « Ton paiement reste bloqué, rien n’est versé au vendeur. 23 000 F en attente de la décision. » Carte : « Le vendeur a jusqu’au sam. 26 sept. à 10 h 15 pour répondre » (ouverture + 48 h). Bouton plein « Suivre mon litige » juste après (la réponse d’abord, puis l’action) ; la frise des quatre états est repliée sous « La suite, en quatre étapes ». « Tu es prévenue à chaque étape par notification. » L’écran tient en une hauteur d’écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 10",
+        "Litige ouvert · défaut caché, vendeur déjà payé",
+        "Défaut caché signalé sur BLV-51388 (retiré le ven. 28 août, fenêtre fermée le ven. 4 sept.) : même écran, mais l’encadré ambre dit « Le vendeur a déjà été payé. Si le défaut est confirmé, BelivaY te rembourse et reprend la somme sur ses prochains versements. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (surtitres en capitales, frise à pastilles, encadré au cadenas pour l’argent)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Numéro de dossier en grand (LIT-3044), état de l’argent, échéance du vendeur en date et heure",
+        "GET /disputes/{id} → number, amount_held, seller_deadline."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Refonte du 25 sept. : frise ouverte avant le bouton ; titres de carte nuit en 25 px",
+        "Bouton avant la frise, frise repliée ; titres de héros en 22 px dans toute la partie (numéro de dossier et montants clés 34 px au plus)",
+        "Consigne « la bonne taille » (26 sept.)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "seller_deadline = opened_at + 48 h",
+        "LIT-3044 : jeu. 24 sept. 10 h 15 + 48 h = sam. 26 sept. 10 h 15. LIT-3042 : mer. 23 sept. 17 h 15 + 48 h = ven. 25 sept. 17 h 15."
+       ]
+      },
+      {
+       "cellules": [
+        "amount_held = somme des articles de la sous-commande",
+        "BLV-51702 : 16 500 + 6 500 = 23 000 F ; BLV-51877 : 15 800 F."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-20",
+        "La confirmation affiche : 1) le numéro de dossier (« LIT-3044 ») ; 2) l’état de l’argent, « Ton paiement reste bloqué, rien n’est versé au vendeur. », avec le montant ; 3) un délai ferme avec date et heure : l’échéance du vendeur.",
+        "§11.3 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-21",
+        "L’écran dit qu’une personne de BelivaY suit le dossier jusqu’à la décision et que le client est prévenu à chaque étape (notification gratuite).",
+        "§11.3 p. 67 · §10.2 p. 60",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-22",
+        "Défaut caché signalé après la fermeture de la fenêtre (vice caché, 100 jours) : l’argent n’est plus bloqué ; l’écran dit « Le vendeur a déjà été payé. Si le défaut est confirmé, BelivaY te rembourse et reprend la somme sur ses prochains versements. »",
+        "§12.2 p. 73",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Remboursé » (remboursement automatique sous le seuil)",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 11",
+        "Remboursement automatique · palier Standard (3 000 F)",
+        "Palier Standard (Carine) : LIT-2987 sur BLV-51206, remboursement partiel de 3 000 F (le seuil Standard). Carte verte « Remboursé. » et « Tu recevras 3 000 F sur ton MTN MoMo 6 77 ·· ·· 41 sous 1 h. » Carte du colis (Colis 1 · Chemise bazin brodée · L, « Réglé tout de suite, sans enquête ») et « Tu n’as rien à rapporter ». Bloc replié « Comment ça marche » ; bouton plein « Retour à mes commandes » ; référence LIT-2987 pour le support."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 12",
+        "Remboursement automatique · palier Élevé (4 800 F)",
+        "Variante palier Élevé (hors jeu d’essai : Carine est Standard) : l’huile de coco vierge 500 ml de BLV-51388 (Colis 1), 4 800 F, au-dessus de 3 000 F mais sous 10 000 F. Même écran, seul le montant change : le palier n’est écrit nulle part."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (carte d’état verte, carte du colis, bouton plein en bas)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "« Remboursé. Tu recevras 3 000 F sur ton MTN MoMo 6 77 ·· ·· 41 sous 1 h. »",
+        "Réponse POST /disputes → {auto_refunded: true, amount, msisdn_masked, eta}."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "montant ≤ seuil_auto(palier) ∧ souhait = rembourser ⇒ remboursement automatique",
+        "Vers le moyen d’origine ; compteur séparé « remboursés sans instruction » ; payé par BelivaY ; dispute.auto_refunded."
+       ]
+      },
+      {
+       "cellules": [
+        "montant > seuil_auto(palier) ⇒ instruction",
+        "Dossier, escrow retenu, arbitrage humain ; dispute.opened."
+       ]
+      },
+      {
+       "cellules": [
+        "remb_auto_12m ≥ N_auto ⇒ sortie de l’automatisme",
+        "Même au palier Élevé (CIF-17) : le litige suivant est instruit."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-23",
+        "Sous le seuil du palier, il n’y a pas d’écran de litige : « Remboursé. Tu recevras [montant] sur [numéro] sous [délai]. »",
+        "§11.3 p. 67 · §11.7 p. 71",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-24",
+        "Seuils : 3 000 F au palier Standard, 10 000 F au palier Élevé ; aucun remboursement automatique aux paliers « À instruire » et « Plafonné ».",
+        "§11.0 p. 66 · §11.4 p. 68",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-25",
+        "Payé par BelivaY, vers le moyen d’origine ; le vendeur est payé normalement et son Trust Score n’est pas touché ; l’IFA compte ce remboursement dans le compteur séparé « remboursés sans instruction ».",
+        "§11.3 p. 67 · §11.4 p. 68 · §11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-26",
+        "L’écran ne montre jamais le palier : seulement le montant, le numéro masqué et le délai. Le compte affiche l’avantage en clair (« Remboursement immédiat jusqu’à 3 000 F », CL-13).",
+        "§11.5 p. 70 · §9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-27",
+        "Le client n’a rien à rapporter ; aucun suivi n’est ouvert. La référence LIT-… est gardée pour le support et apparaît dans « Mes litiges », rubrique « Terminés ».",
+        "§11.3 p. 67 · §11.7 p. 71",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-28",
+        "[délai] est un délai ferme de versement Mobile Money : « sous 1 h » dans le prototype. La spécification ne donne pas de valeur.",
+        "§11.3 p. 67",
+        "À trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIT-AUTO-STD",
+        "Remboursement automatique, palier Standard",
+        "jusqu’à 3 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-AUTO-ELEVE",
+        "Remboursement automatique, palier Élevé",
+        "jusqu’à 10 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "(nouveau)",
+        "Délai de versement d’un remboursement Mobile Money",
+        "1 h proposé",
+        "À trancher"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Litige ouvert au comptoir »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 13",
+        "Litige ouvert au comptoir · LIT-3042 (fer)",
+        "LIT-3042, ouvert au comptoir le mer. 23 sept. à 17 h 15 sur BLV-51877 (Fer à repasser vapeur 2 200 W, 15 800 F), retiré à 17 h 05. Carte nuit : numéro en grand, portrait de Mme Ngo Bassong, « a constaté le problème et photographié le déballage. Tu n’as rien à remplir. » Photo « Semelle fendue · mer. 23 sept. à 17 h 10 » et le souhait noté au comptoir (un remplacement). Encadré neutre au cadenas : paiement bloqué, 15 800 F. Carte : échéance du vendeur ven. 25 sept. à 17 h 15 ; le fer reste au Relais Mvog-Ada, sans frais de garde. Bloc replié « Comment ça marche » (48 h ouvrées pour le constat) ; bouton plein « Suivre mon litige »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Litige ouvert au comptoir · LIT-3045, un colis sur deux",
+        "Le même écran pour une commande à deux colis, ouvert par « Un problème » sur l’écran « Colis remis » de BLV-52018 (CL-09, retrait aujourd’hui à 10 h 32) ; barre d’état à 10:36. LIT-3045, « Ouvert au comptoir · aujourd’hui à 10 h 36 ». Photo des sandales « Bride arrachée · aujourd’hui à 10 h 35 » ; « Colis 2 · Sandales cuir femme · pointure 39 », souhait noté au comptoir : un remboursement. Encadré neutre au cadenas : 14 900 F bloqués. Carte : échéance du vendeur sam. 26 sept. à 10 h 36 (+ 48 h) ; les sandales restent au Relais Mvog-Ada sans frais de garde ; « Colis 1 · ton pagne est en ordre · Tu l’emportes. Jusqu’au jeu. 1er oct., tu peux encore le signaler. » Seul le colis en cause est retenu : le pagne (18 500 F) suit son cours normal."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (carte nuit du dossier, encadré au cadenas, lignes à tuile d’icône)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Constat du gérant visible côté client, avec ses photos",
+        "POST /relay/disputes (application du relais) crée le dossier ; le client reçoit dispute.opened et ouvre #litige-comptoir."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-29",
+        "Le litige au comptoir est la voie à privilégier : colis en main, gérant témoin.",
+        "§11.6 p. 70 · §12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-30",
+        "Le gérant constate dans son application, photographie le déballage et garde le colis au relais ; le client ne remplit rien. « Un problème » de l’écran « Colis remis » ouvre ce même dossier.",
+        "§11.6 p. 70 · §9.4 p. 55",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-31",
+        "L’escrow est retenu immédiatement ; la garde est suspendue et le relais n’est pas payé pour ces jours : le colis gardé ne coûte rien au client pendant l’instruction.",
+        "§11.6 p. 70 · §10.4 p. 62",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-32",
+        "L’écran client montre le dossier, l’argent retenu, le colis gardé sans frais, l’échéance du vendeur et le souhait du client noté par le gérant (sans rien lui faire remplir).",
+        "§11.6 p. 70",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-33",
+        "BelivaY répond à un constat du relais sous 48 h ouvrées ; ce délai est affiché dans le dossier du gérant. Côté client, il est expliqué dans « Comment ça marche » : le délai ferme affiché reste l’échéance du vendeur.",
+        "§11.6 p. 70 · §16.4 p. 92",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIT-CONSTAT-H",
+        "Réponse BelivaY à un constat du relais",
+        "48 h ouvrées",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Suivi du litige » · pendant l’examen",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 15",
+        "Suivi du litige · Reçu",
+        "« Reçu » (juste après l’ouverture, mer. 23 sept. à 17 h 15) : on prévient le vendeur, qui aura jusqu’au ven. 25 sept. à 17 h 15. Encadré neutre au cadenas « 15 800 F bloqués · rien n’est versé au vendeur pendant le litige ». Frise à l’état 1, carte du colis (problème, souhait, fer gardé au relais sans frais), « Comment ça marche » replié, « Écrire dans le dossier »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 16",
+        "Suivi du litige · le vendeur a 48 h (31 h restantes)",
+        "État par défaut, jeudi 24 sept. à 10 h 15 : « Le vendeur a 48 h pour répondre » et 31 h en grand (ven. 17 h 15 − jeu. 10 h 15), « Réponse attendue avant le ven. 25 sept. à 17 h 15 ». Frise à l’état 2 avec les trois réponses possibles. « Les preuves au dossier » : photo du déballage (Mme Ngo Bassong, 17 h 10) et photo du colis scellé chez le vendeur."
+       ],
+       "gras": [
+        "",
+        "",
+        "31 h"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 17",
+        "Suivi du litige · le vendeur conteste",
+        "Le vendeur conteste (jeu. 24 sept. à 09 h 50) : « En examen », décision avant le sam. 26 sept. à 17 h 15. Carte « Ce que dit le vendeur » avec son texte entre guillemets ; ses preuves sont au dossier."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 18",
+        "Suivi du litige · vendeur sans réponse à 48 h",
+        "Le vendeur n’a pas répondu avant le ven. 25 sept. à 17 h 15 : étape 2 en rouge, « En examen · en priorité ». « La règle joue en ta faveur. Une personne de BelivaY vérifie quand même et décide avant le sam. 26 sept. à 17 h 15. » Aucun remboursement automatique à l’échéance."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 19",
+        "Suivi du litige · en examen, preuves côte à côte",
+        "En examen après le refus de l’arrangement (jeu. 24 sept. à 10 h 12) : carte « Ce que BelivaY met côte à côte » — chez le vendeur (produit puis colis scellé, photos du livreur), au comptoir (déballage), réception au relais (scellé intact), remise au comptoir (17 h 05), et la proposition refusée."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (surtitres en capitales, frise à pastilles comme IMG_1971, encadré au cadenas)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Quatre états et compte à rebours du vendeur (31 h à 10 h 15)",
+        "GET /disputes/{id} → state, seller_deadline, seller_answer, decision."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Preuves au dossier et messagerie du dossier",
+        "GET /disputes/{id} → photos[] ; POST /disputes/{id}/messages."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "heures_restantes = floor((t_limite − t_now) / 1 h)",
+        "LIT-3042 à jeu. 10 h 15 : ven. 17 h 15 − jeu. 10 h 15 = 31 h 00 → « 31 h », comme le libellé du jeu d’essai (« En litige · réponse sous 31 h », CL-02)."
+       ]
+      },
+      {
+       "cellules": [
+        "t_now ≥ t_limite ∧ aucune réponse ⇒ file d’arbitrage prioritaire",
+        "Présomption client ; décision humaine journalisée (chapitre 18) ; dispute.decided seulement à la validation humaine."
+       ]
+      },
+      {
+       "cellules": [
+        "décision_au_plus_tard = t_limite_vendeur + 24 h (proposé)",
+        "Même délai pour tous les paliers (délai_traitement(palier) = constante)."
+       ]
+      },
+      {
+       "cellules": [
+        "litige ouvert ⇒ libération, C10 et garde suspendus",
+        "Pour la sous-commande concernée (chapitre 10)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Les dix états du prototype",
+     "colonnes": [
+      "`st`",
+      "Carte clé",
+      "Frise (4 états)",
+      "Action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "recu",
+        "Nuit · « Reçu » · « Il aura jusqu’au ven. 25 sept. à 17 h 15 »",
+        "Reçu en cours",
+        "Écrire dans le dossier"
+       ]
+      },
+      {
+       "cellules": [
+        "vendeur (défaut)",
+        "Nuit · « Le vendeur a 48 h pour répondre » · 31 h",
+        "Étape 2 en cours",
+        "Écrire dans le dossier"
+       ],
+       "gras": [
+        "",
+        "31 h",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "conteste",
+        "Nuit · « Le vendeur conteste » · décision avant sam. 26 sept. 17 h 15",
+        "Étape 3 en cours",
+        "Écrire dans le dossier"
+       ]
+      },
+      {
+       "cellules": [
+        "arrangement",
+        "Orange · « Le vendeur te propose un arrangement »",
+        "Étape 2 en cours",
+        "Voir la proposition (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "silence",
+        "Nuit · « Le vendeur n’a pas répondu » · priorité",
+        "Étape 2 en rouge, étape 3 en cours",
+        "Écrire dans le dossier"
+       ]
+      },
+      {
+       "cellules": [
+        "examen",
+        "Nuit · « BelivaY compare les preuves »",
+        "Étape 3 en cours",
+        "Écrire dans le dossier"
+       ]
+      },
+      {
+       "cellules": [
+        "accepte",
+        "Verte · « Ton fer va être remplacé »",
+        "En examen « pas nécessaire »",
+        "Suivre le remplacement (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "rembourse",
+        "Verte · « Remboursement accordé » · 15 800 F",
+        "Toutes faites",
+        "Suivre le retour (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "remplace",
+        "Verte · « Remplacement accordé »",
+        "Toutes faites",
+        "Suivre le remplacement (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "refuse",
+        "Rouge · « Demande non retenue »",
+        "Toutes faites",
+        "Poser une question sur la décision"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-34",
+        "Suivi en quatre états en langage simple : Reçu → Le vendeur a 48 h pour répondre → En examen → Décision.",
+        "§11.3 p. 67 · §11.0 p. 66",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-35",
+        "Le compte à rebours du vendeur est visible : t_limite_vendeur = t_ouverture + 48 h, affiché en heures restantes arrondies à l’heure inférieure, avec l’échéance en date et heure.",
+        "§11.3 p. 67 · §11.4 p. 68",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-36",
+        "Dans Mes commandes, la carte dit « En litige · réponse sous X h » et porte le numéro de dossier ; la commande reste dans « En cours » jusqu’à la clôture du litige (CL-09).",
+        "§11.3 p. 67 · §9.1 p. 53 · §9.5 p. 57",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-37",
+        "Le vendeur a 48 h et trois réponses : accepter, contester (avec preuves), proposer un arrangement de 40 caractères au moins.",
+        "§11.0 p. 66 · §11.4 p. 68 · §16.2 p. 91",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-38",
+        "Vendeur silencieux à 48 h : le dossier passe en file d’arbitrage prioritaire avec présomption en faveur du client. Un vendeur silencieux ne bloque jamais un client, mais la décision reste humaine, motivée et journalisée : jamais de remboursement automatique à l’échéance des 48 h.",
+        "§11.0 p. 66 · §11.4 p. 68 · §11.6 p. 70 · §18.1 p. 98",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-39",
+        "Délai ferme de la décision affiché pendant l’examen : au plus tard 24 h après l’échéance du vendeur (sam. 26 sept. à 17 h 15 pour LIT-3042). La spécification pose un délai de traitement constant, identique pour tous les paliers, sans valeur.",
+        "§11.5 p. 69 · §11.3 p. 67",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-40",
+        "Pendant tout le litige, l’argent reste bloqué (« rien n’est versé au vendeur ») et le colis gardé au relais ne coûte rien ; la ligne reste visible jusqu’à la décision.",
+        "§11.4 p. 68 · §11.6 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-41",
+        "Messagerie du dossier : fil tracé et gratuit, rattaché au dossier, photos par l’appareil photo ; numéros, e-mails et identifiants sociaux masqués automatiquement des deux côtés. Jamais un e-mail ni WhatsApp pour traiter le litige.",
+        "§15.2 p. 86 · §19.1 p. 104 · §11.6 p. 70 · §11.7 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-42",
+        "La décision repose sur la chaîne de preuves, côte à côte en console : photos du livreur chez le vendeur (produit, puis colis scellé), réception au relais, remise au comptoir, photos du client ou du déballage.",
+        "§11.0 p. 66 · §11.4 p. 68 · §18.1 p. 99",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-43",
+        "Le client voit ses photos et celles du déballage, et la photo du colis scellé ; aucune photo montrée au client ne laisse voir la boutique (anonymat, recadrage côté serveur).",
+        "§19.1 p. 104 · §2.4 p. 13",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "LIT-VENDEUR-H",
+        "Délai de réponse du vendeur",
+        "48 h",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-ARRANG-MIN",
+        "Longueur minimale d’un arrangement",
+        "40 caractères",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "(nouveau)",
+        "Décision de BelivaY après l’échéance du vendeur",
+        "24 h proposé",
+        "À trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Vendeur silencieux",
+        "File d’arbitrage prioritaire à 48 h ; l’écran passe à l’état silence."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Dernier état connu avec « mis à jour à [heure] » ; le compte à rebours continue sur l’échéance reçue."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Suivi du litige » · la décision",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 20",
+        "Suivi du litige · le vendeur accepte (remplacement)",
+        "Le vendeur accepte (jeu. 24 sept. à 09 h 40) : carte verte « Ton fer va être remplacé », fer neuf avant le lun. 28 sept. à 09 h 40, livraison offerte. Bouton plein « Suivre le remplacement ». « En examen » est marqué « pas nécessaire ». « Tes 15 800 F restent bloqués jusqu’à la remise du nouveau fer. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 21",
+        "Décision · remboursement accordé",
+        "Décision de BelivaY (sam. 26 sept. à 11 h 20) : « Remboursement accordé », 15 800 F versés sur MTN MoMo quand le vendeur a reçu et inspecté le fer (48 h au plus). Motif écrit : la fente se voit déjà sur la photo du livreur chez le vendeur ; le vendeur est en tort, il rembourse et paie le retour. Bouton plein « Suivre le retour »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 22",
+        "Décision · remplacement accordé",
+        "Vendeur silencieux puis décision : « Remplacement accordé », fer neuf avant le mer. 30 sept. à 11 h 20, sinon remboursement automatique. Motif écrit (silence, photos du déballage, scellé intact). Bouton plein « Suivre le remplacement »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 23",
+        "Décision · demande non retenue, motif écrit",
+        "Décision défavorable : carte rouge « Demande non retenue » et le motif écrit (trace de calcaire, pas une fente ; fer conforme à sa fiche). Deux conséquences : le paiement de 15 800 F est versé au vendeur ; le fer attend Carine au Relais Mvog-Ada. Bouton secondaire « Poser une question sur la décision »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-44",
+        "Jamais de refus sans motif écrit : le motif est obligatoire en console pour toute décision défavorable au client ; le prototype affiche un motif écrit pour toutes les décisions de BelivaY.",
+        "§11.3 p. 68 · §11.4 p. 68 · §18.1 p. 99",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-45",
+        "Décisions possibles : remboursement (moyen d’origine, après réception et inspection du retour), remplacement, ou débouté. Le vendeur qui accepte la demande du client clôt l’instruction sans examen.",
+        "§2.3 p. 13 · §11.4 p. 68 · §12.4 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-46",
+        "Après une décision de remboursement, l’écran mène à « Retourner un article » ; après un remplacement (décidé ou accepté), à « Remplacement ».",
+        "§12.1 p. 72 · §12.5 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-47",
+        "Débouté : le paiement est versé au vendeur, le colis gardé est rendu au client au comptoir ; le client peut poser une question dans la messagerie du dossier. La v3 ne prévoit pas de recours sur un litige (le relais et le vendeur en prévoient un).",
+        "§11.3 p. 68 · §15.2 p. 86",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-48",
+        "Coût du retour attribué après arbitrage (vendeur, transporteur ou client en tort), jamais à la demande ; la décision le dit (« il paie le retour »).",
+        "§11.0 p. 66 · §11.4 p. 68 · §12.3 p. 73",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Feuille « Arrangement proposé par le vendeur »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 24",
+        "Suivi du litige · arrangement proposé",
+        "Suivi à l’état « arrangement » (jeu. 24 sept. à 09 h 55) : carte orange « À toi de répondre · Le vendeur te propose un arrangement », bouton plein « Voir la proposition », puis la proposition entre guillemets."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 25",
+        "Arrangement · feuille de la proposition du vendeur",
+        "Feuille ouverte : « Proposition du vendeur », le texte (103 caractères : « Je propose de rembourser 5 000 F et vous gardez le fer… »), l’heure de réception. « Si tu acceptes » : 5 000 F remboursés sur MTN MoMo, tu gardes ton fer, le litige est clos, le reste du paiement est versé au vendeur. « Si tu refuses, rien n’est perdu ». Deux boutons : « Refuser » (secondaire) et « Accepter » (plein). Le bouton du suivi derrière la feuille passe en secondaire."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 26",
+        "Arrangement · accepté, litige clos",
+        "Accepté : « Tu recevras 5 000 F sur ton MTN MoMo 6 77 ·· ·· 41 sous 1 h. Le litige LIT-3042 est clos. » ; le fer attend au Relais Mvog-Ada. Bouton « Voir mes litiges »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 27",
+        "Arrangement · refusé, BelivaY examine",
+        "Refusé : BelivaY examine et décide avant le sam. 26 sept. à 17 h 15 ; 15 800 F toujours bloqués. Bouton « Suivre mon litige » (état « En examen »)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "arrangement ⇒ len(texte) ≥ 40",
+        "Proposé au client, qui accepte ou refuse (LIT-ARRANG-MIN)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-49",
+        "Un arrangement compte au moins 40 caractères ; il est montré au client tel que le vendeur l’a écrit (coordonnées masquées), qui l’accepte ou le refuse.",
+        "§11.4 p. 68 · §11.0 p. 66",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-50",
+        "Accepter clôt le litige aux conditions proposées (remboursement partiel vers le moyen d’origine, le reste du paiement versé au vendeur) ; refuser renvoie le dossier en examen, sans pénalité pour le client.",
+        "§11.4 p. 68",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-51",
+        "Délai de réponse du client à un arrangement : absent de la v3 (5 jours chez le relais et le vendeur, avec clôture en faveur du vendeur). Le prototype n’affiche pas de délai.",
+        "§11.4 p. 68",
+        "À trancher"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Mes litiges »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 28",
+        "Mes litiges (depuis le Compte)",
+        "« En cours · 1 » : LIT-3042 — vignette du fer, « En litige · réponse sous 31 h » en neutre soutenu, « Fer à repasser vapeur 2 200 W · Colis 1 », « Le vendeur a 48 h pour répondre », jauge à l’état 2, « LIT-3042 · BLV-51877 » en dernier. « Terminés · 1 » : LIT-2987 — « Remboursé · 3 000 F », Chemise bazin brodée · L, « Tout de suite, sans enquête · le 10 août », jauge complète en vert. Ligne d’aide et « Voir mes commandes »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 29",
+        "Mes litiges · aucun litige",
+        "Aucun litige : « Aucun litige » ; « Un problème avec un colis ? Ouvre ta commande et touche « Signaler un problème ». Au relais, dis-le à Mme Ngo Bassong : elle ouvre le litige pour toi. » ; bouton « Voir mes commandes »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (cartes de dossier, jauge à quatre segments, sections « En cours » / « Terminés »)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Filtre « Litiges » de la messagerie",
+        "Écran « Mes litiges » : dossiers en cours puis terminés, chacun avec son état et son délai",
+        "GET /me/disputes ; entrée « Mes litiges » du compte (CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Chaque dossier : numéro LIT-…, colis, phrase d’état (« En litige · réponse sous 31 h »), jauge à quatre segments",
+        "Une carte par dossier ; le numéro en dernier, comme la carte de commande (9.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Deux états vides empilés (« Aucun échange dans ce filtre… », « Aucune conversation disponible. »)",
+        "Un seul état vide qui dit quoi faire et un bouton « Voir mes commandes »",
+        "#litiges?st=vide."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Encadré permanent « Un litige se fait dans le detail d’une commande »",
+        "Une ligne d’aide sous la liste, sans faute (« détail »)",
+        "Texte : « Un problème avec un autre colis ? Ouvre la commande et touche « Signaler un problème ». »"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Bouton orange « Aller aux commandes » avant les conversations",
+        "Bouton secondaire « Voir mes commandes » après la liste",
+        "L’action principale n’est pas une sortie de l’écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Question de remboursement dans un chat libre, sans dossier ni commande (IMG_2404)",
+        "Le fil écrit est celui du dossier, ouvert depuis le suivi (« Écrire dans le dossier »)",
+        "Fil rattaché à dispute_id (15.2) ; délai de première réponse et fil complet : CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Support muet onze jours, dates sans heure, pas de photo jointe, texte indicatif coupé, boutons flottants sur le fil ; pas de numéro WhatsApp du support ni de délai de réponse (IMG_2403 à 2405)",
+        "Messagerie du dossier avec date et heure, photo par l’appareil photo, délai de réponse affiché, aucun bouton flottant ; numéro WhatsApp du support dans l’aide — CL-13",
+        "Voir CL-13 (messagerie, SUP-DELAI 4 h ouvrées, SUP-WA à publier)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bloc identité, barre de points, tuiles et puces répétés en tête (environ 400 px), deux « Messages » actifs",
+        "En-tête d’écran enfant « Mes litiges » et retour au compte",
+        "Le compte reste minimal (9.5) : CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeaux « 3 200+ Vendeurs certifiés », « Gagnez des points… »",
+        "Aucun bandeau tournant",
+        "Compteur non réel et programme inexistant : à retirer partout."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Support abonnement · Votre dépôt Mobile Money a été validé »",
+        "—",
+        "Abonnement fermé au lancement (CL-14) ; pas de portefeuille (compte, CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Le rappel « un litige s’ouvre depuis la commande », le renvoi vers les commandes, des filtres simples",
+        "L’aide sous la liste et « Voir mes commandes » ; pas de filtre (deux rubriques suffisent)",
+        "Garder le message, sans encadré."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-52",
+        "« Mes litiges », accessible depuis le compte : dossiers en cours puis terminés, chacun avec la phrase d’état, le colis, l’état parmi les quatre, le compte à rebours du vendeur et le numéro de dossier en dernier ; un état vide qui dit quoi faire.",
+        "§9.5 p. 56 · §11.3 p. 67",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-53",
+        "Les remboursements automatiques figurent dans « Terminés » avec leur montant et « sans enquête » ; « Je veux juste signaler » n’y figure pas (pas de dossier).",
+        "§11.3 p. 67",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-54",
+        "Tant qu’un litige est en cours, « Supprimer mon compte » est refusé (CL-13).",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Règles d’arbitrage (serveur et console)",
+   "tableaux": [
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "montant ≤ seuil_auto(palier) ⇒ remboursement automatique",
+        "Vers le moyen d’origine ; compteur séparé « remboursés sans instruction » ; payé par BelivaY."
+       ]
+      },
+      {
+       "cellules": [
+        "montant > seuil_auto(palier) ⇒ instruction",
+        "Dossier, escrow retenu, arbitrage humain."
+       ]
+      },
+      {
+       "cellules": [
+        "t_limite_vendeur = t_ouverture + 48 h",
+        "Affiché en heures restantes, arrondi à l’heure inférieure."
+       ]
+      },
+      {
+       "cellules": [
+        "t_now ≥ t_limite ∧ aucune réponse ⇒ file d’arbitrage prioritaire",
+        "Présomption client ; décision humaine journalisée (chapitre 18)."
+       ]
+      },
+      {
+       "cellules": [
+        "arrangement ⇒ len(texte) ≥ 40",
+        "Proposé au client, qui accepte ou refuse."
+       ]
+      },
+      {
+       "cellules": [
+        "litige ouvert ⇒ libération, C10 et garde suspendus",
+        "Pour la sous-commande concernée (chapitre 10)."
+       ]
+      },
+      {
+       "cellules": [
+        "remboursement → moyen de paiement d’origine",
+        "Jamais réorienté ; carte → carte."
+       ]
+      },
+      {
+       "cellules": [
+        "ordre de la file console = temps restant avant échéance, puis montant ↓",
+        "Échéances : 48 h vendeur, 48 h ouvrées constat relais (18.1)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Le tableau d’arbitrage (11.4)",
+     "colonnes": [
+      "Règle",
+      "Ce qu’il faut implémenter",
+      "Réf."
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Geste immédiat sous seuil",
+        "Remboursement automatique sans enquête : 3 000 F (Standard), 10 000 F (Élevé). Aucun au palier « À instruire » ni « Plafonné ».",
+        "CLT-24"
+       ]
+      },
+      {
+       "cellules": [
+        "Escrow retenu",
+        "Au-dessus du seuil, arbitrage humain ; l’argent reste bloqué pendant tout le litige.",
+        "CLT-55"
+       ]
+      },
+      {
+       "cellules": [
+        "48 h vendeur, trois réponses",
+        "Accepter, contester (avec preuves), proposer un arrangement de 40 caractères au moins.",
+        "CLT-37"
+       ]
+      },
+      {
+       "cellules": [
+        "Silence du vendeur",
+        "À 48 h, BelivaY arbitre avec présomption en faveur du client ; décision humaine et motivée.",
+        "CLT-38"
+       ]
+      },
+      {
+       "cellules": [
+        "Chaîne de preuves",
+        "Photos du livreur chez le vendeur (produit, colis scellé), réception au relais, remise au comptoir, photos du client : côte à côte en console.",
+        "CLT-42"
+       ]
+      },
+      {
+       "cellules": [
+        "Motif écrit",
+        "Obligatoire pour toute décision défavorable au client.",
+        "CLT-44"
+       ]
+      },
+      {
+       "cellules": [
+        "Coût du retour",
+        "Attribué après arbitrage (vendeur, transporteur ou client en tort) ; jamais à la demande.",
+        "CLT-48"
+       ]
+      },
+      {
+       "cellules": [
+        "Effet sur le vendeur",
+        "Litige perdu : pèse sur son Trust Score ; gagné : aucun effet ; taux anormal : revue, jamais sanction automatique.",
+        "CLT-56"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-55",
+        "Au-dessus du seuil du palier : dossier, escrow retenu, arbitrage humain ; l’argent reste bloqué pendant tout le litige.",
+        "§11.4 p. 68",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-56",
+        "Un litige perdu pèse sur le Trust Score du vendeur ; gagné, il ne le pénalise pas. Un taux anormal de litiges déclenche une revue, jamais une sanction automatique.",
+        "§11.4 p. 68",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-57",
+        "Un litige imputable au transport (colis abîmé, scellé rompu) pèse sur le Trust Score de l’entreprise de livraison et de son livreur, jamais sur le client : aucun effet sur son IFA.",
+        "§11.6 p. 70 · §11.7 p. 71 · §16.3 p. 92",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-58",
+        "Au-delà du plafond de valeur de l’entreprise de livraison (75 000 F Nouveau, 250 000 F Confirmé), la responsabilité revient au transporteur qui a accepté le colis hors plafond.",
+        "§11.6 p. 70 · §16.3 p. 91",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-59",
+        "Tout remboursement va vers le moyen de paiement d’origine, jamais réorienté : Mobile Money vers le même numéro, carte vers la même carte (payeur à l’étranger compris).",
+        "§11.4 p. 68 · §2.3 p. 12 · §12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-60",
+        "Montant d’un litige = montant retenu de la sous-commande (articles). Le remboursement des frais de livraison payés, quand le vendeur ou le transporteur est en tort, n’est pas fixé par la spécification ; le prototype montre le montant des articles.",
+        "§11.2 p. 67 · §8.6 p. 50",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-61",
+        "Un montant partiel (LIT-2987 : 3 000 F sur une chemise à 21 000 F) n’a pas de règle de calcul dans la v3 : le client ne saisit jamais de montant ; le serveur doit le calculer (ligne manquante, geste proposé).",
+        "§11.2 p. 67 · §11.6 p. 70",
+        "À trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Photo manquante",
+        "Impossible de passer l’étape 3, sauf « Jamais reçu »."
+       ]
+      },
+      {
+       "cellules": [
+        "Vendeur silencieux",
+        "File d’arbitrage prioritaire à 48 h."
+       ]
+      },
+      {
+       "cellules": [
+        "Litige imputable au transport",
+        "Aucun effet sur l’IFA du client ; le Trust Score du transporteur et du livreur en porte le poids."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "IFA — indice de fiabilité acheteur (interne, jamais affiché)",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "« Indice de confiance 70/100 » affiché au client",
+        "Aucun score nulle part : le compte montre les avantages actifs en clair (« Remboursement immédiat jusqu’à 3 000 F », « Paiement au comptoir jusqu’à 50 000 F »)",
+        "L’API client ne renvoie jamais l’IFA ni le palier (matrice 2.4) ; seulement advantages[] (compte, CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Programme « BelivaY Points », niveau Bronze → Argent, 0 pt",
+        "—",
+        "Aucun programme de points dans la spécification : retirer (compte, CL-13 ; la cagnotte de l’abonnement est après le lancement, CL-14)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Grande carte orange pour un solde de 0, puces coupées, bloc identité répété",
+        "—",
+        "Compte minimal : CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "CGU : « comptes suspendus sans préavis » (IMG_2462)",
+        "Jamais de bannissement : on plafonne ; rétrogradation validée par un humain, avec recours (CIF-22, CIF-25)",
+        "Réécrire la CGU (CL-13) avec ces garde-fous."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "taux_échec = litiges_perdus_12m / commandes_12m",
+        "50 commandes et 5 perdus = 10 %."
+       ]
+      },
+      {
+       "cellules": [
+        "palier négatif ⇔ commandes_total ≥ 5",
+        "Avant, au minimum Standard."
+       ]
+      },
+      {
+       "cellules": [
+        "litiges_perdus_12m ≥ N_abs ⇒ descente proposée",
+        "N_abs = paramètre (à calibrer)."
+       ]
+      },
+      {
+       "cellules": [
+        "remb_auto_12m ≥ N_auto ⇒ sortie de l’automatisme",
+        "Même au palier Élevé."
+       ]
+      },
+      {
+       "cellules": [
+        "rétrogradations_total ≥ 3 ⇒ remontée sur validation humaine",
+        "Jamais remis à zéro."
+       ]
+      },
+      {
+       "cellules": [
+        "descente ⇒ croisement vendeur + validation humaine",
+        "Litiges concentrés sur un vendeur : c’est lui qu’on examine."
+       ]
+      },
+      {
+       "cellules": [
+        "délai_traitement(palier) = constante",
+        "Aucun palier ne rallonge le délai."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Couche 1 — mesurer (12 mois glissants)",
+     "colonnes": [
+      "Compteur",
+      "Poids",
+      "Réf."
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Litiges perdus après instruction",
+        "Fort",
+        "CIF-04"
+       ]
+      },
+      {
+       "cellules": [
+        "Litiges retirés après demande de preuve",
+        "Fort — le plus révélateur",
+        "CIF-05"
+       ]
+      },
+      {
+       "cellules": [
+        "Remboursés automatiquement, non instruits",
+        "Moyen — compteur séparé",
+        "CIF-06"
+       ]
+      },
+      {
+       "cellules": [
+        "Annulations après préparation",
+        "Faible — nul si la cause est BelivaY ou le vendeur",
+        "CIF-07"
+       ]
+      },
+      {
+       "cellules": [
+        "Colis non retirés",
+        "Faible — nul si cause légitime",
+        "CIF-08"
+       ]
+      },
+      {
+       "cellules": [
+        "Refus au comptoir (commande « Validée »)",
+        "Fort — deux refus : paiement d’avance définitif",
+        "CIF-09"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes sans incident",
+        "Fait remonter le score",
+        "CIF-10"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Couche 2 — décider : le score et le montant",
+     "colonnes": [
+      "Palier",
+      "Ce que le client obtient",
+      "Ce que voit le client",
+      "Réf."
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Élevé",
+        "Remboursement immédiat jusqu’à 10 000 F, plafonné en fréquence. Litige prioritaire. Paiement au comptoir.",
+        "« Remboursement immédiat jusqu’à 10 000 F »",
+        "CIF-11"
+       ]
+      },
+      {
+       "cellules": [
+        "Standard",
+        "Remboursement automatique jusqu’à 3 000 F, instruction au-delà. Paiement au comptoir dans les plafonds.",
+        "« Remboursement immédiat jusqu’à 3 000 F » (Carine)",
+        "CIF-12"
+       ]
+      },
+      {
+       "cellules": [
+        "À instruire",
+        "Plus d’automatisme : photos obligatoires, arbitrage humain. Délai inchangé.",
+        "Rien : l’avantage disparaît du compte",
+        "CIF-13"
+       ]
+      },
+      {
+       "cellules": [
+        "Plafonné",
+        "Plafond de commande, pas de paiement au comptoir, pas de remboursement sans preuve. Délai inchangé.",
+        "Rien : le plafond s’applique au panier",
+        "CIF-14"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIF-01",
+        "L’IFA (indice de fiabilité acheteur) est le score interne du client : jamais montré au client, au vendeur, au livreur ni au relais ; seule la console le voit. Aucune réponse d’API client ne le contient.",
+        "§1.4 p. 9 · §2.4 p. 13 · §11.0 p. 66",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-02",
+        "Règle fondatrice : on juge un client sur ses litiges perdus, jamais sur le nombre de ses litiges.",
+        "§11.5 p. 68",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-03",
+        "L’IFA est mesuré dès le premier jour (12 mois glissants) pour calibrer les seuils sur des données réelles ; ses décisions croisent toujours le score et le montant.",
+        "§11.0 p. 66 · §11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-04",
+        "Compteur « litiges perdus après instruction » : poids fort.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-05",
+        "Compteur « litiges retirés après demande de preuve » : poids fort, le plus révélateur.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-06",
+        "Compteur « remboursés automatiquement, non instruits » : poids moyen, compteur séparé.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-07",
+        "Compteur « annulations après préparation » : poids faible, nul si la cause est BelivaY ou le vendeur.",
+        "§11.5 p. 69 · §13.2 p. 78",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-08",
+        "Compteur « colis non retirés » : poids faible, nul si la cause est légitime.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-09",
+        "Compteur « refus au comptoir d’une commande Validée » : poids fort ; deux refus rendent le paiement d’avance obligatoire, définitivement (PAY-CPT-REFUS).",
+        "§11.5 p. 69 · §8.5 p. 49",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-10",
+        "Les commandes sans incident font remonter le score.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-11",
+        "Palier Élevé : remboursement immédiat jusqu’à 10 000 F, plafonné en fréquence ; litige prioritaire ; paiement au comptoir.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-12",
+        "Palier Standard : remboursement automatique jusqu’à 3 000 F, instruction au-delà ; paiement au comptoir dans les plafonds. Au lancement, aucun client n’a 5 commandes : tous sont Standard.",
+        "§11.5 p. 69 · §11.0 p. 66",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-13",
+        "Palier À instruire : plus d’automatisme, photos obligatoires, arbitrage humain ; délai inchangé.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-14",
+        "Palier Plafonné : plafond de commande, pas de paiement au comptoir, pas de remboursement sans preuve ; délai inchangé.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-15",
+        "Aucun palier négatif (À instruire, Plafonné) avant 5 commandes au total : avant, le client est au moins Standard (IFA-MIN-CMD).",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-16",
+        "Un seuil absolu de litiges perdus sur 12 mois (N_abs) propose une descente, en plus du ratio.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-17",
+        "Un plafond de remboursements non instruits sur 12 mois (N_auto) fait sortir de l’automatisme, même au palier Élevé.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-18",
+        "Le compteur de rétrogradations est permanent, jamais remis à zéro ; à partir de 3, toute remontée demande une validation humaine.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-19",
+        "Identité élargie : compte + numéro MoMo + relais habituel ; un changement de numéro garde l’historique IFA.",
+        "§11.5 p. 69 · §3.5 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-20",
+        "Toute descente croise d’abord le Trust Score des vendeurs concernés : litiges concentrés sur un vendeur, c’est lui qu’on examine ; puis validation humaine.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-21",
+        "Aucun palier ne rallonge le délai de traitement d’un litige : délai_traitement(palier) est une constante.",
+        "§11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-22",
+        "Rétrogradation toujours validée par un humain ; recours possible pour le client.",
+        "§11.5 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-23",
+        "Un litige gagné ne laisse aucune trace.",
+        "§11.5 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-24",
+        "Un litige imputable à BelivaY ou au transport ne fait jamais descendre le client.",
+        "§11.5 p. 70 · §13.2 p. 78",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-25",
+        "Jamais de bannissement : on plafonne.",
+        "§11.5 p. 70",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-26",
+        "L’IFA est invisible : le client voit ses avantages actifs en clair, jamais sa note ni son palier.",
+        "§11.5 p. 70 · §9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-27",
+        "Les compteurs tournent dès le lancement sans aucune décision automatique : toute descente est proposée en console (type « Score ») et validée par une personne.",
+        "§11.7 p. 71 · §18.1 p. 99",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIF-28",
+        "L’éligibilité au paiement au comptoir lit l’IFA (neutre ou positif) côté serveur ; le client ne voit que la présence ou l’absence du bouton et, s’il y a lieu, le plafond.",
+        "§8.5 p. 49 · §19.4 p. 107",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "IFA-NABS",
+        "Litiges perdus déclenchant une descente",
+        "à calibrer",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "IFA-NAUTO",
+        "Remboursements non instruits avant sortie de l’automatisme",
+        "à calibrer",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "IFA-MIN-CMD",
+        "Commandes avant un palier négatif",
+        "5",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "(19.4)",
+        "Plafonds de fréquence du palier Élevé",
+        "à calibrer",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "PAY-CPT-REFUS",
+        "Refus au comptoir avant paiement d’avance obligatoire",
+        "2",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Retourner un article » · les quatre étapes",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 30",
+        "Retour · onglet de l’écran de retrait, aucun retour en cours",
+        "Onglet « Retourner un article » ouvert depuis l’écran de retrait de CL-09 (#retour?ref=BLV-52018), barre d’état à 10:33, en-tête « Commande BLV-52018 », onglets segmentés (l’actif en pilule braise). Carte d’accroche « Aucun retour en cours » : « Un retour commence toujours par un signalement : dis-nous ce qui ne va pas, BelivaY organise le reste. », puis « Retour possible jusqu’au jeu. 1er oct. » (retrait + 7 jours) et « Défaut caché à signaler avant le sam. 26 sept. à 10 h 32 » (+ 48 h). Carte « Tes colis retirés » (Colis 1 · 18 500 F et Colis 2 · 14 900 F, retirés aujourd’hui à 10 h 32). Encadré au cadenas « Jusqu’au jeu. 1er oct., rien n’est versé aux vendeurs. » Bouton plein « Signaler un problème » vers l’assistant (étape 1, deux colis)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 31",
+        "Retour · à déposer au relais",
+        "Positions de la maquette S’inspirer IMG_1971 (exact), en clair. Onglets « Au comptoir » / « Retourner un article » (actif). Carte d’accroche « Tu n’as rien à organiser » : « Rapporte le colis au Relais Mvog-Ada. Le livreur le reprend dans sa tournée. », puis le Colis 1 de BLV-51702 (dossier LIT-3044). Carte « Ce qui se passe ensuite » : frise des quatre étapes, la première en cours (pastille orange pleine : Mme Ngo Bassong le scanne, Relais Mvog-Ada ouvert jusqu’à 19 h), les autres en pastilles creuses. Encadré neutre « Retour gratuit si le problème est validé » ; encadré au cadenas « Tes 23 000 F restent bloqués jusqu’à la clôture. » ; bouton plein « J’ai déposé le colis au relais » ; aide « Rapporte-le dans son carton… Retour accepté le ven. 25 sept. à 09 h 30. » ; « Comment ça marche » replié et le lien « Règles des retours et des litiges »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 32",
+        "Retour · déposé et scanné au relais",
+        "Déposé : carte d’accroche « C’est déposé · La suite se fait sans toi. » avec le colis ; frise (dépôt fait le ven. 25 sept. à 16 h 10, livreur en cours) ; carte « Retour déposé » avec la photo du dépôt prise par Mme Ngo Bassong et la pastille « Aucun frais de garde » ; encadrés « Retour gratuit si… » et argent bloqué."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 33",
+        "Retour · récupéré par le livreur",
+        "Récupéré par le livreur : carte d’accroche « Ton colis est en route vers le vendeur · Pris dans la tournée de Mvog-Ada, sans course spéciale. » ; frise à l’étape 3 ; photo de collecte prise par le livreur."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 34",
+        "Retour · inspection du vendeur (48 h)",
+        "Inspection : carte nuit « Le vendeur inspecte ton retour · Avant le lun. 28 sept. à 14 h 20 » (réception + 48 h) ; « Sans réponse du vendeur à cette heure-là, tu es remboursée automatiquement. » ; le colis, la frise, les encadrés."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 35",
+        "Retour · clos et remboursé",
+        "Dossier clos : carte verte « Remboursée · 23 000 F », envoyés sur MTN MoMo 6 77 ·· ·· 41 ; encadré vert « Ce retour ne te coûte rien » (le vendeur est en tort ; aucun frais de garde sur un colis en retour) ; frise complète ; rendu de la notification « Remboursement · LIT-3044 : 23 000 F envoyés… Dossier clos. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 36",
+        "Retour · vendeur sans réponse, remboursement automatique",
+        "Inspection non faite à temps : « Remboursement automatique », 23 000 F ; « Le vendeur n’a pas inspecté ton retour dans les 48 h : tu es remboursée sans attendre. » ; notification à 14 h 20."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : maquette S’inspirer IMG_1971 (exact) — onglets segmentés, carte « Tu n’as rien à organiser », frise « Ce qui se passe ensuite », encadrés, argent au cadenas, bouton plein",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette). Le contenu de la maquette qui contredit la spec n’est pas repris."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Deuxième onglet « Retourner un article » de l’écran de retrait, quatre étapes, argent bloqué",
+        "GET /returns/{id} → steps[], amount_held, trip_payer."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "remboursement ⇐ réception ∧ inspection (≤ 48 h)",
+        "Sans réponse du vendeur à 48 h : automatique. BLV-51702 : reçu sam. 26 sept. 14 h 20 → échéance lun. 28 sept. 14 h 20."
+       ]
+      },
+      {
+       "cellules": [
+        "garde(colis en retour) = 0",
+        "Hors capacité déclarée du relais."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Les douze états du prototype",
+     "colonnes": [
+      "`st`",
+      "Colis",
+      "Ce que dit l’écran",
+      "Action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "aucun (défaut de BLV-52018)",
+        "BLV-52018 · 2 colis",
+        "Aucun retour en cours ; retour possible jusqu’au jeu. 1er oct. ; défaut caché à signaler avant le sam. 26 sept. à 10 h 32",
+        "Signaler un problème (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "depot (défaut)",
+        "BLV-51702 · LIT-3044",
+        "Retour accepté le ven. 25 sept. à 09 h 30 ; « Retour gratuit si le problème est validé » ; 23 000 F bloqués",
+        "J’ai déposé le colis au relais (plein)"
+       ]
+      },
+      {
+       "cellules": [
+        "depose",
+        "BLV-51702",
+        "Retour déposé ven. 25 sept. à 16 h 10 ; photo du dépôt ; aucun frais de garde",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "collecte",
+        "BLV-51702",
+        "Récupéré sam. 26 sept. à 11 h 00 dans la tournée ; photo de collecte",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "inspection",
+        "BLV-51702",
+        "Reçu sam. 26 sept. à 14 h 20 ; inspection avant lun. 28 sept. à 14 h 20",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "clos",
+        "BLV-51702",
+        "Remboursée 23 000 F lun. 28 sept. à 10 h 05 ; « Ce retour ne te coûte rien » ; notification",
+        "Voir mes litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "delai",
+        "BLV-51702",
+        "Pas d’inspection à 14 h 20 : remboursement automatique de 23 000 F",
+        "Voir mes litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "tort",
+        "BLV-51702",
+        "Client en tort : 23 000 − 500 = 22 500 F",
+        "Voir mes litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "gratuit",
+        "BLV-51877 · LIT-3042",
+        "Déjà au relais depuis le constat ; « Ce retour ne te coûte rien » ; 15 800 F bloqués",
+        "Voir le dossier"
+       ]
+      },
+      {
+       "cellules": [
+        "volumineux",
+        "Téléviseur LED 43″ (exemple XL)",
+        "Collecte à domicile ; 189 000 F bloqués",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "sans-retour",
+        "BLV-51388 · Colis 1 (huile de coco)",
+        "Sous 5 000 F : remboursé 4 800 F sans retour",
+        "Voir mes litiges"
+       ]
+      },
+      {
+       "cellules": [
+        "hors-delai",
+        "BLV-51388",
+        "Fenêtre fermée le ven. 4 sept. ; défaut caché couvert jusqu’au dim. 6 déc.",
+        "Signaler un défaut caché (plein)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRO-01",
+        "« Retourner un article » est le deuxième onglet de l’écran de retrait (« Au comptoir » / « Retourner un article ») ; il suit une décision de litige ou un retour accepté. Sans retour en cours, il montre la fenêtre de retour et mène à l’assistant de litige.",
+        "§12.1 p. 72 · §9.4 p. 55",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-02",
+        "« Tu n’as rien à organiser » : le client rapporte le colis au relais ; le livreur le récupère dans sa tournée. On ne fait jamais organiser le transport au client.",
+        "§12.1 p. 72 · §12.5 p. 74",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-03",
+        "Quatre étapes : tu déposes le colis au relais (le gérant le scanne) → le livreur le récupère → le vendeur le reçoit et l’inspecte → dossier clos.",
+        "§12.1 p. 72",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-04",
+        "Encart « Tes [montant] F restent bloqués jusqu’à la clôture. » tant que le dossier n’est pas clos.",
+        "§12.1 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-05",
+        "Bouton « J’ai déposé le colis au relais » ; il ne vaut pas preuve : l’étape 1 ne passe à « fait » qu’au scan du gérant (return.deposited), avec sa photo.",
+        "§12.1 p. 73 · §12.6 p. 74",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-06",
+        "Aucun frais de garde sur un colis en retour ; il ne compte pas dans la capacité déclarée du relais.",
+        "§12.1 p. 72 · §12.3 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-07",
+        "Le trajet retour est une course normale de l’entreprise de livraison, publiée avec les paquets de la zone, avec sa rémunération ; le livreur la prend dans sa tournée, sans course dédiée, avec photo de collecte.",
+        "§12.3 p. 73 · §12.5 p. 74",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-08",
+        "Le remboursement est déclenché à la réception physique et à l’inspection par le vendeur, jamais à la demande.",
+        "§12.4 p. 73 · §12.0 p. 72",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-09",
+        "Inspection sous 48 h après réception ; sans réponse du vendeur, remboursement automatique. (À distinguer du litige, où le silence du vendeur mène à une décision humaine.)",
+        "§12.4 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-10",
+        "Toujours vers le moyen de paiement d’origine ; message au client (push) avec le montant et le numéro de dossier.",
+        "§12.4 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-11",
+        "Le colis gardé au relais depuis un constat n’est pas redéposé : l’étape 1 est déjà faite à la décision.",
+        "§11.6 p. 70 · §12.1 p. 72",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-12",
+        "La page « Règles des retours et des litiges » est accessible depuis l’écran de retour.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "RET-INSPECT-H",
+        "Inspection d’un retour",
+        "48 h",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Retour · motifs, fenêtre, qui paie et cas particuliers",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 37",
+        "Retour · colis déjà au relais, gratuit",
+        "Vendeur en tort, colis déjà au relais (LIT-3042, décision du sam. 26 sept.) : carte d’accroche « Rien à déposer · Ton fer est déjà au relais depuis le constat. » avec le fer ; « Ce qui se passe ensuite » (étape 1 déjà faite : gardé depuis le mer. 23 sept. à 17 h 15, livreur en cours) ; encadré vert « Ce retour ne te coûte rien » ; 15 800 F bloqués (cadenas)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 38",
+        "Retour · trajet à la charge du client",
+        "Client en tort : carte verte « Remboursée · 22 500 F » ; carte « Le trajet retour est à ta charge » avec le motif écrit (carton abîmé après le retrait) et le calcul : articles 23 000 F, trajet retour retenu − 500 F."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 39",
+        "Retour · colis XL collecté à domicile",
+        "Colis XL (exemple, hors commandes de Carine) : carte d’accroche « Collecte à domicile · Colis trop gros pour un relais : un livreur vient le chercher chez toi. » avec le Téléviseur LED 43″ ; frise dont la première étape est « Le livreur le récupère chez toi », à l’adresse par repères (Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage) ; 189 000 F bloqués ; « BelivaY t’envoie l’heure de passage… Il t’appelle en numéro masqué. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 40",
+        "Retour · remboursé sans retour physique",
+        "Sous le petit seuil : « Pas besoin de rapporter l’article », 4 800 F sur MTN MoMo sous 1 h ; encadré neutre « Garde l’article · Sous 5 000 F, le trajet retour coûterait plus que l’article : le remboursement part sans retour. » 5 000 F est la valeur proposée (à trancher entre 3 000 et 5 000 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 41",
+        "Retour · hors délai, défaut caché possible",
+        "Hors fenêtre : carte d’accroche « Le délai de retour est passé » avec BLV-51388 (1 colis), « Retiré le ven. 28 août », « Retour possible jusqu’au ven. 4 sept. · fermé ». Encadré ambre : « Le retour n’est plus possible. Un défaut caché reste couvert 100 jours, jusqu’au dim. 6 déc. : BelivaY l’examine comme un litige. » Bouton plein « Signaler un défaut caché » (assistant, qui démarre à l’étape 2 : un seul colis)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "retour_possible ⇔ motif ∈ {non conforme, abîmé, contrefaçon, défaut caché ≤ 48 h} ∧ t ≤ t_retrait + 7 j ∧ ¬tout_en_ordre",
+        "Vice caché : 100 jours, hors escrow. BLV-51388 : 28 août + 7 j = ven. 4 sept. ; + 100 j = dim. 6 déc."
+       ]
+      },
+      {
+       "cellules": [
+        "payeur_trajet = partie en tort (arbitrage)",
+        "Client en tort : retenu sur le remboursement (23 000 − 500 = 22 500 F)."
+       ]
+      },
+      {
+       "cellules": [
+        "valeur ≤ seuil_sans_retour ⇒ remboursement sans retour",
+        "Seuil à fixer entre 3 000 et 5 000 F (4 800 F ≤ 5 000 F proposé)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Qui paie le trajet retour",
+     "colonnes": [
+      "Décision",
+      "Qui paie",
+      "Ce que voit le client"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Pas encore d’arbitrage",
+        "—",
+        "« Retour gratuit si le problème est validé. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Vendeur en tort",
+        "Le vendeur",
+        "« Ce retour ne te coûte rien. Le vendeur est en tort : il paie le trajet. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Transporteur en tort (colis abîmé, scellé rompu)",
+        "L’entreprise de livraison",
+        "« Ce retour ne te coûte rien. Le transport est en tort : il paie le trajet. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Client en tort",
+        "Le client, retenu sur le remboursement",
+        "Motif écrit et calcul « articles − trajet retour »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRO-13",
+        "Motifs recevables : non conforme, abîmé, contrefaçon, défaut caché signalé dans les 48 h après le retrait.",
+        "§12.0 p. 72 · §12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-14",
+        "Pas de retour sans motif (changement d’avis) au lancement ; plus de compteur « retours sans motif » ni de liste d’exclusions ; on ne promet jamais un retour sans motif. Le client lit « Retour gratuit si le problème est validé ».",
+        "§12.0 p. 72 · §12.2 p. 73 · §19.4 p. 107",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-15",
+        "Fenêtre : 7 jours après le retrait effectif, fermée plus tôt par « Tout est en ordre » au comptoir.",
+        "§12.0 p. 72 · §12.2 p. 73 · §9.4 p. 55",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-16",
+        "Vice caché : couvert 100 jours, hors escrow (le vendeur est déjà payé) ; traité comme un litige, avec reprise sur les versements futurs du vendeur.",
+        "§12.0 p. 72 · §12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-17",
+        "Hors fenêtre : pas de retour ; l’écran le dit, avec la date de fermeture, et propose « Signaler un défaut caché » tant que les 100 jours ne sont pas passés.",
+        "§12.6 p. 75",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-18",
+        "Voie à privilégier : le constat au comptoir (chapitre 11), colis en main, gérant témoin.",
+        "§12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-19",
+        "Carte diaspora : mêmes règles ; remboursement sur la carte du payeur.",
+        "§12.2 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-20",
+        "Qui paie le trajet : attribué après arbitrage sur preuves — vendeur en tort : à sa charge ; transporteur en tort (colis abîmé, scellé rompu) : à la charge de l’entreprise de livraison ; client en tort : à sa charge, prélevé sur le remboursement. Jamais décidé avant l’arbitrage.",
+        "§12.0 p. 72 · §12.3 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-21",
+        "Tant que la décision n’est pas rendue, le client lit « Retour gratuit si le problème est validé » ; quand le vendeur ou le transporteur est en tort, l’encart vert « Ce retour ne te coûte rien ».",
+        "§12.1 p. 72 · §12.3 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-22",
+        "Prix du trajet retour : absent de la v3 ; le relais et le vendeur retiennent 500 F. Le prototype affiche 500 F.",
+        "§12.3 p. 73",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-23",
+        "Colis volumineux (XL, hors gabarit) : collecte à domicile par l’entreprise de livraison au lieu du dépôt au relais.",
+        "§12.3 p. 73 · §12.6 p. 75",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-24",
+        "Sous un petit seuil, remboursement sans retour physique : le trajet coûterait plus que l’article. Seuil entre 3 000 et 5 000 F, à fixer ; le prototype montre 5 000 F.",
+        "§12.0 p. 72 · §12.4 p. 73",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-25",
+        "Défaut caché découvert entre 48 h et 7 jours après le retrait (escrow encore bloqué) : la v3 ne dit pas s’il ouvre un retour ou un vice caché ; et la formule exclut tout retour après « Tout est en ordre », alors que le relais et le vendeur laissent 48 h « même après la confirmation ».",
+        "§12.2 p. 73 · §12.5 p. 74",
+        "À trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "RET-FENETRE",
+        "Fenêtre de retour",
+        "7 jours après le retrait",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "RET-DEFAUT-H",
+        "Signalement d’un défaut caché",
+        "48 h après le retrait",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "RET-VICE",
+        "Garantie du vice caché",
+        "100 jours",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "RET-SANS-RETOUR",
+        "Remboursement sans retour physique",
+        "sous 3 000 à 5 000 F (5 000 F proposé)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-XL-RELAIS",
+        "XL et hors gabarit en relais",
+        "interdit",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "RELAIS-GAIN-COLIS",
+        "Gain du relais par colis remis (et par retour déposé)",
+        "200 F / 250 F / 400 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "(nouveau)",
+        "Prix du trajet retour (partie en tort)",
+        "500 F proposé",
+        "À trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hors fenêtre",
+        "Pas de retour ; litige de vice caché si moins de 100 jours (#retour?st=hors-delai)."
+       ]
+      },
+      {
+       "cellules": [
+        "Colis volumineux",
+        "Collecte à domicile (#retour?st=volumineux)."
+       ]
+      },
+      {
+       "cellules": [
+        "Sous le petit seuil",
+        "Remboursement sans retour physique (#retour?st=sans-retour)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Remplacement »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 42",
+        "Remplacement · délai ferme du vendeur",
+        "Le vendeur a accepté le jeu. 24 sept. à 09 h 40 : carte nuit « Le vendeur renvoie un fer neuf avant le · lun. 28 sept. à 09 h 40 » (72 h ouvrées proposées, dimanche non compté) ; « Passé ce délai, tu es remboursée automatiquement de 15 800 F. » Carte du fer neuf (livraison offerte · 0 F, retrait au Relais Mvog-Ada) ; 15 800 F bloqués jusqu’à la remise ; l’ancien fer repart du relais, tu n’as rien à faire."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 43",
+        "Remplacement · nouveau fer en route",
+        "Nouveau fer en route : « Retrait possible ven. 25 sept. dès 14 h 30 », « Ton code de retrait t’attendra dans Mes commandes. » ; jauge du colis à « Récupéré » (ven. 25 sept. à 10 h 20)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 44",
+        "Remplacement · délai dépassé, remboursement automatique",
+        "Délai dépassé : carte verte « Remboursement automatique · 15 800 F » sur MTN MoMo sous 1 h ; « Le vendeur n’a pas renvoyé le fer avant le lun. 28 sept. à 09 h 40. Tu n’as rien eu à demander. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 45",
+        "Remplacement · autre vendeur proposé",
+        "Le vendeur n’a plus ce fer : un autre vendeur l’a (Vendeur certifié Argent · Trust Score 78) ; « Pour toi : 0 F de plus », écart de 600 F payé par BelivaY (16 400 − 15 800, 3,8 %), livraison offerte. Bouton plein « Accepter ce vendeur », secondaire « Me faire rembourser » ; « Seul un vendeur avec un Trust Score d’au moins 75 peut te servir. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 46",
+        "Remplacement · remis, dossier clos",
+        "Remplacement remis le ven. 25 sept. à 16 h 02 : « Ton nouveau fer est à toi · Le litige LIT-3042 est clos. » ; jauge complète ; « Ton paiement de 15 800 F est libéré pour le vendeur. » ; bouton « Voir ma commande »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Style",
+        "Style : inspiré des maquettes S’inspirer (carte nuit du délai ferme, frise à pastilles, encadré au cadenas)",
+        "palette et graphisme « Mandarine & Nuit » (variables CSS seulement, aucune couleur de la maquette)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "—",
+        "Délai ferme du vendeur en date et heure, bascule automatique en remboursement, autre vendeur si rupture",
+        "GET /replacements/{id} → due_at, parcel, fallback_offer."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "t ≥ délai_remplacement ∧ non expédié ⇒ remboursement",
+        "Délai à trancher ; accord jeu. 24 sept. 09 h 40 + 72 h ouvrées (dimanche exclu) = lun. 28 sept. 09 h 40 ; décision sam. 26 sept. 11 h 20 → mer. 30 sept. 11 h 20."
+       ]
+      },
+      {
+       "cellules": [
+        "écart = prix_livré(autre vendeur) − prix_livré(vendeur initial)",
+        "16 400 − 15 800 = 600 F (3,8 % ≤ 5 %), payé par BelivaY."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRP-01",
+        "Le remplacement repart comme une nouvelle expédition, sans frais de livraison pour le client.",
+        "§12.5 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-02",
+        "Le vendeur a un délai ferme pour renvoyer, affiché en date et heure : 72 h ouvrées proposées (valeur du vendeur et du relais), dimanche non compté, depuis son accord ou la décision.",
+        "§12.5 p. 73 · §12.6 p. 75",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-03",
+        "Passé ce délai sans expédition, bascule automatique en remboursement (replacement.late), sans demande du client.",
+        "§12.0 p. 72 · §12.5 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-04",
+        "S’il n’a plus l’article : proposition d’un autre vendeur du même produit (Trust Score ≥ 75, écart de prix payé par BelivaY, au plus 5 %) ou remboursement ; le client choisit.",
+        "§12.5 p. 73 · §13.2 p. 78",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-05",
+        "L’escrow reste retenu jusqu’à la clôture : réception du retour, ou remise du remplacement.",
+        "§12.5 p. 73",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-06",
+        "Le colis de remplacement a son propre code de retrait, dans Mes commandes, jamais dans une notification ; au relais il est marqué « Remplacement ».",
+        "§9.2 p. 54 · §16.1 p. 90",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-07",
+        "L’article défectueux repart du relais vers le vendeur dans la tournée, sans action du client.",
+        "§12.3 p. 73",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRP-08",
+        "Le souhait « Être remplacé » vaut accord du client : le vendeur qui accepte expédie sans nouvelle question. (Chez le vendeur et le relais, le client accepte ou refuse un remplacement proposé : écran absent de la v3.)",
+        "§11.2 p. 67 · §12.5 p. 73",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "RET-REMPL-DELAI",
+        "Délai de renvoi d’un remplacement",
+        "à fixer (72 h ouvrées proposé)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "REMPL-TRUST-MIN",
+        "Vendeur de remplacement : Trust Score minimal",
+        "75",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "REMPL-ECART",
+        "Vendeur de remplacement : écart de prix livré",
+        "≤ 5 %, payé par BelivaY",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Plus d’article chez le vendeur",
+        "Autre vendeur (Trust Score ≥ 75) ou remboursement, au choix du client (st=autre)."
+       ]
+      },
+      {
+       "cellules": [
+        "Délai dépassé",
+        "Remboursement automatique (st=retard)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Textes d’aide et règles publiées : litiges et retours",
+   "tableaux": [
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « Remboursement sous 7 jours · Sans question » sur tous les écrans",
+        "Aucun bandeau tournant. La promesse juste, « Retour gratuit si le problème est validé », figure au premier lancement (CL-03), sur la fiche (CL-06) et dans l’écran de retour",
+        "Retirer le composant ; aucun écran ne promet un retour sans motif (CRO-14)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « Livraison 24–72h · Cameroun & CEMAC » ; bandeau « Gagnez des points… » ; transitions illisibles",
+        "Aucun bandeau tournant ni animé",
+        "Délai réel < 5 h par zone ; pas de CEMAC au lancement ; pas de programme de points."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Satisfait ou Remboursé · 7 jours pour changer d’avis » (IMG_2352), « 7 jours pour ouvrir un litige. Remboursement garanti. » (IMG_2455)",
+        "Mêmes textes que la FAQ ci-dessous (accueil CL-04, À propos CL-13)",
+        "Remboursement après décision ou sous le seuil automatique, jamais « garanti » ni « sans question »."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "FAQ « Comment se passe un litige avec un vendeur ? »",
+        "« J’ai un problème avec un colis : que faire ? » et six autres questions (tableau)",
+        "Le client règle un problème de colis avec BelivaY ; le vendeur reste anonyme (19.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "FAQ « Puis-je retourner un produit ? » sans réponse visible (masquée par le robot)",
+        "Réponse complète : motifs, 7 jours, « Tout est en ordre », défaut caché 100 jours",
+        "Textes du tableau, en français et en anglais ; pas de bouton flottant."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "FAQ « Mes coordonnées sont-elles visibles par le vendeur ? »",
+        "Gardée, réponse « Jamais »",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Belivay » ; « retrait en boutique » ; question « devenir vendeur » dans la FAQ client ; rien sur le code de retrait, la garde ou le retrait par un proche",
+        "« BelivaY » ; « retrait au relais » ; rien sur l’espace vendeur ; questions « Mon code de retrait », « Combien coûte la garde ? », « Faire retirer par quelqu’un » — CL-13",
+        "Voir CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "FAQ « Ma commande a du retard, que faire ? »",
+        "Gardée — CL-13",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGU : « L’accès à BelivaY suppose un compte nominatif »",
+        "On découvre sans compte (3.1) — CL-03 et CL-13",
+        "Voir CL-03, CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGV : « libérés au vendeur 24h après la confirmation de réception, ou à l’issue du délai de contestation »",
+        "3 jours après la fermeture du droit de retour (1 jour Or et Platine, 14 jours carte), versement le vendredi",
+        "Texte CGV ci-dessous, point 1."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGV : « retour possible sous 7 jours après réception, article complet et dans son état d’origine »",
+        "Motifs recevables seulement, 7 jours après le retrait effectif, fermés par « Tout est en ordre » ; défaut caché 100 jours",
+        "Texte CGV, points 5 et 6."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "CGV : « Le remboursement intervient sur le moyen de paiement d’origine »",
+        "Gardé",
+        "Point 8."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "CGV : « placée sous séquestre Escrow BelivaY » (redondant)",
+        "« Ton argent est protégé : il reste bloqué… »",
+        "« Escrow BelivaY » reste réservé au bandeau de réassurance, au panier et à la fiche."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "CGU : « comptes … suspendus sans préavis »",
+        "Jamais de bannissement : on plafonne ; toute rétrogradation est validée par une personne, avec recours (CIF-22, CIF-25)",
+        "CGU réécrite dans CL-13."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Rien sur les litiges, la grille de garde, le paiement au comptoir, la carte ; un seul paragraphe par document, sans version",
+        "Page « Règles des retours et des litiges », versionnée, en français et en anglais (15.3) ; les autres documents dans CL-13",
+        "Texte ci-dessous ; pages légales et version acceptée : CL-13."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Questions fréquentes « Litiges » et « Retours » (pour la FAQ de CL-13)",
+     "colonnes": [
+      "Question",
+      "Réponse (texte à publier, tutoiement)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "J’ai un problème avec un colis : que faire ?",
+        "Au relais, ouvre ton colis devant le gérant et dis « Un problème » : il constate et prend les photos, tu n’as rien à remplir. Chez toi, ouvre ta commande et touche « Signaler un problème » : quatre écrans, une photo, et c’est envoyé."
+       ]
+      },
+      {
+       "cellules": [
+        "Qui lit mon litige, et quand ?",
+        "Le vendeur a 48 h pour répondre. S’il ne répond pas, une personne de BelivaY décide, avec la règle en ta faveur. Chaque décision arrive avec son motif écrit."
+       ]
+      },
+      {
+       "cellules": [
+        "Et mon argent pendant ce temps ?",
+        "Il reste bloqué : rien n’est versé au vendeur tant que ce n’est pas décidé. Pour un petit montant, tu es remboursé tout de suite, sans enquête."
+       ]
+      },
+      {
+       "cellules": [
+        "Puis-je retourner un produit ?",
+        "Oui s’il est non conforme, abîmé, contrefait, ou s’il a un défaut caché que tu signales dans les 48 h après le retrait. Tu as 7 jours après le retrait ; « Tout est en ordre » au comptoir ferme ce délai. Pas de retour pour un changement d’avis."
+       ]
+      },
+      {
+       "cellules": [
+        "Qui paie le retour ?",
+        "Tu rapportes le colis au relais, c’est tout. Le retour est gratuit si le problème est validé ; si tu es en tort, le trajet est retenu sur ton remboursement."
+       ]
+      },
+      {
+       "cellules": [
+        "Quand suis-je remboursé ?",
+        "Dès que le vendeur a reçu et vérifié l’article, 48 h au plus ; sans réponse de sa part, automatiquement. Toujours sur le moyen qui a payé."
+       ]
+      },
+      {
+       "cellules": [
+        "Un défaut apparaît après 7 jours ?",
+        "Un défaut caché reste couvert 100 jours : signale-le depuis ta commande."
+       ]
+      },
+      {
+       "cellules": [
+        "Mes coordonnées sont-elles visibles par le vendeur ?",
+        "Jamais : le vendeur ne voit ni ton nom, ni ton numéro, ni ton relais. Tout passe par BelivaY."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRO-26",
+        "Aucun texte de l’application (bandeau, FAQ, CGV, À propos) ne promet un retour ou un remboursement « sans question » ou « garanti » : la formule est « Retour gratuit si le problème est validé ».",
+        "§12.0 p. 72 · §3.1 p. 17 · §6.1 p. 34",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CRO-27",
+        "La page « Règles des retours et des litiges » est rédigée en langage simple, en français et en anglais, versionnée ; accessible depuis le compte, le pied du paiement et la page de retour.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pour le développeur : API, événements, messages et routes",
+   "tableaux": [
+    {
+     "sous_titre": "Endpoints",
+     "colonnes": [
+      "Méthode",
+      "Route",
+      "Rôle"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "POST",
+        "/disputes",
+        "Création à l’étape 4 : colis, motif, photos, souhait ; renvoie le dossier ou auto_refunded"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/disputes/{id}/photos",
+        "Photos par l’appareil photo, horodatées côté serveur"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/disputes/{id}",
+        "États, compte à rebours, réponse du vendeur, décision et motif"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/disputes/{id}/messages",
+        "Messagerie tracée ; réponse à un arrangement"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/relay/disputes",
+        "Constat au comptoir (application du relais)"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/me/disputes",
+        "Mes litiges (en cours, terminés) — ajouté pour l’écran"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/returns",
+        "Retour accepté après décision"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/relay/returns/{id}/deposit",
+        "Dépôt scanné au relais"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/returns/{id}/inspection",
+        "Inspection du vendeur (48 h)"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/returns/{id} · /replacements/{id}",
+        "États du retour et du remplacement — ajoutés pour les écrans"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Événements",
+     "colonnes": [
+      "Événement",
+      "Émis par",
+      "Consommé par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "dispute.opened",
+        "client / relais",
+        "escrow (retenu), vendeur (48 h), console"
+       ]
+      },
+      {
+       "cellules": [
+        "dispute.auto_refunded",
+        "serveur",
+        "paiement (remboursement), IFA (compteur séparé)"
+       ]
+      },
+      {
+       "cellules": [
+        "dispute.decided",
+        "console",
+        "client (décision), escrow, Trust Score du vendeur ou du transporteur, IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "return.deposited",
+        "relais",
+        "livraison (course de retour), client"
+       ]
+      },
+      {
+       "cellules": [
+        "return.inspected",
+        "vendeur / délai",
+        "remboursement ou remplacement"
+       ]
+      },
+      {
+       "cellules": [
+        "replacement.late",
+        "horloge",
+        "remboursement automatique"
+       ]
+      },
+      {
+       "cellules": [
+        "return.closed",
+        "client / délai",
+        "escrow (libération) — suspendu pendant un litige"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Messages au client (tous en push gratuit ; jamais le code de retrait)",
+     "colonnes": [
+      "Moment",
+      "Texte"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Dossier ouvert",
+        "« Litige LIT-3042 reçu · le vendeur a jusqu’au ven. 25 sept. à 17 h 15. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Réponse du vendeur",
+        "« LIT-3042 · le vendeur conteste : BelivaY examine et décide avant le sam. 26 sept. à 17 h 15. » / « … te propose un arrangement : réponds dans l’application. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Décision",
+        "« LIT-3042 · décision : [issue]. Motif dans ton dossier. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Remboursement",
+        "« Remboursé · [montant] envoyés sur ton [numéro masqué]. Dossier [LIT-…]. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour déposé",
+        "« Retour déposé au Relais Mvog-Ada · aucun frais de garde. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Routes et états du prototype",
+     "colonnes": [
+      "Route",
+      "Paramètres",
+      "Écran (screens.json)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "#litige",
+        "ref, colis, etape=1..4, pb, st=photo",
+        "dispute-step1-parcel, dispute-step2-what, dispute-step3-photo, dispute-step4-wish"
+       ]
+      },
+      {
+       "cellules": [
+        "#litige-confirme",
+        "ref, colis, souhait=rembourse|remplace|signal",
+        "dispute-confirmed"
+       ]
+      },
+      {
+       "cellules": [
+        "#litige-auto",
+        "palier=eleve",
+        "dispute-auto-refund"
+       ]
+      },
+      {
+       "cellules": [
+        "#litige-comptoir",
+        "ref=BLV-52018 (sinon LIT-3042)",
+        "dispute-counter-opened"
+       ]
+      },
+      {
+       "cellules": [
+        "#litige-suivi",
+        "id=LIT-3042|LIT-3044|LIT-3045, st (10 états), ref, colis, pb, souhait, via=comptoir",
+        "dispute-detail"
+       ]
+      },
+      {
+       "cellules": [
+        "#litige-arrangement",
+        "st=propose|accepte|refuse",
+        "dispute-arrangement"
+       ]
+      },
+      {
+       "cellules": [
+        "#litiges",
+        "st=vide",
+        "my-disputes"
+       ]
+      },
+      {
+       "cellules": [
+        "#retour",
+        "ref, st (12 états)",
+        "return-item"
+       ]
+      },
+      {
+       "cellules": [
+        "#remplacement",
+        "st (5 états), via=decision",
+        "replacement-status"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CLT-62",
+        "Aucune réponse d’API client ne contient l’IFA, le palier, le nom ou le numéro d’une boutique, ni ce que garde le vendeur ; les numéros sont masqués (« 6 77 ·· ·· 41 »).",
+        "§2.4 p. 13 · §19.1 p. 104",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-63",
+        "Tout montant (retenu, remboursé, écart, trajet) vient du service de tarification, identique dans l’application, la notification et l’écran du gérant.",
+        "§19.2 p. 105 · §11.7 p. 71",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-64",
+        "Les notifications de litige et de retour partent en push gratuit ; elles ne comptent pas dans les 6 SMS par commande et ne contiennent jamais le code de retrait.",
+        "§10.3 p. 61 · §9.2 p. 54",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Valeurs du jeu d’essai, arbitrages et écarts relevés",
+   "tableaux": [
+    {
+     "sous_titre": "Valeurs ajoutées au jeu d’essai (objet DX_cl11 du prototype)",
+     "colonnes": [
+      "Valeur",
+      "Contenu",
+      "Calcul ou source"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Heures restantes de LIT-3042",
+        "31 h à jeu. 24 sept. 10 h 15",
+        "ven. 25 sept. 17 h 15 − jeu. 24 sept. 10 h 15 = 31 h 00 ; arrondi inférieur ; identique au libellé « En litige · réponse sous 31 h » du jeu d’essai (CL-02)."
+       ]
+      },
+      {
+       "cellules": [
+        "Photos du déballage",
+        "mer. 23 sept. à 17 h 10",
+        "Entre le retrait (17 h 05) et l’ouverture du dossier (17 h 15)."
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen d’origine",
+        "MTN MoMo 6 77 ·· ·· 41",
+        "Non précisé pour BLV-51877, BLV-51206 et BLV-51388 : numéro principal de Carine."
+       ]
+      },
+      {
+       "cellules": [
+        "Scénarios de LIT-3042",
+        "Accord 09 h 40, contestation 09 h 50, arrangement 09 h 55 et refus 10 h 12 (jeu. 24) ; décision sam. 26 sept. 11 h 20",
+        "États alternatifs, chacun avant l’échéance ou la décision."
+       ]
+      },
+      {
+       "cellules": [
+        "Arrangement",
+        "5 000 F remboursés, le fer reste à Carine ; texte de 103 caractères",
+        "≥ 40 caractères (LIT-ARRANG-MIN)."
+       ]
+      },
+      {
+       "cellules": [
+        "Décision au plus tard",
+        "sam. 26 sept. à 17 h 15",
+        "Échéance du vendeur + 24 h (proposé, CLT-39)."
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement",
+        "avant lun. 28 sept. 09 h 40 (accord) ou mer. 30 sept. 11 h 20 (décision) ; en route ven. 25 sept. 10 h 20 ; retrait dès 14 h 30 ; remis 16 h 02",
+        "72 h ouvrées, dimanche non compté (proposé, CRP-02)."
+       ]
+      },
+      {
+       "cellules": [
+        "Autre vendeur",
+        "Vendeur certifié Argent · Trust Score 78 ; 16 400 F",
+        "Écart 600 F = 3,8 % ≤ 5 %, payé par BelivaY."
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-3044",
+        "Dossier ouvert dans l’application sur BLV-51702, jeu. 24 sept. 10 h 15 ; échéance sam. 26 sept. 10 h 15 ; 23 000 F",
+        "Scénario de l’assistant (16 500 + 6 500) ; numéro suivant LIT-3042."
+       ]
+      },
+      {
+       "cellules": [
+        "Retour de BLV-51702",
+        "accepté ven. 25 sept. 09 h 30 ; déposé 16 h 10 ; récupéré sam. 26 sept. 11 h 00 ; reçu 14 h 20 ; inspection avant lun. 28 sept. 14 h 20 ; clos lun. 28 sept. 10 h 05",
+        "Réception + 48 h (RET-INSPECT-H)."
+       ]
+      },
+      {
+       "cellules": [
+        "Trajet retour",
+        "500 F",
+        "Valeur du relais et du vendeur, absente de la v3 (CRO-22)."
+       ]
+      },
+      {
+       "cellules": [
+        "Seuil sans retour",
+        "5 000 F",
+        "Entre 3 000 et 5 000 F à trancher (CRO-24)."
+       ]
+      },
+      {
+       "cellules": [
+        "Délai de versement",
+        "« sous 1 h »",
+        "Placeholder « [délai] » de la spec (CLT-28)."
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-2987",
+        "BLV-51206 retirée le sam. 8 août ; litige ouvert depuis l’application le lun. 10 août ; remboursé 3 000 F le jour même",
+        "Remboursement partiel automatique du jeu d’essai (CL-02)."
+       ]
+      },
+      {
+       "cellules": [
+        "BLV-51388",
+        "1 colis, 1 boutique : karité × 2 (7 000 F) + huile de coco (4 800 F) = 11 800 F d’articles, 12 700 F payés (CL-09) ; fenêtre fermée ven. 4 sept. ; défaut caché jusqu’au dim. 6 déc.",
+        "28 août + 7 j ; 28 août + 100 j."
+       ]
+      },
+      {
+       "cellules": [
+        "BLV-52018 après le retrait",
+        "Retirée aujourd’hui à 10 h 32 (CL-09) : Colis 1 pagne 18 500 F, Colis 2 sandales 14 900 F ; retour possible jusqu’au jeu. 1er oct. ; défaut caché à signaler avant le sam. 26 sept. à 10 h 32",
+        "Retrait + 7 j ; retrait + 48 h (RET-DEFAUT-H)."
+       ]
+      },
+      {
+       "cellules": [
+        "LIT-3045",
+        "Au comptoir : photos 10 h 35, dossier 10 h 36, échéance sam. 26 sept. à 10 h 36, 14 900 F bloqués. Variante dans l’application : dossier 10 h 40, échéance sam. 26 sept. à 10 h 40",
+        "Numéro suivant LIT-3044 ; ouverture + 48 h."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Écarts et contradictions relevés",
+     "colonnes": [
+      "Où",
+      "Écart",
+      "Proposition"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "11.2 et 11.3",
+        "Dossier créé à l’étape 4 pour tous les choix, alors que « Je veux juste signaler » ne demande rien",
+        "CLT-18 : pas de dossier ni d’argent retenu pour un simple signal."
+       ]
+      },
+      {
+       "cellules": [
+        "11.4 et 12.4",
+        "Silence du vendeur : décision humaine sur un litige, mais remboursement automatique sur une inspection de retour",
+        "Deux règles distinctes, écrites séparément (CLT-38, CRO-09)."
+       ]
+      },
+      {
+       "cellules": [
+        "12.2 et formule 12.5",
+        "Défaut caché ≤ 48 h exclu après « Tout est en ordre » ; le relais et le vendeur le gardent 48 h après la confirmation",
+        "À trancher (CRO-25)."
+       ]
+      },
+      {
+       "cellules": [
+        "2.3, 11.2",
+        "« C10 » cité (avertissement suspendu) mais jamais défini au chapitre 10",
+        "Sens retenu : avertissement avant la libération du vendeur ; à définir."
+       ]
+      },
+      {
+       "cellules": [
+        "11.3, 11.4",
+        "Pas de délai de décision de BelivaY, pas de recours, pas de délai de réponse du client à un arrangement (le relais et le vendeur en ont)",
+        "CLT-39 (24 h proposé), CLT-47, CLT-51."
+       ]
+      },
+      {
+       "cellules": [
+        "12.5",
+        "Délai de remplacement « à trancher » ; 72 h ouvrées chez le vendeur et le relais",
+        "CRP-02 (72 h ouvrées, dimanche non compté)."
+       ]
+      },
+      {
+       "cellules": [
+        "12.3",
+        "Prix du trajet retour absent ; 500 F chez le relais et le vendeur",
+        "CRO-22."
+       ]
+      },
+      {
+       "cellules": [
+        "12.4 contre relais",
+        "Seuil sans retour : 3 000 à 5 000 F (v3) contre 3 000 F Standard / 10 000 F Élevé (relais, confusion avec le remboursement automatique)",
+        "CRO-24 ; aligner le relais."
+       ]
+      },
+      {
+       "cellules": [
+        "Motifs",
+        "Client : Jamais reçu, Abîmé, Pas ce que j’ai commandé, Il manque quelque chose, Autre chose ; relais et retours : non conforme, abîmé, contrefaçon, défaut caché",
+        "La console garde les deux ; correspondance : « Pas ce que j’ai commandé » → non conforme ; « Abîmé » → abîmé ; « Autre chose » → contrefaçon ou défaut caché selon l’examen."
+       ]
+      },
+      {
+       "cellules": [
+        "Vocabulaire",
+        "« défaut caché » (48 h, retour) et « vice caché » (100 jours, hors escrow)",
+        "Côté client, un seul mot, « défaut caché », avec sa date limite ; « vice caché » reste un terme interne (CRO-28)."
+       ]
+      },
+      {
+       "cellules": [
+        "12.2",
+        "« Pas de retour sans motif au lancement » (sous-entend plus tard) ; relais et vendeur : suppression définitive",
+        "Le prototype n’en parle pas ; à trancher par le porteur du produit."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CRO-28",
+        "Côté client, le vice caché (100 jours, hors escrow) et le défaut caché signalé sous 48 h s’appellent tous deux « défaut caché », toujours accompagnés de leur date limite ; « vice caché » reste interne.",
+        "§12.2 p. 73",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CLT-65",
+        "Tutoiement partout, y compris dans les messages ; les textes cités par la spécification sont repris mot pour mot (« Étape N sur 4 », « Prends une photo… », « Ton paiement reste bloqué… », « Remboursé. Tu recevras… », « Tu n’as rien à organiser », « Ce retour ne te coûte rien », « Tes … F restent bloqués jusqu’à la clôture. », « J’ai déposé le colis au relais », « Retour gratuit si le problème est validé »). Le texte d’arrangement est celui du vendeur, tel qu’il l’a écrit.",
+        "§11.1 à §12.3",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spécification",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "11 · Introduction (livrables, décisions, à savoir)",
+        "66",
+        "Parcours ; CLT-04, 20, 24, 25, 34, 35, 37, 38, 42, 48 ; CIF-01, 03, 12"
+       ]
+      },
+      {
+       "cellules": [
+        "11.1 · Assistant, étapes 1 et 2",
+        "66-67",
+        "Assistant · étapes 1 et 2 (#litige) ; CLT-04 à CLT-09"
+       ]
+      },
+      {
+       "cellules": [
+        "11.2 · Assistant, étapes 3 et 4",
+        "67",
+        "Étape 3 (#litige?etape=3) et étape 4 ; CLT-10 à CLT-19"
+       ]
+      },
+      {
+       "cellules": [
+        "11.3 · Confirmation et suivi",
+        "67-68",
+        "Confirmation, Remboursement automatique, Suivi ; CLT-20 à CLT-28, CLT-34 à CLT-36, CLT-44"
+       ]
+      },
+      {
+       "cellules": [
+        "11.4 · Règles d’arbitrage",
+        "68",
+        "Règles d’arbitrage, Suivi, Décision, Arrangement ; CLT-37, 38, 42, 44, 48, 49, 55, 56, 59"
+       ]
+      },
+      {
+       "cellules": [
+        "11.5 · IFA",
+        "68-70",
+        "IFA (interne) ; CIF-01 à CIF-28"
+       ]
+      },
+      {
+       "cellules": [
+        "11.6 · Litige au comptoir, liaisons, interdits",
+        "70",
+        "Litige au comptoir (#litige-comptoir) ; CLT-29 à CLT-33, CLT-57, CLT-58 ; interdits (arbitrage)"
+       ]
+      },
+      {
+       "cellules": [
+        "11.7 · API, événements, erreurs, paramètres, terminé",
+        "70-71",
+        "API et événements ; erreurs et critères (arbitrage) ; paramètres LIT-*, IFA-*"
+       ]
+      },
+      {
+       "cellules": [
+        "12 · Introduction (livrables, décisions, à savoir)",
+        "72",
+        "Retour et remplacement ; CRO-01 à CRO-04, CRO-08, CRO-13 à CRO-16, CRO-20, CRO-24, CRP-02, CRP-03"
+       ]
+      },
+      {
+       "cellules": [
+        "12.1 · L’écran « Retourner un article »",
+        "72-73",
+        "Retour · les quatre étapes (#retour) ; CRO-01 à CRO-06, CRO-21"
+       ]
+      },
+      {
+       "cellules": [
+        "12.2 · Motifs et fenêtre",
+        "73",
+        "Retour · motifs ; CRO-13 à CRO-19 ; CLT-09 et CLT-22 (vice caché dans l’assistant)"
+       ]
+      },
+      {
+       "cellules": [
+        "12.3 · Le trajet retour",
+        "73",
+        "Retour · qui paie ; CRO-06, CRO-07, CRO-20 à CRO-23"
+       ]
+      },
+      {
+       "cellules": [
+        "12.4 · Le remboursement",
+        "73",
+        "Retour · les quatre étapes et petits montants ; CRO-08 à CRO-10, CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "12.5 · Le remplacement, liaisons, calculs, interdits",
+        "73-74",
+        "Remplacement (#remplacement) ; CRP-01 à CRP-08 ; liaisons, calculs et interdits du retour"
+       ]
+      },
+      {
+       "cellules": [
+        "12.6 · API, événements, erreurs, paramètres, terminé",
+        "74-75",
+        "API et événements ; erreurs et critères (retour, remplacement) ; paramètres RET-*, REMPL-*"
+       ]
+      },
+      {
+       "cellules": [
+        "2.3 · Machine à états litige et retour ; 2.6 · données ; 2.7 · événements",
+        "12-14",
+        "Parcours ; CLT-02, CLT-03"
+       ]
+      },
+      {
+       "cellules": [
+        "9.1, 9.4, 9.5 · carte « En litige », comptoir, Mes litiges",
+        "53-56",
+        "CLT-30, CLT-36, CLT-52 à CLT-54 ; CRO-15"
+       ]
+      },
+      {
+       "cellules": [
+        "10.4 · garde suspendue pendant un litige",
+        "62",
+        "CLT-17, CLT-31"
+       ]
+      },
+      {
+       "cellules": [
+        "15.2, 15.3 · messagerie du dossier, pages légales",
+        "86-87",
+        "CLT-41 ; CRO-12, CRO-27 ; Textes d’aide et règles publiées"
+       ]
+      },
+      {
+       "cellules": [
+        "16.1 à 16.4 · liaisons et délais",
+        "90-92",
+        "Liaisons de chaque section ; CLT-33, CLT-58 ; paramètres LIT-VENDEUR-H, LIT-CONSTAT-H, RET-INSPECT-H"
+       ]
+      },
+      {
+       "cellules": [
+        "18.1, 18.4, 18.5 · console : file d’action, fraude, rôles",
+        "98-102",
+        "Règles d’arbitrage (liaisons) ; CLT-38, CLT-44 ; CIF-27"
+       ]
+      },
+      {
+       "cellules": [
+        "19.1 à 19.4 · anonymat, montants, interdits, paramètres",
+        "104-107",
+        "CLT-43, CLT-59, CLT-62, CLT-63 ; paramètres à trancher"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Ligne par ligne (spec/rules.json, 176 lignes des chapitres 11 et 12)",
+     "colonnes": [
+      "Ligne",
+      "Texte de la spécification",
+      "Page",
+      "Où"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CH11-11.0-1",
+        "L'assistant guidé en quatre écrans, un seul choix par écran.",
+        "p. 66",
+        "CLT-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-2",
+        "L'écran de confirmation : numéro de dossier, état de l'argent, délai ferme.",
+        "p. 66",
+        "CLT-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-3",
+        "Le suivi du litige en quatre états, avec le compte à rebours du vendeur.",
+        "p. 66",
+        "CLT-34, CLT-35"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-4",
+        "Les règles d'arbitrage : remboursement automatique sous seuil, 48 h et trois réponses du vendeur, chaîne de preuves,…",
+        "p. 66",
+        "CLT-24, CLT-37, CLT-42, CLT-44"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-5",
+        "L'indice de fiabilité acheteur (IFA) mesuré dès le lancement, avec des décisions qui croisent toujours score et montant.",
+        "p. 66",
+        "CIF-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-6",
+        "Vendeur silencieux 48 h : BelivaY arbitre avec présomption en faveur du client — plus de remboursement automatique à…",
+        "p. 66",
+        "CLT-38"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-7",
+        "Trois réponses du vendeur : accepter, contester, proposer un arrangement (40 caractères au moins).",
+        "p. 66",
+        "CLT-37, CLT-49"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-8",
+        "Remboursement automatique sous seuil : 3 000 F au palier Standard, 10 000 F au palier Élevé, payé par BelivaY ; le…",
+        "p. 66",
+        "CLT-24, CLT-25"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-9",
+        "Chaîne de preuves renforcée : le livreur photographie le produit puis le colis scellé chez le vendeur ; le relais…",
+        "p. 66",
+        "CLT-42"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-10",
+        "Le coût du retour est attribué après arbitrage sur preuves, jamais à la demande (chapitre 12).",
+        "p. 66",
+        "CLT-48, CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.0-11",
+        "Le score client s'appelle officiellement IFA (indice de fiabilité acheteur). Il est interne, jamais montré au…",
+        "p. 66",
+        "CIF-01, CIF-03, CIF-12"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-1",
+        "Quatre écrans, un seul choix par écran. Barre de progression en quatre segments, flèche de retour, « Étape N sur 4…",
+        "p. 66",
+        "CLT-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-2",
+        "Une carte par colis : photo, « Colis 1 », contenu court, date de retrait. Pas de numéro de commande.",
+        "p. 66",
+        "CLT-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-3",
+        "Sautée automatiquement s'il n'y a qu'un colis ; la barre indique « Étape 2 sur 4 ».",
+        "p. 66",
+        "CLT-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-4",
+        "Quatre cartes : Jamais reçu, Abîmé, Pas ce que j'ai commandé, Il manque quelque chose.",
+        "p. 67",
+        "CLT-07"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-5",
+        "« Autre chose » en bas, en texte discret, jamais en premier.",
+        "p. 67",
+        "CLT-07"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.1-6",
+        "Un tap sélectionne et passe à l'étape suivante.",
+        "p. 67",
+        "CLT-08"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-1",
+        "« Prends une photo de l'article et de son emballage. C'est ce qui permet de trancher en ta faveur. »",
+        "p. 67",
+        "CLT-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-2",
+        "« Prendre une photo » ouvre directement l'appareil photo.",
+        "p. 67",
+        "CLT-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-3",
+        "Photo obligatoire, sauf pour « Jamais reçu ».",
+        "p. 67",
+        "CLT-11"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-4",
+        "« Décris ce qui s'est passé » facultatif, en dernier.",
+        "p. 67",
+        "CLT-12"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-5",
+        "Être remboursé : sur le moyen de paiement d'origine.",
+        "p. 67",
+        "CLT-15"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-6",
+        "Être remplacé : le vendeur renvoie le même article (chapitre 12).",
+        "p. 67",
+        "CLT-15"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-7",
+        "Je veux juste signaler : aucune demande, un signal qualité gratuit.",
+        "p. 67",
+        "CLT-15, CLT-18"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-8",
+        "Photos par l'API caméra, horodatées côté serveur, stockées avec le dossier. Jamais par WhatsApp.",
+        "p. 67",
+        "CLT-13"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-9",
+        "Dossier créé à la validation de l'étape 4.",
+        "p. 67",
+        "CLT-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-10",
+        "L'escrow de la sous-commande est retenu dès la création ; libération automatique, avertissement C10 et compteur de…",
+        "p. 67",
+        "CLT-17"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-11",
+        "Une commande à un seul colis démarre à l'étape 2.",
+        "p. 67",
+        "CLT-06 · critère (étapes 1-2)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-12",
+        "Impossible de passer l'étape 3 sans photo, sauf « Jamais reçu ».",
+        "p. 67",
+        "CLT-11 · critère (étape 3)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.2-13",
+        "Aucun écran ne demande preuve d'achat, valeur du colis ou acceptation de conditions.",
+        "p. 67",
+        "CLT-14 · critère (étape 3)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-1",
+        "La peur du client n'est pas de perdre son litige : c'est de ne pas savoir si quelqu'un a lu. L'écran de confirmation…",
+        "p. 67",
+        "CLT-21"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-2",
+        "Le numéro de dossier (« LIT-3042 »).",
+        "p. 67",
+        "CLT-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-3",
+        "L'état de l'argent : « Ton paiement reste bloqué, rien n'est versé au vendeur. »",
+        "p. 67",
+        "CLT-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-4",
+        "Un délai ferme, avec date et heure.",
+        "p. 67",
+        "CLT-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-5",
+        "Sous le seuil du palier, il n'y a pas d'écran de litige : « Remboursé. Tu recevras [montant] sur [numéro] sous…",
+        "p. 67",
+        "CLT-23, CLT-25"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-6",
+        "Reçu → Le vendeur a 48 h pour répondre → En examen → Décision. Le compte à rebours du vendeur est visible. Dans Mes…",
+        "p. 67",
+        "CLT-34, CLT-35, CLT-36"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.3-7",
+        "Jamais de refus sans motif écrit. Le motif est obligatoire en console pour toute décision défavorable au client.",
+        "p. 68",
+        "CLT-44"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-1",
+        "Geste immédiat sous seuil — Remboursement automatique sans enquête : 3 000 F (Standard), 10 000 F (Élevé). Aucun au…",
+        "p. 68",
+        "CLT-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-2",
+        "Escrow retenu — Au-dessus du seuil, arbitrage humain ; l'argent reste bloqué pendant tout le litige.",
+        "p. 68",
+        "CLT-55, CLT-40"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-3",
+        "48 h vendeur, trois réponses — Accepter, contester (avec preuves), proposer un arrangement de 40 caractères au moins.",
+        "p. 68",
+        "CLT-37"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-4",
+        "Silence du vendeur — À 48 h, BelivaY arbitre avec présomption en faveur du client. Un vendeur silencieux ne bloque…",
+        "p. 68",
+        "CLT-38"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-5",
+        "Chaîne de preuves — Photos du livreur chez le vendeur (produit, colis scellé), réception au relais, remise au…",
+        "p. 68",
+        "CLT-42"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-6",
+        "Motif écrit — Obligatoire pour toute décision défavorable au client.",
+        "p. 68",
+        "CLT-44"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-7",
+        "Coût du retour — Attribué après arbitrage (vendeur, transporteur ou client en tort) ; jamais à la demande.",
+        "p. 68",
+        "CLT-48"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-8",
+        "Effet sur le vendeur — Un litige perdu pèse sur son Trust Score ; gagné, il ne le pénalise pas. Un taux anormal…",
+        "p. 68",
+        "CLT-56"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-9",
+        "montant ≤ seuil_auto(palier) ⇒ remboursement automatique — Vers le moyen d'origine ; compteur séparé « remboursés…",
+        "p. 68",
+        "Calcul (remboursement automatique) · CLT-25"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-10",
+        "montant > seuil_auto(palier) ⇒ instruction — Dossier, escrow retenu, arbitrage humain.",
+        "p. 68",
+        "Calcul · CLT-55"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-11",
+        "t_limite_vendeur = t_ouverture + 48 h — Affiché en heures restantes, arrondi à l'heure inférieure.",
+        "p. 68",
+        "Calcul · CLT-35"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-12",
+        "t_now ≥ t_limite ∧ aucune réponse ⇒ file d'arbitrage prioritaire — Présomption client ; décision humaine journalisée…",
+        "p. 68",
+        "Calcul · CLT-38"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-13",
+        "arrangement ⇒ len(texte) ≥ 40 — Proposé au client, qui accepte ou refuse.",
+        "p. 68",
+        "Calcul · CLT-49"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-14",
+        "litige ouvert ⇒ libération, C10 et garde suspendus — Pour la sous-commande concernée (chapitre 10).",
+        "p. 68",
+        "Calcul · CLT-17"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.4-15",
+        "remboursement → moyen de paiement d'origine — Jamais réorienté ; carte → carte.",
+        "p. 68",
+        "Calcul · CLT-59"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-1",
+        "Règle fondatrice : on ne juge pas un client sur ses litiges, on le juge sur ses litiges perdus. Six litiges gagnés,…",
+        "p. 68",
+        "CIF-02"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-2",
+        "Litiges perdus après instruction — Fort",
+        "p. 69",
+        "CIF-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-3",
+        "Litiges retirés après demande de preuve — Fort — le plus révélateur",
+        "p. 69",
+        "CIF-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-4",
+        "Remboursés automatiquement, non instruits — Moyen — compteur séparé",
+        "p. 69",
+        "CIF-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-5",
+        "Annulations après préparation — Faible — nul si la cause est BelivaY ou le vendeur",
+        "p. 69",
+        "CIF-07"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-6",
+        "Colis non retirés — Faible — nul si cause légitime",
+        "p. 69",
+        "CIF-08"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-7",
+        "Refus au comptoir (commande « Validée ») — Fort — deux refus : paiement d'avance définitif",
+        "p. 69",
+        "CIF-09"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-8",
+        "Commandes sans incident — Fait remonter le score",
+        "p. 69",
+        "CIF-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-9",
+        "Élevé — Remboursement immédiat jusqu'à 10 000 F, plafonné en fréquence. Litige prioritaire. Paiement au comptoir.",
+        "p. 69",
+        "CIF-11"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-10",
+        "Standard — Remboursement automatique jusqu'à 3 000 F, instruction au-delà. Paiement au comptoir dans les plafonds.",
+        "p. 69",
+        "CIF-12"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-11",
+        "À instruire — Plus d'automatisme : photos obligatoires, arbitrage humain. Délai inchangé.",
+        "p. 69",
+        "CIF-13"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-12",
+        "Plafonné — Plafond de commande, pas de paiement au comptoir, pas de remboursement sans preuve. Délai inchangé.",
+        "p. 69",
+        "CIF-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-13",
+        "Seuil absolu de litiges perdus en plus du ratio.",
+        "p. 69",
+        "CIF-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-14",
+        "Plafond de remboursements non instruits, même au palier Élevé.",
+        "p. 69",
+        "CIF-17"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-15",
+        "Compteur de rétrogradations permanent.",
+        "p. 69",
+        "CIF-18"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-16",
+        "Identité élargie : compte + numéro MoMo + relais habituel.",
+        "p. 69",
+        "CIF-19"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-17",
+        "Croisement avec le Trust Score vendeur avant toute rétrogradation.",
+        "p. 69",
+        "CIF-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-18",
+        "taux_échec = litiges_perdus_12m / commandes_12m — 50 commandes et 5 perdus = 10 %.",
+        "p. 69",
+        "Calcul IFA (taux d’échec)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-19",
+        "palier négatif ⇔ commandes_total ≥ 5 — Avant, au minimum Standard.",
+        "p. 69",
+        "CIF-15 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-20",
+        "litiges_perdus_12m ≥ N_abs ⇒ descente proposée — N_abs = paramètre.",
+        "p. 69",
+        "CIF-16 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-21",
+        "remb_auto_12m ≥ N_auto ⇒ sortie de l'automatisme — Même au palier Élevé.",
+        "p. 69",
+        "CIF-17 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-22",
+        "rétrogradations_total ≥ 3 ⇒ remontée sur validation humaine — Jamais remis à zéro.",
+        "p. 69",
+        "CIF-18 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-23",
+        "descente ⇒ croisement vendeur + validation humaine — Litiges concentrés sur un vendeur : c'est lui qu'on examine.",
+        "p. 69",
+        "CIF-20 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-24",
+        "délai_traitement(palier) = constante — Aucun palier ne rallonge le délai.",
+        "p. 69",
+        "CIF-21 · calcul IFA"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-25",
+        "Rétrogradation toujours validée par un humain ; recours possible.",
+        "p. 70",
+        "CIF-22"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-26",
+        "Un litige gagné ne laisse aucune trace.",
+        "p. 70",
+        "CIF-23"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-27",
+        "Un litige imputable à BelivaY ou au transport ne fait jamais descendre le client.",
+        "p. 70",
+        "CIF-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-28",
+        "Jamais de bannissement : on plafonne.",
+        "p. 70",
+        "CIF-25"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.5-29",
+        "L'IFA est invisible : le client voit ses avantages actifs, jamais sa note.",
+        "p. 70",
+        "CIF-26"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-1",
+        "C'est la voie à privilégier : le colis est là, le gérant est témoin, et un litige ouvert au comptoir se règle dix…",
+        "p. 70",
+        "CLT-29"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-2",
+        "Application du gérant : problème constaté, photos du déballage prises par le gérant, colis conservé au relais. Le…",
+        "p. 70",
+        "CLT-30"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-3",
+        "Côté client, « Un problème » de l'écran « Colis remis » ouvre le même dossier.",
+        "p. 70",
+        "CLT-30"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-4",
+        "L'escrow est retenu immédiatement.",
+        "p. 70",
+        "CLT-31"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-5",
+        "BelivaY répond à un constat du relais sous 48 h ouvrées ; ce délai est affiché dans le dossier du gérant.",
+        "p. 70",
+        "CLT-33 · liaisons (comptoir)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-6",
+        "Le colis conservé ne coûte rien au client pendant l'instruction : la garde est suspendue, et le relais n'est pas…",
+        "p. 70",
+        "CLT-31"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-7",
+        "Un litige imputable au transport (colis abîmé, scellé rompu) pèse sur le Trust Score de l'entreprise de livraison et…",
+        "p. 70",
+        "CLT-57"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-8",
+        "Au-delà du plafond de valeur de l'entreprise (75 000 F Nouveau, 250 000 F Confirmé), la responsabilité revient au…",
+        "p. 70",
+        "CLT-58"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-9",
+        "Formulaire long, texte libre en premier, conditions à cocher.",
+        "p. 70",
+        "Interdits (arbitrage) · CLT-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-10",
+        "Demande de preuve d'achat ou de la valeur du colis.",
+        "p. 70",
+        "Interdits · CLT-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-11",
+        "Renvoi vers un e-mail ou WhatsApp pour traiter le litige.",
+        "p. 70",
+        "Interdits · CLT-01, CLT-41"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-12",
+        "« Justifie ta réclamation » : on écrit « décris ce qui s'est passé ».",
+        "p. 70",
+        "Interdits · CLT-12"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-13",
+        "Score affiché, bannissement, rétrogradation automatique.",
+        "p. 70",
+        "Interdits · CIF-25, CIF-26, CIF-27"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.6-14",
+        "Remboursement automatique à l'échéance des 48 h sans décision humaine.",
+        "p. 70",
+        "Interdits · CLT-38"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-1",
+        "POST /disputes — Création à l'étape 4 : colis, motif, photos, souhait",
+        "p. 70",
+        "API (développeur) · CLT-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-2",
+        "POST /disputes/{id}/photos — Photos par l'appareil photo, horodatées côté serveur",
+        "p. 70",
+        "API · CLT-13"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-3",
+        "GET /disputes/{id} — États, compte à rebours, décision",
+        "p. 70",
+        "API · suivi"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-4",
+        "POST /disputes/{id}/messages — Messagerie tracée",
+        "p. 70",
+        "API · CLT-41"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-5",
+        "POST /relay/disputes — Constat au comptoir (application du relais)",
+        "p. 71",
+        "API · CLT-30"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-6",
+        "dispute.opened — escrow retenu, vendeur (48 h), console",
+        "p. 71",
+        "Événements · confirmation"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-7",
+        "dispute.auto_refunded — paiement (remboursement), IFA (compteur séparé)",
+        "p. 71",
+        "Événements · CLT-25"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-8",
+        "dispute.decided — client, escrow, Trust Score vendeur ou transporteur, IFA",
+        "p. 71",
+        "Événements · décision"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-9",
+        "Photo manquante — Impossible de passer l'étape 3, sauf « Jamais reçu »",
+        "p. 71",
+        "Erreurs (étape 3, arbitrage)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-10",
+        "Vendeur silencieux — File d'arbitrage prioritaire à 48 h",
+        "p. 71",
+        "Erreurs (suivi, arbitrage)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-11",
+        "Litige imputable au transport — Aucun effet sur l'IFA du client",
+        "p. 71",
+        "Erreurs (arbitrage) · CLT-57"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-12",
+        "Les routes sont indicatives : le nommage final suit la convention de l'API. Tout montant renvoyé vient du service de…",
+        "p. 71",
+        "Rôle de la section développeur · CLT-62, CLT-63"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-13",
+        "Les quatre écrans fonctionnent (étape 1 sautée pour un colis unique, photo obligatoire hors « Jamais reçu »).",
+        "p. 71",
+        "Critères (arbitrage)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-14",
+        "La confirmation affiche dossier, état de l'argent et délai ferme ; le remboursement automatique n'ouvre pas de litige.",
+        "p. 71",
+        "Critères (arbitrage, remboursement automatique)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-15",
+        "Les 48 h et les trois réponses du vendeur sont appliquées ; le silence part en arbitrage prioritaire.",
+        "p. 71",
+        "Critères (arbitrage, suivi)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-16",
+        "La console affiche la chaîne de preuves complète et impose un motif.",
+        "p. 71",
+        "Critères (arbitrage) · liaisons console"
+       ]
+      },
+      {
+       "cellules": [
+        "CH11-11.7-17",
+        "Les compteurs IFA tournent dès le lancement, sans décision automatique.",
+        "p. 71",
+        "Critères (arbitrage, IFA) · CIF-27"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-1",
+        "L'écran « Retourner un article » : « Tu n'as rien à organiser », quatre étapes, qui paie, argent retenu.",
+        "p. 72",
+        "CRO-01 à CRO-04, CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-2",
+        "Les motifs recevables et la fenêtre de retour.",
+        "p. 72",
+        "CRO-13, CRO-15"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-3",
+        "Le trajet retour : course normale de l'entreprise de livraison, coût attribué après arbitrage.",
+        "p. 72",
+        "CRO-07, CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-4",
+        "Le remboursement à la réception et à l'inspection, et le remboursement sans retour physique sous petit seuil.",
+        "p. 72",
+        "CRO-08, CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-5",
+        "Le remplacement avec délai ferme pour le vendeur et bascule automatique en remboursement.",
+        "p. 72",
+        "CRP-02, CRP-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-6",
+        "Retour avec motif seulement : non conforme, abîmé, contrefaçon, défaut caché signalé dans les 48 h après le retrait.…",
+        "p. 72",
+        "CRO-13, CRO-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-7",
+        "Fenêtre : 7 jours après le retrait, fermée plus tôt si le client confirme « Tout est en ordre » ; vice caché couvert…",
+        "p. 72",
+        "CRO-15, CRO-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-8",
+        "Coût du retour attribué après arbitrage sur preuves (vendeur, transporteur ou client en tort), jamais à la demande…",
+        "p. 72",
+        "CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-9",
+        "Remboursement à la réception physique et à l'inspection (48 h au plus), jamais à la demande ; sans retour physique…",
+        "p. 72",
+        "CRO-08, CRO-09, CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.0-10",
+        "Arbitrage rendu le 21 septembre : pas de retour sans motif au lancement. La section 23.2 de la référence (« retour…",
+        "p. 72",
+        "CRO-14, CRO-21, CRO-26"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-1",
+        "Deuxième onglet de l'écran de retrait (« Au comptoir » / « Retourner un article »), ouvert après une décision de…",
+        "p. 72",
+        "CRO-01"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-2",
+        "« Tu n'as rien à organiser » : rapporte le colis au relais ; le livreur le récupère dans sa tournée.",
+        "p. 72",
+        "CRO-02"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-3",
+        "Quatre étapes : tu déposes le colis au relais (le gérant le scanne) → le livreur le récupère → le vendeur le reçoit…",
+        "p. 72",
+        "CRO-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-4",
+        "Encart vert « Ce retour ne te coûte rien » quand le vendeur ou le transporteur est en tort ; aucun frais de garde ne…",
+        "p. 72",
+        "CRO-21, CRO-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-5",
+        "Encart : « Tes 37 000 F restent bloqués jusqu'à la clôture. »",
+        "p. 73",
+        "CRO-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.1-6",
+        "Bouton « J'ai déposé le colis au relais ».",
+        "p. 73",
+        "CRO-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-1",
+        "Motifs — Non conforme, abîmé, contrefaçon, défaut caché (signalé dans les 48 h après le retrait).",
+        "p. 73",
+        "CRO-13"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-2",
+        "Pas de retour — Sans motif (changement d'avis), au lancement.",
+        "p. 73",
+        "CRO-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-3",
+        "Fenêtre — 7 jours après le retrait effectif, fermée plus tôt par « Tout est en ordre » au comptoir.",
+        "p. 73",
+        "CRO-15"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-4",
+        "Vice caché — Couvert 100 jours, hors escrow (le vendeur est déjà payé) : traité comme un litige avec reprise sur ses…",
+        "p. 73",
+        "CRO-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-5",
+        "Voie à privilégier — Le constat au comptoir (chapitre 11) : colis en main, gérant témoin.",
+        "p. 73",
+        "CRO-18"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.2-6",
+        "Carte diaspora — Mêmes règles ; remboursement sur la carte du payeur.",
+        "p. 73",
+        "CRO-19"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.3-1",
+        "C'est une course normale de l'entreprise de livraison, publiée avec les paquets de la zone, avec sa rémunération.",
+        "p. 73",
+        "CRO-07"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.3-2",
+        "Qui paie : attribué après arbitrage sur preuves. Vendeur en tort : à sa charge. Transporteur en tort (colis abîmé,…",
+        "p. 73",
+        "CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.3-3",
+        "Côté client, tant que la décision n'est pas rendue : « Retour gratuit si le problème est validé ».",
+        "p. 73",
+        "CRO-21"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.3-4",
+        "Jamais de frais de garde sur un colis en retour ; il ne compte pas dans la capacité du relais.",
+        "p. 73",
+        "CRO-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.3-5",
+        "Colis volumineux (XL, hors gabarit) : collecte à domicile par l'entreprise de livraison au lieu du dépôt au relais.",
+        "p. 73",
+        "CRO-23"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.4-1",
+        "Déclenché à la réception physique et à l'inspection par le vendeur, jamais à la demande.",
+        "p. 73",
+        "CRO-08"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.4-2",
+        "Inspection sous 48 h ; sans réponse du vendeur, remboursement automatique.",
+        "p. 73",
+        "CRO-09"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.4-3",
+        "Sous un petit seuil (3 000 à 5 000 F, à fixer) : remboursement sans retour physique — le trajet coûterait plus que…",
+        "p. 73",
+        "CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.4-4",
+        "Toujours vers le moyen de paiement d'origine ; message au client avec montant et dossier.",
+        "p. 73",
+        "CRO-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-1",
+        "Repart comme une nouvelle expédition, sans frais de livraison pour le client.",
+        "p. 73",
+        "CRP-01"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-2",
+        "Le vendeur a un délai ferme pour renvoyer (à trancher) ; passé ce délai, bascule automatique en remboursement.",
+        "p. 73",
+        "CRP-02, CRP-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-3",
+        "S'il n'a plus l'article : proposition d'un autre vendeur du même produit (Trust Score ≥ 75, écart payé par BelivaY)…",
+        "p. 73",
+        "CRP-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-4",
+        "L'escrow reste retenu jusqu'à la clôture : réception du retour, ou remise du remplacement.",
+        "p. 73",
+        "CRP-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-5",
+        "Au dépôt, le gérant scanne le colis, le photographie et le range à part ; il touche sa rémunération de colis (200 F…",
+        "p. 74",
+        "Liaisons (retour · relais)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-6",
+        "Le livreur récupère le colis dans la tournée de la zone, sans course dédiée, avec photo de collecte.",
+        "p. 74",
+        "Liaisons (retour · livraison) · CRO-07"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-7",
+        "Un taux de retours « abîmé » élevé sur un transporteur ouvre une revue de l'entreprise de livraison en console,…",
+        "p. 74",
+        "Liaisons (retour · console)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-8",
+        "retour_possible ⇔ motif ∈ {non conforme, abîmé, contrefaçon, défaut caché ≤ 48 h} ∧ t ≤ t_retrait + 7 j ∧…",
+        "p. 74",
+        "Calcul (motifs et fenêtre) · CRO-13, CRO-15, CRO-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-9",
+        "payeur_trajet = partie en tort (arbitrage) — Client en tort : retenu sur le remboursement.",
+        "p. 74",
+        "Calcul · CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-10",
+        "valeur ≤ seuil_sans_retour ⇒ remboursement sans retour — Seuil à fixer entre 3 000 et 5 000 F.",
+        "p. 74",
+        "Calcul · CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-11",
+        "remboursement ⇐ réception ∧ inspection (≤ 48 h) — Sans réponse du vendeur à 48 h : automatique.",
+        "p. 74",
+        "Calcul (quatre étapes) · CRO-08, CRO-09"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-12",
+        "t ≥ délai_remplacement ∧ non expédié ⇒ remboursement — Délai à trancher.",
+        "p. 74",
+        "Calcul (remplacement) · CRP-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-13",
+        "garde(colis en retour) = 0 — Hors capacité déclarée du relais.",
+        "p. 74",
+        "Calcul · CRO-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-14",
+        "Promettre un retour sans motif.",
+        "p. 74",
+        "Interdits (motifs) · CRO-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-15",
+        "Faire organiser le transport au client.",
+        "p. 74",
+        "Interdits (quatre étapes) · CRO-02"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-16",
+        "Rembourser à la demande, avant réception et inspection.",
+        "p. 74",
+        "Interdits · CRO-08"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-17",
+        "Facturer la garde d'un colis en retour.",
+        "p. 74",
+        "Interdits · CRO-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.5-18",
+        "Décider qui paie le trajet avant l'arbitrage.",
+        "p. 74",
+        "Interdits (motifs) · CRO-20"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-1",
+        "POST /returns — Retour accepté après décision",
+        "p. 74",
+        "API (retour)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-2",
+        "POST /relay/returns/{id}/deposit — Dépôt scanné au relais",
+        "p. 74",
+        "API (retour) · CRO-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-3",
+        "POST /returns/{id}/inspection — Inspection du vendeur (48 h)",
+        "p. 74",
+        "API (retour) · CRO-09"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-4",
+        "return.deposited — livraison (course de retour), client",
+        "p. 74",
+        "Événements (retour)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-5",
+        "return.inspected — remboursement ou remplacement",
+        "p. 75",
+        "Événements (retour)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-6",
+        "replacement.late — remboursement automatique",
+        "p. 75",
+        "Événements (remplacement) · CRP-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-7",
+        "Hors fenêtre — Pas de retour ; litige de vice caché si moins de 100 jours",
+        "p. 75",
+        "Erreurs (motifs) · CRO-17"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-8",
+        "Colis volumineux — Collecte à domicile",
+        "p. 75",
+        "Erreurs (motifs) · CRO-23"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-9",
+        "Sous le petit seuil — Remboursement sans retour physique",
+        "p. 75",
+        "Erreurs (motifs) · CRO-24"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-10",
+        "Les routes sont indicatives : le nommage final suit la convention de l'API. Tout montant renvoyé vient du service de…",
+        "p. 75",
+        "Rôle de la section développeur"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-11",
+        "L'écran « Retourner un article » fonctionne avec ses quatre étapes et l'argent retenu.",
+        "p. 75",
+        "Critères (quatre étapes)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-12",
+        "Seuls les motifs recevables ouvrent un retour, dans la fenêtre.",
+        "p. 75",
+        "Critères (motifs)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-13",
+        "Le trajet est une course normale, payée par la partie en tort.",
+        "p. 75",
+        "Critères (motifs)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-14",
+        "Le remboursement suit la réception et l'inspection, ou part sans retour sous le seuil.",
+        "p. 75",
+        "Critères (quatre étapes)"
+       ]
+      },
+      {
+       "cellules": [
+        "CH12-12.6-15",
+        "Le remplacement bascule en remboursement à l'échéance.",
+        "p. 75",
+        "Critères (remplacement)"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

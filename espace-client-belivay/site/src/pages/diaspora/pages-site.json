@@ -1,0 +1,10 @@
+{
+ "routes": [
+  "inscription-diaspora",
+  "proches",
+  "commander-pour",
+  "diaspora-infos",
+  "espace-diaspora",
+  "paniers-proches"
+ ]
+}

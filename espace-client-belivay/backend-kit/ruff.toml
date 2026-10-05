@@ -1,0 +1,11 @@
+# Lint du kit (relaya-marketplace n'a pas de lint Python en CI ; les moteurs utilisent ruff, longueur 120).
+line-length = 140
+target-version = "py311"
+extend-exclude = ["_essai/.venv", "outils/node_modules"]
+
+[lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
+
+[lint.isort]
+known-first-party = ["apps", "belivay_moteurs"]

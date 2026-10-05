@@ -1,0 +1,4385 @@
+{
+ "document": "CL-00",
+ "source": "04_Pages_HTML/CL-00_Lisez-moi_Sommaire_Index.html",
+ "sections": [
+  {
+   "section": "Contenu du dossier",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Dossier ou fichier",
+      "Contenu"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "00_LISEZ-MOI.pdf",
+        "Ce document, à la racine du dossier (copie de CL-00)."
+       ]
+      },
+      {
+       "cellules": [
+        "01_Documents/",
+        "Les 17 documents CL-00 à CL-16, et le PDF complet qui les réunit (BelivaY_Espace_Client_Specification_complete.pdf)."
+       ],
+       "gras": [
+        "",
+        "BelivaY_Espace_Client_Specification_complete.pdf"
+       ]
+      },
+      {
+       "cellules": [
+        "02_Prototype_HTML/BelivaY_Espace_Client_mobile.html",
+        "Le prototype cliquable : 134 écrans (routes) et tous leurs états, thèmes clair et sombre, français et anglais (et pidgin sur le premier lancement), cadre d’iPhone, et à côté du téléphone le Plan du prototype (les 456 écrans et états). Un seul fichier, sans installation."
+       ],
+       "gras": [
+        "",
+        "Plan du prototype"
+       ]
+      },
+      {
+       "cellules": [
+        "03_Captures/Fond_clair/",
+        "456 captures longues (écrans et états), cadre d’iPhone, thème clair."
+       ]
+      },
+      {
+       "cellules": [
+        "03_Captures/Fond_sombre/",
+        "Les mêmes 456 captures en thème sombre « Nuit », mêmes noms de fichiers."
+       ]
+      },
+      {
+       "cellules": [
+        "03_Captures/Anglais/",
+        "Les mêmes 456 captures en anglais, thème clair."
+       ]
+      },
+      {
+       "cellules": [
+        "04_Pages_HTML/",
+        "Chaque document en page web (ouvrir index.html), avec ses figures, pour une lecture à l’écran."
+       ],
+       "gras": [
+        "",
+        "index.html"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Les documents",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Code",
+      "Titre",
+      "Contenu",
+      "Pages"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CL-00",
+        "Lisez-moi, sommaire et index",
+        "Ce document : contenu du dossier, ordre de lecture, ouverture du prototype, décisions du porteur, index des 456 captures.",
+        "37"
+       ],
+       "gras": [
+        "CL-00",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-01",
+        "Fondations, navigation et design system",
+        "Principes non négociables, charte d’écriture, carte de tous les écrans avec d’où l’on arrive sur chacun, navigation (en-tête et bandeau rotatif, barre du bas à cinq onglets, Menu de l’application, Plan du prototype), design system « Mandarine & Nuit » et densité du 26 septembre, rendus clair/sombre, anglais, pidgin, taille du texte, accessibilité, et passage de l’application actuelle à la nouvelle version.",
+        "87"
+       ],
+       "gras": [
+        "CL-01",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-02",
+        "Données, cycle de la commande, calculs, événements et API",
+        "Le fonctionnement interne : jeu d’essai complet et vérifié, acteurs, cycle de vie d’une commande, machines à états, matrice de visibilité, modèle de données, calculs transverses, catalogue des événements, API de référence, droits et sécurité.",
+        "75"
+       ],
+       "gras": [
+        "CL-02",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-03",
+        "Premier lancement, inscription et première commande",
+        "Premier lancement en trois écrans, connexion Google ou e-mail, vérification du numéro, relais habituel, adresse par repères, première commande, proposition des notifications, conditions générales.",
+        "79"
+       ],
+       "gras": [
+        "CL-03",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-04",
+        "Accueil, catégories et listing",
+        "L’accueil gardé exactement comme l’application d’origine, case par case (seul le contenu interdit change), l’index des catégories et le listing unique : rangées, compteurs réels, prix livré et distance sur chaque carte.",
+        "49"
+       ],
+       "gras": [
+        "CL-04",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-05",
+        "Recherche",
+        "La recherche : avant saisie, suggestions dès la 2e lettre, résultats corrigés, filtres à quatre familles, zéro résultat utile, sélecteur de relais.",
+        "41"
+       ],
+       "gras": [
+        "CL-05",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-06",
+        "Fiche produit, galerie, avis et question au vendeur",
+        "La fiche produit (galerie P1–P4, prix livré, variantes, stock réel, vendeur anonyme, livraison, garanties, question au vendeur) et la lecture des avis.",
+        "54"
+       ],
+       "gras": [
+        "CL-06",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-07",
+        "Panier et moteur de frais",
+        "Le panier et le moteur de frais (exemple 7.3 : 272 579 F), la liste « Sauvegardés », l’avertissement avant retrait, le partage à un payeur.",
+        "52"
+       ],
+       "gras": [
+        "CL-07",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-08",
+        "Paiement et confirmation de commande",
+        "Le paiement : contrôle des prix, « Paiement en attente », « Paiement non abouti », reçu « Commande confirmée », paiement au comptoir (« Validée »), moyens de paiement.",
+        "55"
+       ],
+       "gras": [
+        "CL-08",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-09",
+        "Mes commandes, code de retrait et suivi",
+        "Mes commandes comme les captures d’origine (paiement en attente, livraisons en cours avec plan indicatif, En cours / Terminées, puces, cartes à deux actions, feuilles Paiement et Annulation), détail d’une commande, code de retrait, suivi en 4 états, au comptoir côté client et paiement du montant dû.",
+        "107"
+       ],
+       "gras": [
+        "CL-09",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-10",
+        "Notifications, messages de retrait et frais de garde",
+        "Notifications et réglages, push et SMS payants, frais de garde (grille, rappels S0–S5, exemple daté), rendu réel des messages et du lien court.",
+        "78"
+       ],
+       "gras": [
+        "CL-10",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-11",
+        "Litige, retour et remplacement",
+        "Litige en quatre écrans, remboursement automatique, litige ouvert au comptoir, suivi et arrangement, règles IFA internes, retour et remplacement.",
+        "100"
+       ],
+       "gras": [
+        "CL-11",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-12",
+        "Annulation, changement de relais et paiement depuis l’étranger",
+        "Annuler boutique par boutique, annulation par le vendeur ou BelivaY, changer de relais ou d’adresse, payer depuis l’étranger (page du payeur et preuve).",
+        "69"
+       ],
+       "gras": [
+        "CL-12",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-13",
+        "Mon compte, avis, aide, pages légales, mode dégradé",
+        "Le compte minimal, donner un avis (deux notes), aide et support, messagerie, pages légales, mode dégradé, réglages.",
+        "99"
+       ],
+       "gras": [
+        "CL-13",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-14",
+        "Après le lancement : abonnement, listes, flash, assistant",
+        "Après le lancement (interrupteurs fermés) : abonnement client, liste d’envies partageable, ventes flash honnêtes, assistant IA.",
+        "117"
+       ],
+       "gras": [
+        "CL-14",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-15",
+        "Après le lancement : nouveautés EX-01 à EX-06",
+        "Après le lancement : nouveautés EX-01 à EX-06 (rentrée scolaire, cotisation, mise de côté, troc, panier famille, commande WhatsApp avec l’IA).",
+        "110"
+       ],
+       "gras": [
+        "CL-15",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-16",
+        "Registre, liaisons, arbitrages, recette et lexique",
+        "Liaisons avec le relais, le vendeur, la livraison et la console, règles communes et valeurs à trancher, registre des paramètres, arbitrages, registre complet des règles, recette (220 critères), correspondance avec les 139 anciennes règles, scénarios de bout en bout, lexique.",
+        "130"
+       ],
+       "gras": [
+        "CL-16",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "",
+        "PDF complet",
+        "Les 17 documents réunis, avec un signet par document et par section : BelivaY_Espace_Client_Specification_complete.pdf.",
+        "1339"
+       ],
+       "gras": [
+        "",
+        "PDF complet",
+        "BelivaY_Espace_Client_Specification_complete.pdf",
+        "1339"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Ordre de lecture et priorités",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Document",
+      "Règles",
+      "Décidé",
+      "Recommandé",
+      "Proposé",
+      "À trancher"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CL-01",
+        "115",
+        "95",
+        "19",
+        "0",
+        "1"
+       ],
+       "gras": [
+        "CL-01",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-02",
+        "132",
+        "88",
+        "41",
+        "1",
+        "2"
+       ],
+       "gras": [
+        "CL-02",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-03",
+        "87",
+        "52",
+        "34",
+        "0",
+        "1"
+       ],
+       "gras": [
+        "CL-03",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-04",
+        "77",
+        "67",
+        "9",
+        "0",
+        "1"
+       ],
+       "gras": [
+        "CL-04",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-05",
+        "66",
+        "52",
+        "14",
+        "0",
+        "0"
+       ],
+       "gras": [
+        "CL-05",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-06",
+        "92",
+        "68",
+        "21",
+        "2",
+        "1"
+       ],
+       "gras": [
+        "CL-06",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-07",
+        "98",
+        "74",
+        "21",
+        "0",
+        "3"
+       ],
+       "gras": [
+        "CL-07",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-08",
+        "89",
+        "66",
+        "23",
+        "0",
+        "0"
+       ],
+       "gras": [
+        "CL-08",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-09",
+        "116",
+        "88",
+        "26",
+        "1",
+        "1"
+       ],
+       "gras": [
+        "CL-09",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-10",
+        "101",
+        "74",
+        "24",
+        "1",
+        "2"
+       ],
+       "gras": [
+        "CL-10",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-11",
+        "129",
+        "103",
+        "17",
+        "0",
+        "9"
+       ],
+       "gras": [
+        "CL-11",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-12",
+        "72",
+        "56",
+        "15",
+        "0",
+        "1"
+       ],
+       "gras": [
+        "CL-12",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-13",
+        "88",
+        "58",
+        "26",
+        "3",
+        "1"
+       ],
+       "gras": [
+        "CL-13",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-14",
+        "151",
+        "103",
+        "47",
+        "0",
+        "1"
+       ],
+       "gras": [
+        "CL-14",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-15",
+        "154",
+        "64",
+        "47",
+        "36",
+        "7"
+       ],
+       "gras": [
+        "CL-15",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "CL-16",
+        "102",
+        "92",
+        "8",
+        "0",
+        "2"
+       ],
+       "gras": [
+        "CL-16",
+        "",
+        "",
+        "",
+        "",
+        ""
+       ]
+      },
+      {
+       "cellules": [
+        "Total",
+        "1669",
+        "1200",
+        "392",
+        "44",
+        "33"
+       ],
+       "gras": [
+        "Total",
+        "1669",
+        "1200",
+        "392",
+        "44",
+        "33"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Index des captures",
+   "tableaux": [
+    {
+     "sous_titre": "Les nombres du dossier",
+     "colonnes": [
+      "Quoi",
+      "Nombre"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Captures par variante",
+        "456 en clair (Fond_clair), 456 en sombre (Fond_sombre), 456 en anglais (Anglais), mêmes noms de fichiers"
+       ],
+       "gras": [
+        "",
+        "456"
+       ]
+      },
+      {
+       "cellules": [
+        "Écrans (routes)",
+        "134, dont la planche de composants kit et le Plan du prototype plan, qui ne sont pas des écrans de l’application"
+       ],
+       "gras": [
+        "",
+        "134"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresses balayées",
+        "481 routes et états contrôlés (erreurs JavaScript, liens morts, débordements, texte sous 12 px, anglais manquant, liens entrants)"
+       ],
+       "gras": [
+        "",
+        "481"
+       ]
+      },
+      {
+       "cellules": [
+        "Écrans sans lien entrant",
+        "0 orphelin (outil proto/inbound.js, hors Menu, Plan et planche)"
+       ],
+       "gras": [
+        "",
+        "0 orphelin"
+       ]
+      },
+      {
+       "cellules": [
+        "Captures par document",
+        "CL-01 9 · CL-03 42 · CL-04 15 · CL-05 16 · CL-06 22 · CL-07 18 · CL-08 18 · CL-09 46 · CL-10 34 · CL-11 46 · CL-12 32 · CL-13 53 · CL-14 52 · CL-15 53"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Les nombres du dossier",
+     "colonnes": [
+      "Fichier",
+      "Écran et état",
+      "Route du prototype",
+      "Où"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Socle_Interrupteur.jpg",
+        "Interrupteur fermé",
+        "#abonnements?st=ferme",
+        "CL-01 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Vide.jpg",
+        "État vide",
+        "#commandes?st=vide",
+        "CL-01 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Erreur.jpg",
+        "État d’erreur",
+        "#paiement-echec?cause=solde",
+        "CL-01 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Accueil.jpg",
+        "Écran racine · accueil",
+        "#accueil",
+        "CL-01 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Enfant.jpg",
+        "Écran enfant · commande",
+        "#commande?ref=BLV-52018",
+        "CL-01 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Menu.jpg",
+        "Menu de l’application : compte, relais, catégories, achats, aide, préférences",
+        "#menu",
+        "CL-01 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Feuille.jpg",
+        "Feuille du bas",
+        "#code-partage?ref=BLV-52018",
+        "CL-01 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Kit.jpg",
+        "Planche de composants",
+        "#kit",
+        "CL-01 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Socle_Hors_ligne.jpg",
+        "Hors ligne",
+        "#accueil?st=horsligne",
+        "CL-01 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Bienvenue.jpg",
+        "Premier lancement · écran 1 sur 3, la promesse",
+        "#bienvenue",
+        "CL-03 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Bienvenue_pidgin.jpg",
+        "Premier lancement · écran 1 en pidgin",
+        "#bienvenue?langue=pcm",
+        "CL-03 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Interets.jpg",
+        "Premier lancement · écran 2, centres d’intérêt",
+        "#interets",
+        "CL-03 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Interets_choix.jpg",
+        "Centres d’intérêt · trois catégories touchées",
+        "#interets?st=choix",
+        "CL-03 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Interets_pidgin.jpg",
+        "Centres d’intérêt · en pidgin",
+        "#interets?langue=pcm",
+        "CL-03 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion.jpg",
+        "Premier lancement · écran 3, connexion",
+        "#connexion?lancement=1",
+        "CL-03 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion_pidgin.jpg",
+        "Connexion · écran 3 en pidgin",
+        "#connexion?lancement=1&langue=pcm",
+        "CL-03 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion_google.jpg",
+        "Connexion · feuille « Choisis un compte » Google",
+        "#connexion?st=google&lancement=1",
+        "CL-03 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion_existant.jpg",
+        "Connexion Google · adresse déjà inscrite, compte ouvert",
+        "#connexion?st=existant&lancement=1",
+        "CL-03 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Connexion_panier.jpg",
+        "Connexion demandée au paiement · panier gardé",
+        "#connexion?st=panier",
+        "CL-03 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Email.jpg",
+        "Connexion par e-mail · se connecter",
+        "#connexion-email",
+        "CL-03 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Email_inscription.jpg",
+        "Connexion par e-mail · créer un compte",
+        "#connexion-email?st=inscription",
+        "CL-03 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Email_erreur.jpg",
+        "Connexion par e-mail · identifiants incorrects",
+        "#connexion-email?st=erreur",
+        "CL-03 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Email_existe.jpg",
+        "Créer un compte · adresse déjà inscrite",
+        "#connexion-email?st=existe",
+        "CL-03 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Mdp.jpg",
+        "Mot de passe oublié · saisie de l’e-mail",
+        "#mdp-oublie",
+        "CL-03 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Mdp_envoye.jpg",
+        "Mot de passe oublié · lien envoyé",
+        "#mdp-oublie?st=envoye",
+        "CL-03 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero.jpg",
+        "Première commande · étape 1, saisie du numéro",
+        "#numero?from=panier",
+        "CL-03 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero_code.jpg",
+        "Vérifier le numéro · code à 6 chiffres",
+        "#numero?st=code&from=panier",
+        "CL-03 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero_faux.jpg",
+        "Vérifier le numéro · code faux",
+        "#numero?st=faux&from=panier",
+        "CL-03 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero_bloque.jpg",
+        "Vérifier le numéro · trop d’essais",
+        "#numero?st=bloque&from=panier",
+        "CL-03 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero_utilise.jpg",
+        "Vérifier le numéro · déjà relié à un compte",
+        "#numero?st=utilise&from=panier",
+        "CL-03 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Numero_ok.jpg",
+        "Vérifier le numéro · vérifié, droit de commander",
+        "#numero?st=ok&from=panier",
+        "CL-03 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer_ancien.jpg",
+        "Compte · changer de numéro, code sur l’ancien",
+        "#numero-changer",
+        "CL-03 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer_nouveau.jpg",
+        "Changer de numéro · nouveau numéro",
+        "#numero-changer?etape=2",
+        "CL-03 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer_fini.jpg",
+        "Changer de numéro · codes de retrait renouvelés",
+        "#numero-changer?etape=4",
+        "CL-03 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais.jpg",
+        "Puce relais de l’en-tête · mon relais habituel",
+        "#relais-choix",
+        "CL-03 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_autre.jpg",
+        "Mon relais · autre relais choisi",
+        "#relais-choix?sel=Essos",
+        "CL-03 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_premiere.jpg",
+        "Première commande · liste des relais",
+        "#relais-choix?st=premiere",
+        "CL-03 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_horszone.jpg",
+        "Choisir un relais · hors des zones servies",
+        "#relais-choix?st=hors-zone",
+        "CL-03 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_sansrelais.jpg",
+        "Choisir un relais · aucun relais ouvert dans la zone",
+        "#relais-choix?st=sans-relais",
+        "CL-03 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_position.jpg",
+        "Choisir un relais · position refusée",
+        "#relais-choix?st=position",
+        "CL-03 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande1.jpg",
+        "Première commande · étape 2, au relais",
+        "#premiere-commande",
+        "CL-03 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande1_domicile.jpg",
+        "Première commande · étape 2, à domicile",
+        "#premiere-commande?st=domicile",
+        "CL-03 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande1_numero.jpg",
+        "Première commande · feuille « Avec quel numéro payer ? »",
+        "#premiere-commande?st=paiement",
+        "CL-03 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse.jpg",
+        "Adresse par repères · point sur la carte",
+        "#adresse",
+        "CL-03 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse_vide.jpg",
+        "Adresse par repères · formulaire vide",
+        "#adresse?st=vide",
+        "CL-03 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse_ok.jpg",
+        "Adresse par repères · enregistrée",
+        "#adresse?st=enregistree",
+        "CL-03 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse_horszone.jpg",
+        "Adresse par repères · quartier hors zone",
+        "#adresse?st=hors-zone",
+        "CL-03 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifs.jpg",
+        "Après la première commande · proposition des notifications",
+        "#notifs-proposition",
+        "CL-03 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifs_sms.jpg",
+        "Proposition des notifications · « Plus tard », repli SMS",
+        "#notifs-proposition?st=sms",
+        "CL-03 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "CGU.jpg",
+        "Ouverture de l’application · nouvelle version des conditions",
+        "#cgu",
+        "CL-03 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "CGU_inscription.jpg",
+        "Connexion · « Les lire en bref », conditions acceptées",
+        "#cgu?st=inscription",
+        "CL-03 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil.jpg",
+        "Accueil · version d’origine, acheteuse fidèle, 3 colis au relais",
+        "#accueil",
+        "CL-04 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_relais_ferme.jpg",
+        "Accueil · relais fermé ce jour-là",
+        "#accueil?st=ferme",
+        "CL-04 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_nouveau.jpg",
+        "Accueil · profil nouveau",
+        "#accueil?profil=nouveau",
+        "CL-04 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_navigateur.jpg",
+        "Accueil · profil navigateur sans achat",
+        "#accueil?profil=navigateur",
+        "CL-04 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_visiteur.jpg",
+        "Accueil · visiteur sans compte",
+        "#accueil?profil=visiteur",
+        "CL-04 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_lent.jpg",
+        "Accueil · connexion lente",
+        "#accueil?st=lent",
+        "CL-04 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Accueil_hors_ligne.jpg",
+        "Accueil · hors ligne",
+        "#accueil?st=horsligne",
+        "CL-04 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Categories.jpg",
+        "Catégories · Téléphones & tablettes",
+        "#categories",
+        "CL-04 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Categories_sport.jpg",
+        "Catégories · Sport & loisirs, vignette vide masquée",
+        "#categories?u=sport",
+        "CL-04 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste.jpg",
+        "Listing · Téléphones & tablettes, Pertinence",
+        "#liste?cat=tel",
+        "CL-04 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_proche.jpg",
+        "Listing · tout le catalogue, Au plus proche",
+        "#liste?tri=proche&from=accueil",
+        "CL-04 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_marque.jpg",
+        "Listing · Smartphones, feuille Marque",
+        "#liste?cat=tel&sub=Smartphones&sheet=marque&sel=Samsung",
+        "CL-04 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_XL.jpg",
+        "Listing · Électronique, carte XL",
+        "#liste?cat=elec",
+        "CL-04 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_retirable.jpg",
+        "Listing · filtre Retirable à mon relais",
+        "#liste?cat=elec&f=relais",
+        "CL-04 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_peu_fournie.jpg",
+        "Listing · catégorie peu fournie, Aussi dans",
+        "#liste?cat=tel&sub=Tablettes&f=auj",
+        "CL-04 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Recherche_avant_saisie.jpg",
+        "Barre de recherche de l’accueil · avant saisie",
+        "#recherche",
+        "CL-05 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Recherche_efface.jpg",
+        "Recherche · « Effacer » l’historique",
+        "#recherche?st=efface",
+        "CL-05 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Recherche_vocale.jpg",
+        "Micro de la barre · recherche vocale",
+        "#recherche?st=voix",
+        "CL-05 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Saisie_deux_lettres.jpg",
+        "Recherche · suggestions dès la 2e lettre",
+        "#recherche-saisie?q=ch",
+        "CL-05 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Saisie_faute_evitee.jpg",
+        "Recherche · suggestion avant la faute",
+        "#recherche-saisie?q=chargeur+tek",
+        "CL-05 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Saisie_on_cherche.jpg",
+        "Recherche · suggestion « 0 · on cherche »",
+        "#recherche-saisie?q=clim",
+        "CL-05 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_selecteur.jpg",
+        "Résultats · puce relais, choisir le relais",
+        "#relais-selecteur?q=chargeur+tecno",
+        "CL-05 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Resultats_relais_change.jpg",
+        "Résultats · autre relais, « Au plus proche »",
+        "#recherche-resultats?q=chargeur+tecno&relais=essos&tri=proche",
+        "CL-05 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Resultats_corriges.jpg",
+        "Résultats · saisie corrigée, repère panier",
+        "#recherche-resultats?q=chargeur+tekno",
+        "CL-05 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Resultats_filtre_actif.jpg",
+        "Résultats · puce « Retirable aujourd’hui »",
+        "#recherche-resultats?q=chargeur+tecno&auj=1",
+        "CL-05 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Resultats_epuise.jpg",
+        "Résultats · produit épuisé en fin de liste",
+        "#recherche-resultats?q=fer+à+repasser",
+        "CL-05 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Resultats_domicile.jpg",
+        "Résultats · colis XL livrés à domicile",
+        "#recherche-resultats?q=téléviseur",
+        "CL-05 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Filtres.jpg",
+        "Résultats · « Filtres », quatre familles",
+        "#recherche-filtres?q=chargeur+tecno",
+        "CL-05 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Filtres_grise.jpg",
+        "Filtres · compteur en direct, option grisée",
+        "#recherche-filtres?q=chargeur+tecno&auj=1",
+        "CL-05 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Zero_resultat.jpg",
+        "Recherche · zéro résultat utile",
+        "#recherche-zero?q=climatiseur+split",
+        "CL-05 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Zero_alerte.jpg",
+        "Zéro résultat · alerte « Préviens-moi » créée",
+        "#recherche-zero?q=climatiseur+split&st=alerte",
+        "CL-05 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche.jpg",
+        "Fiche produit · page entière (Tecno Camon 30)",
+        "#fiche?p=camon30",
+        "CL-06 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_remise.jpg",
+        "Fiche · remise réelle, prix barré",
+        "#fiche?p=galaxya15&vue=title",
+        "CL-06 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_variante.jpg",
+        "Fiche · variante choisie, autre vendeur",
+        "#fiche?p=camon30&v=noir-128&vue=title",
+        "CL-06 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_alerte.jpg",
+        "Fiche · variante en rupture, « Préviens-moi »",
+        "#fiche?p=camon30&st=alerte&al=vert",
+        "CL-06 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_alerte_ok.jpg",
+        "Fiche · alerte de retour enregistrée",
+        "#fiche?p=camon30&st=alerte-ok&al=vert",
+        "CL-06 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_stock.jpg",
+        "Fiche · quantité bornée au stock",
+        "#fiche?p=pagne&q=6&vue=act",
+        "CL-06 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_taille.jpg",
+        "Fiche · taille en rupture partout",
+        "#fiche?p=robewax&vue=title",
+        "CL-06 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_sans_offre.jpg",
+        "Fiche · aucune offre en stock",
+        "#fiche?p=ferceram&vue=title",
+        "CL-06 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_relais_paye.jpg",
+        "Fiche · retrait payant (+ 900 F)",
+        "#fiche?p=pagne",
+        "CL-06 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_colis_L.jpg",
+        "Fiche · colis L, supplément",
+        "#fiche?p=ventilo",
+        "CL-06 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_XL.jpg",
+        "Fiche · colis XL, livraison à domicile seule",
+        "#fiche?p=tv43&vue=liv",
+        "CL-06 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_relais_plein.jpg",
+        "Fiche · relais plein aujourd’hui",
+        "#fiche?p=camon30&st=relais-plein",
+        "CL-06 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_barre.jpg",
+        "Fiche · barre d’achat collante en défilant",
+        "#fiche?p=camon30&t=spec&st=barre",
+        "CL-06 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_lent.jpg",
+        "Fiche · connexion lente",
+        "#fiche?p=camon30&st=lent",
+        "CL-06 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Galerie.jpg",
+        "Fiche · galerie plein écran, photo du vendeur",
+        "#galerie?p=camon30&i=1",
+        "CL-06 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Galerie_acheteur.jpg",
+        "Galerie · photo d’acheteur",
+        "#galerie?p=camon30&i=6",
+        "CL-06 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis.jpg",
+        "Fiche · « 128 avis vérifiés », lire les avis",
+        "#avis?p=camon30",
+        "CL-06 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_eligible.jpg",
+        "Avis · produit retiré, « Donner mon avis »",
+        "#avis?p=ecouteurs",
+        "CL-06 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_vide.jpg",
+        "Avis · produit sans avis (coque, nouveau)",
+        "#avis?p=coque30",
+        "CL-06 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Question.jpg",
+        "Fiche · « Poser une question au vendeur »",
+        "#question?p=camon30",
+        "CL-06 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Question_masque.jpg",
+        "Question envoyée · numéro masqué",
+        "#question?p=camon30&st=masque",
+        "CL-06 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Fiche_apres.jpg",
+        "Fiche · blocs après le lancement, à leur place",
+        "#fiche?p=camon30&st=apres",
+        "CL-06 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier.jpg",
+        "Panier · référence 272 579 F (3 boutiques, 4 articles)",
+        "#panier",
+        "CL-07 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_seuil.jpg",
+        "Panier · seuil de livraison offerte non atteint",
+        "#panier?st=seuil",
+        "CL-07 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_comptoir.jpg",
+        "Panier · paiement au comptoir proposé",
+        "#panier?st=comptoir",
+        "CL-07 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_conseil.jpg",
+        "Panier · offre changée (même produit, zone du trajet)",
+        "#panier?st=conseil",
+        "CL-07 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_trajetperdu.jpg",
+        "Panier · article retiré, trajet partagé perdu",
+        "#panier?suppr=camon30",
+        "CL-07 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_glisser.jpg",
+        "Panier · balayage d’un article",
+        "#panier?st=glisser",
+        "CL-07 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_avertissement.jpg",
+        "Panier · retrait qui casse un trajet (avertissement)",
+        "#panier-retrait?p=camon30",
+        "CL-07 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_partage.jpg",
+        "Panier · envoyer au payeur à l’étranger",
+        "#panier?st=partage",
+        "CL-07 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_uneboutique.jpg",
+        "Panier · une seule boutique",
+        "#panier?st=une",
+        "CL-07 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_xl.jpg",
+        "Panier · colis XL livré à domicile",
+        "#panier?st=xl",
+        "CL-07 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_retireserveur.jpg",
+        "Panier · article retiré par le serveur",
+        "#panier?st=retire",
+        "CL-07 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_prixchange.jpg",
+        "Panier · un prix a augmenté (Passer commande → contrôle des prix)",
+        "#panier?prix=hausse",
+        "CL-07"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_horsligne.jpg",
+        "Panier · hors ligne",
+        "#panier?st=horsligne",
+        "CL-07 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_invite.jpg",
+        "Panier · visiteur, connexion pour payer",
+        "#panier?st=invite&feuille=1",
+        "CL-07 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Panier_vide.jpg",
+        "Panier · vide",
+        "#panier?st=vide",
+        "CL-07 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Sauvegardes.jpg",
+        "Sauvegardés · onglet, 2 articles avec alertes",
+        "#sauvegardes",
+        "CL-07 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Sauvegardes_rupture.jpg",
+        "Sauvegardés · variante épuisée partout",
+        "#sauvegardes?st=rupture",
+        "CL-07 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Sauvegardes_vide.jpg",
+        "Sauvegardés · vide",
+        "#sauvegardes?st=vide",
+        "CL-07 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Prix_hausse.jpg",
+        "Contrôle des prix · hausse, confirmation",
+        "#prix-change?st=hausse",
+        "CL-08 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Prix_retire.jpg",
+        "Contrôle des prix · produit désactivé",
+        "#prix-change?st=retire",
+        "CL-08 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Prix_pris.jpg",
+        "Contrôle des prix · article pris, aucun autre vendeur",
+        "#prix-change?st=pris",
+        "CL-08 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Prix_baisse.jpg",
+        "Paiement en attente · un prix a baissé, « tu gagnes 1 500 F »",
+        "#paiement-attente?cas=baisse",
+        "CL-08 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Attente.jpg",
+        "Paiement en attente · MTN MoMo, « J’ai validé sur mon téléphone »",
+        "#paiement-attente",
+        "CL-08 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Attente_orange.jpg",
+        "Paiement en attente · numéro changé, Orange Money",
+        "#paiement-attente?st=numero",
+        "CL-08 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Attente_verif.jpg",
+        "Paiement en attente · délai écoulé, vérification",
+        "#paiement-attente?st=verif",
+        "CL-08 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Attente_comptoir.jpg",
+        "Paiement en attente · livraison d’une commande au comptoir",
+        "#paiement-attente?mode=comptoir",
+        "CL-08 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Echec.jpg",
+        "Paiement non abouti · demande expirée",
+        "#paiement-echec",
+        "CL-08 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Echec_solde.jpg",
+        "Paiement non abouti · solde insuffisant",
+        "#paiement-echec?cause=solde",
+        "CL-08 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Echec_carte.jpg",
+        "Paiement non abouti · carte refusée",
+        "#paiement-echec?cause=carte",
+        "CL-08 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen.jpg",
+        "Moyen de paiement · MTN, carte au-delà du plafond",
+        "#paiement-moyen?cause=expire",
+        "CL-08 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen_autre.jpg",
+        "Moyen de paiement · autre numéro",
+        "#paiement-moyen?choix=autre&cause=expire",
+        "CL-08 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Moyen_carte.jpg",
+        "Moyen de paiement · carte, 2 % affichés",
+        "#paiement-moyen?choix=carte&panier=seuil",
+        "CL-08 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Recu.jpg",
+        "Commande confirmée · reçu BLV-52107 (depuis la notification)",
+        "#confirmee",
+        "CL-08 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Recu_premiere.jpg",
+        "Commande confirmée · première commande payée à 10 h 15 (→ proposition des notifications)",
+        "#confirmee?cas=panier&premiere=1",
+        "CL-08 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Recu_partage.jpg",
+        "Commande confirmée · partager la confirmation",
+        "#confirmee?st=partage",
+        "CL-08 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Validee.jpg",
+        "Commande validée · paiement au comptoir (BLV-51940)",
+        "#validee",
+        "CL-08 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_encours.jpg",
+        "Mes commandes · En cours : paiement en attente, livraisons en cours avec plan, cartes",
+        "#commandes",
+        "CL-09 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_expire.jpg",
+        "Mes commandes · réservation expirée à 10 h 27",
+        "#commandes?st=expire",
+        "CL-09 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_vide.jpg",
+        "Mes commandes · nouveau client, rien à afficher",
+        "#commandes?st=vide",
+        "CL-09 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_terminees.jpg",
+        "Mes commandes · Terminées",
+        "#commandes?onglet=terminees",
+        "CL-09 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_rachat.jpg",
+        "Terminées · « Racheter » : articles remis au panier",
+        "#commandes?onglet=terminees&st=rachat&ref=BLV-51702",
+        "CL-09 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_payer.jpg",
+        "Mes commandes · feuille Paiement (MTN / Orange) pour reprendre le paiement",
+        "#commandes?sheet=payer",
+        "CL-09 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_payer_garde.jpg",
+        "Mes commandes · feuille Paiement des frais de garde (400 F)",
+        "#commandes?sheet=payer&ref=BLV-52018",
+        "CL-09 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_annuler.jpg",
+        "Mes commandes · feuille Annulation, motif choisi",
+        "#commandes?sheet=annuler&ref=BLV-52107&motif=delai",
+        "CL-09 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_filtre.jpg",
+        "Mes commandes · puce « À retirer »",
+        "#commandes?f=retirer",
+        "CL-09 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_annulees.jpg",
+        "Mes commandes · Terminées, puce « Annulées »",
+        "#commandes?onglet=terminees&f=annulee",
+        "CL-09 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Commandes_horsligne.jpg",
+        "Mes commandes · hors ligne",
+        "#commandes?st=horsligne",
+        "CL-09 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_close.jpg",
+        "Détail · BLV-51388 retirée et close",
+        "#commande?ref=BLV-51388",
+        "CL-09 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_terminee.jpg",
+        "Détail · BLV-51702 retirée, fenêtre de retour ouverte",
+        "#commande?ref=BLV-51702",
+        "CL-09 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_facture.jpg",
+        "Détail · facture PDF de BLV-51702",
+        "#commande?ref=BLV-51702&st=facture",
+        "CL-09 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_annulee.jpg",
+        "Détail · BLV-51533 annulée et remboursée",
+        "#commande?ref=BLV-51533",
+        "CL-09 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_prete.jpg",
+        "Détail · BLV-52018 retirable maintenant",
+        "#commande?ref=BLV-52018",
+        "CL-09 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_preparation.jpg",
+        "Détail · BLV-52107 en préparation, 3 colis",
+        "#commande?ref=BLV-52107",
+        "CL-09 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_validee.jpg",
+        "Détail · BLV-51940 validée, à payer au retrait",
+        "#commande?ref=BLV-51940",
+        "CL-09 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Commande_litige.jpg",
+        "Détail · BLV-51877 en litige (LIT-3042)",
+        "#commande?ref=BLV-51877",
+        "CL-09 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_visible.jpg",
+        "Code de retrait · plein écran, code et QR",
+        "#code?ref=BLV-52018",
+        "CL-09 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_attente.jpg",
+        "Code de retrait · pas encore de code (3 colis en route)",
+        "#code?ref=BLV-52107",
+        "CL-09 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_bio.jpg",
+        "Code de retrait · déverrouillage au-delà de 50 000 F",
+        "#code?ref=BLV-52107&st=bio",
+        "CL-09 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_validee.jpg",
+        "Code de retrait · commande validée, code bloqué avant paiement",
+        "#code?ref=BLV-51940",
+        "CL-09 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_bloque.jpg",
+        "Code de retrait · bloqué 24 h après 3 codes faux",
+        "#code?ref=BLV-52018&st=bloque",
+        "CL-09 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_nouveau.jpg",
+        "Code de retrait · nouveau code, l’ancien refusé",
+        "#code?ref=BLV-52018&st=nouveau",
+        "CL-09 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_horsligne.jpg",
+        "Code de retrait · hors ligne, lisible depuis le téléphone",
+        "#code?ref=BLV-52018&st=horsligne",
+        "CL-09 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_retire.jpg",
+        "Code de retrait · colis retiré, code disparu",
+        "#code?ref=BLV-51702",
+        "CL-09 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeRetrait_partage.jpg",
+        "Code de retrait · envoyer à quelqu’un",
+        "#code-partage?ref=BLV-52018",
+        "CL-09 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "SuiviCommande_preparation.jpg",
+        "Suivi · réponse en tête et 3 colis",
+        "#suivi?ref=BLV-52107",
+        "CL-09 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "SuiviCommande_retard.jpg",
+        "Suivi · colis 2 en retard chez le vendeur",
+        "#suivi?ref=BLV-52107&st=retard",
+        "CL-09 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "SuiviCommande_attente.jpg",
+        "Suivi · en attente d’un colis, livreur en route",
+        "#suivi?ref=BLV-52107&st=attente",
+        "CL-09 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "SuiviCommande_arrive.jpg",
+        "Suivi · arrivé au relais, horaires et trajet",
+        "#suivi?ref=BLV-52018",
+        "CL-09 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "SuiviCommande_domicile.jpg",
+        "Suivi · livraison à domicile en route",
+        "#suivi?ref=BLV-52096",
+        "CL-09 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_garde.jpg",
+        "Payer au comptoir · frais de garde 400 F",
+        "#comptoir-payer?ref=BLV-52018",
+        "CL-09 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_validee.jpg",
+        "Payer au comptoir · commande validée 24 000 F",
+        "#comptoir-payer?ref=BLV-51940",
+        "CL-09 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_attente.jpg",
+        "Payer au comptoir · demande MoMo envoyée",
+        "#comptoir-payer?ref=BLV-51940&st=attente",
+        "CL-09 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_ok.jpg",
+        "Payer au comptoir · paiement confirmé, code débloqué",
+        "#comptoir-payer?ref=BLV-51940&st=paye",
+        "CL-09 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_echec.jpg",
+        "Payer au comptoir · échec, aucun débit",
+        "#comptoir-payer?ref=BLV-51940&st=echec",
+        "CL-09 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_horsligne.jpg",
+        "Payer au comptoir · hors ligne",
+        "#comptoir-payer?ref=BLV-52018&st=horsligne",
+        "CL-09 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "ComptoirPayer_rien.jpg",
+        "Payer au comptoir · rien à payer le jour d’arrivée",
+        "#comptoir-payer?ref=BLV-52107&st=rien",
+        "CL-09 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_avant.jpg",
+        "Au comptoir · avant la remise",
+        "#comptoir?ref=BLV-52018",
+        "CL-09 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_remis.jpg",
+        "Au comptoir · colis remis, contrôle poussé, deux notes",
+        "#comptoir?ref=BLV-52018&st=remis",
+        "CL-09 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_ok.jpg",
+        "Au comptoir · « Tout est en ordre », deux notes",
+        "#comptoir?ref=BLV-52018&st=ok",
+        "CL-09 · fig. 43"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_tiers.jpg",
+        "Au comptoir · retiré par un proche",
+        "#comptoir?ref=BLV-52018&st=tiers",
+        "CL-09 · fig. 44"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_attente.jpg",
+        "Au comptoir · retrait passé, pas encore confirmé",
+        "#comptoir?ref=BLV-51702",
+        "CL-09 · fig. 45"
+       ]
+      },
+      {
+       "cellules": [
+        "AuComptoir_litige.jpg",
+        "Au comptoir · « Un problème » : litige ouvert, colis gardé",
+        "#comptoir?ref=BLV-51877",
+        "CL-09 · fig. 46"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifications.jpg",
+        "Centre de notifications · 3 non lues",
+        "#notifications",
+        "CL-10 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifications_groupe.jpg",
+        "Centre · regroupement par commande déplié",
+        "#notifications?st=groupe",
+        "CL-10 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifications_horsligne.jpg",
+        "Centre · hors ligne, liste du cache",
+        "#notifications?st=horsligne",
+        "CL-10 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifications_vide.jpg",
+        "Centre · aucune notification",
+        "#notifications?st=vide",
+        "CL-10 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Notifs_reglages.jpg",
+        "Réglage des notifications",
+        "#notifs-reglages",
+        "CL-10 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_verrou.jpg",
+        "Réglage · catégorie critique verrouillée",
+        "#notifs-reglages?st=verrou",
+        "CL-10 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_whatsapp.jpg",
+        "Réglage · WhatsApp « bientôt »",
+        "#notifs-reglages?st=whatsapp",
+        "CL-10 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_enregistre.jpg",
+        "Réglage · Suivi désactivé, enregistré",
+        "#notifs-reglages?st=enregistre",
+        "CL-10 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_nonverifie.jpg",
+        "Réglage · numéro non vérifié",
+        "#notifs-reglages?st=nonverifie",
+        "CL-10 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Push_verrouille.jpg",
+        "Aperçu push · écran verrouillé (depuis le réglage)",
+        "#push",
+        "CL-10 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Push_banniere.jpg",
+        "Aperçu push · bannière du rappel S0",
+        "#push?st=banniere",
+        "CL-10 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Push_groupe.jpg",
+        "Aperçu push · notification regroupée (récupéré + arrivé, BLV-51940)",
+        "#push?st=groupe",
+        "CL-10 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Push_nuit.jpg",
+        "Aperçu push · la nuit, sans son",
+        "#push?st=nuit",
+        "CL-10 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_c3.jpg",
+        "Aperçu SMS · C3 code de retrait",
+        "#sms",
+        "CL-10 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_c3v.jpg",
+        "Aperçu SMS · C3 d’une commande « Validée »",
+        "#sms?st=c3v",
+        "CL-10 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_c1.jpg",
+        "Aperçu SMS · C1 paiement protégé",
+        "#sms?st=c1",
+        "CL-10 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_c4.jpg",
+        "Aperçu SMS · C4 incident",
+        "#sms?st=c4",
+        "CL-10 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_c12.jpg",
+        "Aperçu SMS · C12 remerciement",
+        "#sms?st=c12",
+        "CL-10 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_renvoi.jpg",
+        "Aperçu SMS · renvoi payant du code",
+        "#sms?st=renvoi",
+        "CL-10 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS_otp.jpg",
+        "Aperçu SMS · code de vérification",
+        "#sms?st=otp",
+        "CL-10 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "LienCourt.jpg",
+        "Aperçu · page du lien court · QR, code et relais",
+        "#lien-court",
+        "CL-10 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "LienCourt_retire.jpg",
+        "Aperçu · page du lien court · colis retiré",
+        "#lien-court?st=retire",
+        "CL-10 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde.jpg",
+        "Frais de garde · jour 4, aujourd’hui",
+        "#garde?ref=BLV-52018",
+        "CL-10 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_j1.jpg",
+        "Frais de garde · jour 1, gratuit",
+        "#garde?ref=BLV-52018&j=1",
+        "CL-10 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_j2.jpg",
+        "Frais de garde · jour 2, 100 F",
+        "#garde?ref=BLV-52018&j=2",
+        "CL-10 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_j5.jpg",
+        "Frais de garde · jour 5, 600 F",
+        "#garde?ref=BLV-52018&j=5",
+        "CL-10 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_j6.jpg",
+        "Frais de garde · jour 6, dernier jour",
+        "#garde?ref=BLV-52018&j=6",
+        "CL-10 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_j7.jpg",
+        "Frais de garde · jour 7, dimanche fermé",
+        "#garde?ref=BLV-52018&j=7",
+        "CL-10 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_ferme.jpg",
+        "Frais de garde · fermeture déclarée aujourd’hui",
+        "#garde?ref=BLV-52018&j=ferme",
+        "CL-10 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_renvoye.jpg",
+        "Frais de garde · renvoyé au vendeur",
+        "#garde?ref=BLV-52018&j=renvoye",
+        "CL-10 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_litige.jpg",
+        "Frais de garde · litige, compteur gelé",
+        "#garde?ref=BLV-52018&j=litige",
+        "CL-10 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_nonvu.jpg",
+        "Frais de garde · sans accusé fort",
+        "#garde?ref=BLV-52018&j=nonvu",
+        "CL-10 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Garde_groupage.jpg",
+        "Frais de garde · groupage (après le lancement)",
+        "#garde?ref=BLV-52018&j=groupage",
+        "CL-10 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Push_serie.jpg",
+        "Aperçu push · série de rappels S0 à S5 (depuis les frais de garde)",
+        "#push?st=serie",
+        "CL-10 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape1.jpg",
+        "Litige · assistant, étape 1 « Quel colis ? » (2 colis)",
+        "#litige?ref=BLV-52018&etape=1",
+        "CL-11 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape2.jpg",
+        "Litige · assistant, étape 2 « Que s’est-il passé ? » (1 colis)",
+        "#litige?ref=BLV-51702",
+        "CL-11 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape2_vice.jpg",
+        "Litige · étape 2, retrait de plus de 7 jours (défaut caché)",
+        "#litige?ref=BLV-51388",
+        "CL-11 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape3.jpg",
+        "Litige · étape 3 « Montre-moi », sans photo",
+        "#litige?ref=BLV-51702&etape=3&pb=abime",
+        "CL-11 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape3_photo.jpg",
+        "Litige · étape 3, photos prises",
+        "#litige?ref=BLV-51702&etape=3&pb=abime&st=photo",
+        "CL-11 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape3_jamais.jpg",
+        "Litige · étape 3, « Jamais reçu » (photo facultative)",
+        "#litige?ref=BLV-51702&etape=3&pb=jamais",
+        "CL-11 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_etape4.jpg",
+        "Litige · étape 4 « Que veux-tu ? »",
+        "#litige?ref=BLV-51702&etape=4&pb=abime",
+        "CL-11 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_signal.jpg",
+        "Litige · « Je veux juste signaler » envoyé",
+        "#litige-confirme?ref=BLV-51702&souhait=signal",
+        "CL-11 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_confirme.jpg",
+        "Litige ouvert · LIT-3044, argent bloqué, délai ferme",
+        "#litige-confirme?ref=BLV-51702",
+        "CL-11 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_confirme_vice.jpg",
+        "Litige ouvert · défaut caché, vendeur déjà payé",
+        "#litige-confirme?ref=BLV-51388&colis=1",
+        "CL-11 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_auto.jpg",
+        "Remboursement automatique · palier Standard (3 000 F)",
+        "#litige-auto",
+        "CL-11 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_auto_eleve.jpg",
+        "Remboursement automatique · palier Élevé (4 800 F)",
+        "#litige-auto?palier=eleve",
+        "CL-11 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_comptoir.jpg",
+        "Litige ouvert au comptoir · LIT-3042 (fer)",
+        "#litige-comptoir",
+        "CL-11 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Litige_comptoir_2colis.jpg",
+        "Litige ouvert au comptoir · LIT-3045, un colis sur deux",
+        "#litige-comptoir?ref=BLV-52018",
+        "CL-11 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_recu.jpg",
+        "Suivi du litige · Reçu",
+        "#litige-suivi?id=LIT-3042&st=recu",
+        "CL-11 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_vendeur.jpg",
+        "Suivi du litige · le vendeur a 48 h (31 h restantes)",
+        "#litige-suivi?id=LIT-3042",
+        "CL-11 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_conteste.jpg",
+        "Suivi du litige · le vendeur conteste",
+        "#litige-suivi?id=LIT-3042&st=conteste",
+        "CL-11 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_silence.jpg",
+        "Suivi du litige · vendeur sans réponse à 48 h",
+        "#litige-suivi?id=LIT-3042&st=silence",
+        "CL-11 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_examen.jpg",
+        "Suivi du litige · en examen, preuves côte à côte",
+        "#litige-suivi?id=LIT-3042&st=examen",
+        "CL-11 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_accepte.jpg",
+        "Suivi du litige · le vendeur accepte (remplacement)",
+        "#litige-suivi?id=LIT-3042&st=accepte",
+        "CL-11 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_rembourse.jpg",
+        "Décision · remboursement accordé",
+        "#litige-suivi?id=LIT-3042&st=rembourse",
+        "CL-11 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_remplace.jpg",
+        "Décision · remplacement accordé",
+        "#litige-suivi?id=LIT-3042&st=remplace",
+        "CL-11 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_refuse.jpg",
+        "Décision · demande non retenue, motif écrit",
+        "#litige-suivi?id=LIT-3042&st=refuse",
+        "CL-11 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Suivi_arrangement.jpg",
+        "Suivi du litige · arrangement proposé",
+        "#litige-suivi?id=LIT-3042&st=arrangement",
+        "CL-11 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Arrangement.jpg",
+        "Arrangement · feuille de la proposition du vendeur",
+        "#litige-arrangement",
+        "CL-11 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Arrangement_accepte.jpg",
+        "Arrangement · accepté, litige clos",
+        "#litige-arrangement?st=accepte",
+        "CL-11 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Arrangement_refuse.jpg",
+        "Arrangement · refusé, BelivaY examine",
+        "#litige-arrangement?st=refuse",
+        "CL-11 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Litiges.jpg",
+        "Mes litiges (depuis le Compte)",
+        "#litiges",
+        "CL-11 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Litiges_vide.jpg",
+        "Mes litiges · aucun litige",
+        "#litiges?st=vide",
+        "CL-11 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_aucun.jpg",
+        "Retour · onglet de l’écran de retrait, aucun retour en cours",
+        "#retour?ref=BLV-52018",
+        "CL-11 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_depot.jpg",
+        "Retour · à déposer au relais",
+        "#retour?ref=BLV-51702&st=depot",
+        "CL-11 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_depose.jpg",
+        "Retour · déposé et scanné au relais",
+        "#retour?ref=BLV-51702&st=depose",
+        "CL-11 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_collecte.jpg",
+        "Retour · récupéré par le livreur",
+        "#retour?ref=BLV-51702&st=collecte",
+        "CL-11 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_inspection.jpg",
+        "Retour · inspection du vendeur (48 h)",
+        "#retour?ref=BLV-51702&st=inspection",
+        "CL-11 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_clos.jpg",
+        "Retour · clos et remboursé",
+        "#retour?ref=BLV-51702&st=clos",
+        "CL-11 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_delai.jpg",
+        "Retour · vendeur sans réponse, remboursement automatique",
+        "#retour?ref=BLV-51702&st=delai",
+        "CL-11 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_gratuit.jpg",
+        "Retour · colis déjà au relais, gratuit",
+        "#retour?ref=BLV-51877&st=gratuit",
+        "CL-11 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_tort.jpg",
+        "Retour · trajet à la charge du client",
+        "#retour?ref=BLV-51702&st=tort",
+        "CL-11 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_volumineux.jpg",
+        "Retour · colis XL collecté à domicile",
+        "#retour?st=volumineux",
+        "CL-11 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_sans.jpg",
+        "Retour · remboursé sans retour physique",
+        "#retour?ref=BLV-51388&st=sans-retour",
+        "CL-11 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "Retour_hors.jpg",
+        "Retour · hors délai, défaut caché possible",
+        "#retour?ref=BLV-51388&st=hors-delai",
+        "CL-11 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement.jpg",
+        "Remplacement · délai ferme du vendeur",
+        "#remplacement",
+        "CL-11 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement_expedie.jpg",
+        "Remplacement · nouveau fer en route",
+        "#remplacement?st=expedie",
+        "CL-11 · fig. 43"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement_retard.jpg",
+        "Remplacement · délai dépassé, remboursement automatique",
+        "#remplacement?st=retard",
+        "CL-11 · fig. 44"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement_autre.jpg",
+        "Remplacement · autre vendeur proposé",
+        "#remplacement?st=autre",
+        "CL-11 · fig. 45"
+       ]
+      },
+      {
+       "cellules": [
+        "Remplacement_remis.jpg",
+        "Remplacement · remis, dossier clos",
+        "#remplacement?st=remis",
+        "CL-11 · fig. 46"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler.jpg",
+        "Annuler ma commande · étape 2 après le motif (depuis Mes commandes)",
+        "#annuler?ref=BLV-52107&motif=avis",
+        "CL-12 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_confirmer.jpg",
+        "Annuler · feuille de confirmation de la boutique B (calcul)",
+        "#annuler-confirmer?ref=BLV-52107&boutique=B",
+        "CL-12 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_fait.jpg",
+        "Annuler · boutique B annulée, remboursée",
+        "#annuler-confirmer?ref=BLV-52107&boutique=B&st=fait",
+        "CL-12 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_onglet.jpg",
+        "Modifier ma commande · onglet Annuler (depuis la commande)",
+        "#modifier?ref=BLV-52107",
+        "CL-12 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_impossible.jpg",
+        "Annuler · colis arrivés ou récupérés, annulation impossible",
+        "#annuler?ref=BLV-52107&st=arrivee",
+        "CL-12 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_etat_change.jpg",
+        "Annuler · état changé entre-temps",
+        "#annuler?ref=BLV-52107&st=change",
+        "CL-12 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_hors_ligne.jpg",
+        "Annuler · hors ligne, bouton remplacé",
+        "#annuler?ref=BLV-52107&st=horsligne",
+        "CL-12 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_vendeur_suivant.jpg",
+        "Annuler · rupture, vendeur suivant",
+        "#annuler?ref=BLV-52107&st=vendeur-suivant",
+        "CL-12 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_par_vendeur.jpg",
+        "Commande annulée par le vendeur (BLV-51533)",
+        "#annuler?ref=BLV-51533",
+        "CL-12 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Annuler_par_BelivaY.jpg",
+        "Annuler · boutique C annulée par BelivaY",
+        "#annuler?ref=BLV-52107&st=belivay",
+        "CL-12 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer_relais.jpg",
+        "Modifier · onglet Changer de relais, gratuit",
+        "#changer-relais?ref=BLV-52107",
+        "CL-12 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_confirmer.jpg",
+        "Changer de relais · confirmation (Essos)",
+        "#changer-relais?ref=BLV-52107&st=choisi&relais=Essos",
+        "CL-12 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_tournee.jpg",
+        "Changer de relais · impossible pendant la tournée",
+        "#changer-relais?ref=BLV-52107&st=tournee",
+        "CL-12 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_transfert.jpg",
+        "Changer de relais · colis arrivés, transfert 400 F",
+        "#changer-relais?ref=BLV-52018",
+        "CL-12 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_transfert_payer.jpg",
+        "Changer de relais · montant dû du transfert",
+        "#changer-relais?ref=BLV-52018&st=payer&relais=Essos",
+        "CL-12 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Relais_fait.jpg",
+        "Changer de relais · transfert demandé",
+        "#changer-relais?ref=BLV-52018&st=fait&relais=Essos",
+        "CL-12 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Modifier_domicile.jpg",
+        "Modifier · livraison à domicile (BLV-52096), onglet Changer d’adresse",
+        "#modifier?ref=BLV-52096&onglet=relais",
+        "CL-12 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer_adresse.jpg",
+        "Changer d’adresse · feuille, avant collecte",
+        "#changer-adresse?ref=BLV-52096&st=avant",
+        "CL-12 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse_fait.jpg",
+        "Changer d’adresse · adresse changée",
+        "#changer-adresse?ref=BLV-52096&st=fait",
+        "CL-12 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse_impossible.jpg",
+        "Changer d’adresse · colis déjà en route",
+        "#changer-adresse?ref=BLV-52096&st=impossible",
+        "CL-12 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Etranger.jpg",
+        "Modifier · onglet Payer de l’étranger (client)",
+        "#modifier?ref=BLV-52107&onglet=etranger",
+        "CL-12 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Etranger_partager.jpg",
+        "Payer de l’étranger · envoyer son panier (partage du téléphone)",
+        "#modifier?ref=BLV-52107&onglet=etranger&st=partager",
+        "CL-12 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Etranger_paye_par.jpg",
+        "Payer de l’étranger · commande payée par un proche (BLV-52124)",
+        "#modifier?ref=BLV-52124&onglet=etranger",
+        "CL-12 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur.jpg",
+        "Page web du payeur · formulaire carte",
+        "#payeur",
+        "CL-12 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur_3DS.jpg",
+        "Page du payeur · 3-D Secure",
+        "#payeur?st=3ds",
+        "CL-12 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur_refusee.jpg",
+        "Page du payeur · carte refusée",
+        "#payeur?st=refusee",
+        "CL-12 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur_plafond.jpg",
+        "Page du payeur · panier au-dessus de 150 000 F",
+        "#payeur?st=plafond",
+        "CL-12 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur_sans_comptoir.jpg",
+        "Page du payeur · jamais au comptoir",
+        "#payeur?st=sans-comptoir",
+        "CL-12 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Payeur_paye.jpg",
+        "Page du payeur · paiement confirmé",
+        "#payeur?st=paye",
+        "CL-12 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Preuve_email.jpg",
+        "Payeur · e-mail de repli",
+        "#payeur-preuve?st=paye",
+        "CL-12 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Preuve_incident.jpg",
+        "Payeur · notification d’incident et suivi",
+        "#payeur-preuve?st=incident",
+        "CL-12 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Preuve_retrait.jpg",
+        "Payeur · preuve de retrait",
+        "#payeur-preuve?st=retire",
+        "CL-12 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Compte.jpg",
+        "Mon compte · point d’entrée (tuiles, avantages, relais, rubriques)",
+        "#compte",
+        "CL-13 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Compte_nouveau.jpg",
+        "Mon compte · compte neuf, numéro à vérifier",
+        "#compte?st=nouveau",
+        "CL-13 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresses.jpg",
+        "Mes adresses (depuis le Compte)",
+        "#adresses",
+        "CL-13 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresses_modifier.jpg",
+        "Adresses · modifier une adresse par repères",
+        "#adresses?st=modifier",
+        "CL-13 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresses_hors_zone.jpg",
+        "Adresses · quartier hors zone servie",
+        "#adresses?st=hors",
+        "CL-13 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresses_vide.jpg",
+        "Adresses · aucune adresse",
+        "#adresses?st=vide",
+        "CL-13 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement_moyens.jpg",
+        "Moyens de paiement (depuis le Compte)",
+        "#moyens-paiement",
+        "CL-13 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Paiement_ajout.jpg",
+        "Moyens de paiement · feuille d’ajout d’un numéro",
+        "#moyens-paiement?st=ajout",
+        "CL-13 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Factures.jpg",
+        "Factures (depuis le Compte)",
+        "#factures",
+        "CL-13 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Factures_apercu.jpg",
+        "Factures · aperçu du PDF BLV-51702",
+        "#factures?st=apercu&ref=BLV-51702",
+        "CL-13 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Factures_apercu_rembourse.jpg",
+        "Factures · BLV-51206 remboursée en partie",
+        "#factures?st=apercu&ref=BLV-51206",
+        "CL-13 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Factures_vide.jpg",
+        "Factures · aucune",
+        "#factures?st=vide",
+        "CL-13 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Supprimer_bloque.jpg",
+        "Supprimer mon compte · refusé (commandes en cours)",
+        "#supprimer",
+        "CL-13 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Supprimer_possible.jpg",
+        "Supprimer mon compte · confirmation par code",
+        "#supprimer?st=possible",
+        "CL-13 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_formulaire.jpg",
+        "Avis · deux notes (depuis la commande ou le Compte)",
+        "#avis-donner?ref=BLV-51702",
+        "CL-13 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_deux_colis.jpg",
+        "Avis · deux colis, deux vendeurs",
+        "#avis-donner?ref=BLV-52018",
+        "CL-13 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_note_basse.jpg",
+        "Avis · note basse",
+        "#avis-donner?ref=BLV-51702&st=bas",
+        "CL-13 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_proposition_litige.jpg",
+        "Avis · note basse, litige proposé",
+        "#avis-bas?ref=BLV-51702",
+        "CL-13 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_envoye.jpg",
+        "Avis · notes envoyées",
+        "#avis-donner?ref=BLV-51702&st=envoye",
+        "CL-13 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_modifier.jpg",
+        "Avis · modifier ses notes",
+        "#avis-donner?ref=BLV-51702&st=modifier",
+        "CL-13 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_fenetre_fermee.jpg",
+        "Avis · notation fermée (7 jours passés)",
+        "#avis-donner?st=ferme",
+        "CL-13 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Avis_non_eligible.jpg",
+        "Avis · colis pas encore retiré",
+        "#avis-donner?st=non",
+        "CL-13 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Aide.jpg",
+        "Aide et support (depuis le Compte)",
+        "#aide",
+        "CL-13 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Aide_hors_heures.jpg",
+        "Aide · hors heures (22 h 40)",
+        "#aide?st=horsheures",
+        "CL-13 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Aide_whatsapp.jpg",
+        "Aide · feuille WhatsApp et ses interdits",
+        "#aide?st=wa",
+        "CL-13 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "FAQ_theme.jpg",
+        "Questions fréquentes · thème Frais de garde",
+        "#faq?t=garde&a=1",
+        "CL-13 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "FAQ_recherche.jpg",
+        "Questions fréquentes · recherche « code »",
+        "#faq?q=code",
+        "CL-13 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "FAQ_zero.jpg",
+        "Questions fréquentes · aucune réponse",
+        "#faq?q=parrainage",
+        "CL-13 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Messagerie.jpg",
+        "Messagerie (tuile Messages du Compte)",
+        "#messagerie",
+        "CL-13 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Messagerie_vide.jpg",
+        "Messagerie · aucune conversation",
+        "#messagerie?st=vide",
+        "CL-13 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_dossier.jpg",
+        "Fil du dossier LIT-3042",
+        "#fil?id=LIT-3042",
+        "CL-13 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_photo.jpg",
+        "Fil du dossier · photo versée",
+        "#fil?id=LIT-3042&st=photo",
+        "CL-13 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_litige_application.jpg",
+        "Fil du dossier LIT-3044 (ouvert dans l’application)",
+        "#fil?id=LIT-3044",
+        "CL-13 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_vendeur_masque.jpg",
+        "Fil · question au vendeur, numéro masqué",
+        "#fil?id=question",
+        "CL-13 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_support.jpg",
+        "Fil du support · résolu",
+        "#fil?id=support",
+        "CL-13 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "Fil_nouveau.jpg",
+        "Écrire au support",
+        "#fil?id=support&st=nouveau",
+        "CL-13 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "Rappel.jpg",
+        "Demander un rappel · feuille",
+        "#rappel",
+        "CL-13 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "Rappel_envoye.jpg",
+        "Rappel demandé",
+        "#rappel?st=envoye",
+        "CL-13 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Legal.jpg",
+        "Pages légales (depuis le Compte)",
+        "#legal",
+        "CL-13 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "Legal_CGV.jpg",
+        "Pages légales · CGV",
+        "#legal-doc?d=cgv",
+        "CL-13 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "Legal_CGU_anglais.jpg",
+        "Pages légales · CGU en anglais",
+        "#legal-doc?d=cgu&lang=en",
+        "CL-13 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "Legal_garde.jpg",
+        "Pages légales · politique de garde",
+        "#legal-doc?d=garde",
+        "CL-13 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_info.jpg",
+        "Connexion et données (depuis Réglages ou une bannière)",
+        "#reseau",
+        "CL-13 · fig. 43"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_lent.jpg",
+        "Mode dégradé · accueil en connexion lente",
+        "#reseau?st=lent",
+        "CL-13 · fig. 44"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_hors_ligne.jpg",
+        "Mode dégradé · Mes commandes hors ligne",
+        "#reseau?st=horsligne",
+        "CL-13 · fig. 45"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_code_cache.jpg",
+        "Mode dégradé · code de retrait hors ligne",
+        "#reseau?st=cache",
+        "CL-13 · fig. 46"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_argent_grise.jpg",
+        "Mode dégradé · panier hors ligne, paiement grisé",
+        "#reseau?st=argent",
+        "CL-13 · fig. 47"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_donnees_economes.jpg",
+        "Mode dégradé · accueil en données économes",
+        "#reseau?st=eco",
+        "CL-13 · fig. 48"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_sms_repli.jpg",
+        "Mode dégradé · SMS de retrait de repli",
+        "#reseau?st=sms",
+        "CL-13 · fig. 49"
+       ]
+      },
+      {
+       "cellules": [
+        "Reseau_comptoir.jpg",
+        "Mode dégradé · hors ligne au comptoir",
+        "#reseau?st=comptoir",
+        "CL-13 · fig. 50"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages.jpg",
+        "Réglages (depuis le Compte)",
+        "#reglages",
+        "CL-13 · fig. 51"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_pidgin.jpg",
+        "Réglages · pidgin en relecture",
+        "#reglages?pcm=1",
+        "CL-13 · fig. 52"
+       ]
+      },
+      {
+       "cellules": [
+        "Reglages_tres_grand.jpg",
+        "Réglages · très grande taille de texte",
+        "#reglages?txt=tres",
+        "CL-13 · fig. 53"
+       ]
+      },
+      {
+       "cellules": [
+        "Interrupteur_abonnement.jpg",
+        "Abonnement · module fermé, ancien lien neutre",
+        "#abonnements?st=ferme",
+        "CL-14 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Interrupteur_listes.jpg",
+        "Sauvegardés · listes d’envies fermées (une seule liste)",
+        "#listes?st=ferme",
+        "CL-14 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Abonnements.jpg",
+        "Abonnements · paliers, annuel (depuis Compte)",
+        "#abonnements",
+        "CL-14 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Abonnements_mensuel.jpg",
+        "Abonnements · paliers, mensuel, « le plus choisi »",
+        "#abonnements?per=mois&choisi=1",
+        "CL-14 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_declencheur.jpg",
+        "Panier · « avec Prime, cette livraison était offerte »",
+        "#abonnements?st=declencheur",
+        "CL-14 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_souscrire_essai.jpg",
+        "Souscrire · premier mois à 1 500 F",
+        "#abonnement-souscrire",
+        "CL-14 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_souscrire_annuel.jpg",
+        "Souscrire · Prime annuel, non remboursable",
+        "#abonnement-souscrire?formule=annuel",
+        "CL-14 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_souscrire_pass7.jpg",
+        "Souscrire · Pass 7 jours",
+        "#abonnement-souscrire?formule=pass7",
+        "CL-14 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_souscrire_essai_utilise.jpg",
+        "Souscrire · essai déjà utilisé",
+        "#abonnement-souscrire?st=essai-utilise",
+        "CL-14 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_souscrire_business.jpg",
+        "Souscrire · Business, justificatif revendeur",
+        "#abonnement-souscrire?palier=business",
+        "CL-14 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_mon_abonnement.jpg",
+        "Mon abonnement · actif, économies, quotas (depuis Compte)",
+        "#mon-abonnement",
+        "CL-14 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_renouvellement.jpg",
+        "Mon abonnement · renouvellement annoncé par push",
+        "#mon-abonnement?st=renouvellement",
+        "CL-14 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_grace.jpg",
+        "Mon abonnement · prélèvement échoué, 7 jours de grâce",
+        "#mon-abonnement?st=grace",
+        "CL-14 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_resilier.jpg",
+        "Mon abonnement · feuille « Résilier Prime ? »",
+        "#abonnement-resilier",
+        "CL-14 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_resilie.jpg",
+        "Mon abonnement · résilié, actif jusqu’au terme",
+        "#mon-abonnement?st=resilie",
+        "CL-14 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_cagnotte.jpg",
+        "Cagnotte · 3 918 F en attente",
+        "#cagnotte",
+        "CL-14 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_cagnotte_creditee.jpg",
+        "Cagnotte · créditée après libération",
+        "#cagnotte?st=creditee",
+        "CL-14 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_cagnotte_annulee.jpg",
+        "Cagnotte · part annulée (colis remboursé)",
+        "#cagnotte?st=annulee",
+        "CL-14 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_parrainage.jpg",
+        "Parrainage · lien, filleul en attente",
+        "#parrainage",
+        "CL-14 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_parrainage_recompense.jpg",
+        "Parrainage · 1 mois offert",
+        "#parrainage?st=recompense",
+        "CL-14 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_parrainage_limite.jpg",
+        "Parrainage · limite de 3 par mois atteinte",
+        "#parrainage?st=limite",
+        "CL-14 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_offrir.jpg",
+        "Offrir un abonnement · page web du payeur à l’étranger",
+        "#abonnement-offrir",
+        "CL-14 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Abo_offrir_paye.jpg",
+        "Offrir un abonnement · payé par carte",
+        "#abonnement-offrir?st=paye",
+        "CL-14 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Listes.jpg",
+        "Sauvegardés · mes listes d’envies (module ouvert)",
+        "#listes",
+        "CL-14 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Listes_defaut.jpg",
+        "Sauvegardés · favoris seuls, aucune autre liste",
+        "#listes?st=defaut",
+        "CL-14 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_creer.jpg",
+        "Sauvegardés · feuille « Nouvelle liste » groupée",
+        "#liste-creer?mode=groupe",
+        "CL-14 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_anniversaire.jpg",
+        "Liste d’envies · groupée, 2 sur 4 offerts",
+        "#liste-envies?id=anniv",
+        "CL-14 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_favoris.jpg",
+        "Liste d’envies · favoris (liste par défaut)",
+        "#liste-envies?id=favoris",
+        "CL-14 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_surprise.jpg",
+        "Liste d’envies · mode surprise",
+        "#liste-envies?id=anniv&st=surprise",
+        "CL-14 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_demarrer.jpg",
+        "Liste d’envies · feuille « Démarrer la livraison maintenant »",
+        "#liste-envies?id=anniv&st=demarrer",
+        "CL-14 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_envoyer.jpg",
+        "Envoyer ma liste · avec mon adresse",
+        "#liste-envoyer",
+        "CL-14 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_envoyer_tierce.jpg",
+        "Envoyer ma liste · groupée, relais d’un proche",
+        "#liste-envoyer?id=mariage",
+        "CL-14 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_envoyer_hors_zone.jpg",
+        "Envoyer ma liste · adresse hors zone",
+        "#liste-envoyer?st=hors-zone",
+        "CL-14 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_envoyer_sans_relais.jpg",
+        "Envoyer ma liste · sans relais habituel",
+        "#liste-envoyer?st=sans-relais",
+        "CL-14 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_publique.jpg",
+        "Liste partagée · page web de celui qui offre",
+        "#liste-publique",
+        "CL-14 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_publique_expiree.jpg",
+        "Liste partagée · lien expiré",
+        "#liste-publique?st=expire",
+        "CL-14 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offrir.jpg",
+        "Offrir un article · Mobile Money",
+        "#liste-offrir",
+        "CL-14 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offrir_carte.jpg",
+        "Offrir un article · carte depuis l’étranger",
+        "#liste-offrir?moyen=carte",
+        "CL-14 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offrir_prix.jpg",
+        "Offrir un article · prix changé depuis le partage",
+        "#liste-offrir?st=prix",
+        "CL-14 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offrir_pris.jpg",
+        "Offrir un article · déjà offert par quelqu’un",
+        "#liste-offrir?st=pris",
+        "CL-14 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offert.jpg",
+        "Cadeau payé · confirmation à celui qui offre",
+        "#liste-offert",
+        "CL-14 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "Liste_offert_remis.jpg",
+        "Cadeau remis · e-mail de remerciement",
+        "#liste-offert?st=retire",
+        "CL-14 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "Flash.jpg",
+        "Ventes flash · vraie fin, vrai stock (depuis la fiche)",
+        "#ventes-flash",
+        "CL-14 · fig. 43"
+       ]
+      },
+      {
+       "cellules": [
+        "Flash_offre.jpg",
+        "Ventes flash · feuille d’une offre",
+        "#ventes-flash?offre=cartable",
+        "CL-14 · fig. 44"
+       ]
+      },
+      {
+       "cellules": [
+        "Flash_hors_zone.jpg",
+        "Ventes flash · aucune offre pour le relais",
+        "#ventes-flash?st=hors-zone",
+        "CL-14 · fig. 45"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_repondre.jpg",
+        "Assistant · réponse, code jamais écrit (depuis Aide)",
+        "#assistant",
+        "CL-14 · fig. 46"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_alternative.jpg",
+        "Assistant · produit introuvable, alternative",
+        "#assistant?st=alternative",
+        "CL-14 · fig. 47"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_humain.jpg",
+        "Assistant · passage à un conseiller",
+        "#assistant?st=humain",
+        "CL-14 · fig. 48"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_proactif.jpg",
+        "Assistant · propositions proactives",
+        "#assistant?st=proactif",
+        "CL-14 · fig. 49"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_confirmer.jpg",
+        "Assistant · confirmer une annulation proposée",
+        "#assistant-confirmer",
+        "CL-14 · fig. 50"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_confirmer_paiement.jpg",
+        "Assistant · confirmer un paiement proposé",
+        "#assistant-confirmer?action=paiement",
+        "CL-14 · fig. 51"
+       ]
+      },
+      {
+       "cellules": [
+        "IA_fait.jpg",
+        "Assistant · action faite après accord",
+        "#assistant?st=fait",
+        "CL-14 · fig. 52"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_ecoles.jpg",
+        "Rentrée · chercher l’école, liste en cours (depuis Sauvegardés)",
+        "#rentree",
+        "CL-15 · fig. 1"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_horssaison.jpg",
+        "Rentrée · hors saison",
+        "#rentree?st=hors-saison",
+        "CL-15 · fig. 2"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_papier.jpg",
+        "Rentrée · photographier la liste papier",
+        "#rentree-liste-papier",
+        "CL-15 · fig. 3"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_papier_envoyee.jpg",
+        "Rentrée · liste papier reçue",
+        "#rentree-liste-papier?st=envoyee",
+        "CL-15 · fig. 4"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_classe.jpg",
+        "Rentrée · choisir la classe",
+        "#rentree-classe",
+        "CL-15 · fig. 5"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_liste_modifiee.jpg",
+        "Rentrée · la liste, modifiée par l’école",
+        "#rentree-liste?st=modifiee",
+        "CL-15 · fig. 6"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_liste_possede.jpg",
+        "Rentrée · article déjà possédé décoché",
+        "#rentree-liste?st=possede",
+        "CL-15 · fig. 7"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_liste_equivalent.jpg",
+        "Rentrée · feuille « équivalent conforme »",
+        "#rentree-liste?st=equivalent",
+        "CL-15 · fig. 8"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_panier.jpg",
+        "Rentrée · panier de rentrée, 3 boutiques",
+        "#rentree-panier",
+        "CL-15 · fig. 9"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_suivi.jpg",
+        "Rentrée · suivi, 1 colis sur 2 arrivé",
+        "#rentree-suivi",
+        "CL-15 · fig. 10"
+       ]
+      },
+      {
+       "cellules": [
+        "Rentree_suivi_complete.jpg",
+        "Rentrée · toute la liste au relais, un seul code",
+        "#rentree-suivi?st=complete",
+        "CL-15 · fig. 11"
+       ]
+      },
+      {
+       "cellules": [
+        "Ecole.jpg",
+        "Espace école · publier les listes (lien « Tu représentes une école ? »)",
+        "#ecole",
+        "CL-15 · fig. 12"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_creer.jpg",
+        "Cotisation · créer (depuis la fiche du cadeau)",
+        "#cotisation",
+        "CL-15 · fig. 13"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_partager.jpg",
+        "Cotisation · créée, partager le lien",
+        "#cotisation-partager",
+        "CL-15 · fig. 14"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_participer.jpg",
+        "Cotisation · page web ouverte par le lien",
+        "#cotisation-participer",
+        "CL-15 · fig. 15"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_participer_carte.jpg",
+        "Cotisation · participer discrètement, par carte",
+        "#cotisation-participer?st=carte",
+        "CL-15 · fig. 16"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_suivre.jpg",
+        "Cotisation · suivre la jauge, issues à la date limite",
+        "#cotisation-suivre",
+        "CL-15 · fig. 17"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_atteinte.jpg",
+        "Cotisation · objectif atteint, commande passée",
+        "#cotisation-atteinte",
+        "CL-15 · fig. 18"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_hausse.jpg",
+        "Cotisation · objectif atteint, hausse de prix à trancher",
+        "#cotisation-atteinte?st=hausse",
+        "CL-15 · fig. 19"
+       ]
+      },
+      {
+       "cellules": [
+        "Cotisation_echue.jpg",
+        "Cotisation · date limite dépassée, remboursements",
+        "#cotisation-echue",
+        "CL-15 · fig. 20"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_offre.jpg",
+        "Mise de côté · feuille sur la fiche du produit",
+        "#cote",
+        "CL-15 · fig. 21"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_non.jpg",
+        "Mise de côté · article sous 20 000 F, non éligible",
+        "#cote?st=non",
+        "CL-15 · fig. 22"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_plan.jpg",
+        "Mise de côté · plan de versements",
+        "#cote-plan",
+        "CL-15 · fig. 23"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_suivre.jpg",
+        "Mise de côté · versement du jour",
+        "#cote-suivre",
+        "CL-15 · fig. 24"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_grace.jpg",
+        "Mise de côté · échéance manquée, délai de grâce",
+        "#cote-suivre?st=grace",
+        "CL-15 · fig. 25"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_ajour.jpg",
+        "Mise de côté · versement 2 payé, dernier à venir",
+        "#cote-suivre?st=ajour",
+        "CL-15 · fig. 26"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_versement.jpg",
+        "Mise de côté · payer le versement 2",
+        "#cote-versement",
+        "CL-15 · fig. 27"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_dernier.jpg",
+        "Mise de côté · payer le dernier versement",
+        "#cote-versement?n=3",
+        "CL-15 · fig. 28"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_fini.jpg",
+        "Mise de côté · payé en entier, commande vers le relais",
+        "#cote-fini",
+        "CL-15 · fig. 29"
+       ]
+      },
+      {
+       "cellules": [
+        "Cote_annuler.jpg",
+        "Mise de côté · feuille « Annuler », remboursement exact",
+        "#cote-annuler",
+        "CL-15 · fig. 30"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_estimer.jpg",
+        "Troc · estimer l’ancien téléphone (depuis la fiche)",
+        "#troc",
+        "CL-15 · fig. 31"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_offre.jpg",
+        "Troc · fourchette de reprise, reste estimé",
+        "#troc-offre",
+        "CL-15 · fig. 32"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_depot.jpg",
+        "Troc · code de dépôt au relais",
+        "#troc-depot",
+        "CL-15 · fig. 33"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_depose.jpg",
+        "Troc · téléphone déposé, IMEI vérifié",
+        "#troc-depot?st=depose",
+        "CL-15 · fig. 34"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_refuse.jpg",
+        "Troc · dépôt refusé, téléphone signalé volé",
+        "#troc-depot?st=refuse",
+        "CL-15 · fig. 35"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_inspection_encours.jpg",
+        "Troc · inspection en cours, deux issues",
+        "#troc-inspection?st=encours",
+        "CL-15 · fig. 36"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_inspection.jpg",
+        "Troc · valeur confirmée",
+        "#troc-inspection",
+        "CL-15 · fig. 37"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_contreoffre.jpg",
+        "Troc · feuille « contre-offre du reconditionneur »",
+        "#troc-contre-offre",
+        "CL-15 · fig. 38"
+       ]
+      },
+      {
+       "cellules": [
+        "Troc_payer.jpg",
+        "Troc · payer le téléphone neuf",
+        "#troc-payer",
+        "CL-15 · fig. 39"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_choisir.jpg",
+        "Panier famille · choisir et modifier (depuis Compte)",
+        "#famille",
+        "CL-15 · fig. 40"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_trop_lourd.jpg",
+        "Panier famille · article de plus de 5 kg refusé",
+        "#famille?st=modifie",
+        "CL-15 · fig. 41"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_destinataire.jpg",
+        "Panier famille · destinataire et relais",
+        "#famille-destinataire",
+        "CL-15 · fig. 42"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_payer.jpg",
+        "Panier famille · payer par carte",
+        "#famille-payer",
+        "CL-15 · fig. 43"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_3ds.jpg",
+        "Panier famille · 3-D Secure",
+        "#famille-payer?st=3ds",
+        "CL-15 · fig. 44"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_mensuel.jpg",
+        "Panier famille · chaque mois",
+        "#famille-mensuel",
+        "CL-15 · fig. 45"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_preavis.jpg",
+        "Panier famille · préavis, hausse signalée",
+        "#famille-mensuel?st=preavis",
+        "CL-15 · fig. 46"
+       ]
+      },
+      {
+       "cellules": [
+        "Famille_preuve.jpg",
+        "Panier famille · preuve de retrait au payeur",
+        "#famille-preuve",
+        "CL-15 · fig. 47"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_message.jpg",
+        "WhatsApp · message vocal, accord demandé (depuis Aide)",
+        "#wa",
+        "CL-15 · fig. 48"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_proposition.jpg",
+        "WhatsApp · proposition de l’IA au prix livré",
+        "#wa-proposition",
+        "CL-15 · fig. 49"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_humain.jpg",
+        "WhatsApp · doute, passage à un humain",
+        "#wa-proposition?st=humain",
+        "CL-15 · fig. 50"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_confirmer.jpg",
+        "WhatsApp · récapitulatif, « Réponds OUI »",
+        "#wa-confirmer",
+        "CL-15 · fig. 51"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_lien.jpg",
+        "WhatsApp · lien vers le paiement de base",
+        "#wa-lien",
+        "CL-15 · fig. 52"
+       ]
+      },
+      {
+       "cellules": [
+        "Wa_suite.jpg",
+        "WhatsApp · paiement reçu, code jamais sur WhatsApp",
+        "#wa-suite",
+        "CL-15 · fig. 53"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

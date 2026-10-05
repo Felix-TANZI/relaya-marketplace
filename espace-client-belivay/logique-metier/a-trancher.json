@@ -1,0 +1,289 @@
+{
+ "description": "Valeurs à décider avant la mise en production ou avant d’ouvrir un module (CL-16).",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "tableaux": [
+  {
+   "sous_titre": "Lancement : à décider avant la mise en production",
+   "colonnes": [
+    "Question",
+    "Valeur proposée (montrée par le prototype)",
+    "Qui tranche",
+    "Bloque",
+    "Règles"
+   ],
+   "lignes": [
+    {
+     "question": "Nombre minimal de produits d’une rangée d’accueil (N)\nACC-RANGEE-MIN",
+     "valeur_proposee_montree_par_le_prototype": "3 produits : une rangée sous 3 produits n’est pas affichée.",
+     "qui_tranche": "Porteur du produit, sur les données du catalogue au lancement",
+     "bloque": "Rangées de l’accueil",
+     "regles": "CL-04 CAC-19 · CAC-20"
+    },
+    {
+     "question": "Seuil de biométrie avant d’afficher le code de retrait\nCODE-BIO",
+     "valeur_proposee_montree_par_le_prototype": "50 000 F (BLV-52107, 196 780 F, demande le déverrouillage du téléphone). « Proposé » au registre, rangé parmi les valeurs à trancher en 19.4.",
+     "qui_tranche": "Porteur du produit, avec la sécurité",
+     "bloque": "Code de retrait",
+     "regles": "CL-09 CCD-04"
+    },
+    {
+     "question": "Garde : prorata ou jour entier\nGARDE-PRORATA",
+     "valeur_proposee_montree_par_le_prototype": "Jour entier (BLV-52018 : 400 F le jour 4). « Proposé » au registre, à trancher en 19.4.",
+     "qui_tranche": "Porteur du produit, avec la finance et le réseau de relais",
+     "bloque": "Calcul de la garde",
+     "regles": "CL-10 CGA-05"
+    },
+    {
+     "question": "Seuil de panier du mode économique des SMS\nSMS-ECO",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur montrée ; le prototype suppose BLV-52018 au-dessus du seuil (le rappel S1 part en SMS).",
+     "qui_tranche": "Porteur du produit, avec la finance (budget SMS)",
+     "bloque": "Envoi des SMS",
+     "regles": "CL-10 CSM-14"
+    },
+    {
+     "question": "Fournisseur SMS secondaire\nSMS-SECOURS",
+     "valeur_proposee_montree_par_le_prototype": "À désigner (principal : Africa’s Talking).",
+     "qui_tranche": "Direction technique",
+     "bloque": "Replis des messages",
+     "regles": "CL-10 CSM-20 · CSM-31"
+    },
+    {
+     "question": "Seuil de dissociation d’une commande (messages d’arrivée)",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur montrée ; un colis en retard est annoncé par le message d’incident C4.",
+     "qui_tranche": "Porteur du produit, avec les opérations",
+     "bloque": "Messages d’arrivée",
+     "regles": "CL-10 CSM-08\nCL-09 CSU-03"
+    },
+    {
+     "question": "Supplément de livraison des colis M et L\nLIV-SUPPL-M / L",
+     "valeur_proposee_montree_par_le_prototype": "+ 200 F colis M, + 300 F colis L, sous le prix livré dès la carte ; jamais offerts.",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Cartes, fiche, panier",
+     "regles": "CL-01 CDS-16\nCL-04 CLS-10\nCL-06 CFP-24\nCL-05 CRE-24\nCL-07 CFR-18\nCL-02 CAL-09"
+    },
+    {
+     "question": "Supplément de livraison d’un colis XL (absent du registre)\nLIV-SUPPL-XL",
+     "valeur_proposee_montree_par_le_prototype": "1 500 F à domicile (téléviseur 189 000 F → 190 500 F livré chez soi).",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Fiche et panier d’un XL",
+     "regles": "CL-06 CFP-29\nCL-07 CFR-19\nCL-02 CAL-09"
+    },
+    {
+     "question": "Frais de remise à domicile d’un panier de plusieurs boutiques",
+     "valeur_proposee_montree_par_le_prototype": "Non montré : le prototype ne livre à domicile qu’un seul colis.",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Panier à domicile",
+     "regles": "CL-07 CFR-20"
+    },
+    {
+     "question": "Code de vérification du numéro : validité, essais, renvois\nOTP-DUREE · OTP-ESSAIS · OTP-RENVOI",
+     "valeur_proposee_montree_par_le_prototype": "10 minutes ; 5 codes faux puis 15 minutes d’attente ; renvoi après 60 s, 3 envois par heure.",
+     "qui_tranche": "Porteur du produit, avec la sécurité",
+     "bloque": "Vérification du numéro",
+     "regles": "CL-03 CIN-33\nCL-02 CAP-14"
+    },
+    {
+     "question": "Seuils IFA : litiges perdus (N_abs), remboursements non instruits (N_auto), plafonds de fréquence du palier Élevé\nIFA-NABS · IFA-NAUTO",
+     "valeur_proposee_montree_par_le_prototype": "À calibrer sur les données réelles : les compteurs tournent dès le lancement, sans décision automatique ; aucune valeur à l’écran (l’IFA n’est jamais montré).",
+     "qui_tranche": "Porteur du produit, avec l’équipe risque (console)",
+     "bloque": "Litiges",
+     "regles": "CL-11 CIF-11 · CIF-16 · CIF-17 · CIF-27"
+    },
+    {
+     "question": "Plafond d’annulations après confirmation avant « À instruire »\nANN-PLAFOND",
+     "valeur_proposee_montree_par_le_prototype": "Rien n’est montré au client ; au-delà du plafond, la console propose le palier.",
+     "qui_tranche": "Porteur du produit, avec l’équipe risque",
+     "bloque": "Annulation",
+     "regles": "CL-12 CAN-18"
+    },
+    {
+     "question": "Seuil de remboursement sans retour physique (3 000 à 5 000 F)\nRET-SANS-RETOUR",
+     "valeur_proposee_montree_par_le_prototype": "5 000 F dans CL-11 (huile de coco de 4 800 F remboursée sans retour) ; l’exemple de la feuille « conditions 2.0 » (CL-03) écrit 3 000 F : à aligner sur la valeur retenue.",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Retour",
+     "regles": "CL-11 CRO-24"
+    },
+    {
+     "question": "Délai du vendeur pour renvoyer un remplacement\nRET-REMPL-DELAI",
+     "valeur_proposee_montree_par_le_prototype": "72 h ouvrées, dimanche non compté (valeur du vendeur et du relais) : « avant le mer. 30 sept. à 11 h 20 » pour LIT-3042.",
+     "qui_tranche": "Porteur du produit, avec les vendeurs",
+     "bloque": "Remplacement",
+     "regles": "CL-11 CRP-02 · CRP-03"
+    },
+    {
+     "question": "Score de zone, seuils d’alerte, seuils de fraude",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur côté client (console seulement).",
+     "qui_tranche": "Porteur du produit, avec les opérations et l’équipe risque",
+     "bloque": "Console",
+     "regles": "CL-16 CCN-11"
+    },
+    {
+     "question": "Fenêtre de notation\nAVIS-FENETRE",
+     "valeur_proposee_montree_par_le_prototype": "7 jours après le retrait (valeur du relais, égale à la fenêtre de retour) : la notation de BLV-51388 (retirée le ven. 28 août) était ouverte jusqu’au ven. 4 sept.",
+     "qui_tranche": "Porteur du produit",
+     "bloque": "Avis",
+     "regles": "CL-13 CAV-10\nCL-09 CCM-17\nCL-06 CLA-04"
+    },
+    {
+     "question": "Seuil de note basse (proposition d’un litige)\nAVIS-BAS",
+     "valeur_proposee_montree_par_le_prototype": "2 étoiles. « Proposé » au registre, rangé parmi les valeurs à trancher en 19.4.",
+     "qui_tranche": "Porteur du produit",
+     "bloque": "Avis",
+     "regles": "CL-13 CAV-13"
+    },
+    {
+     "question": "Prestataire de paiement par carte\nPAY-CARTE-PSP",
+     "valeur_proposee_montree_par_le_prototype": "Flutterwave ou CinetPay ; le prototype ne nomme pas de prestataire (« notre prestataire »).",
+     "qui_tranche": "Direction, avec la finance et la direction technique",
+     "bloque": "Paiement depuis l’étranger",
+     "regles": "CL-08 CPY-47\nCL-12 CET-10"
+    },
+    {
+     "question": "Rôles de la double validation de l’escrow",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur côté client (console).",
+     "qui_tranche": "Direction, avec la finance",
+     "bloque": "Console",
+     "regles": "CL-16 CCN-19"
+    },
+    {
+     "question": "Liste des produits interdits",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur côté client (catalogue vendeur).",
+     "qui_tranche": "Direction, avec le juriste",
+     "bloque": "Catalogue",
+     "regles": "CL-16 CTV-31"
+    },
+    {
+     "question": "Numéro WhatsApp du support\nSUP-WA",
+     "valeur_proposee_montree_par_le_prototype": "« À publier » : l’aide propose WhatsApp pour une question, jamais pour une commande.",
+     "qui_tranche": "Direction (support)",
+     "bloque": "Aide",
+     "regles": "CL-13 CSV-03"
+    },
+    {
+     "question": "Délai de versement d’un remboursement Mobile Money",
+     "valeur_proposee_montree_par_le_prototype": "« sous 1 h » (remboursement automatique LIT-2987 de 3 000 F).",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Remboursements",
+     "regles": "CL-11 CLT-28"
+    },
+    {
+     "question": "Délai ferme de la décision d’un litige en examen",
+     "valeur_proposee_montree_par_le_prototype": "Au plus tard 24 h après l’échéance du vendeur : sam. 26 sept. à 17 h 15 pour LIT-3042.",
+     "qui_tranche": "Porteur du produit, avec le support",
+     "bloque": "Suivi du litige",
+     "regles": "CL-11 CLT-39"
+    },
+    {
+     "question": "Délai de réponse du client à un arrangement",
+     "valeur_proposee_montree_par_le_prototype": "Aucun délai affiché (5 jours chez le relais et le vendeur, avec clôture en faveur du vendeur).",
+     "qui_tranche": "Porteur du produit",
+     "bloque": "Litige",
+     "regles": "CL-11 CLT-51"
+    },
+    {
+     "question": "Frais de livraison dans le montant d’un litige",
+     "valeur_proposee_montree_par_le_prototype": "Le prototype retient et rembourse le montant des articles (15 800 F pour LIT-3042).",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Litige",
+     "regles": "CL-11 CLT-60"
+    },
+    {
+     "question": "Calcul d’un remboursement partiel",
+     "valeur_proposee_montree_par_le_prototype": "LIT-2987 : 3 000 F sur une chemise de 21 000 F ; le client ne saisit jamais de montant.",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Litige",
+     "regles": "CL-11 CLT-61"
+    },
+    {
+     "question": "Prix du trajet retour",
+     "valeur_proposee_montree_par_le_prototype": "500 F (valeur du relais et du vendeur), payé par la partie en tort.",
+     "qui_tranche": "Porteur du produit, avec les entreprises de livraison",
+     "bloque": "Retour",
+     "regles": "CL-11 CRO-22"
+    },
+    {
+     "question": "Défaut caché découvert entre 48 h et 7 jours après le retrait",
+     "valeur_proposee_montree_par_le_prototype": "Le prototype l’oriente vers l’assistant de litige ; retour ou vice caché : non tranché.",
+     "qui_tranche": "Porteur du produit, avec le juriste",
+     "bloque": "Retour",
+     "regles": "CL-11 CRO-25"
+    },
+    {
+     "question": "Commande « Validée » non retirée : retenue supérieure à ce qui a été payé",
+     "valeur_proposee_montree_par_le_prototype": "Non montré (BLV-51940 : 900 F payés ; la retenue garde + 500 F pourrait dépasser).",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Garde et renvoi",
+     "regles": "CL-10 CGA-23"
+    }
+   ]
+  },
+  {
+   "sous_titre": "Après le lancement : à décider avant d’ouvrir le module",
+   "colonnes": [
+    "Question",
+    "Valeur proposée (montrée par le prototype)",
+    "Qui tranche",
+    "Bloque",
+    "Règles"
+   ],
+   "lignes": [
+    {
+     "question": "Durée par défaut d’un lien de liste d’envies (7, 30 ou 90 jours)\nLST-VALIDITE",
+     "valeur_proposee_montree_par_le_prototype": "30 jours.",
+     "qui_tranche": "Porteur du produit",
+     "bloque": "Liste d’envies (FF-LISTE-ENVIES)",
+     "regles": "CL-14 CLE-24 · CFS-07"
+    },
+    {
+     "question": "Budget de croissance mensuel des ventes flash\nFLASH-BUDGET",
+     "valeur_proposee_montree_par_le_prototype": "Aucune valeur montrée.",
+     "qui_tranche": "Direction, avec la finance",
+     "bloque": "Ventes flash (FF-FLASH)",
+     "regles": "CL-14 CFS-07 · CVF-06"
+    },
+    {
+     "question": "Coût IA maximal par commande (assistant)\nIA-COUT-MAX",
+     "valeur_proposee_montree_par_le_prototype": "À fixer après 60 jours de mesure ; aucun plafond appliqué d’ici là.",
+     "qui_tranche": "Direction, avec la direction technique",
+     "bloque": "Assistant (FF-IA)",
+     "regles": "CL-14 CIA-07 · CIA-12 · CFS-07"
+    },
+    {
+     "question": "Frais de service d’une cotisation\nCOT-FRAIS",
+     "valeur_proposee_montree_par_le_prototype": "2 % (« à confirmer » avec les vrais frais de paiement).",
+     "qui_tranche": "Porteur du produit, avec la finance",
+     "bloque": "Cotisation (EX-02)",
+     "regles": "CL-15 CCZ-04 · CRV-06"
+    },
+    {
+     "question": "Forfait d’annulation d’une mise de côté\nMDC-FORFAIT",
+     "valeur_proposee_montree_par_le_prototype": "5 % du prix, 5 000 F au plus, reversé au vendeur (« à valider par un juriste »).",
+     "qui_tranche": "Juriste, puis porteur du produit",
+     "bloque": "Mise de côté (EX-03)",
+     "regles": "CL-15 CMD-13 · CRV-05"
+    },
+    {
+     "question": "Source de la liste des téléphones volés\nTRC-IMEI-SOURCE",
+     "valeur_proposee_montree_par_le_prototype": "À identifier ; le prototype montre un dépôt refusé « téléphone signalé volé ».",
+     "qui_tranche": "Direction, avec le juriste",
+     "bloque": "Troc (EX-04)",
+     "regles": "CL-15 CRV-07"
+    },
+    {
+     "question": "Reconditionneur partenaire\nTRC-PARTENAIRE",
+     "valeur_proposee_montree_par_le_prototype": "À contractualiser.",
+     "qui_tranche": "Direction",
+     "bloque": "Troc (EX-04)",
+     "regles": "CL-15 CRV-08"
+    },
+    {
+     "question": "Coût WhatsApp et IA par commande ; conservation des vocaux\nWAP-COUT · WAP-VOCAL-CONSERV",
+     "valeur_proposee_montree_par_le_prototype": "À mesurer ; durée de conservation des vocaux à fixer (le prototype l’annonce au premier vocal).",
+     "qui_tranche": "Direction, avec le juriste (données personnelles)",
+     "bloque": "WhatsApp IA (EX-06)",
+     "regles": "CL-15 CRV-09 · CWA-05"
+    }
+   ]
+  }
+ ]
+}

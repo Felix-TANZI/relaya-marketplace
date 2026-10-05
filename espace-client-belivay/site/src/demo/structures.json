@@ -1,0 +1,183 @@
+[
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "panier"
+  ],
+  "etats": [
+   "panier",
+   "panier?st=glisser",
+   "panier?st=partage",
+   "panier?prix=hausse",
+   "panier?st=horsligne",
+   "panier?feuille=1&st=invite",
+   "panier?st=retire"
+  ],
+  "libelle": "Remise au Relais Mvog-Ada",
+  "colis": 3,
+  "valeur": "400 F",
+  "motif": "DP-18 : une remise par colis ; panier de référence et variantes à 3 colis (frais.calculer)"
+ },
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "panier"
+  ],
+  "etats": [
+   "panier?st=conseil",
+   "panier?suppr=camon30"
+  ],
+  "libelle": "Remise au Relais Mvog-Ada",
+  "colis": 2,
+  "valeur": "400 F",
+  "motif": "DP-18 : 2 colis (frais.calculer)"
+ },
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "panier-retrait",
+   "connexion",
+   "paiement-moyen",
+   "xp-pay"
+  ],
+  "libelle": "Remise au Relais Mvog-Ada",
+  "colis": 3,
+  "valeur": "400 F",
+  "motif": "DP-18 : panier de référence, 3 colis (frais.calculer)"
+ },
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "commande"
+  ],
+  "etats": [
+   "commande",
+   "commande?ref=BLV-52018"
+  ],
+  "libelle": "Remise au relais",
+  "colis": 2,
+  "valeur": "400 F",
+  "motif": "DP-18 : BLV-52018, 2 colis (frais.calculer : 34 180 F)"
+ },
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "commande"
+  ],
+  "etats": [
+   "commande?ref=BLV-52107"
+  ],
+  "libelle": "Remise au relais",
+  "colis": 3,
+  "valeur": "400 F",
+  "motif": "DP-18 : BLV-52107, 3 colis (frais.calculer : 197 580 F)"
+ },
+ {
+  "type": "remisesParColis",
+  "routes": [
+   "rentree-panier"
+  ],
+  "libelle": "Remise au relais",
+  "colis": 2,
+  "valeur": "400 F",
+  "motif": "DP-18 : 2 boutiques de Mvog-Ada, 2 colis"
+ },
+ {
+  "type": "supprimer",
+  "routes": [
+   "liste",
+   "selection",
+   "recherche-zero",
+   "recherche-resultats",
+   "assistant",
+   "liste-envoyer",
+   "rentree",
+   "rentree-liste",
+   "fiche"
+  ],
+  "texte": "+ 300 F colis L",
+  "motif": "DP-07 : aucun supplément de classe M ou L"
+ },
+ {
+  "type": "supprimer",
+  "routes": [
+   "liste",
+   "selection",
+   "recherche-resultats",
+   "fiche"
+  ],
+  "texte": "+ 200 F colis M",
+  "motif": "DP-07 : aucun supplément de classe M ou L"
+ },
+ {
+  "type": "supprimerLigne",
+  "routes": [
+   "fiche"
+  ],
+  "texte": "Supplément colis L",
+  "motif": "DP-07 : aucun supplément de classe L (la remise L de 600 F est dans le retrait à 1 100 F)"
+ },
+ {
+  "type": "nonOffert",
+  "routes": [
+   "recherche-resultats"
+  ],
+  "dans": "Téléviseur LED 32",
+  "texte": "+ 200 F de retrait",
+  "en": "+ 200 F pickup fee",
+  "motif": "DP-25 : colis L, remise 600 F ; l'offert couvre 900 F, il reste 200 F (catalogue.prix_livre)",
+  "dansEn": "32″ LED TV"
+ },
+ {
+  "type": "cellules",
+  "routes": [
+   "legal-doc"
+  ],
+  "dans": "Jours 2–3",
+  "cellules": [
+   [
+    "Jour 1",
+    "Gratuit"
+   ],
+   [
+    "Jours 2–4",
+    "100 F"
+   ],
+   [
+    "Jour 5",
+    "200 F"
+   ],
+   [
+    "Jour 6",
+    "500 F"
+   ],
+   [
+    "Jour 7",
+    "1 000 F"
+   ]
+  ],
+  "en": [
+   [
+    "Day 1",
+    "Free"
+   ],
+   [
+    "Days 2–4",
+    "100 F"
+   ],
+   [
+    "Day 5",
+    "200 F"
+   ],
+   [
+    "Day 6",
+    "500 F"
+   ],
+   [
+    "Day 7",
+    "1 000 F"
+   ]
+  ],
+  "motif": "DP-08 : grille 0, 100, 100, 100, 200, 500, 1 000 F"
+ }
+]

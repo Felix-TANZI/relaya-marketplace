@@ -1,0 +1,13 @@
+{
+ "routes": [
+  "panier",
+  "panier-retrait",
+  "sauvegardes"
+ ],
+ "exclus": {},
+ "repris": {
+  "sauvegardes": "DP-54 : devenu « Favoris », repris pour l'usage réel (données, alertes, tri, filtres, panier, annulation).",
+  "panier": "DP-54 : repris pour l'usage réel (données, quantités, frais calculés, mode de retrait, comptoir, favoris).",
+  "panier-retrait": "DP-54 : enrichi pour le client (en-tête d'origine gardé, contenu complété : marque et distance du relais calculées pour chaque produit)."
+ }
+}

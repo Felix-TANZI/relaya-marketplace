@@ -1,0 +1,3408 @@
+{
+ "document": "CL-03",
+ "source": "04_Pages_HTML/CL-03_Premier_lancement_Inscription_Premiere_commande.html",
+ "sections": [
+  {
+   "section": "Parcours « De la première ouverture à la première commande »",
+   "tableaux": [
+    {
+     "sous_titre": "Le parcours, écran par écran",
+     "colonnes": [
+      "#",
+      "Écran (route)",
+      "Ce qui se passe",
+      "Règle qui décide"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "1",
+        "#bienvenue",
+        "Promesse, trois repères, langue (français, English, pidgin), « Continuer ». Pidgin : ?langue=pcm suit les trois écrans.",
+        "CIN-01 à CIN-09"
+       ]
+      },
+      {
+       "cellules": [
+        "2",
+        "#interets",
+        "Catégories à toucher ou « Passer ».",
+        "CIN-10, CIN-11"
+       ]
+      },
+      {
+       "cellules": [
+        "3",
+        "#connexion?lancement=1",
+        "Google (feuille du compte du téléphone : le compte de Carine → ?st=existant, « Utiliser un autre compte » → #accueil?profil=nouveau), e-mail, ou « Découvrir sans compte » (→ #accueil?profil=visiteur). Sans paramètre, #connexion est la connexion ouverte depuis l’application (retour à l’accueil, sans barre d’étapes).",
+        "CIN-13 à CIN-20, CCG-06"
+       ]
+      },
+      {
+       "cellules": [
+        "4",
+        "#accueil … #panier",
+        "Le visiteur navigue et remplit son panier (écrans CL-04 à CL-07).",
+        "CIN-14"
+       ]
+      },
+      {
+       "cellules": [
+        "5",
+        "#connexion?st=panier",
+        "Au clic sur « Se connecter pour payer » du panier d’un visiteur (#panier?st=invite, CL-07), la connexion est demandée ; le panier est gardé.",
+        "CIN-14, CIN-18"
+       ]
+      },
+      {
+       "cellules": [
+        "6",
+        "#numero?from=panier → ?st=code → ?st=ok",
+        "Numéro vérifié par code : le droit de commander s’ouvre.",
+        "CIN-29 à CIN-38"
+       ]
+      },
+      {
+       "cellules": [
+        "7",
+        "#premiere-commande",
+        "Relais habituel (ou adresse) et numéro Mobile Money prérempli ; « Payer 272 579 F ». Aussi depuis le panier d’un compte vérifié sans commande (#panier?premiere=1, CL-07).",
+        "CPR-01 à CPR-21"
+       ]
+      },
+      {
+       "cellules": [
+        "7a",
+        "#relais-choix?st=premiere · #adresse",
+        "Autre relais, relais hors zone, aucun relais dans la zone, position refusée ; adresse par repères.",
+        "CPR-02 à CPR-13, CPR-22 à CPR-25"
+       ]
+      },
+      {
+       "cellules": [
+        "8",
+        "#paiement-attente?premiere=1 → #confirmee?premiere=1",
+        "Paiement (CL-08) de la première commande, BLV-52131. Le reçu ne contient aucune autre action.",
+        "Chapitre 8"
+       ]
+      },
+      {
+       "cellules": [
+        "9",
+        "#notifs-proposition",
+        "« Suivre ma commande » sur le reçu de la première commande : la feuille s’ouvre sur le suivi, une seule fois ; « Plus tard » → repli SMS (?st=sms) ; la suite mène à Mes commandes.",
+        "CPR-26 à CPR-31"
+       ]
+      },
+      {
+       "cellules": [
+        "—",
+        "#cgu",
+        "À la première ouverture après une nouvelle version majeure des conditions ; aussi depuis la carte « Version 2.0 dès le jeudi 1er octobre » de « Nos conditions en bref ».",
+        "CCG-01 à CCG-10"
+       ]
+      },
+      {
+       "cellules": [
+        "—",
+        "#numero-changer",
+        "Depuis le compte (crayon du profil, CL-13) ou le réglage des notifications (CL-10) : changement de numéro sécurisé ; retour au compte.",
+        "CIN-39 à CIN-46"
+       ]
+      },
+      {
+       "cellules": [
+        "—",
+        "#numero (sans paramètre)",
+        "Depuis le compte ou le réglage des notifications quand le numéro n’est pas vérifié (CL-13, CL-10) : même écran, retour au compte, « Revenir à mon compte » une fois vérifié.",
+        "CIN-29 à CIN-36"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Routes et paramètres d’état du prototype",
+     "colonnes": [
+      "Route",
+      "Paramètres d’état",
+      "Ce qu’ils ouvrent"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "bienvenue",
+        "— · langue=pcm",
+        "Promesse en français (ou en anglais avec la bascule EN) · rendu pidgin"
+       ]
+      },
+      {
+       "cellules": [
+        "interets",
+        "— · st=choix · langue=pcm",
+        "Rien de touché · trois catégories touchées · rendu pidgin"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion",
+        "lancement=1 · — · st=google · st=existant · st=panier · langue=pcm",
+        "Écran 3 du premier lancement · connexion depuis l’application · compte Google du téléphone · e-mail déjà inscrit · connexion demandée au paiement · rendu pidgin (lancement=1 suit les feuilles Google)"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion-email",
+        "— · st=inscription · st=erreur · st=existe · from=panier",
+        "Se connecter · créer un compte · identifiants faux · adresse déjà inscrite · retour vers le numéro"
+       ]
+      },
+      {
+       "cellules": [
+        "mdp-oublie",
+        "— · st=envoye",
+        "Saisie de l’e-mail · lien envoyé"
+       ]
+      },
+      {
+       "cellules": [
+        "numero",
+        "from=panier · — · st=code · st=faux · st=bloque · st=utilise · st=ok",
+        "Au clic sur payer (première commande) · depuis le compte « nouveau » ou le réglage des notifications · code · code faux · trop d’essais · numéro déjà relié · vérifié"
+       ]
+      },
+      {
+       "cellules": [
+        "numero-changer",
+        "etape=1 à 4",
+        "Code sur l’ancien · nouveau numéro · code sur le nouveau · terminé"
+       ]
+      },
+      {
+       "cellules": [
+        "relais-choix",
+        "— · sel=<zone> · st=premiere · st=hors-zone · st=sans-relais · st=position · from=compte|commandes",
+        "Relais habituel · autre relais choisi · première commande · hors zone servie · aucun relais ouvert · position refusée · retour vers le compte ou Mes commandes (sinon l’accueil)"
+       ]
+      },
+      {
+       "cellules": [
+        "premiere-commande",
+        "— · st=domicile · st=paiement (mode=domicile)",
+        "Au relais · à domicile · feuille « Avec quel numéro payer ? »"
+       ]
+      },
+      {
+       "cellules": [
+        "adresse",
+        "— · st=vide · st=enregistree · st=hors-zone",
+        "Adresse posée sur la carte · vide · enregistrée · quartier hors zone"
+       ]
+      },
+      {
+       "cellules": [
+        "notifs-proposition",
+        "— · st=sms",
+        "Proposition sur le suivi de la première commande · « Plus tard » ou autorisation refusée (repli SMS)"
+       ]
+      },
+      {
+       "cellules": [
+        "cgu",
+        "— · st=inscription",
+        "Nouvelle version majeure · conditions en bref (inscription)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Routes et paramètres d’état du prototype",
+     "colonnes": [
+      "Valeur",
+      "Où",
+      "Pourquoi"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Numéros tapés : 6 77 58 32 41 (vérifié) et 6 55 21 47 08 (nouveau)",
+        "Saisie du numéro, changement de numéro, autre numéro de paiement",
+        "Le jeu d’essai ne donne que les numéros masqués (6 77 ·· ·· 41, 6 55 ·· ·· 08) ; un champ montre ce que l’on tape. Partout ailleurs, le numéro reste masqué au milieu."
+       ]
+      },
+      {
+       "cellules": [
+        "Code SMS 503917, code faux 503971",
+        "Numéro, changement de numéro",
+        "Exemple de code à 6 chiffres."
+       ]
+      },
+      {
+       "cellules": [
+        "10 minutes · 5 essais puis 15 minutes · renvoi après 60 s (« 0:42 » affiché) · blocage jusqu’à 10 h 30",
+        "Numéro",
+        "Valeurs proposées des paramètres « à trancher » de 3.4 ; 10 h 30 = 10 h 15 + 15 min."
+       ]
+      },
+      {
+       "cellules": [
+        "Lien de mot de passe : 30 minutes ; mots de passe faux : 5 essais puis 15 minutes",
+        "E-mail, mot de passe oublié",
+        "La spec se tait ; valeurs recommandées."
+       ]
+      },
+      {
+       "cellules": [
+        "Gérants : M. Abena (Essos), Mme Fouda (Mvan), Mme Eyenga (Melen), M. Nkodo (Bastos), M. Onana (Soa)",
+        "Relais",
+        "3.4 exige le gérant pour chaque relais ; seul Mme Ngo Bassong est dans le jeu d’essai."
+       ]
+      },
+      {
+       "cellules": [
+        "Trajets : 6 min à pied (Mvog-Ada), 9 min (Essos), 16 min (Mvan), 18 min (Melen), 20 min (Bastos) en taxi",
+        "Relais",
+        "3.4 exige le temps de trajet ; distances déjà dans D.relays."
+       ]
+      },
+      {
+       "cellules": [
+        "Relais Biyem-Assi « En configuration » ; depuis Biyem-Assi : Mvan 6,3 km · 22 min, Mvog-Ada 7,4 km · 25 min",
+        "Relais sans relais dans la zone",
+        "Cas d’erreur 3.5 « aucun relais ouvert dans la zone »."
+       ]
+      },
+      {
+       "cellules": [
+        "Soa hors des 12 zones : Relais Soa 1,1 km · 4 min · ouvert jusqu’à 18 h · retrait samedi 26 sept. ; Relais Essos 11,4 km · 28 min",
+        "Relais et adresse hors zone",
+        "Liaison 3.4 « hors zone, le client est prévenu dès le choix du relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "Conditions : version 1.0 du 1er août 2026 (celle des pages légales de CL-13), acceptée par Carine le 2 août ; version 2.0 publiée le jeudi 24 septembre 2026, en vigueur le jeudi 1er octobre",
+        "Conditions",
+        "15.3 : version horodatée et nouvelle version majeure."
+       ]
+      },
+      {
+       "cellules": [
+        "Retrait de la première commande : « retrait dès aujourd’hui 17 h »",
+        "Première commande, suivi sous la feuille des notifications",
+        "Même heure que sous le bouton du panier (CL-07) : la boutique C est prête sous 6 h."
+       ]
+      },
+      {
+       "cellules": [
+        "Centres d’intérêt de Carine : Téléphones & tablettes, Mode femme, Beauté & santé",
+        "Centres d’intérêt",
+        "État « catégories touchées »."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Où vit chaque écran, et ce qui a été simplifié",
+   "tableaux": [
+    {
+     "sous_titre": "Où vit chaque écran : le geste qui y mène",
+     "colonnes": [
+      "Écran (état)",
+      "On y arrive par (geste du client)",
+      "Retour"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "bienvenue",
+        "Première ouverture de l’application ; rien d’autre n’y mène.",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "interets",
+        "« Continuer » de l’écran 1.",
+        "Écran 1"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion?lancement=1",
+        "« Continuer » ou « Passer » de l’écran 2. Sans paramètre : « Déjà un compte ? Se connecter » de l’écran 1, l’encart « Tu navigues sans compte » de l’accueil d’un visiteur (CL-04).",
+        "Écran 2 (sans paramètre : accueil)"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion?st=google · st=existant",
+        "Bouton « Continuer avec Google » → feuille du compte Google ; toucher le compte de Carine, déjà inscrit par e-mail → « Bon retour ».",
+        "Fermer la feuille"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion?st=panier",
+        "« Se connecter pour payer » du panier d’un visiteur (CL-07) ; « Me connecter à ce compte » d’un numéro déjà relié.",
+        "Panier"
+       ]
+      },
+      {
+       "cellules": [
+        "connexion-email (st=inscription, existe, erreur)",
+        "« Continuer avec un e-mail » ; onglet « Créer un compte » ; « Créer mon compte » avec une adresse déjà inscrite → existe ; erreur : réponse du serveur à « Se connecter ».",
+        "Connexion"
+       ]
+      },
+      {
+       "cellules": [
+        "mdp-oublie",
+        "« Mot de passe oublié ? » de la connexion par e-mail.",
+        "Connexion par e-mail"
+       ]
+      },
+      {
+       "cellules": [
+        "numero?from=panier",
+        "Google ou e-mail depuis la connexion au paiement. Sans paramètre : « Vérifier mon numéro » du compte « nouveau » (CL-13) ou du réglage des notifications (CL-10). faux, bloque : dans le prototype, toucher les six cases simule la réponse du serveur ; utilise : réponse du serveur à l’envoi du code.",
+        "Panier (sans paramètre : compte)"
+       ]
+      },
+      {
+       "cellules": [
+        "numero-changer",
+        "Crayon du profil dans le Compte (CL-13) ; « Changer de numéro » du réglage des notifications (CL-10).",
+        "Compte"
+       ]
+      },
+      {
+       "cellules": [
+        "relais-choix (sel)",
+        "Puce « Retrait à … » de l’en-tête, « Changer » du relais dans le Compte ou Mes commandes, le Menu ; toucher un autre relais → sel.",
+        "Écran d’origine (from=compte|commandes, sinon l’accueil)"
+       ]
+      },
+      {
+       "cellules": [
+        "relais-choix?st=premiere · hors-zone · sans-relais · position",
+        "« Changer » du relais de la première commande ; les trois autres états dépendent de la position du client (hors zone, zone sans relais ouvert, position refusée) ; « Choisir un relais » d’une adresse hors zone.",
+        "Première commande"
+       ]
+      },
+      {
+       "cellules": [
+        "premiere-commande",
+        "« Continuer » du numéro vérifié ; « Passer commande » du panier d’un compte vérifié sans commande (#panier?premiere=1, CL-07).",
+        "Panier"
+       ]
+      },
+      {
+       "cellules": [
+        "adresse (vide, enregistree, hors-zone)",
+        "« Modifier » de l’adresse à domicile de la première commande ; « Me faire livrer à domicile » quand aucun relais n’est ouvert dans la zone → vide.",
+        "Première commande à domicile"
+       ]
+      },
+      {
+       "cellules": [
+        "notifs-proposition (sms)",
+        "« Suivre ma commande » du reçu de la première commande (#confirmee?premiere=1, CL-08) ; « Plus tard » → sms.",
+        "Mes commandes"
+       ]
+      },
+      {
+       "cellules": [
+        "cgu · cgu?st=inscription",
+        "Ouverture de l’application après une nouvelle version majeure ; carte « Version 2.0 » de « Nos conditions en bref » · « Les lire en bref » sous les boutons de connexion.",
+        "Accueil · connexion"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Simplifié à la refonte du 26 septembre",
+     "colonnes": [
+      "Écran",
+      "Retiré, réuni ou replié",
+      "Pourquoi"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Connexion",
+        "L’encadré du numéro et la ligne grise « Adresse, relais et moyen de paiement… » réunis en un encadré : « Numéro, relais et moyen de paiement : demandés à ta première commande, pas maintenant. » ; l’aide sous « Découvrir sans compte » réduite à une ligne.",
+        "Pas deux encadrés qui disent la même chose."
+       ]
+      },
+      {
+       "cellules": [
+        "Mot de passe oublié · envoyé",
+        "Ligne « Tu te connectes avec Google ? … » retirée.",
+        "Un client Google n’arrive pas sur cet écran."
+       ]
+      },
+      {
+       "cellules": [
+        "Vérifier ton numéro",
+        "« Il sert à » passe sous le bouton ; l’état « Vérifié » ne répète plus les trois usages ; l’état « code faux » a un seul bouton, « Recevoir un nouveau code ».",
+        "L’action d’abord, une seule action principale."
+       ]
+      },
+      {
+       "cellules": [
+        "« Mon numéro » (numero?st=compte)",
+        "Écran retiré.",
+        "Il doublait le Compte : numéro vérifié, crayon « Changer de numéro », connexion Google et « Se déconnecter » y sont déjà (CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Mon relais",
+        "Lien « Afficher les relais plus loin » retiré ; photo de la façade réduite (92 px au lieu de 120).",
+        "Les quatre relais ouverts sont déjà listés ; la photo, demandée par le point relais (CPR-13), reste, plus petite."
+       ]
+      },
+      {
+       "cellules": [
+        "Proposition des notifications",
+        "Bouton « WhatsApp · bientôt » retiré ; le canal SMS est dit dans la phrase d’en-tête ; la ligne du cadenas retirée (le cadenas et « non désactivables » le disent).",
+        "Rien d’après le lancement sur un écran de lancement ; pas de WhatsApp au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Tailles",
+        "Bouton Google 46 px (au lieu de 52), bouton e-mail 44 px, titre de la promesse 18 px, cercles d’état 72 px, marges de 20 px au plus.",
+        "Densité commune du 26 sept."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écrans « Premier lancement »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 1",
+        "Premier lancement · écran 1 sur 3, la promesse",
+        "Écran 1 sur 3, lisible sans défiler, aux positions de la maquette S’inspirer IMG_1941 et aux couleurs « Mandarine & Nuit » : logo centré et accroche grise « Tout près de toi », encart vert à bouclier rond avec le titre centré « Ton argent est bloqué jusqu’à ce que tu aies le colis en main. » et, en vert, « Le vendeur est payé seulement après ta confirmation. Rien n’arrive ? On te rembourse. », trois tuiles sans icône (« Moins de 5 h · Livraison dans ta zone », « Retour gratuit · si problème validé », « MoMo · MTN, Orange »), choix « Langue » Français · English · Pidgin en onglets (pilule orange sur la langue active), bouton plein orange « Continuer », barre d’étapes 1 / 3 et le lien « Déjà un compte ? Se connecter »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 2",
+        "Premier lancement · écran 1 en pidgin",
+        "Même écran en pidgin (Pidgin touché) : « We dey near you », « Your money go stay block until you get your parcel for hand. », « Seller no go get money until you confirm say all correct. », « If notin come, we go pay you back. », « Under 5 hours · Delivery for your zone », « Free return · if we confirm the problem », « Language », puis la ligne « For now, na only the first three screens dey for Pidgin. The rest of the app, the notifications and the SMS go stay for French until dem check the Pidgin. », « Continue », « You get account already? Log in ». Ces textes sont une proposition à faire relire par un traducteur camerounais."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 3",
+        "Premier lancement · écran 2, centres d’intérêt",
+        "Écran 2 sur 3 : bouton de retour carré, bouton à contour orange « Passer » en haut à droite, titre « Qu’est-ce qui t’intéresse ? » et la phrase « Touche quelques catégories. On s’en sert seulement pour ranger ton accueil. » Dix tuiles d’univers avec leur compteur réel (Téléphones & tablettes 132, Électronique 98, Mode femme 283, Mode homme 165, Chaussures 145, Beauté & santé 168, Maison & cuisine 138, Supermarché 129, Bébé & enfant 90, Sport & loisirs 39 produits : 1 387 au total). Bouton plein « Continuer », barre 2 / 3."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 4",
+        "Centres d’intérêt · trois catégories touchées",
+        "Trois tuiles touchées (Téléphones & tablettes, Mode femme, Beauté & santé) : bord orange, fond orangé (carte orange des maquettes), pastille cochée ; le bouton devient « Continuer · 3 choisies »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 5",
+        "Centres d’intérêt · en pidgin",
+        "Écran 2 en pidgin : « Skip », « Wetin you like? », « Touch some categories. We go use am only for arrange your home page. », tuiles Phones & tablets, Electronics, Women clothes, Men clothes, Shoes, Beauty & health, House & kitchen, Supermarket, Baby & pikin, Sport & play, avec les mêmes compteurs (« 132 products »…), bouton « Continue »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Écrans sans premier lancement (habillage de l’application d’origine)",
+        "Style : maquette S’inspirer IMG_1941 (exact pour les positions), onglet « Premier écran » : logo centré, encart vert à bouclier rond, trois tuiles, langue en onglets orange",
+        "Palette et graphisme « Mandarine & Nuit » (variables CSS du socle, jamais les couleurs de la maquette) ; clair par défaut, sombre « Nuit ». Contenus interdits de la maquette remplacés par la spec : « 24-72 h » → « Moins de 5 h · Livraison dans ta zone », « Retour 7 j · Sans discuter » → « Retour gratuit · si problème validé », « Tout près de vous » → « Tout près de toi »."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Choix de langue FR / EN visible dans les réglages",
+        "Choix de langue dès le premier écran : Français · English · Pidgin ; bascule FR · EN dans le Menu ensuite",
+        "Segment à trois choix sur #bienvenue ; la langue est gardée sur l’appareil puis enregistrée dans le champ langue du compte (2.6)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Drapeaux français et britannique pour les langues",
+        "Noms des langues écrits dans leur langue, sans drapeau",
+        "Un drapeau n’est pas une langue (le Cameroun est bilingue) ; libellés « Français », « English », « Pidgin »."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune promesse avant de naviguer",
+        "Écran 1 : encart vert de la promesse, trois repères",
+        "Textes exacts de 3.1 (voir les règles) ; tient sans défiler sur un téléphone de 844 px de haut."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau tournant « Livraison 24–72h · Cameroun & CEMAC » (IMG_2414)",
+        "Repère « Moins de 5 h · Livraison dans ta zone »",
+        "Une fourchette n’est jamais affichée ; la décision du 25 sept. vise moins de 5 h par zone (SLA-ZONE-H). Aucune promesse CEMAC."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucun choix de centres d’intérêt",
+        "Écran 2 facultatif, « Passer » bien visible",
+        "Les univers touchés partent avec account.created et ordonnent l’accueil (chapitre 4) ; rien d’autre."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIN-01",
+        "Premier lancement en trois écrans au plus : la promesse, les centres d’intérêt (facultatifs), la connexion. Aucun écran n’impose de créer un compte avant de naviguer ; aucun mur d’inscription.",
+        "§3.0 p. 17 · §3.1 p. 17–18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-02",
+        "La promesse est lisible sans défiler : logo, accroche, encart vert, repères, langue et bouton tiennent dans le premier écran (taille de texte normale).",
+        "§3.1 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-03",
+        "L’encart vert dit la promesse : « Ton argent est bloqué jusqu’à ce que tu aies le colis en main. », puis le vendeur payé après confirmation et le remboursement si rien n’arrive. Une promesse, pas une liste de fonctionnalités.",
+        "§3.1 p. 17",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-04",
+        "L’accroche s’écrit « Tout près de toi » : la spec écrit « Tout près de vous » ; la charte tutoie partout.",
+        "§3.1 p. 17",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-05",
+        "Repère « Retour gratuit · si problème validé ». Jamais « Retour 7 j · Sans discuter », ni aucune promesse de retour sans motif sur le premier écran.",
+        "§3.0 p. 17 · §3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-06",
+        "Repère « MoMo · MTN, Orange ».",
+        "§3.1 p. 17",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-07",
+        "Repère de délai « Moins de 5 h · Livraison dans ta zone » à la place de « 24-72 h · Livraison » : la décision du 25 sept. fixe un délai affiché sous 5 h par zone (SLA-ZONE-H) et une fourchette ne s’affiche jamais.",
+        "§3.1 p. 17 · §1.3 p. 8 · §16.4 p. 92",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-08",
+        "Bilingue dès le premier écran : le choix Français · English est sur l’écran 1 ; il change aussitôt la langue de l’écran et de toute l’application.",
+        "§3.0 p. 17 · §3.1 p. 17",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-09",
+        "Le pidgin est proposé comme troisième langue (demandé par le prototype, déjà présent chez le vendeur et le relais, absent de la v3). Chaque texte s’affiche en pidgin s’il est traduit et validé — aujourd’hui les trois écrans du premier lancement —, sinon en français ; notifications et SMS restent en français jusqu’à la validation, et l’écran 1 le dit. Les textes pidgin sont relus par un traducteur camerounais avant la production (même règle que CL-13, CRG-02).",
+        "§3.1 p. 17 (FR, EN)",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-10",
+        "Centres d’intérêt facultatifs : les univers du catalogue avec leur compteur réel ; « Passer » bien visible ; le choix sert seulement à ordonner l’accueil.",
+        "§3.1 p. 17 · §3.0 p. 17",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-11",
+        "Langue et centres d’intérêt restent sur l’appareil tant qu’il n’y a pas de compte, puis sont rattachés au compte à sa création. Rien n’est envoyé au serveur avant.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-12",
+        "Le lien « Déjà un compte ? Se connecter » de l’écran 1 mène droit à la connexion, sans l’écran des intérêts.",
+        "—",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Connexion »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 6",
+        "Premier lancement · écran 3, connexion",
+        "Écran 3 sur 3, au style exact de la maquette S’inspirer IMG_1941 : bouton de retour carré, logo centré et « Tout près de toi », titre centré « Ton compte en un geste » et « Il sert à payer et à suivre tes colis. Pour regarder, pas besoin de compte. » Bouton contrasté « Continuer avec Google » (46 px, noir en clair, blanc en sombre, G monochrome), bouton clair « Continuer avec un e-mail », un seul encadré neutre « Numéro, relais et moyen de paiement : demandés à ta première commande, pas maintenant. », séparateur « ou », lien-bouton « Découvrir sans compte » (vers l’accueil d’un visiteur) et la ligne « On te demande de te connecter seulement pour payer. » Ligne d’acceptation « En créant ton compte, tu acceptes nos conditions (version 1.0). » et le lien « Les lire en bref ». Barre 3 / 3."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 7",
+        "Connexion · écran 3 en pidgin",
+        "Écran 3 en pidgin : « Your account for one touch », « You need am for pay and follow your parcels. For just look, you no need account. », « Continue with Google », « Continue with email », « Number, relay and how you go pay: we go ask dem for your first order, no be now. », « or », « Look around without account », « We go ask you to log in only when you wan pay. », « When you create your account, you accept our conditions (version 1.0). » et « Read the short version ». Les feuilles qui suivent (Google, compte existant) restent en français : elles ne sont pas encore traduites."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 8",
+        "Connexion · feuille « Choisis un compte » Google",
+        "Toucher Google ouvre le choix du compte Google du téléphone (écran du système) : « Choisis un compte · pour continuer vers BelivaY », Carine Mballa · c•••••@gmail.com (→ feuille suivante), « Utiliser un autre compte » (nouveau compte → accueil « nouveau », CL-04), et la ligne « Google partage seulement ton nom, ton e-mail et ta photo. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 9",
+        "Connexion Google · adresse déjà inscrite, compte ouvert",
+        "Le compte de Carine touché : son adresse a déjà un compte BelivaY, créé par e-mail. Feuille « Bon retour, Carine », « c•••••@gmail.com a déjà un compte BelivaY. Google confirme qu’elle est à toi : on l’ouvre, avec tes commandes. », bouton plein « Ouvrir mon compte » (→ accueil), ligne « Une adresse, un seul compte : ton mot de passe marche toujours. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 10",
+        "Connexion demandée au paiement · panier gardé",
+        "Connexion demandée au paiement (« Se connecter pour payer » du panier d’un visiteur, CL-07) : en-tête « Connexion » avec retour au panier, titre « Connecte-toi pour payer », carte orange « Ton panier est gardé · 4 articles · 3 colis · 272 579 F », Google (bouton contrasté) puis e-mail, encadré neutre « Ensuite : ton numéro par SMS, puis ton relais. Une seule fois. » et la ligne d’acceptation. Pas de « Découvrir sans compte » ici."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Page de connexion de l’application d’origine (IMG_2488, IMG_2489)",
+        "Style : maquette S’inspirer IMG_1941 (exact pour les positions, palette « Mandarine & Nuit ») : Google en bouton contrasté, e-mail en bouton clair, encadré neutre du numéro, ligne grise « demandés à ta première commande »",
+        "La maquette réunit promesse et connexion sur un écran ; la spec garde trois écrans (1 et 3 du premier lancement), au même style. Logo Google monochrome : pas de bleu dans la charte."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Accroche courte, champs larges et lisibles",
+        "Titre court « Ton compte en un geste », champs de 48 px sur l’écran e-mail",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau tournant « 3 200+ Vendeurs certifiés sur BelivaY »",
+        "Aucun compteur écrit en dur",
+        "Supprimer le bandeau (19.3 « Tout chiffre affiché qui n’est pas réel »)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Formulaire e-mail d’abord, Google en dessous « ou continuer avec »",
+        "« Continuer avec Google » en premier, puis « Continuer avec un e-mail »",
+        "Google mis en avant (3.2) : bouton le plus haut, 52 px, fond sombre (blanc en thème sombre)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Des milliers de produits » ; photo de mise en scène (polo « TANZI », emballages)",
+        "Pas de photo, pas de compteur",
+        "La promesse est sur l’écran 1 ; ici, trois choix seulement."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de « Découvrir sans compte », pas de choix de langue, pas de promesse",
+        "« Découvrir sans compte » ; langue et promesse sur l’écran 1",
+        "#accueil en visiteur ; connexion demandée seulement au paiement (3.1)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Badge « Favoris 3 » visible après la déconnexion",
+        "Aucune donnée d’un compte montrée à un visiteur",
+        "Le dock d’un visiteur n’a que ses propres badges (panier local)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Dock qui change de forme une fois déconnecté ; icône d’utilisateur générique",
+        "Écrans de connexion sans dock ; dock identique partout ailleurs (Accueil, Catégories, Panier, Sauvegardés, Compte)",
+        "Pas de dock sur #connexion ; le visiteur retrouve le même dock à cinq onglets."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau tournant « Livraison 24–72h · Cameroun & CEMAC »",
+        "—",
+        "Supprimer (décision du 25 sept. : moins de 5 h, zones de Yaoundé)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Boutons Apple et Facebook, icônes sans libellé",
+        "Google et e-mail seulement",
+        "3.2 ne prévoit que Google et e-mail ; chaque bouton a un libellé."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "« Livraison partout » ; « Support 24/7 »",
+        "—",
+        "Faux au lancement (zones servies ; support 7 h – 21 h, SUP-HORAIRES)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Slogan « Le Cameroun plus connecté. »",
+        "« Tout près de toi » (écran 1)",
+        "Une seule accroche, celle de 3.1."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Lien « Mot de passe oublié », œil du mot de passe, bouton plein clair",
+        "Gardés sur l’écran e-mail",
+        "Voir la section suivante."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIN-13",
+        "Trois choix : « Continuer avec Google » mis en avant (premier, un geste), « Continuer avec un e-mail » en second, « Découvrir sans compte ».",
+        "§3.1 p. 18 · §3.2 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-14",
+        "« Découvrir sans compte » : on navigue et on remplit son panier ; la connexion n’est demandée qu’au paiement ; le panier du visiteur est conservé à la connexion.",
+        "§3.1 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-15",
+        "Connexion Google : jeton vérifié par le serveur (POST /auth/google) ; l’application ne crée jamais un compte sur la seule foi du téléphone.",
+        "§3.2 p. 18 · §3.5 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-16",
+        "Un e-mail = un compte (contrainte unique en base) : Google avec un e-mail déjà inscrit ouvre ce compte, après vérification.",
+        "§3.2 p. 18 · §3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-17",
+        "Le compte ouvert par Google garde son mot de passe : les deux méthodes marchent ensuite.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-18",
+        "Connexion demandée au paiement : « Connecte-toi pour payer », avec la carte du panier gardé (articles, colis, total du service de tarification), sans « Découvrir sans compte ».",
+        "§3.1 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-19",
+        "Bouton Google conforme à la charte de Google en production : fond sombre en thème clair, clair en thème sombre, logo « G » officiel (seule image tierce admise, exception à l’absence de bleu). Le prototype dessine un G monochrome. Données demandées : nom, e-mail, photo, rien d’autre.",
+        "§3.2 p. 18",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-20",
+        "À la création du compte, événement account.created (console : statistiques).",
+        "§3.5 p. 20",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Google annulé par le client",
+        "Retour à l’écran, rien n’est créé."
+       ]
+      },
+      {
+       "cellules": [
+        "Jeton Google invalide ou expiré",
+        "« La connexion Google n’a pas abouti. Réessaie ou continue avec un e-mail. » ; rien n’est créé."
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse Google non vérifiée (email_verified faux)",
+        "Pas de rattachement à un compte existant ; connexion par e-mail proposée."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Bannière « Hors ligne » (15.4) ; les boutons Google et e-mail attendent le réseau ; « Découvrir sans compte » marche avec le cache."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écrans « Connexion par e-mail » et « Mot de passe oublié »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 11",
+        "Connexion par e-mail · se connecter",
+        "Onglets « Se connecter » (actif, pilule orange) · « Créer un compte » ; E-mail c•••••@gmail.com ; mot de passe masqué avec l’œil ; lien « Mot de passe oublié ? » ; bouton plein « Se connecter »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 12",
+        "Connexion par e-mail · créer un compte",
+        "Créer un compte : Prénom « Carine » (« Pour te saluer et pour le livreur à domicile. Rien d’autre. »), E-mail, Mot de passe (« 8 caractères au moins, dont un chiffre. »), bouton plein « Créer mon compte », ligne d’acceptation des conditions (version 1.0) et « Les lire en bref ». Dans le prototype, l’adresse tapée est celle de Carine, déjà inscrite : « Créer mon compte » mène à la figure suivante."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 13",
+        "Connexion par e-mail · identifiants incorrects",
+        "Identifiants faux : encadré rouge « E-mail ou mot de passe incorrect. Vérifie l’adresse, ou choisis un nouveau mot de passe. », deux champs en rouge, « Se connecter », puis « Après 5 essais, attends 15 minutes ou choisis un nouveau mot de passe. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 14",
+        "Créer un compte · adresse déjà inscrite",
+        "Adresse déjà inscrite à la création : champ e-mail en rouge, encadré « Cette adresse a déjà un compte BelivaY. Une adresse, un seul compte : connecte-toi avec elle. », bouton plein « Me connecter avec cette adresse », et « Tu l’as créé avec Google ? Continuer avec Google »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 15",
+        "Mot de passe oublié · saisie de l’e-mail",
+        "Mot de passe oublié : « Nouveau mot de passe », « Entre ton adresse e-mail : on t’envoie un lien pour en choisir un. », champ e-mail, bouton plein « Recevoir le lien », ligne « Le lien arrive par e-mail seulement, jamais par SMS. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 16",
+        "Mot de passe oublié · lien envoyé",
+        "Lien envoyé : enveloppe dans un grand cercle vert, « Regarde tes e-mails », « Si c•••••@gmail.com a un compte BelivaY, un lien vient de partir. Il marche 30 minutes. », bouton plein « Revenir à la connexion », puis la ligne « Rien reçu ? Regarde dans les courriers indésirables. » et le lien « Renvoyer le lien »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Habillage de l’application d’origine",
+        "Style : inspiré des maquettes S’inspirer (onglets orange de IMG_1941, grands cercles d’état de IMG_1952)",
+        "Mêmes jetons clair / sombre que le socle."
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Lien « Mot de passe oublié », œil du mot de passe, bouton plein",
+        "Gardés",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Case « Se souvenir de moi »",
+        "La session reste ouverte sur le téléphone",
+        "Jeton de session long sur mobile ; « Se déconnecter » dans le Compte (CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Lien « Vous n’avez pas de compte ? S’inscrire » vers une autre page",
+        "Onglet « Créer un compte » sur le même écran",
+        "Deux états d’une même route (st=inscription)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucun message quand l’adresse existe déjà",
+        "« Cette adresse a déjà un compte BelivaY » et connexion proposée",
+        "Contrainte unique sur l’e-mail (3.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de canal précisé pour le lien de mot de passe",
+        "Lien par e-mail seulement (Brevo)",
+        "Jamais par SMS (3.2)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIN-21",
+        "E-mail et mot de passe : méthode classique, proposée en second ; se connecter et créer un compte sont deux onglets du même écran.",
+        "§3.2 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-22",
+        "Créer un compte demande le prénom, l’e-mail et le mot de passe, rien d’autre : le numéro, le relais, l’adresse et le paiement viennent plus tard. Le prénom sert à saluer et au livreur à domicile (seul donné au livreur avec l’adresse).",
+        "§3.0 p. 17 · §2.4 p. 13",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-23",
+        "Mot de passe de 8 caractères au moins, dont un chiffre (comme l’espace vendeur) ; stocké haché.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-24",
+        "Identifiants faux : un seul message, « E-mail ou mot de passe incorrect. » (on ne dit pas lequel est faux) ; après 5 essais, 15 minutes d’attente pour cette adresse.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-25",
+        "Adresse déjà inscrite à la création : pas de second compte ; connexion proposée avec cette adresse, ou « Continuer avec Google » si le compte vient de Google.",
+        "§3.2 p. 18 · §3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-26",
+        "Mot de passe oublié : lien par e-mail (Brevo), jamais par SMS.",
+        "§3.2 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-27",
+        "La réponse est la même que l’adresse ait un compte ou non (« Si … a un compte BelivaY, un lien vient de partir ») ; le lien marche 30 minutes et une seule fois ; il ouvre la page « Nouveau mot de passe » ; changer le mot de passe ferme les sessions des autres appareils.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-28",
+        "Un compte créé avec Google n’a pas de mot de passe : l’écran le rappelle et renvoie vers Google.",
+        "§3.2 p. 18",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Identifiants faux",
+        "« E-mail ou mot de passe incorrect. » ; champs en rouge ; lien « Mot de passe oublié ? »."
+       ]
+      },
+      {
+       "cellules": [
+        "Cinq échecs",
+        "« Après 5 essais, attends 15 minutes ou choisis un nouveau mot de passe. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse déjà inscrite (création)",
+        "« Cette adresse a déjà un compte BelivaY » ; « Me connecter avec cette adresse »."
+       ]
+      },
+      {
+       "cellules": [
+        "Lien expiré ou déjà utilisé",
+        "« Ce lien ne marche plus. Demande un nouveau lien. » et le bouton « Recevoir le lien »."
+       ]
+      },
+      {
+       "cellules": [
+        "Compte Google sans mot de passe",
+        "Le lien n’est pas envoyé ; l’e-mail rappelle de continuer avec Google."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Vérifier ton numéro »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 17",
+        "Première commande · étape 1, saisie du numéro",
+        "En-tête « Ton numéro » avec le sous-titre « Première commande · étape 1 sur 2 » et la barre d’étapes (en cours en orange), « Vérifie ton numéro », « Un code par SMS, une seule fois. Il te faut un numéro vérifié pour commander. » Champ +237 · 6 77 58 32 41 avec la pastille verte « MTN MoMo » détectée à la saisie. Bouton plein « Recevoir le code par SMS », ligne « Avant la vérification, ce numéro ne reçoit rien d’autre que ce code. », puis « Il sert à » : Payer en Mobile Money · Recevoir ton code de retrait · Te reconnaître au comptoir du relais."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 18",
+        "Vérifier le numéro · code à 6 chiffres",
+        "« Entre le code reçu par SMS », « Envoyé au 6 77 ·· ·· 41 · MTN. » et « Modifier » ; six cases 5 0 3 9 1 7 ; « Renvoyer le code dans 0:42 » ; bouton plein « Valider mon numéro » ; « Le code marche 10 minutes. » Dans le prototype, toucher les cases simule un code faux (figure suivante)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 19",
+        "Vérifier le numéro · code faux",
+        "Code faux : six cases en rouge (5 0 3 9 7 1), « Ce code ne correspond pas », « Vérifie le SMS et réessaie. Encore 4 essais. », un seul bouton plein « Recevoir un nouveau code ». Retaper le code dans les cases relance la vérification (toucher les cases simule ici le 5e code faux)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 20",
+        "Vérifier le numéro · trop d’essais",
+        "Trop d’essais : cadenas dans un grand cercle rouge, « Trop d’essais », « Pour protéger ce numéro, attends 10 h 30 pour recevoir un nouveau code. », encadré vert « Ton panier est gardé : rien n’est perdu. », bouton plein « Revenir au panier », lien « Écrire au support »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 21",
+        "Vérifier le numéro · déjà relié à un compte",
+        "Numéro déjà relié : « Ce numéro a déjà un compte », « 6 77 ·· ·· 41 est vérifié sur un autre compte BelivaY. Connecte-toi à ce compte : ton panier te suivra. », bouton plein « Me connecter à ce compte », bouton clair « Utiliser un autre numéro », « Un numéro vérifié va avec un seul compte. Ce n’est pas toi ? Écris au support. »"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 22",
+        "Vérifier le numéro · vérifié, droit de commander",
+        "Vérifié : première étape de la barre en vert, carte verte à coche ronde « Numéro vérifié · 6 77 ·· ·· 41 · MTN MoMo · Tu peux commander. », bouton plein « Continuer » (vers la première commande), « Il reste une étape : ton relais et ton moyen de paiement. »"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Habillage de l’application d’origine",
+        "Style : inspiré (en-tête à sous-titre « Première commande · étape 1 sur 2 » et barre d’étapes verte / orange de IMG_1955, carte verte de succès)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Indicatif +237 et format « 6XX XXX XXX »",
+        "Champ +237 avec drapeau, numéro groupé par deux",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Téléphone vide, modifiable comme un champ libre",
+        "Numéro vérifié par code avant la première commande ; changement par deux codes (section suivante)",
+        "POST /auth/otp/send puis /verify ; le numéro n’est jamais un champ libre du profil."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune vérification, aucun état « Vérifié »",
+        "Numéro masqué au milieu, pastille « Vérifié », opérateur",
+        "phone_verified_at au compte ; affichage « 6 77 ·· ·· 41 »."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Téléphone vide en bas du formulaire, sans rappel",
+        "Demandé au clic sur payer, avec « Il te faut un numéro vérifié pour commander »",
+        "Contrôle peut_commander au moment de payer, jamais avant."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Champ « Biographie · Parlez-nous de vous… »",
+        "—",
+        "Compte minimal (9.5) ; inscription la plus légère possible (3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "E-mail modifiable sans vérification ; libellé « EMAIL »",
+        "E-mail venu de Google ou vérifié par lien ; libellé « E-mail »",
+        "Un e-mail = un compte (3.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « Remboursement sous 7 jours · Sans question »",
+        "—",
+        "Promesse supprimée le 21 sept. (retour avec motif)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Icône de bouclier sur « Sauvegarder » ; pied de page web",
+        "—",
+        "Rien à sauvegarder : chaque étape se valide seule."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Numéro vérifié absent du profil (IMG_2388)",
+        "Numéro vérifié en tête du Compte, avec son crayon « Changer de numéro » (CL-13 ; section suivante)",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "peut_commander ⇔ numéro_vérifié",
+        "Sinon écran de vérification au clic sur payer (3.4)."
+       ]
+      },
+      {
+       "cellules": [
+        "code : 6 chiffres ; validité, essais et renvoi paramétrables",
+        "Valeurs à trancher ; proposées : 10 min, 5 essais puis 15 min, renvoi après 60 s et 3 envois par heure (OTP-DUREE, OTP-ESSAIS, OTP-RENVOI)."
+       ]
+      },
+      {
+       "cellules": [
+        "heure de reprise = heure du 5e code faux + 15 min",
+        "Jeu d’essai : 10 h 15 + 15 min = « attends 10 h 30 »."
+       ]
+      },
+      {
+       "cellules": [
+        "opérateur = préfixe(numéro)",
+        "Table des préfixes MTN et Orange tenue en paramètre ; 677 → MTN, 655 → Orange sur le jeu d’essai."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIN-29",
+        "Quelle que soit la méthode de connexion, le numéro est vérifié par code avant toute commande, jamais avant la navigation : un compte sans numéro vérifié ne peut pas commander ; l’écran s’ouvre au clic sur payer.",
+        "§3.3 p. 18 · §3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-30",
+        "Le numéro vérifié sert au débit Mobile Money, aux messages de retrait, à l’identification au comptoir, et à l’IFA (identité élargie : compte + numéro MoMo + relais habituel), jamais montrée au client.",
+        "§3.3 p. 18 · §3.0 p. 17 · §11.5 p. 69",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-31",
+        "Aucun message sur un numéro non vérifié, sauf le code de vérification lui-même (seul message autorisé avant la vérification).",
+        "§3.3 p. 18 · §3.5 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-32",
+        "Opérateur détecté à la saisie (MTN, Orange) et affiché ; il sert aux instructions de paiement du chapitre 8.",
+        "§3.3 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-33",
+        "Code de 6 chiffres ; durée de validité, nombre d’essais et délai de renvoi sont des paramètres, à trancher. Le prototype montre les valeurs proposées : 10 minutes, 5 essais puis 15 minutes d’attente, renvoi après 60 secondes.",
+        "§3.4 p. 19",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-34",
+        "Code faux : « Ce code ne correspond pas » ; nouvel essai avec le nombre d’essais restants ; blocage après le nombre d’essais paramétré, avec l’heure de reprise écrite.",
+        "§3.5 p. 20",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-35",
+        "Numéro déjà utilisé : proposer la connexion au compte existant. Un numéro vérifié va avec un seul compte.",
+        "§3.5 p. 20",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-36",
+        "Numéro vérifié : événement phone.verified (paiement : droit de commander ; IFA : identité élargie).",
+        "§3.5 p. 20",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-37",
+        "Pendant un blocage, le panier est gardé et la navigation continue ; seul le paiement attend.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-38",
+        "Le code se remplit tout seul quand c’est possible : Android (API SMS Retriever, le SMS porte le hachage de l’application), iOS (champ one-time-code).",
+        "—",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Code faux",
+        "« Ce code ne correspond pas » ; « Encore 4 essais » ; nouveau code possible."
+       ]
+      },
+      {
+       "cellules": [
+        "5e code faux",
+        "« Trop d’essais » ; « attends 10 h 30 » ; panier gardé ; lien vers le support."
+       ]
+      },
+      {
+       "cellules": [
+        "Code expiré (après 10 minutes)",
+        "« Ce code n’est plus valable » ; « Recevoir un nouveau code »."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro déjà vérifié sur un autre compte",
+        "« Ce numéro a déjà un compte » ; « Me connecter à ce compte » ; « Utiliser un autre numéro »."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro qui n’est ni MTN ni Orange",
+        "Il peut être vérifié (messages, comptoir) ; au paiement, un numéro MTN ou Orange est demandé (feuille « Avec quel numéro payer ? »)."
+       ]
+      },
+      {
+       "cellules": [
+        "SMS non délivré",
+        "Renvoi possible après le délai ; au 3e envoi dans l’heure, lien vers le support."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Changer de numéro »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 23",
+        "Compte · changer de numéro, code sur l’ancien",
+        "Étape 1 sur 3 (sous-titre de l’en-tête et barre d’étapes orange) : surtitre orange « Ton numéro actuel », « Confirme avec ton numéro actuel », « Code envoyé au 6 77 ·· ·· 41 · MTN. », six cases, « Renvoyer le code dans 0:42 », encadré « Ce qui va changer : tes codes de retrait en cours seront renouvelés. L’ancien code ne marchera plus au relais. », bouton plein « Valider », « Tu n’as plus ce numéro ? Écrire au support »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 24",
+        "Changer de numéro · nouveau numéro",
+        "Étape 2 sur 3 : « Ton nouveau numéro », champ +237 · 6 55 21 47 08 avec « Orange Money » détecté, bouton plein « Recevoir le code », « Ce numéro ne doit pas être vérifié sur un autre compte. » (L’étape 3, code sur le nouveau numéro, reprend l’écran de l’étape 1 avec « Code envoyé au 6 55 ·· ·· 08 · Orange. » et « Sans les deux codes, rien ne change : ton numéro reste le même. »)"
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 25",
+        "Changer de numéro · codes de retrait renouvelés",
+        "Terminé : carte verte à coche ronde « Numéro changé · 6 55 ·· ·· 08 · Orange Money · vérifié ». « Ce qui a changé » : BLV-52018 a un nouveau code de retrait, l’ancien (604 318) ne marche plus au Relais Mvog-Ada ; messages et codes arrivent au 6 55 ·· ·· 08 ; commandes et historique restent ; le 6 77 ·· ·· 41 reste un moyen de paiement MTN MoMo (ligne vers Moyens de paiement). Bouton plein « Voir mon nouveau code » (il ouvre le code de retrait de BLV-52018 à l’état « Nouveau code », CL-09), lien « Revenir à mon compte »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Habillage de l’application d’origine",
+        "Style : inspiré (sous-titre « Étape x sur 3 » et barre d’étapes de IMG_1955, onglet Compte allumé)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeaux tournants « 3 200+ Vendeurs certifiés » et « Livraison 24–72h · Cameroun & CEMAC » (capturé en plein fondu)",
+        "—",
+        "Supprimer (compteur écrit en dur, fourchette de délai)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Puces d’onglets coupées au bord (« Paieme… »), puce « Accueil » en double du dock",
+        "—",
+        "Le compte est une liste (CL-13) ; le numéro vérifié et la méthode de connexion sont en tête du Compte, sans page « Sécurité »."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Double authentification par e-mail (« Recevoir un code par email »)",
+        "—",
+        "Hors spec ; le numéro vérifié est l’ancre d’identité (3.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Mot de passe · Modifier » montré à tous",
+        "Méthode de connexion affichée dans le profil du Compte (« connexion Google ») ; mot de passe seulement pour un compte e-mail, par le lien de « Mot de passe oublié »",
+        "Un compte Google n’a pas de mot de passe (3.2)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Adresses IP brutes ; « Mobile — Safari / iOS 18.7 · Safari » répété",
+        "—",
+        "Jargon et donnée personnelle."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Appareil actuel « Cet appareil » et « Tout déconnecter »",
+        "« Se déconnecter » du Compte (CL-13) ; changer de numéro ou de mot de passe ferme les sessions des autres appareils",
+        "Invalidation serveur des jetons des autres appareils (CIN-45)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Liste d’au moins 6 sessions identiques du même iPhone, cinq boutons rouges « Révoquer »",
+        "—",
+        "Une connexion réutilise la session de l’appareil (identifiant d’appareil), jamais une nouvelle ligne."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bouton robot et « haut de page » par-dessus la dernière ligne",
+        "—",
+        "Assistant IA : après le lancement (FF-IA fermé)."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de « Changer de numéro »",
+        "Changement par deux codes ; codes de retrait renouvelés",
+        "numero-changer, 4 étapes."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Pas de « Supprimer mon compte »",
+        "Dans le compte (CL-13)",
+        "Refusé pendant une commande ou un litige (9.5)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CIN-39",
+        "Changer de numéro exige un code sur l’ancien, puis un code sur le nouveau : changement_numéro ⇒ OTP(ancien) ∧ OTP(nouveau). Sans les deux, rien ne change.",
+        "§3.3 p. 18 · §3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-40",
+        "Au changement, les codes de retrait en cours sont régénérés : l’ancien est refusé au comptoir ; le nouveau part au nouveau numéro et s’affiche dans Mes commandes. L’écran final nomme les commandes concernées.",
+        "§3.3 p. 18 · §9.2 p. 54",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-41",
+        "L’historique IFA est conservé : c’est le même compte, avec un nouveau numéro.",
+        "§3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-42",
+        "Plus accès à l’ancien numéro : le changement passe par le support (messagerie tracée), après vérification d’identité par une personne ; jamais de contournement automatique.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-43",
+        "L’ancien numéro reste un moyen de paiement tant que le client ne le retire pas ; il ne reçoit plus aucun message.",
+        "§9.5 p. 56",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-44",
+        "Pas de double authentification ni de liste des appareils au lancement : la connexion est protégée par Google ou le mot de passe, le compte par le numéro vérifié et ses codes.",
+        "§3.2, §3.3 p. 18",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-45",
+        "Changer de numéro ou de mot de passe ferme les sessions des autres appareils.",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CIN-46",
+        "Le numéro vérifié s’affiche en tête du Compte (CL-13), masqué au milieu, avec la pastille « Vérifié » et la méthode de connexion ; son crayon ouvre « Changer de numéro ». Pas de page « Mon numéro » ni « Sécurité » en plus.",
+        "§9.5 p. 56 · §10.1 p. 60",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Code de l’ancien numéro faux",
+        "Comme la vérification : « Ce code ne correspond pas », essais restants, blocage paramétré."
+       ]
+      },
+      {
+       "cellules": [
+        "Nouveau numéro vérifié sur un autre compte",
+        "« Ce numéro a déjà un compte » ; rien ne change."
+       ]
+      },
+      {
+       "cellules": [
+        "Abandon à l’étape 2 ou 3",
+        "Le numéro reste le même ; aucun code de retrait n’est touché."
+       ]
+      },
+      {
+       "cellules": [
+        "Colis déjà retiré entre-temps",
+        "Aucun code à régénérer pour lui."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Choisir mon relais »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 26",
+        "Puce relais de l’en-tête · mon relais habituel",
+        "Relais habituel (ouvert depuis la puce de l’en-tête) : petite carte « Depuis ta position » (ta position en noir, le relais habituel en orange, les autres en gris). Carte orange « Ton relais habituel » avec « Choisi » : portrait de Mme Ngo Bassong, « Relais Mvog-Ada », « Mme Ngo Bassong t’y accueille », photo de la façade (92 px), 350 m · 6 min à pied, « Ouvert jusqu’à 19 h · fermé le dimanche ». « Les autres relais par distance », en cartes à la manière de la maquette « Changer de point relais » (IMG_1977 : visage rond, gérant et trajet, horaires, distance à droite) : Relais Essos (M. Abena, 2,4 km · 9 min en taxi, ouvert jusqu’à 20 h), Relais Mvan (Mme Fouda, 4,8 km · 16 min, 18 h), Relais Bastos (M. Nkodo, 6,1 km · 20 min, 19 h). Le Relais Melen, plein aujourd’hui, n’apparaît pas. Bloc replié « Comment ça marche ». La barre du bas garde l’onglet de l’écran d’où l’on vient."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 27",
+        "Mon relais · autre relais choisi",
+        "Relais Essos touché : sa carte prend le contour orange, encadré « Ce qui change : les distances et les prix livrés partiront de ce relais. Tes commandes en cours gardent le leur. », bouton plein « Choisir le Relais Essos » (retour à l’écran d’origine), et « Changer le relais d’une commande déjà payée ? Modifier la commande »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 28",
+        "Première commande · liste des relais",
+        "Première commande (titre « Ton relais ») : carte « Ta position · Mvog-Ada », « Du plus proche au plus loin » : Relais Mvog-Ada présélectionné (contour orange, distance en vert) avec la pastille verte « Le plus proche », puis Essos, Mvan, Bastos. Bouton plein « Choisir le Relais Mvog-Ada », « Il devient ton relais habituel : on te le propose à chaque commande. », carte « Plutôt à domicile ? Livraison 1 500 F · offerte dès 50 000 F »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 29",
+        "Choisir un relais · hors des zones servies",
+        "Hors des zones servies : encadré ambre « Tu es à Soa, hors des 12 zones servies au lancement. Un relais hors zone reçoit ses colis plus tard : sa date de retrait est écrite ci-dessous. » Relais Soa (M. Onana, 1,1 km · 4 min en taxi, ouvert jusqu’à 18 h) avec « Commande passée aujourd’hui : retrait samedi 26 sept. », pastilles « Le plus proche » et « Hors zone servie » ; Relais Essos (11,4 km · 28 min, « Colis en moins de 5 h », « Zone servie »). Bouton plein « Choisir le Relais Soa »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 30",
+        "Choisir un relais · aucun relais ouvert dans la zone",
+        "Aucun relais ouvert dans la zone : encadré « Pas encore de relais ouvert à Biyem-Assi. Voici le plus proche d’une autre zone, avec son vrai délai, ou la livraison à domicile. » « Relais d’une autre zone » : Relais Mvan (6,3 km · 22 min, colis en moins de 5 h, « Le plus proche ») puis Relais Mvog-Ada (7,4 km · 25 min). Bouton plein « Choisir le Relais Mvan », carte « Me faire livrer à domicile · 1 500 F · offerte dès 50 000 F d’articles » (formulaire d’adresse vide)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 31",
+        "Choisir un relais · position refusée",
+        "Position refusée : encadré « Position non partagée. Cherche ton quartier ou un repère : on range les relais depuis là. », champ « Quartier ou repère » (Mvog-Ada), bouton clair « Utiliser ma position », puis « Relais près de Mvog-Ada » et la même liste, Mvog-Ada présélectionné."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "—",
+        "Style : inspiré de la maquette S’inspirer IMG_1977 « Changer de point relais » : cartes à visage rond, distance à droite, relais choisi en contour orange",
+        "Pas de choix d’un relais sans son gérant, sa distance et ses horaires ; le Relais Melen, plein, reste masqué."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucun choix du relais ; relais habituel absent du compte (IMG_2393, IMG_2394)",
+        "Écran « Choisir mon relais » : relais habituel en tête, autres relais par distance, états hors zone, sans relais, position refusée",
+        "GET /relais, PUT /me/relais-habituel, relay.chosen ; lien depuis la puce de l’en-tête, le menu et le compte."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "relais proposés = relais ouverts (KYC validé ∧ capacité > 0 ∧ horaires définis) ∧ non saturés ∧ ouverts aujourd’hui, triés par distance ↑",
+        "Depuis la position, ou depuis le quartier ou le repère saisi (3.4). Jeu d’essai : Mvog-Ada 350 m, Essos 2,4 km, Mvan 4,8 km, Bastos 6,1 km ; Melen (plein) exclu."
+       ]
+      },
+      {
+       "cellules": [
+        "relais_habituel = choix du client",
+        "Origine des distances et des prix livrés partout (chapitres 5 à 7) ; relay.chosen."
+       ]
+      },
+      {
+       "cellules": [
+        "zone(relais) ∉ zones servies ⇒ date_retrait = date calculée par la logistique",
+        "Affichée comme une date ferme (« retrait samedi 26 sept. »), jamais une fourchette."
+       ]
+      },
+      {
+       "cellules": [
+        "aucun relais proposé dans la zone ⇒ relais le plus proche d’une autre zone + domicile",
+        "Chacun avec son délai réel (3.5)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPR-01",
+        "Le relais habituel est demandé à la première commande seulement ; ensuite il est présélectionné à chaque commande et se change depuis la puce « Retrait à … » de l’en-tête, le menu ou le compte (« Changer »).",
+        "§3.4 p. 18 · §9.5 p. 56",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-02",
+        "Liste par distance, le plus proche en premier (pastille verte « Le plus proche ») : seuls les relais ouverts (KYC validé, capacité > 0, horaires définis) et non saturés, depuis la position ou l’adresse.",
+        "§3.4 p. 18–19 · §13.3 p. 78",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-03",
+        "Un relais « En configuration », saturé ou fermé n’est jamais proposé ; un relais saturé revient dans la liste quand il a de la place. Une ligne le dit, sans nommer les relais absents.",
+        "§3.4 p. 18–19 · §16.1 p. 90",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-04",
+        "Chaque relais montre son gérant (nom et photo), le nom du point, la distance et le temps de trajet, les horaires du jour.",
+        "§3.4 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-05",
+        "Un seul relais par zone au lancement (RELAIS-PAR-ZONE = 1) : le relais de la zone est proposé ; les autres lignes sont des relais d’autres zones.",
+        "§3.5 p. 20 · §1.3 p. 8 · §16.1 p. 90",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-06",
+        "Le relais choisi devient le relais habituel et fixe l’origine des distances et des prix livrés partout ; événement relay.chosen (tarification, recherche).",
+        "§3.4 p. 18–19 · §3.5 p. 20",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-07",
+        "Changer de relais habituel ne déplace pas les commandes en cours ; changer le relais d’une commande passe par « Modifier la commande » (gratuit avant la collecte, voir CL-12).",
+        "§13.3 p. 78",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-08",
+        "Hors des zones servies, le client est prévenu dès le choix du relais.",
+        "§3.4 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-09",
+        "Le délai hors zone s’écrit comme une date ferme calculée (« Commande passée aujourd’hui : retrait samedi 26 sept. ») et non « retrait en 48 à 72 h » (fourchette interdite) ; le relais de zone servie le plus proche est proposé avec « Colis en moins de 5 h ».",
+        "§3.4 p. 19 · §1.3 p. 8",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-10",
+        "Aucun relais ouvert dans la zone : proposer le relais le plus proche d’une autre zone, avec son délai réel, ou la livraison à domicile.",
+        "§3.5 p. 20",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-11",
+        "Position refusée : recherche par quartier ou repère ; la liste se range depuis ce point ; « Utiliser ma position » redemande l’autorisation.",
+        "§3.4 p. 19",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-12",
+        "Le visiteur sans compte voit les distances depuis le relais le plus proche de sa position ; rien n’est enregistré avant la première commande.",
+        "§3.4 p. 18",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-13",
+        "Tri par distance (3.4) ; l’API décrit un tri « par temps de trajet » (3.5) : on trie par distance et on affiche les deux. La photo de la façade du relais habituel est montrée (demande du point relais).",
+        "§3.4 p. 18 · §3.5 p. 19",
+        "Recommandé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Hors des zones servies",
+        "Encadré ambre, date ferme par relais, relais de zone servie avec « Colis en moins de 5 h »."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucun relais ouvert dans la zone",
+        "Relais le plus proche d’une autre zone avec son délai, et la livraison à domicile."
+       ]
+      },
+      {
+       "cellules": [
+        "Position refusée",
+        "Champ « Quartier ou repère », « Utiliser ma position »."
+       ]
+      },
+      {
+       "cellules": [
+        "Relais devenu plein entre l’affichage et le choix",
+        "« Ce relais est plein aujourd’hui. » ; liste rafraîchie."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Dernière liste en cache, bouton « Choisir » grisé avec l’explication (15.4)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Première commande »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 32",
+        "Première commande · étape 2, au relais",
+        "Au relais : en-tête « Avant de payer » avec le sous-titre « Première commande · étape 2 sur 2 » et la barre d’étapes (faite en vert, en cours en orange), « Deux choix, une seule fois », « Ensuite, on s’en souvient. » « Où récupérer tes colis ? » : onglets Au relais · À domicile (pilule orange) ; carte orange « Ton relais » du Relais Mvog-Ada (portrait, Mme Ngo Bassong, 350 m · 6 min à pied, ouvert jusqu’à 19 h, « Le plus proche », « Changer ») et « Il devient ton relais habituel : on te le propose à chaque commande. » « Avec quel numéro payer ? » : 6 77 ·· ·· 41 · MTN MoMo · ton numéro vérifié, « Changer » ; « Tu valides le paiement sur ton téléphone, avec ton code secret MoMo. » Carte « Récapitulatif » : « Total à payer 272 579 F · 4 articles · 3 colis · retrait dès aujourd’hui 17 h » (même heure que sous le bouton du panier, CL-07), bouton plein « Payer 272 579 F » (→ paiement en attente de la première commande, #paiement-attente?premiere=1, CL-08), pied : Conditions de vente · Retours et litiges · Garde au relais (pages légales de CL-13)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 33",
+        "Première commande · étape 2, à domicile",
+        "À domicile : carte « Maison · Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage » et « Modifier » ; « Livraison à domicile de base (1 500 F) offerte : ton panier dépasse 50 000 F. » ; « Le livreur t’appelle par un numéro masqué avant d’arriver. » Total 272 579 F (271 699 + 1 380 + 1 000 − 1 500) · « livrés à domicile »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 34",
+        "Première commande · feuille « Avec quel numéro payer ? »",
+        "Feuille « Avec quel numéro payer ? » : « Le numéro reçoit la demande de paiement Mobile Money. » ; choix « 6 77 ·· ·· 41 · MTN MoMo · Ton numéro vérifié » ou « Un autre numéro · MTN ou Orange, détecté à la saisie » (coché) avec +237 · 6 55 21 47 08 et « Orange Money » détecté ; « Pas de code SMS pour ce numéro : tu valides chaque paiement avec son code secret MoMo. » ; bouton plein « Utiliser ce numéro », lien « Autre moyen de paiement » (feuille des moyens de paiement de CL-08, ?from=premiere). Sous la feuille, le bouton « Payer 272 579 F » est grisé."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Habillage de l’application d’origine",
+        "Style : inspiré (IMG_1950 « Récapitulatif », IMG_1977 carte orange, barre d’étapes de IMG_1955)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "État vide qui dit à quoi sert l’ajout ; +237 avec drapeau et masque 6XX XXX XXX",
+        "Champ +237 dans la feuille « Avec quel numéro payer ? »",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Opérateur déduit du préfixe ; « BelivaY ne stocke jamais votre code secret Mobile Money »",
+        "Opérateur détecté ; « tu valides … avec ton code secret MoMo »",
+        "Aucun code secret saisi dans l’application (CamPay le demande sur le téléphone)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Vos comptes Mobile Money enregistrés sur cet appareil »",
+        "Moyens de paiement portés par le compte",
+        "Stockés côté serveur, masqués au milieu (2.6)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "« Aucun moyen enregistré » après 10 commandes",
+        "Numéro prérempli avec le numéro vérifié",
+        "Premier numéro = numéro vérifié ; ensuite le dernier numéro utilisé."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Numéro ajouté sans vérification",
+        "Pas de code SMS pour un numéro de paiement : le code secret MoMo prouve la possession à chaque paiement",
+        "Ce numéro ne reçoit jamais de message (seul le numéro vérifié en reçoit, 3.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Encart « Modes acceptés sur BelivaY » qui n’en montre aucun ; carte absente",
+        "MTN MoMo et Orange Money ici ; carte (diaspora, 2 %) par « Autre moyen de paiement »",
+        "Feuille des moyens de paiement : CL-08."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeau « Gagnez des points à chaque achat · Programme Fidélité »",
+        "—",
+        "Aucun programme de points (cagnotte : après le lancement)."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Puce « Paieme… » coupée ; l’état vide occupe la moitié de la carte",
+        "—",
+        "Le compte (CL-13) liste les moyens ; ici, une carte et une feuille."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Calculs",
+     "colonnes": [
+      "Condition ou formule",
+      "Règle d’implémentation"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Relais : Total = 271 699 + 1 380 + 400 − 900 = 272 579 F",
+        "S ≥ 30 000 F ⇒ livraison de base relais offerte (500 + 400). Montants du service de tarification (7.3)."
+       ]
+      },
+      {
+       "cellules": [
+        "Domicile : Total = 271 699 + 1 380 + 1 000 − 1 500 = 272 579 F",
+        "S ≥ 50 000 F ⇒ livraison de base domicile offerte (500 + 1 000), au tarif d’un colis S. Le montant est recalculé à chaque changement de mode."
+       ]
+      },
+      {
+       "cellules": [
+        "numéro_paiement(1re commande) = numéro vérifié",
+        "Ensuite, le dernier numéro utilisé."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPR-14",
+        "L’adresse de livraison, le relais habituel et le moyen de paiement ne sont demandés qu’à la première commande ; le profil complet n’est jamais un préalable, ni à la navigation, ni à la première commande.",
+        "§3.4 p. 18–19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-15",
+        "Un seul écran « Avant de payer » réunit le mode de remise et le numéro de paiement ; aux commandes suivantes, il est sauté (relais habituel présélectionné, dernier numéro).",
+        "§3.4 p. 18 · §9.5 p. 56",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-16",
+        "Paiement : numéro Mobile Money prérempli avec le numéro vérifié, opérateur affiché.",
+        "§3.4 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-17",
+        "Un autre numéro MoMo peut payer : opérateur détecté à la saisie, pas de code SMS (le code secret MoMo prouve la possession à chaque paiement), aucun message vers lui.",
+        "§3.3 p. 18",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-18",
+        "Mode domicile : l’adresse par repères est demandée (écran suivant) ; la livraison part seule, le livreur appelle par un numéro masqué.",
+        "§3.4 p. 18 · §1.3 p. 8 · §16.3 p. 92",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-19",
+        "Le total vient du service de tarification et se recalcule à chaque changement de mode ; le délai affiché est le vrai délai (« retrait dès aujourd’hui 17 h », comme sous le bouton du panier).",
+        "§3.5 p. 20 · §7.3 p. 41",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-20",
+        "Le XL et le hors gabarit n’ont que le mode domicile : le segment « Au relais » est grisé avec l’explication.",
+        "§1.4 p. 9 · §19.4 p. 106",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-21",
+        "« Payer … F » lance la séquence serveur du chapitre 8 (recalcul, contrôle des prix, réservation, paiement en attente).",
+        "§8.1 p. 46",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Relais proposé devenu plein",
+        "Carte remplacée par le suivant, avec « Ton relais habituel est plein aujourd’hui »."
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse hors zone",
+        "Mode domicile impossible ; choix d’un relais (écran « Adresse »)."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro ni MTN ni Orange",
+        "« Ce numéro ne peut pas payer en Mobile Money. » ; autre numéro."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors ligne",
+        "Bouton « Payer » grisé : « Il faut du réseau pour payer » (15.4)."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Écran « Adresse par repères »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 35",
+        "Adresse par repères · point sur la carte",
+        "« Où te livrer ? », « Écris ce qui aide le livreur à trouver ta porte. » Nom de l’adresse : Maison (choisi) · Travail · Autre ; Quartier « Mvog-Ada » avec « Zone servie » ; Repères « carrefour Emana, immeuble bleu, 2e étage » ; Point sur la carte posé (« Déplace la carte pour ajuster ») ; « Le livreur voit ton prénom et cette adresse pendant la livraison. Le vendeur ne la voit jamais. » ; bouton plein « Enregistrer l’adresse »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 36",
+        "Adresse par repères · formulaire vide",
+        "Formulaire vide : « Ton quartier », « Carrefour, couleur de l’immeuble, étage… », exemple « carrefour Emana, immeuble bleu, 2e étage », carte « Pose le point devant ta porte » et « Utiliser ma position » ; « Enregistrer l’adresse » inactif."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 37",
+        "Adresse par repères · enregistrée",
+        "Adresse enregistrée : carte verte à coche ronde « Adresse enregistrée · Tu la retrouves dans Mon compte, Adresses. », carte Maison · Mvog-Ada, carrefour Emana, immeuble bleu, 2e étage · « Point posé sur la carte », bouton plein « Continuer vers le paiement »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 38",
+        "Adresse par repères · quartier hors zone",
+        "Quartier hors zone : « Soa » en rouge avec « Hors zone », encadré ambre « Soa est hors des 12 zones servies. Pas encore de livraison à domicile ici. Choisis un relais : sa date de retrait est écrite dans la liste. », bouton plein « Choisir un relais » (liste hors zone)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "Habillage de l’application d’origine",
+        "Style : inspiré (pastilles orange, carte verte de succès)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Adresse par repères (« Bastos, face pharmacie du Coin »)",
+        "Champ « Repères » en texte libre",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Garder",
+        "Libellés parlants (Domicile, Bureau) avec icônes",
+        "Maison · Travail · Autre",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Ni position sur la carte, ni quartier rattaché",
+        "Quartier (zone servie ou non) et point sur la carte",
+        "Champs quartier, reperes, lat, lng (2.6) ; POST /me/adresses."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Adresse « Bureau » à Douala acceptée sans avertissement",
+        "Quartier hors zone signalé ; relais proposé",
+        "Pas de livraison à domicile hors des zones servies au lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Relais habituel absent",
+        "« Choisir mon relais » (section précédente) et dans le compte",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Nom du destinataire répété sur chaque carte",
+        "—",
+        "Le prénom du compte suffit."
+       ]
+      },
+      {
+       "cellules": [
+        "Retirer",
+        "Bandeaux « 3 200+ Vendeurs certifiés » et « Livraison 24–72h · Cameroun & CEMAC »",
+        "—",
+        "Compteur écrit en dur ; fourchette et zones fausses."
+       ]
+      },
+      {
+       "cellules": [
+        "Changer",
+        "Corbeille rouge sans libellé ; « Par défaut » à la fois étiquette et bouton ; bloc d’identité répété",
+        "Traités dans la liste des adresses (CL-13)",
+        "—"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPR-22",
+        "Adresse (si domicile) : nom, quartier, repères en texte libre (« carrefour Emana, immeuble bleu, 2e étage ») et position sur la carte ; POST /me/adresses.",
+        "§3.4 p. 18 · §2.6 p. 14 · §3.5 p. 19",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-23",
+        "C’est ce que le livreur utilise : il voit le prénom du client et l’adresse pendant la livraison seulement ; le vendeur ne la voit jamais. (19.1 limite le livreur au « prénom et quartier » ; 2.4 et 9.5 lui donnent l’adresse : l’adresse est nécessaire pour livrer.)",
+        "§2.4 p. 13 · §9.5 p. 56 · §19.1 p. 104",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-24",
+        "Quartier hors des zones servies : pas de livraison à domicile au lancement ; un relais est proposé, avec sa date de retrait.",
+        "§3.4 p. 19",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-25",
+        "L’adresse enregistrée rejoint « Mon compte › Adresses » et est réutilisée aux commandes suivantes.",
+        "§9.5 p. 56",
+        "Décidé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Quartier hors zone",
+        "Encadré ambre et « Choisir un relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "Position refusée",
+        "Le point se pose à la main sur la carte ; le quartier suffit pour la zone."
+       ]
+      },
+      {
+       "cellules": [
+        "Repères vides",
+        "« Enregistrer l’adresse » reste inactif."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Feuille « Proposition des notifications »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 39",
+        "Après la première commande · proposition des notifications",
+        "« Suivre ma commande » touché sur le reçu de la première commande (CL-08) : sur le suivi de BLV-52131 (« Ta première commande · Retrait possible aujourd’hui dès 17 h · 3 colis · Relais Mvog-Ada »), feuille « On te prévient quand tes colis arrivent ? », « Gratuit. Si l’application est fermée, on t’écrit par SMS au 6 77 ·· ·· 41 ». Comme la maquette « Notifications » (IMG_1942) : carte « Ce que tu reçois » à interrupteurs : « Commande, retrait, incident, paiement » (vert, cadenas, « non désactivables »), « Messages » et « Suivi » (actifs), « Promotions » (coupé, « 3 par semaine au plus. Jamais par SMS. »). Bouton plein « Activer les notifications » (→ Mes commandes), liens « Régler en détail » (CL-10) et « Plus tard » (figure suivante)."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 40",
+        "Proposition des notifications · « Plus tard », repli SMS",
+        "« Plus tard », ou autorisation refusée par le téléphone : bulle dans un grand cercle, « On te prévient par SMS », « Paiement protégé, colis arrivé, rappels de garde, incident : l’essentiel de chaque commande arrive par SMS. », « SMS au 6 77 ·· ·· 41 · vérifié », « Jamais de promotion par SMS », bouton plein « Compris » (→ Mes commandes), lien « Activer les notifications »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "—",
+        "Style : inspiré de la maquette S’inspirer IMG_1942 « Notifications » : interrupteurs de « Ce que tu reçois » ; le canal de repli SMS est dit dans la phrase d’en-tête",
+        "Le bouton WhatsApp de la maquette n’est pas repris : pas de canal WhatsApp au lancement (FF-WHATSAPP-CANAL fermé), et rien d’après le lancement sur un écran de lancement."
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Interrupteurs « Notifications SMS » et « Newsletter » (activé) dans les réglages (IMG_2415, IMG_2486)",
+        "Feuille proposée une fois après la première commande ; défauts de 10.1 (Promotions désactivé)",
+        "PUT /me/notification-settings ; réglage complet : CL-10."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CPR-26",
+        "Le réglage des notifications (canal de repli SMS, catégories) est proposé après la première commande, pas pendant l’inscription.",
+        "§3.4 p. 18",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-27",
+        "Moment : une fois, à la première ouverture du suivi après la première commande (« Suivre ma commande » du reçu, #confirmee?premiere=1) ; jamais sur le reçu, qui ne contient aucune autre action ; « Plus tard » la reporte à la commande suivante, une seule fois.",
+        "§3.4 p. 18 · §8.4 p. 48",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-28",
+        "Valeurs par défaut : repli SMS au numéro vérifié ; aucun canal WhatsApp au lancement (FF-WHATSAPP-CANAL fermé : pas de bouton) ; Commande, Retrait, Incident, Paiement actifs et non désactivables ; Messages et Suivi actifs, désactivables ; Promotions désactivé.",
+        "§10.1 p. 60",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-29",
+        "« Activer les notifications » demande l’autorisation du système (Android 13 et plus, iOS) et enregistre le jeton FCM ; si elle est refusée, l’écran dit que l’essentiel arrive par SMS (6 SMS par commande au plus, jamais de promotion).",
+        "§10.1 p. 60 · §10.3 p. 61",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-30",
+        "Le code de retrait n’apparaît jamais sur l’écran verrouillé ni dans une notification.",
+        "§10.1 p. 60 · §10.2 p. 60",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CPR-31",
+        "Le réglage est porté par le compte, pas par l’appareil (PUT /me/notification-settings).",
+        "§10.1 p. 60 · §10.7 p. 64",
+        "Décidé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Feuille « Conditions générales »",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Figure",
+      "Écran et état",
+      "Explication"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Fig. 41",
+        "Ouverture de l’application · nouvelle version des conditions",
+        "À l’ouverture de l’application, sur l’accueil : feuille « Pages légales · version 2.0 », « Nos conditions changent », « Elles s’appliquent dès le jeudi 1er octobre. Voici ce qui change pour toi. » Carte orange « Ce qui change » (comme celle de la maquette IMG_1977) : deux points, seulement ce qui n’est pas dans la version 1.0 en vigueur (pages légales de CL-13) : « Retours : un article abîmé de moins de 3 000 F est remboursé sans que tu le rapportes au relais. » (RET-SANS-RETOUR, à trancher : valeur proposée) ; « Confidentialité : ton centre de notifications garde tout 12 mois, puis l’efface. » (NOT-CONSERV, proposé). « Tes commandes déjà passées gardent les conditions du jour où tu les as passées. » Bouton plein « J’accepte et je continue », liens « Voir les pages légales » (CL-13) et « Plus tard »."
+       ]
+      },
+      {
+       "cellules": [
+        "Fig. 42",
+        "Connexion · « Les lire en bref », conditions acceptées",
+        "« Nos conditions en bref » (lien « Les lire en bref » de la connexion) : surtitre « Version 1.0 · 1er août 2026 » (la version en vigueur, celle des pages légales de CL-13), « Ce que tu acceptes en créant ton compte, en langage simple. » Cinq points : argent bloqué jusqu’au retrait ; retour avec motif ; jour d’arrivée gratuit au relais ; Mobile Money ou carte, jamais d’espèces ; le vendeur ne voit jamais ton nom, ton numéro ni ton adresse. « Les textes complets » : les huit pages légales de CL-13 (conditions d’utilisation, conditions de vente, confidentialité, retours et litiges, garde au relais, paiement au comptoir et par carte, cookies, mentions légales), chacune ouvrant legal-doc?d=…. « En français et en anglais. Chaque version est datée ; celle que tu acceptes est enregistrée avec ton compte. » Carte « Version 2.0 dès le jeudi 1er octobre · Voir ce qui change » (→ figure précédente). Bouton plein « J’ai compris »."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Mise à niveau — de l’écran actuel à la nouvelle version",
+     "colonnes": [
+      "",
+      "Aujourd’hui",
+      "Nouvelle version",
+      "Ce que fait le développeur"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Changer",
+        "—",
+        "Style : inspiré (carte orange « Ce qui change » de IMG_1977)",
+        "—"
+       ]
+      },
+      {
+       "cellules": [
+        "Ajouter",
+        "Aucune acceptation des conditions ; pas de pages légales depuis le compte",
+        "Ligne d’acceptation à l’inscription, feuille à chaque version majeure, pages légales au pied du paiement",
+        "GET /legal/current, POST /me/terms-acceptance ; version et heure enregistrées avec le compte."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Règles",
+     "colonnes": [
+      "ID",
+      "Règle",
+      "Source",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CCG-01",
+        "Pages légales : conditions générales d’utilisation et de vente, politique de confidentialité, mentions légales, règles des retours et des litiges, politique de garde au relais, conditions du paiement au comptoir et de la carte. CL-13 les présente en huit pages (conditions d’utilisation et de vente séparées, cookies en plus) ; CL-03 ouvre les mêmes (legal-doc?d=…).",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-02",
+        "Accessibles depuis le compte, le pied du paiement (pied de « Avant de payer ») et la page de retour.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-03",
+        "Pages versionnées ; la version acceptée est horodatée avec le compte.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-04",
+        "Aucune case à cocher dans le parcours d’achat : l’acceptation se fait à l’inscription, puis à chaque nouvelle version majeure.",
+        "§15.3 p. 87 · §15.4 p. 88",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-05",
+        "Rédaction en langage simple, en français et en anglais.",
+        "§15.3 p. 87",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-06",
+        "À l’inscription, l’acceptation est la ligne « En créant ton compte, tu acceptes nos conditions (version …) » sous les boutons Google et e-mail, avec « Les lire en bref » ; créer le compte enregistre la version et l’heure.",
+        "§15.3 p. 87 · §3.1 p. 18",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-07",
+        "Nouvelle version majeure : feuille à l’ouverture de l’application, avec ce qui change en trois points au plus, « J’accepte et je continue », « Voir les pages légales » (CL-13) et « Plus tard » jusqu’à la date d’entrée en vigueur. Elle ne liste que ce qui change par rapport à la version en vigueur.",
+        "§15.3 p. 87",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-08",
+        "Après la date d’entrée en vigueur, la feuille ne se ferme plus sans acceptation, mais ne cache jamais le code de retrait ni le suivi d’une commande en cours (lien « Afficher mon code » quand un colis attend).",
+        "—",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-09",
+        "Les commandes déjà passées gardent les conditions et la version des paramètres du jour de la commande.",
+        "§2.6 p. 14 · §18.3 p. 100",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "CCG-10",
+        "Une version mineure (correction, précision) ne demande pas de nouvelle acceptation ; sa date s’affiche dans la page légale.",
+        "—",
+        "Recommandé"
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Pour le développeur : API, événements, erreurs, paramètres",
+   "tableaux": [
+    {
+     "sous_titre": "Endpoints indicatifs",
+     "colonnes": [
+      "Méthode",
+      "Route",
+      "Rôle"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "POST",
+        "/auth/google",
+        "Connexion Google, jeton vérifié côté serveur ; crée le compte ou ouvre celui de l’e-mail (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/auth/email",
+        "Connexion ou création par e-mail (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/auth/password/forgot · /auth/password/reset",
+        "Lien par e-mail (Brevo), 30 min, usage unique (ajout)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/auth/otp/send",
+        "Envoi du code au numéro : seul message autorisé avant vérification (spec 3.5) ; purpose = verify, change_old, change_new"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/auth/otp/verify",
+        "Vérification du numéro ; ouvre le droit de commander (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "PUT",
+        "/me/phone",
+        "Changement de numéro après les deux codes ; régénère les codes de retrait (ajout)"
+       ]
+      },
+      {
+       "cellules": [
+        "GET",
+        "/relais?near=lat,lng · ?q=",
+        "Relais ouverts et non saturés, par distance, avec trajet (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "PUT",
+        "/me/relais-habituel",
+        "Enregistre le relais habituel (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/me/adresses",
+        "Adresse par repères (spec 3.5)"
+       ]
+      },
+      {
+       "cellules": [
+        "POST",
+        "/me/moyens-paiement",
+        "Numéro MoMo de paiement, opérateur détecté (ajout)"
+       ]
+      },
+      {
+       "cellules": [
+        "PUT",
+        "/me/notification-settings",
+        "Canal de repli, catégories (10.7)"
+       ]
+      },
+      {
+       "cellules": [
+        "GET · POST",
+        "/legal/current · /me/terms-acceptance",
+        "Version en vigueur ; acceptation horodatée (ajout, 15.3)"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Événements émis et qui les consomme",
+     "colonnes": [
+      "Événement",
+      "Consommé par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "account.created",
+        "Console (statistiques) — avec méthode, langue, version des conditions"
+       ]
+      },
+      {
+       "cellules": [
+        "phone.verified",
+        "Paiement (droit de commander), IFA (identité élargie) ; aussi au changement de numéro"
+       ]
+      },
+      {
+       "cellules": [
+        "relay.chosen",
+        "Tarification (origine des distances), recherche"
+       ]
+      },
+      {
+       "cellules": [
+        "terms.accepted",
+        "Console (journal) — ajout"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Modèle de données touché",
+     "colonnes": [
+      "Objet",
+      "Champs"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Client",
+        "prenom, email (unique), google_sub, password_hash, telephone, telephone_verifie_at, operateur, langue, interets[], relais_habituel_id, terms_version, terms_accepted_at"
+       ]
+      },
+      {
+       "cellules": [
+        "Adresse",
+        "nom, quartier, zone_servie, reperes, lat, lng"
+       ]
+      },
+      {
+       "cellules": [
+        "MoyenPaiement",
+        "numero (masqué à l’affichage), operateur, dernier_utilise_at"
+       ]
+      },
+      {
+       "cellules": [
+        "CodeVerification",
+        "numero, purpose, hash, expire_at, essais, envois_heure"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paramètres (registre)",
+     "colonnes": [
+      "Code",
+      "Paramètre",
+      "Valeur",
+      "Statut"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "RELAIS-PAR-ZONE",
+        "Relais par zone au lancement",
+        "1",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SLA-ZONE-H",
+        "Délai de livraison par zone (repère « Moins de 5 h »)",
+        "moins de 5 h",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-DOM-BASE",
+        "Livraison de base domicile (carte « Plutôt à domicile ? »)",
+        "1 500 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "LIV-SEUIL-DOM",
+        "Livraison offerte à domicile",
+        "dès 50 000 F",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "FF-WHATSAPP-CANAL",
+        "WhatsApp comme canal de repli",
+        "fermé (aucun bouton au lancement)",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "SMS-MAX-CMD",
+        "SMS payants par commande (repli si notifications refusées)",
+        "6 au plus",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "OTP-LONG",
+        "Longueur du code de vérification (code proposé, absent du registre)",
+        "6 chiffres",
+        "Décidé"
+       ]
+      },
+      {
+       "cellules": [
+        "OTP-DUREE",
+        "Validité du code (code proposé)",
+        "10 minutes (proposé)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "OTP-ESSAIS",
+        "Codes faux avant blocage (code proposé)",
+        "5, puis 15 minutes d’attente (proposé)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "OTP-RENVOI",
+        "Délai et nombre de renvois (code proposé)",
+        "60 s entre deux envois, 3 envois par heure (proposé)",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "MDP-LIEN",
+        "Validité du lien « mot de passe oublié » (code proposé)",
+        "30 minutes, usage unique",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "MDP-ESSAIS",
+        "Mots de passe faux avant attente (code proposé)",
+        "5, puis 15 minutes",
+        "Recommandé"
+       ]
+      },
+      {
+       "cellules": [
+        "RET-SANS-RETOUR",
+        "Remboursement sans retour physique (exemple de la feuille « version 2.0 »)",
+        "sous 3 000 à 5 000 F ; 3 000 F montré",
+        "À trancher"
+       ]
+      },
+      {
+       "cellules": [
+        "NOT-CONSERV",
+        "Conservation dans le centre de notifications (exemple de la feuille « version 2.0 »)",
+        "12 mois",
+        "Proposé"
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "États et erreurs",
+     "colonnes": [
+      "Cas",
+      "Affichage et action"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "Code faux (3.5)",
+        "« Ce code ne correspond pas » ; nouvel essai ; blocage après le nombre d’essais paramétré (OTP-ESSAIS)."
+       ]
+      },
+      {
+       "cellules": [
+        "Numéro déjà utilisé (3.5)",
+        "Proposer la connexion au compte existant."
+       ]
+      },
+      {
+       "cellules": [
+        "Aucun relais ouvert dans la zone (3.5)",
+        "Relais le plus proche d’une autre zone, avec son délai réel, ou la livraison à domicile."
+       ]
+      },
+      {
+       "cellules": [
+        "E-mail déjà inscrit",
+        "Pas de second compte ; connexion proposée (Google ou mot de passe)."
+       ]
+      },
+      {
+       "cellules": [
+        "Hors zone servie",
+        "Prévenu au choix du relais, date ferme ; domicile fermé."
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "section": "Couverture de la spécification",
+   "tableaux": [
+    {
+     "sous_titre": "",
+     "colonnes": [
+      "Section de la spec",
+      "Pages",
+      "Où c’est traité (écran, règles)"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "3.0 Pourquoi, ce qu’il faut livrer, décisions, à savoir",
+        "17",
+        "Parcours d’ensemble ; livrables 1 à 5 : Premier lancement (CIN-01), Connexion (CIN-13), Numéro (CIN-29), Première commande (CPR-01, CPR-14), Changer de numéro (CIN-39) ; décisions : CIN-05 (retour), CIN-01 et CIN-08 (trois écrans, bilingue), CIN-10 (intérêts), CIN-30 (IFA)."
+       ]
+      },
+      {
+       "cellules": [
+        "3.1 Le premier lancement",
+        "17–18",
+        "Écrans bienvenue, interets, connexion ; CIN-01 à CIN-14 ; critères d’acceptation des sections 2 et 3."
+       ]
+      },
+      {
+       "cellules": [
+        "3.2 Méthodes de connexion",
+        "18",
+        "connexion, connexion-email, mdp-oublie ; CIN-13, CIN-15, CIN-16, CIN-21, CIN-25, CIN-26."
+       ]
+      },
+      {
+       "cellules": [
+        "3.3 Le numéro de téléphone",
+        "18",
+        "numero, numero-changer ; CIN-29 à CIN-32, CIN-39, CIN-40."
+       ]
+      },
+      {
+       "cellules": [
+        "3.4 Ce qui est demandé plus tard (relais, adresse, paiement, notifications ; liaisons ; conditions et calculs ; interdits)",
+        "18–19",
+        "premiere-commande, relais-choix, adresse, notifs-proposition ; CPR-01 à CPR-31 ; calculs CIN-29, CIN-33, CIN-39, CIN-41, CPR-02, CIN-16 ; interdits en fin de chaque section."
+       ]
+      },
+      {
+       "cellules": [
+        "3.5 API, événements, erreurs, paramètre, définition de terminé",
+        "19–20",
+        "Section « Pour le développeur » (endpoints, événements, erreurs, RELAIS-PAR-ZONE) ; CIN-20, CIN-34, CIN-35, CIN-36, CPR-05, CPR-06, CPR-10."
+       ]
+      },
+      {
+       "cellules": [
+        "15.3 Pages légales",
+        "87",
+        "cgu, ligne d’acceptation de connexion et connexion-email, pied de premiere-commande ; CCG-01 à CCG-10."
+       ]
+      },
+      {
+       "cellules": [
+        "1.3 Décision du 25 sept. (un relais par zone, délai sous 5 h)",
+        "8",
+        "CIN-07 (repère « Moins de 5 h »), CPR-05, CPR-09."
+       ]
+      },
+      {
+       "cellules": [
+        "2.4, 2.6 Visibilité et modèle de données (client, adresse)",
+        "13–14",
+        "CIN-22, CPR-22, CPR-23 ; modèle dans « Pour le développeur »."
+       ]
+      },
+      {
+       "cellules": [
+        "9.2, 9.5 Code régénéré, compte minimal (relais habituel, adresses, moyens de paiement, numéro vérifié)",
+        "53–56",
+        "CIN-40, CIN-46, CPR-01, CPR-25."
+       ]
+      },
+      {
+       "cellules": [
+        "10.1 Réglage des notifications",
+        "60",
+        "CPR-28 à CPR-31."
+       ]
+      },
+      {
+       "cellules": [
+        "13.3 Changer de point relais d’une commande",
+        "78",
+        "CPR-02 (le plus proche en vert), CPR-07 (lien vers changer-relais)."
+       ]
+      },
+      {
+       "cellules": [
+        "16.1 Client ↔ point relais : choix du relais",
+        "90",
+        "CPR-02 à CPR-05 ; liaisons de la section « Choisir mon relais »."
+       ]
+      },
+      {
+       "cellules": [
+        "16.4 et 19.3 Délais du lancement, interdits valables partout",
+        "92, 105",
+        "CIN-07, CPR-09 ; interdits de chaque section (aucun chiffre non réel, aucune fourchette, aucune promotion par SMS)."
+       ]
+      }
+     ]
+    },
+    {
+     "sous_titre": "Traçabilité règle par règle",
+     "colonnes": [
+      "Règle de la spec (rules.json)",
+      "Énoncé (abrégé)",
+      "Traité par"
+     ],
+     "lignes": [
+      {
+       "cellules": [
+        "CH3-3.0-1",
+        "Trois écrans au plus, promesse d’abord, pas de mur",
+        "CIN-01, CIN-02"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-2",
+        "Google en un geste, e-mail en second",
+        "CIN-13"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-3",
+        "OTP avant la première commande, jamais avant la navigation",
+        "CIN-29"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-4",
+        "Relais, adresse, paiement à la première commande",
+        "CPR-01, CPR-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-5",
+        "Changement de numéro sécurisé",
+        "CIN-39, CIN-40"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-6 · CH3-3.0-9",
+        "« Retour 7 j · Sans discuter » supprimé → « Retour gratuit · si problème validé »",
+        "CIN-05"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-7",
+        "Trois écrans, bilingue dès le premier, intérêts facultatifs",
+        "CIN-01, CIN-08, CIN-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.0-8",
+        "Numéro vérifié → IFA (identité élargie)",
+        "CIN-30, CIN-36"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.1-1",
+        "Comprendre en dix secondes ; la promesse exacte",
+        "CIN-03"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.1-2",
+        "Écran 1 : logo, accroche, encart vert, trois repères, langue",
+        "CIN-02 à CIN-09"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.1-3",
+        "Écran 2 : intérêts, « Passer », ordonne l’accueil",
+        "CIN-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.1-4",
+        "Écran 3 : Google, e-mail, découvrir sans compte",
+        "CIN-13, CIN-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.1-5 à 7",
+        "Critères : promesse sans défiler ; aucun compte imposé ; panier du visiteur gardé",
+        "CIN-02, CIN-01, CIN-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.2-1 à 4",
+        "Google (jeton serveur), e-mail second, un e-mail = un compte, lien par e-mail",
+        "CIN-13, CIN-15, CIN-16, CIN-21, CIN-26"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.3-1 à 5",
+        "Numéro vérifié ; aucun message avant ; pas de commande sans ; changement ; opérateur",
+        "CIN-29 à CIN-32, CIN-39, CIN-40"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-1",
+        "Demandé à la première commande ; profil jamais préalable",
+        "CPR-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-2",
+        "Liste des relais par distance, gérant, horaires, trajet ; exclusions ; devient habituel",
+        "CPR-01 à CPR-04"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-3",
+        "Adresse par repères avec position sur la carte",
+        "CPR-22"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-4",
+        "Numéro Mobile Money prérempli",
+        "CPR-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-5",
+        "Notifications proposées après la première commande",
+        "CPR-26"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-6 à 8",
+        "Liaisons : origine des distances ; relais ouverts ; hors zone prévenu",
+        "CPR-06, CPR-02, CPR-03, CPR-08"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-9 à 13",
+        "Calculs : peut_commander ; code 6 chiffres ; changement ; relais proposés ; un e-mail = un compte",
+        "CIN-29, CIN-33, CIN-39, CIN-41, CPR-02, CIN-16"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.4-14 à 17",
+        "Interdits : mur, profil complet, message non vérifié, retour sans motif",
+        "Interdits des sections 2, 4, 7 ; CIN-01, CIN-05, CIN-31, CPR-14"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.5-1 à 7",
+        "Endpoints",
+        "Pour le développeur"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.5-8 à 10",
+        "Événements account.created, phone.verified, relay.chosen",
+        "CIN-20, CIN-36, CPR-06"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.5-11 à 13",
+        "Erreurs : code faux, numéro déjà utilisé, aucun relais dans la zone",
+        "CIN-34, CIN-35, CPR-10"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.5-14",
+        "Routes indicatives ; montants du service de tarification ; visibilité",
+        "Pour le développeur ; CPR-19"
+       ]
+      },
+      {
+       "cellules": [
+        "CH3-3.5-15 à 18",
+        "Définition de terminé",
+        "Critères d’acceptation des sections 2 à 9"
+       ]
+      },
+      {
+       "cellules": [
+        "CH15-15.3-1 à 4",
+        "Pages légales : liste, accès, versions, acceptation, langage simple FR/EN",
+        "CCG-01 à CCG-05"
+       ]
+      },
+      {
+       "cellules": [
+        "RELAIS-PAR-ZONE",
+        "Relais par zone au lancement = 1 (Fixé 25 sept.)",
+        "CPR-05 ; paramètres"
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

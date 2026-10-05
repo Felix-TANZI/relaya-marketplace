@@ -1,0 +1,720 @@
+{
+ "description": "Extrait de CL-02 : API de référence : conventions, API de référence : les routes.",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "sections": [
+  {
+   "section": "API de référence : conventions",
+   "tableaux": [],
+   "regles": [
+    "CAP-01",
+    "CAP-02",
+    "CAP-03",
+    "CAP-04",
+    "CAP-05",
+    "CAP-06",
+    "CAP-07",
+    "CAP-08",
+    "CAP-09",
+    "CAP-10",
+    "CAP-11",
+    "CAP-12",
+    "CAP-13"
+   ]
+  },
+  {
+   "section": "API de référence : les routes",
+   "tableaux": [
+    {
+     "sous_titre": "Authentification et compte",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "POST",
+       "chemin": "/auth/google",
+       "role": "Connexion Google : jeton d’identité vérifié par le serveur (signature, audience, email_verified) ; crée le compte ou ouvre celui de l’e-mail",
+       "ecran": "connexion",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/auth/email",
+       "role": "Connexion ou création par e-mail (mode: signup) ; 401 message unique, 409 e-mail déjà pris",
+       "ecran": "connexion-email",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/auth/password/forgot · /auth/password/reset",
+       "role": "Lien par e-mail (Brevo), jeton à usage unique de 30 min ; réponse toujours 202",
+       "ecran": "mdp-oublie",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/auth/otp/send",
+       "role": "Code à 6 chiffres par SMS (purpose : verify, change_old, change_new) ; seul message avant la vérification",
+       "ecran": "numero, numero-changer",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/auth/otp/verify",
+       "role": "Vérifie le numéro ; ouvre le droit de commander (phone.verified)",
+       "ecran": "numero?st=ok",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "PUT",
+       "chemin": "/me/phone",
+       "role": "Changement de numéro après les deux codes : codes de retrait régénérés, autres sessions fermées",
+       "ecran": "numero-changer",
+       "doc": "CL-03"
+      },
+      {
+       "methode": "GET · PATCH · DELETE",
+       "chemin": "/me",
+       "role": "Profil (numéro et e-mail masqués, relais habituel, avantages, compteurs) ; langue et thème ; suppression (409 compte_en_cours ou 202 après OTP)",
+       "ecran": "compte, reglages, supprimer",
+       "doc": "CL-13"
+      },
+      {
+       "methode": "POST · DELETE",
+       "chemin": "/devices",
+       "role": "Jeton FCM par appareil ; révoqué à la déconnexion",
+       "ecran": "notifs-proposition, compte",
+       "doc": "CL-10"
+      },
+      {
+       "methode": "GET · POST",
+       "chemin": "/me/moyens-paiement",
+       "role": "Numéros Mobile Money de paiement ; opérateur détecté à la saisie",
+       "ecran": "moyens-paiement",
+       "doc": "CL-03, CL-13"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Relais et adresses",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/relais?near=lat,lng · ?q= · &open_today=1&not_full=1",
+       "role": "Relais ouverts et non saturés, par distance, avec gérant, photos, trajet, horaires du jour ; date ferme hors zone",
+       "ecran": "relais-choix, relais-selecteur, changer-relais",
+       "doc": "CL-03, CL-05, CL-12"
+      },
+      {
+       "methode": "PUT",
+       "chemin": "/me/relais-habituel",
+       "role": "Enregistre le relais habituel (relay.chosen)",
+       "ecran": "relais-choix",
+       "doc": "CL-03, CL-05"
+      },
+      {
+       "methode": "POST · PUT · DELETE",
+       "chemin": "/me/adresses · /me/adresses/{id}",
+       "role": "Adresse par repères (nom, quartier, repères, position) ; 422 zone_non_servie",
+       "ecran": "adresse, adresses",
+       "doc": "CL-03, CL-13"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Accueil, catalogue et recherche",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/home?profil=auto · /home/rows/{id}?cursor=",
+       "role": "Profil, reprise (retraits, montants dus, paiement interrompu) et rangées ordonnées, chacune paginée à part",
+       "ecran": "accueil",
+       "doc": "CL-04"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/categories",
+       "role": "Univers, sous-catégories non vides et compteurs réels (cache court)",
+       "ecran": "categories",
+       "doc": "CL-04"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/listing/{cat}?sub=&tri=&f=&marque=&cursor=",
+       "role": "Listing en grille, prix livrés depuis le relais ; count, xl_hidden, marques[], voisines[]",
+       "ecran": "liste",
+       "doc": "CL-04"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/search/suggest?q=",
+       "role": "Suggestions dès 2 lettres, compteurs réels, historique en tête",
+       "ecran": "recherche-saisie",
+       "doc": "CL-05"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/search?q=&filters=&relais=&tri=&cursor=",
+       "role": "Résultats par produit maître, offre attribuée, correction (corrected_from), compteurs des filtres",
+       "ecran": "recherche-resultats, recherche-zero, recherche-filtres",
+       "doc": "CL-05"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/search/trending?zone=",
+       "role": "Recherches de la zone (clients distincts, 7 jours) avec au moins un produit livrable",
+       "ecran": "recherche",
+       "doc": "CL-05"
+      },
+      {
+       "methode": "GET · DELETE",
+       "chemin": "/me/search-history · /me/search-history/{id}",
+       "role": "Historique ; suppression réelle d’une ligne ou de tout",
+       "ecran": "recherche",
+       "doc": "CL-05"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/search/alerts",
+       "role": "Alerte « Préviens-moi quand ça arrive » (requête, zone)",
+       "ecran": "recherche-zero",
+       "doc": "CL-05"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Fiche, favoris et alertes",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/products/{maitre}?relais=&variante=&q=",
+       "role": "Produit maître, variantes, offre attribuée (palier, Trust Score, distance, délai ; jamais le nom), prix livré, heures fermes, avis cumulés",
+       "ecran": "fiche, galerie",
+       "doc": "CL-06"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/products/{maitre}/reviews?cursor= · /reviews/summary",
+       "role": "Avis vérifiés ; moyenne, répartition (borne de Wilson interne)",
+       "ecran": "avis",
+       "doc": "CL-06, CL-13"
+      },
+      {
+       "methode": "GET · POST · PATCH · DELETE",
+       "chemin": "/me/favorites · /me/favorites/{id}",
+       "role": "Liste unique favoris et sauvegardés ; alertes baisse de prix et retour en stock",
+       "ecran": "sauvegardes",
+       "doc": "CL-06, CL-07"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/me/alerts",
+       "role": "Alerte de retour en stock sur une variante en rupture partout",
+       "ecran": "fiche?st=alerte",
+       "doc": "CL-06"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/messages/threads",
+       "role": "Question au vendeur ; coordonnées masquées avant l’enregistrement (masked)",
+       "ecran": "question",
+       "doc": "CL-06, CL-13"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Panier",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/cart?mode=&relais=",
+       "role": "Panier recalculé depuis zéro : sections, lignes, suggestions, conseil, récapitulatif, éligibilité au comptoir, délais",
+       "ecran": "panier",
+       "doc": "CL-07"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/cart/lines",
+       "role": "Ajout (variante, quantité) ; offre ré-attribuée côté serveur",
+       "ecran": "fiche, panier",
+       "doc": "CL-06, CL-07"
+      },
+      {
+       "methode": "PATCH · DELETE",
+       "chemin": "/cart/lines/{id}",
+       "role": "Quantité, variante ; retrait (?dry_run=1 : avertissement et panier simulé)",
+       "ecran": "panier, panier-retrait",
+       "doc": "CL-07"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/cart/lines/{id}/save · /cart/lines/{id}/swap-offer",
+       "role": "Mettre de côté ; « Changer d’offre » (refusé si le gain n’est plus positif)",
+       "ecran": "panier?sauve=, panier?offre=mixeur",
+       "doc": "CL-07"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/cart/eligibility/counter",
+       "role": "Éligibilité au comptoir : eligible, reason, due_now, due_at_pickup",
+       "ecran": "panier?st=comptoir",
+       "doc": "CL-07"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/carts/{id}/share",
+       "role": "Lien de paiement pour un proche (partage natif) ; sans adresse ni numéro",
+       "ecran": "panier?st=partage, modifier?onglet=etranger",
+       "doc": "CL-07, CL-12"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Paiement",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "POST",
+       "chemin": "/checkout",
+       "role": "Recalcul, contrôle des prix, réservation, commande en attente, demande à l’agrégateur ; Idempotency-Key ; 202 ou 409 price_changed",
+       "ecran": "paiement-attente, prix-change",
+       "doc": "CL-07, CL-08"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/checkout/confirm",
+       "role": "Confirmation explicite après une hausse, un retrait ou un article pris",
+       "ecran": "prix-change",
+       "doc": "CL-08"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/checkout/counter",
+       "role": "Commande « Validée » : demande Mobile Money de la livraison seule",
+       "ecran": "paiement-attente?mode=comptoir, validee",
+       "doc": "CL-08"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/payments/{id}",
+       "role": "État réel : pending, verifying, succeeded, failed ; cause client ; expires_at (sondage 3 s puis 10 s)",
+       "ecran": "paiement-attente",
+       "doc": "CL-08, CL-09"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/payments/{id}/resend · /cancel · /abandon",
+       "role": "Nouvelle tentative (autre numéro possible) ; annulation ; abandon du paiement interrompu",
+       "ecran": "paiement-attente?st=renvoi|numero, commandes",
+       "doc": "CL-08, CL-09"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/webhooks/campay",
+       "role": "Webhook signé de l’agrégateur (Fapshi : même traitement) ; seule source de vérité",
+       "ecran": "—",
+       "doc": "CL-08"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/orders/{id}/counter-payment",
+       "role": "Demande MoMo du montant dû au comptoir (calculé, jamais saisi)",
+       "ecran": "comptoir-payer",
+       "doc": "CL-08, CL-09"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}/receipt",
+       "role": "Reçu : référence, montant, numéro masqué, relais, gérant, retrait estimé, nombre de colis",
+       "ecran": "confirmee",
+       "doc": "CL-08"
+      },
+      {
+       "methode": "GET · POST",
+       "chemin": "/gift-links/{token} · /gift-payments",
+       "role": "Page du payeur à l’étranger ; paiement par carte (3-D Secure, 2 %) ; 402 card_declined, 422 over_cap",
+       "ecran": "payeur, payeur-preuve",
+       "doc": "CL-12, CL-15"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Commandes, suivi et code",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/me/orders?tab=cours|terminees",
+       "role": "Cartes rangées par le serveur (phrase, colis, action unique, ton) ; bloc interrupted ; action_needed (badge)",
+       "ecran": "commandes",
+       "doc": "CL-09"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}",
+       "role": "Détail : reçu, colis par boutique, frais figés, montant dû, liens permis",
+       "ecran": "commande",
+       "doc": "CL-09"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}/tracking",
+       "role": "Réponse en tête et état par colis (rang, heure, livreur : prénom, photo, heure estimée)",
+       "ecran": "suivi",
+       "doc": "CL-09, CL-11"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/orders/{id}/code/reveal · /code/resend · /code/renew",
+       "role": "Code et QR (preuve de déverrouillage au-delà de CODE-BIO) ; renvoi payant (3 par 24 h) ; nouveau code après un blocage",
+       "ecran": "code, code-partage",
+       "doc": "CL-09, CL-10"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}/storage",
+       "role": "Garde : J0, rang, dû maintenant, demain, palier suivant, date limite, renvoi, jours",
+       "ecran": "garde, code",
+       "doc": "CL-09, CL-10"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/orders/{id}/all-good",
+       "role": "« Tout est en ordre » : fermeture de la fenêtre de retour (return.closed)",
+       "ecran": "comptoir?st=ok",
+       "doc": "CL-09"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}/invoice.pdf · /me/factures",
+       "role": "Facture générée par le serveur (montants figés) ; liste des factures",
+       "ecran": "commande?st=facture, factures",
+       "doc": "CL-09, CL-13"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/orders/{id}/rebuy",
+       "role": "Racheter aux prix et stocks actuels",
+       "ecran": "commandes?st=rachat",
+       "doc": "CL-09"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Notifications",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET · POST",
+       "chemin": "/me/notifications?cursor= · /me/notifications/read",
+       "role": "Centre (30 par page, unread_count) ; marquer lu",
+       "ecran": "notifications",
+       "doc": "CL-10"
+      },
+      {
+       "methode": "GET · PUT",
+       "chemin": "/me/notification-settings",
+       "role": "Canal de repli, catégories (critiques : 422 category_locked)",
+       "ecran": "notifs-reglages, notifs-proposition",
+       "doc": "CL-03, CL-10"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/me/consents",
+       "role": "Consentement horodaté (WhatsApp le jour où le canal ouvre)",
+       "ecran": "notifs-reglages",
+       "doc": "CL-10"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/r/{token}",
+       "role": "Page publique du lien court (QR, code, relais) ; noindex, désactivée au retrait",
+       "ecran": "lien-court",
+       "doc": "CL-10"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Modifier une commande",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "GET",
+       "chemin": "/orders/{id}/manage",
+       "role": "Sous-commandes : lettre, colis, zone, palier, article, montant, état, cancellable, refund_if_cancelled",
+       "ecran": "modifier, annuler",
+       "doc": "CL-12"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/suborders/{id}/cancel",
+       "role": "Annulation par boutique ; 409 state_changed ; clé d’idempotence = sous-commande",
+       "ecran": "annuler-confirmer",
+       "doc": "CL-12, CL-14"
+      },
+      {
+       "methode": "PUT",
+       "chemin": "/orders/{id}/relais · /orders/{id}/address",
+       "role": "Changement de relais ou d’adresse avant collecte ; 409 in_tour, 409 relay_full, 409 collected",
+       "ecran": "changer-relais, changer-adresse",
+       "doc": "CL-12"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/parcels/{id}/transfer",
+       "role": "Transfert d’un colis arrivé (400 F + garde) ; 202 avec la demande MoMo",
+       "ecran": "changer-relais?ref=BLV-52018&st=payer",
+       "doc": "CL-12"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Litiges, retours et remplacements",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "POST",
+       "chemin": "/disputes",
+       "role": "Création à l’étape 4 (colis, motif, photos, souhait) ; renvoie le dossier ou auto_refunded",
+       "ecran": "litige, litige-confirme, litige-auto",
+       "doc": "CL-11"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/disputes/{id} · /me/disputes",
+       "role": "États, compte à rebours, réponse du vendeur, décision et motif ; liste des dossiers",
+       "ecran": "litige-suivi, litiges",
+       "doc": "CL-11"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/disputes/{id}/photos · /disputes/{id}/messages",
+       "role": "Photos par l’appareil photo (heure serveur) ; messagerie tracée, réponse à un arrangement",
+       "ecran": "litige, fil, litige-arrangement",
+       "doc": "CL-11, CL-13"
+      },
+      {
+       "methode": "POST · GET",
+       "chemin": "/returns · /returns/{id} · /returns/{id}/inspection",
+       "role": "Retour accepté ; état ; inspection du vendeur (48 h)",
+       "ecran": "retour",
+       "doc": "CL-11"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/replacements/{id}",
+       "role": "État du remplacement",
+       "ecran": "remplacement",
+       "doc": "CL-11"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Avis, aide et légal",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "POST · PUT",
+       "chemin": "/orders/{id}/reviews",
+       "role": "Deux notes (vendeur, relais) ; 403 non_eligible, 410 fenetre_fermee",
+       "ecran": "avis-donner, avis-bas",
+       "doc": "CL-13"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/help · /help/faq?lang=&q=",
+       "role": "Aide (heures, délai, dossiers en cours) ; questions fréquentes",
+       "ecran": "aide, faq",
+       "doc": "CL-13"
+      },
+      {
+       "methode": "GET · POST",
+       "chemin": "/me/threads · /support/threads · /support/callback",
+       "role": "Messagerie ; nouveau fil de support ; demande de rappel",
+       "ecran": "messagerie, fil, rappel",
+       "doc": "CL-13"
+      },
+      {
+       "methode": "GET · POST",
+       "chemin": "/legal/{doc}?lang= · /me/legal · /me/legal/accept",
+       "role": "Textes légaux (version, date, essentiel, PDF) ; versions acceptées ; acceptation horodatée",
+       "ecran": "cgu, legal, legal-doc",
+       "doc": "CL-03, CL-13"
+      },
+      {
+       "methode": "GET",
+       "chemin": "/config/flags",
+       "role": "Interrupteurs de fonctionnalité (tous fermés au lancement)",
+       "ecran": "—",
+       "doc": "CL-14"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Application du relais (effet côté client)",
+     "colonnes": [
+      "Méthode",
+      "Chemin",
+      "Rôle",
+      "Écran",
+      "Doc."
+     ],
+     "lignes": [
+      {
+       "methode": "POST",
+       "chemin": "/relay/disputes",
+       "role": "Constat au comptoir (le client ne remplit rien) → dispute.opened",
+       "ecran": "litige-comptoir",
+       "doc": "CL-09, CL-11"
+      },
+      {
+       "methode": "POST",
+       "chemin": "/relay/returns/{id}/deposit",
+       "role": "Dépôt d’un retour scanné → return.deposited",
+       "ecran": "retour?st=depose",
+       "doc": "CL-11"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Après le lancement (derrière les interrupteurs)",
+     "colonnes": [
+      "Module",
+      "Routes"
+     ],
+     "lignes": [
+      {
+       "module": "Abonnement (CL-14)",
+       "routes": "GET /subscriptions/plans · POST /subscriptions · DELETE /subscriptions/{id} · POST /subscriptions/business-proof · GET /me/subscription · GET /me/cagnotte · GET /me/referrals · GET /gift-subscriptions/beneficiary?msisdn="
+      },
+      {
+       "module": "Listes d’envies (CL-14)",
+       "routes": "GET · POST /lists · GET /lists/{id} · DELETE /lists/{id}/items/{item} · POST /lists/{id}/share · POST /lists/{id}/release-now · GET /lists/public/{token} · POST /lists/{id}/items/{item}/gift"
+      },
+      {
+       "module": "Ventes flash, assistant (CL-14)",
+       "routes": "GET /flash?relay_id= · assistant par AIService (mêmes routes et droits que l’application)"
+      },
+      {
+       "module": "Rentrée EX-01 (CL-15)",
+       "routes": "GET /schools?q=&near= · GET /schools/{id}/lists?year= · GET /school-lists/{id} · POST /school-lists/{id}/cart · POST /paper-lists · POST /schools/{id}/lists"
+      },
+      {
+       "module": "Cotisation EX-02",
+       "routes": "POST /pools · GET /pools/{link} · GET /pools/{id} · POST /pools/{id}/contributions"
+      },
+      {
+       "module": "Mise de côté EX-03",
+       "routes": "POST /layaways · GET /layaways/{id} · POST /layaways/{id}/installments · POST /layaways/{id}/cancel"
+      },
+      {
+       "module": "Troc EX-04",
+       "routes": "POST /tradeins/estimate · POST /tradeins · POST /relay/tradeins/{code}/deposit · GET /tradeins/{id} · POST /tradeins/{id}/accept · POST /tradeins/{id}/refuse"
+      },
+      {
+       "module": "Panier famille EX-05",
+       "routes": "GET /family-baskets/templates · POST /family-baskets · PUT /family-baskets/{id}/renewal · GET /family-baskets/{id}/proofs · POST /gift-payments"
+      },
+      {
+       "module": "WhatsApp EX-06",
+       "routes": "POST /wa/webhook (messages, statuts) → AIService → recherche, attribution, tarification de base"
+      }
+     ]
+    },
+    {
+     "sous_titre": "Routes écrites autrement dans un document d’écran",
+     "colonnes": [
+      "Écrit",
+      "Document",
+      "Route retenue"
+     ],
+     "lignes": [
+      {
+       "ecrit": "GET /relays?near=home&open_today=1&not_full=1",
+       "document": "CL-12",
+       "route_retenue": "GET /relais?near=…&open_today=1&not_full=1"
+      },
+      {
+       "ecrit": "GET /legal/current · POST /me/terms-acceptance",
+       "document": "CL-03",
+       "route_retenue": "GET /legal/cgu (champs version, effective_at, major, summary) · POST /me/legal/accept {doc, version}"
+      },
+      {
+       "ecrit": "POST /orders/{id}/code/renew",
+       "document": "CL-09",
+       "route_retenue": "gardé (nouveau code après un blocage) : la v3 dit « nouveau code sur demande » sans route"
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,261 @@
+{
+ "description": "Décisions du porteur du produit et arbitrages transverses (CL-16).",
+ "source": "Extrait de CL-02 et CL-16 (04_Pages_HTML) par logique-metier/outils/",
+ "tableaux": [
+  {
+   "sous_titre": "Décisions du porteur du produit, 26 septembre 2026",
+   "colonnes": [
+    "Sujet",
+    "Ce que dit la spec",
+    "Décision",
+    "Raison",
+    "Règles"
+   ],
+   "lignes": [
+    {
+     "sujet": "Accueil d’origine",
+     "ce_que_dit_la_spec": "4.1 : « L’accueil ne présente pas BelivaY » (aucun bloc de présentation, aucune carte de chiffres, aucun pied de page de site) et une structure imposée (recherche, reprise, carrousel, grille des catégories, rangées, « Près de ton relais », Nouveautés, Top ventes).",
+     "decision": "« La page accueil garde-la exactement comme je l’avais faite en version originale. » L’accueil reprend l’enchaînement, les emplacements et le style de l’application d’origine (IMG_2339 à 2355). Seul le contenu interdit change, dans la même case : bandeau noir rotatif à 5 messages vrais ; 6 bandes d’univers à vrais compteurs ; « Prix en baisse » à remises réelles, sans minuterie ; « À la une · Près de ton relais » ; « Récemment consultés » ; « Produits populaires » (6 meilleures ventes) ; bannière « Retrait offert » ; « Nouveaux arrivages » ; rangées par univers (3 produits au moins) ; « Pourquoi choisir BelivaY ? » ; carte « BelivaY · Tout près de toi » ; pied de page sans numéro en clair ; barre flottante « 3 colis t’attendent au relais · Mon code ».",
+     "raison": "Écart assumé à 4.1 : CAC-01 et CAC-02 sont réécrites avec le statut « Décidé (porteur, 26 sept.) ». Les générateurs de la spec (reprise, Près de ton relais, Nouveautés, Top ventes) sont gardés dans les cases d’origine. Les interdits de 19.3 restent appliqués : aucun faux chiffre, aucun compte à rebours, aucun robot, aucun encart Premium.",
+     "regles": "CL-04 CAC-01 · CAC-02 · CAC-04 · CAC-26"
+    },
+    {
+     "sujet": "Plan dans Mes commandes",
+     "ce_que_dit_la_spec": "9.3 et 9.6 : aucune carte de suivi du livreur en temps réel ; 16.3 et 19.1 : ni la position ni le numéro du livreur, aucune boutique révélée.",
+     "decision": "« Dans mes commandes […] on doit pouvoir voir la map » (IMG_2432 à 2452). Un « Plan indicatif » figure dans la liste (panneau « Livraisons en cours »), dans le détail d’une commande et dans suivi. Il montre ta maison, ton relais (Mvog-Ada) et le trajet à pied (« 350 m · 6 min »). Il ne montre jamais la position du livreur ni la boutique.",
+     "raison": "Le plan répond à « où vais-je chercher mon colis ? » sans rien exposer : 9.3, 9.6, 16.3 et 19.1 sont respectés. Pour le livreur, une heure estimée suffit.",
+     "regles": "CL-09 CMC-49 · CSU-08"
+    },
+    {
+     "sujet": "Puces de filtre et deux actions par carte",
+     "ce_que_dit_la_spec": "9.1 : « aucun filtre, aucune recherche, aucun tri dans l’historique » et une seule action par carte (recette 9.3 et 9.4).",
+     "decision": "Écart assumé à 9.1, pris sur la disposition d’origine. Sous les onglets En cours 4 / Terminées 4, des puces : Toutes · À retirer · En route · En litige, puis Toutes · Retirées · Annulées. Chaque carte a au plus une action principale, une action secondaire et « Détails » (BLV-52018 : Payer 400 F · Mon code ; BLV-52107 : Annuler · Suivre). L’historique n’a toujours ni recherche ni tri, et l’ordre reste celui du serveur.",
+     "raison": "Disposition des captures d’origine demandée par le porteur. Les puces filtrent des états déjà calculés, sans appel au serveur.",
+     "regles": "CL-09 CMC-02 · CMC-23 · CMC-25"
+    },
+    {
+     "sujet": "Menu réel et Plan du prototype hors de l’application",
+     "ce_que_dit_la_spec": "La spec ne décrit pas le contenu du menu (☰). Le prototype en faisait une liste de tous ses écrans, générée depuis les routes (champ menu:{…}).",
+     "decision": "Le ☰ ouvre le vrai menu de l’application. On y trouve, de haut en bas : le compte ; le relais (« Changer ») ; les 10 catégories et « Toutes les catégories » ; Mes achats (Mes commandes, Sauvegardés et listes, Mes litiges, Factures) ; Aide (Aide et support, Messagerie, Notifications) ; Préférences (FR / EN / Pidgin, thème sombre, Réglages) ; pages légales, À propos, Comment ça marche. La liste des écrans et états (456 captures) vit dans le « Plan du prototype », hors du téléphone : panneau à gauche dès 1 100 px, bouton « Plan du prototype » ou route #plan. Le champ menu:{…} n’est plus lu.",
+     "raison": "« Beaucoup de pages ne sont pas où elles doivent être. » Un écran existe parce qu’un client y arrive par un vrai geste, jamais par une liste. Le Plan n’apparaît ni dans les captures, ni en production. Aucun retour ne mène au Menu.",
+     "regles": "CL-01 CNV-02\nCL-16 CTV-32 · CTV-33"
+    },
+    {
+     "sujet": "Modules après le lancement : entrées repliées à leur place",
+     "ce_que_dit_la_spec": "32.1 : les modules sont fermés au lancement (interrupteurs FF-…) et n’ont aucune entrée visible. La spec ne dit pas où leur entrée vivra.",
+     "decision": "Chaque module a son entrée là où il vivra, repliée et marquée d’un cadenas : Compte, « Après le lancement · 6 services » (Abonnement Prime, cagnotte, parrainage, panier famille, mise de côté, troc) ; Aide, « Après le lancement · 2 services » (Assistant, Commander sur WhatsApp) ; Sauvegardés (Listes d’envies, Listes de rentrée) ; fiche st=apres (Mettre de côté, Offrir à plusieurs, Échanger mon téléphone, Vente flash, Livraison offerte avec un abonnement). En production, l’entrée n’existe pas tant que l’interrupteur est fermé.",
+     "raison": "Chaque écran d’un module s’atteint depuis l’écran précédent de son parcours. Le contrôle inbound.js compte 0 orphelin sur 134 écrans.",
+     "regles": "CL-16 CTV-34 · CTV-33\nCL-14 CFS-02"
+    }
+   ]
+  },
+  {
+   "sous_titre": "Arbitrages transverses des documents",
+   "colonnes": [
+    "Sujet",
+    "Ce que dit la spec",
+    "Décision",
+    "Raison",
+    "Règles"
+   ],
+   "lignes": [
+    {
+     "sujet": "Tutoiement",
+     "ce_que_dit_la_spec": "Quelques phrases de la spec vouvoient : « Tout près de vous » (3.1, 4.3), « Mme Ngo Bassong vous attend au relais » (8.4).",
+     "decision": "Tutoiement partout, y compris dans les messages ; les phrases de la spec sont reprises mot pour mot, adaptées au « tu ». Seul le texte d’un vendeur (arrangement, réponse) s’affiche tel qu’il l’a écrit.",
+     "raison": "La charte du client tutoie ; un même écran ne mélange pas deux registres.",
+     "regles": "CL-01 CCH-22\nCL-03 CIN-04\nCL-04 CCT-09\nCL-08 CRC-12\nCL-11 CLT-65 · CLT-49"
+    },
+    {
+     "sujet": "Délai affiché",
+     "ce_que_dit_la_spec": "Des passages antérieurs écrivent « 24-72 h » (6.2), « retrait dès demain » (7.x), « retrait en 48 à 72 h » (3.4) ; la décision du 25 sept. vise moins de 5 h par zone (§1.3, 16.4).",
+     "decision": "Un délai est toujours une heure ou une date ferme calculée par le serveur (« retrait dès aujourd’hui 17 h », « samedi 26 sept. ») ; jamais de fourchette. Hors zone : date ferme calculée.",
+     "raison": "La décision la plus récente l’emporte (§1.3) ; une fourchette est interdite (19.3, BRIEF charte).",
+     "regles": "CL-01 CCH-03\nCL-03 CIN-07 · CPR-09\nCL-06 CFP-26\nCL-07 CPN-30 · CPN-32\nCL-09 CSU-02\nCL-08 CRC-05"
+    },
+    {
+     "sujet": "Phrase sous « Passer commande »",
+     "ce_que_dit_la_spec": "La spec écrit « Tu ne paies rien tant que les vendeurs n’ont pas confirmé. Colis prêts sous 4 h, retrait dès demain » (7.2).",
+     "decision": "« Ton argent reste bloqué jusqu’à ton retrait. Colis prêts sous 6 h, retrait dès aujourd’hui 17 h. »",
+     "raison": "Le débit Mobile Money a lieu au paiement, avant la confirmation des vendeurs (8.1, 2.2) ; « demain » contredit le délai de moins de 5 h.",
+     "regles": "CL-07 CPN-30"
+    },
+    {
+     "sujet": "Pidgin",
+     "ce_que_dit_la_spec": "Absent de la spec client v3 ; présent chez le point relais et le vendeur ; demandé par le prototype.",
+     "decision": "Troisième langue proposée : chaque texte s’affiche en pidgin s’il est traduit et validé (aujourd’hui les trois écrans du premier lancement), sinon en français ; notifications et SMS en français jusqu’à validation ; textes relus par un traducteur camerounais. L’ajout à la spec reste à confirmer par le porteur du produit.",
+     "raison": "Même offre de langues dans les trois espaces ; rien d’affiché qui ne soit validé.",
+     "regles": "CL-01 CRD-03\nCL-03 CIN-09\nCL-13 CRG-01 · CRG-02"
+    },
+    {
+     "sujet": "Partage par WhatsApp",
+     "ce_que_dit_la_spec": "10.6 interdit « commande, panier… transmis par WhatsApp » ; 7.4 et 8.4 prévoient l’envoi du panier et de la confirmation par WhatsApp.",
+     "decision": "Partage natif du téléphone du client (WhatsApp peut y apparaître en premier) : c’est le client qui envoie un lien, à coût nul. BelivaY n’envoie jamais rien par WhatsApp au lancement et n’y transmet jamais code, preuve ni litige.",
+     "raison": "L’interdit vise les envois de BelivaY (pas d’API WhatsApp au lancement, 19.4) ; le lien partagé ne porte ni code, ni adresse, ni numéro.",
+     "regles": "CL-01 CCH-12\nCL-07 CPN-46 · CPN-47\nCL-08 CRC-09\nCL-12 CET-02\nCL-09 CCD-08"
+    },
+    {
+     "sujet": "Ce que voit le livreur à domicile",
+     "ce_que_dit_la_spec": "19.1 : « prénom et quartier seulement » ; 2.4 et 9.5 lui donnent l’adresse (« c’est ce que le livreur utilise »).",
+     "decision": "Le livreur voit le prénom et l’adresse par repères, pendant la livraison seulement ; jamais le numéro (appel masqué) ; le vendeur ne voit jamais l’adresse.",
+     "raison": "Sans l’adresse, on ne livre pas ; l’exposition est limitée au temps de la livraison.",
+     "regles": "CL-03 CPR-23\nCL-13 CCO-12\nCL-02 CVI-03\nCL-16 CTV-03"
+    },
+    {
+     "sujet": "Classe du mixeur et de la marmite",
+     "ce_que_dit_la_spec": "Le jeu d’essai initial les classait M, alors que l’exemple de référence 7.3 (272 579 F) et BLV-52107 (196 780 F) ne comptent aucun supplément de classe.",
+     "decision": "Mixeur-blender et marmite en classe S ; l’offre du mixeur à Mvog-Ada est à 1,2 km. Exemples de colis M et L : huile d’arachide 5 L (M), riz 25 kg et ventilateur (L), téléviseurs (CL-05).",
+     "raison": "Les exemples chiffrés de la spec priment ; correction faite à l’assemblage (CL-02).",
+     "regles": "CL-07 CFR-18\nCL-02 CDA-12"
+    },
+    {
+     "sujet": "Supplément de classe M, L et XL",
+     "ce_que_dit_la_spec": "19.4 : supplément M et L « à trancher » ; aucun tarif XL au registre.",
+     "decision": "Partout la même valeur proposée, affichée dès la carte et la fiche sous le prix livré : « + 200 F colis M », « + 300 F colis L » ; XL à domicile seulement, supplément proposé 1 500 F. Jamais offert, jamais découvert au panier. Valeurs à trancher.",
+     "raison": "Le client voit le vrai prix livré dès la carte ; une seule valeur tant qu’il n’y a pas de décision.",
+     "regles": "CL-01 CDS-16\nCL-04 CLS-10\nCL-06 CFP-24 · CFP-29\nCL-05 CRE-24\nCL-07 CFR-18 · CFR-19\nCL-02 CAL-09"
+    },
+    {
+     "sujet": "Litige LIT-3042 et BLV-51206",
+     "ce_que_dit_la_spec": "Le jeu d’essai initial écrivait « réponse sous 29 h » et « retirée le 9 août » (un dimanche, relais fermé).",
+     "decision": "LIT-3042 : ouvert mer. 23 sept. 17 h 15, échéance ven. 25 sept. 17 h 15, « En litige · réponse sous 31 h » à 10 h 15. BLV-51206 : « Retirée le 8 août » ; LIT-2987 ouvert le lun. 10 août, remboursement partiel automatique de 3 000 F le jour même.",
+     "raison": "Le délai affiché se recalcule (t_ouverture + 48 h − maintenant) ; aucune date impossible dans le jeu d’essai.",
+     "regles": "CL-09 CMC-30\nCL-11 CLT-35"
+    },
+    {
+     "sujet": "Reprendre un paiement interrompu",
+     "ce_que_dit_la_spec": "La spec décrit la carte « Paiement interrompu » (9.1) sans dire quel écran rouvre le paiement.",
+     "decision": "Dans Mes commandes, l’encart orange « Paiement en attente » (214 699 F, articles réservés jusqu’à 10 h 27, compte à rebours 12:00) : « Reprendre le paiement » ouvre la feuille Paiement (commandes?sheet=payer, MTN MoMo présélectionné ou Orange Money), puis « Continuer avec MTN Mobile Money » rouvre la même demande (paiement-attente?st=reprise). Ce n’est jamais une commande. L’accueil d’origine n’a plus de ligne de reprise du paiement : sa barre flottante reprend les colis à retirer.",
+     "raison": "Une seule demande de paiement par tentative (idempotence) ; le client retrouve l’état réel.",
+     "regles": "CL-04 CAC-06\nCL-09 CMC-10 · CMC-14\nCL-08 CPY-26"
+    },
+    {
+     "sujet": "Autre numéro Mobile Money",
+     "ce_que_dit_la_spec": "La spec demande un numéro vérifié pour commander, et propose de payer avec un autre numéro.",
+     "decision": "Payer une commande avec un autre numéro : pas de code SMS (le code secret MoMo prouve la possession), aucun message envoyé à ce numéro. Enregistrer un numéro dans « Moyens de paiement » : vérification par code SMS.",
+     "raison": "Aucun message vers un numéro non vérifié ; un numéro gardé dans le compte doit appartenir au client.",
+     "regles": "CL-03 CPR-17 · CIN-31\nCL-08 CPY-46\nCL-13 CCO-15"
+    },
+    {
+     "sujet": "Masque du numéro",
+     "ce_que_dit_la_spec": "La spec écrit « 6 77 41 ».",
+     "decision": "Masque « 6 77 ·· ·· 41 » (points médians), le même sur tous les écrans, messages et reçus.",
+     "raison": "Lisible et cohérent avec le jeu d’essai ; les étoiles se confondent avec les renvois.",
+     "regles": "CL-01 CCH-33\nCL-08 CPY-33\nCL-13 CCO-06"
+    },
+    {
+     "sujet": "Porte-monnaie et dépôt",
+     "ce_que_dit_la_spec": "L’application actuelle a « Mon Compte BelivaY » et « Déposer des fonds » ; la spec ne les reprend pas.",
+     "decision": "Aucun porte-monnaie, aucun dépôt, aucun numéro « officiel » : l’argent du client n’est tenu qu’en escrow, lié à une commande, et revient au moyen d’origine.",
+     "raison": "Zéro espèce et escrow par commande (19.2, v2.0).",
+     "regles": "CL-08 CPY-51\nCL-13 CCO-25"
+    },
+    {
+     "sujet": "Colis de valeur retiré par un tiers",
+     "ce_que_dit_la_spec": "La spec parle de « porteur nommé, pièce vérifiée » pour un colis de valeur (9.x) sans seuil ; le point relais retient 100 000 F (RET-07).",
+     "decision": "Nom du porteur facultatif sous 100 000 F, obligatoire au-delà, pièce vérifiée au comptoir.",
+     "raison": "Même règle que l’application du gérant.",
+     "regles": "CL-09 CCD-09"
+    },
+    {
+     "sujet": "« Tout est en ordre »",
+     "ce_que_dit_la_spec": "La spec le place à la fois sur l’écran du client et dans le parcours du gérant.",
+     "decision": "L’application du client est la seule source de vérité ; l’écran du gérant invite le client, il ne confirme jamais à sa place.",
+     "raison": "Seul le client ferme sa fenêtre de retour.",
+     "regles": "CL-09 CCM-19 · CCM-14"
+    },
+    {
+     "sujet": "Garde au relais : dimanche et litige",
+     "ce_que_dit_la_spec": "La grille (10.4) ne dit pas quel jour devient le dernier quand le 7e jour tombe un jour fermé, ni si un jour de litige ouvert en cours de journée est facturé.",
+     "decision": "Date limite = dernier jour ouvert de rang ≤ 7 (« retrait avant samedi 26 au soir ») ; renvoi le premier jour ouvert suivant ; rappel « dernier jour » à l’ouverture du relais ; un jour où un litige s’ouvre n’est pas facturé ; une seule garde par groupe de remise.",
+     "raison": "Lecture favorable au client, identique dans l’application, le SMS et l’écran du gérant.",
+     "regles": "CL-10 CGA-09 · CGA-13 · CGA-16 · CGA-25 · CGA-26"
+    },
+    {
+     "sujet": "« Je veux juste signaler » et remboursement automatique",
+     "ce_que_dit_la_spec": "La spec décrit trois souhaits et le remboursement automatique sous seuil sans dire lesquels ouvrent un dossier.",
+     "decision": "« Je veux juste signaler » n’ouvre pas de dossier LIT (ni argent retenu, ni délai vendeur) ; le remboursement automatique ne s’applique qu’au souhait « Être remboursé ».",
+     "raison": "Un signal qualité ne doit ni bloquer un vendeur ni coûter à BelivaY.",
+     "regles": "CL-11 CLT-18 · CLT-19"
+    },
+    {
+     "sujet": "Défaut caché et vice caché",
+     "ce_que_dit_la_spec": "La spec distingue le défaut caché signalé sous 48 h et le vice caché couvert 100 jours, et ne dit pas ce qui se passe entre 48 h et 7 jours.",
+     "decision": "Côté client, un seul mot, « défaut caché », toujours avec sa date limite ; « vice caché » reste interne. Le cas 48 h – 7 jours reste à trancher.",
+     "raison": "Un seul mot pour une seule idée (charte).",
+     "regles": "CL-11 CRO-28 · CRO-25"
+    },
+    {
+     "sujet": "Plafond du paiement au comptoir d’un nouveau compte",
+     "ce_que_dit_la_spec": "« Nouveau compte : 15 000 F » sans définir la fin de la période « nouveau ».",
+     "decision": "Compte neuf : 15 000 F ; passage à 50 000 F à la première commande retirée ; 100 000 F après 5 commandes sans incident.",
+     "raison": "Lecture la plus simple, vérifiable par le client.",
+     "regles": "CL-13 CCO-04\nCL-07 CPN-36"
+    },
+    {
+     "sujet": "Livraison due nulle au comptoir",
+     "ce_que_dit_la_spec": "La spec suppose une livraison payée d’avance ; au-delà de 30 000 F avec un seul ramassage, elle vaut 0 F.",
+     "decision": "Rien n’est payé d’avance : la commande passe « Validée » sans demande Mobile Money, et l’écran dit « livraison offerte ».",
+     "raison": "On ne demande jamais un paiement de 0 F.",
+     "regles": "CL-07 CPN-38"
+    },
+    {
+     "sujet": "SMS d’échec de paiement",
+     "ce_que_dit_la_spec": "8.2 prévoit un SMS d’échec ; il n’est pas dans la liste des six SMS de 10.3.",
+     "decision": "Il compte comme une variante du SMS d’incident C4 dans le plafond de la tentative ; plafond atteint : push seulement.",
+     "raison": "Le plafond de six SMS par commande reste vrai.",
+     "regles": "CL-08 CPY-43\nCL-10 CSM-02"
+    },
+    {
+     "sujet": "Annulation d’une sous-commande « prête »",
+     "ce_que_dit_la_spec": "La formule écrit « annulable ⇔ état ∈ {payée, confirmée} » ; l’état « prête » n’y figure pas.",
+     "decision": "Annulable tant que le colis n’est pas collecté (état < collectée) ; la collecte ferme l’annulation.",
+     "raison": "Rien n’a encore été transporté : l’annuler ne coûte rien à personne.",
+     "regles": "CL-12 CAN-08\nCL-02 CCY-16"
+    },
+    {
+     "sujet": "Frais de service carte à l’annulation",
+     "ce_que_dit_la_spec": "La spec ne dit pas si les 2 % sont rendus au payeur à l’étranger.",
+     "decision": "Annulation par le bénéficiaire : remboursement selon la formule, les frais de service restent acquis (BLV-52124 : 11 900 F rendus, 238 F gardés) ; annulation par le vendeur ou BelivaY : tout ce qui a été débité (12 138 F).",
+     "raison": "Le payeur ne paie jamais la faute d’un autre.",
+     "regles": "CL-12 CET-24"
+    },
+    {
+     "sujet": "Anciens liens vers un module fermé",
+     "ce_que_dit_la_spec": "La spec ferme les modules après le lancement sans dire ce qu’affiche un lien ancien.",
+     "decision": "Page neutre « Ce lien ne mène à aucune page » et « Retour à l’accueil » ; le point relais et le vendeur masquent aussi ce qui dépend d’un module fermé.",
+     "raison": "Aucun encart ni promesse d’un module fermé, même par un lien.",
+     "regles": "CL-01 CCH-19\nCL-14 CFS-04 · CFS-05 · CFS-09"
+    },
+    {
+     "sujet": "Messagerie : clôture d’un fil",
+     "ce_que_dit_la_spec": "La v3 ne dit pas quand un fil se ferme ; le vendeur a une règle (MSG-02).",
+     "decision": "Un fil de support peut être marqué « Résolue » et rouvert par un nouveau message ; le fil d’un dossier passe en lecture seule à la clôture du dossier.",
+     "raison": "Même règle que l’espace vendeur.",
+     "regles": "CL-13 CSV-15"
+    },
+    {
+     "sujet": "Micro de la barre de recherche",
+     "ce_que_dit_la_spec": "La spec veut une recherche vocale « lancée directement » ; l’accueil n’avait qu’un lien vers la recherche.",
+     "decision": "Le micro de l’accueil ouvre directement l’écoute (recherche?st=voix) ; la barre ouvre la saisie.",
+     "raison": "Un geste de moins, comme la spec le demande.",
+     "regles": "CL-05 CRE-13\nCL-04 CAC-03"
+    },
+    {
+     "sujet": "Liens entre écrans",
+     "ce_que_dit_la_spec": "Plusieurs parties utilisaient des paramètres différents pour le même écran.",
+     "decision": "Formes uniques : legal-doc?d=cgu|cgv|confidentialite|retours|garde|comptoir|cookies|mentions, fil?id=…, liste?cat=&sub= pour le listing, liste-envies?id= pour une liste d’envies.",
+     "raison": "Un lien profond doit ouvrir le bon état partout (notifications, SMS, e-mails).",
+     "regles": "CL-03 CCG-01\nCL-04 CLS-01\nCL-10 CNT-02"
+    },
+    {
+     "sujet": "Variantes du jeu d’essai",
+     "ce_que_dit_la_spec": "Deux cas n’existent pas dans la liste « Mes commandes » de Carine : une livraison à domicile et un cadeau payé depuis l’étranger.",
+     "decision": "BLV-52096 (livraison à domicile, CL-09 et CL-12) et BLV-52124 (cadeau payé depuis l’étranger par Hervé, CL-12) sont des variantes d’exemple ; leurs figures le disent.",
+     "raison": "Les chiffres de la liste de Carine restent ceux du jeu d’essai.",
+     "regles": "CL-12 CET-04 · CMO-03"
+    }
+   ]
+  }
+ ]
+}

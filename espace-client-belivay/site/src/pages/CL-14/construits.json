@@ -1,0 +1,41 @@
+{
+ "routes": [
+  "abonnements",
+  "abonnement-souscrire",
+  "mon-abonnement",
+  "abonnement-resilier",
+  "cagnotte",
+  "parrainage",
+  "abonnement-offrir",
+  "listes",
+  "liste-creer",
+  "liste-envies",
+  "liste-envoyer",
+  "liste-publique",
+  "liste-offrir",
+  "liste-offert",
+  "ventes-flash",
+  "assistant",
+  "assistant-confirmer"
+ ],
+ "exclus": {},
+ "repris": {
+  "abonnements": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "abonnement-souscrire": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "mon-abonnement": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "abonnement-resilier": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "cagnotte": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "parrainage": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "abonnement-offrir": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "listes": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-creer": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-envies": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-envoyer": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-publique": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-offrir": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "liste-offert": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "ventes-flash": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "assistant": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte).",
+  "assistant-confirmer": "DP-54 : repris pour l'usage réel (Prime et paliers en données avec remise au paiement, cagnotte, parrainage, listes d'envies partagées et offertes, ventes flash à rebours, assistant sur les données du compte)."
+ }
+}

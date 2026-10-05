@@ -50,10 +50,26 @@ jobs:
               nproc
               echo "=== Containers ==="
               $COMPOSE ps
-              echo "=== Dernières sauvegardes ==="
-              ls -lh /var/backups/belivay/*.sql.gz 2>/dev/null | tail -3 || echo "Aucune sauvegarde trouvée"
+              echo "=== Sauvegardes de la base ==="
+              PROBLEME=0
+              LAST=$(ls -t /var/backups/belivay/*.sql.gz 2>/dev/null | head -1)
+              if [ -z "$LAST" ]; then
+                echo "ALERTE : aucune sauvegarde trouvée"
+                PROBLEME=1
+              else
+                AGE_H=$(( ( $(date +%s) - $(stat -c %Y "$LAST") ) / 3600 ))
+                echo "Dernière : $(basename "$LAST") - $(du -h "$LAST" | cut -f1), il y a ${AGE_H} h"
+                if [ "$AGE_H" -gt 26 ]; then
+                  echo "ALERTE : la dernière sauvegarde a plus de 26 h (le cron tourne chaque nuit)"
+                  PROBLEME=1
+                fi
+              fi
+              echo "--- Journal des sauvegardes (5 dernières lignes) ---"
+              tail -5 /var/backups/belivay/backup.log 2>/dev/null || echo "Pas de journal"
               echo "=== Traces OOM (dmesg) ==="
               (sudo -n dmesg -T 2>/dev/null || dmesg -T 2>/dev/null) \
                 | grep -iE "out of memory|killed process" \
                 || echo "Aucune trace trouvée (ou accès refusé)"
+              # Le run passe en rouge (donc email) si un problème a été relevé.
+              [ "$PROBLEME" -eq 0 ] || exit 1
             fi

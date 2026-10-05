@@ -83,7 +83,7 @@ export default function SaisieAssisteePage() {
 
   return (
     <div className="pb-24 pt-2">
-      <Link to="/seller/products" className="mb-3 inline-flex items-center gap-1 font-semibold" style={{ fontSize: 12.5, color: p.textMuted }}>
+      <Link to="/seller/v2/produits" className="mb-3 inline-flex items-center gap-1 font-semibold" style={{ fontSize: 12.5, color: p.textMuted }}>
         <ChevronLeft size={14} /> {t('sl9_ouverture.back_to_my_products')}
       </Link>
 

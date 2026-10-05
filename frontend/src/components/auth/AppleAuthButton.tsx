@@ -26,24 +26,40 @@ function AppleGlyph() {
 }
 
 /**
- * Bouton "Sign in with Apple" — natif iOS uniquement (ASAuthorizationController
- * via le plugin Capacitor). Apple n'exige ce mode de connexion que sur l'app
- * iOS (obligatoire dès qu'un fournisseur tiers comme Google est proposé,
- * App Review Guideline 4.8) : pas de rendu sur Android/web, où rien ne
- * l'impose et où le flux web (Services ID + redirect) n'est pas configuré.
+ * Bouton "Sign in with Apple" — rendu sur TOUTES les plateformes (iOS, Android,
+ * web), par choix produit : les deux fournisseurs tiers doivent apparaitre
+ * partout, au meme titre que Google.
+ *
+ * Etat reel du flux selon la plateforme :
+ *  - iOS natif : fonctionnel (ASAuthorizationController via le plugin Capacitor).
+ *    C'est la seule plateforme ou Apple l'impose (App Review Guideline 4.8, des
+ *    lors qu'un fournisseur tiers comme Google est propose).
+ *  - web : fonctionne UNIQUEMENT si un « Services ID » Apple est configure.
+ *    C'est un identifiant distinct du bundle ID de l'app, a creer dans le compte
+ *    Apple Developer avec son URL de redirection, puis a fournir au build via
+ *    VITE_APPLE_SERVICES_ID et a ajouter a APPLE_CLIENT_IDS cote backend (sans
+ *    quoi le backend rejette le jeton, son audience ne correspondant pas).
+ *  - Android : le plugin n'implemente pas cette plateforme.
+ *
+ * Hors cas fonctionnel, le clic n'echoue pas en silence : l'erreur est remontee
+ * a `onError` et affichee en toast (voir handleClick).
  */
 export default function AppleAuthButton({ onCredential, disabled = false, onError }: AppleAuthButtonProps) {
   const { t } = useTranslation();
   const [pending, setPending] = useState(false);
 
-  if (Capacitor.getPlatform() !== 'ios') return null;
+  // iOS s'authentifie avec le bundle ID de l'app ; les autres plateformes
+  // exigent le Services ID. Sans celui-ci, on retombe sur le bundle ID : le
+  // flux echouera, mais proprement et avec un message.
+  const servicesId = import.meta.env.VITE_APPLE_SERVICES_ID?.trim();
+  const clientId = Capacitor.getPlatform() === 'ios' ? 'com.belivay.client' : servicesId || 'com.belivay.client';
 
   const handleClick = async () => {
     if (disabled || pending) return;
     setPending(true);
     try {
       const { response } = await SignInWithApple.authorize({
-        clientId: 'com.belivay.client',
+        clientId,
         redirectURI: 'https://belivay.com/auth/apple/callback',
         scopes: 'email name',
       });

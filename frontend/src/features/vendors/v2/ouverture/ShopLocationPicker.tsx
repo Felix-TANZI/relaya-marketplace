@@ -82,7 +82,7 @@ export default function ShopLocationPicker({ lat, lng, zoneLabel, onChange, p }:
           onClick={locate}
           disabled={locating}
           className="absolute bottom-3 right-3 flex items-center gap-1.5 rounded-full font-bold text-white disabled:opacity-70"
-          style={{ padding: '9px 14px', fontSize: 12, background: primaryGradient(p), boxShadow: '0 8px 20px rgba(0,0,0,0.25)' }}
+          style={{ padding: '9px 14px', fontSize: 12, background: primaryGradient(p), boxShadow: '0 8px 20px rgba(0,0,0,0.25)', zIndex: 1000 }}
         >
           <LocateFixed size={14} />
           {locating ? t('sl9_ouverture.locating') : t('sl9_ouverture.locate_me')}

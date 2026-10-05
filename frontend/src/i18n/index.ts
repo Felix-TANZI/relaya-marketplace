@@ -40,6 +40,12 @@ import sl10Fr from "./domains/sl10.fr";
 import sl10En from "./domains/sl10.en";
 import sl11Fr from "./domains/sl11.fr";
 import sl11En from "./domains/sl11.en";
+import sl12Fr from "./domains/sl12.fr";
+import sl12En from "./domains/sl12.en";
+import sl13Fr from "./domains/sl13.fr";
+import sl13En from "./domains/sl13.en";
+import sl14Fr from "./domains/sl14.fr";
+import sl14En from "./domains/sl14.en";
 
 import cr1Fr from "./domains/cr1.fr";
 import cr1En from "./domains/cr1.en";
@@ -93,7 +99,7 @@ const savedLang =
 const mergedFr = {
   ...fr,
   ...cl1Fr, ...cl2Fr, ...cl3Fr, ...cl4Fr, ...cl5Fr, ...cl6Fr, ...cl7Fr,
-  ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr, ...sl5Fr, ...sl6Fr, ...sl7Fr, ...sl8Fr, ...sl9Fr, ...sl10Fr, ...sl11Fr,
+  ...sl1Fr, ...sl2Fr, ...sl3Fr, ...sl4Fr, ...sl5Fr, ...sl6Fr, ...sl7Fr, ...sl8Fr, ...sl9Fr, ...sl10Fr, ...sl11Fr, ...sl12Fr, ...sl13Fr, ...sl14Fr,
   ...cr1Fr, ...do1Fr,
   ...rl1Fr, ...rl2Fr,
   ...ad1Fr, ...ad2Fr, ...ad3Fr, ...ad4Fr, ...ad5aFr, ...ad5bFr, ...ad6Fr,
@@ -106,7 +112,7 @@ const mergedFr = {
 const mergedEn = {
   ...en,
   ...cl1En, ...cl2En, ...cl3En, ...cl4En, ...cl5En, ...cl6En, ...cl7En,
-  ...sl1En, ...sl2En, ...sl3En, ...sl4En, ...sl5En, ...sl6En, ...sl7En, ...sl8En, ...sl9En, ...sl10En, ...sl11En,
+  ...sl1En, ...sl2En, ...sl3En, ...sl4En, ...sl5En, ...sl6En, ...sl7En, ...sl8En, ...sl9En, ...sl10En, ...sl11En, ...sl12En, ...sl13En, ...sl14En,
   ...cr1En, ...do1En,
   ...rl1En, ...rl2En,
   ...ad1En, ...ad2En, ...ad3En, ...ad4En, ...ad5aEn, ...ad5bEn, ...ad6En,

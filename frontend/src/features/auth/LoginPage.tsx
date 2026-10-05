@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useToast } from '@/context/ToastContext';
 import { inferPortalRoleFromPath, isDedicatedPortal, portalHomePath, portalRole, type PortalRole } from '@/config/portals';
 import GoogleAuthButton from '@/components/auth/GoogleAuthButton';
+import AppleAuthButton, { type AppleCredential } from '@/components/auth/AppleAuthButton';
 
 const portalCopy: Record<PortalRole, {
   labelKey: string;
@@ -96,7 +97,7 @@ export default function LoginPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, googleLogin, verify2FA } = useAuth();
+  const { login, googleLogin, appleLogin, verify2FA } = useAuth();
   const { showToast } = useToast();
   const loginState = location.state as {
     from?: string;
@@ -189,6 +190,26 @@ export default function LoginPage() {
       }
     } catch (error) {
       showToast(error instanceof Error ? error.message : t('cl1_login.google_login_unavailable'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Meme parcours que handleGoogleLogin : 2FA eventuelle, puis redirection.
+  const handleAppleLogin = async (credential: AppleCredential) => {
+    setLoading(true);
+    try {
+      const res = await appleLogin(credential);
+      if (res.twoFactorRequired) {
+        setTwoFA({ userId: res.userId, email: res.email });
+        setCode('');
+        showToast(t('cl1_login.verification_code_sent', { email: res.email }), 'success');
+      } else {
+        showToast(t('auth.login_success') || 'Connexion reussie !', 'success');
+        navigate(afterLoginPath, { replace: true });
+      }
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : t('cl6_social_auth.apple_login_failed'), 'error');
     } finally {
       setLoading(false);
     }
@@ -363,25 +384,34 @@ export default function LoginPage() {
                   )}
                 </button>
 
+                {/* Le separateur est hors du test sur googleUnavailable : Apple
+                    s'affiche sur toutes les plateformes, il reste donc toujours
+                    au moins un fournisseur sous ce separateur. */}
+                <div className="relative flex items-center py-1">
+                  <div className="h-px flex-1 bg-white/45" />
+                  <span className="px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-700">
+                    {t('cl1_login.or_divider')}
+                  </span>
+                  <div className="h-px flex-1 bg-white/45" />
+                </div>
+
                 {!googleUnavailable && (
-                  <>
-                    <div className="relative flex items-center py-1">
-                      <div className="h-px flex-1 bg-white/45" />
-                      <span className="px-3 text-[11px] font-black uppercase tracking-[0.16em] text-gray-700">
-                        {t('cl1_login.or_divider')}
-                      </span>
-                      <div className="h-px flex-1 bg-white/45" />
-                    </div>
-                    <GoogleAuthButton
-                      onCredential={handleGoogleLogin}
-                      disabled={loading}
-                      label="signin_with"
-                      locale={String(i18n.language || 'fr').split('-')[0]}
-                      onUnavailable={() => setGoogleUnavailable(true)}
-                      onError={(message) => showToast(message, 'error')}
-                    />
-                  </>
+                  <GoogleAuthButton
+                    onCredential={handleGoogleLogin}
+                    disabled={loading}
+                    label="signin_with"
+                    locale={String(i18n.language || 'fr').split('-')[0]}
+                    onUnavailable={() => setGoogleUnavailable(true)}
+                    onError={(message) => showToast(message, 'error')}
+                  />
                 )}
+
+                <AppleAuthButton
+                  onCredential={handleAppleLogin}
+                  disabled={loading}
+                  onError={(message) => showToast(message, 'error')}
+                />
+
               </form>
             )}
 

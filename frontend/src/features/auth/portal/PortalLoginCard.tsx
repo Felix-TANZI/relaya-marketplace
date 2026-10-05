@@ -126,7 +126,7 @@ export default function PortalLoginCard({
             <span className="h-px flex-1 bg-gray-200 dark:bg-white/10" />
           </div>
 
-          <SocialAuthRow ctl={ctl} accent={accent} />
+          <SocialAuthRow ctl={ctl} />
 
           {content.card.registerPath ? (
             <p className="mt-5 text-center text-xs text-gray-500 dark:text-white/60">

@@ -132,7 +132,7 @@ export default function UneOffrePage() {
             <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>{t('sl10_catalogue.zones_title')}</p>
           </div>
           <p className="mb-3" style={{ fontSize: 12, color: p.textMuted, lineHeight: 1.5 }}>{t('sl10_catalogue.zones_unavailable')}</p>
-          <SecondaryButton p={p} onClick={() => navigate(`/seller/products/${product.id}/edit`)}>
+          <SecondaryButton p={p} onClick={() => navigate(`/seller/v2/produits/${product.id}/modifier`)}>
             <span className="flex items-center justify-center gap-2"><Pencil size={14} /> {t('sl10_catalogue.cta_edit_price')}</span>
           </SecondaryButton>
         </Card>
@@ -145,7 +145,7 @@ export default function UneOffrePage() {
             <p className="font-bold" style={{ fontSize: 13.5, color: p.text }}>{t('sl10_catalogue.your_offer_title')}</p>
             <button
               type="button"
-              onClick={() => navigate(`/seller/products/${product.id}/edit`)}
+              onClick={() => navigate(`/seller/v2/produits/${product.id}/modifier`)}
               className="flex items-center gap-1 font-bold"
               style={{ fontSize: 12, color: p.orange }}
             >
@@ -198,13 +198,13 @@ export default function UneOffrePage() {
           />
         </Card>
 
-        {/* "Faire une promotion" (OFR-05) : renvoie vers l'écran d'édition existant
-            qui porte déjà la demande de campagne (vendorsApi.requestProductCampaign) —
-            aucune donnée de promotion n'est affichée ici tant que ce lot ne construit
-            pas cet écran dans l'espace v2. */}
+        {/* "Faire une promotion" (OFR-05) : renvoie vers Modifier l'offre (espace v2)
+            avec ?focus=price, pour que le vendeur atterrisse directement sur le champ
+            prix — la demande de campagne elle-même (vendorsApi.requestProductCampaign)
+            reste hors périmètre de ce lot, aucune donnée de promotion n'est fabriquée. */}
         <button
           type="button"
-          onClick={() => navigate(`/seller/products/${product.id}/edit`)}
+          onClick={() => navigate(`/seller/v2/produits/${product.id}/modifier?focus=price`)}
           className="w-full text-left rounded-2xl"
           style={{ background: p.card, border: `1px solid ${p.border}`, padding: '14px 16px' }}
         >

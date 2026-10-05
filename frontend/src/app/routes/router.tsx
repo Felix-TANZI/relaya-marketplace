@@ -108,6 +108,7 @@ const MesProduitsV2Page = lazy(() => import('@/features/vendors/v2/catalogue/Mes
 const UneOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/UneOffrePage'));
 const NouvelleOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/NouvelleOffreWizardPage'));
 const DupliquerProduitV2Page = lazy(() => import('@/features/vendors/v2/catalogue/DupliquerProduitPage'));
+const ModifierOffreV2Page = lazy(() => import('@/features/vendors/v2/catalogue/ModifierOffrePage'));
 
 const MonPalierV2Page = lazy(() => import('@/features/vendors/v2/compte/trust-score/MonPalierPage'));
 const MonScoreV2Page = lazy(() => import('@/features/vendors/v2/compte/trust-score/MonScorePage'));
@@ -123,6 +124,24 @@ const NotificationsV2Page = lazy(() => import('@/features/vendors/v2/compte/noti
 const AvisDroitReponseV2Page = lazy(() => import('@/features/vendors/v2/compte/avis/AvisDroitReponsePage'));
 const MessagerieV2Page = lazy(() => import('@/features/vendors/v2/compte/messagerie/MessageriePage'));
 const AideV2Page = lazy(() => import('@/features/vendors/v2/compte/aide/AidePage'));
+
+const MonArgentV2Page = lazy(() => import('@/features/vendors/v2/argent/MonArgentPage'));
+const MesGainsV2Page = lazy(() => import('@/features/vendors/v2/argent/MesGainsPage'));
+const SeLibereV2Page = lazy(() => import('@/features/vendors/v2/argent/SeLiberePage'));
+const GeleV2Page = lazy(() => import('@/features/vendors/v2/argent/GelePage'));
+const DocumentsV2Page = lazy(() => import('@/features/vendors/v2/argent/DocumentsPage'));
+const ChangerNumeroV2Page = lazy(() => import('@/features/vendors/v2/argent/ChangerNumeroFlow'));
+const VersementsV2Page = lazy(() => import('@/features/vendors/v2/argent/VersementsPage'));
+
+const BoutiqueV2Page = lazy(() => import('@/features/vendors/v2/boutique/BoutiquePage'));
+const HorairesV2Page = lazy(() => import('@/features/vendors/v2/boutique/HorairesPage'));
+const EmplacementV2Page = lazy(() => import('@/features/vendors/v2/boutique/EmplacementPage'));
+const EquipeV2Page = lazy(() => import('@/features/vendors/v2/boutique/EquipePage'));
+const EquipeAjoutV2Page = lazy(() => import('@/features/vendors/v2/boutique/EquipeAjoutPage'));
+
+const ServicesV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/ServicesPage'));
+const ChiffresV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/ChiffresPage'));
+const DemandeV2Page = lazy(() => import('@/features/vendors/v2/compte/croissance/DemandePage'));
 const SellerPaymentsPage = lazy(() => import('@/features/vendors/SellerPaymentsPage'));
 const SellerWalletPage = lazy(() => import('@/features/vendors/SellerWalletPage'));
 const SellerSettlementsPage = lazy(() => import('@/features/vendors/SellerSettlementsPage'));
@@ -276,7 +295,7 @@ export const router = createBrowserRouter([
     path: '/seller',
     element: <ProtectedRoute><RoleRoute role="seller"><SellerLayout /></RoleRoute></ProtectedRoute>,
     children: [
-      { index: true, element: <Navigate to="/seller/dashboard" replace /> },
+      { index: true, element: <Navigate to="/seller/v2/accueil" replace /> },
       { path: 'dashboard',         element: <SellerDashboardPage /> },
       { path: 'products',          element: <SellerProductsPage /> },
       { path: 'products/new',      element: <ProductFormPage /> },
@@ -319,6 +338,7 @@ export const router = createBrowserRouter([
       { path: 'v2/produits',                   element: <MesProduitsV2Page /> },
       { path: 'v2/produits/nouveau',           element: <NouvelleOffreV2Page /> },
       { path: 'v2/produits/dupliquer/:id',     element: <DupliquerProduitV2Page /> },
+      { path: 'v2/produits/:id/modifier',      element: <ModifierOffreV2Page /> },
       { path: 'v2/produits/:id',               element: <UneOffreV2Page /> },
 
       { path: 'v2/palier',                     element: <MonPalierV2Page /> },
@@ -335,6 +355,30 @@ export const router = createBrowserRouter([
       { path: 'v2/avis',                       element: <AvisDroitReponseV2Page /> },
       { path: 'v2/messagerie',                 element: <MessagerieV2Page /> },
       { path: 'v2/aide',                       element: <AideV2Page /> },
+
+      // Argent / versements (lot construit le 04/10 — modele retrait a la
+      // demande, decide par le proprietaire). v2/argent est un ecran racine
+      // (header verre + dock, ajoute a V2_ROOT_PATHS dans SellerLayout.tsx) ;
+      // les autres sont des ecrans enfants (fleche retour via ScreenHeader).
+      { path: 'v2/argent',                     element: <MonArgentV2Page /> },
+      { path: 'v2/argent/gains',               element: <MesGainsV2Page /> },
+      { path: 'v2/argent/se-libere',           element: <SeLibereV2Page /> },
+      { path: 'v2/argent/gele',                element: <GeleV2Page /> },
+      { path: 'v2/argent/documents',           element: <DocumentsV2Page /> },
+      { path: 'v2/argent/numero',              element: <ChangerNumeroV2Page /> },
+      { path: 'v2/versements',                 element: <VersementsV2Page /> },
+
+      // Boutique / equipe / emplacement (lot construit le 04/10).
+      { path: 'v2/boutique',                   element: <BoutiqueV2Page /> },
+      { path: 'v2/horaires',                   element: <HorairesV2Page /> },
+      { path: 'v2/emplacement',                element: <EmplacementV2Page /> },
+      { path: 'v2/equipe',                     element: <EquipeV2Page /> },
+      { path: 'v2/equipe/ajouter',             element: <EquipeAjoutV2Page /> },
+
+      // Croissance (lot construit le 04/10).
+      { path: 'v2/services',                   element: <ServicesV2Page /> },
+      { path: 'v2/chiffres',                   element: <ChiffresV2Page /> },
+      { path: 'v2/demande',                    element: <DemandeV2Page /> },
 
       { path: 'v2/:screen',        element: <SellerV2ComingSoonPage /> },
 

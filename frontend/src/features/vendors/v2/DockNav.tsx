@@ -18,14 +18,13 @@ export interface DockBadges {
   frozen?: boolean;
 }
 
-// Accueil/Commandes/Produits rebranchés sur les écrans v2 (lots 5 et 9).
-// "Argent" reste sur la page v1 : les écrans Mon argent/Se libère/Gelé/Mes
-// gains (lot 3, frontend) n'ont pas encore été construits.
+// Les 4 onglets racine sont maintenant tous sur des écrans v2 (lot Argent
+// construit le 04/10 — modèle retrait à la demande).
 const TABS = [
   { key: 'home', path: '/seller/v2/accueil', icon: Home },
   { key: 'orders', path: '/seller/v2/commandes', icon: ShoppingBag },
   { key: 'products', path: '/seller/v2/produits', icon: Package },
-  { key: 'money', path: '/seller/wallet', icon: Wallet },
+  { key: 'money', path: '/seller/v2/argent', icon: Wallet },
 ] as const;
 
 export default function DockNav({ badges = {} }: { badges?: DockBadges }) {

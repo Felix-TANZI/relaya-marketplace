@@ -136,12 +136,12 @@ export default function MenuPage() {
       items: [
         {
           labelKey: 'sl5_fondations.menu_my_money',
-          path: '/seller/wallet',
+          path: '/seller/v2/argent',
           highlight: toPayXaf !== null ? t('sl5_fondations.menu_my_money_highlight', { amount: formatXAF(toPayXaf) }) : undefined,
           highlightColor: p.green,
         },
-        { labelKey: 'sl5_fondations.menu_payouts', path: '/seller/settlements', subtitle: t('sl5_fondations.menu_payouts_subtitle') },
-        { labelKey: 'sl5_fondations.menu_documents', path: '/seller/payments', subtitle: t('sl5_fondations.menu_documents_subtitle') },
+        { labelKey: 'sl5_fondations.menu_payouts', path: '/seller/v2/versements', subtitle: t('sl5_fondations.menu_payouts_subtitle') },
+        { labelKey: 'sl5_fondations.menu_documents', path: '/seller/v2/argent/documents', subtitle: t('sl5_fondations.menu_documents_subtitle') },
       ],
     },
     {
@@ -167,15 +167,17 @@ export default function MenuPage() {
           highlightColor: p.orange,
           hideChevron: true,
         },
-        { labelKey: 'sl5_fondations.menu_my_numbers', path: '/seller/analytics' },
+        { labelKey: 'sl5_fondations.menu_my_numbers', path: '/seller/v2/chiffres' },
         { labelKey: 'sl5_fondations.menu_plans', path: '/seller/v2/plans' },
         { labelKey: 'sl5_fondations.menu_visibility', path: '/seller/v2/se-faire-voir' },
+        { labelKey: 'sl14_croissance.menu_services', path: '/seller/v2/services' },
+        { labelKey: 'sl14_croissance.menu_demand', path: '/seller/v2/demande' },
       ],
     },
     {
       titleKey: 'sl5_fondations.menu_group_shop',
       items: [
-        { labelKey: 'sl5_fondations.menu_my_shop', path: '/seller/shop', subtitle: t('sl5_fondations.menu_my_shop_subtitle') },
+        { labelKey: 'sl5_fondations.menu_my_shop', path: '/seller/v2/boutique', subtitle: t('sl5_fondations.menu_my_shop_subtitle') },
         { labelKey: 'sl5_fondations.menu_hours', path: '/seller/v2/horaires' },
         { labelKey: 'sl5_fondations.menu_reviews', path: '/seller/v2/avis' },
         { labelKey: 'sl5_fondations.menu_team', path: '/seller/v2/equipe' },

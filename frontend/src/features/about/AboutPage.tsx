@@ -212,7 +212,7 @@ export default function AboutPage() {
               <Link to="/catalog" className="pf-btn-accent" style={{ textDecoration: "none" }}>
                 <ShoppingCart size={15} /> {t("cl5_about.cta_buy")}
               </Link>
-              <Link to="/become-seller" className="pf-btn-ghost" style={{ textDecoration: "none" }}>
+              <Link to="/vendeur/ouvrir-boutique" className="pf-btn-ghost" style={{ textDecoration: "none" }}>
                 <Store size={15} /> {t("cl5_about.cta_sell")}
               </Link>
             </div>

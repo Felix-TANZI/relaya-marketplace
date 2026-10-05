@@ -73,7 +73,7 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <Link to="/become-seller" className="text-gray-300 hover:text-primary transition-colors text-sm">
+                <Link to="/vendeur/ouvrir-boutique" className="text-gray-300 hover:text-primary transition-colors text-sm">
                   {t('cl1_footer.become_seller')}
                 </Link>
               </li>

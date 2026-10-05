@@ -57,17 +57,17 @@ function buildNav(t: TFn): NavSection[] {
     {
       label: t('seller_layout.section_sales'),
       items: [
-        { label: t('seller_layout.nav_dashboard'), path: '/seller/dashboard', icon: LayoutDashboard },
-        { label: t('seller_layout.nav_orders'),    path: '/seller/orders',    icon: ShoppingBag, badge: true },
-        { label: t('seller_layout.nav_disputes'),  path: '/seller/disputes',  icon: Scale },
-        { label: t('seller_layout.nav_returns'),   path: '/seller/returns',   icon: RotateCcw },
+        { label: t('seller_layout.nav_dashboard'), path: '/seller/v2/accueil',    icon: LayoutDashboard },
+        { label: t('seller_layout.nav_orders'),    path: '/seller/v2/commandes',  icon: ShoppingBag, badge: true },
+        { label: t('seller_layout.nav_disputes'),  path: '/seller/v2/litiges',    icon: Scale },
+        { label: t('seller_layout.nav_returns'),   path: '/seller/v2/retours',    icon: RotateCcw },
       ],
     },
     {
       label: t('seller_layout.section_catalog'),
       items: [
-        { label: t('seller_layout.nav_my_products'), path: '/seller/products',     icon: Package },
-        { label: t('seller_layout.nav_add_product'), path: '/seller/products/new', icon: Plus },
+        { label: t('seller_layout.nav_my_products'), path: '/seller/v2/produits',         icon: Package },
+        { label: t('seller_layout.nav_add_product'), path: '/seller/v2/produits/nouveau', icon: Plus },
       ],
     },
     {
@@ -80,20 +80,23 @@ function buildNav(t: TFn): NavSection[] {
     {
       label: t('seller_layout.section_shop'),
       items: [
-        { label: t('seller_layout.nav_my_shop'),        path: '/seller/shop',           icon: Store },
-        { label: t('seller_layout.nav_certifications'), path: '/seller/certifications', icon: Award },
-        { label: t('seller_layout.nav_plans'),          path: '/seller/plans',          icon: CreditCard },
+        { label: t('seller_layout.nav_my_shop'),        path: '/seller/v2/boutique',   icon: Store },
+        { label: t('seller_layout.nav_certifications'), path: '/seller/v2/palier',     icon: Award },
+        { label: t('seller_layout.nav_plans'),          path: '/seller/v2/plans',      icon: CreditCard },
       ],
     },
     {
+      // Argent/versements construit le 04/10 (VD-09, modele retrait a la
+      // demande) — adjustments (corrections admin ponctuelles) reste seul
+      // sur v1, aucun ecran v2 ne couvre ce cas tres secondaire.
       label: t('seller_layout.section_account'),
       items: [
-        { label: t('seller_layout.nav_wallet'),        path: '/seller/wallet',        icon: Wallet },
-        { label: t('seller_layout.nav_payments'),      path: '/seller/payments',      icon: FileText },
-        { label: t('seller_layout.nav_settlements'),   path: '/seller/settlements',   icon: CircleCheckBig },
-        { label: t('seller_layout.nav_pending_funds'), path: '/seller/pending-funds', icon: Lock },
-        { label: t('seller_layout.nav_adjustments'),   path: '/seller/adjustments',   icon: Scale },
-        { label: t('seller_layout.nav_settings'),      path: '/seller/settings',      icon: Settings },
+        { label: t('seller_layout.nav_wallet'),        path: '/seller/v2/argent',             icon: Wallet },
+        { label: t('seller_layout.nav_payments'),      path: '/seller/v2/argent/gele',        icon: FileText },
+        { label: t('seller_layout.nav_settlements'),   path: '/seller/v2/argent/documents',   icon: CircleCheckBig },
+        { label: t('seller_layout.nav_pending_funds'), path: '/seller/v2/argent/se-libere',   icon: Lock },
+        { label: t('seller_layout.nav_adjustments'),   path: '/seller/adjustments',           icon: Scale },
+        { label: t('seller_layout.nav_settings'),      path: '/seller/v2/parametres', icon: Settings },
       ],
     },
   ];
@@ -248,7 +251,7 @@ export default function SellerLayout() {
   useEffect(() => {
     vendorsApi.getProfile()
       .then(setProfile)
-      .catch(() => navigate('/become-seller'));
+      .catch(() => navigate('/vendeur/ouvrir-boutique'));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -291,7 +294,7 @@ export default function SellerLayout() {
   // titre, JAMAIS l'en-tête racine en plus) — il fournit déjà sa propre
   // en-tête ; lui superposer celle de SellerLayout produisait deux barres
   // empilées (repéré en vérifiant les captures du rapport visuel).
-  const V2_ROOT_PATHS = ['/seller/v2/accueil', '/seller/v2/commandes', '/seller/v2/produits', '/seller/menu'];
+  const V2_ROOT_PATHS = ['/seller/v2/accueil', '/seller/v2/commandes', '/seller/v2/produits', '/seller/v2/argent', '/seller/menu'];
   const isV2 = location.pathname.startsWith('/seller/v2/') || location.pathname === '/seller/menu';
   const isV2Root = V2_ROOT_PATHS.includes(location.pathname);
   const showTopbar = !isV2 || isV2Root;
@@ -320,12 +323,13 @@ export default function SellerLayout() {
       >
         {/* Menu (VD-11 MEN-01) : remplace le tiroir mobile par l'écran Menu
             en sept groupes — action VD-D12.A01. */}
-        {/* Sur v1, la sidebar bureau couvre déjà l'accès au menu (lg:hidden).
-            Sur v2, il n'y a plus de sidebar du tout : ce bouton reste le seul
-            chemin vers l'écran Menu, y compris sur bureau. */}
+        {/* Toujours visible, y compris sur bureau en v1 : la sidebar v1 ne
+            contient aucun lien vers les écrans v2 (confirmé par audit visuel
+            du 04/10), donc la cacher ici privait un vendeur arrivé sur une
+            page v1 de tout chemin de retour vers le nouvel espace. */}
         <button onClick={() => navigate('/seller/menu')}
           aria-label={t('sl5_fondations.dock_label')}
-          className={`${isV2 ? '' : 'lg:hidden'} w-9 h-9 rounded-xl flex items-center justify-center transition-all`}
+          className="w-9 h-9 rounded-xl flex items-center justify-center transition-all"
           style={{ color: T.muted }}
           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = T.creamAlt; }}
           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
@@ -363,7 +367,7 @@ export default function SellerLayout() {
             quitte le bandeau pour la feuille compte, ou elle est moins exposee
             a l'appui accidentel. */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          <button onClick={() => navigate('/seller/orders')}
+          <button onClick={() => navigate('/seller/v2/commandes')}
             aria-label={t('seller_layout.nav_orders')}
             className="w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90"
             style={{ color: T.muted }}

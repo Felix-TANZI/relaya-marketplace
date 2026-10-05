@@ -186,7 +186,7 @@ export default {
     // ── Inspection à la réception ────────────────────────────────────────
     inspection_title: 'Inspection à la réception',
     inspection_received_label: 'Reçu',
-    inspection_deadline_prefix: 'Répondez avant',
+    inspection_deadline_prefix: 'Inspectez avant',
     inspection_deadline_expired: 'Délai dépassé — présomption en faveur du client, BelivaY décide',
     inspection_step1_title: '1. Constater',
     inspection_check_seal: 'Le scellé est intact',

@@ -1,0 +1,136 @@
+// frontend/src/i18n/domains/sl13.en.ts
+// English mirror of sl13.fr.ts — shared seller space v2 domain, VD-11 "Shop,
+// account and communication". See sl13.fr.ts for the full context: Shop
+// (fig.2) / Opening hours (fig.3) plus Location (fig.4) / My team (fig.5-6).
+
+export default {
+  sl13_boutique: {
+    // ── My shop (VD-11 fig.2) ───────────────────────────────────────────────
+    title: 'My shop',
+    subtitle: 'Your shop name stays between you and BelivaY.',
+
+    client_sees_label: 'What the customer sees',
+    trust_score_label: 'Trust Score {{score}}',
+    nothing_else: 'Nothing else: no shop name, photo, address, phone, link or QR code.',
+    trust_score_explain: 'Trust Score: your trust rating, out of 100.',
+
+    how_it_works: 'How it works',
+    client_never_sees: 'The customer never sees the shop name, a shop page, a photo, the address, the phone, WhatsApp, a link or a QR code.',
+    vendor_never_sees: 'You never see the customer’s name, number, address or neighbourhood, their delivery method, their relay point, the other sellers, the total paid. Only exception: the “pay on collection” label.',
+    between_you: 'Between the two of you, no direct contact: in-app messages tied to the order, anonymous and filtered.',
+
+    link_hours: 'Opening hours and closures',
+    link_hours_subtitle: 'Mon – Sat 8 am – 6 pm',
+    link_reviews: 'Reviews',
+    link_team: 'My team',
+    link_location: 'Location',
+    link_location_count: '{{count}} location registered',
+    link_location_count_plural: '{{count}} locations registered',
+    link_location_none: 'No location registered yet',
+
+    identity_title: 'Your identity with BelivaY',
+    identity_shop_name: 'Shop name',
+    identity_owner: 'Account holder',
+    identity_username: 'Username',
+    identity_status: 'Account status',
+    identity_account: 'Account',
+    identity_account_created: 'Created on {{date}}',
+    identity_account_created_approved: 'Created on {{created}} · approved on {{approved}}',
+    identity_hint: 'The username never changes. The account holder follows your ID document: changing it needs a check.',
+
+    status_pending: 'Pending',
+    status_approved: 'Approved',
+    status_rejected: 'Rejected',
+    status_suspended: 'Suspended',
+
+    request_change: 'Request a change',
+    request_change_whatsapp_message: 'Hello BelivaY, I am {{shop}} (account #{{id}}) and I would like to request a change to my shop information.',
+
+    // ── Opening hours and closures (VD-11 fig.3) ────────────────────────────
+    hours_title: 'Opening hours and closures',
+    hours_subtitle: 'Preparation time only runs during your opening hours.',
+
+    closed_today_title: 'Closed today',
+    closed_today_open_note: 'Open today until 6 pm',
+    closed_today_explain: 'When on: no new orders until tomorrow 8 am. Orders already received still need preparing.',
+    closed_today_not_ready: 'Not available yet: the one-day “closed today” switch is not connected to the server yet. Use the pause in Settings in the meantime.',
+
+    hours_card_title: 'Opening hours',
+    hours_mon_sat: 'Monday to Saturday',
+    hours_mon_sat_value: '8 am – 6 pm',
+    hours_sunday: 'Sunday',
+    hours_sunday_value: 'Always closed',
+    hours_locked_note: 'These hours are the same for every BelivaY seller at launch. Only your weekly closed day can vary — that setting is not shown here yet.',
+
+    pickup_title: 'Courier pickup times',
+    pickup_not_ready: 'Not available yet: courier pickup windows per zone are not yet shown in the seller space.',
+
+    closures_title: 'Scheduled closures',
+    closures_empty: 'No closure scheduled yet.',
+    closures_schedule_button: 'Schedule a closure',
+    closures_not_ready: 'Not available yet: scheduling closures is not connected to the server yet.',
+    closures_advance_notice: 'At least 48 h ahead: time to hand your orders to other sellers.',
+
+    // ── Location (VD-11 fig.4) ─────────────────────────────────────────────
+    location_title: 'Location',
+    location_subtitle: 'Your price + delivery from here: the lowest total wins.',
+    location_none: 'No location saved yet.',
+    location_verified_pill: 'Main',
+    location_no_coords: 'Position not set yet.',
+    landmark_label: 'Landmark for the courier',
+    landmark_placeholder: 'E.g.: facing the crossroads pharmacy',
+    landmark_hint: 'A simple phrase to find the shop.',
+    how_cost_strong: 'Total delivered cost',
+    how_cost_text: '= your price + the real delivery cost from your shop. The lowest total gets the order.',
+    how_tie_strong: 'At equal cost,',
+    how_tie_text: 'the higher Trust Score comes first.',
+    how_fail_strong: 'Out of stock, too slow or refused:',
+    how_fail_text: 'the order goes to the next seller.',
+    how_no_choice_text: 'The customer doesn’t choose a seller: they choose a product, BelivaY chooses the offer.',
+    relocate_cta: 'Set the point again from the shop',
+    relocate_hint: 'Do it on the spot. Beyond 200 m, a new check follows.',
+    location_error: 'Position unavailable. Check that location access is allowed.',
+
+    // ── My team (VD-11 fig.5) ──────────────────────────────────────────────
+    team_title: 'My team',
+    team_subtitle: 'One access per person: we always know who did what.',
+    role_owner: 'Owner',
+    team_owner_caption: 'You · everything, including money and prices',
+    team_no_second_access: 'No second access yet — Preparation accounts are coming soon.',
+    team_add_cta: 'Add access',
+    team_never_share: 'Never share your account: in a dispute, we must know who did what.',
+    team_prep_matrix_title: 'What a Preparation access sees',
+    team_can_do: 'Can do',
+    prep_can_1: 'Prepare, “It’s ready”, out of stock, more time',
+    prep_can_2: 'Stock, photos, handover code',
+    prep_can_3: 'Reply to disputes, inspect returns',
+    prep_can_4: '“Close today”',
+    team_never_sees: 'Never sees',
+    prep_cannot_1: 'Money, payouts, documents',
+    prep_cannot_2: 'Prices, publishing, plans',
+    prep_cannot_3: 'The payout number, the team',
+    team_owner_can_all: 'You, the owner, can do everything.',
+    team_preview_prep_home: 'Preview of the Preparation home screen',
+    team_preview_not_wired: 'Available once a real second access exists on the server.',
+    team_how_2fa: 'Adding or removing an access will require a code sent by SMS: this is your second factor.',
+    team_how_log: 'Every action will be signed by its author and shown in the order log.',
+
+    // ── My team · add access (VD-11 fig.6) ─────────────────────────────────
+    add_title: 'Add access',
+    add_subtitle: 'The person gets an SMS to install the app and choose their password.',
+    add_firstname_label: 'First and last name',
+    add_firstname_placeholder: 'First name',
+    add_lastname_placeholder: 'Last name',
+    add_phone_label: 'Phone',
+    add_access_prep_title: '“Preparation” access',
+    add_access_prep_can: 'Orders, stock, photos, handover code, disputes, returns, “Close today”.',
+    add_access_prep_cannot: 'Never: money, payouts, documents, prices, publishing, plans, team.',
+    add_access_level_fixed_note: 'Only the Preparation access is available for now.',
+    add_not_wired_title: 'Sending not wired yet',
+    add_not_wired_text: 'Multi-user team accounts are not delivered on the server yet. Contact support for a manual add in the meantime.',
+    add_not_wired_whatsapp_cta: 'Contact WhatsApp support',
+    add_send_cta: 'Send the invitation',
+    add_sms_hint: 'To confirm, a code will be sent to you by SMS.',
+    add_whatsapp_message: 'Hello, I would like to add a “Preparation” access for {{name}} ({{phone}}) on my BelivaY shop.',
+  },
+};

@@ -22,7 +22,7 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
-const SELLER_HOME_PATH = '/seller/dashboard';
+const SELLER_HOME_PATH = '/seller/v2/accueil';
 
 interface TwoFAState {
   userId: number;

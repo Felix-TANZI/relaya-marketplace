@@ -1,0 +1,18 @@
+/* Corrections de la spécification sur le prototype, décidées par le porteur (DP-44, 3 oct.).
+   Chargé après la feuille du prototype ; les tests de comparaison l'appliquent aussi au prototype,
+   pour juger le site contre « le prototype corrigé ». Les autres corrections de DP-44 :
+   - textes sous 12 px portés à 12 px (CRD-07) : par outils/styles.mjs, dans la feuille elle-même ;
+   - anglicismes et pidgin (CCH-30, DP-13) : dans les textes (i18n/texte.ts, pages/Menu.tsx) ;
+   - la planche de composants revient à l'accueil (CNV-10) : outils/prototype.mjs. */
+
+/* (2) Braise des boutons pleins, pastilles et badges : #C9500E → #B0430A, texte blanc à 4,5 et 5,8 : 1
+   (CDS-11, CRD-08). Le prototype éclaircit encore les boutons pleins en clair (#F58A3A → #EA6C1F). */
+:root{--braise-1:#C9500E;--braise-2:#B0430A}
+html:not([data-theme=dark]) .btn.primary{background:linear-gradient(180deg,var(--braise-1),var(--braise-2));border-color:var(--braise-2)}
+
+/* (4) Bouton retour et avatar : 40 px visibles, 44 px de zone de toucher (CRD-06). Le portrait est
+   déjà rogné en rond par lui-même : l'avatar peut cesser de rogner, sans changer un pixel. */
+.hd-sub>a.ibtn:first-child::after{content:'';position:absolute;inset:-2px}
+.hd-av{position:relative;overflow:visible}
+.hd-av .portrait{box-shadow:none}
+.hd-av::after{content:'';position:absolute;inset:-2px;border-radius:50%}

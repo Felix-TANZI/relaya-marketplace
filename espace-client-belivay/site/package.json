@@ -1,0 +1,40 @@
+{
+  "name": "site",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "playwright test",
+    "donnees": "python3 ../logique-metier/outils/site.py && node outils/styles.mjs && node outils/prototype.mjs && node outils/demo.mjs"
+  },
+  "dependencies": {
+    "i18next": "^25.10.10",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-i18next": "^16.6.6",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.13.3",
+    "@types/pngjs": "^6.0.5",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^5.2.0",
+    "autoprefixer": "^10.6.1",
+    "oxlint": "^1.81.0",
+    "pixelmatch": "^7.2.0",
+    "pngjs": "^7.0.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.9.3",
+    "vite": "^7.3.6"
+  },
+  "engines": {
+    "node": ">=20.19"
+  }
+}

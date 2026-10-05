@@ -1,0 +1,17 @@
+{
+ "routes": [
+  "accueil",
+  "categories",
+  "liste",
+  "selection",
+  "promotions"
+ ],
+ "exclus": {},
+ "repris": {
+  "accueil": "Carrousel à 10 catégories, consigne du porteur (5 oct. 2026) : 10 bandes et 10 points, photo déposée par bande (public/images/carrousel).",
+  "categories": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "liste": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "promotions": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais).",
+  "selection": "DP-54 : catalogue et recherche en données (tri, filtres, favori, panier, relais)."
+ }
+}

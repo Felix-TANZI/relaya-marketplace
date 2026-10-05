@@ -1,0 +1,8 @@
+{
+ "routes": [
+  "profil",
+  "profil-email",
+  "securite",
+  "confidentialite"
+ ]
+}
